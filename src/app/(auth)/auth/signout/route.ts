@@ -7,5 +7,5 @@ export async function POST(request: NextRequest) {
   if (rejected) return rejected;
   const supabase = await createClient();
   await supabase.auth.signOut();
-  return NextResponse.redirect(new URL("/login", request.url), { status: 303, headers: { "Cache-Control": "no-store" } });
+  return NextResponse.redirect(new URL("/login?notice=signed-out", request.url), { status: 303, headers: { "Cache-Control": "no-store" } });
 }

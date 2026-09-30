@@ -15,7 +15,18 @@ export type WorkspaceNode = {
 
 export type TreeNode = WorkspaceNode & { depth: number; children: TreeNode[] };
 
-export type ChecklistItem = { id: string; label: string; checked: boolean; position: number };
+export type ChecklistStep = { id: string; label: string; checked: boolean; position: number };
+
+export type ChecklistItem = {
+  id: string;
+  label: string;
+  checked: boolean;
+  position: number;
+  notes: string;
+  starred: boolean;
+  dueDate: string | null;
+  steps: ChecklistStep[];
+};
 
 /** A file (or folder) with its content, as returned by GET /api/nodes/:id. */
 export type NodeDetail = { node: WorkspaceNode & { content: string }; items: ChecklistItem[] };

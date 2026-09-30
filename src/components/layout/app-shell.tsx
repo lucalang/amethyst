@@ -1,7 +1,8 @@
-import { Suspense, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { ScrollExitFallback } from "./scroll-exit-fallback";
 import { MobileTabBar, TopNav } from "./top-nav";
 
-export function AppShell({ children, displayName }: { children: ReactNode; displayName: string }) {
+export function AppShell({ children, displayName, hasOther }: { children: ReactNode; displayName: string; hasOther: boolean }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -10,27 +11,26 @@ export function AppShell({ children, displayName }: { children: ReactNode; displ
       >
         Skip to content
       </a>
-      <Suspense fallback={<div className="h-14 border-b border-border" />}>
-        <TopNav displayName={displayName} />
-      </Suspense>
+      <TopNav displayName={displayName} hasOther={hasOther} />
       <main id="main" className="flex-1 pb-24 md:pb-10">
         {children}
       </main>
-      <MobileTabBar />
+      <MobileTabBar hasOther={hasOther} />
+      <ScrollExitFallback />
     </div>
   );
 }
 
 export function PageContainer({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8 ${className}`}>{children}</div>;
+  return <div className={`mx-auto w-full max-w-[88rem] px-4 py-7 md:px-6 md:py-10 ${className}`}>{children}</div>;
 }
 
 export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold md:text-2xl">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">{title}</h1>
+        {description ? <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>

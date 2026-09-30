@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { apiFetch } from "@/lib/api-client";
+import type { Collection } from "@/lib/collections";
 import type { Tables } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 import { nodeNameSchema } from "@/lib/validation/workspace";
@@ -46,22 +47,22 @@ const DESKTOP_QUERY = "(min-width: 768px)";
 const HIDDEN_KEY = "archive:explorer-hidden";
 
 export function EntryWorkspace({
+  collection,
   entry: initialEntry,
   initialNodes,
   initialFile,
-  imageHosts,
 }: {
+  collection: Collection;
   entry: Entry;
   initialNodes: WorkspaceNode[];
   initialFile: NodeDetail | null;
-  imageHosts: string[];
 }) {
   const [entry, setEntry] = useState(initialEntry);
   const [nodes, setNodes] = useState(initialNodes);
   return (
     <div>
-      <EntryHeader entry={entry} totals={checklistTotals(nodes)} onEntryChange={setEntry} />
-      <Workspace entry={entry} nodes={nodes} setNodes={setNodes} initialFile={initialFile} imageHosts={imageHosts} />
+      <EntryHeader collection={collection} entry={entry} totals={checklistTotals(nodes)} onEntryChange={setEntry} />
+      <Workspace entry={entry} nodes={nodes} setNodes={setNodes} initialFile={initialFile} />
     </div>
   );
 }
@@ -71,13 +72,11 @@ function Workspace({
   nodes,
   setNodes,
   initialFile,
-  imageHosts,
 }: {
   entry: Entry;
   nodes: WorkspaceNode[];
   setNodes: React.Dispatch<React.SetStateAction<WorkspaceNode[]>>;
   initialFile: NodeDetail | null;
-  imageHosts: string[];
 }) {
   const queryClient = useQueryClient();
   const tree = useMemo(() => buildTree(nodes), [nodes]);
@@ -298,15 +297,15 @@ function Workspace({
   const deleting = deleteId ? byId.get(deleteId) : undefined;
 
   return (
-    <section aria-label="Workspace" className="mx-auto w-full max-w-7xl md:px-6">
+    <section aria-label="Workspace" className="enter mx-auto w-full max-w-[88rem] md:px-6" style={{ "--enter-index": 2 } as React.CSSProperties}>
       <div
         className={cn(
-          "grid min-h-[calc(100dvh-3.5rem)] grid-cols-1 border-y border-border bg-card md:rounded-lg md:border",
-          !explorerHidden && "md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[18rem_minmax(0,1fr)]",
+          "grid min-h-[calc(100dvh-3.5rem)] grid-cols-1 border-y border-border bg-black md:rounded-xl md:border",
+          !explorerHidden && "md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)]",
         )}
       >
         {!explorerHidden ? (
-          <aside aria-label="Explorer" className="hidden border-r border-border md:block">
+          <aside aria-label="Explorer" className="hidden border-r border-border bg-surface md:block md:rounded-l-xl">
             {/* Leaves room for main's bottom padding so the panel never slides under the top bar. */}
             <div className="sticky top-14 h-[calc(100dvh-6rem)]">
               <Explorer scope="desktop" {...explorerProps} onHide={() => setHidden(true)} />
@@ -322,7 +321,6 @@ function Workspace({
             path={selectedId ? ancestorsOf(nodes, selectedId) : []}
             hasNodes={nodes.length > 0}
             initialFile={initialFile}
-            imageHosts={imageHosts}
             explorerHidden={explorerHidden}
             autoFocus={freshFileId !== null && freshFileId === selectedId}
             onShowExplorer={() => setHidden(false)}
@@ -408,7 +406,6 @@ function FilePane({
   path,
   hasNodes,
   initialFile,
-  imageHosts,
   explorerHidden,
   autoFocus,
   onShowExplorer,
@@ -425,7 +422,6 @@ function FilePane({
   path: WorkspaceNode[];
   hasNodes: boolean;
   initialFile: NodeDetail | null;
-  imageHosts: string[];
   explorerHidden: boolean;
   autoFocus: boolean;
   onShowExplorer: () => void;
@@ -448,7 +444,7 @@ function FilePane({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="sticky top-14 z-20 flex h-11 items-center gap-1.5 border-b border-border bg-card px-2 md:px-4">
+      <div className="sticky top-14 z-20 flex h-11 items-center gap-1.5 border-b border-border bg-black/90 px-2 backdrop-blur md:rounded-tr-xl md:px-4">
         <Button variant="ghost" size="sm" className="md:hidden" onClick={onOpenFiles}>
           <PanelLeft aria-hidden /> Files
         </Button>
@@ -468,7 +464,7 @@ function FilePane({
                   </li>
                 ))}
                 <li className="flex min-w-0 items-center gap-1.5 font-medium" aria-current="page">
-                  <Icon aria-hidden className={cn("size-4 shrink-0", node.kind === "checklist" ? "text-coral/90" : "text-muted-foreground")} />
+                  <Icon aria-hidden className={cn("size-4 shrink-0", node.kind === "checklist" ? "text-rose/90" : "text-amethyst/90")} />
                   <span className="truncate">{node.name}</span>
                 </li>
               </ol>
@@ -536,7 +532,7 @@ function FilePane({
           </Button>
         </div>
       ) : node.kind === "note" ? (
-        <NoteEditor detail={query.data} imageHosts={imageHosts} autoFocus={autoFocus} onSaved={onSaved} />
+        <NoteEditor detail={query.data} autoFocus={autoFocus} onSaved={onSaved} />
       ) : node.kind === "checklist" ? (
         <ChecklistEditor detail={query.data} autoFocus={autoFocus} onItemsChange={onItemsChange} />
       ) : null}

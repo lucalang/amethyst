@@ -12,10 +12,10 @@
   --font-heading: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
-  --color-jade: var(--jade);
-  --color-jade-foreground: var(--jade-foreground);
-  --color-coral: var(--coral);
-  --color-coral-foreground: var(--coral-foreground);
+  --color-amethyst: var(--amethyst);
+  --color-amethyst-foreground: var(--amethyst-foreground);
+  --color-rose: var(--rose);
+  --color-rose-foreground: var(--rose-foreground);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -42,33 +42,40 @@
   --radius-4xl: 8px;
 }
 
-/* Dark-first palette; the app always renders with the .dark class. */
+/* Pitch black with amethyst accents and a restrained rose; the app always renders with .dark. */
 :root,
 .dark {
-  --background: #0b0c0f;
-  --foreground: #f1f0eb;
-  --surface: #121419;
-  --surface-raised: #181b21;
-  --card: #121419;
-  --card-foreground: #f1f0eb;
-  --popover: #16181e;
-  --popover-foreground: #f1f0eb;
-  --primary: #5cc9a7;
-  --primary-foreground: #04130e;
-  --secondary: #1d2027;
-  --secondary-foreground: #f1f0eb;
-  --muted: #1a1d23;
-  --muted-foreground: #a2a6b0;
-  --accent: #1f232a;
-  --accent-foreground: #f1f0eb;
-  --destructive: #f2766a;
-  --border: rgb(255 255 255 / 0.08);
-  --input: rgb(255 255 255 / 0.14);
-  --ring: #5cc9a7;
-  --jade: #5cc9a7;
-  --jade-foreground: #04130e;
-  --coral: #f2866f;
-  --coral-foreground: #1c0905;
+  --background: #000000;
+  --foreground: #ece8f4;
+  --surface: #09080d;
+  --surface-raised: #110f17;
+  --card: #09080d;
+  --card-foreground: #ece8f4;
+  --popover: #121019;
+  --popover-foreground: #ece8f4;
+  --primary: #a57cff;
+  --primary-foreground: #12051f;
+  --secondary: #17141f;
+  --secondary-foreground: #ece8f4;
+  --muted: #121018;
+  --muted-foreground: #a5a0b5;
+  --accent: #1b1726;
+  --accent-foreground: #ece8f4;
+  --destructive: #ff6b6b;
+  --border: rgb(255 255 255 / 0.09);
+  --input: rgb(255 255 255 / 0.15);
+  --ring: #a57cff;
+  --amethyst: #a57cff;
+  --amethyst-foreground: #12051f;
+  --rose: #f472a8;
+  --rose-foreground: #22040f;
+  /* Document heading colors (live-preview editor). */
+  --md-h1: #dccfff;
+  --md-h2: #b36dff;
+  --md-h3: #e24fd9;
+  --md-h4: #ff7fae;
+  --md-h5: #c6b9e8;
+  --md-h6: #a39bbd;
   --radius: 8px;
   color-scheme: dark;
 }
@@ -98,6 +105,9 @@
   html {
     @apply font-sans;
   }
+  ::selection {
+    background: rgb(165 124 255 / 0.35);
+  }
 }
 
 /* Comfortable touch targets on coarse pointers. */
@@ -112,6 +122,69 @@
   }
 }
 
+/* Glass is reserved for overlays (dialogs, sheets, sticky bars). */
+.glass {
+  background: rgb(9 8 13 / 0.78);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion: short page entrances and scroll-linked exits (never keystroke-driven).
+ * ------------------------------------------------------------------------- */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.enter {
+  /* backwards (not both): once finished, no transform lingers to create stacking contexts. */
+  animation: enter 240ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation-delay: calc(min(var(--enter-index, 0), 6) * 40ms);
+}
+
+@keyframes scroll-exit {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes header-exit {
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-6%);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  /* Fade as the element leaves under the sticky top bar; reverses when scrolling back. */
+  .scroll-fade {
+    animation: scroll-exit linear both;
+    animation-timeline: view(block 3.5rem 0px);
+    animation-range: exit 0% exit 100%;
+  }
+  .header-scroll-exit {
+    transform-origin: 50% 0;
+    animation: header-exit linear both;
+    animation-timeline: view(block 3.5rem 0px);
+    animation-range: exit 0% exit 100%;
+  }
+}
+
+/* JS fallback (see ScrollExitFallback) for browsers without scroll timelines. */
+.scroll-fade[data-exit-fallback] {
+  opacity: calc(1 - var(--exit-progress, 0));
+  transform: translateY(calc(-10px * var(--exit-progress, 0)));
+}
+.header-scroll-exit[data-exit-fallback] {
+  transform-origin: 50% 0;
+  opacity: calc(1 - var(--exit-progress, 0));
+  transform: scale(calc(1 - 0.1 * var(--exit-progress, 0))) translateY(calc(-6% * var(--exit-progress, 0)));
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -121,11 +194,141 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .enter,
+  .scroll-fade,
+  .header-scroll-exit {
+    animation: none !important;
+  }
+  .scroll-fade[data-exit-fallback],
+  .header-scroll-exit[data-exit-fallback] {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-/* Glass is reserved for overlays (dialogs, sheets, sticky bars over artwork). */
-.glass {
-  background: rgb(18 20 25 / 0.72);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+/* ---------------------------------------------------------------------------
+ * Live-preview Markdown editor (CodeMirror 6)
+ * ------------------------------------------------------------------------- */
+.cm-live .cm-editor {
+  background: transparent;
+  color: var(--foreground);
+}
+.cm-live .cm-editor.cm-focused {
+  outline: none;
+}
+.cm-live .cm-scroller {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.75;
+  overflow: visible;
+}
+.cm-live .cm-content {
+  max-width: 46rem;
+  padding: 1.5rem 0 40vh;
+  caret-color: var(--amethyst);
+}
+.cm-live .cm-line {
+  padding: 0 0.125rem;
+}
+.cm-live .cm-cursor {
+  border-left: 2px solid var(--amethyst);
+}
+.cm-live .cm-selectionBackground,
+.cm-live .cm-editor.cm-focused .cm-selectionBackground,
+.cm-live .cm-content ::selection {
+  background: rgb(165 124 255 / 0.3) !important;
+}
+.cm-live .cm-placeholder {
+  color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+  font-style: normal;
+}
+.cm-live .cm-md-h {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+.cm-live .cm-md-h1 {
+  color: var(--md-h1);
+  font-size: 2.05em;
+  padding-top: 0.55em;
+  padding-bottom: 0.2em;
+}
+.cm-live .cm-md-h2 {
+  color: var(--md-h2);
+  font-size: 1.7em;
+  padding-top: 0.5em;
+  padding-bottom: 0.15em;
+}
+.cm-live .cm-md-h3 {
+  color: var(--md-h3);
+  font-size: 1.42em;
+  padding-top: 0.45em;
+  padding-bottom: 0.1em;
+}
+.cm-live .cm-md-h4 {
+  color: var(--md-h4);
+  font-size: 1.22em;
+  padding-top: 0.4em;
+}
+.cm-live .cm-md-h5 {
+  color: var(--md-h5);
+  font-size: 1.08em;
+  padding-top: 0.35em;
+}
+.cm-live .cm-md-h6 {
+  color: var(--md-h6);
+  font-size: 0.95em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding-top: 0.35em;
+}
+.cm-live .cm-md-mark {
+  color: color-mix(in oklab, currentColor 55%, var(--muted-foreground));
+  font-weight: 500;
+}
+.cm-live .cm-md-strong {
+  font-weight: 750;
+  color: #f5f1ff;
+}
+.cm-live .cm-md-em {
+  font-style: italic;
+}
+.cm-live .cm-md-strike {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+}
+.cm-live .cm-md-code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--secondary);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.cm-live .cm-md-link {
+  color: var(--amethyst);
+  text-decoration: underline;
+  text-decoration-color: rgb(165 124 255 / 0.45);
+  text-underline-offset: 3px;
+}
+.cm-live .cm-md-url {
+  color: var(--muted-foreground);
+}
+.cm-live .cm-md-list-mark {
+  color: var(--amethyst);
+  font-weight: 700;
+}
+.cm-live .cm-md-quote {
+  border-left: 3px solid rgb(165 124 255 / 0.5);
+  padding-left: 0.9rem !important;
+  color: color-mix(in oklab, var(--foreground) 80%, var(--muted-foreground));
+}
+.cm-live .cm-md-codeblock {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-raised);
+}
+.cm-live .cm-md-hr {
+  color: var(--muted-foreground);
 }

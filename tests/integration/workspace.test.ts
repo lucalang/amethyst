@@ -142,6 +142,51 @@ describe("checklists", () => {
     expect(rpc.error?.code).toBe("22023");
   });
 
+  it("stores task notes, importance, due dates and ordered steps", async () => {
+    const list = await addNode({ kind: "checklist", name: "Watch party" });
+    const { data: added } = await user.client.rpc("add_checklist_items", { p_file_id: list.id, p_labels: ["Marineford"] });
+    const task = added![0];
+    expect(task).toMatchObject({ notes: "", starred: false, due_date: null });
+
+    const updated = await user.client
+      .from("workspace_checklist_items")
+      .update({ notes: "Bring tissues.\nEpisode 483 onwards.", starred: true, due_date: "2026-11-01" })
+      .eq("id", task.id)
+      .select("notes, starred, due_date")
+      .single();
+    expect(updated.data).toEqual({ notes: "Bring tissues.\nEpisode 483 onwards.", starred: true, due_date: "2026-11-01" });
+
+    const steps = [];
+    for (const label of ["Snacks", "Projector", "Invite crew"]) {
+      const { data, error } = await user.client.rpc("add_checklist_step", { p_item_id: task.id, p_label: label });
+      expect(error).toBeNull();
+      steps.push(data!);
+    }
+    expect(steps.map((step) => step.position)).toEqual([0, 1, 2]);
+    await user.client.from("workspace_checklist_steps").update({ checked: true }).eq("id", steps[1].id);
+    expect((await user.client.rpc("reorder_checklist_steps", { p_item_id: task.id, p_step_ids: [steps[2].id, steps[0].id, steps[1].id] })).error).toBeNull();
+    expect((await user.client.rpc("reorder_checklist_steps", { p_item_id: task.id, p_step_ids: [steps[0].id] })).error?.code).toBe("22023");
+
+    const { data: reloaded } = await user.client
+      .from("workspace_checklist_items")
+      .select("label, steps:workspace_checklist_steps(label, checked, position)")
+      .eq("id", task.id)
+      .single();
+    expect(reloaded?.steps.sort((a, b) => a.position - b.position).map((step) => [step.label, step.checked])).toEqual([
+      ["Invite crew", false],
+      ["Snacks", false],
+      ["Projector", true],
+    ]);
+
+    const concurrent = await Promise.all(
+      Array.from({ length: 5 }, (_, index) => user.client.rpc("add_checklist_step", { p_item_id: task.id, p_label: `Extra ${index}` })),
+    );
+    expect(new Set(concurrent.map((result) => result.data?.position)).size).toBe(5);
+
+    await user.client.from("workspace_checklist_items").delete().eq("id", task.id);
+    expect((await user.client.from("workspace_checklist_steps").select("id").eq("item_id", task.id)).data).toEqual([]);
+  });
+
   it("summarizes checklist progress per entry", async () => {
     const { data } = await user.client.from("entry_workspace_summary").select("checklist_total, checklist_checked").eq("entry_id", entry).single();
     expect(data?.checklist_total).toBeGreaterThanOrEqual(9);

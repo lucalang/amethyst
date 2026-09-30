@@ -10,13 +10,14 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Archive", template: "%s · Archive" },
-  description: "Private media archive and progress tracker.",
+  title: { default: "Amethyst Archives", template: "%s · Amethyst Archives" },
+  description: "Your private archive of anime and game workspaces: notes, checklists and progress.",
+  applicationName: "Amethyst Archives",
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0c0f",
+  themeColor: "#000000",
   colorScheme: "dark",
 };
 

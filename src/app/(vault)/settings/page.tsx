@@ -30,7 +30,7 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Security</CardTitle>
-            <CardDescription>Accounts are invite-only. Magic links never create new accounts.</CardDescription>
+            <CardDescription>Change your password, or sign out of this device. Your data is private to your account.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button asChild variant="outline">

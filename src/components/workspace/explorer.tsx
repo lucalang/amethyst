@@ -34,6 +34,8 @@ export type EditState = { mode: "create"; parentId: string | null; kind: NodeKin
 
 const INDENT = 14;
 const BASE_PADDING = 6;
+/** Horizontal inset of each row (mx-1.5) so selection highlights read as rounded pills. */
+const ROW_INSET = 6;
 const DND_TYPE = "application/x-archive-node";
 
 export const treeRowId = (id: string, scope: string) => `${scope}-node-${id}`;
@@ -176,7 +178,7 @@ export function Explorer(props: ExplorerProps) {
       </div>
 
       <div
-        className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain py-1", dropTarget === null && "bg-jade/5")}
+        className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain py-1.5", dropTarget === null && "bg-amethyst/5")}
         onDragOver={(event) => {
           if (dragId && canMoveTo(nodes, dragId, null)) {
             event.preventDefault();
@@ -261,9 +263,11 @@ function TreeItem({ node, ctx, tabStop }: { node: TreeNode; ctx: TreeContext; ta
       ) : (
         <div
           className={cn(
-            "group relative flex h-7 cursor-pointer items-center gap-1.5 pr-1 text-[13px] select-none pointer-coarse:h-10",
-            selected ? "bg-secondary text-foreground shadow-[inset_2px_0_0_var(--jade)]" : "text-foreground/85 hover:bg-secondary/50",
-            dropHere && "bg-jade/15 ring-1 ring-jade/50 ring-inset",
+            "group relative mx-1.5 flex h-7 cursor-pointer items-center gap-1.5 rounded-md pr-1 text-[13px] transition-colors select-none pointer-coarse:h-10",
+            selected
+              ? "bg-amethyst/[0.13] text-foreground shadow-[inset_2px_0_0_var(--amethyst)]"
+              : "text-foreground/80 hover:bg-white/[0.045] hover:text-foreground",
+            dropHere && "bg-amethyst/15 ring-1 ring-amethyst/50 ring-inset",
             ctx.dragId === node.id && "opacity-50",
           )}
           style={{ paddingLeft: padding }}
@@ -312,7 +316,7 @@ function TreeItem({ node, ctx, tabStop }: { node: TreeNode; ctx: TreeContext; ta
           )}
           <Icon
             aria-hidden
-            className={cn("size-4 shrink-0", isFolder ? "text-jade/90" : node.kind === "checklist" ? "text-coral/90" : "text-muted-foreground")}
+            className={cn("size-4 shrink-0", isFolder ? "text-amethyst/80" : node.kind === "checklist" ? "text-rose/80" : "text-muted-foreground")}
           />
           <span className="min-w-0 flex-1 truncate">{node.name}</span>
           {node.kind === "checklist" && node.itemsTotal > 0 ? (
@@ -320,7 +324,7 @@ function TreeItem({ node, ctx, tabStop }: { node: TreeNode; ctx: TreeContext; ta
               aria-hidden
               className={cn(
                 "shrink-0 text-[11px] tabular-nums",
-                node.itemsChecked === node.itemsTotal ? "text-jade" : "text-muted-foreground",
+                node.itemsChecked === node.itemsTotal ? "text-amethyst" : "text-muted-foreground",
               )}
             >
               {node.itemsChecked}/{node.itemsTotal}
@@ -334,7 +338,7 @@ function TreeItem({ node, ctx, tabStop }: { node: TreeNode; ctx: TreeContext; ta
           <span
             aria-hidden
             className={cn("pointer-events-none absolute inset-y-0 w-px", containsSelection ? "bg-white/25" : "bg-white/10")}
-            style={{ left: padding + 7.5 }}
+            style={{ left: padding + ROW_INSET + 7.5 }}
           />
           {creatingHere ? <NameInput ctx={ctx} depth={node.depth + 1} kind={ctx.editing!.mode === "create" ? (ctx.editing as { kind: NodeKind }).kind : "note"} initial="" /> : null}
           {node.children.map((child) => (
@@ -434,10 +438,10 @@ function NameInput({ ctx, depth, kind, initial }: { ctx: TreeContext; depth: num
   }
 
   const input = (
-    <div className="py-0.5 pr-2" style={{ paddingLeft: BASE_PADDING + depth * INDENT }}>
+    <div className="py-0.5 pr-2" style={{ paddingLeft: BASE_PADDING + depth * INDENT + ROW_INSET }}>
       <div className="flex items-center gap-1.5">
         <span aria-hidden className="size-4 shrink-0" />
-        <Icon aria-hidden className={cn("size-4 shrink-0", kind === "folder" ? "text-jade/90" : kind === "checklist" ? "text-coral/90" : "text-muted-foreground")} />
+        <Icon aria-hidden className={cn("size-4 shrink-0", kind === "folder" ? "text-amethyst/80" : kind === "checklist" ? "text-rose/80" : "text-muted-foreground")} />
         <input
           autoFocus
           value={value}

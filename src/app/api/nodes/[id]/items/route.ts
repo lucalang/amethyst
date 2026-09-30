@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ITEM_COLUMNS, toChecklistItem } from "@/lib/data/workspace";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { addItemsSchema, checkAllSchema, reorderItemsSchema } from "@/lib/validation/workspace";
 
@@ -23,9 +24,9 @@ export async function POST(request: Request, { params }: Params) {
 
   const { data, error } = await prepared.ctx.supabase
     .rpc("add_checklist_items", { p_file_id: prepared.id, p_labels: parsed.data.labels })
-    .select("id, label, checked, position");
+    .select(ITEM_COLUMNS);
   if (error) return dbError(error);
-  return jsonResponse({ items: [...(data ?? [])].sort((a, b) => a.position - b.position) }, { status: 201 });
+  return jsonResponse({ items: (data ?? []).map((row) => toChecklistItem(row)).sort((a, b) => a.position - b.position) }, { status: 201 });
 }
 
 /** Persist a complete item order. */

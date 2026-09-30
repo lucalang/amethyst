@@ -13,7 +13,7 @@ function StatusLine({ state }: { state: FormState }) {
   return (
     <p role="status" aria-live="polite" className="min-h-5 text-sm">
       {state.status === "error" ? <span className="text-destructive">{state.message}</span> : null}
-      {state.status === "success" ? <span className="text-jade">{state.message}</span> : null}
+      {state.status === "success" ? <span className="text-amethyst">{state.message}</span> : null}
     </p>
   );
 }

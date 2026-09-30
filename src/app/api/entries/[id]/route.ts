@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { allowedImageHosts } from "@/lib/env";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { entryPatchSchema } from "@/lib/validation/entries";
 
@@ -13,7 +12,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) return apiError(404, "not_found", "Entry not found.");
 
-  const parsed = await parseJson(request, entryPatchSchema(allowedImageHosts()));
+  const parsed = await parseJson(request, entryPatchSchema);
   if ("response" in parsed) return parsed.response;
   const { expectedVersion, coverUrl, bannerUrl, ...rest } = parsed.data;
 

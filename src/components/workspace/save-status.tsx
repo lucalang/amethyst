@@ -38,12 +38,12 @@ export function SaveStatus({ state, onRetry, className }: { state: SaveState; on
         </>
       ) : state.kind === "conflict" ? (
         <>
-          <AlertTriangle aria-hidden className="size-3.5 text-coral" />
-          <span className="text-coral">Changed elsewhere</span>
+          <AlertTriangle aria-hidden className="size-3.5 text-rose" />
+          <span className="text-rose">Changed elsewhere</span>
         </>
       ) : (
         <>
-          <Check aria-hidden className="size-3.5 text-jade" />
+          <Check aria-hidden className="size-3.5 text-amethyst" />
           <span className="text-muted-foreground">Saved</span>
         </>
       )}

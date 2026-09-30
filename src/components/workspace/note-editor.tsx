@@ -2,22 +2,19 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { Eye, PenLine } from "lucide-react";
 import { toast } from "sonner";
-import { Markdown } from "@/components/media/markdown";
+import { EditorToolbar } from "@/components/editor/editor-toolbar";
+import { LiveMarkdownEditor, type EditorStatus, type LiveMarkdownEditorHandle } from "@/components/editor/live-markdown-editor";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { cn } from "@/lib/utils";
 import { MAX_NOTE_LENGTH } from "@/lib/validation/workspace";
 import type { NodeDetail, WorkspaceNode } from "@/lib/workspace/tree";
 import { errorMessage, nodeQueryKey, readLocal, useHydrated, writeLocal } from "./client-utils";
 import { SaveStatus, type SaveState } from "./save-status";
 
 const AUTOSAVE_DELAY_MS = 700;
-const MODE_KEY = "archive:note-mode";
 
 type Backup = { content: string; baseVersion: number };
-type Mode = "write" | "preview";
 const backupKey = (fileId: string) => `archive:draft:${fileId}`;
 
 function readBackup(fileId: string): Backup | null {
@@ -36,47 +33,36 @@ function readBackup(fileId: string): Backup | null {
 const writeBackup = (fileId: string, backup: Backup) => writeLocal(backupKey(fileId), JSON.stringify(backup));
 export const clearDraftBackup = (fileId: string) => writeLocal(backupKey(fileId), null);
 
-const textareaClass =
-  "block min-h-[50vh] w-full flex-1 resize-none bg-transparent px-4 py-5 font-sans text-[15px] leading-7 text-foreground outline-none [field-sizing:content] placeholder:text-muted-foreground/70 md:px-8";
+const TOOLBAR_ROW = "sticky top-[6.25rem] z-10 flex min-h-11 items-center justify-between gap-3 border-b border-border bg-black/90 px-3 backdrop-blur md:px-6";
+const PAGE = "px-5 md:px-10 lg:px-14";
 
 /**
- * Markdown note with autosave. Drafts are mirrored to localStorage until the
- * server confirms them, saves are serialized, and version conflicts are
- * surfaced instead of silently overwriting another tab's changes.
+ * Markdown note with Obsidian-style live preview and autosave. Drafts are
+ * mirrored to localStorage until the server confirms them, saves are
+ * serialized, and version conflicts are surfaced instead of overwriting
+ * another tab's changes.
  */
-export function NoteEditor(props: {
-  detail: NodeDetail;
-  imageHosts: readonly string[];
-  autoFocus?: boolean;
-  onSaved: (node: WorkspaceNode) => void;
-}) {
-  // localStorage (drafts, mode) is only readable after hydration.
+export function NoteEditor(props: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void }) {
+  // The editor and local drafts only exist in the browser.
   const hydrated = useHydrated();
   if (!hydrated) {
     return (
       <div className="flex flex-1 flex-col">
-        <div className="h-10 border-b border-border" />
-        <textarea readOnly aria-label={`Contents of ${props.detail.node.name}`} value={props.detail.node.content} className={textareaClass} />
+        <div className={TOOLBAR_ROW} />
+        <div className={`${PAGE} flex-1 py-6 text-base leading-[1.75] whitespace-pre-wrap text-foreground/90`} aria-busy="true">
+          {props.detail.node.content}
+        </div>
       </div>
     );
   }
   return <LiveNoteEditor {...props} />;
 }
 
-function LiveNoteEditor({
-  detail,
-  imageHosts,
-  autoFocus,
-  onSaved,
-}: {
-  detail: NodeDetail;
-  imageHosts: readonly string[];
-  autoFocus?: boolean;
-  onSaved: (node: WorkspaceNode) => void;
-}) {
+function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void }) {
   const fileId = detail.node.id;
   const name = detail.node.name;
   const queryClient = useQueryClient();
+  const editorRef = useRef<LiveMarkdownEditorHandle>(null);
 
   const [initial] = useState(() => {
     const backup = readBackup(fileId);
@@ -88,7 +74,7 @@ function LiveNoteEditor({
   });
   const [draft, setDraft] = useState(initial.draft);
   const [state, setState] = useState<SaveState>(initial.conflict ? { kind: "conflict" } : initial.restored ? { kind: "dirty" } : { kind: "saved" });
-  const [mode, setMode] = useState<Mode>(() => (readLocal(MODE_KEY) === "preview" ? "preview" : "write"));
+  const [editorStatus, setEditorStatus] = useState<EditorStatus>({ canUndo: false, canRedo: false, heading: 0 });
 
   const draftRef = useRef(initial.draft);
   const savedRef = useRef({ content: detail.node.content, version: detail.node.version });
@@ -97,7 +83,6 @@ function LiveNoteEditor({
   );
   const chainRef = useRef<Promise<void>>(Promise.resolve());
   const mountedRef = useRef(true);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   function remember(content: string, version: number, updatedAt: string) {
     savedRef.current = { content, version };
@@ -188,15 +173,11 @@ function LiveNoteEditor({
     if (!theirs) return;
     conflictRef.current = null;
     savedRef.current = theirs;
+    editorRef.current?.setContent(theirs.content);
     draftRef.current = theirs.content;
     setDraft(theirs.content);
     clearDraftBackup(fileId);
     setState({ kind: "saved" });
-  }
-
-  function switchMode(next: Mode) {
-    setMode(next);
-    writeLocal(MODE_KEY, next);
   }
 
   const autosave = useEffectEvent(() => {
@@ -215,10 +196,6 @@ function LiveNoteEditor({
     mountedRef.current = true;
     return () => flushOnUnmount();
   }, []);
-
-  useEffect(() => {
-    if (autoFocus) textareaRef.current?.focus();
-  }, [autoFocus]);
 
   const announceRestore = useEffectEvent(() => {
     if (initial.restored) toast.info(`Restored unsaved changes to “${name}” from this browser.`);
@@ -251,16 +228,13 @@ function LiveNoteEditor({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="sticky top-[6.25rem] z-10 flex min-h-10 flex-wrap items-center justify-between gap-2 border-b border-border bg-card px-4 py-1.5 md:px-8">
-        <SaveStatus state={state} onRetry={state.kind === "error" ? () => void save() : undefined} />
-        <div role="group" aria-label="Editor mode" className="flex rounded-md border border-border bg-surface p-0.5">
-          <ModeButton active={mode === "write"} onClick={() => switchMode("write")} icon={PenLine} label="Write" />
-          <ModeButton active={mode === "preview"} onClick={() => switchMode("preview")} icon={Eye} label="Preview" />
-        </div>
+      <div className={TOOLBAR_ROW}>
+        <EditorToolbar getView={() => editorRef.current?.view() ?? null} status={editorStatus} />
+        <SaveStatus state={state} onRetry={state.kind === "error" ? () => void save() : undefined} className="shrink-0" />
       </div>
 
       {state.kind === "conflict" ? (
-        <div role="alert" className="flex flex-wrap items-center gap-3 border-b border-coral/30 bg-coral/10 px-4 py-2.5 text-sm md:px-8">
+        <div role="alert" className={`flex flex-wrap items-center gap-3 border-b border-rose/30 bg-rose/10 py-2.5 text-sm ${PAGE}`}>
           <p className="min-w-0 flex-1">This note was changed somewhere else (another tab or device) while you were editing.</p>
           <div className="flex gap-2">
             <Button size="sm" onClick={keepMine}>
@@ -273,55 +247,24 @@ function LiveNoteEditor({
         </div>
       ) : null}
 
-      {mode === "write" ? (
-        <textarea
-          ref={textareaRef}
-          aria-label={`Contents of ${name}`}
-          value={draft}
-          maxLength={MAX_NOTE_LENGTH}
-          spellCheck
-          placeholder={"Start writing…\n\nMarkdown works here: # Heading, **bold**, - list, [link](https://…)"}
-          onChange={(event) => change(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key.toLowerCase() === "s" && (event.metaKey || event.ctrlKey)) {
-              event.preventDefault();
-              void save();
-            }
-          }}
+      <div className={`flex-1 ${PAGE}`}>
+        <LiveMarkdownEditor
+          ref={editorRef}
+          initialValue={initial.draft}
+          ariaLabel={`Contents of ${name}`}
+          placeholder="Start writing… Type # for a heading, **bold**, - for a list."
+          autoFocus={autoFocus}
+          onChange={change}
+          onSave={() => void save()}
           onBlur={() => {
             if (draftRef.current !== savedRef.current.content) void save();
           }}
-          className={textareaClass}
+          onStatus={setEditorStatus}
         />
-      ) : (
-        <div className="min-h-[50vh] flex-1 px-4 py-5 md:px-8">
-          {draft.trim() ? (
-            <Markdown content={draft} imageHosts={imageHosts} className="max-w-3xl text-[15px] leading-7" />
-          ) : (
-            <p className="text-sm text-muted-foreground">Nothing written yet. Switch to Write to start.</p>
-          )}
-        </div>
-      )}
-      <p className="border-t border-border px-4 py-2 text-right text-[11px] text-muted-foreground tabular-nums md:px-8">
+      </div>
+      <p className={`border-t border-border py-2 text-right text-[11px] text-muted-foreground tabular-nums ${PAGE}`}>
         {draft.length.toLocaleString("en")} / {MAX_NOTE_LENGTH.toLocaleString("en")} characters · Markdown
       </p>
     </div>
-  );
-}
-
-function ModeButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: typeof Eye; label: string }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "inline-flex min-h-7 items-center gap-1.5 rounded-sm px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground pointer-coarse:min-h-9",
-        active && "bg-secondary text-foreground",
-      )}
-    >
-      <Icon aria-hidden className="size-3.5" />
-      {label}
-    </button>
   );
 }

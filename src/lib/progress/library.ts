@@ -29,12 +29,11 @@ export function entryState(summary: EntrySummary): LibraryState {
 /** Headline progress for a library card: checked items across every checklist. */
 export function entryProgress(entry: Pick<LibraryEntry, "summary">): { done: number; total: number | null; label: string } {
   const { summary } = entry;
-  return { done: summary.checklistChecked, total: summary.checklistTotal > 0 ? summary.checklistTotal : null, label: "items" };
+  return { done: summary.checklistChecked, total: summary.checklistTotal > 0 ? summary.checklistTotal : null, label: "tasks" };
 }
 
 export const librarySearchSchema = z.object({
   q: z.string().trim().max(100).catch("").default(""),
-  kind: z.enum(["all", "anime", "game", "custom"]).catch("all").default("all"),
   status: z.enum(["all", "in_progress", "completed", "not_started"]).catch("all").default("all"),
   sort: z.enum(["recent", "title", "progress", "added"]).catch("recent").default("recent"),
 });
@@ -49,7 +48,6 @@ export function filterLibrary(entries: LibraryEntry[], search: LibrarySearch): L
   const q = search.q.toLocaleLowerCase();
   const filtered = entries.filter(
     (entry) =>
-      (search.kind === "all" || entry.kind === search.kind) &&
       (search.status === "all" || entryState(entry.summary) === search.status) &&
       (!q || entry.title.toLocaleLowerCase().includes(q)),
   );

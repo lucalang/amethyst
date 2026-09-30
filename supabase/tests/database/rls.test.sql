@@ -1,7 +1,7 @@
 -- RLS, ownership and integrity tests for personal workspaces. Run with: npm run test:db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(65);
+select plan(86);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
@@ -33,6 +33,8 @@ insert into public.workspace_nodes (id, user_id, entry_id, parent_id, kind, name
   ('bbbbbbbb-0000-4000-8000-0000000000c1', 'bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000e1', null, 'checklist', 'B list');
 insert into public.workspace_checklist_items (id, user_id, file_id, label) values
   ('bbbbbbbb-0000-4000-8000-0000000000d1', 'bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000c1', 'B secret');
+insert into public.workspace_checklist_steps (id, user_id, item_id, label) values
+  ('bbbbbbbb-0000-4000-8000-0000000000b5', 'bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000d1', 'B secret step');
 
 -- ---------------------------------------------------------------------------
 -- Schema: the catalog model, MyAnimeList sync and the import worker are gone
@@ -55,6 +57,7 @@ select set_config('request.jwt.claims', '{"role":"anon"}', true);
 select throws_ok('select * from public.entries', '42501', null, 'anon cannot read entries');
 select throws_ok('select * from public.workspace_nodes', '42501', null, 'anon cannot read workspace nodes');
 select throws_ok('select * from public.workspace_checklist_items', '42501', null, 'anon cannot read checklist items');
+select throws_ok('select * from public.workspace_checklist_steps', '42501', null, 'anon cannot read task steps');
 select throws_ok('select * from public.workspace_tree', '42501', null, 'anon cannot read the tree view');
 select throws_ok($$insert into public.workspace_nodes (entry_id, kind, name) values ('aaaaaaaa-0000-4000-8000-0000000000e1', 'note', 'x')$$, '42501', null, 'anon cannot create nodes');
 select throws_ok($$select public.set_checklist_checked('aaaaaaaa-0000-4000-8000-0000000000c1', true)$$, '42501', null, 'anon cannot call checklist RPCs');
@@ -153,10 +156,44 @@ select results_eq(
   'entry summary counts files and items'
 );
 
+-- Task details and steps
+select is((select count(*)::int from public.workspace_checklist_steps), 0, 'A cannot see B steps');
+select lives_ok(
+  $$update public.workspace_checklist_items set notes = 'Rewatch before the movie', starred = true, due_date = '2026-10-31' where id = 'aaaaaaaa-0000-4000-8000-0000000000d2'$$,
+  'task notes, importance and due date are editable'
+);
+select throws_ok($$update public.workspace_checklist_items set due_date = '1800-01-01' where id = 'aaaaaaaa-0000-4000-8000-0000000000d2'$$, '23514', null, 'due dates are bounded');
+select throws_ok($$update public.workspace_checklist_items set notes = repeat('x', 20001) where id = 'aaaaaaaa-0000-4000-8000-0000000000d2'$$, '23514', null, 'task notes are bounded');
+select lives_ok($$select public.add_checklist_step('aaaaaaaa-0000-4000-8000-0000000000d2', ' Buy snacks ')$$, 'add a step');
+select lives_ok($$select public.add_checklist_step('aaaaaaaa-0000-4000-8000-0000000000d2', 'Invite Zoro')$$, 'add another step');
+select results_eq(
+  $$select label, position from public.workspace_checklist_steps where item_id = 'aaaaaaaa-0000-4000-8000-0000000000d2' order by position$$,
+  $$values ('Buy snacks', 0), ('Invite Zoro', 1)$$,
+  'steps are appended in order with trimmed labels'
+);
+select throws_ok($$select public.add_checklist_step('bbbbbbbb-0000-4000-8000-0000000000d1', 'planted')$$, '22023', null, 'RPC cannot add steps to a B task');
+select throws_ok($$insert into public.workspace_checklist_steps (item_id, label) values ('bbbbbbbb-0000-4000-8000-0000000000d1', 'planted')$$, '23503', null, 'cannot insert steps into a B task');
+select throws_ok($$insert into public.workspace_checklist_steps (user_id, item_id, label) values ('bbbbbbbb-0000-4000-8000-000000000002', 'aaaaaaaa-0000-4000-8000-0000000000d2', 'x')$$, '42501', null, 'step ownership is not client-writable');
+select throws_ok($$insert into public.workspace_checklist_steps (item_id, label) values ('aaaaaaaa-0000-4000-8000-0000000000d2', '  ')$$, '23514', null, 'blank step labels are rejected');
+select lives_ok($$update public.workspace_checklist_steps set label = 'hijacked', checked = true where id = 'bbbbbbbb-0000-4000-8000-0000000000b5'$$, 'update of B step is silently filtered');
+select throws_ok($$update public.workspace_checklist_steps set item_id = 'aaaaaaaa-0000-4000-8000-0000000000d1' where item_id = 'aaaaaaaa-0000-4000-8000-0000000000d2'$$, '42501', null, 'steps cannot be reassigned by clients');
+select throws_ok($$select public.reorder_checklist_steps('bbbbbbbb-0000-4000-8000-0000000000d1', array['bbbbbbbb-0000-4000-8000-0000000000b5']::uuid[])$$, '22023', null, 'RPC cannot reorder B steps');
+select throws_ok(
+  $$select public.reorder_checklist_steps('aaaaaaaa-0000-4000-8000-0000000000d2', array(select id from public.workspace_checklist_steps where label = 'Invite Zoro'))$$,
+  '22023', null, 'partial step reorders are rejected'
+);
+select lives_ok(
+  $$select public.reorder_checklist_steps('aaaaaaaa-0000-4000-8000-0000000000d2',
+      array(select id from public.workspace_checklist_steps where item_id = 'aaaaaaaa-0000-4000-8000-0000000000d2' order by position desc))$$,
+  'complete step reorders are applied'
+);
+select is((select label from public.workspace_checklist_steps where item_id = 'aaaaaaaa-0000-4000-8000-0000000000d2' and position = 0), 'Invite Zoro', 'step order was reversed');
+
 -- Cascading deletes
 select lives_ok($$delete from public.workspace_nodes where id = 'aaaaaaaa-0000-4000-8000-0000000000f1'$$, 'delete a folder');
 select is((select count(*)::int from public.workspace_nodes where entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e1'), 0, 'its whole subtree is deleted');
 select is((select count(*)::int from public.workspace_checklist_items where file_id = 'aaaaaaaa-0000-4000-8000-0000000000c1'), 0, 'with checklist items');
+select is((select count(*)::int from public.workspace_checklist_steps), 0, 'and their steps');
 
 -- ---------------------------------------------------------------------------
 -- Guards that apply even to privileged roles
@@ -166,6 +203,12 @@ select throws_ok($$update public.workspace_nodes set kind = 'note' where id = 'b
 select throws_ok($$update public.workspace_checklist_items set file_id = 'bbbbbbbb-0000-4000-8000-0000000000f1' where id = 'bbbbbbbb-0000-4000-8000-0000000000d1'$$, '23514', null, 'items cannot move between files');
 select is((select name from public.workspace_nodes where id = 'bbbbbbbb-0000-4000-8000-0000000000f1'), 'B folder', 'B node unchanged');
 select is((select count(*)::int from public.workspace_checklist_items where id = 'bbbbbbbb-0000-4000-8000-0000000000d1'), 1, 'B item not deleted');
+select throws_ok($$update public.workspace_checklist_steps set item_id = 'aaaaaaaa-0000-4000-8000-0000000000d1' where id = 'bbbbbbbb-0000-4000-8000-0000000000b5'$$, '23514', null, 'steps cannot move between tasks');
+select results_eq(
+  $$select label, checked from public.workspace_checklist_steps where id = 'bbbbbbbb-0000-4000-8000-0000000000b5'$$,
+  $$values ('B secret step', false)$$,
+  'B step unchanged'
+);
 
 select * from finish();
 rollback;

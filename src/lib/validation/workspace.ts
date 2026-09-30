@@ -51,10 +51,36 @@ export const addItemsSchema = z
   })
   .strict();
 
+export const MAX_TASK_NOTES_LENGTH = 20_000;
+
+export const dueDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date like 2026-10-31.")
+  .refine((value) => {
+    const time = Date.parse(`${value}T00:00:00Z`);
+    // Round-trip so impossible dates such as 2026-02-30 are rejected rather than rolled over.
+    return !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === value && value >= "1900-01-01" && value <= "2999-12-31";
+  }, "Choose a valid date.");
+
 export const updateItemSchema = z
+  .object({
+    label: itemLabelSchema.optional(),
+    checked: z.boolean().optional(),
+    notes: z.string().max(MAX_TASK_NOTES_LENGTH, `Notes can be at most ${MAX_TASK_NOTES_LENGTH.toLocaleString("en")} characters.`).optional(),
+    starred: z.boolean().optional(),
+    dueDate: dueDateSchema.nullable().optional(),
+  })
+  .strict()
+  .refine((value) => Object.values(value).some((field) => field !== undefined), "Nothing to update.");
+
+export const addStepSchema = z.object({ label: itemLabelSchema }).strict();
+
+export const updateStepSchema = z
   .object({ label: itemLabelSchema.optional(), checked: z.boolean().optional() })
   .strict()
   .refine((value) => value.label !== undefined || value.checked !== undefined, "Nothing to update.");
+
+export const reorderStepsSchema = z.object({ stepIds: z.array(z.uuid()).max(1000) }).strict();
 
 export const reorderItemsSchema = z.object({ itemIds: z.array(z.uuid()).max(10_000) }).strict();
 

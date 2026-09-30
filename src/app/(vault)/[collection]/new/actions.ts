@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { allowedImageHosts } from "@/lib/env";
+import { COLLECTIONS, entryPath, isCollectionSlug } from "@/lib/collections";
 import { requireUser } from "@/lib/supabase/auth";
 import { newEntrySchema, starterFilesFor } from "@/lib/validation/entries";
 
@@ -14,11 +14,13 @@ export type NewEntryState = {
 
 export async function createEntry(_prev: NewEntryState, formData: FormData): Promise<NewEntryState> {
   const ctx = await requireUser();
-  const values = Object.fromEntries(
-    ["kind", "title", "platform", "coverUrl", "bannerUrl"].map((key) => [key, String(formData.get(key) ?? "")]),
-  );
-  const parsed = newEntrySchema(allowedImageHosts()).safeParse({
-    kind: formData.get("kind"),
+  const values = Object.fromEntries(["title", "platform", "coverUrl", "bannerUrl"].map((key) => [key, String(formData.get(key) ?? "")]));
+  const slug = String(formData.get("collection") ?? "");
+  if (!isCollectionSlug(slug)) return { status: "error", message: "Unknown collection.", values };
+  const kind = COLLECTIONS[slug].kind;
+
+  const parsed = newEntrySchema.safeParse({
+    kind,
     title: formData.get("title"),
     platform: formData.get("platform") || undefined,
     coverUrl: formData.get("coverUrl") || undefined,
@@ -40,7 +42,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
       banner_url: input.bannerUrl,
       platform: input.kind === "game" ? input.platform : null,
     })
-    .select("id")
+    .select("id, kind")
     .single();
   if (error || !entry) return { status: "error", message: "Could not create the entry.", values };
 
@@ -52,5 +54,5 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
     return { status: "error", message: "Could not create the workspace files.", values };
   }
 
-  redirect(`/entries/${entry.id}`);
+  redirect(entryPath(entry));
 }

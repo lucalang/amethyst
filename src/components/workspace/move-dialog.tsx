@@ -101,12 +101,12 @@ function MoveForm({
                 checked={target === option.id}
                 disabled={option.disabled}
                 onChange={() => setTarget(option.id)}
-                className="accent-[var(--jade)]"
+                className="accent-[var(--amethyst)]"
               />
               {option.id === null ? (
                 <SquareDashed aria-hidden className="size-4 text-muted-foreground" />
               ) : (
-                <Folder aria-hidden className="size-4 text-jade/90" />
+                <Folder aria-hidden className="size-4 text-amethyst/90" />
               )}
               <span className="truncate">{option.name}</span>
               {option.id === moving.parentId ? <span className="ml-auto text-xs text-muted-foreground">current</span> : null}

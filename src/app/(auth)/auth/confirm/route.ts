@@ -3,9 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/validation/redirect";
 
-const ALLOWED_TYPES = new Set<EmailOtpType>(["email", "magiclink", "invite", "recovery"]);
+const ALLOWED_TYPES = new Set<EmailOtpType>(["email", "signup", "magiclink", "invite", "recovery"]);
 
-// Verifies email links (magic link, invite, recovery) server-side.
+// Verifies email links (sign-up confirmation, magic link, invite, recovery) server-side.
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const tokenHash = searchParams.get("token_hash");

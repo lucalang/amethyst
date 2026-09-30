@@ -1,13 +1,20 @@
 import "server-only";
 import type { AuthContext } from "@/lib/supabase/auth";
 import { EMPTY_SUMMARY, type LibraryEntry } from "@/lib/progress/library";
+import type { EntryKind } from "@/lib/validation/entries";
 import { fetchAll } from "./fetch-all";
 
-export async function loadLibrary(ctx: AuthContext): Promise<LibraryEntry[]> {
+/** One collection's entries; other kinds are never loaded into this view. */
+export async function loadLibrary(ctx: AuthContext, kind: EntryKind): Promise<LibraryEntry[]> {
   const { supabase } = ctx;
   const [entries, summaries] = await Promise.all([
     fetchAll((from, to) =>
-      supabase.from("entries").select("id, kind, title, cover_url, created_at, updated_at").order("updated_at", { ascending: false }).range(from, to),
+      supabase
+        .from("entries")
+        .select("id, kind, title, cover_url, created_at, updated_at")
+        .eq("kind", kind)
+        .order("updated_at", { ascending: false })
+        .range(from, to),
     ),
     fetchAll((from, to) => supabase.from("entry_workspace_summary").select("*").range(from, to)),
   ]);

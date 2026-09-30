@@ -2,7 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./database.types";
 
-const PUBLIC_PATHS = ["/login", "/auth/confirm", "/auth/signout", "/auth/session-expired"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/signout", "/auth/session-expired"];
+// Signed-in visitors skip these and go straight to their library.
+const GUEST_ONLY_PATHS = new Set(["/login", "/register", "/forgot-password"]);
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -46,9 +48,9 @@ export async function updateSession(request: NextRequest) {
     return withSessionCookies(NextResponse.redirect(url), response);
   }
 
-  if (signedIn && pathname === "/login") {
+  if (signedIn && GUEST_ONLY_PATHS.has(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/anime";
     url.search = "";
     return withSessionCookies(NextResponse.redirect(url), response);
   }

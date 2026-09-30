@@ -57,13 +57,13 @@ isOneToOne: false
                   ]
                 },"workspace_checklist_items": {
                   Row: {
-                    "checked": boolean,"created_at": string,"file_id": string,"id": string,"label": string,"position": number,"updated_at": string,"user_id": string
+                    "checked": boolean,"created_at": string,"due_date": string | null,"file_id": string,"id": string,"label": string,"notes": string,"position": number,"starred": boolean,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "checked"?: boolean,"created_at"?: string,"file_id": string,"id"?: string,"label": string,"position"?: number,"updated_at"?: string,"user_id"?: string
+                    "checked"?: boolean,"created_at"?: string,"due_date"?: string | null,"file_id": string,"id"?: string,"label": string,"notes"?: string,"position"?: number,"starred"?: boolean,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "checked"?: boolean,"created_at"?: string,"file_id"?: string,"id"?: string,"label"?: string,"position"?: number,"updated_at"?: string,"user_id"?: string
+                    "checked"?: boolean,"created_at"?: string,"due_date"?: string | null,"file_id"?: string,"id"?: string,"label"?: string,"notes"?: string,"position"?: number,"starred"?: boolean,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -84,6 +84,31 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "users"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"workspace_checklist_steps": {
+                  Row: {
+                    "checked": boolean,"created_at": string,"id": string,"item_id": string,"label": string,"position": number,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "checked"?: boolean,"created_at"?: string,"id"?: string,"item_id": string,"label": string,"position"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "checked"?: boolean,"created_at"?: string,"id"?: string,"item_id"?: string,"label"?: string,"position"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workspace_checklist_steps_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "workspace_checklist_steps_user_id_item_id_fkey"
+      columns: ["user_id","item_id"]
+isOneToOne: false
+      referencedRelation: "workspace_checklist_items"
+      referencedColumns: ["user_id","id"]
     }
                   ]
                 },"workspace_nodes": {
@@ -189,10 +214,13 @@ isOneToOne: false
 { Args: { "p_file_id": string,"p_labels": (string)[] }; Returns: {
               "checked": boolean,
 "created_at": string,
+"due_date": string | null,
 "file_id": string,
 "id": string,
 "label": string,
+"notes": string,
 "position": number,
+"starred": boolean,
 "updated_at": string,
 "user_id": string
             }[]
@@ -202,11 +230,31 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"add_checklist_step":
+{ Args: { "p_item_id": string,"p_label": string }; Returns: {
+              "checked": boolean,
+"created_at": string,
+"id": string,
+"item_id": string,
+"label": string,
+"position": number,
+"updated_at": string,
+"user_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "workspace_checklist_steps"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "ensure_profile":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "reorder_checklist_items":
 { Args: { "p_file_id": string,"p_item_ids": (string)[] }; Returns: undefined
+                           },
+"reorder_checklist_steps":
+{ Args: { "p_item_id": string,"p_step_ids": (string)[] }; Returns: undefined
                            },
 "set_checklist_checked":
 { Args: { "p_checked": boolean,"p_file_id": string }; Returns: number

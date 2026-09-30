@@ -11,5 +11,11 @@ export default async function VaultLayout({ children }: { children: ReactNode })
     ({ data: profile } = await ctx.supabase.from("users").select("display_name").eq("id", ctx.userId).maybeSingle());
   }
   const displayName = profile?.display_name || ctx.email || "Account";
-  return <AppShell displayName={displayName}>{children}</AppShell>;
+  // "Other" (custom entries) is only a destination for accounts that have some.
+  const { count } = await ctx.supabase.from("entries").select("id", { count: "exact", head: true }).eq("kind", "custom");
+  return (
+    <AppShell displayName={displayName} hasOther={(count ?? 0) > 0}>
+      {children}
+    </AppShell>
+  );
 }

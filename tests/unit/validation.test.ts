@@ -1,21 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { newEntrySchema, starterFilesFor } from "@/lib/validation/entries";
-import { getAllowedImageHosts, isAllowedImageUrl, parseExtraImageHosts } from "@/lib/validation/image-hosts";
 import { safeNextPath } from "@/lib/validation/redirect";
-import { addItemsSchema, createNodeSchema, nodeNameSchema, splitLines, updateItemSchema, updateNodeSchema } from "@/lib/validation/workspace";
+import {
+  addItemsSchema,
+  addStepSchema,
+  createNodeSchema,
+  nodeNameSchema,
+  reorderStepsSchema,
+  splitLines,
+  updateItemSchema,
+  updateNodeSchema,
+  updateStepSchema,
+} from "@/lib/validation/workspace";
 
 describe("new entries", () => {
-  const schema = newEntrySchema(getAllowedImageHosts(undefined));
+  const schema = newEntrySchema;
 
-  it("accepts a manual anime with only a title and an allowed image", () => {
-    const parsed = schema.parse({ kind: "anime", title: "  One Piece ", coverUrl: "https://cdn.myanimelist.net/images/anime/6/73245.jpg" });
-    expect(parsed).toMatchObject({ kind: "anime", title: "One Piece", coverUrl: "https://cdn.myanimelist.net/images/anime/6/73245.jpg", bannerUrl: null });
+  it("accepts a manual anime with only a title and an image from any public host", () => {
+    const parsed = schema.parse({ kind: "anime", title: "  One Piece ", coverUrl: "https://i.imgur.com/abc.jpg" });
+    expect(parsed).toMatchObject({ kind: "anime", title: "One Piece", coverUrl: "https://i.imgur.com/abc.jpg", bannerUrl: null });
+    expect(schema.parse({ kind: "game", title: "Fortnite", coverUrl: "http://static.example.org/cover.png" }).coverUrl).toBe(
+      "http://static.example.org/cover.png",
+    );
   });
 
-  it("rejects unknown kinds, blank titles and foreign image hosts", () => {
+  it("rejects unknown kinds, blank titles and local image targets", () => {
     expect(schema.safeParse({ kind: "franchise", title: "x" }).success).toBe(false);
     expect(schema.safeParse({ kind: "anime", title: "   " }).success).toBe(false);
-    expect(schema.safeParse({ kind: "anime", title: "x", coverUrl: "https://evil.test/a.png" }).success).toBe(false);
+    expect(schema.safeParse({ kind: "anime", title: "x", coverUrl: "http://127.0.0.1/a.png" }).success).toBe(false);
+    expect(schema.safeParse({ kind: "anime", title: "x", coverUrl: "ftp://files.example.com/a.png" }).success).toBe(false);
   });
 
   it("starts every kind with editable starter files", () => {
@@ -60,6 +73,26 @@ describe("workspace input", () => {
     expect(updateItemSchema.safeParse({ checked: true }).success).toBe(true);
     expect(updateItemSchema.safeParse({}).success).toBe(false);
   });
+
+  it("validates task details and steps", () => {
+    expect(updateItemSchema.safeParse({ notes: "Watch the extended cut", starred: true, dueDate: "2026-10-31" }).success).toBe(true);
+    expect(updateItemSchema.safeParse({ dueDate: null }).success).toBe(true);
+    expect(updateItemSchema.safeParse({ notes: "" }).success).toBe(true);
+    expect(updateItemSchema.safeParse({ notes: "x".repeat(20_001) }).success).toBe(false);
+    expect(updateItemSchema.safeParse({ dueDate: "31.10.2026" }).success).toBe(false);
+    expect(updateItemSchema.safeParse({ dueDate: "2026-02-30" }).success).toBe(false);
+    expect(updateItemSchema.safeParse({ dueDate: "1800-01-01" }).success).toBe(false);
+    expect(updateItemSchema.safeParse({ starred: "yes" }).success).toBe(false);
+    expect(updateItemSchema.safeParse({ position: 3 }).success).toBe(false);
+
+    expect(addStepSchema.parse({ label: "  Buy the box set " }).label).toBe("Buy the box set");
+    expect(addStepSchema.safeParse({ label: " " }).success).toBe(false);
+    expect(updateStepSchema.safeParse({ checked: true }).success).toBe(true);
+    expect(updateStepSchema.safeParse({}).success).toBe(false);
+    expect(updateStepSchema.safeParse({ item_id: crypto.randomUUID() }).success).toBe(false);
+    expect(reorderStepsSchema.safeParse({ stepIds: [crypto.randomUUID()] }).success).toBe(true);
+    expect(reorderStepsSchema.safeParse({ stepIds: ["nope"] }).success).toBe(false);
+  });
 });
 
 describe("safeNextPath", () => {
@@ -76,29 +109,4 @@ describe("safeNextPath", () => {
       expect(safeNextPath(input)).toBe("/");
     },
   );
-});
-
-describe("image host allow-list", () => {
-  const hosts = getAllowedImageHosts("images.example.com, bad_host, ");
-
-  it("includes provider defaults and valid extras only", () => {
-    expect(hosts).toContain("cdn.myanimelist.net");
-    expect(hosts).toContain("images.example.com");
-    expect(parseExtraImageHosts("bad_host,,-x.com")).toEqual([]);
-  });
-
-  it("accepts https URLs on allowed hosts", () => {
-    expect(isAllowedImageUrl("https://cdn.myanimelist.net/images/anime/1/1.jpg", hosts)).toBe(true);
-  });
-
-  it.each([
-    "http://cdn.myanimelist.net/a.jpg",
-    "https://evil.test/a.jpg",
-    "https://user:pw@cdn.myanimelist.net/a.jpg",
-    "https://cdn.myanimelist.net:8443/a.jpg",
-    "https://cdn.myanimelist.net.evil.test/a.jpg",
-    "not a url",
-  ])("rejects %s", (url) => {
-    expect(isAllowedImageUrl(url, hosts)).toBe(false);
-  });
 });

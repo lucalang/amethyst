@@ -26,7 +26,7 @@ export function ProgressMeter({ done, total, label, className, compact }: Props)
         className={cn("relative overflow-hidden rounded-sm bg-secondary", compact ? "h-1" : "h-1.5")}
       >
         {known ? (
-          <div className="h-full rounded-sm bg-jade transition-[width]" style={{ width: `${percent}%` }} />
+          <div className="h-full rounded-sm bg-amethyst transition-[width]" style={{ width: `${percent}%` }} />
         ) : (
           <div className="h-full w-full bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgb(255_255_255/0.08)_6px_12px)]" />
         )}

@@ -2,7 +2,7 @@ import "server-only";
 import { apiError, dbError } from "@/lib/http";
 import type { AuthContext } from "@/lib/supabase/auth";
 import type { Tables } from "@/lib/supabase/database.types";
-import type { NodeDetail, NodeKind, WorkspaceNode } from "@/lib/workspace/tree";
+import type { ChecklistItem, ChecklistStep, NodeDetail, NodeKind, WorkspaceNode } from "@/lib/workspace/tree";
 import { fetchAll } from "./fetch-all";
 
 type Supabase = AuthContext["supabase"];
@@ -10,6 +10,23 @@ type Supabase = AuthContext["supabase"];
 export type WorkspaceData = { entry: Tables<"entries">; nodes: WorkspaceNode[] };
 
 export const NODE_COLUMNS = "id, parent_id, kind, name, version, updated_at";
+export const ITEM_COLUMNS = "id, label, checked, position, notes, starred, due_date";
+export const STEP_COLUMNS = "id, label, checked, position";
+
+type ItemRow = { id: string; label: string; checked: boolean; position: number; notes: string; starred: boolean; due_date: string | null };
+
+export function toChecklistItem(row: ItemRow, steps: ChecklistStep[] = []): ChecklistItem {
+  return {
+    id: row.id,
+    label: row.label,
+    checked: row.checked,
+    position: row.position,
+    notes: row.notes,
+    starred: row.starred,
+    dueDate: row.due_date,
+    steps: [...steps].sort((a, b) => a.position - b.position || (a.id < b.id ? -1 : 1)),
+  };
+}
 
 export function toWorkspaceNode(
   row: { id: string; parent_id: string | null; kind: string; name: string; version: number; updated_at: string },
@@ -70,18 +87,19 @@ export async function loadNodeDetail(supabase: Supabase, nodeId: string, entryId
   if (error) throw new Error(`Query failed (${error.code ?? "unknown"})`);
   if (!node) return null;
 
-  const items =
+  const rows =
     node.kind === "checklist"
       ? await fetchAll((from, to) =>
           supabase
             .from("workspace_checklist_items")
-            .select("id, label, checked, position")
+            .select(`${ITEM_COLUMNS}, steps:workspace_checklist_steps(${STEP_COLUMNS})`)
             .eq("file_id", nodeId)
             .order("position")
             .order("id")
             .range(from, to),
         )
       : [];
+  const items = rows.map((row) => toChecklistItem(row, row.steps));
 
   return {
     node: {
