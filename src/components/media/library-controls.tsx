@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const KINDS: { value: LibrarySearch["kind"]; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "franchise", label: "Anime" },
+  { value: "anime", label: "Anime" },
   { value: "game", label: "Games" },
   { value: "custom", label: "Custom" },
 ];

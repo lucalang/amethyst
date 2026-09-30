@@ -1,27 +1,7 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { z } from "zod";
-import { FranchiseView, type FranchiseTab } from "@/components/franchise/franchise-view";
-import { loadFranchise } from "@/lib/data/franchise";
-import { allowedImageHosts } from "@/lib/env";
-import { requireUser } from "@/lib/supabase/auth";
+import { permanentRedirect } from "next/navigation";
 
-const TABS = ["arcs", "movies", "specials", "characters"] as const;
-
-export const metadata: Metadata = { title: "Franchise" };
-
-export default async function FranchisePage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const [{ id }, query] = await Promise.all([params, searchParams]);
-  if (!z.uuid().safeParse(id).success) notFound();
-  const ctx = await requireUser();
-  const data = await loadFranchise(ctx, id);
-  if (!data) notFound();
-  const tab = TABS.find((value) => value === query.tab) ?? "arcs";
-  return <FranchiseView key={data.entry.id} data={data} initialTab={tab as FranchiseTab} imageHosts={allowedImageHosts()} />;
+// Imported franchises became anime workspaces; keep old links working.
+export default async function LegacyFranchisePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  permanentRedirect(`/entries/${encodeURIComponent(id)}`);
 }

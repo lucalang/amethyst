@@ -1,7 +1,14 @@
 import { z } from "zod";
 import { isAllowedImageUrl } from "./image-hosts";
 
-export const TAB_TYPES = ["markdown", "checklist"] as const;
+export const ENTRY_KINDS = ["anime", "game", "custom"] as const;
+export type EntryKind = (typeof ENTRY_KINDS)[number];
+
+export const ENTRY_KIND_LABELS: Record<EntryKind, string> = {
+  anime: "Anime",
+  game: "Game",
+  custom: "Custom",
+};
 
 export function artworkUrl(hosts: readonly string[]) {
   return z
@@ -18,7 +25,6 @@ export function entryPatchSchema(hosts: readonly string[]) {
   return z
     .object({
       title: z.string().trim().min(1, "Title is required.").max(300).optional(),
-      notes: z.string().max(50_000).optional(),
       coverUrl: artworkUrl(hosts).nullable().optional(),
       bannerUrl: artworkUrl(hosts).nullable().optional(),
       platform: z.string().trim().max(80).nullable().optional(),
@@ -29,36 +35,35 @@ export function entryPatchSchema(hosts: readonly string[]) {
 
 export function newEntrySchema(hosts: readonly string[]) {
   return z.object({
-    kind: z.enum(["game", "custom"]),
+    kind: z.enum(ENTRY_KINDS),
     title: z.string().trim().min(1, "Title is required.").max(300),
     platform: z.string().trim().max(80).optional().transform((value) => value || null),
     coverUrl: artworkUrl(hosts).optional().transform((value) => value ?? null),
     bannerUrl: artworkUrl(hosts).optional().transform((value) => value ?? null),
-    notes: z.string().max(50_000).optional().transform((value) => value ?? ""),
   });
 }
 
-export const customTabSchema = z.discriminatedUnion("type", [
-  z.object({ id: z.uuid(), title: z.string().trim().min(1).max(60), type: z.literal("markdown"), content: z.string().max(100_000) }),
-  z.object({ id: z.uuid(), title: z.string().trim().min(1).max(60), type: z.literal("checklist") }),
-]);
-export const customTabsSchema = z
-  .array(customTabSchema)
-  .max(20)
-  .refine((tabs) => new Set(tabs.map((tab) => tab.id)).size === tabs.length, "Tab ids must be unique.");
-export type CustomTab = z.infer<typeof customTabSchema>;
+export type StarterFile = { kind: "folder" | "note" | "checklist"; name: string; content?: string };
 
-export function defaultTabsFor(kind: "game" | "custom", uuid: () => string): CustomTab[] {
-  if (kind === "game") {
-    return [
-      { id: uuid(), title: "Tier List", type: "markdown", content: "## S\n\n## A\n\n## B\n" },
-      { id: uuid(), title: "Codes", type: "markdown", content: "" },
-      { id: uuid(), title: "Guides", type: "markdown", content: "" },
-      { id: uuid(), title: "Checklist", type: "checklist" },
-    ];
+/** Starter files for a new workspace; users can rename, move or delete them. */
+export function starterFilesFor(kind: EntryKind): StarterFile[] {
+  switch (kind) {
+    case "anime":
+      return [
+        { kind: "note", name: "Notes" },
+        { kind: "checklist", name: "Arcs" },
+      ];
+    case "game":
+      return [
+        { kind: "note", name: "Tier List", content: "## S\n\n## A\n\n## B\n" },
+        { kind: "note", name: "Codes" },
+        { kind: "note", name: "Guides" },
+        { kind: "checklist", name: "Checklist" },
+      ];
+    default:
+      return [
+        { kind: "note", name: "Notes" },
+        { kind: "checklist", name: "Checklist" },
+      ];
   }
-  return [
-    { id: uuid(), title: "Notes", type: "markdown", content: "" },
-    { id: uuid(), title: "Checklist", type: "checklist" },
-  ];
 }

@@ -1,8 +1,4 @@
-import { expect, type Page } from "@playwright/test";
-import { runWorker } from "../../src/lib/worker/run";
-import { workerConfigFromEnv } from "../../src/lib/worker/config";
-import { adminClient, env } from "../support/local-supabase";
-import { MOCK_ORIGIN } from "../support/mock-server";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 export { E2E_USERS } from "./global-setup";
 
@@ -14,42 +10,33 @@ export async function signIn(page: Page, email: string, password: string) {
   await expect(page).toHaveURL(/\/$/);
 }
 
-/** Process due jobs/outbox with the production worker code against the mock providers. */
-export async function runE2EWorker() {
-  const config = workerConfigFromEnv(
-    (name) =>
-      ({
-        JIKAN_BASE_URL: `${MOCK_ORIGIN}/v4`,
-        JIKAN_INTERVAL_MS: "0",
-        MAL_INTERVAL_MS: "0",
-        MAL_CLIENT_ID: "e2e-client-id",
-        MAL_TOKEN_URL: `${MOCK_ORIGIN}/mal/v1/oauth2/token`,
-        MAL_API_BASE_URL: `${MOCK_ORIGIN}/mal/v2`,
-        TOKEN_ENCRYPTION_KEY: env.TOKEN_ENCRYPTION_KEY,
-        WORKER_BUDGET_MS: "30000",
-      })[name],
-    `e2e-${process.pid}`,
-  );
-  return runWorker(adminClient(), config, { fetch: globalThis.fetch.bind(globalThis), sleep: async () => undefined, now: Date.now });
+/** The explorer: a side panel on desktop, a sheet opened from "Files" on small screens. */
+export async function explorer(page: Page, mobile: boolean): Promise<Locator> {
+  if (!mobile) return page.getByRole("complementary", { name: "Explorer" });
+  const sheet = page.getByRole("dialog", { name: "Files" });
+  if (!(await sheet.isVisible())) await page.getByRole("button", { name: "Files", exact: true }).click();
+  await expect(sheet).toBeVisible();
+  return sheet;
 }
 
-export async function makeOutboxDue() {
-  await adminClient().from("sync_outbox").update({ not_before: new Date(Date.now() - 1000).toISOString() }).eq("state", "pending");
+export function treeItem(scope: Locator, name: string, kind: "folder" | "note" | "checklist") {
+  return scope.getByRole("treeitem", { name: new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}, ${kind}`) });
 }
 
-export async function mockState(): Promise<{ patches: { id: number; body: Record<string, string> }[] }> {
-  return (await fetch(`${MOCK_ORIGIN}/__state`)).json();
+export function rowActions(scope: Locator, name: string) {
+  return scope.getByRole("button", { name: `Actions for ${name}`, exact: true });
 }
 
-export async function resetMalMock() {
-  await fetch(`${MOCK_ORIGIN}/__reset`, { method: "POST" });
+/** Resolves when an autosave (or other change) to a workspace node has been accepted. */
+export function nodeSaved(page: Page) {
+  return page.waitForResponse((response) => /\/api\/nodes\/[^/]+$/.test(new URL(response.url()).pathname) && response.request().method() === "PATCH" && response.ok());
 }
 
 /** Fail on horizontal overflow and on interactive elements without an accessible name. */
 export async function assertLayoutAndA11y(page: Page) {
   const report = await page.evaluate(() => {
     const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
-    const unnamed = Array.from(document.querySelectorAll("button, a[href], [role=checkbox], input:not([type=hidden]), select, textarea"))
+    const unnamed = Array.from(document.querySelectorAll("button, a[href], [role=checkbox], [role=treeitem], input:not([type=hidden]), select, textarea"))
       .filter((element) => {
         const el = element as HTMLElement;
         if (el.closest("[aria-hidden=true]") || el.offsetParent === null) return false;

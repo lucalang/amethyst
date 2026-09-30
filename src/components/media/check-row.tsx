@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import type { TriState } from "@/lib/progress/derive";
 
 /** Full-width, touch-friendly checklist row. The whole row toggles the box. */
 export function CheckRow({
@@ -17,7 +16,7 @@ export function CheckRow({
   className,
 }: {
   id: string;
-  checked: boolean | TriState;
+  checked: boolean | "indeterminate";
   onChange: (checked: boolean) => void;
   label: ReactNode;
   prefix?: ReactNode;
@@ -25,7 +24,7 @@ export function CheckRow({
   disabled?: boolean;
   className?: string;
 }) {
-  const state = checked === true || checked === "checked" ? true : checked === "indeterminate" ? "indeterminate" : false;
+  const state = checked;
   return (
     <div
       className={cn(

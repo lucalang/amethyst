@@ -16,9 +16,6 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
-    "worker": "tsx --env-file=.env.local scripts/worker.ts",
-    "worker:once": "tsx --env-file=.env.local scripts/worker.ts --once",
-    "worker:schedule:local": "tsx scripts/schedule-local-worker.ts",
     "user:invite": "tsx --env-file=.env.local scripts/invite-user.ts",
     "verify": "npm run typecheck && npm run lint && npm test && npm run build"
   },

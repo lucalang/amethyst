@@ -43,9 +43,3 @@ export async function createTestUser(label: string): Promise<TestUser> {
 export async function deleteTestUser(user: TestUser | undefined) {
   if (user) await adminClient().auth.admin.deleteUser(user.id);
 }
-
-/** Tests drive the worker directly against mocks; keep the scheduled edge worker out of the way. */
-export async function setScheduledWorker(active: boolean) {
-  const { error } = await adminClient().rpc("set_worker_schedule_active", { p_active: active });
-  if (error) throw error;
-}

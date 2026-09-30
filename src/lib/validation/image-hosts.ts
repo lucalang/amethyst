@@ -1,7 +1,6 @@
 // Remote artwork hosts. Shared by next.config.ts (next/image remotePatterns)
 // and URL validation, so only allow-listed hosts are ever fetched or stored.
-// Plain module with no path aliases: it is imported by next.config.ts and the
-// Deno worker.
+// Plain module with no path aliases: it is imported by next.config.ts.
 
 export const DEFAULT_IMAGE_HOSTS: readonly string[] = [
   "cdn.myanimelist.net",

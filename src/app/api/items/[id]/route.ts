@@ -1,30 +1,29 @@
 import { z } from "zod";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
+import { updateItemSchema } from "@/lib/validation/workspace";
 
-const patchSchema = z.object({ title: z.string().trim().min(1).max(500) });
 type Params = { params: Promise<{ id: string }> };
 
-// Custom checklist items only; imported works and episodes are provider-managed.
+const notFound = () => apiError(404, "not_found", "Checklist item not found.");
+
 export async function PATCH(request: Request, { params }: Params) {
   const rejected = rejectCrossOrigin(request);
   if (rejected) return rejected;
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;
   const { id } = await params;
-  if (!z.uuid().safeParse(id).success) return apiError(404, "not_found", "Item not found.");
-  const parsed = await parseJson(request, patchSchema);
-  if ("response" in parsed) return parsed.response;
+  if (!z.uuid().safeParse(id).success) return notFound();
 
+  const parsed = await parseJson(request, updateItemSchema);
+  if ("response" in parsed) return parsed.response;
   const { data, error } = await ctx.supabase
-    .from("media_items")
-    .update({ title: parsed.data.title })
+    .from("workspace_checklist_items")
+    .update(parsed.data)
     .eq("id", id)
-    .eq("kind", "checklist")
-    .select("id, title")
+    .select("id, label, checked, position")
     .maybeSingle();
   if (error) return dbError(error);
-  if (!data) return apiError(404, "not_found", "Item not found.");
-  return jsonResponse({ item: data });
+  return data ? jsonResponse({ item: data }) : notFound();
 }
 
 export async function DELETE(request: Request, { params }: Params) {
@@ -33,10 +32,9 @@ export async function DELETE(request: Request, { params }: Params) {
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;
   const { id } = await params;
-  if (!z.uuid().safeParse(id).success) return apiError(404, "not_found", "Item not found.");
+  if (!z.uuid().safeParse(id).success) return notFound();
 
-  const { data, error } = await ctx.supabase.from("media_items").delete().eq("id", id).eq("kind", "checklist").select("id").maybeSingle();
+  const { data, error } = await ctx.supabase.from("workspace_checklist_items").delete().eq("id", id).select("id").maybeSingle();
   if (error) return dbError(error);
-  if (!data) return apiError(404, "not_found", "Item not found.");
-  return jsonResponse({ deleted: true });
+  return data ? jsonResponse({ deleted: true }) : notFound();
 }

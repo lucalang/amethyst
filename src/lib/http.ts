@@ -55,6 +55,7 @@ export async function parseJson<T extends z.ZodType>(
 export function dbError(error: { code?: string; message: string }, fallback = "Database request failed.") {
   if (error.code === "22023" || error.code === "23514") return apiError(422, "rejected", error.message);
   if (error.code === "23505") return apiError(409, "conflict", "That already exists.");
+  if (error.code === "23503") return apiError(404, "not_found", "A referenced item no longer exists. Reload and try again.");
   if (error.code === "42501") return apiError(403, "forbidden", "Not allowed.");
   console.error("database error", error.code);
   return apiError(500, "server_error", fallback);

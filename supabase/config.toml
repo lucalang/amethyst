@@ -380,7 +380,8 @@ authorization_url_path = "/oauth/consent"
 allow_dynamic_registration = false
 
 [edge_runtime]
-enabled = true
+# No Edge Functions are used.
+enabled = false
 # Supported request policies: `oneshot`, `per_worker`.
 # `per_worker` (default) — enables hot reload during local development.
 # `oneshot` — fallback mode if hot reload causes issues (e.g. in large repos or with symlinks).
@@ -389,17 +390,6 @@ policy = "per_worker"
 inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
-
-# Values are read from supabase/.env (gitignored); see .env.example.
-[edge_runtime.secrets]
-WORKER_SECRET = "env(WORKER_SECRET)"
-TOKEN_ENCRYPTION_KEY = "env(TOKEN_ENCRYPTION_KEY)"
-MAL_CLIENT_ID = "env(MAL_CLIENT_ID)"
-MAL_CLIENT_SECRET = "env(MAL_CLIENT_SECRET)"
-
-# The worker authenticates callers with WORKER_SECRET instead of a user JWT.
-[functions.worker]
-verify_jwt = false
 
 [analytics]
 enabled = false

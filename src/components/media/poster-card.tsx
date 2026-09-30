@@ -1,18 +1,18 @@
 import Link from "next/link";
-import { Gamepad2, Loader2, SquarePen, Tv } from "lucide-react";
+import { Gamepad2, SquarePen, Tv } from "lucide-react";
 import { entryProgress, entryState, type LibraryEntry } from "@/lib/progress/library";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "./media-image";
 import { ProgressMeter } from "./progress-meter";
 
 const KIND = {
-  franchise: { label: "Anime", icon: Tv },
+  anime: { label: "Anime", icon: Tv },
   game: { label: "Game", icon: Gamepad2 },
   custom: { label: "Custom", icon: SquarePen },
 } as const;
 
-export function entryHref(entry: Pick<LibraryEntry, "id" | "kind">) {
-  return entry.kind === "franchise" ? `/franchise/${entry.id}` : `/entries/${entry.id}`;
+export function entryHref(entry: Pick<LibraryEntry, "id">) {
+  return `/entries/${entry.id}`;
 }
 
 export function PosterCard({ entry, priority }: { entry: LibraryEntry; priority?: boolean }) {
@@ -39,11 +39,7 @@ export function PosterCard({ entry, priority }: { entry: LibraryEntry; priority?
         <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-sm bg-black/70 px-1.5 py-0.5 text-[11px] font-medium text-foreground">
           <Icon aria-hidden className="size-3" /> {kind.label}
         </span>
-        {entry.importing ? (
-          <span className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-sm bg-black/70 px-1.5 py-0.5 text-[11px] text-jade">
-            <Loader2 aria-hidden className="size-3 animate-spin motion-reduce:animate-none" /> Importing
-          </span>
-        ) : state === "completed" ? (
+        {state === "completed" ? (
           <span className="absolute top-2 right-2 rounded-sm bg-jade px-1.5 py-0.5 text-[11px] font-semibold text-jade-foreground">Done</span>
         ) : null}
         <div className="absolute inset-x-2 bottom-2">

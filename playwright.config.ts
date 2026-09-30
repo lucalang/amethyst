@@ -27,13 +27,6 @@ export default defineConfig({
     timeout: 180_000,
     env: {
       APP_URL: baseURL,
-      JIKAN_BASE_URL: "http://127.0.0.1:4010/v4",
-      MAL_CLIENT_ID: "e2e-client-id",
-      MAL_REDIRECT_URI: `${baseURL}/api/mal/callback`,
-      MAL_AUTHORIZE_URL: "http://127.0.0.1:4010/mal/v1/oauth2/authorize",
-      MAL_TOKEN_URL: "http://127.0.0.1:4010/mal/v1/oauth2/token",
-      MAL_API_BASE_URL: "http://127.0.0.1:4010/mal/v2",
-      WORKER_URL: "",
       NEXT_DIST_DIR: ".next-e2e",
     },
   },

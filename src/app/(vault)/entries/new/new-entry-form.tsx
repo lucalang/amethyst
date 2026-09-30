@@ -1,15 +1,21 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { Gamepad2, Loader2, SquarePen, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { starterFilesFor, type EntryKind } from "@/lib/validation/entries";
 import { createEntry, type NewEntryState } from "./actions";
 
 const initial: NewEntryState = { status: "idle" };
+
+const KINDS: { value: EntryKind; label: string; icon: typeof Tv }[] = [
+  { value: "anime", label: "Anime", icon: Tv },
+  { value: "game", label: "Game", icon: Gamepad2 },
+  { value: "custom", label: "Custom", icon: SquarePen },
+];
 
 function Field({
   id,
@@ -41,13 +47,14 @@ function Field({
   );
 }
 
-export function NewEntryForm({ defaultKind, imageHosts }: { defaultKind: "game" | "custom"; imageHosts: string[] }) {
+export function NewEntryForm({ defaultKind, imageHosts }: { defaultKind: EntryKind; imageHosts: string[] }) {
   const [state, action, pending] = useActionState(createEntry, initial);
   const [, startTransition] = useTransition();
   const [kind, setKind] = useState(defaultKind);
   const errors = state.fieldErrors ?? {};
   const values = state.values ?? {};
   const hostHint = `HTTPS URL from an allowed host: ${imageHosts.join(", ")}.`;
+  const starters = starterFilesFor(kind).map((file) => file.name);
 
   return (
     <form
@@ -64,23 +71,33 @@ export function NewEntryForm({ defaultKind, imageHosts }: { defaultKind: "game" 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">Type</legend>
         <div className="flex gap-2">
-          {(["game", "custom"] as const).map((value) => (
+          {KINDS.map(({ value, label, icon: Icon }) => (
             <label
               key={value}
               className={cn(
-                "flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-md border border-border px-4 text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                "flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border border-border px-3 text-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
                 kind === value && "border-jade bg-jade/10 text-foreground",
               )}
             >
               <input type="radio" name="kind" value={value} checked={kind === value} onChange={() => setKind(value)} className="sr-only" />
-              {value === "game" ? "Game" : "Custom entry"}
+              <Icon aria-hidden className="size-4" />
+              {label}
             </label>
           ))}
         </div>
       </fieldset>
 
       <Field id="title" label="Title" error={errors.title}>
-        <Input id="title" name="title" defaultValue={values.title} required maxLength={300} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? "title-error" : undefined} />
+        <Input
+          id="title"
+          name="title"
+          defaultValue={values.title}
+          required
+          maxLength={300}
+          placeholder={kind === "anime" ? "e.g. One Piece" : kind === "game" ? "e.g. Hollow Knight" : undefined}
+          aria-invalid={Boolean(errors.title)}
+          aria-describedby={errors.title ? "title-error" : undefined}
+        />
       </Field>
 
       {kind === "game" ? (
@@ -98,14 +115,8 @@ export function NewEntryForm({ defaultKind, imageHosts }: { defaultKind: "game" 
         </Field>
       </div>
 
-      <Field id="notes" label="Notes" hint="Markdown supported. You can edit this later." error={errors.notes}>
-        <Textarea id="notes" name="notes" defaultValue={values.notes} className="min-h-28" maxLength={50_000} />
-      </Field>
-
       <p className="text-xs text-muted-foreground">
-        {kind === "game"
-          ? "Starts with Tier List, Codes, Guides and Checklist tabs. Rename, reorder or remove them any time."
-          : "Starts with Notes and Checklist tabs."}
+        Opens as a workspace with {starters.map((name) => `“${name}”`).join(", ")}. Add folders, notes and checklists, or rename and delete these any time.
       </p>
 
       <div className="flex items-center gap-3">

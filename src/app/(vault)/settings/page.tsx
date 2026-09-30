@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { KeyRound, LogOut } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
-import { MalConnectionCard } from "@/components/sync/mal-connection-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { malConfig } from "@/lib/env";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "./forms";
 
@@ -13,14 +11,11 @@ export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
   const ctx = await requireUser();
-  const [{ data: profile }, { data: account }] = await Promise.all([
-    ctx.supabase.from("users").select("display_name, created_at").eq("id", ctx.userId).maybeSingle(),
-    ctx.supabase.from("mal_accounts").select("*").eq("user_id", ctx.userId).maybeSingle(),
-  ]);
+  const { data: profile } = await ctx.supabase.from("users").select("display_name, created_at").eq("id", ctx.userId).maybeSingle();
 
   return (
     <PageContainer className="max-w-3xl">
-      <PageHeader title="Settings" description="Account, security and connected services." />
+      <PageHeader title="Settings" description="Account and security." />
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -50,8 +45,6 @@ export default async function SettingsPage() {
             </form>
           </CardContent>
         </Card>
-
-        <MalConnectionCard account={account} configured={malConfig() !== null} />
       </div>
     </PageContainer>
   );

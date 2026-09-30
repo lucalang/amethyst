@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Gamepad2, Import, LibraryBig, LogOut, Plus, RefreshCw, Search, Settings, SquarePen } from "lucide-react";
+import { Gamepad2, LibraryBig, LogOut, Plus, Search, Settings, SquarePen, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,13 +16,14 @@ import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
   { href: "/", label: "Library", icon: LibraryBig },
-  { href: "/import", label: "Import", icon: Import },
-  { href: "/sync", label: "Sync", icon: RefreshCw },
+  { href: "/entries/new", label: "New", icon: Plus },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/" || pathname.startsWith("/franchise") || pathname.startsWith("/entries");
+  if (href === "/") {
+    return pathname === "/" || pathname.startsWith("/franchise") || (pathname.startsWith("/entries/") && pathname !== "/entries/new");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -42,7 +43,7 @@ export function TopNav({ displayName }: { displayName: string }) {
         </Link>
 
         <nav aria-label="Primary" className="hidden items-center gap-1 md:flex">
-          {NAV_ITEMS.slice(0, 3).map((item) => (
+          {NAV_ITEMS.slice(0, 1).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -83,13 +84,13 @@ export function TopNav({ displayName }: { displayName: string }) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuItem asChild>
-              <Link href="/import">
-                <Import aria-hidden /> Import anime franchise
+              <Link href="/entries/new?kind=anime">
+                <Tv aria-hidden /> Anime
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/entries/new?kind=game">
-                <Gamepad2 aria-hidden /> Custom game
+                <Gamepad2 aria-hidden /> Game
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
@@ -116,11 +117,6 @@ export function TopNav({ displayName }: { displayName: string }) {
                 <Settings aria-hidden /> Settings
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/entries/new?kind=game" className="sm:hidden">
-                <Plus aria-hidden /> New entry
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <form action="/auth/signout" method="post">
               <DropdownMenuItem asChild>
@@ -143,7 +139,7 @@ export function MobileTabBar() {
       aria-label="Primary"
       className="glass fixed inset-x-0 bottom-0 z-40 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-3">
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           const Icon = item.icon;
