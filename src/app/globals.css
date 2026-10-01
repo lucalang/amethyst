@@ -634,6 +634,44 @@
 .cm-live .cm-md-hr {
   color: var(--muted-foreground);
 }
+/* Task items (- [ ] / - [x]) rendered as checkboxes in notes. */
+.cm-live .cm-md-task {
+  display: inline-grid;
+  place-items: center;
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0 0.5em 0 0.1em;
+  vertical-align: -0.15em;
+  border: 1.5px solid rgb(165 124 255 / 0.65);
+  border-radius: 0.3em;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.cm-live .cm-md-task:hover {
+  border-color: var(--amethyst);
+  box-shadow: 0 0 0 3px rgb(165 124 255 / 0.18);
+}
+.cm-live .cm-md-task[aria-checked="true"] {
+  background: var(--amethyst);
+  border-color: var(--amethyst);
+}
+.cm-live .cm-md-task[aria-checked="true"]::after {
+  content: "";
+  width: 0.3em;
+  height: 0.55em;
+  margin-top: -0.12em;
+  border: solid var(--primary-foreground);
+  border-width: 0 0.13em 0.13em 0;
+  rotate: 45deg;
+}
+.cm-live .cm-md-task-done {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklab, var(--muted-foreground) 70%, transparent);
+}
 /* Embedded images (Obsidian-style ![[…]] and ![](…)). */
 .cm-live .cm-md-embed {
   display: block;

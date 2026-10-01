@@ -21,6 +21,42 @@ const RULE = mark("cm-md-hr");
 const HEADING_LINES = [1, 2, 3, 4, 5, 6].map((level) => Decoration.line({ class: `cm-md-h cm-md-h${level}` }));
 const QUOTE_LINE = Decoration.line({ class: "cm-md-quote" });
 const CODE_LINE = Decoration.line({ class: "cm-md-codeblock" });
+const TASK_DONE = mark("cm-md-task-done");
+
+/** Flip the `[ ]` / `[x]` marker of the task item on the line containing `pos`. */
+function toggleTaskAt(view: EditorView, pos: number) {
+  const line = view.state.doc.lineAt(pos);
+  const match = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])\]/.exec(line.text);
+  if (!match) return;
+  const at = line.from + match[1].length;
+  view.dispatch({ changes: { from: at, to: at + 1, insert: match[2] === " " ? "x" : " " }, userEvent: "input.toggle" });
+}
+
+class TaskWidget extends WidgetType {
+  constructor(readonly checked: boolean) {
+    super();
+  }
+  eq(other: TaskWidget) {
+    return other.checked === this.checked;
+  }
+  toDOM(view: EditorView) {
+    const box = document.createElement("span");
+    box.className = "cm-md-task";
+    box.setAttribute("role", "checkbox");
+    box.setAttribute("aria-checked", String(this.checked));
+    box.setAttribute("aria-label", this.checked ? "Mark as not done" : "Mark as done");
+    // Toggle without moving the caret or stealing focus.
+    box.addEventListener("mousedown", (event) => event.preventDefault());
+    box.addEventListener("click", (event) => {
+      event.preventDefault();
+      toggleTaskAt(view, view.posAtDOM(box));
+    });
+    return box;
+  }
+  ignoreEvent() {
+    return true;
+  }
+}
 
 /** Lines touched by the selection while the editor has focus. */
 function activeLines(view: EditorView): Set<number> {
@@ -113,6 +149,9 @@ export function buildLivePreview(view: EditorView): DecorationSet {
   const syntaxMark = (from: number, to: number) => {
     if (to > from) ranges.push((isActive(from) ? SYNTAX : hidden).range(from, to));
   };
+  // Raw task syntax shows only while the caret is strictly inside it (like Obsidian).
+  const caretInside = (from: number, to: number) =>
+    view.hasFocus && state.selection.ranges.some((range) => (range.empty ? range.head > from && range.head < to : range.from < to && range.to > from));
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -185,6 +224,18 @@ export function buildLivePreview(view: EditorView): DecorationSet {
           case "TaskMarker":
             ranges.push(LIST_MARK.range(ref.from, ref.to));
             break;
+          case "Task": {
+            // "- [ ] text": the list mark and [ ] become one checkbox; Enter continues the list.
+            const marker = children(ref.node, "TaskMarker")[0];
+            const listMark = ref.node.parent ? children(ref.node.parent, "ListMark")[0] : undefined;
+            if (!marker || !listMark) break;
+            const checked = /x/i.test(doc.sliceString(marker.from, marker.to));
+            let end = marker.to;
+            if (end < doc.lineAt(end).to && /[ \t]/.test(doc.sliceString(end, end + 1))) end++;
+            if (!caretInside(listMark.from, end)) ranges.push(Decoration.replace({ widget: new TaskWidget(checked) }).range(listMark.from, end));
+            if (checked && ref.to > end) ranges.push(TASK_DONE.range(end, ref.to));
+            break;
+          }
           case "QuoteMark":
             ranges.push(SYNTAX.range(ref.from, ref.to));
             break;
