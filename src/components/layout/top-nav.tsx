@@ -17,8 +17,8 @@ import { cn } from "@/lib/utils";
 
 const COLLECTION_ICONS = { anime: Tv, games: Gamepad2, other: Shapes } as const;
 
-function navItems(hasOther: boolean) {
-  const collections = [COLLECTIONS.anime, COLLECTIONS.games, ...(hasOther ? [COLLECTIONS.other] : [])];
+function navItems() {
+  const collections = [COLLECTIONS.anime, COLLECTIONS.games, COLLECTIONS.other];
   return collections.map((collection) => ({ href: `/${collection.slug}`, label: collection.label, icon: COLLECTION_ICONS[collection.slug] }));
 }
 
@@ -39,7 +39,7 @@ export function BrandMark({ className }: { className?: string }) {
   );
 }
 
-export function TopNav({ displayName, hasOther }: { displayName: string; hasOther: boolean }) {
+export function TopNav({ displayName }: { displayName: string; hasOther: boolean }) {
   const pathname = usePathname();
   const current = collectionFromPath(pathname);
 
@@ -51,7 +51,7 @@ export function TopNav({ displayName, hasOther }: { displayName: string; hasOthe
         </Link>
 
         <nav aria-label="Collections" className="hidden items-center gap-1 md:flex">
-          {navItems(hasOther).map((item) => {
+          {navItems().map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
@@ -96,6 +96,11 @@ export function TopNav({ displayName, hasOther }: { displayName: string; hasOthe
                     <Gamepad2 aria-hidden /> Game
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/other/new">
+                    <Shapes aria-hidden /> Other
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -132,9 +137,9 @@ export function TopNav({ displayName, hasOther }: { displayName: string; hasOthe
   );
 }
 
-export function MobileTabBar({ hasOther }: { hasOther: boolean }) {
+export function MobileTabBar(_props: { hasOther: boolean }) {
   const pathname = usePathname();
-  const items = [...navItems(hasOther), { href: "/settings", label: "Settings", icon: Settings }];
+  const items = [...navItems(), { href: "/settings", label: "Settings", icon: Settings }];
   return (
     <nav aria-label="Primary" className="glass fixed inset-x-0 bottom-0 z-40 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden">
       <ul className={cn("grid", items.length === 4 ? "grid-cols-4" : "grid-cols-3")}>

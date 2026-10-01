@@ -31,6 +31,40 @@ async function openEntry(page: Page, collection: "anime" | "games", title: strin
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
 }
 
+test("custom entries are discoverable before the first entry", async ({ page }, testInfo) => {
+  const project = testInfo.project.name;
+  const user = userFor(project);
+  await signIn(page, user.email, user.password);
+  const navigation = page.getByRole("navigation", { name: project === "mobile" ? "Primary" : "Collections" });
+  const other = navigation.getByRole("link", { name: "Other", exact: true });
+  await expect(other).toBeVisible();
+  await other.click();
+  await expect(page).toHaveURL(/\/other$/);
+  await expect(page.getByRole("heading", { name: "No other yet" })).toBeVisible();
+  await expect(other).toHaveAttribute("aria-current", "page");
+  await assertLayoutAndA11y(page);
+  await shot(page, project, "other-empty");
+  await page.getByRole("main").getByRole("link", { name: "New entry", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/other\/new$/);
+  await page.getByLabel("Title", { exact: true }).fill("Custom workspace");
+  await page.getByRole("button", { name: "Create entry", exact: true }).click();
+  await expect(page).toHaveURL(/\/other\/[0-9a-f-]{36}(\?|$)/);
+  await expect(page.getByRole("heading", { name: "Custom workspace", exact: true })).toBeVisible();
+  await other.click();
+  await expect(page.getByRole("link", { name: /^Custom workspace,/ })).toBeVisible();
+  await assertLayoutAndA11y(page);
+  await shot(page, project, "other-created");
+
+  if (project === "desktop") {
+    await page.getByRole("button", { name: "Account menu", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
+    await page.getByRole("button", { name: "New", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Other", exact: true }).click();
+    await expect(page).toHaveURL(/\/other\/new$/);
+    await expect(page.getByLabel("Title", { exact: true })).toBeVisible();
+  }
+});
+
 test("anime and games are separate libraries with artwork from any public host", async ({ page }, testInfo) => {
   const project = testInfo.project.name;
   const user = userFor(project);
