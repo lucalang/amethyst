@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import { FileText, ListChecks, Loader2, Plus } from "lucide-react";
+import { CategorySelect } from "@/components/categories/category-picker";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Collection } from "@/lib/collections";
+import type { Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { starterFilesFor } from "@/lib/validation/entries";
 import { createEntry, type NewEntryState } from "./actions";
@@ -16,7 +18,7 @@ const initial: NewEntryState = { status: "idle" };
 
 const PLACEHOLDERS: Record<Collection["slug"], string> = { anime: "e.g. One Piece", games: "e.g. Hollow Knight", other: "e.g. Reading list" };
 
-export function NewEntryForm({ collection }: { collection: Collection }) {
+export function NewEntryForm({ collection, categories }: { collection: Collection; categories: Category[] }) {
   const [state, action, pending] = useActionState(createEntry, initial);
   const [, startTransition] = useTransition();
   const errors = state.fieldErrors ?? {};
@@ -62,6 +64,8 @@ export function NewEntryForm({ collection }: { collection: Collection }) {
             </p>
           ) : null}
         </div>
+
+        <CategorySelect categories={categories} />
 
         <ImageUrlField
           id="coverUrl"

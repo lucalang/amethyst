@@ -23,7 +23,26 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "entries": {
+            "categories": {
+                  Row: {
+                    "created_at": string,"id": string,"name": string,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"name": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"name"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "categories_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"entries": {
                   Row: {
                     "banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"title": string,"updated_at": string,"user_id": string,"version": number
                   }
@@ -36,6 +55,43 @@ export type Database = {
                   Relationships: [
                     {
       foreignKeyName: "entries_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "users"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"entry_categories": {
+                  Row: {
+                    "category_id": string,"created_at": string,"entry_id": string,"user_id": string
+                  }
+                  Insert: {
+                    "category_id": string,"created_at"?: string,"entry_id": string,"user_id"?: string
+                  }
+                  Update: {
+                    "category_id"?: string,"created_at"?: string,"entry_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "entry_categories_user_id_category_id_fkey"
+      columns: ["user_id","category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "entry_categories_user_id_entry_id_fkey"
+      columns: ["user_id","entry_id"]
+isOneToOne: false
+      referencedRelation: "entries"
+      referencedColumns: ["user_id","id"]
+    },{
+      foreignKeyName: "entry_categories_user_id_entry_id_fkey"
+      columns: ["user_id","entry_id"]
+isOneToOne: false
+      referencedRelation: "entry_workspace_summary"
+      referencedColumns: ["user_id","entry_id"]
+    },{
+      foreignKeyName: "entry_categories_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "users"
@@ -258,6 +314,9 @@ isOneToOne: false
                            },
 "set_checklist_checked":
 { Args: { "p_checked": boolean,"p_file_id": string }; Returns: number
+                           },
+"set_entry_categories":
+{ Args: { "p_category_ids": (string)[],"p_entry_id": string }; Returns: string[]
                            }
           }
           Enums: {

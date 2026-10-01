@@ -4,6 +4,7 @@ import { z } from "zod";
 import { EntryWorkspace } from "@/components/workspace/workspace";
 import { COLLECTIONS, collectionForKind, entryPath, isCollectionSlug } from "@/lib/collections";
 import { loadNodeDetail, loadWorkspace } from "@/lib/data/workspace";
+import { loadCategories, loadEntryCategoryIds } from "@/lib/data/categories";
 import { getAuthContext, requireUser } from "@/lib/supabase/auth";
 import { buildTree, firstFile } from "@/lib/workspace/tree";
 
@@ -34,12 +35,15 @@ export default async function EntryPage({ params, searchParams }: Props) {
   const requested = typeof file === "string" ? data.nodes.find((node) => node.id === file && node.kind !== "folder") : undefined;
   const initialId = requested?.id ?? firstFile(buildTree(data.nodes))?.id ?? null;
   const initialFile = initialId ? await loadNodeDetail(ctx.supabase, initialId, id) : null;
+  const [categories, categoryIds] = await Promise.all([loadCategories(ctx), loadEntryCategoryIds(ctx, id)]);
 
   return (
     <EntryWorkspace
       key={data.entry.id}
       collection={COLLECTIONS[collection]}
       entry={data.entry}
+      categories={categories}
+      categoryIds={categoryIds}
       initialNodes={data.nodes}
       initialFile={initialFile}
     />

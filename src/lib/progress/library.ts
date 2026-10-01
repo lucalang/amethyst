@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseCategoryIds } from "@/lib/categories";
 import type { EntryKind } from "@/lib/validation/entries";
 
 export type EntrySummary = {
@@ -12,6 +13,7 @@ export type LibraryEntry = {
   kind: EntryKind;
   title: string;
   coverUrl: string | null;
+  categoryIds: string[];
   createdAt: string;
   lastActivityAt: string;
   summary: EntrySummary;
@@ -36,6 +38,8 @@ export const librarySearchSchema = z.object({
   q: z.string().trim().max(100).catch("").default(""),
   status: z.enum(["all", "in_progress", "completed", "not_started"]).catch("all").default("all"),
   sort: z.enum(["recent", "title", "progress", "added"]).catch("recent").default("recent"),
+  /** Entries in ANY of these categories; empty means no category restriction. */
+  categories: z.unknown().optional().transform(parseCategoryIds),
 });
 export type LibrarySearch = z.infer<typeof librarySearchSchema>;
 
@@ -46,10 +50,12 @@ function ratio(entry: LibraryEntry): number {
 
 export function filterLibrary(entries: LibraryEntry[], search: LibrarySearch): LibraryEntry[] {
   const q = search.q.toLocaleLowerCase();
+  const categories = new Set(search.categories);
   const filtered = entries.filter(
     (entry) =>
       (search.status === "all" || entryState(entry.summary) === search.status) &&
-      (!q || entry.title.toLocaleLowerCase().includes(q)),
+      (!q || entry.title.toLocaleLowerCase().includes(q)) &&
+      (categories.size === 0 || entry.categoryIds.some((id) => categories.has(id))),
   );
   const sorted = [...filtered];
   switch (search.sort) {

@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Loader2, MoreHorizontal, Pencil, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { CategorySelect } from "@/components/categories/category-picker";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { ProgressMeter } from "@/components/media/progress-meter";
@@ -23,6 +25,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/api-client";
+import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
 import type { Collection } from "@/lib/collections";
 import type { Tables } from "@/lib/supabase/database.types";
 import { errorMessage } from "./client-utils";
@@ -38,19 +41,31 @@ const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slic
 export function EntryHeader({
   collection,
   entry,
+  categories,
+  categoryIds,
   totals,
   onEntryChange,
 }: {
   collection: Collection;
   entry: Entry;
+  categories: Category[];
+  categoryIds: string[];
   totals: { total: number; checked: number };
   onEntryChange: (entry: Entry) => void;
 }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [savedCategories, setSavedCategories] = useState<Category[] | null>(null);
   const banner = entry.banner_url ?? entry.cover_url;
   const kindLabel = capitalize(collection.singular);
+  // Names always come from the latest server list, so renames show up here too.
+  const assigned = sortCategories(
+    (savedCategories ?? categoryIds.map((id) => ({ id, name: "" }))).flatMap((category) => {
+      const current = categories.find((candidate) => candidate.id === category.id);
+      return current ? [current] : category.name ? [category] : [];
+    }),
+  );
 
   return (
     <header data-testid="entry-header" className="header-scroll-exit">
@@ -74,6 +89,22 @@ export function EntryHeader({
             <p className="text-[11px] font-semibold tracking-[0.16em] text-amethyst uppercase">{kindLabel}</p>
             <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words md:text-[2.1rem]">{entry.title}</h1>
             {entry.platform ? <p className="mt-1 text-sm text-muted-foreground">{entry.platform}</p> : null}
+            {assigned.length ? (
+              <ul aria-label="Categories" className="mt-2.5 flex flex-wrap gap-1.5">
+                {assigned.map((category) => (
+                  <li key={category.id} className="min-w-0">
+                    <Link
+                      href={`/${collection.slug}?${CATEGORY_PARAM}=${category.id}`}
+                      title={`Show ${collection.label.toLowerCase()} in “${category.name}”`}
+                      className="group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full bg-amethyst/[0.1] px-2.5 text-xs font-medium text-foreground/90 ring-1 ring-amethyst/25 transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:bg-amethyst/20 hover:text-foreground hover:ring-amethyst/60 hover:shadow-[0_6px_18px_-8px_rgb(165_124_255/0.8)] focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <Tag aria-hidden className="size-3 shrink-0 text-amethyst transition-transform duration-200 group-hover/cat:-rotate-12" />
+                      <span className="max-w-[14rem] truncate">{category.name}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {totals.total > 0 ? (
               <div className="mt-3 max-w-sm">
                 <ProgressMeter done={totals.checked} total={totals.total} label="tasks done" />
@@ -104,12 +135,26 @@ export function EntryHeader({
         open={editOpen}
         onOpenChange={setEditOpen}
         entry={entry}
-        onSave={async (values) => {
-          const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, {
-            method: "PATCH",
-            json: { ...values, expectedVersion: entry.version },
-          });
-          onEntryChange(updated);
+        categories={categories}
+        assigned={assigned}
+        onSave={async (values, selected) => {
+          const detailsChanged =
+            values.title.trim() !== entry.title ||
+            (values.coverUrl.trim() || null) !== entry.cover_url ||
+            (values.bannerUrl.trim() || null) !== entry.banner_url;
+          if (detailsChanged) {
+            const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, {
+              method: "PATCH",
+              json: { ...values, expectedVersion: entry.version },
+            });
+            onEntryChange(updated);
+          }
+          const before = assigned.map((category) => category.id).sort().join();
+          if (selected.map((category) => category.id).sort().join() !== before) {
+            // Categories are saved separately so the entry and its workspace stay untouched.
+            await apiFetch(`/api/entries/${entry.id}/categories`, { method: "PUT", json: { categoryIds: selected.map((category) => category.id) } });
+            setSavedCategories(selected);
+          }
           toast.success("Details saved.");
           router.refresh();
         }}
@@ -147,15 +192,21 @@ function EditDetailsDialog({
   open,
   onOpenChange,
   entry,
+  categories,
+  assigned,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: Entry;
-  onSave: (values: { title: string; coverUrl: string; bannerUrl: string }) => Promise<void>;
+  categories: Category[];
+  assigned: Category[];
+  onSave: (values: { title: string; coverUrl: string; bannerUrl: string }, categories: Category[]) => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Categories created inside this dialog are not in the server list until the next refresh.
+  const created = useRef(new Map<string, Category>());
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
@@ -171,11 +222,18 @@ function EditDetailsDialog({
             setPending(true);
             setError(null);
             try {
-              await onSave({
-                title: String(formData.get("title") ?? ""),
-                coverUrl: String(formData.get("coverUrl") ?? ""),
-                bannerUrl: String(formData.get("bannerUrl") ?? ""),
-              });
+              await onSave(
+                {
+                  title: String(formData.get("title") ?? ""),
+                  coverUrl: String(formData.get("coverUrl") ?? ""),
+                  bannerUrl: String(formData.get("bannerUrl") ?? ""),
+                },
+                parseCategoryIds(formData.getAll("categoryIds")).flatMap((id) => {
+                  const category =
+                    categories.find((candidate) => candidate.id === id) ?? assigned.find((candidate) => candidate.id === id) ?? created.current.get(id);
+                  return category ? [category] : [];
+                }),
+              );
               onOpenChange(false);
             } catch (saveError) {
               setError(errorMessage(saveError));
@@ -189,6 +247,11 @@ function EditDetailsDialog({
             <Label htmlFor="edit-title">Title</Label>
             <Input id="edit-title" name="title" defaultValue={entry.title} required maxLength={300} className="h-10" />
           </div>
+          <CategorySelect
+            categories={categories}
+            defaultSelected={assigned.map((category) => category.id)}
+            onSelectionChange={(selected) => selected.forEach((category) => created.current.set(category.id, category))}
+          />
           <ImageUrlField
             id="edit-cover"
             name="coverUrl"

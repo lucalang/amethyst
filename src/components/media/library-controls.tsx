@@ -2,17 +2,30 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { useOptimistic, useTransition } from "react";
 import { ArrowDownWideNarrow, ListFilter, Loader2, Search, X } from "lucide-react";
+import { CategoryChip, CategoryFilter } from "@/components/categories/category-picker";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CATEGORY_PARAM, type Category } from "@/lib/categories";
 import type { LibrarySearch } from "@/lib/progress/library";
 
-export function LibraryControls({ search, label }: { search: LibrarySearch; label: string }) {
+export function LibraryControls({
+  search,
+  label,
+  categories,
+  categoryCounts,
+}: {
+  search: LibrarySearch;
+  label: string;
+  categories: Category[];
+  categoryCounts: Record<string, number>;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
+  const [selectedCategories, setSelectedCategories] = useOptimistic(search.categories);
 
   function update(key: string, value: string, defaultValue: string) {
     const next = new URLSearchParams(params.toString());
@@ -22,9 +35,24 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
     startTransition(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
   }
 
-  const filtered = search.status !== "all" || search.q;
+  function updateCategories(ids: string[]) {
+    startTransition(() => {
+      setSelectedCategories(ids);
+      const next = new URLSearchParams(params.toString());
+      if (ids.length) next.set(CATEGORY_PARAM, ids.join(","));
+      else next.delete(CATEGORY_PARAM);
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    });
+  }
+
+  const activeCategories = selectedCategories
+    .map((id) => categories.find((category) => category.id === id))
+    .filter((category): category is Category => Boolean(category));
+  const filtered = search.status !== "all" || search.q || activeCategories.length > 0;
 
   return (
+    <div className="space-y-3">
     <div className="flex flex-wrap items-center gap-2">
       <form
         action={pathname}
@@ -52,6 +80,7 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
         />
         {search.status !== "all" ? <input type="hidden" name="status" value={search.status} /> : null}
         {search.sort !== "recent" ? <input type="hidden" name="sort" value={search.sort} /> : null}
+        {activeCategories.length ? <input type="hidden" name={CATEGORY_PARAM} value={activeCategories.map((category) => category.id).join(",")} /> : null}
       </form>
       <Select value={search.status} onValueChange={(value) => update("status", value, "all")}>
         <SelectTrigger className="min-w-[9.5rem] flex-1 sm:w-44 sm:flex-none" aria-label="Filter by progress" data-active={search.status !== "all"}>
@@ -65,6 +94,12 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
           <SelectItem value="completed">Completed</SelectItem>
         </SelectContent>
       </Select>
+      <CategoryFilter
+        categories={categories}
+        selected={activeCategories.map((category) => category.id)}
+        counts={categoryCounts}
+        onChange={updateCategories}
+      />
       <Select value={search.sort} onValueChange={(value) => update("sort", value, "recent")}>
         <SelectTrigger className="min-w-[9.5rem] flex-1 sm:w-48 sm:flex-none" aria-label="Sort" data-active={search.sort !== "recent"}>
           <ArrowDownWideNarrow aria-hidden className="size-4 text-muted-foreground max-sm:hidden" />
@@ -85,6 +120,26 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
         </Button>
       ) : null}
       <span role="status" className="sr-only">{pending ? "Updating library" : ""}</span>
+    </div>
+    {activeCategories.length ? (
+      <div className="flex flex-wrap items-center gap-1.5" aria-label="Active category filters" role="group">
+        <span className="mr-1 text-xs text-muted-foreground">{activeCategories.length === 1 ? "Category" : "Any of"}</span>
+        {activeCategories.map((category) => (
+          <CategoryChip
+            key={category.id}
+            name={category.name}
+            onRemove={() => updateCategories(activeCategories.filter((other) => other.id !== category.id).map((other) => other.id))}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => updateCategories([])}
+          className="ml-1 inline-flex h-7 items-center rounded-full px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-white/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+        >
+          Clear categories
+        </button>
+      </div>
+    ) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { COLLECTIONS, isCollectionSlug } from "@/lib/collections";
+import { loadCategories } from "@/lib/data/categories";
 import { requireUser } from "@/lib/supabase/auth";
 import { NewEntryForm } from "./new-entry-form";
 
@@ -15,15 +16,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function NewEntryPage({ params }: Props) {
   const { collection: slug } = await params;
   if (!isCollectionSlug(slug)) notFound();
-  await requireUser();
+  const ctx = await requireUser();
   const collection = COLLECTIONS[slug];
+  const categories = await loadCategories(ctx);
   return (
     <PageContainer>
       <PageHeader
         title={collection.newLabel}
         description="A name is all it needs. Artwork is optional, and everything else lives in its workspace of folders, notes and checklists."
       />
-      <NewEntryForm collection={collection} />
+      <NewEntryForm collection={collection} categories={categories} />
     </PageContainer>
   );
 }

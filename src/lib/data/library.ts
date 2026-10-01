@@ -11,7 +11,7 @@ export async function loadLibrary(ctx: AuthContext, kind: EntryKind): Promise<Li
     fetchAll((from, to) =>
       supabase
         .from("entries")
-        .select("id, kind, title, cover_url, created_at, updated_at")
+        .select("id, kind, title, cover_url, created_at, updated_at, entry_categories(category_id)")
         .eq("kind", kind)
         .order("updated_at", { ascending: false })
         .range(from, to),
@@ -27,6 +27,7 @@ export async function loadLibrary(ctx: AuthContext, kind: EntryKind): Promise<Li
       kind: entry.kind as LibraryEntry["kind"],
       title: entry.title,
       coverUrl: entry.cover_url,
+      categoryIds: entry.entry_categories.map((row) => row.category_id),
       createdAt: entry.created_at,
       lastActivityAt: row?.last_activity_at ?? entry.updated_at,
       summary: row

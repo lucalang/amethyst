@@ -20,6 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { apiFetch } from "@/lib/api-client";
 import type { Collection } from "@/lib/collections";
+import type { Category } from "@/lib/categories";
 import type { Tables } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 import { nodeNameSchema } from "@/lib/validation/workspace";
@@ -49,11 +50,15 @@ const HIDDEN_KEY = "archive:explorer-hidden";
 export function EntryWorkspace({
   collection,
   entry: initialEntry,
+  categories,
+  categoryIds,
   initialNodes,
   initialFile,
 }: {
   collection: Collection;
   entry: Entry;
+  categories: Category[];
+  categoryIds: string[];
   initialNodes: WorkspaceNode[];
   initialFile: NodeDetail | null;
 }) {
@@ -61,7 +66,14 @@ export function EntryWorkspace({
   const [nodes, setNodes] = useState(initialNodes);
   return (
     <div>
-      <EntryHeader collection={collection} entry={entry} totals={checklistTotals(nodes)} onEntryChange={setEntry} />
+      <EntryHeader
+        collection={collection}
+        entry={entry}
+        categories={categories}
+        categoryIds={categoryIds}
+        totals={checklistTotals(nodes)}
+        onEntryChange={setEntry}
+      />
       <Workspace entry={entry} nodes={nodes} setNodes={setNodes} initialFile={initialFile} />
     </div>
   );

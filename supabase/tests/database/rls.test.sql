@@ -1,7 +1,7 @@
 -- RLS, ownership and integrity tests for personal workspaces. Run with: npm run test:db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(86);
+select plan(104);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
@@ -35,6 +35,10 @@ insert into public.workspace_checklist_items (id, user_id, file_id, label) value
   ('bbbbbbbb-0000-4000-8000-0000000000d1', 'bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000c1', 'B secret');
 insert into public.workspace_checklist_steps (id, user_id, item_id, label) values
   ('bbbbbbbb-0000-4000-8000-0000000000b5', 'bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000d1', 'B secret step');
+insert into public.categories (id, user_id, name) values
+  ('bbbbbbbb-0000-4000-8000-0000000000ca', 'bbbbbbbb-0000-4000-8000-000000000002', 'Romance');
+insert into public.entry_categories (user_id, entry_id, category_id) values
+  ('bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000e1', 'bbbbbbbb-0000-4000-8000-0000000000ca');
 
 -- ---------------------------------------------------------------------------
 -- Schema: the catalog model, MyAnimeList sync and the import worker are gone
@@ -58,6 +62,7 @@ select throws_ok('select * from public.entries', '42501', null, 'anon cannot rea
 select throws_ok('select * from public.workspace_nodes', '42501', null, 'anon cannot read workspace nodes');
 select throws_ok('select * from public.workspace_checklist_items', '42501', null, 'anon cannot read checklist items');
 select throws_ok('select * from public.workspace_checklist_steps', '42501', null, 'anon cannot read task steps');
+select throws_ok('select * from public.categories', '42501', null, 'anon cannot read categories');
 select throws_ok('select * from public.workspace_tree', '42501', null, 'anon cannot read the tree view');
 select throws_ok($$insert into public.workspace_nodes (entry_id, kind, name) values ('aaaaaaaa-0000-4000-8000-0000000000e1', 'note', 'x')$$, '42501', null, 'anon cannot create nodes');
 select throws_ok($$select public.set_checklist_checked('aaaaaaaa-0000-4000-8000-0000000000c1', true)$$, '42501', null, 'anon cannot call checklist RPCs');
@@ -189,6 +194,28 @@ select lives_ok(
 );
 select is((select label from public.workspace_checklist_steps where item_id = 'aaaaaaaa-0000-4000-8000-0000000000d2' and position = 0), 'Invite Zoro', 'step order was reversed');
 
+-- Categories
+select lives_ok($$insert into public.categories (name) values ('AFK'), ('Tower Defense')$$, 'A creates categories');
+select throws_ok($$insert into public.categories (name) values ('afk')$$, '23505', null, 'category names are unique per account regardless of case');
+select throws_ok($$insert into public.categories (name) values ('  ')$$, '23514', null, 'blank category names are rejected');
+select is((select count(*)::int from public.categories), 2, 'A sees only own categories');
+select throws_ok($$insert into public.categories (user_id, name) values ('bbbbbbbb-0000-4000-8000-000000000002', 'planted')$$, '42501', null, 'category ownership is not client-writable');
+select lives_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0000000000e2', array(select id from public.categories))$$, 'assign several categories to one entry');
+select is((select count(*)::int from public.entry_categories where entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e2'), 2, 'the entry has both categories');
+select lives_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0000000000e2', array(select id from public.categories where name = 'AFK'))$$, 'replace the assignments');
+select results_eq(
+  $$select c.name from public.entry_categories ec join public.categories c on c.id = ec.category_id where ec.entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e2'$$,
+  $$values ('AFK')$$,
+  'only the kept category remains assigned'
+);
+select throws_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0000000000e2', array['bbbbbbbb-0000-4000-8000-0000000000ca']::uuid[])$$, '22023', null, 'RPC cannot assign a B category');
+select throws_ok($$insert into public.entry_categories (entry_id, category_id) values ('aaaaaaaa-0000-4000-8000-0000000000e2', 'bbbbbbbb-0000-4000-8000-0000000000ca')$$, '23503', null, 'cannot assign a B category directly');
+select throws_ok($$select public.set_entry_categories('bbbbbbbb-0000-4000-8000-0000000000e1', '{}')$$, '22023', null, 'cannot change the categories of a B entry');
+select lives_ok($$update public.categories set name = 'hijacked' where id = 'bbbbbbbb-0000-4000-8000-0000000000ca'$$, 'update of a B category is silently filtered');
+select lives_ok($$delete from public.categories where name = 'AFK'$$, 'delete a category');
+select is((select count(*)::int from public.entries where id = 'aaaaaaaa-0000-4000-8000-0000000000e2'), 1, 'deleting a category keeps its entries');
+select is((select count(*)::int from public.entry_categories where entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e2'), 0, 'and removes its assignments');
+
 -- Cascading deletes
 select lives_ok($$delete from public.workspace_nodes where id = 'aaaaaaaa-0000-4000-8000-0000000000f1'$$, 'delete a folder');
 select is((select count(*)::int from public.workspace_nodes where entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e1'), 0, 'its whole subtree is deleted');
@@ -208,6 +235,11 @@ select results_eq(
   $$select label, checked from public.workspace_checklist_steps where id = 'bbbbbbbb-0000-4000-8000-0000000000b5'$$,
   $$values ('B secret step', false)$$,
   'B step unchanged'
+);
+select results_eq(
+  $$select c.name from public.entry_categories ec join public.categories c on c.id = ec.category_id where ec.entry_id = 'bbbbbbbb-0000-4000-8000-0000000000e1'$$,
+  $$values ('Romance')$$,
+  'B category and assignment unchanged'
 );
 
 select * from finish();

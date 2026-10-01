@@ -48,6 +48,18 @@ tests/{unit,integration,e2e,support}
 - Custom entries created before this split keep their `custom` kind and appear under **Other** (`/other`). That tab only shows when such entries exist.
 - An entry's workspace lives at `/<collection>/<id>`. Old `/entries/<id>` and `/franchise/<id>` links redirect there, and `/` redirects to `/anime`.
 
+## Categories
+
+- Each account has one private, reusable set of categories (e.g. *Romance*, *AFK*, *Tower Defense*). They are separate from the Anime, Games and Other collections.
+- An entry of any kind can have zero, one or many categories.
+- When creating or editing an entry, an optional searchable field selects existing categories or creates new ones inline (Create “Name”). Selections show as removable chips. Changing only categories never modifies the entry or its workspace.
+- The library toolbar has a separate **Categories** filter with a searchable checkbox list:
+  - Several selections match entries in **any** of them, combined with search and the other filters.
+  - Results stay within the current library.
+  - Active selections show as chips and can be cleared.
+- **Settings → Categories** renames categories (every entry updates) and deletes them (assignments are removed; entries are kept).
+- Names are trimmed, cannot be empty and are unique per account regardless of case.
+
 ## Artwork from any public host
 
 Cover and banner URLs may use any public `http(s)` host. Images are served same-origin by the authenticated proxy at `/api/image`, which enforces these rules:
@@ -125,6 +137,15 @@ Migrations live in `supabase/migrations` and are applied in order. Migrations 1�
   - A composite `(user_id, item_id)` foreign key with cascade, trimmed labels, and a trigger so steps cannot move between tasks.
   - RLS, and column grants that keep ids, owners and timestamps out of client control.
   - The invoker RPCs `add_checklist_step` (locks the task for gap-free positions) and `reorder_checklist_steps` (requires a complete order).
+
+`20261001000100_categories` adds `categories` and `entry_categories`:
+
+- Names are unique per account case-insensitively, via a unique index on `lower(name)`.
+- Composite owner foreign keys mean an assignment can only join an entry and a category of the same account. Both cascade on delete, so deleting a category never deletes entries.
+- RLS and column grants restrict access to the owning account.
+- The invoker RPC `set_entry_categories` replaces an entry's assignments in one step.
+
+Existing entries start uncategorized.
 
 Regenerate types with `npm run db:types`.
 

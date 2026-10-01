@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { parseCategoryIds } from "@/lib/categories";
 import { COLLECTIONS, entryPath, isCollectionSlug } from "@/lib/collections";
 import { requireUser } from "@/lib/supabase/auth";
 import { newEntrySchema, starterFilesFor } from "@/lib/validation/entries";
@@ -50,6 +51,15 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
   if (filesError) {
     await ctx.supabase.from("entries").delete().eq("id", entry.id);
     return { status: "error", message: "Could not create the workspace files.", values };
+  }
+
+  const categoryIds = parseCategoryIds(formData.getAll("categoryIds"));
+  if (categoryIds.length) {
+    const { error: categoriesError } = await ctx.supabase.rpc("set_entry_categories", { p_entry_id: entry.id, p_category_ids: categoryIds });
+    if (categoriesError) {
+      await ctx.supabase.from("entries").delete().eq("id", entry.id);
+      return { status: "error", message: "A selected category no longer exists. Check the categories and try again.", values };
+    }
   }
 
   redirect(entryPath(entry));

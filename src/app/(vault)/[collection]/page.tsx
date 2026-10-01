@@ -9,6 +9,8 @@ import { LibraryControls } from "@/components/media/library-controls";
 import { PosterCard } from "@/components/media/poster-card";
 import { Button } from "@/components/ui/button";
 import { COLLECTIONS, isCollectionSlug } from "@/lib/collections";
+import { CATEGORY_PARAM } from "@/lib/categories";
+import { loadCategories } from "@/lib/data/categories";
 import { loadLibrary } from "@/lib/data/library";
 import { filterLibrary, librarySearchSchema } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
@@ -32,8 +34,13 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     q: typeof query.q === "string" ? query.q : undefined,
     status: query.status,
     sort: query.sort,
+    categories: query[CATEGORY_PARAM],
   });
-  const library = await loadLibrary(ctx, collection.kind);
+  const [library, categories] = await Promise.all([loadLibrary(ctx, collection.kind), loadCategories(ctx)]);
+  // Ignore ids of categories deleted since the link was made.
+  search.categories = search.categories.filter((id) => categories.some((category) => category.id === id));
+  const categoryCounts: Record<string, number> = {};
+  for (const entry of library) for (const id of entry.categoryIds) categoryCounts[id] = (categoryCounts[id] ?? 0) + 1;
   const visible = filterLibrary(library, search);
 
   return (
@@ -62,7 +69,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
           </div>
 
           <div className="enter enter-soft mb-8" style={{ "--enter-index": 2 } as React.CSSProperties}>
-            <LibraryControls search={search} label={collection.label} />
+            <LibraryControls search={search} label={collection.label} categories={categories} categoryCounts={categoryCounts} />
           </div>
 
           {library.length === 0 ? (
