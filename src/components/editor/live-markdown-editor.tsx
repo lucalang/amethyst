@@ -1,8 +1,9 @@
 "use client";
 
+import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap, redoDepth, undoDepth } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Prec } from "@codemirror/state";
 import { EditorView, drawSelection, keymap, placeholder as placeholderExtension } from "@codemirror/view";
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, type Ref } from "react";
 import { livePreview } from "./live-preview";
@@ -80,12 +81,16 @@ export function LiveMarkdownEditor({
         markdown({ base: markdownLanguage }),
         livePreview,
         imageUploads(reportImageError),
+        // Typing [ or ( adds the closing bracket; typing it again steps over it.
+        closeBrackets(),
+        Prec.high(EditorState.languageData.of(() => [{ closeBrackets: { brackets: ["(", "["] } }])),
         keymap.of([
           { key: "Mod-b", run: (view) => toggleInline(view, "**") },
           { key: "Mod-i", run: (view) => toggleInline(view, "*") },
           { key: "Mod-k", run: insertLink },
           { key: "Mod-s", preventDefault: true, run: () => (emitSave(), true) },
           ...headingKeys,
+          ...closeBracketsKeymap,
           ...defaultKeymap,
           ...historyKeymap,
         ]),

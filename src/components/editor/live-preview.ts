@@ -23,14 +23,20 @@ const QUOTE_LINE = Decoration.line({ class: "cm-md-quote" });
 const CODE_LINE = Decoration.line({ class: "cm-md-codeblock" });
 const TASK_DONE = mark("cm-md-task-done");
 
+/** Set when a click completes a task, so the re-rendered checkbox plays the completion pop once. */
+let popNextCheck = false;
+
 /** Flip the `[ ]` / `[x]` marker of the task item on the line containing `pos`. */
 function toggleTaskAt(view: EditorView, pos: number) {
   const line = view.state.doc.lineAt(pos);
   const match = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])\]/.exec(line.text);
   if (!match) return;
   const at = line.from + match[1].length;
+  popNextCheck = match[2] === " ";
   view.dispatch({ changes: { from: at, to: at + 1, insert: match[2] === " " ? "x" : " " }, userEvent: "input.toggle" });
 }
+
+const SVG = "http://www.w3.org/2000/svg";
 
 class TaskWidget extends WidgetType {
   constructor(readonly checked: boolean) {
@@ -42,9 +48,18 @@ class TaskWidget extends WidgetType {
   toDOM(view: EditorView) {
     const box = document.createElement("span");
     box.className = "cm-md-task";
+    if (this.checked && popNextCheck) box.classList.add("check-pop");
+    popNextCheck = false;
     box.setAttribute("role", "checkbox");
     box.setAttribute("aria-checked", String(this.checked));
     box.setAttribute("aria-label", this.checked ? "Mark as not done" : "Mark as done");
+    const tick = document.createElementNS(SVG, "svg");
+    tick.setAttribute("viewBox", "0 0 24 24");
+    tick.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS(SVG, "path");
+    path.setAttribute("d", "M20 6 9 17l-5-5");
+    tick.append(path);
+    box.append(tick);
     // Toggle without moving the caret or stealing focus.
     box.addEventListener("mousedown", (event) => event.preventDefault());
     box.addEventListener("click", (event) => {
