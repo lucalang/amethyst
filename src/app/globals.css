@@ -696,6 +696,35 @@
   text-decoration: line-through;
   text-decoration-color: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
 }
+/* Each task line is a card like a checklist row; the transparent top border is the gap (CodeMirror lines can't use margins). */
+.cm-live .cm-line.cm-md-task-line {
+  padding: 0.6rem 0.75rem 0.6rem 0.9rem;
+  border-top: 6px solid transparent;
+  border-radius: 0.5rem;
+  background-color: rgb(255 255 255 / 0.04);
+  background-clip: padding-box;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05);
+  transition:
+    background-color 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+.cm-live .cm-line.cm-md-task-line:hover {
+  background-color: #15111d;
+  box-shadow:
+    inset 0 0 0 1px rgb(165 124 255 / 0.3),
+    0 10px 28px -20px rgb(165 124 255 / 0.9);
+}
+.cm-live .cm-line.cm-md-task-line-done {
+  background-color: rgb(255 255 255 / 0.022);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.035);
+}
+.cm-live .cm-line.cm-md-task-line-done:hover {
+  background-color: rgb(255 255 255 / 0.045);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.cm-live .cm-md-task-line .cm-md-task {
+  margin-right: 0.8em;
+}
 /* Embedded images (Obsidian-style ![[…]] and ![](…)). */
 .cm-live .cm-md-embed {
   display: block;

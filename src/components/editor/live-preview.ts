@@ -22,6 +22,8 @@ const HEADING_LINES = [1, 2, 3, 4, 5, 6].map((level) => Decoration.line({ class:
 const QUOTE_LINE = Decoration.line({ class: "cm-md-quote" });
 const CODE_LINE = Decoration.line({ class: "cm-md-codeblock" });
 const TASK_DONE = mark("cm-md-task-done");
+const TASK_LINE = Decoration.line({ class: "cm-md-task-line" });
+const TASK_LINE_DONE = Decoration.line({ class: "cm-md-task-line cm-md-task-line-done" });
 
 /** Set when a click completes a task, so the re-rendered checkbox plays the completion pop once. */
 let popNextCheck = false;
@@ -245,6 +247,7 @@ export function buildLivePreview(view: EditorView): DecorationSet {
             const listMark = ref.node.parent ? children(ref.node.parent, "ListMark")[0] : undefined;
             if (!marker || !listMark) break;
             const checked = /x/i.test(doc.sliceString(marker.from, marker.to));
+            addLines(ref.from, ref.from, checked ? TASK_LINE_DONE : TASK_LINE, "t");
             let end = marker.to;
             if (end < doc.lineAt(end).to && /[ \t]/.test(doc.sliceString(end, end + 1))) end++;
             if (!caretInside(listMark.from, end)) ranges.push(Decoration.replace({ widget: new TaskWidget(checked) }).range(listMark.from, end));
