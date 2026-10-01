@@ -19,15 +19,11 @@ export default async function NewEntryPage({ params }: Props) {
   const collection = COLLECTIONS[slug];
   return (
     <PageContainer>
-      <div className="enter">
-        <PageHeader
-          title={collection.newLabel}
-          description={`Give it a name and artwork. Everything else lives in its own workspace of folders, notes and checklists.`}
-        />
-      </div>
-      <div className="enter" style={{ "--enter-index": 1 } as React.CSSProperties}>
-        <NewEntryForm collection={collection} />
-      </div>
+      <PageHeader
+        title={collection.newLabel}
+        description="A name is all it needs. Artwork is optional, and everything else lives in its workspace of folders, notes and checklists."
+      />
+      <NewEntryForm collection={collection} />
     </PageContainer>
   );
 }

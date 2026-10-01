@@ -247,7 +247,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; au
         </div>
       ) : null}
 
-      <div className={`flex-1 ${PAGE}`}>
+      <div className={`enter enter-soft flex-1 ${PAGE}`}>
         <LiveMarkdownEditor
           ref={editorRef}
           initialValue={initial.draft}

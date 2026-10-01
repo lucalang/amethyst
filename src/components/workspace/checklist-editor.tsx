@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { Fragment, useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
   CalendarDays,
   CheckCheck,
   ChevronRight,
+  ClipboardList,
   Eye,
   EyeOff,
   ListChecks,
@@ -34,9 +35,28 @@ import { SaveStatus, type SaveState } from "./save-status";
 import { TaskDetails, notesBackupKey, type Outcome, type TaskActions, type TaskPatch } from "./task-details";
 
 const COMPLETED_KEY = "archive:checklist:completed";
+/** How long a just-completed task stays in place so the check and strike-through can play. */
+const SETTLE_MS = 520;
+const FRESH_MS = 600;
 
 const byPosition = <T extends { id: string; position: number }>(list: readonly T[]) =>
   [...list].sort((a, b) => a.position - b.position || (a.id < b.id ? -1 : 1));
+
+const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** A set of ids that each drop out again after `ms`. */
+function useTransientIds(ms: number) {
+  const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
+  function add(added: readonly string[], onDone?: () => void) {
+    if (added.length === 0) return;
+    setIds((current) => new Set([...current, ...added]));
+    window.setTimeout(() => {
+      setIds((current) => new Set([...current].filter((id) => !added.includes(id))));
+      onDone?.();
+    }, ms);
+  }
+  return [ids, add] as const;
+}
 
 /**
  * Task list in the style of Microsoft To Do. Changes apply optimistically and
@@ -58,14 +78,18 @@ export function ChecklistEditor({
   const [pending, setPending] = useState(0);
   const [lastError, setLastError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [settling, addSettling] = useTransientIds(SETTLE_MS);
+  const [fresh, addFresh] = useTransientIds(FRESH_MS);
   const storedCompleted = useLocalStorageValue(COMPLETED_KEY);
   const [completedOverride, setCompletedOverride] = useState<boolean | null>(null);
   const showCompleted = completedOverride ?? storedCompleted !== "hidden";
   const chainRef = useRef<Promise<unknown>>(Promise.resolve());
   const today = useToday();
 
-  const active = items.filter((item) => !item.checked);
-  const completed = items.filter((item) => item.checked);
+  // Just-completed tasks linger in the active list until their completion feedback has played.
+  const active = items.filter((item) => !item.checked || settling.has(item.id));
+  const completed = items.filter((item) => item.checked && !settling.has(item.id));
+  const doneCount = items.filter((item) => item.checked).length;
   const state: SaveState = pending > 0 ? { kind: "saving" } : lastError ? { kind: "error", message: lastError } : { kind: "saved" };
 
   const report = useEffectEvent((next: ChecklistItem[]) => onItemsChange(fileId, next));
@@ -177,6 +201,8 @@ export function ChecklistEditor({
 
   function toggle(item: ChecklistItem, checked: boolean) {
     void patchItem(item, { checked }, `“${item.label}” not saved`);
+    if (checked && !prefersReducedMotion()) addSettling([item.id], () => addFresh([item.id]));
+    else addFresh([item.id]);
   }
 
   function setAll(checked: boolean) {
@@ -218,6 +244,7 @@ export function ChecklistEditor({
     );
     if (!result.ok) return false;
     setItems((current) => byPosition([...current, ...result.value.items]));
+    addFresh(result.value.items.map((item) => item.id));
     return true;
   }
 
@@ -230,6 +257,8 @@ export function ChecklistEditor({
     item,
     today,
     expanded: expandedId === item.id,
+    celebrate: settling.has(item.id),
+    fresh: fresh.has(item.id),
     first: index === 0,
     last: index === section.length - 1,
     actions,
@@ -244,13 +273,13 @@ export function ChecklistEditor({
       <div className="sticky top-[6.25rem] z-10 flex min-h-11 items-center justify-between gap-3 border-b border-border bg-black/90 px-4 backdrop-blur md:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <span className="text-xs text-muted-foreground tabular-nums">
-            {items.length === 0 ? "No tasks" : `${completed.length} of ${items.length} completed`}
+            {items.length === 0 ? "No tasks" : `${doneCount} of ${items.length} completed`}
           </span>
           {items.length > 0 ? (
-            <span aria-hidden className="hidden h-1 w-24 overflow-hidden rounded-full bg-white/[0.07] sm:block">
+            <span aria-hidden className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-white/[0.07] sm:block">
               <span
-                className="block h-full rounded-full bg-amethyst transition-[width] duration-300 motion-reduce:transition-none"
-                style={{ width: `${(completed.length / items.length) * 100}%` }}
+                className="block h-full rounded-full bg-[linear-gradient(90deg,var(--amethyst),var(--rose))] transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                style={{ width: `${(doneCount / items.length) * 100}%` }}
               />
             </span>
           ) : null}
@@ -279,38 +308,42 @@ export function ChecklistEditor({
         </div>
       </div>
 
-      <div className="w-full max-w-[52rem] px-2 py-5 md:px-6">
+      <div className="enter enter-soft w-full max-w-[54rem] px-3 pt-5 pb-10 md:px-8 md:pt-7">
         {active.length > 0 ? (
-          <ul aria-label={`${name} tasks`} className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
+          <ul aria-label={`${name} tasks`} className="space-y-1.5">
             {active.map((item, index) => (
               <TaskRow key={item.id} {...rowProps(item, index, active)} />
             ))}
           </ul>
         ) : (
-          <p className="px-3 pb-2 text-sm text-muted-foreground">
-            {items.length === 0 ? "No tasks yet. Add your first one below." : "Everything here is done."}
-          </p>
+          <div className="flex items-center gap-3 rounded-lg border border-dashed border-white/[0.08] px-4 py-5 text-sm text-muted-foreground">
+            <ClipboardList aria-hidden className="size-5 shrink-0 text-amethyst/70" />
+            {items.length === 0 ? "No tasks yet. Add your first one below." : "Everything here is done. Nice."}
+          </div>
         )}
 
         <AddTask name={name} autoFocus={autoFocus} onAdd={addTasks} />
 
         {completed.length > 0 ? (
-          <section className="mt-8">
+          <section className="mt-7">
             <h3>
               <button
                 type="button"
                 aria-expanded={showCompleted}
                 aria-controls={`completed-${fileId}`}
                 onClick={() => setCompletedVisible(!showCompleted)}
-                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-white/[0.04] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="group/completed inline-flex h-8 items-center gap-1.5 rounded-md bg-white/[0.05] pr-2.5 pl-1.5 text-[13px] font-semibold text-foreground/90 ring-1 ring-white/[0.06] transition-[background-color,box-shadow,color] duration-200 outline-none ring-inset hover:bg-white/[0.09] hover:text-foreground hover:ring-amethyst/35 focus-visible:ring-2 focus-visible:ring-ring/70 active:scale-[0.97]"
               >
-                <ChevronRight aria-hidden className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", showCompleted && "rotate-90")} />
+                <ChevronRight
+                  aria-hidden
+                  className={cn("size-4 text-muted-foreground transition-[rotate,color] duration-300 ease-out group-hover/completed:text-amethyst", showCompleted && "rotate-90")}
+                />
                 Completed
-                <span className="rounded-full bg-white/[0.07] px-2 py-px text-xs tabular-nums">{completed.length}</span>
+                <span className="ml-0.5 text-muted-foreground tabular-nums">{completed.length}</span>
               </button>
             </h3>
             {showCompleted ? (
-              <ul id={`completed-${fileId}`} aria-label={`${name} completed tasks`} className="mt-2 divide-y divide-white/[0.06] border-y border-white/[0.06]">
+              <ul id={`completed-${fileId}`} aria-label={`${name} completed tasks`} className="enter enter-drop mt-2.5 space-y-1.5">
                 {completed.map((item, index) => (
                   <TaskRow key={item.id} {...rowProps(item, index, completed)} />
                 ))}
@@ -327,6 +360,8 @@ function TaskRow({
   item,
   today,
   expanded,
+  celebrate,
+  fresh,
   first,
   last,
   actions,
@@ -338,6 +373,8 @@ function TaskRow({
   item: ChecklistItem;
   today: string | null;
   expanded: boolean;
+  celebrate: boolean;
+  fresh: boolean;
   first: boolean;
   last: boolean;
   actions: TaskActions;
@@ -350,8 +387,27 @@ function TaskRow({
   const renamingRef = useRef(false);
   const doneSteps = item.steps.filter((step) => step.checked).length;
   const due = item.dueDate ? describeDue(item.dueDate, today) : null;
-  const overdue = due?.overdue && !item.checked;
-  const hasMeta = item.steps.length > 0 || due || item.notes.trim() !== "";
+  const overdue = Boolean(due?.overdue && !item.checked);
+  const dueToday = Boolean(item.dueDate && item.dueDate === today && !item.checked);
+  const meta = [
+    item.steps.length > 0 ? (
+      <span key="steps" className={cn("inline-flex items-center gap-1 tabular-nums", doneSteps === item.steps.length && "text-amethyst/90")}>
+        <ListChecks aria-hidden className="size-3.5" />
+        {doneSteps} of {item.steps.length}
+      </span>
+    ) : null,
+    due ? (
+      <span key="due" className={cn("inline-flex items-center gap-1", overdue ? "text-rose" : dueToday && "text-amethyst")}>
+        <CalendarDays aria-hidden className="size-3.5" />
+        {overdue ? `Overdue · ${due.text}` : due.text}
+      </span>
+    ) : null,
+    item.notes.trim() ? (
+      <span key="note" className="inline-flex items-center gap-1">
+        <StickyNote aria-hidden className="size-3.5" /> Note
+      </span>
+    ) : null,
+  ].filter(Boolean);
   const detailsId = `task-details-${item.id}`;
 
   function commitRename() {
@@ -362,9 +418,20 @@ function TaskRow({
   }
 
   return (
-    <li className={cn("group/task transition-colors", expanded ? "bg-white/[0.03]" : "hover:bg-white/[0.025]")}>
-      <div className="flex items-start gap-3 px-3 py-2.5">
-        <RoundCheck checked={item.checked} label={item.label} onCheckedChange={onToggle} className="mt-[3px]" />
+    <li
+      className={cn(
+        "task-row group/task relative rounded-lg transition-[background-color,box-shadow] duration-200 ease-out",
+        expanded
+          ? "bg-[#140f1e] shadow-[inset_0_0_0_1px_rgb(165_124_255/0.38),0_18px_40px_-26px_rgb(165_124_255/0.8)]"
+          : item.checked
+            ? "bg-white/[0.022] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.035)] hover:bg-white/[0.045]"
+            : "bg-white/[0.04] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.05)] hover:bg-[#15111d] hover:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.3),0_10px_28px_-20px_rgb(165_124_255/0.9)]",
+        "has-[[data-row-button]:focus-visible]:shadow-[inset_0_0_0_2px_var(--amethyst)]",
+        fresh && "task-in",
+      )}
+    >
+      <div className="flex min-h-[3.25rem] items-center gap-3.5 py-1.5 pr-2 pl-4">
+        <RoundCheck checked={item.checked} label={item.label} onCheckedChange={onToggle} celebrate={celebrate} />
         {editing !== null ? (
           <input
             autoFocus
@@ -383,11 +450,12 @@ function TaskRow({
                 setEditing(null);
               }
             }}
-            className="-my-0.5 h-8 min-w-0 flex-1 rounded-sm bg-white/[0.04] px-2 text-[15px] ring-1 ring-amethyst/50 outline-none"
+            className="h-9 min-w-0 flex-1 rounded-md bg-black/50 px-2.5 text-[14.5px] ring-1 ring-amethyst/60 outline-none"
           />
         ) : (
           <button
             id={`task-${item.id}`}
+            data-row-button
             type="button"
             aria-expanded={expanded}
             aria-controls={expanded ? detailsId : undefined}
@@ -401,35 +469,30 @@ function TaskRow({
                 setEditing(item.label);
               }
             }}
-            className="min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+            className="min-w-0 flex-1 self-stretch py-1.5 text-left outline-none"
           >
-            <span
-              className={cn(
-                "block text-[15px] leading-6 break-words transition-colors",
-                item.checked ? "text-muted-foreground line-through decoration-muted-foreground/50" : "text-foreground",
-              )}
-            >
-              {item.label}
+            <span className="block text-[14.5px] leading-5 break-words">
+              <span
+                className={cn(
+                  "bg-[linear-gradient(currentColor,currentColor)] [box-decoration-break:clone] bg-no-repeat [background-position:0_58%] transition-[background-size,color] duration-300 ease-out",
+                  item.checked ? "bg-[length:100%_1.5px] text-muted-foreground" : "bg-[length:0%_1.5px] text-foreground",
+                )}
+              >
+                {item.label}
+              </span>
             </span>
-            {hasMeta ? (
-              <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                {item.steps.length > 0 ? (
-                  <span className="inline-flex items-center gap-1 tabular-nums">
-                    <ListChecks aria-hidden className="size-3.5" />
-                    {doneSteps} of {item.steps.length}
-                  </span>
-                ) : null}
-                {due ? (
-                  <span className={cn("inline-flex items-center gap-1", overdue && "text-rose")}>
-                    <CalendarDays aria-hidden className="size-3.5" />
-                    {overdue ? `Overdue · ${due.text}` : due.text}
-                  </span>
-                ) : null}
-                {item.notes.trim() ? (
-                  <span className="inline-flex items-center gap-1">
-                    <StickyNote aria-hidden className="size-3.5" /> Note
-                  </span>
-                ) : null}
+            {meta.length > 0 ? (
+              <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                {meta.map((part, index) => (
+                  <Fragment key={index}>
+                    {index > 0 ? (
+                      <span aria-hidden className="text-white/20">
+                        •
+                      </span>
+                    ) : null}
+                    {part}
+                  </Fragment>
+                ))}
               </span>
             ) : null}
           </button>
@@ -440,11 +503,17 @@ function TaskRow({
           aria-label={item.starred ? `Remove importance from ${item.label}` : `Mark ${item.label} as important`}
           onClick={() => void actions.patchItem(item, { starred: !item.starred }, "Importance not saved")}
           className={cn(
-            "-my-0.5 grid size-8 shrink-0 place-items-center rounded-md transition-colors outline-none hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-ring/60",
-            item.starred ? "text-rose" : "text-muted-foreground/60 hover:text-foreground",
+            "task-star group/star grid size-9 shrink-0 place-items-center rounded-full transition-[background-color,color] duration-200 outline-none hover:bg-rose/10 focus-visible:ring-2 focus-visible:ring-rose/60 active:scale-90",
+            item.starred ? "text-rose" : "text-muted-foreground/70 hover:text-rose",
           )}
         >
-          <Star aria-hidden className={cn("size-4", item.starred && "fill-current")} />
+          <Star
+            aria-hidden
+            className={cn(
+              "size-[1.1rem] transition-[scale,rotate,filter] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/star:scale-125 group-hover/star:rotate-[18deg]",
+              item.starred && "fill-current drop-shadow-[0_0_6px_rgb(244_114_168/0.7)]",
+            )}
+          />
         </button>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
@@ -452,7 +521,7 @@ function TaskRow({
               variant="ghost"
               size="icon-sm"
               aria-label={`Actions for ${item.label}`}
-              className="-my-0.5 text-muted-foreground opacity-0 group-hover/task:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 pointer-coarse:opacity-100"
+              className="text-muted-foreground opacity-0 transition-[opacity,background-color,color] group-hover/task:opacity-100 focus-visible:opacity-100 aria-expanded:opacity-100 pointer-coarse:opacity-100"
             >
               <MoreHorizontal aria-hidden />
             </Button>
@@ -528,10 +597,25 @@ function AddTask({ name, autoFocus, onAdd }: { name: string; autoFocus?: boolean
   }
 
   return (
-    <form onSubmit={submit} className="mt-2">
-      <div className="flex items-start gap-3 rounded-md px-3 py-2 transition-colors focus-within:bg-white/[0.03] hover:bg-white/[0.02]">
-        <span className="mt-[3px] grid size-5 shrink-0 place-items-center text-amethyst">
-          {adding ? <Loader2 aria-hidden className="size-4 animate-spin motion-reduce:animate-none" /> : <Plus aria-hidden className="size-5" />}
+    // Docked like To Do's input: stays reachable at the bottom while scrolling long lists.
+    <form onSubmit={submit} className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[5] mt-1.5 md:bottom-4">
+      <div
+        className={cn(
+          "group/add flex min-h-[3.25rem] cursor-text items-center gap-3.5 rounded-lg bg-[#0e0b14] py-1.5 pr-2 pl-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07),0_-10px_28px_-14px_rgb(0_0_0/0.95)] transition-[background-color,box-shadow] duration-200",
+          "hover:bg-[#130f1b] hover:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.25),0_-10px_28px_-14px_rgb(0_0_0/0.95)]",
+          "focus-within:bg-[#130f1b] focus-within:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.6),0_0_0_3px_rgb(165_124_255/0.12),0_-10px_28px_-14px_rgb(0_0_0/0.95)]",
+        )}
+        onClick={() => inputRef.current?.focus()}
+      >
+        <span className="grid size-5 shrink-0 place-items-center text-amethyst">
+          {adding ? (
+            <Loader2 aria-hidden className="size-4 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <>
+              <Plus aria-hidden className="size-5 transition-[rotate,scale] duration-300 group-hover/add:rotate-90 group-focus-within/add:hidden" />
+              <span aria-hidden className="hidden size-5 rounded-full border-[1.5px] border-white/35 group-focus-within/add:block" />
+            </>
+          )}
         </span>
         <textarea
           ref={inputRef}
@@ -547,15 +631,15 @@ function AddTask({ name, autoFocus, onAdd }: { name: string; autoFocus?: boolean
           }}
           placeholder="Add a task"
           maxLength={100_000}
-          className="max-h-48 min-h-6 min-w-0 flex-1 resize-none bg-transparent text-[15px] leading-6 outline-none [field-sizing:content] placeholder:text-amethyst/90 focus:placeholder:text-muted-foreground/70"
+          className="max-h-48 min-h-5 min-w-0 flex-1 resize-none bg-transparent py-1.5 text-[14.5px] leading-5 outline-none [field-sizing:content] placeholder:font-medium placeholder:text-amethyst group-focus-within/add:placeholder:font-normal group-focus-within/add:placeholder:text-muted-foreground/70"
         />
         {draft.trim() ? (
-          <Button type="submit" size="sm" className="-my-0.5 h-7" disabled={adding}>
+          <Button type="submit" size="sm" className="enter enter-soft h-8 px-3" disabled={adding}>
             Add
           </Button>
         ) : null}
       </div>
-      <p className="mt-1 px-3 pl-11 text-xs text-muted-foreground" aria-live="polite">
+      <p className="mt-1.5 pl-[3.1rem] text-xs text-muted-foreground empty:hidden" aria-live="polite">
         {lines.length > 1 ? `${lines.length} tasks will be added, one per line.` : draft ? "Enter adds the task. Shift+Enter starts a new line." : ""}
       </p>
     </form>

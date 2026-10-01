@@ -44,7 +44,7 @@ function ToolButton({
           // Keep the editor's selection: act on mousedown without taking focus.
           onMouseDown={(event) => event.preventDefault()}
           onClick={onRun}
-          className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-35 pointer-coarse:size-10 [&_svg]:size-4"
+          className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-[color,background-color,scale] duration-150 hover:bg-amethyst/12 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-90 active:bg-amethyst/20 disabled:opacity-35 pointer-coarse:size-10 [&_svg]:size-4"
         >
           {children}
         </button>
@@ -72,7 +72,7 @@ export function EditorToolbar({ getView, status, className }: { getView: () => E
             type="button"
             aria-label={`Text style: ${current.label}`}
             onMouseDown={(event) => event.preventDefault()}
-            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none pointer-coarse:h-10"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground transition-[color,background-color,scale] duration-150 hover:bg-amethyst/12 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-95 pointer-coarse:h-10"
           >
             <Heading aria-hidden className="size-4" />
             <span className="w-16 text-left">{current.level === 0 ? "Text" : `Heading ${current.level}`}</span>

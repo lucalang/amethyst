@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { Loader2, Search, X } from "lucide-react";
+import { ArrowDownWideNarrow, ListFilter, Loader2, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { LibrarySearch } from "@/lib/progress/library";
@@ -26,11 +26,20 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <form action={pathname} method="get" role="search" className="relative w-full sm:w-72">
+      <form
+        action={pathname}
+        method="get"
+        role="search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          update("q", String(new FormData(event.currentTarget).get("q") ?? "").trim(), "");
+        }}
+        className="group/search flex h-10 w-full min-w-0 items-center gap-2.5 rounded-md border border-input bg-surface px-3 transition-[border-color,box-shadow,background-color] duration-200 hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(165_124_255/0.08)] focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40 sm:w-80"
+      >
         <label htmlFor="library-search" className="sr-only">
           Search {label}
         </label>
-        <Search aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+        {pending ? <Loader2 aria-hidden className="size-4 shrink-0 animate-spin text-amethyst" /> : <Search aria-hidden className="size-4 shrink-0 text-muted-foreground transition-[color,scale] duration-200 group-hover/search:text-amethyst group-focus-within/search:scale-110 group-focus-within/search:text-amethyst" />}
         <input
           id="library-search"
           key={search.q}
@@ -39,16 +48,17 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
           defaultValue={search.q}
           placeholder={`Search ${label.toLowerCase()}`}
           autoComplete="off"
-          className="h-9 w-full rounded-md border border-input bg-surface pr-3 pl-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+          className="h-full w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
         {search.status !== "all" ? <input type="hidden" name="status" value={search.status} /> : null}
         {search.sort !== "recent" ? <input type="hidden" name="sort" value={search.sort} /> : null}
       </form>
       <Select value={search.status} onValueChange={(value) => update("status", value, "all")}>
-        <SelectTrigger size="sm" className="w-36" aria-label="Filter by progress">
+        <SelectTrigger className="min-w-[9.5rem] flex-1 sm:w-44 sm:flex-none" aria-label="Filter by progress" data-active={search.status !== "all"}>
+          <ListFilter aria-hidden className="size-4 text-muted-foreground max-sm:hidden" />
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" align="start">
           <SelectItem value="all">Any progress</SelectItem>
           <SelectItem value="in_progress">In progress</SelectItem>
           <SelectItem value="not_started">Not started</SelectItem>
@@ -56,10 +66,11 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
         </SelectContent>
       </Select>
       <Select value={search.sort} onValueChange={(value) => update("sort", value, "recent")}>
-        <SelectTrigger size="sm" className="w-40" aria-label="Sort">
+        <SelectTrigger className="min-w-[9.5rem] flex-1 sm:w-48 sm:flex-none" aria-label="Sort" data-active={search.sort !== "recent"}>
+          <ArrowDownWideNarrow aria-hidden className="size-4 text-muted-foreground max-sm:hidden" />
           <SelectValue />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" align="start">
           <SelectItem value="recent">Recently active</SelectItem>
           <SelectItem value="added">Recently added</SelectItem>
           <SelectItem value="title">Title A–Z</SelectItem>
@@ -67,13 +78,13 @@ export function LibraryControls({ search, label }: { search: LibrarySearch; labe
         </SelectContent>
       </Select>
       {filtered ? (
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="outline" size="icon-lg" className="size-10 bg-surface" aria-label="Clear filters" title="Clear filters">
           <Link href={pathname} replace scroll={false}>
-            <X aria-hidden /> Clear
+            <X aria-hidden />
           </Link>
         </Button>
       ) : null}
-      {pending ? <Loader2 aria-label="Updating" className="size-4 animate-spin text-muted-foreground" /> : null}
+      <span role="status" className="sr-only">{pending ? "Updating library" : ""}</span>
     </div>
   );
 }

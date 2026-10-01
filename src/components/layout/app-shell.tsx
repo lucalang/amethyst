@@ -12,7 +12,7 @@ export function AppShell({ children, displayName, hasOther }: { children: ReactN
         Skip to content
       </a>
       <TopNav displayName={displayName} hasOther={hasOther} />
-      <main id="main" className="flex-1 pb-24 md:pb-10">
+      <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
         {children}
       </main>
       <MobileTabBar hasOther={hasOther} />
@@ -27,7 +27,7 @@ export function PageContainer({ children, className = "" }: { children: ReactNod
 
 export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="mb-7 flex flex-wrap items-end justify-between gap-3">
+    <div className="enter mb-7 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">{title}</h1>
         {description ? <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{description}</p> : null}

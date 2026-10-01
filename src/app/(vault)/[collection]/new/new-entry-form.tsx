@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { useActionState, useState, useTransition } from "react";
+import { FileText, ListChecks, Loader2, Plus } from "lucide-react";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Collection } from "@/lib/collections";
+import { cn } from "@/lib/utils";
 import { starterFilesFor } from "@/lib/validation/entries";
 import { createEntry, type NewEntryState } from "./actions";
 
@@ -20,7 +21,9 @@ export function NewEntryForm({ collection }: { collection: Collection }) {
   const [, startTransition] = useTransition();
   const errors = state.fieldErrors ?? {};
   const values = state.values ?? {};
-  const starters = starterFilesFor(collection.kind).map((file) => file.name);
+  const [bannerOpen, setBannerOpen] = useState(false);
+  const showBanner = bannerOpen || Boolean(values.bannerUrl) || Boolean(errors.bannerUrl);
+  const starters = starterFilesFor(collection.kind);
 
   return (
     <form
@@ -31,72 +34,96 @@ export function NewEntryForm({ collection }: { collection: Collection }) {
         const formData = new FormData(event.currentTarget);
         startTransition(() => action(formData));
       }}
-      className="max-w-2xl space-y-6"
+      className="enter max-w-2xl rounded-lg border border-white/[0.08] bg-surface/70 shadow-[0_24px_60px_-40px_rgb(165_124_255/0.5)]"
+      style={{ "--enter-index": 1 } as React.CSSProperties}
       noValidate
     >
       <input type="hidden" name="collection" value={collection.slug} />
-      <div className="space-y-1.5">
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          name="title"
-          defaultValue={values.title}
-          required
-          maxLength={300}
-          placeholder={PLACEHOLDERS[collection.slug]}
-          aria-invalid={Boolean(errors.title)}
-          aria-describedby={errors.title ? "title-error" : undefined}
-          className="h-10 text-base"
-        />
-        {errors.title ? (
-          <p id="title-error" className="text-xs text-rose">
-            {errors.title}
-          </p>
-        ) : null}
-      </div>
-
-      {collection.kind === "game" ? (
-        <div className="space-y-1.5">
-          <Label htmlFor="platform">Platform</Label>
-          <Input id="platform" name="platform" defaultValue={values.platform} maxLength={80} placeholder="Optional, e.g. PC, Switch, PS5" />
+      <div className="space-y-6 p-5 md:p-7">
+        <div className="space-y-2">
+          <Label htmlFor="title" className="text-sm">
+            Title
+          </Label>
+          <Input
+            id="title"
+            name="title"
+            defaultValue={values.title}
+            required
+            autoFocus
+            maxLength={300}
+            placeholder={PLACEHOLDERS[collection.slug]}
+            aria-invalid={Boolean(errors.title)}
+            aria-describedby={errors.title ? "title-error" : undefined}
+            className="h-11 bg-black/40 px-3.5 text-base md:text-base"
+          />
+          {errors.title ? (
+            <p id="title-error" className="text-xs text-rose">
+              {errors.title}
+            </p>
+          ) : null}
         </div>
-      ) : null}
 
-      <ImageUrlField
-        id="coverUrl"
-        name="coverUrl"
-        label="Cover image URL"
-        hint="Optional. A direct link to an image on any public website."
-        defaultValue={values.coverUrl}
-        error={errors.coverUrl}
-        shape="poster"
-      />
-      <ImageUrlField
-        id="bannerUrl"
-        name="bannerUrl"
-        label="Banner image URL"
-        hint="Optional wide artwork for the top of the workspace."
-        defaultValue={values.bannerUrl}
-        error={errors.bannerUrl}
-        shape="banner"
-      />
+        <ImageUrlField
+          id="coverUrl"
+          name="coverUrl"
+          label="Cover image URL"
+          hint="Optional. A direct link to an image on any public website."
+          defaultValue={values.coverUrl}
+          error={errors.coverUrl}
+          shape={collection.kind === "game" ? "square" : "poster"}
+        />
 
-      <p className="text-xs text-muted-foreground">
-        Opens as a workspace with {starters.map((name) => `“${name}”`).join(", ")}. Add folders, notes and checklists, or rename and delete these any time.
-      </p>
-
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={pending} className="h-10 px-4">
-          {pending ? <Loader2 aria-hidden className="animate-spin" /> : null}
-          Create {collection.singular}
-        </Button>
-        <Button asChild variant="ghost" className="h-10">
-          <Link href={`/${collection.slug}`}>Cancel</Link>
-        </Button>
-        <p role="status" aria-live="polite" className="text-sm text-rose">
-          {state.status === "error" ? state.message : null}
-        </p>
+        {showBanner ? (
+          <div className="enter enter-drop">
+            <ImageUrlField
+              id="bannerUrl"
+              name="bannerUrl"
+              label="Banner image URL"
+              hint="Optional wide artwork for the top of the workspace."
+              defaultValue={values.bannerUrl}
+              error={errors.bannerUrl}
+              shape="banner"
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setBannerOpen(true)}
+            className="group/banner -mt-2 inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-amethyst focus-visible:text-amethyst focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <Plus aria-hidden className="size-4 transition-transform duration-200 group-hover/banner:rotate-90" />
+            Add a banner image
+            <span className="text-xs font-normal text-muted-foreground/70">optional</span>
+          </button>
+        )}
       </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-white/[0.06] px-5 py-4 md:px-7">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="mr-0.5">Starts with</span>
+          {starters.map((file) => {
+            const Icon = file.kind === "checklist" ? ListChecks : FileText;
+            return (
+              <span key={file.name} className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] px-2 py-0.5 text-foreground/80 ring-1 ring-white/[0.06]">
+                <Icon aria-hidden className={cn("size-3", file.kind === "checklist" ? "text-rose/80" : "text-amethyst/80")} />
+                {file.name}
+              </span>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="ghost" className="h-10 px-3.5">
+            <Link href={`/${collection.slug}`}>Cancel</Link>
+          </Button>
+          <Button type="submit" disabled={pending} className="h-10 px-4">
+            {pending ? <Loader2 aria-hidden className="animate-spin" /> : <Plus aria-hidden />}
+            Create {collection.singular}
+          </Button>
+        </div>
+      </div>
+      <p role="status" aria-live="polite" className="px-5 pb-4 text-sm text-rose empty:hidden md:px-7">
+        {state.status === "error" ? state.message : null}
+      </p>
     </form>
   );
 }

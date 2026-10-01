@@ -31,7 +31,7 @@ export function ImageUrlField({
   hint: string;
   defaultValue?: string | null;
   error?: string;
-  shape: "poster" | "banner";
+  shape: "poster" | "square" | "banner";
 }) {
   const [value, setValue] = useState(defaultValue ?? "");
   const [debounced, setDebounced] = useState((defaultValue ?? "").trim());
@@ -84,7 +84,7 @@ export function ImageUrlField({
         <div
           className={cn(
             "relative grid shrink-0 place-items-center overflow-hidden rounded-md border border-border bg-surface",
-            shape === "poster" ? "aspect-[2/3] w-14" : "aspect-[16/7] w-24",
+            shape === "poster" ? "aspect-[2/3] w-14" : shape === "square" ? "aspect-square w-16" : "aspect-[16/7] w-24",
           )}
         >
           {previewable ? (
@@ -113,6 +113,7 @@ export function ImageUrlField({
             onChange={(event) => setValue(event.target.value)}
             aria-invalid={Boolean(error) || (syntax !== null && !syntax.ok)}
             aria-describedby={statusId}
+            className="h-10"
           />
           <p
             id={statusId}

@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, CalendarDays, MoreHorizontal, Pencil, Plus, StickyNote, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CalendarDays, MoreHorizontal, Pencil, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { MAX_TASK_NOTES_LENGTH, dueDateSchema, itemLabelSchema } from "@/lib/validation/workspace";
 import type { ChecklistItem, ChecklistStep } from "@/lib/workspace/tree";
@@ -28,17 +27,20 @@ export type TaskActions = {
 
 export const notesBackupKey = (itemId: string) => `archive:task-notes:${itemId}`;
 
-const SECTION_LABEL = "text-[11px] font-medium tracking-[0.08em] text-muted-foreground uppercase";
+const SECTION_LABEL = "text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase";
+const CARD =
+  "rounded-lg bg-black/50 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] transition-shadow duration-200 focus-within:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.45)]";
 
-/** Expanded view of one task: steps, due date and notes. */
+/** Expanded view of one task, grouped into cards like Microsoft To Do's detail pane. */
 export function TaskDetails({ id, item, today, actions }: { id: string; item: ChecklistItem; today: string | null; actions: TaskActions }) {
   return (
-    <div id={id} role="region" aria-label={`Details for ${item.label}`} className="task-details space-y-5 pt-1 pr-3 pb-5 pl-11 md:pr-4">
+    <div id={id} role="region" aria-label={`Details for ${item.label}`} className="enter enter-drop space-y-2 px-3 pb-3 md:pr-3 md:pl-[3.25rem]">
       <Steps item={item} actions={actions} />
       <DueDate item={item} today={today} actions={actions} />
       <Notes item={item} actions={actions} />
-      <div className="flex justify-end border-t border-white/[0.06] pt-3">
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={() => actions.remove(item)}>
+      <div className="flex items-center justify-between gap-3 pt-0.5 pl-1">
+        <span className="text-[11px] text-muted-foreground/80">Changes save automatically</span>
+        <Button variant="ghost" size="sm" className="h-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive hover:[&_svg]:text-destructive" onClick={() => actions.remove(item)}>
           <Trash2 aria-hidden /> Delete task
         </Button>
       </div>
@@ -65,24 +67,27 @@ function Steps({ item, actions }: { item: ChecklistItem; actions: TaskActions })
   }
 
   return (
-    <div>
-      <div className="flex items-baseline justify-between gap-3">
+    <div className={CARD}>
+      <div className="flex items-center justify-between gap-3 px-3.5 pt-2.5 pb-1">
         <h4 className={SECTION_LABEL}>Steps</h4>
         {item.steps.length > 0 ? (
-          <span className="text-xs text-muted-foreground tabular-nums" aria-label={`${done} of ${item.steps.length} steps completed`}>
+          <span
+            className={cn("text-xs tabular-nums", done === item.steps.length ? "text-amethyst" : "text-muted-foreground")}
+            aria-label={`${done} of ${item.steps.length} steps completed`}
+          >
             {done} of {item.steps.length}
           </span>
         ) : null}
       </div>
       {item.steps.length > 0 ? (
-        <ol className="mt-1.5 divide-y divide-white/[0.05]">
+        <ol className="px-1.5">
           {item.steps.map((step, index) => (
             <StepRow key={step.id} item={item} step={step} index={index} actions={actions} />
           ))}
         </ol>
       ) : null}
-      <form onSubmit={add} className="mt-1 flex items-center gap-3 py-1">
-        <Plus aria-hidden className="size-4 shrink-0 text-amethyst" />
+      <form onSubmit={add} className="group/step-add flex min-h-10 items-center gap-3 px-3.5 pb-1">
+        <Plus aria-hidden className="size-[1.05rem] shrink-0 text-amethyst transition-transform duration-300 group-hover/step-add:rotate-90" />
         <input
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
@@ -90,7 +95,7 @@ function Steps({ item, actions }: { item: ChecklistItem; actions: TaskActions })
           disabled={busy}
           aria-label={`Add a step to ${item.label}`}
           placeholder={item.steps.length ? "Next step" : "Add step"}
-          className="h-8 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/80 disabled:opacity-60"
+          className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:font-medium placeholder:text-amethyst focus:placeholder:font-normal focus:placeholder:text-muted-foreground/70 disabled:opacity-60"
         />
       </form>
     </div>
@@ -118,7 +123,7 @@ function StepRow({ item, step, index, actions }: { item: ChecklistItem; step: Ch
   }
 
   return (
-    <li className="group/step flex min-h-10 items-center gap-3">
+    <li className="group/step flex min-h-10 items-center gap-3 rounded-md pr-0.5 pl-2 transition-colors duration-150 hover:bg-white/[0.045]">
       <RoundCheck size="sm" checked={step.checked} label={step.label} onCheckedChange={(checked) => actions.patchStep(item, step, { checked })} />
       {editing !== null ? (
         <input
@@ -138,7 +143,7 @@ function StepRow({ item, step, index, actions }: { item: ChecklistItem; step: Ch
               setEditing(null);
             }
           }}
-          className="h-8 min-w-0 flex-1 rounded-sm bg-white/[0.04] px-2 text-sm ring-1 ring-amethyst/50 outline-none"
+          className="h-8 min-w-0 flex-1 rounded-md bg-black/60 px-2 text-sm ring-1 ring-amethyst/60 outline-none"
         />
       ) : (
         <button
@@ -153,8 +158,8 @@ function StepRow({ item, step, index, actions }: { item: ChecklistItem; step: Ch
             }
           }}
           className={cn(
-            "min-w-0 flex-1 rounded-sm py-2 text-left text-sm break-words outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-            step.checked && "text-muted-foreground line-through decoration-muted-foreground/50",
+            "min-w-0 flex-1 rounded-sm py-2 text-left text-sm break-words transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+            step.checked && "text-muted-foreground line-through decoration-muted-foreground/60",
           )}
         >
           {step.label}
@@ -226,14 +231,17 @@ function DueDate({ item, today, actions }: { item: ChecklistItem; today: string 
 
   useEffect(() => () => window.clearTimeout(timerRef.current), []);
 
+  const tone = due?.overdue && !item.checked ? "text-rose" : item.dueDate === today && !item.checked ? "text-amethyst" : "text-foreground/85";
+
   return (
-    <div>
-      <label htmlFor={inputId} className={SECTION_LABEL}>
-        Due date
-      </label>
-      <div className="mt-1.5 flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <CalendarDays aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+    <div className={cn(CARD, "px-3.5 py-2.5")}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <CalendarDays aria-hidden className={cn("size-[1.05rem] shrink-0", item.dueDate ? tone : "text-muted-foreground")} />
+        <label htmlFor={inputId} className="text-sm font-medium">
+          Due date
+        </label>
+        {due ? <span className={cn("text-sm", tone)}>{due.overdue && !item.checked ? `Overdue · ${due.text}` : due.text}</span> : null}
+        <div className="ml-auto flex items-center gap-1">
           <input
             id={inputId}
             type="date"
@@ -247,32 +255,28 @@ function DueDate({ item, today, actions }: { item: ChecklistItem; today: string 
               timerRef.current = window.setTimeout(() => commit(value), 700);
             }}
             onBlur={(event) => commit(event.target.value)}
-            className="h-9 rounded-md border border-border bg-white/[0.02] pr-2 pl-8 text-sm [color-scheme:dark] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="h-8 rounded-md border border-white/10 bg-white/[0.03] px-2 text-xs text-muted-foreground [color-scheme:dark] transition-colors outline-none hover:border-amethyst/40 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
           />
-        </div>
-        {item.dueDate ? (
-          <>
-            <span className={cn("text-sm", due?.overdue && !item.checked ? "text-rose" : "text-muted-foreground")}>
-              {due?.overdue && !item.checked ? `Overdue · ${due.text}` : due?.text}
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => choose("")} aria-label="Remove due date">
-              <X aria-hidden /> Clear
+          {item.dueDate ? (
+            <Button variant="ghost" size="icon-sm" onClick={() => choose("")} aria-label="Remove due date" className="text-muted-foreground">
+              <X aria-hidden />
             </Button>
-          </>
-        ) : today ? (
-          <div className="flex gap-1.5">
-            {[
-              { label: "Today", value: today },
-              { label: "Tomorrow", value: addDays(today, 1) },
-              { label: "Next week", value: addDays(today, 7) },
-            ].map((option) => (
-              <Button key={option.label} variant="outline" size="sm" className="h-8 rounded-full" onClick={() => choose(option.value)}>
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
+      {!item.dueDate && today ? (
+        <div className="mt-2 flex flex-wrap gap-1.5 pl-[1.8rem]">
+          {[
+            { label: "Today", value: today },
+            { label: "Tomorrow", value: addDays(today, 1) },
+            { label: "Next week", value: addDays(today, 7) },
+          ].map((option) => (
+            <Button key={option.label} variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs" onClick={() => choose(option.value)}>
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -336,27 +340,24 @@ function Notes({ item, actions }: { item: ChecklistItem; actions: TaskActions })
   useEffect(() => () => flush(), []);
 
   return (
-    <div>
-      <div className="flex items-center justify-between gap-3">
+    <div className={CARD}>
+      <div className="flex min-h-8 items-center justify-between gap-3 px-3.5 pt-2.5">
         <label htmlFor={textareaId} className={SECTION_LABEL}>
           Notes
         </label>
         {notes !== "" || state.kind !== "saved" ? <SaveStatus state={state} onRetry={state.kind === "error" ? () => void save() : undefined} /> : null}
       </div>
-      <div className="relative mt-1.5">
-        <StickyNote aria-hidden className="pointer-events-none absolute top-2.5 left-2.5 size-4 text-muted-foreground/70" />
-        <Textarea
-          id={textareaId}
-          value={notes}
-          maxLength={MAX_TASK_NOTES_LENGTH}
-          onChange={(event) => change(event.target.value)}
-          onBlur={() => {
-            if (notesRef.current !== savedRef.current) void save();
-          }}
-          placeholder="Add a note"
-          className="max-h-[60vh] min-h-20 resize-none bg-white/[0.02] pl-8 text-sm leading-6 [field-sizing:content] dark:bg-white/[0.02]"
-        />
-      </div>
+      <textarea
+        id={textareaId}
+        value={notes}
+        maxLength={MAX_TASK_NOTES_LENGTH}
+        onChange={(event) => change(event.target.value)}
+        onBlur={() => {
+          if (notesRef.current !== savedRef.current) void save();
+        }}
+        placeholder="Add a note"
+        className="block max-h-[60vh] min-h-20 w-full resize-none bg-transparent px-3.5 pt-1.5 pb-3 text-sm leading-6 outline-none [field-sizing:content] placeholder:text-muted-foreground/60"
+      />
     </div>
   );
 }

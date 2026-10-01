@@ -70,13 +70,32 @@ test("anime and games are separate libraries with artwork from any public host",
   await expect(page.getByRole("link", { name: /^One Piece,/ })).toHaveCount(0);
   await page.getByRole("main").getByRole("link", { name: "New game" }).first().click();
   await page.getByLabel("Title").fill("Fortnite");
-  await page.getByLabel("Platform").fill("PC");
+  await expect(page.getByLabel(/platform/i)).toHaveCount(0);
   await page.getByLabel("Cover image URL").fill(FORTNITE_COVER);
   await expect(page.getByText(/Image found · JPEG/)).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: "Create game" }).click();
   await expect(page).toHaveURL(/\/games\/[0-9a-f-]{36}(\?|$)/);
   await expect(page.getByRole("heading", { level: 1, name: "Fortnite" })).toBeVisible();
   await expect(page.getByTestId("entry-header").getByText("Game", { exact: true })).toBeVisible();
+
+  const gameId = new URL(page.url()).pathname.split("/")[2];
+  const admin = adminClient();
+  const { data: newGame } = await admin.from("entries").select("platform").eq("id", gameId).single();
+  expect(newGame?.platform).toBeNull();
+  const { error: legacyError } = await admin.from("entries").update({ platform: "Legacy PC" }).eq("id", gameId);
+  expect(legacyError).toBeNull();
+  await page.reload();
+  await page.getByRole("button", { name: "Edit details" }).click();
+  const editDetails = page.getByRole("dialog", { name: "Edit details" });
+  await expect(editDetails.getByLabel(/platform/i)).toHaveCount(0);
+  const detailsSaved = page.waitForResponse((response) => response.url().includes(`/api/entries/${gameId}`) && response.request().method() === "PATCH");
+  await editDetails.getByRole("button", { name: "Save", exact: true }).click();
+  const detailsResponse = await detailsSaved;
+  expect(detailsResponse.ok()).toBe(true);
+  expect(detailsResponse.request().postDataJSON()).not.toHaveProperty("platform");
+  await expect(editDetails).not.toBeVisible();
+  const { data: legacyGame } = await admin.from("entries").select("platform").eq("id", gameId).single();
+  expect(legacyGame?.platform).toBe("Legacy PC");
 
   // --- Never mixed: each library, its search and its "new" flow are scoped --------------
   await page.goto("/games");
@@ -542,20 +561,163 @@ test("saving problems are visible and recoverable", async ({ page, context }, te
   await expect(page.getByRole("region", { name: "Details for Win a match" }).getByLabel("Notes", { exact: true })).toHaveValue("Land at Tilted Towers.");
 });
 
-test("motion: page entrances, scroll exits and reduced motion", async ({ page }, testInfo) => {
+test("motion: page entrances, hover effects, scroll exits and reduced motion", async ({ page }, testInfo) => {
   const project = testInfo.project.name;
   const user = userFor(project);
-  await signIn(page, user.email, user.password);
-
-  // Library cards enter with a short fade + rise.
-  const card = page.getByRole("list", { name: "Anime" }).getByRole("listitem").first();
-  const entrance = await card.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return { name: style.animationName, duration: parseFloat(style.animationDuration) };
+  // Record every entrance that actually starts, with the visual state a moment after it began.
+  await page.addInitScript(() => {
+    const entrances: { tag: string; duration: number; delay: number; from: { opacity: string; transform: string }; to: { opacity: string } }[] = [];
+    Reflect.set(window, "archiveEntrances", entrances);
+    document.addEventListener("animationstart", (event) => {
+      if (event.animationName !== "archive-enter" || !(event.target instanceof HTMLElement)) return;
+      const element = event.target;
+      const animation = element.getAnimations().find((candidate) => (candidate as CSSAnimation).animationName === "archive-enter");
+      const timing = animation?.effect?.getComputedTiming();
+      const frames = (animation?.effect as KeyframeEffect | undefined)?.getKeyframes() ?? [];
+      entrances.push({
+        tag: element.tagName,
+        duration: Number(timing?.duration ?? 0),
+        delay: Number(timing?.delay ?? 0),
+        from: { opacity: String(frames[0]?.opacity), transform: String(frames[0]?.transform) },
+        to: { opacity: String(frames.at(-1)?.opacity) },
+      });
+    });
   });
-  expect(entrance.name).toBe("enter");
-  expect(entrance.duration).toBeGreaterThanOrEqual(0.18);
-  expect(entrance.duration).toBeLessThanOrEqual(0.3);
+  type Entrance = { tag: string; duration: number; delay: number; from: { opacity: string; transform: string }; to: { opacity: string } };
+  const entrances = () => page.evaluate(() => Reflect.get(window, "archiveEntrances") as Entrance[]);
+  const entranceCount = async () => (await entrances()).length;
+  const idle = () =>
+    expect
+      .poll(() => page.evaluate(() => document.getAnimations().filter((animation) => (animation as CSSAnimation).animationName === "archive-enter" && animation.playState === "running").length))
+      .toBe(0);
+
+  await signIn(page, user.email, user.password);
+  await idle();
+
+  // Library cards really enter (the keyframes change opacity and position; they used to collide with
+  // tw-animate-css's own `enter` and do nothing), quickly and with a short stagger.
+  const cards = (await entrances()).filter((record) => record.tag === "LI");
+  expect(cards.length).toBeGreaterThan(0);
+  for (const card of cards) {
+    expect(card.duration).toBeGreaterThanOrEqual(200);
+    expect(card.duration).toBeLessThanOrEqual(400);
+    expect(card.delay).toBeLessThanOrEqual(300);
+    expect(card.from.opacity).toBe("0");
+    expect(card.from.transform).toMatch(/translate/);
+    expect(card.to.opacity).toBe("1");
+  }
+  const card = page.getByRole("list", { name: "Anime" }).getByRole("listitem").first();
+  expect(await card.evaluate((element) => getComputedStyle(element).opacity)).toBe("1");
+
+  // Internal navigation plays entrances too, without a full page load.
+  await page.evaluate(() => Reflect.set(window, "motionSession", "same-document"));
+  const navigation = page.getByRole("navigation", { name: project === "mobile" ? "Primary" : "Collections" });
+  const beforeGames = await entranceCount();
+  await navigation.getByRole("link", { name: "Games", exact: true }).click();
+  await expect(page).toHaveURL(/\/games$/);
+  await expect.poll(entranceCount).toBeGreaterThan(beforeGames);
+  await idle();
+
+  // Game creation needs only a title: no platform anywhere.
+  await page.getByRole("main").getByRole("link", { name: "New game" }).first().click();
+  await expect(page).toHaveURL(/\/games\/new$/);
+  await expect(page.getByLabel(/platform/i)).toHaveCount(0);
+  await expect(page.getByLabel("Banner image URL")).toHaveCount(0);
+  await page.getByRole("button", { name: /Add a banner image/ }).click();
+  await expect(page.getByLabel("Banner image URL")).toBeVisible();
+  await idle();
+  await shot(page, project, "polished-game-creation", false);
+  await page.getByLabel("Title").fill("Motion game");
+  await page.getByRole("button", { name: "Create game" }).click();
+  await expect(page).toHaveURL(/\/games\/[0-9a-f-]{36}(\?|$)/);
+  await expect(page.getByRole("heading", { name: "Motion game", exact: true })).toBeVisible();
+  const titleOnlyGameId = new URL(page.url()).pathname.split("/")[2];
+  const { data: titleOnlyGame } = await adminClient().from("entries").select("platform, cover_url, banner_url").eq("id", titleOnlyGameId).single();
+  expect(titleOnlyGame).toEqual({ platform: null, cover_url: null, banner_url: null });
+  await navigation.getByRole("link", { name: "Games", exact: true }).click();
+  await expect(page.getByRole("list", { name: "Games" }).getByRole("listitem")).toHaveCount(2);
+  await idle();
+  await shot(page, project, "polished-library-games", false);
+  await navigation.getByRole("link", { name: "Anime", exact: true }).click();
+  await expect(page).toHaveURL(/\/anime$/);
+  await idle();
+  expect(await page.evaluate(() => Reflect.get(window, "motionSession"))).toBe("same-document");
+
+  // Hover: lift, scale and artwork zoom with transforms only, so the grid never shifts.
+  const libraryLink = card.getByRole("link");
+  const layoutBefore = await card.evaluate((element) => ({ width: element.clientWidth, height: element.clientHeight, top: (element as HTMLElement).offsetTop }));
+  if (project === "desktop") {
+    await libraryLink.hover();
+    await expect.poll(() => libraryLink.evaluate((element) => getComputedStyle(element).translate)).toBe("0px -8px");
+    await expect.poll(() => libraryLink.evaluate((element) => Number(getComputedStyle(element).scale))).toBeGreaterThan(1.04);
+    await expect.poll(() => libraryLink.locator(".poster-artwork").evaluate((element) => Number(getComputedStyle(element).scale))).toBeGreaterThan(1.08);
+    await expect.poll(() => libraryLink.locator(".poster-frame").evaluate((element) => getComputedStyle(element).boxShadow)).toContain("rgba(165, 124, 255");
+    await shot(page, project, "polished-card-hover", false);
+    await page.mouse.move(1, 1);
+    await expect.poll(() => libraryLink.evaluate((element) => getComputedStyle(element).translate)).toBe("none");
+    const newButton = page.getByRole("main").getByRole("link", { name: "New anime" }).first();
+    await newButton.hover();
+    await expect.poll(() => newButton.evaluate((element) => getComputedStyle(element).translate)).toBe("0px -1px");
+    await expect.poll(() => newButton.evaluate((element) => getComputedStyle(element).boxShadow)).toContain("rgba(165, 124, 255");
+    await page.mouse.down();
+    await expect.poll(() => newButton.evaluate((element) => Number(getComputedStyle(element).scale))).toBeLessThan(0.99);
+    await page.mouse.move(1, 1);
+    await page.mouse.up();
+  } else {
+    expect(await libraryLink.evaluate((element) => getComputedStyle(element).translate)).toBe("none");
+  }
+  expect(await card.evaluate((element) => ({ width: element.clientWidth, height: element.clientHeight, top: (element as HTMLElement).offsetTop }))).toEqual(layoutBefore);
+
+  // Filters form one aligned toolbar and never replay the page entrance.
+  const beforeFilters = await entranceCount();
+  const sort = page.getByRole("combobox", { name: "Sort", exact: true });
+  await sort.focus();
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Tab");
+  await expect(sort).toBeFocused();
+  await expect.poll(() => sort.evaluate((element) => getComputedStyle(element).boxShadow)).not.toBe("none");
+  await sort.press("Space");
+  await expect(page.getByRole("option", { name: "Recently active" })).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(page.getByRole("option", { name: "Most progress" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/sort=progress/);
+  await expect(sort).toContainText("Most progress");
+  await page.getByLabel("Search Anime").fill("One");
+  await page.getByLabel("Search Anime").press("Enter");
+  await expect(page).toHaveURL(/q=One/);
+  await expect(libraryLink).toBeVisible();
+  expect(await entranceCount()).toBe(beforeFilters);
+
+  const alignment = await page.evaluate(() => {
+    const controls = Array.from(document.querySelectorAll("form[role=search], [role=combobox], a[aria-label='Clear filters']"));
+    return controls.map((element) => {
+      const rect = element.getBoundingClientRect();
+      const value = element.querySelector("[data-slot=select-value]")?.getBoundingClientRect();
+      return { height: rect.height, top: rect.top, right: rect.right, valueInside: !value || (value.top >= rect.top && value.bottom <= rect.bottom) };
+    });
+  });
+  expect(alignment).toHaveLength(4);
+  for (const control of alignment) {
+    expect(control.height).toBe(40);
+    expect(control.valueInside).toBe(true);
+  }
+  expect(alignment[1].top).toBe(alignment[2].top);
+  if (project === "desktop") expect(new Set(alignment.map((control) => control.top)).size).toBe(1);
+  else expect(Math.abs(alignment[3].right - alignment[0].right)).toBeLessThanOrEqual(1);
+  await assertLayoutAndA11y(page);
+  await shot(page, project, "polished-filters", false);
+  if (project === "mobile") {
+    const viewport = page.viewportSize()!;
+    await page.setViewportSize({ width: 320, height: 720 });
+    await assertLayoutAndA11y(page);
+    await shot(page, project, "polished-filters-narrow", false);
+    await page.setViewportSize(viewport);
+  }
+  await page.getByRole("link", { name: "Clear filters", exact: true }).click();
+  await expect(page).toHaveURL(/\/anime$/);
+  await expect(libraryLink).toBeVisible();
+  expect(await entranceCount()).toBe(beforeFilters);
 
   // The workspace header shrinks and fades as it scrolls away; it is never sticky.
   await openEntry(page, "anime", "One Piece");
@@ -565,29 +727,34 @@ test("motion: page entrances, scroll exits and reduced motion", async ({ page },
   await expect.poll(opacity).toBeGreaterThan(0.99);
   await page.evaluate(() => window.scrollBy(0, 220));
   await expect.poll(opacity).toBeLessThan(0.95);
-  const transform = await header.evaluate((element) => getComputedStyle(element).transform);
-  expect(transform).not.toBe("none");
+  expect(await header.evaluate((element) => getComputedStyle(element).transform)).not.toBe("none");
   await shot(page, project, "scrolled", false);
   await page.evaluate(() => window.scrollTo(0, 0));
   await expect.poll(opacity).toBeGreaterThan(0.99);
 
-  // Typing never replays entrance animations.
+  // Typing and autosaving never replay entrances.
   const files = await explorer(page, project === "mobile");
   await treeItem(files, "Live preview", "note").locator("> div").click();
   const editor = noteEditor(page, "Live preview");
+  await idle();
+  const beforeTyping = await entranceCount();
+  const typingSaved = nodeSaved(page);
   await editor.click();
   await page.keyboard.press("ControlOrMeta+End");
   await page.keyboard.insertText(" typing");
-  const running = await page.evaluate(
-    () => document.getAnimations().filter((animation) => (animation as CSSAnimation).animationName === "enter" && animation.playState === "running").length,
-  );
-  expect(running).toBe(0);
+  await typingSaved;
+  await expect(editor).toBeFocused();
+  expect(await entranceCount()).toBe(beforeTyping);
 
-  // Reduced motion: no entrance or scroll-linked animation at all.
+  // Reduced motion: no entrance, scroll-linked or hover movement, and content stays visible.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/anime");
   const calmCard = page.getByRole("list", { name: "Anime" }).getByRole("listitem").first();
-  expect(await calmCard.evaluate((element) => getComputedStyle(element).animationName)).toBe("none");
+  expect(await calmCard.evaluate((element) => [getComputedStyle(element).animationName, getComputedStyle(element).opacity])).toEqual(["none", "1"]);
+  await calmCard.getByRole("link").hover();
+  expect(await calmCard.getByRole("link").evaluate((element) => [getComputedStyle(element).translate, getComputedStyle(element).scale])).toEqual(["none", "none"]);
+  await assertLayoutAndA11y(page);
+  await shot(page, project, "polished-reduced-motion", false);
   await openEntry(page, "anime", "One Piece");
   await page.evaluate(() => window.scrollBy(0, 220));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);

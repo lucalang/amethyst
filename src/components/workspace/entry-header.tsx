@@ -54,7 +54,7 @@ export function EntryHeader({
 
   return (
     <header data-testid="entry-header" className="header-scroll-exit">
-      <div aria-hidden className="relative h-36 overflow-hidden md:h-56">
+      <div aria-hidden className="relative h-32 overflow-hidden md:h-48">
         {banner ? (
           <MediaImage src={banner} alt="" className={entry.banner_url ? "opacity-55" : "scale-110 opacity-40 blur-2xl"} />
         ) : (
@@ -65,7 +65,7 @@ export function EntryHeader({
       <div className="mx-auto max-w-[88rem] px-4 md:px-6">
         <div className="relative -mt-16 flex flex-col gap-4 pb-7 md:-mt-24 md:flex-row md:items-end md:gap-6">
           <div
-            className="enter relative aspect-[2/3] w-24 shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_24px_60px_-24px_rgb(165_124_255/0.5)] ring-1 ring-white/10 md:w-32"
+            className={`enter enter-card relative ${entry.kind === "game" ? "aspect-square w-28 md:w-36" : "aspect-[2/3] w-24 md:w-32"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_24px_60px_-24px_rgb(165_124_255/0.55)] ring-1 ring-white/10`}
             style={{ "--enter-index": 0 } as React.CSSProperties}
           >
             <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} priority fallbackLabel={entry.title} />
@@ -81,12 +81,12 @@ export function EntryHeader({
             ) : null}
           </div>
           <div className="enter flex gap-2 pb-1" style={{ "--enter-index": 2 } as React.CSSProperties}>
-            <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+            <Button variant="secondary" className="h-9 px-3" onClick={() => setEditOpen(true)}>
               <Pencil aria-hidden /> Edit details
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon-sm" aria-label={`More ${collection.singular} actions`}>
+                <Button variant="outline" size="icon" className="size-9" aria-label={`More ${collection.singular} actions`}>
                   <MoreHorizontal aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
@@ -152,11 +152,10 @@ function EditDetailsDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   entry: Entry;
-  onSave: (values: { title: string; coverUrl: string; bannerUrl: string; platform?: string }) => Promise<void>;
+  onSave: (values: { title: string; coverUrl: string; bannerUrl: string }) => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isGame = entry.kind === "game";
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
@@ -176,7 +175,6 @@ function EditDetailsDialog({
                 title: String(formData.get("title") ?? ""),
                 coverUrl: String(formData.get("coverUrl") ?? ""),
                 bannerUrl: String(formData.get("bannerUrl") ?? ""),
-                ...(isGame ? { platform: String(formData.get("platform") ?? "") } : {}),
               });
               onOpenChange(false);
             } catch (saveError) {
@@ -189,15 +187,16 @@ function EditDetailsDialog({
         >
           <div className="space-y-1.5">
             <Label htmlFor="edit-title">Title</Label>
-            <Input id="edit-title" name="title" defaultValue={entry.title} required maxLength={300} />
+            <Input id="edit-title" name="title" defaultValue={entry.title} required maxLength={300} className="h-10" />
           </div>
-          {isGame ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-platform">Platform</Label>
-              <Input id="edit-platform" name="platform" defaultValue={entry.platform ?? ""} maxLength={80} />
-            </div>
-          ) : null}
-          <ImageUrlField id="edit-cover" name="coverUrl" label="Cover image URL" hint="Portrait artwork (2:3) works best." defaultValue={entry.cover_url} shape="poster" />
+          <ImageUrlField
+            id="edit-cover"
+            name="coverUrl"
+            label="Cover image URL"
+            hint={entry.kind === "game" ? "Square artwork (1:1) works best." : "Portrait artwork (2:3) works best."}
+            defaultValue={entry.cover_url}
+            shape={entry.kind === "game" ? "square" : "poster"}
+          />
           <ImageUrlField id="edit-banner" name="bannerUrl" label="Banner image URL" hint="Optional wide artwork for the header." defaultValue={entry.banner_url} shape="banner" />
           {error ? (
             <p role="alert" className="text-sm text-destructive">
@@ -205,7 +204,7 @@ function EditDetailsDialog({
             </p>
           ) : null}
           <DialogFooter>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="h-10">
               {pending ? <Loader2 aria-hidden className="animate-spin" /> : null} Save
             </Button>
           </DialogFooter>

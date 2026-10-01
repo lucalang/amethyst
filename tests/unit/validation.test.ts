@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { newEntrySchema, starterFilesFor } from "@/lib/validation/entries";
+import { entryPatchSchema, newEntrySchema, starterFilesFor } from "@/lib/validation/entries";
 import { safeNextPath } from "@/lib/validation/redirect";
 import {
   addItemsSchema,
@@ -29,6 +29,14 @@ describe("new entries", () => {
     expect(schema.safeParse({ kind: "anime", title: "   " }).success).toBe(false);
     expect(schema.safeParse({ kind: "anime", title: "x", coverUrl: "http://127.0.0.1/a.png" }).success).toBe(false);
     expect(schema.safeParse({ kind: "anime", title: "x", coverUrl: "ftp://files.example.com/a.png" }).success).toBe(false);
+  });
+
+  it("creates games with only a title and leaves platform out of detail patches", () => {
+    expect(schema.parse({ kind: "game", title: "Hollow Knight" })).toEqual({
+      kind: "game", title: "Hollow Knight", platform: null, coverUrl: null, bannerUrl: null,
+    });
+    expect(entryPatchSchema.parse({ title: "Hollow Knight", expectedVersion: 1 })).not.toHaveProperty("platform");
+    expect(entryPatchSchema.parse({ platform: "Legacy PC" })).toEqual({ platform: "Legacy PC" });
   });
 
   it("starts every kind with editable starter files", () => {

@@ -219,7 +219,7 @@ function ToolbarButton({ label, onClick, children }: { label: string; onClick: (
           type="button"
           aria-label={label}
           onClick={onClick}
-          className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none pointer-coarse:size-9 [&_svg]:size-4"
+          className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-[color,background-color,scale] duration-150 hover:bg-amethyst/12 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-90 pointer-coarse:size-9 [&_svg]:size-4 [&_svg]:transition-[scale,rotate] [&_svg]:duration-300 [&_svg]:ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:[&_svg]:scale-115"
         >
           {children}
         </button>
@@ -262,11 +262,12 @@ function TreeItem({ node, ctx, tabStop }: { node: TreeNode; ctx: TreeContext; ta
         <NameInput ctx={ctx} depth={node.depth} kind={node.kind} initial={node.name} />
       ) : (
         <div
+          data-selected={selected}
           className={cn(
-            "group relative mx-1.5 flex h-7 cursor-pointer items-center gap-1.5 rounded-md pr-1 text-[13px] transition-colors select-none pointer-coarse:h-10",
+            "tree-row group relative mx-1.5 flex h-7 cursor-pointer items-center gap-1.5 rounded-md pr-1 text-[13px] transition-[background-color,color] duration-150 select-none pointer-coarse:h-10",
             selected
-              ? "bg-amethyst/[0.13] text-foreground shadow-[inset_2px_0_0_var(--amethyst)]"
-              : "text-foreground/80 hover:bg-white/[0.045] hover:text-foreground",
+              ? "bg-[linear-gradient(90deg,rgb(165_124_255/0.22),rgb(165_124_255/0.06))] font-medium text-foreground"
+              : "text-foreground/80 hover:bg-white/[0.055] hover:text-foreground",
             dropHere && "bg-amethyst/15 ring-1 ring-amethyst/50 ring-inset",
             ctx.dragId === node.id && "opacity-50",
           )}
@@ -316,7 +317,7 @@ function TreeItem({ node, ctx, tabStop }: { node: TreeNode; ctx: TreeContext; ta
           )}
           <Icon
             aria-hidden
-            className={cn("size-4 shrink-0", isFolder ? "text-amethyst/80" : node.kind === "checklist" ? "text-rose/80" : "text-muted-foreground")}
+            className={cn("tree-icon size-4 shrink-0", isFolder ? "text-amethyst/80" : node.kind === "checklist" ? "text-rose/80" : "text-muted-foreground")}
           />
           <span className="min-w-0 flex-1 truncate">{node.name}</span>
           {node.kind === "checklist" && node.itemsTotal > 0 ? (
@@ -361,7 +362,7 @@ function RowMenu({ node, ctx, visible }: { node: TreeNode; ctx: TreeContext; vis
           aria-label={`Actions for ${node.name}`}
           onClick={(event) => event.stopPropagation()}
           className={cn(
-            "grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-background/60 hover:text-foreground focus-visible:opacity-100 data-[state=open]:opacity-100 pointer-coarse:size-9 pointer-coarse:opacity-100",
+            "grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground opacity-0 transition-[color,background-color,opacity,scale] duration-150 group-hover:opacity-100 hover:bg-black/60 hover:text-amethyst active:scale-90 focus-visible:opacity-100 data-[state=open]:opacity-100 pointer-coarse:size-9 pointer-coarse:opacity-100",
             visible && "opacity-100",
           )}
         >

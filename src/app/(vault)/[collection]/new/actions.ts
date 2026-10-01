@@ -14,7 +14,7 @@ export type NewEntryState = {
 
 export async function createEntry(_prev: NewEntryState, formData: FormData): Promise<NewEntryState> {
   const ctx = await requireUser();
-  const values = Object.fromEntries(["title", "platform", "coverUrl", "bannerUrl"].map((key) => [key, String(formData.get(key) ?? "")]));
+  const values = Object.fromEntries(["title", "coverUrl", "bannerUrl"].map((key) => [key, String(formData.get(key) ?? "")]));
   const slug = String(formData.get("collection") ?? "");
   if (!isCollectionSlug(slug)) return { status: "error", message: "Unknown collection.", values };
   const kind = COLLECTIONS[slug].kind;
@@ -22,7 +22,6 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
   const parsed = newEntrySchema.safeParse({
     kind,
     title: formData.get("title"),
-    platform: formData.get("platform") || undefined,
     coverUrl: formData.get("coverUrl") || undefined,
     bannerUrl: formData.get("bannerUrl") || undefined,
   });
@@ -40,7 +39,6 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
       title: input.title,
       cover_url: input.coverUrl,
       banner_url: input.bannerUrl,
-      platform: input.kind === "game" ? input.platform : null,
     })
     .select("id, kind")
     .single();

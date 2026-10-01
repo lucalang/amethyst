@@ -29,7 +29,7 @@ export function isActive(pathname: string, href: string) {
 export function BrandMark({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-2 font-semibold tracking-tight", className)}>
-      <span aria-hidden className="grid size-7 place-items-center rounded-md bg-amethyst/15 text-amethyst ring-1 ring-amethyst/40">
+      <span aria-hidden className="brand-gem grid size-7 place-items-center rounded-md bg-amethyst/15 text-amethyst ring-1 ring-amethyst/40">
         <Gem className="size-4" />
       </span>
       <span>
@@ -59,8 +59,8 @@ export function TopNav({ displayName, hasOther }: { displayName: string; hasOthe
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-                  active && "text-foreground after:absolute after:inset-x-3 after:-bottom-[13px] after:h-0.5 after:rounded-full after:bg-amethyst",
+                  "nav-link relative rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 outline-none hover:text-foreground focus-visible:text-foreground",
+                  active && "text-foreground",
                 )}
               >
                 {item.label}
@@ -147,11 +147,11 @@ export function MobileTabBar({ hasOther }: { hasOther: boolean }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground",
+                  "group/tab flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground transition-colors active:bg-amethyst/10",
                   active && "text-amethyst",
                 )}
               >
-                <Icon aria-hidden className="size-5" />
+                <Icon aria-hidden className="size-5 transition-[scale,translate] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-active/tab:scale-90 group-aria-[current=page]/tab:-translate-y-0.5" />
                 {item.label}
               </Link>
             </li>

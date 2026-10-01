@@ -130,19 +130,45 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Motion: short page entrances and scroll-linked exits (never keystroke-driven).
+ * Motion. Keyframe names are prefixed: tw-animate-css already owns `enter`/`exit`.
+ * Entrances are CSS animations on mount only, so rerenders never replay them.
  * ------------------------------------------------------------------------- */
-@keyframes enter {
+:root {
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes archive-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate3d(0, var(--enter-y, 14px), 0) scale(var(--enter-scale, 1));
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
 .enter {
-  /* backwards (not both): once finished, no transform lingers to create stacking contexts. */
-  animation: enter 240ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-  animation-delay: calc(min(var(--enter-index, 0), 6) * 40ms);
+  /* backwards (not both): once finished, no transform lingers to fight hover or scroll effects. */
+  animation: archive-enter var(--enter-duration, 320ms) var(--ease-out-soft) backwards;
+  animation-delay: calc(min(var(--enter-index, 0), 8) * 36ms);
+}
+.enter-card {
+  --enter-y: 22px;
+  --enter-scale: 0.94;
+  --enter-duration: 360ms;
+}
+.enter-soft {
+  --enter-y: 8px;
+  --enter-duration: 240ms;
+}
+.enter-drop {
+  --enter-y: -6px;
+  --enter-duration: 220ms;
+}
+[data-entrance="skip"] .enter {
+  animation: none;
 }
 
 @keyframes scroll-exit {
@@ -185,6 +211,262 @@
   transform: scale(calc(1 - 0.1 * var(--exit-progress, 0))) translateY(calc(-6% * var(--exit-progress, 0)));
 }
 
+/* ---------------------------------------------------------------------------
+ * Interaction. Hover effects use the individual translate/scale properties on
+ * elements that never carry entrance or scroll animations, so they compose.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  /* Library poster: lift, scale, amethyst edge glow, artwork zoom and a light sweep. */
+  .poster-card {
+    position: relative;
+    transition:
+      translate 320ms var(--ease-spring),
+      scale 320ms var(--ease-spring);
+  }
+  /* The scroll-linked layer clips to its box, so give it room for the hover glow without taking clicks. */
+  .poster-card > .scroll-fade {
+    margin: -2.5rem;
+    padding: 2.5rem;
+    pointer-events: none;
+  }
+  .poster-card > .scroll-fade > * {
+    pointer-events: auto;
+  }
+  .poster-frame {
+    transition:
+      border-color 200ms ease,
+      box-shadow 320ms var(--ease-out-soft);
+  }
+  /* Diagonal shine: parked beyond the bottom-right corner, swept to beyond the top-left on hover. */
+  .poster-frame::after {
+    content: "";
+    position: absolute;
+    inset: -50%;
+    z-index: 2;
+    pointer-events: none;
+    background: linear-gradient(
+      135deg,
+      transparent 41%,
+      rgb(255 255 255 / 0.1) 45%,
+      rgb(255 255 255 / 0.42) 50%,
+      rgb(214 190 255 / 0.16) 55%,
+      transparent 59%
+    );
+    translate: 60% 60%;
+    opacity: 0;
+  }
+  .poster-artwork {
+    transition:
+      scale 700ms var(--ease-out-soft),
+      filter 300ms ease;
+  }
+  .poster-title {
+    transition: color 200ms ease;
+  }
+  .poster-card:focus-visible {
+    z-index: 3;
+    translate: 0 -6px;
+    scale: 1.03;
+    outline: none;
+  }
+  .poster-card:focus-visible .poster-frame {
+    border-color: var(--amethyst);
+    box-shadow:
+      0 0 0 2px var(--amethyst),
+      0 22px 44px -18px rgb(165 124 255 / 0.7);
+  }
+  .poster-card:focus-visible .poster-title {
+    color: var(--amethyst);
+  }
+  .poster-card:active {
+    scale: 0.97;
+    transition-duration: 90ms;
+  }
+
+  /* Primary buttons: a highlight sweeps across on hover. */
+  .btn-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 25%, rgb(255 255 255 / 0.5) 50%, transparent 75%);
+    translate: -130% 0;
+  }
+
+  /* Top navigation: an amethyst→rose underline grows from the center. */
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0.75rem;
+    bottom: -13px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--amethyst), var(--rose));
+    scale: 0 1;
+    opacity: 0;
+    transition:
+      scale 320ms var(--ease-out-soft),
+      opacity 200ms ease;
+  }
+  .nav-link[aria-current="page"]::after {
+    scale: 1 1;
+    opacity: 1;
+  }
+  .nav-link::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(120% 140% at 50% 120%, rgb(165 124 255 / 0.28), transparent 70%);
+    opacity: 0;
+    transition: opacity 220ms ease;
+    pointer-events: none;
+  }
+  .nav-link:focus-visible::before {
+    opacity: 1;
+  }
+
+  /* Brand gem: a small spin and glow. */
+  .brand-gem {
+    transition:
+      rotate 420ms var(--ease-spring),
+      scale 420ms var(--ease-spring),
+      filter 300ms ease;
+  }
+
+  /* Explorer rows: an accent bar grows in from the left edge. */
+  .tree-row::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    border-radius: 999px;
+    background: var(--amethyst);
+    scale: 1 0;
+    transition: scale 220ms var(--ease-out-soft);
+  }
+  .tree-row[data-selected="true"]::before {
+    scale: 1 1;
+  }
+  .tree-row .tree-icon {
+    transition:
+      scale 220ms var(--ease-spring),
+      color 200ms ease;
+  }
+}
+
+/* Poster hover is not gated on (hover: hover): devices that report a touch primary pointer still have a mouse. */
+.poster-card:hover {
+  z-index: 3;
+  translate: 0 -8px;
+  scale: 1.05;
+}
+.poster-card:hover .poster-frame {
+  border-color: rgb(190 158 255 / 0.9);
+  box-shadow:
+    0 0 0 1px rgb(165 124 255 / 0.55),
+    0 0 22px -4px rgb(165 124 255 / 0.55),
+    0 26px 50px -18px rgb(165 124 255 / 0.75),
+    0 10px 64px -24px rgb(244 114 168 / 0.4);
+}
+/* Transition only while hovered: one sweep per entry, instant reset on leave so the next entry sweeps again. */
+.poster-card:hover .poster-frame::after {
+  translate: -60% -60%;
+  opacity: 1;
+  transition:
+    translate 440ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 120ms ease;
+}
+.poster-card:hover .poster-artwork {
+  scale: 1.1;
+  filter: saturate(1.15) brightness(1.06);
+}
+.poster-card:hover .poster-title {
+  color: var(--amethyst);
+}
+.poster-card:hover:active {
+  translate: 0 -4px;
+  scale: 1.02;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-sheen:hover::after {
+    translate: 130% 0;
+    transition: translate 700ms var(--ease-out-soft);
+  }
+  .nav-link:hover::after {
+    scale: 1 1;
+    opacity: 0.55;
+  }
+  .nav-link[aria-current="page"]:hover::after {
+    opacity: 1;
+  }
+  .nav-link:hover::before {
+    opacity: 1;
+  }
+  a:hover .brand-gem {
+    rotate: -14deg;
+    scale: 1.14;
+    filter: drop-shadow(0 0 8px rgb(165 124 255 / 0.8));
+  }
+  .tree-row:hover::before {
+    scale: 1 0.6;
+  }
+  .tree-row[data-selected="true"]:hover::before {
+    scale: 1 1;
+  }
+  .tree-row:hover .tree-icon {
+    scale: 1.15;
+  }
+}
+
+/* Task completion feedback: the check pops and a ring ripples out. */
+@keyframes check-pop {
+  0% {
+    scale: 0.6;
+  }
+  55% {
+    scale: 1.18;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes check-ripple {
+  from {
+    opacity: 0.7;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 2.4;
+  }
+}
+@keyframes task-in {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+.check-pop {
+  animation: check-pop 380ms var(--ease-spring);
+}
+.check-pop::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  border: 2px solid var(--amethyst);
+  animation: check-ripple 520ms var(--ease-out-soft) forwards;
+  pointer-events: none;
+}
+.task-in {
+  animation: task-in 260ms var(--ease-out-soft) backwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -196,13 +478,33 @@
   }
   .enter,
   .scroll-fade,
-  .header-scroll-exit {
+  .header-scroll-exit,
+  .task-in,
+  .check-pop,
+  .check-pop::before {
     animation: none !important;
   }
   .scroll-fade[data-exit-fallback],
   .header-scroll-exit[data-exit-fallback] {
     opacity: 1;
     transform: none;
+  }
+  /* Keep the color and glow feedback, drop the movement. */
+  .poster-card,
+  .poster-artwork,
+  .brand-gem,
+  .tree-icon,
+  [data-slot="button"],
+  [data-slot="button"] svg,
+  .task-row,
+  .task-star {
+    translate: none !important;
+    scale: none !important;
+    rotate: none !important;
+  }
+  .btn-sheen::after,
+  .poster-frame::after {
+    display: none;
   }
 }
 
