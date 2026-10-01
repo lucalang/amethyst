@@ -5,7 +5,7 @@ test.describe.configure({ mode: "serial" });
 
 // Accounts created here start with "e2e-" so global setup removes them on the next run.
 const stamp = Date.now();
-const newcomer = { email: `e2e-reg-${stamp}@test.local`, password: "Amethyst-2026-first", reset: "Amethyst-2026-second" };
+const newcomer = { email: `e2e-reg-${stamp}@example.com`, password: "Amethyst-2026-first", reset: "Amethyst-2026-second" };
 
 test.beforeEach(({}, testInfo) => {
   test.skip(testInfo.project.name !== "desktop" && !testInfo.title.includes("layout"), "auth flows run once; layout runs everywhere");

@@ -229,7 +229,11 @@ function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; au
   return (
     <div className="flex flex-1 flex-col">
       <div className={TOOLBAR_ROW}>
-        <EditorToolbar getView={() => editorRef.current?.view() ?? null} status={editorStatus} />
+        <EditorToolbar
+          getView={() => editorRef.current?.view() ?? null}
+          status={editorStatus}
+          onInsertImages={(files) => editorRef.current?.insertImages(files)}
+        />
         <SaveStatus state={state} onRetry={state.kind === "error" ? () => void save() : undefined} className="shrink-0" />
       </div>
 
@@ -260,6 +264,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; au
             if (draftRef.current !== savedRef.current.content) void save();
           }}
           onStatus={setEditorStatus}
+          onImageError={(message) => toast.error(message)}
         />
       </div>
       <p className={`border-t border-border py-2 text-right text-[11px] text-muted-foreground tabular-nums ${PAGE}`}>

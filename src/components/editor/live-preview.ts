@@ -1,7 +1,8 @@
 import { syntaxTree } from "@codemirror/language";
-import type { Range } from "@codemirror/state";
-import { Decoration, type DecorationSet, type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
+import type { EditorState, Range } from "@codemirror/state";
+import { Decoration, type DecorationSet, type EditorView, ViewPlugin, type ViewUpdate, WidgetType } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
+import { findImageEmbeds, resolveImageSrc } from "@/lib/attachments";
 
 // Obsidian-style live preview: Markdown stays the document; decorations style
 // it in place and hide syntax markers except on the lines holding the caret.
@@ -37,6 +38,59 @@ function children(node: SyntaxNode, name: string): SyntaxNode[] {
   const found: SyntaxNode[] = [];
   for (let child = node.firstChild; child; child = child.nextSibling) if (child.name === name) found.push(child);
   return found;
+}
+
+class ImageWidget extends WidgetType {
+  constructor(
+    readonly src: string | null,
+    readonly alt: string,
+    readonly label: string,
+    readonly width: number | null,
+    readonly height: number | null,
+  ) {
+    super();
+  }
+  eq(other: ImageWidget) {
+    return other.src === this.src && other.alt === this.alt && other.width === this.width && other.height === this.height;
+  }
+  toDOM(view: EditorView) {
+    const wrap = document.createElement("span");
+    wrap.className = "cm-md-embed";
+    const missing = () => {
+      wrap.classList.add("cm-md-embed-missing");
+      wrap.textContent = `“${this.label}” could not be loaded`;
+    };
+    if (!this.src) {
+      missing();
+      return wrap;
+    }
+    const image = document.createElement("img");
+    image.src = this.src;
+    image.alt = this.alt;
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.draggable = false;
+    if (this.width) image.style.width = `${this.width}px`;
+    if (this.height) image.style.height = `${this.height}px`;
+    // Heights change once the image arrives; let CodeMirror re-measure lines.
+    image.addEventListener("load", () => view.requestMeasure());
+    image.addEventListener("error", () => {
+      missing();
+      view.requestMeasure();
+    });
+    wrap.append(image);
+    return wrap;
+  }
+  ignoreEvent() {
+    return false;
+  }
+}
+
+function inCode(state: EditorState, pos: number): boolean {
+  for (let node: SyntaxNode | null = syntaxTree(state).resolveInner(pos, 1); node; node = node.parent) {
+    if (node.name === "InlineCode" || node.name === "FencedCode" || node.name === "CodeBlock") return true;
+  }
+  return false;
 }
 
 export function buildLivePreview(view: EditorView): DecorationSet {
@@ -148,7 +202,33 @@ export function buildLivePreview(view: EditorView): DecorationSet {
       },
     });
   }
-  return Decoration.set(ranges, true);
+
+  // Image embeds (![[name.png|300]], ![alt](url)): the image replaces the syntax on other
+  // lines; on the caret line the syntax stays editable and the image shows below it.
+  const embeds: Range<Decoration>[] = [];
+  const replaced: [number, number][] = [];
+  for (const { from, to } of view.visibleRanges) {
+    for (let pos = from; pos <= to; ) {
+      const line = doc.lineAt(pos);
+      if (line.text.includes("![")) {
+        for (const embed of findImageEmbeds(line.text)) {
+          const start = line.from + embed.from;
+          const end = line.from + embed.to;
+          if (inCode(state, start)) continue;
+          const widget = new ImageWidget(resolveImageSrc(embed.target), embed.alt, embed.target, embed.width, embed.height);
+          if (isActive(start)) {
+            embeds.push(URL_TEXT.range(start, end), Decoration.widget({ widget, side: 1 }).range(end));
+          } else {
+            embeds.push(Decoration.replace({ widget }).range(start, end));
+            replaced.push([start, end]);
+          }
+        }
+      }
+      pos = line.to + 1;
+    }
+  }
+  const visible = ranges.filter((range) => range.from === range.to || !replaced.some(([start, end]) => range.from >= start && range.to <= end));
+  return Decoration.set([...visible, ...embeds], true);
 }
 
 export const livePreview = ViewPlugin.fromClass(

@@ -7,6 +7,7 @@ import { EditorView, drawSelection, keymap, placeholder as placeholderExtension 
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, type Ref } from "react";
 import { livePreview } from "./live-preview";
 import { headingLevelAt, insertLink, setHeading, toggleInline } from "./markdown-commands";
+import { imageUploads, insertImageFiles } from "./note-images";
 
 export type EditorStatus = { canUndo: boolean; canRedo: boolean; heading: number };
 
@@ -15,6 +16,8 @@ export type LiveMarkdownEditorHandle = {
   /** Replace the whole document (e.g. loading another tab's version); undoable. */
   setContent: (text: string) => void;
   focus: () => void;
+  /** Upload images and embed them at the caret as ![[name]]. */
+  insertImages: (files: File[]) => void;
 };
 
 /**
@@ -31,6 +34,7 @@ export function LiveMarkdownEditor({
   onSave,
   onBlur,
   onStatus,
+  onImageError,
 }: {
   ref?: Ref<LiveMarkdownEditorHandle>;
   initialValue: string;
@@ -41,9 +45,15 @@ export function LiveMarkdownEditor({
   onSave?: () => void;
   onBlur?: () => void;
   onStatus?: (status: EditorStatus) => void;
+  onImageError?: (message: string) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const imageErrorRef = useRef(onImageError);
+  useEffect(() => {
+    imageErrorRef.current = onImageError;
+  });
+  const reportImageError = (message: string) => imageErrorRef.current?.(message);
 
   const emitChange = useEffectEvent((value: string) => onChange(value));
   const emitSave = useEffectEvent(() => onSave?.());
@@ -69,6 +79,7 @@ export function LiveMarkdownEditor({
         EditorView.lineWrapping,
         markdown({ base: markdownLanguage }),
         livePreview,
+        imageUploads(reportImageError),
         keymap.of([
           { key: "Mod-b", run: (view) => toggleInline(view, "**") },
           { key: "Mod-i", run: (view) => toggleInline(view, "*") },
@@ -118,6 +129,11 @@ export function LiveMarkdownEditor({
         view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text } });
       },
       focus: () => viewRef.current?.focus(),
+      insertImages: (files) => {
+        const view = viewRef.current;
+        if (!view || files.length === 0) return;
+        void insertImageFiles(view, files, view.state.selection.main.head, "file", reportImageError);
+      },
     }),
     [],
   );

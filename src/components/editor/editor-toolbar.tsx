@@ -1,8 +1,8 @@
 "use client";
 
 import type { EditorView } from "@codemirror/view";
-import type { ReactNode } from "react";
-import { Bold, ChevronDown, Heading, Italic, Link2, List, ListChecks, ListOrdered, Redo2, Undo2 } from "lucide-react";
+import { useRef, type ReactNode } from "react";
+import { Bold, ChevronDown, Heading, ImagePlus, Italic, Link2, List, ListChecks, ListOrdered, Redo2, Undo2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -57,7 +57,18 @@ function ToolButton({
   );
 }
 
-export function EditorToolbar({ getView, status, className }: { getView: () => EditorView | null; status: EditorStatus; className?: string }) {
+export function EditorToolbar({
+  getView,
+  status,
+  className,
+  onInsertImages,
+}: {
+  getView: () => EditorView | null;
+  status: EditorStatus;
+  className?: string;
+  onInsertImages?: (files: File[]) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const run = (command: (view: EditorView) => unknown) => () => {
     const view = getView();
     if (view) command(view);
@@ -102,6 +113,27 @@ export function EditorToolbar({ getView, status, className }: { getView: () => E
       <ToolButton label="Link" shortcut="Mod+K" onRun={run(insertLink)}>
         <Link2 aria-hidden />
       </ToolButton>
+      {onInsertImages ? (
+        <>
+          <ToolButton label="Insert image (or paste / drop one)" onRun={() => fileInputRef.current?.click()}>
+            <ImagePlus aria-hidden />
+          </ToolButton>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp,image/avif,image/bmp"
+            multiple
+            hidden
+            aria-hidden
+            tabIndex={-1}
+            onChange={(event) => {
+              const files = [...(event.target.files ?? [])];
+              event.target.value = "";
+              if (files.length) onInsertImages(files);
+            }}
+          />
+        </>
+      ) : null}
       <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />
       <ToolButton label="Bulleted list" onRun={run((view) => toggleList(view, "bullet"))}>
         <List aria-hidden />

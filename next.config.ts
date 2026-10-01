@@ -2,14 +2,23 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
 
+// Note images upload straight to Supabase Storage and load from signed Storage URLs.
+const supabaseOrigin = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin;
+  } catch {
+    return "";
+  }
+})();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   // Remote artwork is served same-origin by the authenticated /api/image proxy.
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${supabaseOrigin}`.trim(),
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self' ${supabaseOrigin}`.trim(),
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -38,8 +47,8 @@ const nextConfig: NextConfig = {
         headers: [{ key: "Content-Security-Policy", value: "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox" }, ...shared],
       },
       {
-        // The image proxy sets its own private caching headers.
-        source: "/api/:path((?!image$).*)",
+        // The image proxy and note-image redirects set their own private caching headers.
+        source: "/api/:path((?!image$|attachments/).*)",
         headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
     ];

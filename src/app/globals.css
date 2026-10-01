@@ -634,3 +634,46 @@
 .cm-live .cm-md-hr {
   color: var(--muted-foreground);
 }
+/* Embedded images (Obsidian-style ![[…]] and ![](…)). */
+.cm-live .cm-md-embed {
+  display: block;
+  margin: 0.5rem 0;
+  line-height: 0;
+}
+.cm-live .cm-md-embed img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 18px 40px -24px rgb(165 124 255 / 0.55);
+  cursor: text;
+}
+.cm-live .cm-md-embed-missing {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px dashed rgb(244 114 168 / 0.45);
+  border-radius: 0.5rem;
+  font-size: 0.85em;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.cm-live .cm-md-uploading {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0.25rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: rgb(165 124 255 / 0.14);
+  color: var(--amethyst);
+  font-size: 0.8em;
+  animation: upload-pulse 1.2s ease-in-out infinite;
+}
+@keyframes upload-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}

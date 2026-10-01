@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadLocalEnv } from "./tests/support/local-supabase";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://localhost:${PORT}`;
+const testEnv = loadLocalEnv();
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -28,6 +30,9 @@ export default defineConfig({
     env: {
       APP_URL: baseURL,
       NEXT_DIST_DIR: ".next-e2e",
+      // Overrides .env.local, which may point at the hosted project.
+      NEXT_PUBLIC_SUPABASE_URL: testEnv.NEXT_PUBLIC_SUPABASE_URL,
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: testEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     },
   },
 });

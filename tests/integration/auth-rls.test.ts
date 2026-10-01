@@ -47,7 +47,7 @@ afterAll(async () => {
 
 describe("public registration", () => {
   it("creates unconfirmed accounts that cannot sign in until the email is verified", async () => {
-    const email = `signup-${Date.now()}@test.local`;
+    const email = `signup-${Date.now()}@example.com`;
     const { data, error } = await anonClient().auth.signUp({ email, password: "Password-12345" });
     try {
       expect(error).toBeNull();

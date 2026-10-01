@@ -1,12 +1,19 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 
+/** Test settings: `.env.test.local` if present (so `.env.local` may point at production), else `.env.local`. */
 export function loadLocalEnv(): Record<string, string> {
+  const file = existsSync(".env.test.local") ? ".env.test.local" : ".env.local";
   const env: Record<string, string> = {};
-  for (const line of readFileSync(".env.local", "utf8").split("\n")) {
+  for (const line of readFileSync(file, "utf8").split("\n")) {
     const index = line.indexOf("=");
     if (index > 0 && !line.startsWith("#")) env[line.slice(0, index).trim()] = line.slice(index + 1).trim();
+  }
+  const host = new URL(env.NEXT_PUBLIC_SUPABASE_URL ?? "http://invalid").hostname;
+  // Tests create and delete users; never let them touch a hosted project.
+  if (host !== "127.0.0.1" && host !== "localhost") {
+    throw new Error(`Tests only run against a local Supabase, but ${file} points at ${host}. Create .env.test.local with the values from \`npx supabase status\`.`);
   }
   return env;
 }
