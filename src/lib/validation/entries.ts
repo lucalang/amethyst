@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isUploadedImagePath } from "@/lib/attachments";
 import { IMAGE_URL_MESSAGES, checkImageUrl } from "./image-url";
 
 export const ENTRY_KINDS = ["anime", "game", "custom"] as const;
@@ -15,7 +16,7 @@ export const artworkUrl = z
   .trim()
   .max(2048, "Image addresses can be at most 2048 characters.")
   .superRefine((value, ctx) => {
-    if (value === "") return;
+    if (value === "" || isUploadedImagePath(value)) return;
     const checked = checkImageUrl(value);
     if (!checked.ok) ctx.addIssue({ code: "custom", message: IMAGE_URL_MESSAGES[checked.problem] });
   })

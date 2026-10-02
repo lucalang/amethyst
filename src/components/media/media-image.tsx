@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { artworkSrc } from "@/lib/attachments";
 import { cn } from "@/lib/utils";
-import { checkImageUrl, imageProxyUrl } from "@/lib/validation/image-url";
 
 type Props = {
   src: string | null | undefined;
@@ -16,8 +16,8 @@ type Props = {
 /** Remote artwork served same-origin through the image proxy, with a stable fallback tile. */
 export function MediaImage({ src, alt, className, priority, fallbackLabel }: Props) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const usable = src && src !== failedSrc && checkImageUrl(src).ok;
-  if (!usable) {
+  const resolved = src && src !== failedSrc ? artworkSrc(src) : null;
+  if (!resolved) {
     const initials = (fallbackLabel ?? alt)
       .split(/\s+/)
       .filter(Boolean)
@@ -40,12 +40,12 @@ export function MediaImage({ src, alt, className, priority, fallbackLabel }: Pro
   return (
     // eslint-disable-next-line @next/next/no-img-element -- served by the authenticated /api/image proxy, not next/image
     <img
-      src={imageProxyUrl(src)}
+      src={resolved}
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
       className={cn("absolute inset-0 h-full w-full object-cover", className)}
-      onError={() => setFailedSrc(src)}
+      onError={() => setFailedSrc(src ?? null)}
     />
   );
 }

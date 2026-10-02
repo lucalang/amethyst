@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  artworkSrc,
   attachmentUrl,
   findImageEmbeds,
+  isUploadedImagePath,
   isValidAttachmentName,
   pastedImageName,
   resolveImageSrc,
   sanitizeAttachmentName,
+  uploadedImageName,
   withSuffix,
 } from "@/lib/attachments";
+import { newEntrySchema } from "@/lib/validation/entries";
 
 describe("note image embeds", () => {
   it("finds Obsidian embeds with optional sizes", () => {
@@ -59,5 +63,20 @@ describe("attachment names", () => {
     expect(isValidAttachmentName("other-user/a.png")).toBe(false);
     expect(isValidAttachmentName("evil.svg")).toBe(false);
     expect(isValidAttachmentName("page.html")).toBe(false);
+  });
+
+  it("recognizes uploaded cover and banner paths and resolves artwork sources", () => {
+    const path = attachmentUrl("One Piece cover.png");
+    expect(isUploadedImagePath(path)).toBe(true);
+    expect(uploadedImageName(path)).toBe("One Piece cover.png");
+    expect(isUploadedImagePath("/api/attachments/../secret.png")).toBe(false);
+    expect(isUploadedImagePath("/api/attachments/a.png?x=1")).toBe(false);
+    expect(isUploadedImagePath("/api/image?url=x")).toBe(false);
+    expect(artworkSrc(path)).toBe(path);
+    expect(artworkSrc("https://example.com/a.png")).toBe(`/api/image?url=${encodeURIComponent("https://example.com/a.png")}`);
+    expect(artworkSrc("http://127.0.0.1/a.png")).toBeNull();
+    expect(artworkSrc(null)).toBeNull();
+    expect(newEntrySchema.parse({ kind: "game", title: "Fortnite", coverUrl: path }).coverUrl).toBe(path);
+    expect(newEntrySchema.safeParse({ kind: "game", title: "Fortnite", coverUrl: "/api/attachments/../x.png" }).success).toBe(false);
   });
 });

@@ -49,6 +49,28 @@ export function isValidAttachmentName(name: string): boolean {
 
 export const attachmentUrl = (name: string) => `/api/attachments/${encodeURIComponent(name)}`;
 
+const ATTACHMENT_PATH = "/api/attachments/";
+
+/** Cover/banner images uploaded from the device are stored as their same-origin attachment path. */
+export function isUploadedImagePath(value: string): boolean {
+  if (!value.startsWith(ATTACHMENT_PATH)) return false;
+  try {
+    const name = decodeURIComponent(value.slice(ATTACHMENT_PATH.length));
+    return isValidAttachmentName(name) && attachmentUrl(name) === value;
+  } catch {
+    return false;
+  }
+}
+
+export const uploadedImageName = (path: string) => decodeURIComponent(path.slice(ATTACHMENT_PATH.length));
+
+/** Where stored artwork loads from: own uploads directly, public images through the proxy. */
+export function artworkSrc(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (isUploadedImagePath(value)) return value;
+  return checkImageUrl(value).ok ? imageProxyUrl(value) : null;
+}
+
 /** Where an embed's target is loaded from: own attachments, or public images through the proxy. */
 export function resolveImageSrc(target: string): string | null {
   const value = target.trim();
