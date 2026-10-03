@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { parseCategoryIds } from "@/lib/categories";
 import { COLLECTIONS, entryPath, isCollectionSlug } from "@/lib/collections";
 import { requireUser } from "@/lib/supabase/auth";
-import { newEntrySchema, starterFilesFor } from "@/lib/validation/entries";
+import { newEntrySchema } from "@/lib/validation/entries";
 
 export type NewEntryState = {
   status: "idle" | "error";
@@ -44,14 +44,6 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
     .select("id, kind")
     .single();
   if (error || !entry) return { status: "error", message: "Could not create the entry.", values };
-
-  const { error: filesError } = await ctx.supabase.from("workspace_nodes").insert(
-    starterFilesFor(input.kind).map((file) => ({ entry_id: entry.id, parent_id: null, kind: file.kind, name: file.name, content: file.content ?? "" })),
-  );
-  if (filesError) {
-    await ctx.supabase.from("entries").delete().eq("id", entry.id);
-    return { status: "error", message: "Could not create the workspace files.", values };
-  }
 
   const categoryIds = parseCategoryIds(formData.getAll("categoryIds"));
   if (categoryIds.length) {

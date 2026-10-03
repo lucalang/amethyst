@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entryPatchSchema, newEntrySchema, starterFilesFor } from "@/lib/validation/entries";
+import { entryPatchSchema, newEntrySchema } from "@/lib/validation/entries";
 import { safeNextPath } from "@/lib/validation/redirect";
 import {
   addItemsSchema,
@@ -37,14 +37,6 @@ describe("new entries", () => {
     });
     expect(entryPatchSchema.parse({ title: "Hollow Knight", expectedVersion: 1 })).not.toHaveProperty("platform");
     expect(entryPatchSchema.parse({ platform: "Legacy PC" })).toEqual({ platform: "Legacy PC" });
-  });
-
-  it("starts every kind with editable starter files", () => {
-    expect(starterFilesFor("anime").map((file) => [file.kind, file.name])).toEqual([
-      ["note", "Notes"],
-      ["checklist", "Arcs"],
-    ]);
-    expect(starterFilesFor("game").map((file) => file.name)).toEqual(["Tier List", "Codes", "Guides", "Checklist"]);
   });
 });
 

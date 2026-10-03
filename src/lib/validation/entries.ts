@@ -39,28 +39,3 @@ export const newEntrySchema = z.object({
   coverUrl: artworkUrl.optional().transform((value) => value ?? null),
   bannerUrl: artworkUrl.optional().transform((value) => value ?? null),
 });
-
-export type StarterFile = { kind: "folder" | "note" | "checklist"; name: string; content?: string };
-
-/** Starter files for a new workspace; users can rename, move or delete them. */
-export function starterFilesFor(kind: EntryKind): StarterFile[] {
-  switch (kind) {
-    case "anime":
-      return [
-        { kind: "note", name: "Notes" },
-        { kind: "checklist", name: "Arcs" },
-      ];
-    case "game":
-      return [
-        { kind: "note", name: "Tier List", content: "## S\n\n## A\n\n## B\n" },
-        { kind: "note", name: "Codes" },
-        { kind: "note", name: "Guides" },
-        { kind: "checklist", name: "Checklist" },
-      ];
-    default:
-      return [
-        { kind: "note", name: "Notes" },
-        { kind: "checklist", name: "Checklist" },
-      ];
-  }
-}

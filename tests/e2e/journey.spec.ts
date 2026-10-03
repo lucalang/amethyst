@@ -31,6 +31,17 @@ async function openEntry(page: Page, collection: "anime" | "games", title: strin
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
 }
 
+/** New entries start empty; later steps work with these files. */
+async function addRootFiles(page: Page, entryId: string, files: { kind: "note" | "checklist"; name: string }[]) {
+  for (const file of files) {
+    const response = await page.request.post(`/api/entries/${entryId}/nodes`, {
+      headers: { Origin: new URL(page.url()).origin },
+      data: { parentId: null, kind: file.kind, name: file.name },
+    });
+    expect(response.ok(), file.name).toBe(true);
+  }
+}
+
 test("custom entries are discoverable before the first entry", async ({ page }, testInfo) => {
   const project = testInfo.project.name;
   const user = userFor(project);
@@ -97,6 +108,11 @@ test("anime and games are separate libraries with artwork from any public host",
   await expect(header.getByText("Anime", { exact: true })).toBeVisible();
   const coverImage = header.getByRole("img", { name: "One Piece cover" });
   await expect.poll(() => coverImage.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth), { timeout: 20_000 }).toBeGreaterThan(0);
+  await expect(page.getByRole("heading", { name: "Start your workspace" })).toBeVisible();
+  await addRootFiles(page, onePieceId, [
+    { kind: "note", name: "Notes" },
+    { kind: "checklist", name: "Arcs" },
+  ]);
 
   // --- A game in its own library -------------------------------------------------------
   await page.goto("/games");
@@ -113,6 +129,10 @@ test("anime and games are separate libraries with artwork from any public host",
   await expect(page.getByTestId("entry-header").getByText("Game", { exact: true })).toBeVisible();
 
   const gameId = new URL(page.url()).pathname.split("/")[2];
+  await addRootFiles(page, gameId, [
+    { kind: "note", name: "Guides" },
+    { kind: "checklist", name: "Checklist" },
+  ]);
   const admin = adminClient();
   const { data: newGame } = await admin.from("entries").select("platform").eq("id", gameId).single();
   expect(newGame?.platform).toBeNull();

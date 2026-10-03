@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
-import { FileText, ListChecks, Loader2, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { CategorySelect } from "@/components/categories/category-picker";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Collection } from "@/lib/collections";
 import type { Category } from "@/lib/categories";
-import { cn } from "@/lib/utils";
-import { starterFilesFor } from "@/lib/validation/entries";
 import { createEntry, type NewEntryState } from "./actions";
 
 const initial: NewEntryState = { status: "idle" };
@@ -25,7 +23,6 @@ export function NewEntryForm({ collection, categories }: { collection: Collectio
   const values = state.values ?? {};
   const [bannerOpen, setBannerOpen] = useState(false);
   const showBanner = bannerOpen || Boolean(values.bannerUrl) || Boolean(errors.bannerUrl);
-  const starters = starterFilesFor(collection.kind);
 
   return (
     <form
@@ -102,19 +99,7 @@ export function NewEntryForm({ collection, categories }: { collection: Collectio
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t border-white/[0.06] px-5 py-4 md:px-7">
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="mr-0.5">Starts with</span>
-          {starters.map((file) => {
-            const Icon = file.kind === "checklist" ? ListChecks : FileText;
-            return (
-              <span key={file.name} className="inline-flex items-center gap-1 rounded-full bg-white/[0.05] px-2 py-0.5 text-foreground/80 ring-1 ring-white/[0.06]">
-                <Icon aria-hidden className={cn("size-3", file.kind === "checklist" ? "text-rose/80" : "text-amethyst/80")} />
-                {file.name}
-              </span>
-            );
-          })}
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-3 border-t border-white/[0.06] px-5 py-4 md:px-7">
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" className="h-10 px-3.5">
             <Link href={`/${collection.slug}`}>Cancel</Link>

@@ -23,7 +23,7 @@ export default async function NewEntryPage({ params }: Props) {
     <PageContainer>
       <PageHeader
         title={collection.newLabel}
-        description="A name is all it needs. Artwork is optional, and everything else lives in its workspace of folders, notes and checklists."
+        description="A name is all it needs. Artwork is optional, and the workspace starts empty for your own folders, notes and checklists."
       />
       <NewEntryForm collection={collection} categories={categories} />
     </PageContainer>
