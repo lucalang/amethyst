@@ -1,4 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
+import { isolateHistory } from "@codemirror/commands";
 import type { EditorState, Range } from "@codemirror/state";
 import { Decoration, type DecorationSet, type EditorView, ViewPlugin, type ViewUpdate, WidgetType } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
@@ -22,39 +23,58 @@ const HEADING_LINES = [1, 2, 3, 4, 5, 6].map((level) => Decoration.line({ class:
 const QUOTE_LINE = Decoration.line({ class: "cm-md-quote" });
 const CODE_LINE = Decoration.line({ class: "cm-md-codeblock" });
 const TASK_DONE = mark("cm-md-task-done");
-const TASK_LINE = Decoration.line({ class: "cm-md-task-line" });
-const TASK_LINE_DONE = Decoration.line({ class: "cm-md-task-line cm-md-task-line-done" });
-
-/** Set when a click completes a task, so the re-rendered checkbox plays the completion pop once. */
-let popNextCheck = false;
+const completedTaskAt = new WeakMap<EditorView, number>();
 
 /** Flip the `[ ]` / `[x]` marker of the task item on the line containing `pos`. */
 function toggleTaskAt(view: EditorView, pos: number) {
   const line = view.state.doc.lineAt(pos);
-  const match = /^(\s*(?:[-*+]|\d+[.)])\s+\[)([ xX])\]/.exec(line.text);
-  if (!match) return;
-  const at = line.from + match[1].length;
-  popNextCheck = match[2] === " ";
-  view.dispatch({ changes: { from: at, to: at + 1, insert: match[2] === " " ? "x" : " " }, userEvent: "input.toggle" });
+  let markerFrom: number | undefined;
+  syntaxTree(view.state).iterate({
+    from: line.from,
+    to: line.to,
+    enter(node) {
+      if (node.name === "TaskMarker" && node.from >= line.from && node.to <= line.to) markerFrom = node.from;
+    },
+  });
+  if (markerFrom === undefined) return;
+  const at = markerFrom + 1;
+  const checked = view.state.doc.sliceString(at, at + 1).toLowerCase() === "x";
+  if (!checked) completedTaskAt.set(view, markerFrom);
+  view.dispatch({
+    changes: { from: at, to: at + 1, insert: checked ? " " : "x" },
+    selection: view.state.selection,
+    annotations: isolateHistory.of("full"),
+    userEvent: "input.toggle",
+  });
 }
 
 const SVG = "http://www.w3.org/2000/svg";
 
 class TaskWidget extends WidgetType {
-  constructor(readonly checked: boolean) {
+  constructor(readonly checked: boolean, readonly markerFrom: number, readonly label: string) {
     super();
   }
   eq(other: TaskWidget) {
-    return other.checked === this.checked;
+    return other.checked === this.checked && other.markerFrom === this.markerFrom && other.label === this.label;
+  }
+  updateDOM(box: HTMLElement, view: EditorView) {
+    box.setAttribute("aria-checked", String(this.checked));
+    box.setAttribute("aria-label", `${this.checked ? "Mark as not done" : "Mark as done"}: ${this.label}`);
+    if (this.checked && completedTaskAt.get(view) === this.markerFrom) {
+      box.classList.add("check-pop");
+      completedTaskAt.delete(view);
+    } else if (!this.checked) {
+      box.classList.remove("check-pop");
+    }
+    return true;
   }
   toDOM(view: EditorView) {
-    const box = document.createElement("span");
+    const box = document.createElement("button");
+    box.type = "button";
+    box.contentEditable = "false";
     box.className = "cm-md-task";
-    if (this.checked && popNextCheck) box.classList.add("check-pop");
-    popNextCheck = false;
     box.setAttribute("role", "checkbox");
-    box.setAttribute("aria-checked", String(this.checked));
-    box.setAttribute("aria-label", this.checked ? "Mark as not done" : "Mark as done");
+    this.updateDOM(box, view);
     const tick = document.createElementNS(SVG, "svg");
     tick.setAttribute("viewBox", "0 0 24 24");
     tick.setAttribute("aria-hidden", "true");
@@ -66,8 +86,17 @@ class TaskWidget extends WidgetType {
     box.addEventListener("mousedown", (event) => event.preventDefault());
     box.addEventListener("click", (event) => {
       event.preventDefault();
+      event.stopPropagation();
       toggleTaskAt(view, view.posAtDOM(box));
     });
+    box.addEventListener("keydown", (event) => {
+      if (event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleTaskAt(view, view.posAtDOM(box));
+      }
+    });
+    box.addEventListener("animationend", () => box.classList.remove("check-pop"));
     return box;
   }
   ignoreEvent() {
@@ -78,7 +107,7 @@ class TaskWidget extends WidgetType {
 /** Lines touched by the selection while the editor has focus. */
 function activeLines(view: EditorView): Set<number> {
   const lines = new Set<number>();
-  if (!view.hasFocus) return lines;
+  if (!view.hasFocus || view.dom.querySelector(".cm-md-task:focus")) return lines;
   const { doc, selection } = view.state;
   for (const range of selection.ranges) {
     const last = doc.lineAt(range.to).number;
@@ -166,10 +195,6 @@ export function buildLivePreview(view: EditorView): DecorationSet {
   const syntaxMark = (from: number, to: number) => {
     if (to > from) ranges.push((isActive(from) ? SYNTAX : hidden).range(from, to));
   };
-  // Raw task syntax shows only while the caret is strictly inside it (like Obsidian).
-  const caretInside = (from: number, to: number) =>
-    view.hasFocus && state.selection.ranges.some((range) => (range.empty ? range.head > from && range.head < to : range.from < to && range.to > from));
-
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
       from,
@@ -242,16 +267,42 @@ export function buildLivePreview(view: EditorView): DecorationSet {
             ranges.push(LIST_MARK.range(ref.from, ref.to));
             break;
           case "Task": {
-            // "- [ ] text": the list mark and [ ] become one checkbox; Enter continues the list.
             const marker = children(ref.node, "TaskMarker")[0];
             const listMark = ref.node.parent ? children(ref.node.parent, "ListMark")[0] : undefined;
             if (!marker || !listMark) break;
             const checked = /x/i.test(doc.sliceString(marker.from, marker.to));
-            addLines(ref.from, ref.from, checked ? TASK_LINE_DONE : TASK_LINE, "t");
+            let depth = 0;
+            for (let ancestor = ref.node.parent?.parent; ancestor; ancestor = ancestor.parent) {
+              if (ancestor.name === "ListItem") depth += 1;
+            }
             let end = marker.to;
-            if (end < doc.lineAt(end).to && /[ \t]/.test(doc.sliceString(end, end + 1))) end++;
-            if (!caretInside(listMark.from, end)) ranges.push(Decoration.replace({ widget: new TaskWidget(checked) }).range(listMark.from, end));
-            if (checked && ref.to > end) ranges.push(TASK_DONE.range(end, ref.to));
+            const firstLine = doc.lineAt(marker.from);
+            while (end < firstLine.to && /[ \t]/.test(doc.sliceString(end, end + 1))) end++;
+            if (!isActive(marker.from)) {
+              const label = doc.sliceString(end, ref.to).replace(/\s+/g, " ").trim().slice(0, 160) || "Task";
+              ranges.push(Decoration.replace({ widget: new TaskWidget(checked, marker.from, label) }).range(listMark.from, end));
+            }
+            for (let pos = firstLine.from; pos <= ref.to; ) {
+              const line = doc.lineAt(pos);
+              const editing = active.has(line.number);
+              const first = line.number === firstLine.number;
+              const key = `t:${line.from}`;
+              if (!decoratedLines.has(key)) {
+                decoratedLines.add(key);
+                ranges.push(Decoration.line({
+                  class: `cm-md-task-line${editing ? " cm-md-task-editing" : first ? " cm-md-task-rendered" : " cm-md-task-continuation"}${checked && !editing ? " cm-md-task-line-done" : ""}`,
+                  attributes: { style: `--cm-task-indent: ${depth * 1.25}rem` },
+                }).range(line.from));
+              }
+              if (!editing) {
+                const prefixEnd = first ? listMark.from : line.from + (line.text.match(/^[ \t]*/)?.[0].length ?? 0);
+                if (prefixEnd > line.from && /^[ \t]*$/.test(doc.sliceString(line.from, prefixEnd))) ranges.push(hidden.range(line.from, prefixEnd));
+                const textFrom = Math.max(end, prefixEnd, line.from);
+                const textTo = Math.min(ref.to, line.to);
+                if (checked && textTo > textFrom) ranges.push(TASK_DONE.range(textFrom, textTo));
+              }
+              pos = line.to + 1;
+            }
             break;
           }
           case "QuoteMark":
