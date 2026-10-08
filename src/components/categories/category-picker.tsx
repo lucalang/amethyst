@@ -6,6 +6,8 @@ import { Check, ChevronDown, Loader2, Plus, Search, Settings2, Tags, X } from "l
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiFetch } from "@/lib/api-client";
 import { categoryKey, categoryNameSchema, sortCategories, type Category } from "@/lib/categories";
+import { collectionForKind } from "@/lib/collections";
+import type { EntryKind } from "@/lib/validation/entries";
 import { cn } from "@/lib/utils";
 
 /** Merge server categories with ones created on this page (server names win, e.g. after a rename). */
@@ -19,8 +21,8 @@ function useCategoryList(categories: readonly Category[]) {
   return { all, remember: (category: Category) => setCreated((current) => [...current, category]) };
 }
 
-async function createCategory(name: string): Promise<Category> {
-  const { category } = await apiFetch<{ category: Category }>("/api/categories", { method: "POST", json: { name } });
+async function createCategory(name: string, kind: EntryKind): Promise<Category> {
+  const { category } = await apiFetch<{ category: Category }>("/api/categories", { method: "POST", json: { name, kind } });
   return category;
 }
 
@@ -223,11 +225,13 @@ export function CategoryChip({ name, onRemove, className }: { name: string; onRe
  */
 export function CategorySelect({
   categories,
+  kind,
   defaultSelected = [],
   name = "categoryIds",
   onSelectionChange,
 }: {
   categories: readonly Category[];
+  kind: EntryKind;
   defaultSelected?: readonly string[];
   name?: string;
   onSelectionChange?: (selected: Category[]) => void;
@@ -288,7 +292,7 @@ export function CategorySelect({
                 update(selected.includes(category.id) ? selected.filter((id) => id !== category.id) : [...selected, category.id])
               }
               onCreate={async (categoryName) => {
-                const category = await createCategory(categoryName);
+                const category = await createCategory(categoryName, kind);
                 remember(category);
                 if (!selected.includes(category.id)) update([...selected, category.id], [...all, category]);
               }}
@@ -303,14 +307,16 @@ export function CategorySelect({
   );
 }
 
-/** Library toolbar filter: entries matching ANY selected category. */
+/** Library toolbar filter: entries matching ALL selected categories. */
 export function CategoryFilter({
   categories,
+  kind,
   selected,
   counts,
   onChange,
 }: {
   categories: readonly Category[];
+  kind: EntryKind;
   selected: readonly string[];
   counts: Record<string, number>;
   onChange: (next: string[]) => void;
@@ -349,7 +355,7 @@ export function CategoryFilter({
         />
         <div className="flex items-center justify-between gap-2 border-t border-white/[0.07] px-2 py-1.5">
           <Link
-            href="/settings#categories"
+            href={`/settings?collection=${collectionForKind(kind).slug}#categories`}
             className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground transition-colors outline-none hover:bg-white/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             <Settings2 aria-hidden className="size-3.5" /> Manage

@@ -62,7 +62,7 @@ export function NewEntryForm({ collection, categories }: { collection: Collectio
           ) : null}
         </div>
 
-        <CategorySelect categories={categories} />
+        <CategorySelect key={collection.kind} kind={collection.kind} categories={categories} />
 
         <ImageUrlField
           id="coverUrl"

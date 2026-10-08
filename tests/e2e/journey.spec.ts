@@ -250,6 +250,13 @@ test("workspace: nested folders, files, rename, move, delete and reload", async 
 
   await page.getByRole("button", { name: "Actions for Orange Town", exact: true }).click();
   await page.getByRole("menuitem", { name: "Rename" }).click();
+  await expect(page.getByRole("textbox", { name: "Task name" })).toBeFocused();
+  await page.getByRole("textbox", { name: "Task name" }).fill("   ");
+  await page.getByRole("button", { name: "Save name", exact: true }).focus();
+  await expect(page.getByRole("textbox", { name: "Task name" })).toHaveValue("   ");
+  await page.getByRole("button", { name: "Save name", exact: true }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Task name" })).toHaveValue("   ");
   await page.getByRole("textbox", { name: "Task name" }).fill("Orange Town (Buggy)");
   await page.getByRole("textbox", { name: "Task name" }).press("Enter");
   await expect(page.getByRole("checkbox", { name: "Orange Town (Buggy)" })).toBeVisible();
@@ -272,6 +279,21 @@ test("workspace: nested folders, files, rename, move, delete and reload", async 
   files = await explorer(page, mobile);
   await rowActions(files, "Thoughts").click();
   await page.getByRole("menuitem", { name: "Rename" }).click();
+  await expect(files.getByRole("textbox", { name: "New name" })).toBeFocused();
+  await files.getByRole("textbox", { name: "New name" }).fill("Cancelled name");
+  await files.getByRole("textbox", { name: "New name" }).press("Escape");
+  await expect(treeItem(files, "Thoughts", "note")).toBeVisible();
+  await rowActions(files, "Thoughts").click();
+  await page.getByRole("menuitem", { name: "Rename" }).click();
+  await page.route("**/api/nodes/*", async (route) => {
+    if (route.request().method() === "PATCH") await route.fulfill({ status: 409, json: { error: "Rename check failure" } });
+    else await route.continue();
+  });
+  await files.getByRole("textbox", { name: "New name" }).fill("Crew notes");
+  await files.getByRole("textbox", { name: "New name" }).press("Enter");
+  await expect(files.getByRole("alert")).toContainText("Rename check failure");
+  await expect(files.getByRole("textbox", { name: "New name" })).toHaveValue("Crew notes");
+  await page.unroute("**/api/nodes/*");
   await files.getByRole("textbox", { name: "New name" }).fill("Crew notes");
   await files.getByRole("textbox", { name: "New name" }).press("Enter");
   await expect(treeItem(files, "Crew notes", "note")).toHaveAttribute("aria-level", "3");

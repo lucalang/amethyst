@@ -36,12 +36,12 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     sort: query.sort,
     categories: query[CATEGORY_PARAM],
   });
-  const [library, categories] = await Promise.all([loadLibrary(ctx, collection.kind), loadCategories(ctx)]);
+  const [library, categories] = await Promise.all([loadLibrary(ctx, collection.kind), loadCategories(ctx, collection.kind)]);
   // Ignore ids of categories deleted since the link was made.
   search.categories = search.categories.filter((id) => categories.some((category) => category.id === id));
-  const categoryCounts: Record<string, number> = {};
-  for (const entry of library) for (const id of entry.categoryIds) categoryCounts[id] = (categoryCounts[id] ?? 0) + 1;
   const visible = filterLibrary(library, search);
+  const categoryCounts: Record<string, number> = {};
+  for (const entry of visible) for (const id of entry.categoryIds) categoryCounts[id] = (categoryCounts[id] ?? 0) + 1;
 
   return (
     <EntranceScope>
@@ -69,7 +69,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
           </div>
 
           <div className="enter enter-soft mb-8" style={{ "--enter-index": 2 } as React.CSSProperties}>
-            <LibraryControls search={search} label={collection.label} categories={categories} categoryCounts={categoryCounts} />
+            <LibraryControls search={search} label={collection.label} kind={collection.kind} categories={categories} categoryCounts={categoryCounts} />
           </div>
 
           {library.length === 0 ? (

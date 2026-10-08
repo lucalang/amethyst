@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ENTRY_KINDS } from "@/lib/validation/entries";
 
 export type Category = { id: string; name: string };
 
@@ -17,6 +18,7 @@ export const categoryNameSchema = z
   .refine((value) => !hasControlCharacters(value), "Category names cannot contain line breaks.");
 
 export const categoryInputSchema = z.object({ name: categoryNameSchema }).strict();
+export const categoryCreateSchema = categoryInputSchema.extend({ kind: z.enum(ENTRY_KINDS) });
 
 export const entryCategoriesSchema = z
   .object({ categoryIds: z.array(z.uuid()).max(MAX_CATEGORIES_PER_ENTRY, `An entry can have at most ${MAX_CATEGORIES_PER_ENTRY} categories.`) })

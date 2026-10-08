@@ -19,11 +19,12 @@ import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api-client";
 import { MAX_CATEGORY_NAME_LENGTH, categoryNameSchema, sortCategories, type Category } from "@/lib/categories";
 import { errorMessage } from "@/components/workspace/client-utils";
+import type { EntryKind } from "@/lib/validation/entries";
 
 const usageLabel = (count: number) => (count === 0 ? "Not used yet" : `${count} ${count === 1 ? "entry" : "entries"}`);
 
 /** Create, rename and delete the account's categories. */
-export function CategoryManager({ categories: initial, usage }: { categories: Category[]; usage: Record<string, number> }) {
+export function CategoryManager({ categories: initial, usage, kind }: { categories: Category[]; usage: Record<string, number>; kind: EntryKind }) {
   const router = useRouter();
   const [categories, setCategories] = useState(initial);
   const [draft, setDraft] = useState("");
@@ -40,7 +41,7 @@ export function CategoryManager({ categories: initial, usage }: { categories: Ca
     }
     setAdding(true);
     try {
-      const { category, created } = await apiFetch<{ category: Category; created: boolean }>("/api/categories", { method: "POST", json: { name: parsed.data } });
+      const { category, created } = await apiFetch<{ category: Category; created: boolean }>("/api/categories", { method: "POST", json: { name: parsed.data, kind } });
       if (created) {
         setCategories((current) => sortCategories([...current, category]));
         setDraft("");

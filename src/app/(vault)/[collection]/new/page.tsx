@@ -18,7 +18,7 @@ export default async function NewEntryPage({ params }: Props) {
   if (!isCollectionSlug(slug)) notFound();
   const ctx = await requireUser();
   const collection = COLLECTIONS[slug];
-  const categories = await loadCategories(ctx);
+  const categories = await loadCategories(ctx, collection.kind);
   return (
     <PageContainer>
       <PageHeader

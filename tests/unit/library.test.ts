@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryInputSchema, categoryKey, entryCategoriesSchema, parseCategoryIds, sortCategories } from "@/lib/categories";
+import { categoryCreateSchema, categoryInputSchema, categoryKey, entryCategoriesSchema, parseCategoryIds, sortCategories } from "@/lib/categories";
 import { EMPTY_SUMMARY, entryProgress, entryState, filterLibrary, librarySearchSchema, type LibraryEntry } from "@/lib/progress/library";
 
 const AFK = "11111111-1111-4111-8111-111111111111";
@@ -48,10 +48,14 @@ describe("library filters", () => {
     expect(librarySearchSchema.parse({ kind: "game" })).not.toHaveProperty("kind");
   });
 
-  it("matches ANY selected category, combined with the other filters", () => {
+  it("matches ALL selected categories, combined with the other filters", () => {
     const search = (params: Record<string, unknown>) => filterLibrary(entries, librarySearchSchema.parse(params)).map((e) => e.title);
     expect(search({ categories: TOWER })).toEqual(["Alpha", "Gamma"]);
-    expect(search({ categories: `${AFK},${ROMANCE}` })).toEqual(["Beta", "Alpha"]);
+    expect(search({ categories: `${AFK},${ROMANCE}` })).toEqual([]);
+    expect(search({ categories: `${AFK},${TOWER}` })).toEqual(["Alpha"]);
+    expect(search({ categories: AFK })).toEqual(["Alpha"]);
+    expect(search({ categories: `${AFK},${TOWER}`, status: "completed", q: "alp" })).toEqual(["Alpha"]);
+    expect(search({ categories: `${AFK},${TOWER}`, status: "in_progress" })).toEqual([]);
     expect(search({ categories: `${TOWER}`, status: "completed" })).toEqual(["Alpha"]);
     expect(search({ categories: `${TOWER}`, q: "gam" })).toEqual(["Gamma"]);
     // No selection, or only malformed ids, means no category restriction.
@@ -68,6 +72,9 @@ describe("categories", () => {
     expect(categoryInputSchema.safeParse({ name: "x".repeat(61) }).success).toBe(false);
     expect(categoryInputSchema.safeParse({ name: "two\nlines" }).success).toBe(false);
     expect(categoryInputSchema.safeParse({ name: "AFK", user_id: AFK }).success).toBe(false);
+    expect(categoryCreateSchema.safeParse({ name: "AFK" }).success).toBe(false);
+    expect(categoryCreateSchema.safeParse({ name: "AFK", kind: "unknown" }).success).toBe(false);
+    for (const kind of ["game", "anime", "custom"]) expect(categoryCreateSchema.parse({ name: "AFK", kind }).kind).toBe(kind);
   });
 
   it("treats names case-insensitively and sorts them naturally", () => {

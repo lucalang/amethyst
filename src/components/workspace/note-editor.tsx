@@ -8,6 +8,7 @@ import { LiveMarkdownEditor, type EditorStatus, type LiveMarkdownEditorHandle } 
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { MAX_NOTE_LENGTH } from "@/lib/validation/workspace";
+import { markdownTaskCounts } from "@/lib/progress/markdown";
 import type { NodeDetail, WorkspaceNode } from "@/lib/workspace/tree";
 import { errorMessage, nodeQueryKey, readLocal, useHydrated, writeLocal } from "./client-utils";
 import { SaveStatus, type SaveState } from "./save-status";
@@ -42,7 +43,7 @@ const PAGE = "px-5 md:px-10 lg:px-14";
  * serialized, and version conflicts are surfaced instead of overwriting
  * another tab's changes.
  */
-export function NoteEditor(props: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void }) {
+export function NoteEditor(props: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void; onTaskCountsChange: (counts: { total: number; checked: number }) => void }) {
   // The editor and local drafts only exist in the browser.
   const hydrated = useHydrated();
   if (!hydrated) {
@@ -58,7 +59,7 @@ export function NoteEditor(props: { detail: NodeDetail; autoFocus?: boolean; onS
   return <LiveNoteEditor {...props} />;
 }
 
-function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void }) {
+function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void; onTaskCountsChange: (counts: { total: number; checked: number }) => void }) {
   const fileId = detail.node.id;
   const name = detail.node.name;
   const queryClient = useQueryClient();
@@ -84,10 +85,10 @@ function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; au
   const chainRef = useRef<Promise<void>>(Promise.resolve());
   const mountedRef = useRef(true);
 
-  function remember(content: string, version: number, updatedAt: string) {
-    savedRef.current = { content, version };
+  function remember(content: string, node: WorkspaceNode) {
+    savedRef.current = { content, version: node.version };
     queryClient.setQueryData<NodeDetail>(nodeQueryKey(fileId), (old) =>
-      old ? { ...old, node: { ...old.node, content, version, updatedAt } } : old,
+      old ? { ...old, node: { ...old.node, ...node, content } } : old,
     );
   }
 
@@ -95,7 +96,8 @@ function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; au
     const latest = await apiFetch<NodeDetail>(`/api/nodes/${fileId}`);
     if (latest.node.content === draftRef.current) {
       // Our own earlier save (for example from before a file switch) already landed.
-      remember(latest.node.content, latest.node.version, latest.node.updatedAt);
+      remember(latest.node.content, latest.node);
+      onSaved(latest.node);
       clearDraftBackup(fileId);
       setState({ kind: "saved" });
       return;
@@ -114,7 +116,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; au
         method: "PATCH",
         json: { content, expectedVersion: base.version },
       });
-      remember(content, node.version, node.updatedAt);
+      remember(content, node);
       onSaved(node);
       if (draftRef.current === content) {
         clearDraftBackup(fileId);
@@ -187,6 +189,9 @@ function LiveNoteEditor({ detail, autoFocus, onSaved }: { detail: NodeDetail; au
     const timer = window.setTimeout(autosave, AUTOSAVE_DELAY_MS);
     return () => window.clearTimeout(timer);
   }, [draft]);
+
+  const reportTasks = useEffectEvent(() => onTaskCountsChange(markdownTaskCounts(draft)));
+  useEffect(() => reportTasks(), [draft]);
 
   const flushOnUnmount = useEffectEvent(() => {
     mountedRef.current = false;

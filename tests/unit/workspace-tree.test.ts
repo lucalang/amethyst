@@ -20,6 +20,7 @@ const node = (id: string, name: string, kind: NodeKind, parentId: string | null 
   parentId,
   version: 1,
   updatedAt: "2026-01-01T00:00:00Z",
+  includeInCoverProgress: kind === "checklist",
   itemsTotal: items[0],
   itemsChecked: items[1],
 });

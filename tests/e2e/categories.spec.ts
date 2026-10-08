@@ -5,7 +5,7 @@ test.describe.configure({ mode: "serial" });
 
 const userFor = (project: string) => (project === "mobile" ? E2E_USERS.mobile : E2E_USERS.desktop);
 
-async function createEntry(page: Page, collection: "anime" | "games", title: string, categories: { create?: string[]; pick?: string[] }) {
+async function createEntry(page: Page, collection: "anime" | "games" | "other", title: string, categories: { create?: string[]; pick?: string[] }) {
   await page.goto(`/${collection}/new`);
   await page.getByLabel("Title").fill(title);
   if (categories.create?.length || categories.pick?.length) {
@@ -26,7 +26,7 @@ async function createEntry(page: Page, collection: "anime" | "games", title: str
   }
   const chips = page.getByRole("group", { name: "Categories" });
   for (const name of [...(categories.create ?? []), ...(categories.pick ?? [])]) await expect(chips.getByText(name, { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: /^Create (anime|game)$/ }).click();
+  await page.getByRole("button", { name: /^Create (anime|game|entry)$/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
 }
 
@@ -42,7 +42,7 @@ async function filterBy(page: Page, names: string[]) {
   await page.keyboard.press("Escape");
 }
 
-test("categories: create inline, filter by any, edit, rename and delete", async ({ page }, testInfo) => {
+test("categories: type separation, match all, edit, rename and delete", async ({ page }, testInfo) => {
   const user = userFor(testInfo.project.name);
   await signIn(page, user.email, user.password);
 
@@ -51,7 +51,12 @@ test("categories: create inline, filter by any, edit, rename and delete", async 
   await expect(page.getByRole("list", { name: "Categories" }).getByRole("link")).toHaveText(["AFK", "Tower Defense"]);
   await createEntry(page, "games", "AFK Journey", { pick: ["AFK"] });
   await createEntry(page, "games", "Hollow Knight", {});
-  await createEntry(page, "anime", "Frieren", { pick: ["AFK"], create: ["Romance"] });
+  await page.goto("/anime/new");
+  await page.getByRole("button", { name: "Add categories" }).click();
+  await expect(page.getByRole("option", { name: "Tower Defense", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("option", { name: "AFK", exact: true })).toHaveCount(0);
+  await createEntry(page, "anime", "Frieren", { create: ["AFK", "Romance"] });
+  await createEntry(page, "other", "Custom Notes", { create: ["AFK"] });
 
   // Names are unique regardless of case: an existing match offers no "Create" action.
   await page.goto("/anime/new");
@@ -61,7 +66,7 @@ test("categories: create inline, filter by any, edit, rename and delete", async 
   await expect(page.getByRole("option", { name: /Create/ })).toHaveCount(0);
   await page.keyboard.press("Escape");
 
-  // The filter matches ANY selected category and stays inside the current library.
+  // The filter matches ALL selected categories and stays inside the current library.
   await page.goto("/games");
   await filterBy(page, ["Tower Defense"]);
   await expect(page).toHaveURL(/categories=/);
@@ -70,7 +75,7 @@ test("categories: create inline, filter by any, edit, rename and delete", async 
   await filterBy(page, ["AFK"]);
   await expect(page.getByRole("button", { name: "Categories: 2 selected" })).toBeVisible();
   await expect(poster(page, "Bloons TD 6")).toBeVisible();
-  await expect(poster(page, "AFK Journey")).toBeVisible();
+  await expect(poster(page, "AFK Journey")).toHaveCount(0);
   await expect(poster(page, "Hollow Knight")).toHaveCount(0);
   await expect(poster(page, "Frieren")).toHaveCount(0);
   const active = page.getByRole("group", { name: "Active category filters" });
@@ -80,8 +85,9 @@ test("categories: create inline, filter by any, edit, rename and delete", async 
   // Combined with search, and cleared in one click.
   await page.getByLabel("Search Games").fill("journey");
   await page.getByLabel("Search Games").press("Enter");
-  await expect(poster(page, "AFK Journey")).toBeVisible();
+  await expect(poster(page, "AFK Journey")).toHaveCount(0);
   await expect(poster(page, "Bloons TD 6")).toHaveCount(0);
+  await expect(page.getByText("Nothing matches")).toBeVisible();
   await active.getByRole("button", { name: "Clear categories" }).click();
   await expect(page).not.toHaveURL(/categories=/);
   await expect(page.getByRole("button", { name: "Filter by category" })).toBeVisible();
@@ -100,10 +106,16 @@ test("categories: create inline, filter by any, edit, rename and delete", async 
   await expect(page.getByRole("heading", { level: 1, name: "Bloons TD 6" })).toBeVisible();
 
   // Rename updates every assignment; delete removes the label, never the entries.
-  await page.goto("/settings#categories");
+  await page.goto("/settings?collection=games#categories");
   const list = page.getByRole("list", { name: "Your categories" });
-  await expect(list.getByText("2 entries")).toHaveCount(1);
+  await expect(list.getByText("Romance", { exact: true })).toHaveCount(0);
+  await expect(list.getByText("1 entry")).toHaveCount(2);
   await list.getByRole("button", { name: "Rename Tower Defense" }).click();
+  await expect(list.getByRole("textbox", { name: "New name for Tower Defense" })).toBeFocused();
+  await list.getByRole("textbox", { name: "New name for Tower Defense" }).fill("AFK");
+  await list.getByRole("button", { name: "Save name" }).click();
+  await expect(list.getByRole("alert")).toBeVisible();
+  await expect(list.getByRole("textbox", { name: "New name for Tower Defense" })).toHaveValue("AFK");
   await list.getByRole("textbox", { name: "New name for Tower Defense" }).fill("TD");
   await list.getByRole("button", { name: "Save name" }).click();
   await expect(list.getByText("TD", { exact: true })).toBeVisible();
@@ -112,6 +124,12 @@ test("categories: create inline, filter by any, edit, rename and delete", async 
   await expect(confirm).toContainText("The entries themselves are not deleted.");
   await confirm.getByRole("button", { name: "Delete category" }).click();
   await expect(list.getByText("AFK", { exact: true })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "Category entry type" }).getByRole("link", { name: "Anime", exact: true }).click();
+  await expect(list.getByText("AFK", { exact: true })).toBeVisible();
+  await expect(list.getByText("TD", { exact: true })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "Category entry type" }).getByRole("link", { name: "Other", exact: true }).click();
+  await expect(list.getByText("AFK", { exact: true })).toBeVisible();
+  await expect(list.getByText("Romance", { exact: true })).toHaveCount(0);
 
   await page.goto("/games");
   await expect(poster(page, "AFK Journey")).toBeVisible();

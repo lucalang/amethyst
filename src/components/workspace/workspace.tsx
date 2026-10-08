@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { AlertTriangle, ChevronRight, FilePlus2, FileText, FolderInput, FolderPlus, ListPlus, Loader2, MoreHorizontal, PanelLeft, PanelLeftOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { apiFetch } from "@/lib/api-client";
 import type { Collection } from "@/lib/collections";
@@ -186,7 +187,7 @@ function Workspace({
     if (current?.mode === "rename") requestAnimationFrame(() => focusTreeRow(current.id, isDesktop() ? "desktop" : "mobile"));
   }
 
-  async function submitName(value: string): Promise<string | null> {
+  async function submitName(value: string, includeInCoverProgress?: boolean): Promise<string | null> {
     const current = editing;
     if (!current) return null;
     const parsed = nodeNameSchema.safeParse(value);
@@ -200,7 +201,7 @@ function Workspace({
       if (current.mode === "create") {
         const { node } = await apiFetch<{ node: WorkspaceNode }>(`/api/entries/${entry.id}/nodes`, {
           method: "POST",
-          json: { parentId: current.parentId, kind: current.kind, name },
+          json: { parentId: current.parentId, kind: current.kind, name, includeInCoverProgress },
         });
         setNodes((previous) => [...previous, node]);
         setEditing(null);
@@ -266,7 +267,15 @@ function Workspace({
 
   function onSaved(saved: WorkspaceNode) {
     setNodes((previous) =>
-      previous.map((candidate) => (candidate.id === saved.id ? { ...candidate, version: saved.version, updatedAt: saved.updatedAt } : candidate)),
+      previous.map((candidate) => (candidate.id === saved.id ? { ...candidate, version: saved.version, updatedAt: saved.updatedAt, includeInCoverProgress: saved.includeInCoverProgress } : candidate)),
+    );
+  }
+
+  function onNoteTasksChange(fileId: string, counts: { total: number; checked: number }) {
+    setNodes((previous) =>
+      previous.some((candidate) => candidate.id === fileId && (candidate.itemsTotal !== counts.total || candidate.itemsChecked !== counts.checked))
+        ? previous.map((candidate) => (candidate.id === fileId ? { ...candidate, itemsTotal: counts.total, itemsChecked: counts.checked } : candidate))
+        : previous,
     );
   }
 
@@ -342,6 +351,7 @@ function Workspace({
             onMove={setMoveId}
             onDelete={setDeleteId}
             onSaved={onSaved}
+            onNoteTasksChange={onNoteTasksChange}
             onItemsChange={onItemsChange}
           />
         </div>
@@ -353,6 +363,12 @@ function Workspace({
           showCloseButton={false}
           className="w-[88vw] max-w-sm gap-0 p-0"
           onOpenAutoFocus={(event) => {
+            const input = (event.currentTarget as HTMLElement).querySelector<HTMLInputElement>("[data-name-input]");
+            if (input) {
+              event.preventDefault();
+              input.focus();
+              return;
+            }
             // Start in the tree (on the open file) rather than on the first toolbar button.
             const row = (event.currentTarget as HTMLElement).querySelector<HTMLElement>('[role="treeitem"][tabindex="0"]');
             if (row) {
@@ -427,6 +443,7 @@ function FilePane({
   onMove,
   onDelete,
   onSaved,
+  onNoteTasksChange,
   onItemsChange,
 }: {
   fileId: string | null;
@@ -443,8 +460,13 @@ function FilePane({
   onMove: (id: string) => void;
   onDelete: (id: string) => void;
   onSaved: (node: WorkspaceNode) => void;
+  onNoteTasksChange: (fileId: string, counts: { total: number; checked: number }) => void;
   onItemsChange: (fileId: string, items: ChecklistItem[]) => void;
 }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [progressPending, setProgressPending] = useState(false);
+  const [progressError, setProgressError] = useState<string | null>(null);
   const query = useQuery({
     queryKey: nodeQueryKey(fileId ?? "none"),
     queryFn: () => apiFetch<NodeDetail>(`/api/nodes/${fileId}`),
@@ -453,6 +475,25 @@ function FilePane({
     staleTime: Infinity,
   });
   const Icon = node ? KIND_ICON[node.kind] : FileText;
+
+  async function changeProgress(includeInCoverProgress: boolean) {
+    if (!fileId || progressPending) return;
+    setProgressPending(true);
+    setProgressError(null);
+    try {
+      const { node: saved } = await apiFetch<{ node: WorkspaceNode }>(`/api/nodes/${fileId}`, {
+        method: "PATCH",
+        json: { includeInCoverProgress },
+      });
+      queryClient.setQueryData<NodeDetail>(nodeQueryKey(fileId), (old) => old ? { ...old, node: { ...old.node, ...saved } } : old);
+      onSaved(saved);
+      router.refresh();
+    } catch (error) {
+      setProgressError(errorMessage(error));
+    } finally {
+      setProgressPending(false);
+    }
+  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -487,7 +528,17 @@ function FilePane({
                   <MoreHorizontal aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44" onCloseAutoFocus={(event) => event.preventDefault()}>
+              <DropdownMenuContent align="end" className="w-64" onCloseAutoFocus={(event) => event.preventDefault()}>
+                <DropdownMenuCheckboxItem
+                  checked={node.includeInCoverProgress}
+                  disabled={progressPending || !query.data}
+                  onSelect={(event) => event.preventDefault()}
+                  onCheckedChange={(checked) => void changeProgress(checked)}
+                >
+                  Include in cover progress
+                </DropdownMenuCheckboxItem>
+                {progressError ? <p role="alert" className="px-2 py-1 text-xs text-destructive">{progressError}</p> : null}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={() => onRename(node.id)}>
                   <Pencil aria-hidden /> Rename
                 </DropdownMenuItem>
@@ -544,7 +595,7 @@ function FilePane({
           </Button>
         </div>
       ) : node.kind === "note" ? (
-        <NoteEditor detail={query.data} autoFocus={autoFocus} onSaved={onSaved} />
+        <NoteEditor detail={query.data} autoFocus={autoFocus} onSaved={onSaved} onTaskCountsChange={(counts) => onNoteTasksChange(fileId, counts)} />
       ) : node.kind === "checklist" ? (
         <ChecklistEditor detail={query.data} autoFocus={autoFocus} onItemsChange={onItemsChange} />
       ) : null}

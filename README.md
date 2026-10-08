@@ -50,15 +50,23 @@ tests/{unit,integration,e2e,support}
 
 ## Categories
 
-- Each account has one private, reusable set of categories (e.g. *Romance*, *AFK*, *Tower Defense*). They are separate from the Anime, Games and Other collections.
+- Each account has independent categories for Anime, Games and Other (e.g. *Romance*, *AFK*, *Tower Defense*). Names can be reused across types without linking them.
 - An entry of any kind can have zero, one or many categories.
 - When creating or editing an entry, an optional searchable field selects existing categories or creates new ones inline (Create “Name”). Selections show as removable chips. Changing only categories never modifies the entry or its workspace.
 - The library toolbar has a separate **Categories** filter with a searchable checkbox list:
-  - Several selections match entries in **any** of them, combined with search and the other filters.
+  - Several selections match entries containing **all** of them, combined with search and the other filters. Additional categories are allowed.
   - Results stay within the current library.
   - Active selections show as chips and can be cleared.
-- **Settings → Categories** renames categories (every entry updates) and deletes them (assignments are removed; entries are kept).
-- Names are trimmed, cannot be empty and are unique per account regardless of case.
+- **Settings → Categories** manages the selected entry type. Renaming or deleting affects only that type; entries are kept.
+- Names are trimmed, cannot be empty and are unique per account and entry type regardless of case.
+
+## Cover progress
+
+- Each note or checklist has a saved **Include in cover progress** setting in its **File actions** menu. Checklist creation offers the same setting.
+- Included files contribute their completed and total tasks to the entry header and library cover. Excluded files keep their own task states and remain fully editable.
+- Markdown task lists use the GFM parser; task-like text in code blocks or inline code is not counted. Checklist steps are not counted twice.
+- The setting is stored per file in Supabase and is unchanged by task edits, empty files, navigation or new sessions.
+- Migration `20261008000200_file_cover_progress` keeps existing checklists included and Markdown notes excluded. It preserves content, task states, versions and activity timestamps.
 
 ## Artwork from any public host
 
@@ -146,6 +154,8 @@ Migrations live in `supabase/migrations` and are applied in order. Migrations 1�
 - The invoker RPC `set_entry_categories` replaces an entry's assignments in one step.
 
 Existing entries start uncategorized.
+
+`20261008000100_category_entry_types` scopes categories and assignments to their entry type. Shared legacy categories are split while preserving assignments; unused legacy categories remain available independently in each type. Apply it before deploying the updated app, using `npx supabase migration up --local` locally or `npx supabase db push` for a linked hosted project. Neither requires a data reset.
 
 Regenerate types with `npm run db:types`.
 

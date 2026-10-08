@@ -25,13 +25,13 @@ export type Database = {
           Tables: {
             "categories": {
                   Row: {
-                    "created_at": string,"id": string,"name": string,"updated_at": string,"user_id": string
+                    "created_at": string,"id": string,"kind": string,"name": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "created_at"?: string,"id"?: string,"name": string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"id"?: string,"kind": string,"name": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"name"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"id"?: string,"kind"?: string,"name"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -63,27 +63,27 @@ isOneToOne: false
                   ]
                 },"entry_categories": {
                   Row: {
-                    "category_id": string,"created_at": string,"entry_id": string,"user_id": string
+                    "category_id": string,"created_at": string,"entry_id": string,"kind": string,"user_id": string
                   }
                   Insert: {
-                    "category_id": string,"created_at"?: string,"entry_id": string,"user_id"?: string
+                    "category_id": string,"created_at"?: string,"entry_id": string,"kind"?: string,"user_id"?: string
                   }
                   Update: {
-                    "category_id"?: string,"created_at"?: string,"entry_id"?: string,"user_id"?: string
+                    "category_id"?: string,"created_at"?: string,"entry_id"?: string,"kind"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
       foreignKeyName: "entry_categories_user_id_category_id_fkey"
-      columns: ["user_id","category_id"]
+      columns: ["user_id","category_id","kind"]
 isOneToOne: false
       referencedRelation: "categories"
-      referencedColumns: ["user_id","id"]
+      referencedColumns: ["user_id","id","kind"]
     },{
       foreignKeyName: "entry_categories_user_id_entry_id_fkey"
-      columns: ["user_id","entry_id"]
+      columns: ["user_id","entry_id","kind"]
 isOneToOne: false
       referencedRelation: "entries"
-      referencedColumns: ["user_id","id"]
+      referencedColumns: ["user_id","id","kind"]
     },{
       foreignKeyName: "entry_categories_user_id_entry_id_fkey"
       columns: ["user_id","entry_id"]
@@ -169,13 +169,13 @@ isOneToOne: false
                   ]
                 },"workspace_nodes": {
                   Row: {
-                    "content": string,"created_at": string,"entry_id": string,"id": string,"kind": string,"name": string,"parent_id": string | null,"updated_at": string,"user_id": string,"version": number
+                    "content": string,"created_at": string,"entry_id": string,"id": string,"include_in_cover_progress": boolean,"kind": string,"markdown_tasks_checked": number,"markdown_tasks_total": number,"name": string,"parent_id": string | null,"updated_at": string,"user_id": string,"version": number
                   }
                   Insert: {
-                    "content"?: string,"created_at"?: string,"entry_id": string,"id"?: string,"kind": string,"name": string,"parent_id"?: string | null,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "content"?: string,"created_at"?: string,"entry_id": string,"id"?: string,"include_in_cover_progress"?: boolean,"kind": string,"markdown_tasks_checked"?: number,"markdown_tasks_total"?: number,"name": string,"parent_id"?: string | null,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Update: {
-                    "content"?: string,"created_at"?: string,"entry_id"?: string,"id"?: string,"kind"?: string,"name"?: string,"parent_id"?: string | null,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "content"?: string,"created_at"?: string,"entry_id"?: string,"id"?: string,"include_in_cover_progress"?: boolean,"kind"?: string,"markdown_tasks_checked"?: number,"markdown_tasks_total"?: number,"name"?: string,"parent_id"?: string | null,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -228,7 +228,7 @@ isOneToOne: false
                   ]
                 },"workspace_tree": {
                   Row: {
-                    "entry_id": string | null,"id": string | null,"items_checked": number | null,"items_total": number | null,"kind": string | null,"name": string | null,"parent_id": string | null,"updated_at": string | null,"user_id": string | null,"version": number | null
+                    "entry_id": string | null,"id": string | null,"include_in_cover_progress": boolean | null,"items_checked": number | null,"items_total": number | null,"kind": string | null,"name": string | null,"parent_id": string | null,"updated_at": string | null,"user_id": string | null,"version": number | null
                   }
                   Relationships: [
                     {

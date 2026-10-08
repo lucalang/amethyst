@@ -38,7 +38,7 @@ export const librarySearchSchema = z.object({
   q: z.string().trim().max(100).catch("").default(""),
   status: z.enum(["all", "in_progress", "completed", "not_started"]).catch("all").default("all"),
   sort: z.enum(["recent", "title", "progress", "added"]).catch("recent").default("recent"),
-  /** Entries in ANY of these categories; empty means no category restriction. */
+  /** Entries in ALL of these categories; empty means no category restriction. */
   categories: z.unknown().optional().transform(parseCategoryIds),
 });
 export type LibrarySearch = z.infer<typeof librarySearchSchema>;
@@ -50,12 +50,11 @@ function ratio(entry: LibraryEntry): number {
 
 export function filterLibrary(entries: LibraryEntry[], search: LibrarySearch): LibraryEntry[] {
   const q = search.q.toLocaleLowerCase();
-  const categories = new Set(search.categories);
   const filtered = entries.filter(
     (entry) =>
       (search.status === "all" || entryState(entry.summary) === search.status) &&
       (!q || entry.title.toLocaleLowerCase().includes(q)) &&
-      (categories.size === 0 || entry.categoryIds.some((id) => categories.has(id))),
+      search.categories.every((id) => entry.categoryIds.includes(id)),
   );
   const sorted = [...filtered];
   switch (search.sort) {

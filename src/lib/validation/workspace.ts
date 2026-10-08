@@ -26,6 +26,7 @@ export const createNodeSchema = z
     parentId: z.uuid().nullable(),
     kind: z.enum(NODE_KINDS),
     name: nodeNameSchema,
+    includeInCoverProgress: z.boolean().optional(),
   })
   .strict();
 
@@ -34,10 +35,11 @@ export const updateNodeSchema = z
     name: nodeNameSchema.optional(),
     parentId: z.uuid().nullable().optional(),
     content: z.string().max(MAX_NOTE_LENGTH, `Notes can be at most ${MAX_NOTE_LENGTH.toLocaleString("en")} characters.`).optional(),
+    includeInCoverProgress: z.boolean().optional(),
     expectedVersion: z.number().int().positive().optional(),
   })
   .strict()
-  .refine((value) => value.name !== undefined || value.parentId !== undefined || value.content !== undefined, "Nothing to update.");
+  .refine((value) => value.name !== undefined || value.parentId !== undefined || value.content !== undefined || value.includeInCoverProgress !== undefined, "Nothing to update.");
 
 /** Blank lines are dropped so a pasted list becomes one item per line. */
 export const addItemsSchema = z

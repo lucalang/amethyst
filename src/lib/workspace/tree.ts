@@ -9,6 +9,7 @@ export type WorkspaceNode = {
   name: string;
   version: number;
   updatedAt: string;
+  includeInCoverProgress: boolean;
   itemsTotal: number;
   itemsChecked: number;
 };
@@ -134,7 +135,7 @@ export function suggestName(nodes: readonly WorkspaceNode[], parentId: string | 
 
 export function checklistTotals(nodes: readonly WorkspaceNode[]): { total: number; checked: number } {
   return nodes.reduce(
-    (sum, node) => (node.kind === "checklist" ? { total: sum.total + node.itemsTotal, checked: sum.checked + node.itemsChecked } : sum),
+    (sum, node) => (node.kind !== "folder" && node.includeInCoverProgress ? { total: sum.total + node.itemsTotal, checked: sum.checked + node.itemsChecked } : sum),
     { total: 0, checked: 0 },
   );
 }

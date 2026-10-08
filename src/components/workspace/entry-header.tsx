@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
-import type { Collection } from "@/lib/collections";
+import { collectionForKind, type Collection } from "@/lib/collections";
 import type { Tables } from "@/lib/supabase/database.types";
 import { errorMessage } from "./client-utils";
 
@@ -215,7 +215,7 @@ function EditDetailsDialog({
           <DialogDescription>Artwork can be any public image link. A preview appears once the link is checked.</DialogDescription>
         </DialogHeader>
         <form
-          key={`${entry.id}-${entry.version}-${open}`}
+          key={`${entry.id}-${open}`}
           onSubmit={async (event) => {
             event.preventDefault();
             const formData = new FormData(event.currentTarget);
@@ -248,6 +248,7 @@ function EditDetailsDialog({
             <Input id="edit-title" name="title" defaultValue={entry.title} required maxLength={300} className="h-10" />
           </div>
           <CategorySelect
+            kind={collectionForKind(entry.kind).kind}
             categories={categories}
             defaultSelected={assigned.map((category) => category.id)}
             onSelectionChange={(selected) => selected.forEach((category) => created.current.set(category.id, category))}
@@ -267,6 +268,9 @@ function EditDetailsDialog({
             </p>
           ) : null}
           <DialogFooter>
+            <Button type="button" variant="outline" disabled={pending} onClick={() => onOpenChange(false)} className="h-10">
+              Cancel
+            </Button>
             <Button type="submit" disabled={pending} className="h-10">
               {pending ? <Loader2 aria-hidden className="animate-spin" /> : null} Save
             </Button>

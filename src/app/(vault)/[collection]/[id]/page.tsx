@@ -35,7 +35,7 @@ export default async function EntryPage({ params, searchParams }: Props) {
   const requested = typeof file === "string" ? data.nodes.find((node) => node.id === file && node.kind !== "folder") : undefined;
   const initialId = requested?.id ?? firstFile(buildTree(data.nodes))?.id ?? null;
   const initialFile = initialId ? await loadNodeDetail(ctx.supabase, initialId, id) : null;
-  const [categories, categoryIds] = await Promise.all([loadCategories(ctx), loadEntryCategoryIds(ctx, id)]);
+  const [categories, categoryIds] = await Promise.all([loadCategories(ctx, COLLECTIONS[collection].kind), loadEntryCategoryIds(ctx, id)]);
 
   return (
     <EntryWorkspace

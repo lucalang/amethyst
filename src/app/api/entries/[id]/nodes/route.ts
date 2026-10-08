@@ -25,11 +25,11 @@ export async function POST(request: Request, { params }: Params) {
 
   const parsed = await parseJson(request, createNodeSchema);
   if ("response" in parsed) return parsed.response;
-  const { parentId, kind, name } = parsed.data;
+  const { parentId, kind, name, includeInCoverProgress } = parsed.data;
 
   const { data, error } = await ctx.supabase
     .from("workspace_nodes")
-    .insert({ entry_id: id, parent_id: parentId, kind, name })
+    .insert({ entry_id: id, parent_id: parentId, kind, name, include_in_cover_progress: includeInCoverProgress ?? kind === "checklist" })
     .select(NODE_COLUMNS)
     .single();
   if (error) {

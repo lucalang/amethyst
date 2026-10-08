@@ -33,6 +33,7 @@ import { describeDue, useToday } from "./due-date";
 import { RoundCheck } from "./round-check";
 import { SaveStatus, type SaveState } from "./save-status";
 import { TaskDetails, notesBackupKey, type Outcome, type TaskActions, type TaskPatch } from "./task-details";
+import { InlineNameForm } from "./inline-name-form";
 
 const COMPLETED_KEY = "archive:checklist:completed";
 /** How long a just-completed task stays in place so the check and strike-through can play. */
@@ -153,15 +154,16 @@ export function ChecklistEditor({
       setSteps(item.id, (steps) => [...steps, result.value.step]);
       return { ok: true };
     },
-    patchStep(item, step, patch) {
+    async patchStep(item, step, patch) {
       const apply = (values: { label?: string; checked?: boolean }) =>
         setSteps(item.id, (steps) => steps.map((candidate) => (candidate.id === step.id ? { ...candidate, ...values } : candidate)));
       apply(patch);
-      void run(
+      const result = await run(
         "Step not saved",
         () => apiFetch(`/api/steps/${step.id}`, { method: "PATCH", json: patch }),
         () => apply({ label: step.label, checked: step.checked }),
       );
+      return result.ok ? { ok: true } : result;
     },
     removeStep(item, step) {
       setSteps(item.id, (steps) => steps.filter((candidate) => candidate.id !== step.id));
@@ -229,13 +231,14 @@ export function ChecklistEditor({
     requestAnimationFrame(() => document.getElementById(`task-${item.id}`)?.focus());
   }
 
-  function rename(item: ChecklistItem, label: string) {
+  async function rename(item: ChecklistItem, label: string): Promise<string | null> {
     const parsed = itemLabelSchema.safeParse(label);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Invalid task name.");
-      return;
+      return parsed.error.issues[0]?.message ?? "Invalid task name.";
     }
-    if (parsed.data !== item.label) void patchItem(item, { label: parsed.data }, "Rename not saved");
+    if (parsed.data === item.label) return null;
+    const result = await patchItem(item, { label: parsed.data }, "Rename not saved");
+    return result.ok ? null : result.message;
   }
 
   async function addTasks(labels: string[]): Promise<boolean> {
@@ -381,7 +384,7 @@ function TaskRow({
   onToggle: (checked: boolean) => void;
   onExpand: () => void;
   onMove: (delta: number) => void;
-  onRename: (label: string) => void;
+  onRename: (label: string) => Promise<string | null>;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const renamingRef = useRef(false);
@@ -410,13 +413,6 @@ function TaskRow({
   ].filter(Boolean);
   const detailsId = `task-details-${item.id}`;
 
-  function commitRename() {
-    if (editing === null) return;
-    const value = editing;
-    setEditing(null);
-    onRename(value);
-  }
-
   return (
     <li
       className={cn(
@@ -433,24 +429,17 @@ function TaskRow({
       <div className="flex min-h-[3.25rem] items-center gap-3.5 py-1.5 pr-2 pl-4">
         <RoundCheck checked={item.checked} label={item.label} onCheckedChange={onToggle} celebrate={celebrate} />
         {editing !== null ? (
-          <input
-            autoFocus
-            value={editing}
+          <InlineNameForm
+            initial={editing}
+            inputId={`task-name-${item.id}`}
             maxLength={500}
-            aria-label="Task name"
-            onChange={(event) => setEditing(event.target.value)}
-            onBlur={commitRename}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                commitRename();
-              } else if (event.key === "Escape") {
-                event.preventDefault();
-                event.stopPropagation();
-                setEditing(null);
-              }
+            label="Task name"
+            onCancel={() => setEditing(null)}
+            onSave={async (value) => {
+              const message = await onRename(value);
+              if (!message) setEditing(null);
+              return message;
             }}
-            className="h-9 min-w-0 flex-1 rounded-md bg-black/50 px-2.5 text-[14.5px] ring-1 ring-amethyst/60 outline-none"
           />
         ) : (
           <button
@@ -530,7 +519,10 @@ function TaskRow({
             align="end"
             onClick={(event) => event.stopPropagation()}
             onCloseAutoFocus={(event) => {
-              if (renamingRef.current) event.preventDefault();
+              if (renamingRef.current) {
+                event.preventDefault();
+                document.getElementById(`task-name-${item.id}`)?.focus();
+              }
               renamingRef.current = false;
             }}
           >

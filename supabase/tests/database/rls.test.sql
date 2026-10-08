@@ -1,7 +1,7 @@
 -- RLS, ownership and integrity tests for personal workspaces. Run with: npm run test:db
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(104);
+select plan(111);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures (as postgres)
@@ -35,8 +35,8 @@ insert into public.workspace_checklist_items (id, user_id, file_id, label) value
   ('bbbbbbbb-0000-4000-8000-0000000000d1', 'bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000c1', 'B secret');
 insert into public.workspace_checklist_steps (id, user_id, item_id, label) values
   ('bbbbbbbb-0000-4000-8000-0000000000b5', 'bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000d1', 'B secret step');
-insert into public.categories (id, user_id, name) values
-  ('bbbbbbbb-0000-4000-8000-0000000000ca', 'bbbbbbbb-0000-4000-8000-000000000002', 'Romance');
+insert into public.categories (id, user_id, kind, name) values
+  ('bbbbbbbb-0000-4000-8000-0000000000ca', 'bbbbbbbb-0000-4000-8000-000000000002', 'anime', 'Romance');
 insert into public.entry_categories (user_id, entry_id, category_id) values
   ('bbbbbbbb-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-0000000000e1', 'bbbbbbbb-0000-4000-8000-0000000000ca');
 
@@ -195,11 +195,11 @@ select lives_ok(
 select is((select label from public.workspace_checklist_steps where item_id = 'aaaaaaaa-0000-4000-8000-0000000000d2' and position = 0), 'Invite Zoro', 'step order was reversed');
 
 -- Categories
-select lives_ok($$insert into public.categories (name) values ('AFK'), ('Tower Defense')$$, 'A creates categories');
-select throws_ok($$insert into public.categories (name) values ('afk')$$, '23505', null, 'category names are unique per account regardless of case');
-select throws_ok($$insert into public.categories (name) values ('  ')$$, '23514', null, 'blank category names are rejected');
+select lives_ok($$insert into public.categories (name, kind) values ('AFK', 'game'), ('Tower Defense', 'game')$$, 'A creates categories');
+select throws_ok($$insert into public.categories (name, kind) values ('afk', 'game')$$, '23505', null, 'category names are unique per account and type regardless of case');
+select throws_ok($$insert into public.categories (name, kind) values ('  ', 'game')$$, '23514', null, 'blank category names are rejected');
 select is((select count(*)::int from public.categories), 2, 'A sees only own categories');
-select throws_ok($$insert into public.categories (user_id, name) values ('bbbbbbbb-0000-4000-8000-000000000002', 'planted')$$, '42501', null, 'category ownership is not client-writable');
+select throws_ok($$insert into public.categories (user_id, name, kind) values ('bbbbbbbb-0000-4000-8000-000000000002', 'planted', 'game')$$, '42501', null, 'category ownership is not client-writable');
 select lives_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0000000000e2', array(select id from public.categories))$$, 'assign several categories to one entry');
 select is((select count(*)::int from public.entry_categories where entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e2'), 2, 'the entry has both categories');
 select lives_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0000000000e2', array(select id from public.categories where name = 'AFK'))$$, 'replace the assignments');
@@ -212,9 +212,16 @@ select throws_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0
 select throws_ok($$insert into public.entry_categories (entry_id, category_id) values ('aaaaaaaa-0000-4000-8000-0000000000e2', 'bbbbbbbb-0000-4000-8000-0000000000ca')$$, '23503', null, 'cannot assign a B category directly');
 select throws_ok($$select public.set_entry_categories('bbbbbbbb-0000-4000-8000-0000000000e1', '{}')$$, '22023', null, 'cannot change the categories of a B entry');
 select lives_ok($$update public.categories set name = 'hijacked' where id = 'bbbbbbbb-0000-4000-8000-0000000000ca'$$, 'update of a B category is silently filtered');
-select lives_ok($$delete from public.categories where name = 'AFK'$$, 'delete a category');
+select lives_ok($$insert into public.categories (name, kind) values ('AFK', 'anime'), ('AFK', 'custom')$$, 'same category name can exist in each type');
+select throws_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0000000000e2', array(select id from public.categories where kind = 'anime'))$$, '22023', null, 'RPC rejects another type from the same account');
+select throws_ok($$insert into public.entry_categories (entry_id, category_id) select 'aaaaaaaa-0000-4000-8000-0000000000e2', id from public.categories where kind = 'anime'$$, '23503', null, 'direct assignment rejects another type');
+select lives_ok($$select public.set_entry_categories('aaaaaaaa-0000-4000-8000-0000000000e1', array(select id from public.categories where kind = 'anime'))$$, 'anime can use its independent category');
+select lives_ok($$update public.categories set name = 'Anime AFK' where kind = 'anime'$$, 'rename an anime category');
+select is((select name from public.categories where kind = 'game' and name = 'AFK'), 'AFK', 'game category is unchanged');
+select lives_ok($$delete from public.categories where name = 'AFK' and kind = 'game'$$, 'delete a game category');
 select is((select count(*)::int from public.entries where id = 'aaaaaaaa-0000-4000-8000-0000000000e2'), 1, 'deleting a category keeps its entries');
 select is((select count(*)::int from public.entry_categories where entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e2'), 0, 'and removes its assignments');
+select is((select count(*)::int from public.entry_categories where entry_id = 'aaaaaaaa-0000-4000-8000-0000000000e1'), 1, 'anime category assignment survives game category deletion');
 
 -- Cascading deletes
 select lives_ok($$delete from public.workspace_nodes where id = 'aaaaaaaa-0000-4000-8000-0000000000f1'$$, 'delete a folder');

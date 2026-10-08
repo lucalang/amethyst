@@ -12,6 +12,7 @@ import { readLocal, writeLocal } from "./client-utils";
 import { addDays, describeDue } from "./due-date";
 import { RoundCheck } from "./round-check";
 import { SaveStatus, type SaveState } from "./save-status";
+import { InlineNameForm } from "./inline-name-form";
 
 export type TaskPatch = Partial<Pick<ChecklistItem, "label" | "checked" | "notes" | "starred" | "dueDate">>;
 export type Outcome = { ok: true } | { ok: false; message: string };
@@ -19,7 +20,7 @@ export type Outcome = { ok: true } | { ok: false; message: string };
 export type TaskActions = {
   patchItem: (item: ChecklistItem, patch: TaskPatch, failure: string, options?: { revert?: boolean }) => Promise<Outcome>;
   addStep: (item: ChecklistItem, label: string) => Promise<Outcome>;
-  patchStep: (item: ChecklistItem, step: ChecklistStep, patch: { label?: string; checked?: boolean }) => void;
+  patchStep: (item: ChecklistItem, step: ChecklistStep, patch: { label?: string; checked?: boolean }) => Promise<Outcome>;
   removeStep: (item: ChecklistItem, step: ChecklistStep) => void;
   moveStep: (item: ChecklistItem, index: number, delta: number) => void;
   remove: (item: ChecklistItem) => void;
@@ -106,15 +107,17 @@ function StepRow({ item, step, index, actions }: { item: ChecklistItem; step: Ch
   const [editing, setEditing] = useState<string | null>(null);
   const renamingRef = useRef(false);
 
-  function commit() {
-    if (editing === null) return;
-    const parsed = itemLabelSchema.safeParse(editing);
-    setEditing(null);
+  async function rename(value: string): Promise<string | null> {
+    const parsed = itemLabelSchema.safeParse(value);
     if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Invalid step.");
-      return;
+      return parsed.error.issues[0]?.message ?? "Invalid step.";
     }
-    if (parsed.data !== step.label) actions.patchStep(item, step, { label: parsed.data });
+    if (parsed.data !== step.label) {
+      const outcome = await actions.patchStep(item, step, { label: parsed.data });
+      if (!outcome.ok) return outcome.message;
+    }
+    setEditing(null);
+    return null;
   }
 
   function move(delta: number) {
@@ -126,24 +129,13 @@ function StepRow({ item, step, index, actions }: { item: ChecklistItem; step: Ch
     <li className="group/step flex min-h-10 items-center gap-3 rounded-md pr-0.5 pl-2 transition-colors duration-150 hover:bg-white/[0.045]">
       <RoundCheck size="sm" checked={step.checked} label={step.label} onCheckedChange={(checked) => actions.patchStep(item, step, { checked })} />
       {editing !== null ? (
-        <input
-          autoFocus
-          value={editing}
+        <InlineNameForm
+          initial={editing}
+          inputId={`step-name-${step.id}`}
           maxLength={500}
-          aria-label="Step name"
-          onChange={(event) => setEditing(event.target.value)}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              commit();
-            } else if (event.key === "Escape") {
-              event.preventDefault();
-              event.stopPropagation();
-              setEditing(null);
-            }
-          }}
-          className="h-8 min-w-0 flex-1 rounded-md bg-black/60 px-2 text-sm ring-1 ring-amethyst/60 outline-none"
+          label="Step name"
+          onSave={rename}
+          onCancel={() => setEditing(null)}
         />
       ) : (
         <button
@@ -180,7 +172,10 @@ function StepRow({ item, step, index, actions }: { item: ChecklistItem; step: Ch
           align="end"
           onClick={(event) => event.stopPropagation()}
           onCloseAutoFocus={(event) => {
-            if (renamingRef.current) event.preventDefault();
+            if (renamingRef.current) {
+              event.preventDefault();
+              document.getElementById(`step-name-${step.id}`)?.focus();
+            }
             renamingRef.current = false;
           }}
         >

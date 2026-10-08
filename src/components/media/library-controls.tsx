@@ -9,15 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORY_PARAM, type Category } from "@/lib/categories";
 import type { LibrarySearch } from "@/lib/progress/library";
+import type { EntryKind } from "@/lib/validation/entries";
 
 export function LibraryControls({
   search,
   label,
+  kind,
   categories,
   categoryCounts,
 }: {
   search: LibrarySearch;
   label: string;
+  kind: EntryKind;
   categories: Category[];
   categoryCounts: Record<string, number>;
 }) {
@@ -96,6 +99,7 @@ export function LibraryControls({
       </Select>
       <CategoryFilter
         categories={categories}
+        kind={kind}
         selected={activeCategories.map((category) => category.id)}
         counts={categoryCounts}
         onChange={updateCategories}
@@ -123,7 +127,7 @@ export function LibraryControls({
     </div>
     {activeCategories.length ? (
       <div className="flex flex-wrap items-center gap-1.5" aria-label="Active category filters" role="group">
-        <span className="mr-1 text-xs text-muted-foreground">{activeCategories.length === 1 ? "Category" : "Any of"}</span>
+        <span className="mr-1 text-xs text-muted-foreground">{activeCategories.length === 1 ? "Category" : "All of"}</span>
         {activeCategories.map((category) => (
           <CategoryChip
             key={category.id}

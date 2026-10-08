@@ -6,17 +6,20 @@ import { CategoryManager } from "@/components/categories/category-manager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadCategories, loadCategoryUsage } from "@/lib/data/categories";
+import { COLLECTIONS, isCollectionSlug } from "@/lib/collections";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "./forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const { collection: slug } = await searchParams;
+  const collection = COLLECTIONS[typeof slug === "string" && isCollectionSlug(slug) ? slug : "anime"];
   const ctx = await requireUser();
   const [{ data: profile }, categories, usage] = await Promise.all([
     ctx.supabase.from("users").select("display_name, created_at").eq("id", ctx.userId).maybeSingle(),
-    loadCategories(ctx),
-    loadCategoryUsage(ctx),
+    loadCategories(ctx, collection.kind),
+    loadCategoryUsage(ctx, collection.kind),
   ]);
 
   return (
@@ -37,11 +40,23 @@ export default async function SettingsPage() {
           <CardHeader>
             <CardTitle>Categories</CardTitle>
             <CardDescription>
-              Your own labels, usable across anime, games and other entries. Renaming updates every entry; deleting only removes the label.
+              Labels for {collection.label.toLowerCase()}.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <CategoryManager categories={categories} usage={usage} />
+            <nav aria-label="Category entry type" className="mb-4 flex gap-4 border-b border-white/[0.08]">
+              {Object.values(COLLECTIONS).map((item) => (
+                <Link
+                  key={item.slug}
+                  href={`/settings?collection=${item.slug}#categories`}
+                  aria-current={item.slug === collection.slug ? "page" : undefined}
+                  className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors ${item.slug === collection.slug ? "border-amethyst text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <CategoryManager key={collection.kind} kind={collection.kind} categories={categories} usage={usage} />
           </CardContent>
         </Card>
 

@@ -2,6 +2,7 @@ import "server-only";
 import { apiError, dbError } from "@/lib/http";
 import type { AuthContext } from "@/lib/supabase/auth";
 import type { Tables } from "@/lib/supabase/database.types";
+import { markdownTaskCounts } from "@/lib/progress/markdown";
 import type { ChecklistItem, ChecklistStep, NodeDetail, NodeKind, WorkspaceNode } from "@/lib/workspace/tree";
 import { fetchAll } from "./fetch-all";
 
@@ -9,7 +10,7 @@ type Supabase = AuthContext["supabase"];
 
 export type WorkspaceData = { entry: Tables<"entries">; nodes: WorkspaceNode[] };
 
-export const NODE_COLUMNS = "id, parent_id, kind, name, version, updated_at";
+export const NODE_COLUMNS = "id, parent_id, kind, name, version, updated_at, include_in_cover_progress, markdown_tasks_total, markdown_tasks_checked";
 export const ITEM_COLUMNS = "id, label, checked, position, notes, starred, due_date";
 export const STEP_COLUMNS = "id, label, checked, position";
 
@@ -29,8 +30,8 @@ export function toChecklistItem(row: ItemRow, steps: ChecklistStep[] = []): Chec
 }
 
 export function toWorkspaceNode(
-  row: { id: string; parent_id: string | null; kind: string; name: string; version: number; updated_at: string },
-  counts: { total: number; checked: number } = { total: 0, checked: 0 },
+  row: { id: string; parent_id: string | null; kind: string; name: string; version: number; updated_at: string; include_in_cover_progress: boolean; markdown_tasks_total: number; markdown_tasks_checked: number },
+  counts: { total: number; checked: number } = { total: row.markdown_tasks_total, checked: row.markdown_tasks_checked },
 ): WorkspaceNode {
   return {
     id: row.id,
@@ -39,6 +40,7 @@ export function toWorkspaceNode(
     name: row.name,
     version: row.version,
     updatedAt: row.updated_at,
+    includeInCoverProgress: row.include_in_cover_progress,
     itemsTotal: counts.total,
     itemsChecked: counts.checked,
   };
@@ -57,7 +59,7 @@ export async function loadWorkspaceNodes(supabase: Supabase, entryId: string): P
   const rows = await fetchAll((from, to) =>
     supabase
       .from("workspace_tree")
-      .select("id, parent_id, kind, name, version, updated_at, items_total, items_checked")
+      .select("id, parent_id, kind, name, version, updated_at, items_total, items_checked, include_in_cover_progress")
       .eq("entry_id", entryId)
       .order("id")
       .range(from, to),
@@ -69,6 +71,7 @@ export async function loadWorkspaceNodes(supabase: Supabase, entryId: string): P
     name: row.name!,
     version: row.version ?? 1,
     updatedAt: row.updated_at!,
+    includeInCoverProgress: row.include_in_cover_progress ?? false,
     itemsTotal: row.items_total ?? 0,
     itemsChecked: row.items_checked ?? 0,
   }));
@@ -81,7 +84,7 @@ export async function loadWorkspace(ctx: AuthContext, entryId: string): Promise<
 }
 
 export async function loadNodeDetail(supabase: Supabase, nodeId: string, entryId?: string): Promise<NodeDetail | null> {
-  let query = supabase.from("workspace_nodes").select("id, entry_id, parent_id, kind, name, content, version, updated_at").eq("id", nodeId);
+  let query = supabase.from("workspace_nodes").select(`${NODE_COLUMNS}, entry_id, content`).eq("id", nodeId);
   if (entryId) query = query.eq("entry_id", entryId);
   const { data: node, error } = await query.maybeSingle();
   if (error) throw new Error(`Query failed (${error.code ?? "unknown"})`);
@@ -103,7 +106,7 @@ export async function loadNodeDetail(supabase: Supabase, nodeId: string, entryId
 
   return {
     node: {
-      ...toWorkspaceNode(node, { total: items.length, checked: items.filter((item) => item.checked).length }),
+      ...toWorkspaceNode(node, node.kind === "note" ? markdownTaskCounts(node.content) : { total: items.length, checked: items.filter((item) => item.checked).length }),
       content: node.content,
     },
     items,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   ChevronRight,
   ChevronsDownUp,
@@ -29,6 +29,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { canMoveTo, visibleRows, type NodeKind, type TreeNode, type WorkspaceNode } from "@/lib/workspace/tree";
+import { InlineNameForm } from "./inline-name-form";
 
 export type EditState = { mode: "create"; parentId: string | null; kind: NodeKind } | { mode: "rename"; id: string };
 
@@ -64,7 +65,7 @@ type ExplorerProps = {
   onStartCreate: (kind: NodeKind, parentId?: string | null) => void;
   onStartRename: (id: string) => void;
   onCancelEdit: () => void;
-  onSubmitName: (value: string) => Promise<string | null>;
+  onSubmitName: (value: string, includeInCoverProgress?: boolean) => Promise<string | null>;
   onRequestMove: (id: string) => void;
   onRequestDelete: (id: string) => void;
   onMove: (id: string, parentId: string | null) => void;
@@ -376,6 +377,11 @@ function RowMenu({ node, ctx, visible }: { node: TreeNode; ctx: TreeContext; vis
         onClick={(event) => event.stopPropagation()}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
+          const input = document.getElementById(`${ctx.scope}-name-input`);
+          if (input) {
+            input.focus();
+            return;
+          }
           requestAnimationFrame(() => {
             if (document.activeElement === document.body) focusTreeRow(node.id, ctx.scope);
           });
@@ -411,75 +417,38 @@ function RowMenu({ node, ctx, visible }: { node: TreeNode; ctx: TreeContext; vis
 }
 
 function NameInput({ ctx, depth, kind, initial }: { ctx: TreeContext; depth: number; kind: NodeKind; initial: string }) {
-  const [value, setValue] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const settled = useRef(false);
+  const [includeInCoverProgress, setIncludeInCoverProgress] = useState(kind === "checklist");
   const Icon = KIND_ICON[kind];
-  const errorId = `${ctx.scope}-name-error`;
   const creating = initial === "";
-
-  function cancel() {
-    settled.current = true;
-    ctx.onCancelEdit();
-  }
-
-  async function commit() {
-    if (busy || settled.current) return;
-    const name = value.trim();
-    if (!name || name === initial) {
-      cancel();
-      return;
-    }
-    setBusy(true);
-    const message = await ctx.onSubmitName(name);
-    setBusy(false);
-    if (message) setError(message);
-    else settled.current = true;
-  }
 
   const input = (
     <div className="py-0.5 pr-2" style={{ paddingLeft: BASE_PADDING + depth * INDENT + ROW_INSET }}>
       <div className="flex items-center gap-1.5">
         <span aria-hidden className="size-4 shrink-0" />
         <Icon aria-hidden className={cn("size-4 shrink-0", kind === "folder" ? "text-amethyst/80" : kind === "checklist" ? "text-rose/80" : "text-muted-foreground")} />
-        <input
-          autoFocus
-          value={value}
-          readOnly={busy}
-          aria-busy={busy}
+        <InlineNameForm
+          initial={initial}
+          inputId={`${ctx.scope}-name-input`}
           maxLength={200}
-          aria-label={creating ? `Name for the new ${KIND_LABEL[kind]}` : "New name"}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? errorId : undefined}
+          label={creating ? `Name for the new ${KIND_LABEL[kind]}` : "New name"}
           placeholder={creating ? `${kind === "folder" ? "Folder" : kind === "checklist" ? "Checklist" : "Note"} name` : undefined}
-          onFocus={(event) => event.currentTarget.select()}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setError(null);
-          }}
-          onKeyDown={(event) => {
-            event.stopPropagation();
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void commit();
-            } else if (event.key === "Escape") {
-              event.preventDefault();
-              cancel();
-            }
-          }}
-          onBlur={() => {
-            if (error) cancel();
-            else void commit();
-          }}
-          className="h-6 min-w-0 flex-1 rounded-sm border border-ring bg-background px-1.5 text-[13px] outline-none aria-invalid:border-destructive pointer-coarse:h-9"
-        />
+          compact
+          onSave={(name) => ctx.onSubmitName(name, creating ? includeInCoverProgress : undefined)}
+          onCancel={ctx.onCancelEdit}
+        >
+          {creating && kind === "checklist" ? (
+            <label className="flex items-start gap-1.5 py-1 text-[11px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={includeInCoverProgress}
+                onChange={(event) => setIncludeInCoverProgress(event.target.checked)}
+                className="mt-0.5 shrink-0 accent-amethyst"
+              />
+              <span>Include in cover progress</span>
+            </label>
+          ) : null}
+        </InlineNameForm>
       </div>
-      {error ? (
-        <p id={errorId} role="alert" className="mt-1 ml-[22px] rounded-sm bg-destructive/15 px-1.5 py-1 text-xs text-destructive">
-          {error}
-        </p>
-      ) : null}
     </div>
   );
   // A new item renders as its own row; renames replace the existing row's content.
