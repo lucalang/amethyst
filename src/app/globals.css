@@ -294,15 +294,21 @@
     translate: -130% 0;
   }
 
-  /* Top navigation: an amethyst→rose underline grows from the center. */
+  .collection-nav-strip {
+    scrollbar-width: none;
+    scroll-padding-inline: 1rem;
+  }
+  .collection-nav-strip::-webkit-scrollbar {
+    display: none;
+  }
   .nav-link::after {
     content: "";
     position: absolute;
     inset-inline: 0.75rem;
-    bottom: -13px;
+    bottom: -1px;
     height: 2px;
     border-radius: 999px;
-    background: linear-gradient(90deg, var(--amethyst), var(--rose));
+    background: var(--amethyst);
     scale: 0 1;
     opacity: 0;
     transition:

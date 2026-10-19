@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Gem, LibraryBig, LogOut, Settings } from "lucide-react";
-import { CollectionActions, NewCategoryButton } from "@/components/categories/collection-actions";
+import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,25 +43,24 @@ export function TopNav({ displayName, collections }: { displayName: string; coll
           <BrandMark className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
         </Link>
 
-        <nav aria-label="Categories" className="hidden min-w-0 items-center gap-1 overflow-x-auto md:flex">
+        <nav aria-label="Categories" className="collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4 md:flex">
           {collections.map((item) => {
             const href = `/${item.id}`;
             const active = isActive(pathname, href);
             return (
-              <div key={item.id} className="flex shrink-0 items-center">
               <Link
+                key={item.id}
                 href={href}
                 title={item.name}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "nav-link relative max-w-48 truncate rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors duration-200 outline-none hover:text-foreground focus-visible:text-foreground",
-                  active && "text-foreground",
+                  "nav-link relative flex h-9 shrink-0 items-center gap-2 rounded-md border border-transparent px-3 text-sm font-medium text-muted-foreground transition-[color,background-color,border-color] duration-200 outline-none hover:border-white/[0.08] hover:bg-white/[0.035] hover:text-foreground focus-visible:text-foreground",
+                  active && "border-amethyst/25 bg-amethyst/10 text-foreground",
                 )}
               >
-                {item.name}
+                <LibraryBig aria-hidden className={cn("size-3.5 shrink-0", active ? "text-amethyst" : "text-muted-foreground/65")} />
+                <span className="max-w-40 truncate">{item.name}</span>
               </Link>
-              <CollectionActions collection={item} />
-              </div>
             );
           })}
         </nav>
@@ -103,31 +102,41 @@ export function TopNav({ displayName, collections }: { displayName: string; coll
 
 export function MobileTabBar({ collections }: { collections: LibraryCategory[] }) {
   const pathname = usePathname();
-  const items = [...collections.map((collection) => ({ href: `/${collection.id}`, label: collection.name, icon: LibraryBig })), { href: "/settings", label: "Settings", icon: Settings }];
+  const settingsActive = isActive(pathname, "/settings");
   return (
-    <nav aria-label="Primary" className="glass fixed inset-x-0 bottom-0 z-40 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden">
-      <ul className="flex overflow-x-auto">
-        {items.map((item) => {
-          const active = isActive(pathname, item.href);
-          const Icon = item.icon;
+    <nav aria-label="Primary" className="glass fixed inset-x-0 bottom-0 z-40 flex border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden">
+      <ul className="collection-nav-strip flex min-w-0 flex-1 overflow-x-auto px-1">
+        {collections.map((collection) => {
+          const href = `/${collection.id}`;
+          const active = isActive(pathname, href);
           return (
-            <li key={item.href} className="min-w-24 flex-1">
+            <li key={collection.id} className="w-24 shrink-0">
               <Link
-                href={item.href}
-                title={item.label}
+                href={href}
+                title={collection.name}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group/tab flex min-h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground transition-colors active:bg-amethyst/10",
+                  "flex min-h-16 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium text-muted-foreground transition-colors active:bg-amethyst/10",
                   active && "text-amethyst",
                 )}
               >
-                <Icon aria-hidden className="size-5 transition-[scale,translate] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-active/tab:scale-90 group-aria-[current=page]/tab:-translate-y-0.5" />
-                <span className="max-w-28 truncate px-2">{item.label}</span>
+                <span className={cn("grid h-7 w-11 place-items-center rounded-md transition-colors", active && "bg-amethyst/15 ring-1 ring-amethyst/25")}>
+                  <LibraryBig aria-hidden className="size-4" />
+                </span>
+                <span className="w-full truncate px-2">{collection.name}</span>
               </Link>
             </li>
           );
         })}
       </ul>
+      <Link
+        href="/settings"
+        aria-current={settingsActive ? "page" : undefined}
+        className={cn("flex min-h-16 w-20 shrink-0 flex-col items-center justify-center gap-1 border-l border-white/[0.08] text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground", settingsActive && "text-amethyst")}
+      >
+        <span className={cn("grid h-7 w-11 place-items-center rounded-md", settingsActive && "bg-amethyst/15 ring-1 ring-amethyst/25")}><Settings aria-hidden className="size-4" /></span>
+        Settings
+      </Link>
     </nav>
   );
 }

@@ -60,26 +60,31 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     <EntranceScope>
       <PageContainer>
         <section aria-labelledby="library-heading">
-          <div className="scroll-fade mb-6 flex flex-wrap items-end justify-between gap-4">
-            <div className="enter min-w-0">
-              <p className="text-[11px] font-semibold tracking-[0.22em] text-amethyst uppercase">Category</p>
-              <h1 id="library-heading" className="mt-1 text-3xl font-extrabold tracking-tight break-words md:text-4xl">
-                {search.q ? `“${search.q}” in ${collection.name}` : collection.name}
-              </h1>
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                <span className="tabular-nums">
-                  {visible.length === library.length ? library.length : `${visible.length} of ${library.length}`}{" "}
-                  {library.length === 1 ? "entry" : "entries"}
-                </span>
-              </p>
+          <div className="scroll-fade mb-6 flex flex-wrap items-center justify-between gap-5 border-b border-white/[0.08] pb-6">
+            <div className="enter flex min-w-0 flex-1 basis-full items-start gap-3.5 sm:basis-0">
+              <span aria-hidden className="mt-0.5 grid size-12 shrink-0 place-items-center rounded-lg border border-amethyst/20 bg-amethyst/[0.07] text-amethyst">
+                <LibraryBig className="size-5" strokeWidth={1.75} />
+              </span>
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+                  <span>Library</span>
+                  <span className="border-l border-white/[0.12] pl-2.5 tabular-nums">
+                    {visible.length === library.length ? library.length : `${visible.length} of ${library.length}`}{" "}
+                    {library.length === 1 ? "entry" : "entries"}
+                  </span>
+                </p>
+                <h1 id="library-heading" className="mt-1 text-2xl leading-tight font-semibold tracking-normal break-words md:text-3xl">
+                  {search.q ? `“${search.q}” in ${collection.name}` : collection.name}
+                </h1>
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-            <CollectionActions collection={collection} />
-            <Button asChild className="enter h-10 px-4" style={{ "--enter-index": 1 } as React.CSSProperties}>
-              <Link href={`/${slug}/new`}>
-                <Plus aria-hidden /> New entry
-              </Link>
-            </Button>
+            <div className="enter flex w-full shrink-0 items-center gap-2 sm:w-auto" style={{ "--enter-index": 1 } as React.CSSProperties}>
+              <Button asChild className="h-10 flex-1 gap-2 px-4 sm:flex-none">
+                <Link href={`/${slug}/new`}>
+                  <Plus aria-hidden /> New entry
+                </Link>
+              </Button>
+              <CollectionActions collection={collection} className="size-10" />
             </div>
           </div>
 

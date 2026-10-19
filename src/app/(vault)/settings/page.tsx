@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { KeyRound, LogOut } from "lucide-react";
+import { ArrowUpRight, KeyRound, LibraryBig, LogOut, Tags } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { CategoryManager } from "@/components/categories/category-manager";
 import { CollectionActions, NewCategoryButton } from "@/components/categories/collection-actions";
@@ -38,37 +38,60 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </CardContent>
         </Card>
 
-        <Card id="collections" className="scroll-mt-20">
-          <CardHeader>
-            <CardTitle>Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="mb-4 divide-y divide-border">
-              {collections.map((item) => <li key={item.id} className="flex min-h-12 items-center justify-between gap-3"><Link href={`/${item.id}`} className="min-w-0 break-words text-sm hover:text-amethyst">{item.name}</Link><CollectionActions collection={item} /></li>)}
-            </ul>
+        <section id="collections" aria-labelledby="collections-heading" className="scroll-mt-24 border-t border-white/[0.08] pt-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <h2 id="collections-heading" className="text-base font-semibold tracking-normal">Categories</h2>
+              <span className="grid h-5 min-w-5 place-items-center rounded bg-white/[0.06] px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums" aria-label={`${collections.length} categories`}>{collections.length}</span>
+            </div>
             <NewCategoryButton />
-          </CardContent>
-        </Card>
+          </div>
+          {collections.length ? (
+            <ul aria-label="Your categories" className="divide-y divide-white/[0.06] border-y border-white/[0.08]">
+              {collections.map((item) => (
+                <li key={item.id} className="group/collection flex items-center gap-3 px-3 transition-colors hover:bg-white/[0.025] focus-within:bg-white/[0.025]">
+                  <Link href={`/${item.id}`} title={item.name} className="flex min-h-18 min-w-0 flex-1 items-center gap-3.5 py-3">
+                    <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-md border border-white/[0.08] bg-surface-raised text-amethyst/80 transition-[color,background-color,border-color] group-hover/collection:border-amethyst/30 group-hover/collection:bg-amethyst/[0.08] group-hover/collection:text-amethyst">
+                      <LibraryBig className="size-[18px]" />
+                    </span>
+                    <span className="min-w-0 flex-1 text-sm font-medium break-words text-foreground transition-colors group-hover/collection:text-amethyst">{item.name}</span>
+                    <ArrowUpRight aria-hidden className="size-4 shrink-0 text-muted-foreground/40 transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5 group-hover/collection:text-amethyst" />
+                  </Link>
+                  <CollectionActions collection={item} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex items-center gap-3 border-y border-dashed border-white/[0.1] py-7 text-sm text-muted-foreground">
+              <LibraryBig aria-hidden className="size-5 text-amethyst/60" />
+              No categories yet
+            </div>
+          )}
+        </section>
 
-        {collection ? <Card id="categories" className="scroll-mt-20">
-          <CardHeader><CardTitle>Labels</CardTitle><CardDescription className="break-words">Labels for {collection.name}.</CardDescription></CardHeader>
-          <CardContent>
-            <nav aria-label="Labels by category" className="mb-4 flex gap-4 overflow-x-auto border-b border-white/[0.08]">
+        {collection ? <section id="categories" aria-labelledby="labels-heading" className="scroll-mt-24 pt-2">
+          <div className="mb-4 flex items-center gap-2.5">
+            <Tags aria-hidden className="size-4 text-muted-foreground" />
+            <h2 id="labels-heading" className="text-base font-semibold tracking-normal">Labels</h2>
+          </div>
+          <div className="space-y-5">
+            <nav aria-label="Labels by category" className="collection-nav-strip flex gap-1 overflow-x-auto rounded-md border border-white/[0.08] bg-white/[0.02] p-1">
               {collections.map((item) => (
                 <Link
                   key={item.id}
                   href={`/settings?collection=${item.id}#categories`}
                   aria-current={item.id === collection.id ? "page" : undefined}
                   title={item.name}
-                  className={`max-w-48 shrink-0 truncate border-b-2 px-1 pb-2 text-sm font-medium transition-colors ${item.id === collection.id ? "border-amethyst text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                  className={`flex h-9 max-w-48 shrink-0 items-center gap-2 rounded border px-3 text-sm font-medium transition-colors ${item.id === collection.id ? "border-white/[0.1] bg-surface-raised text-foreground shadow-sm" : "border-transparent text-muted-foreground hover:bg-white/[0.03] hover:text-foreground"}`}
                 >
-                  {item.name}
+                  <LibraryBig aria-hidden className={`size-3.5 shrink-0 ${item.id === collection.id ? "text-amethyst" : "text-muted-foreground/60"}`} />
+                  <span className="truncate">{item.name}</span>
                 </Link>
               ))}
             </nav>
             <CategoryManager key={collection.id} collectionId={collection.id} categories={categories} usage={usage} />
-          </CardContent>
-        </Card> : null}
+          </div>
+        </section> : null}
 
         <Card>
           <CardHeader>
