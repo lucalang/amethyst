@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { loadCollections } from "@/lib/data/collections";
 import { ensureProfile, requireUser } from "@/lib/supabase/auth";
 
 export default async function VaultLayout({ children }: { children: ReactNode }) {
@@ -11,10 +12,9 @@ export default async function VaultLayout({ children }: { children: ReactNode })
     ({ data: profile } = await ctx.supabase.from("users").select("display_name").eq("id", ctx.userId).maybeSingle());
   }
   const displayName = profile?.display_name || ctx.email || "Account";
-  // "Other" (custom entries) is only a destination for accounts that have some.
-  const { count } = await ctx.supabase.from("entries").select("id", { count: "exact", head: true }).eq("kind", "custom");
+  const collections = await loadCollections(ctx);
   return (
-    <AppShell displayName={displayName} hasOther={(count ?? 0) > 0}>
+    <AppShell displayName={displayName} collections={collections}>
       {children}
     </AppShell>
   );

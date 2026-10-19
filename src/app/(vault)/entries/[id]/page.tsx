@@ -1,9 +1,9 @@
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 import { entryPath } from "@/lib/collections";
 import { requireUser } from "@/lib/supabase/auth";
 
-// Workspaces moved under their collection (/anime/…, /games/…); keep old links working.
+// Resolve the current category each time, including after an entry moves.
 export default async function LegacyEntryPage({
   params,
   searchParams,
@@ -14,8 +14,8 @@ export default async function LegacyEntryPage({
   const [{ id }, { file }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
   const ctx = await requireUser();
-  const { data: entry } = await ctx.supabase.from("entries").select("id, kind").eq("id", id).maybeSingle();
+  const { data: entry } = await ctx.supabase.from("entries").select("id, collection_id").eq("id", id).maybeSingle();
   if (!entry) notFound();
   const query = typeof file === "string" ? `?file=${encodeURIComponent(file)}` : "";
-  permanentRedirect(`${entryPath(entry)}${query}`);
+  redirect(`${entryPath(entry)}${query}`);
 }

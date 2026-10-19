@@ -26,8 +26,7 @@ const newPasswordSchema = z
 const confirmUrl = (next: string) => `${serverEnv().APP_URL}/auth/confirm?next=${encodeURIComponent(next)}`;
 
 function destination(next: unknown) {
-  const path = safeNextPath(next);
-  return path === "/" ? "/anime" : path;
+  return safeNextPath(next);
 }
 
 export async function signInWithPassword(_prev: AuthState, formData: FormData): Promise<AuthState> {
@@ -69,7 +68,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { emailRedirectTo: confirmUrl("/anime") },
+    options: { emailRedirectTo: confirmUrl("/") },
   });
   if (error) {
     if (error.code === "weak_password") return { status: "error", message: error.message, fieldErrors: { password: error.message }, email };
@@ -81,7 +80,7 @@ export async function signUp(_prev: AuthState, formData: FormData): Promise<Auth
   if (data.session) {
     // Email confirmation is disabled in this environment: the account is ready.
     await supabase.rpc("ensure_profile");
-    redirect("/anime");
+    redirect("/");
   }
   // Same answer whether or not the address was already registered (no account enumeration).
   return { status: "success", message: `We sent a confirmation link to ${parsed.data.email}. Open it to activate your account.`, email };
@@ -91,7 +90,7 @@ export async function resendConfirmation(_prev: AuthState, formData: FormData): 
   const parsed = emailSchema.safeParse(String(formData.get("email") ?? "").trim());
   if (!parsed.success) return { status: "error", message: "Enter a valid email address." };
   const supabase = await createClient();
-  const { error } = await supabase.auth.resend({ type: "signup", email: parsed.data, options: { emailRedirectTo: confirmUrl("/anime") } });
+  const { error } = await supabase.auth.resend({ type: "signup", email: parsed.data, options: { emailRedirectTo: confirmUrl("/") } });
   if (error?.status === 429) return { status: "error", message: "Please wait a moment before requesting another email.", email: parsed.data };
   return { status: "success", message: "If that account still needs confirming, a new link is on its way.", email: parsed.data };
 }
@@ -110,6 +109,6 @@ export async function sendMagicLink(_prev: AuthState, formData: FormData): Promi
   if (!parsed.success) return { status: "error", message: "Enter a valid email address." };
   const supabase = await createClient();
   // Magic links only sign in existing accounts; registration uses the sign-up form.
-  await supabase.auth.signInWithOtp({ email: parsed.data, options: { shouldCreateUser: false, emailRedirectTo: confirmUrl("/anime") } });
+  await supabase.auth.signInWithOtp({ email: parsed.data, options: { shouldCreateUser: false, emailRedirectTo: confirmUrl("/") } });
   return { status: "success", message: "If an account exists for that address, a sign-in link is on its way.", email: parsed.data };
 }

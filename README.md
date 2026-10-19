@@ -1,6 +1,6 @@
-# Amethyst Archives — private anime & game workspaces
+# Amethyst Archives — private categorized workspaces
 
-Anime and games live in separate libraries. Each entry is its own workspace:
+Organize entries in your own top-level categories. Each entry is its own workspace:
 a VS Code-style explorer of nested folders on the left, and an editor for
 Markdown notes and task lists on the right. All data belongs to the signed-in
 user. There is no external catalog or sync.
@@ -19,19 +19,21 @@ flowchart LR
 
 - Every vault page, route handler and server action checks the session with `supabase.auth.getClaims()`. Ownership always comes from the verified `sub`, never from client input. All data access uses the user's JWT, so RLS applies. The app never uses the Supabase secret key; only `npm run user:invite` and the tests do.
 - Data model:
-  - An entry is an `entries` row: `anime`, `game` or `custom`, with a title, artwork and an optional platform.
+  - Top-level categories are private `collections` rows, with stable UUIDs and case-insensitive names unique per account.
+  - An entry is an `entries` row with a required `collection_id`, a title, artwork and an optional platform. Legacy `kind` values remain as metadata, not library boundaries.
+  - Labels remain in `categories` and `entry_categories`, scoped by `collection_id` independently of top-level category names.
   - Each entry has a tree of `workspace_nodes` (`folder`, `note` or `checklist`). Notes hold Markdown.
   - Checklists hold tasks (`workspace_checklist_items`). Each task has a label, a checked state, notes, an importance flag and an optional due date.
   - Tasks hold ordered steps (`workspace_checklist_steps`).
 
 ```
 src/app/(auth)             login, register, forgot password, email-link confirmation, sign-out
-src/app/(vault)            /anime, /games, /other libraries; /[collection]/new; /[collection]/[id] workspace; settings
+src/app/(vault)            /[collection] category libraries; /[collection]/new; /[collection]/[id] workspace; settings
 src/app/api                JSON route handlers (all authenticated) incl. /api/image proxy
 src/components/editor      CodeMirror live-preview Markdown editor, toolbar, commands
 src/components/workspace   explorer tree, note editor, task list + task details, move dialog, header
 src/components             ui (shadcn), layout, media
-src/lib/collections.ts     the Anime / Games / Other collections and their routes
+src/lib/collections.ts     category types, stable entry paths and legacy route detection
 src/lib/images             server-only image fetcher with SSRF protections
 src/lib/validation         Zod schemas (entries, workspace, image URLs)
 src/lib/data               server-only loaders
@@ -42,23 +44,27 @@ supabase/tests             pgTAP RLS/integrity tests
 tests/{unit,integration,e2e,support}
 ```
 
-## Collections
+## Top-level categories
 
-- **Anime** (`/anime`) and **Games** (`/games`) are separate top-level destinations. Each has its own library, search, progress filter, sort and **New** flow, so a game never appears in the anime library.
-- Custom entries created before this split keep their `custom` kind and appear under **Other** (`/other`). That tab only shows when such entries exist.
-- An entry's workspace lives at `/<collection>/<id>`. Old `/entries/<id>` and `/franchise/<id>` links redirect there, and `/` redirects to `/anime`.
+- Every account creates its own categories. Navigation uses the current account's saved categories; new accounts start empty.
+- The navbar's **New category** opens a name dialog and then the new empty library. The library's **New entry** still creates an entry in that category, with artwork and a workspace.
+- Category menus in navigation, library headers and settings offer rename and confirmed deletion. Names are trimmed, nonempty, at most 60 characters and case-insensitively unique per account.
+- A database foreign key blocks deleting categories that contain entries. Move their entries first using **More entry actions → Move to category**. Entry IDs, files, images, progress and completion states are retained.
+- Libraries live at `/<category UUID>` and workspaces at `/<category UUID>/<entry UUID>`. Renaming never changes either ID. `/` opens the first saved category or a no-categories empty state.
+- Old `/anime`, `/games` and `/other` URLs resolve to each user's migrated category, even after renaming. If that category was deleted they return home. Old entry URLs, including `/entries/<id>` and `/franchise/<id>`, resolve to the entry's current category, including after moves.
 
-## Categories
+## Entry labels
 
-- Each account has independent categories for Anime, Games and Other (e.g. *Romance*, *AFK*, *Tower Defense*). Names can be reused across types without linking them.
-- An entry of any kind can have zero, one or many categories.
-- When creating or editing an entry, an optional searchable field selects existing categories or creates new ones inline (Create “Name”). Selections show as removable chips. Changing only categories never modifies the entry or its workspace.
-- The library toolbar has a separate **Categories** filter with a searchable checkbox list:
+- Each top-level category has independent labels (e.g. *Romance*, *AFK*, *Tower Defense*). Names can be reused in different libraries without linking them.
+- An entry can have zero, one or many labels.
+- When creating or editing an entry, an optional searchable field selects existing labels or creates new ones inline (Create “Name”). Selections show as removable chips. Changing only labels never modifies the entry or its workspace.
+- The library toolbar has a separate **Labels** filter with a searchable checkbox list:
   - Several selections match entries containing **all** of them, combined with search and the other filters. Additional categories are allowed.
   - Results stay within the current library.
   - Active selections show as chips and can be cleared.
-- **Settings → Categories** manages the selected entry type. Renaming or deleting affects only that type; entries are kept.
-- Names are trimmed, cannot be empty and are unique per account and entry type regardless of case.
+- **Settings → Labels** manages labels for the selected category. Renaming or deleting a label affects only that library; entries are kept.
+- Moving an entry copies its assigned labels into the destination library, reusing case-insensitive name matches. Other source entries and labels are untouched.
+- Label names are trimmed, cannot be empty and are unique per account and top-level category regardless of case.
 
 ## Cover progress
 
@@ -158,6 +164,20 @@ Existing entries start uncategorized.
 `20261008000100_category_entry_types` scopes categories and assignments to their entry type. Shared legacy categories are split while preserving assignments; unused legacy categories remain available independently in each type. Apply it before deploying the updated app, using `npx supabase migration up --local` locally or `npx supabase db push` for a linked hosted project. Neither requires a data reset.
 
 Regenerate types with `npm run db:types`.
+
+### Upgrade to user-owned categories
+
+Apply `20261019000100_user_collections.sql` before using this version of the app:
+
+```bash
+npx supabase migration up --local  # local Supabase
+# OR, for a linked hosted project:
+npx supabase db push
+```
+
+Do not run `db reset`. This migration creates independent Anime, Games and Other category records for every existing user, assigns existing entries and labels to their matching category, and keeps all entry and label IDs and label assignments. It does not modify workspace nodes, attachments, images, checklists, progress settings or completion states. The migrated categories are ordinary renameable and empty-only deletable categories. New users are not given mandatory categories.
+
+Restart the app after applying the migration. Existing test fixtures still assume fixed libraries and need explicit category IDs before their next update; they were not changed as part of this migration.
 
 ## Authentication
 

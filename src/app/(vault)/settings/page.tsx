@@ -3,10 +3,11 @@ import Link from "next/link";
 import { KeyRound, LogOut } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { CategoryManager } from "@/components/categories/category-manager";
+import { CollectionActions, NewCategoryButton } from "@/components/categories/collection-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadCategories, loadCategoryUsage } from "@/lib/data/categories";
-import { COLLECTIONS, isCollectionSlug } from "@/lib/collections";
+import { loadCollections } from "@/lib/data/collections";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "./forms";
 
@@ -14,12 +15,13 @@ export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { collection: slug } = await searchParams;
-  const collection = COLLECTIONS[typeof slug === "string" && isCollectionSlug(slug) ? slug : "anime"];
   const ctx = await requireUser();
+  const collections = await loadCollections(ctx);
+  const collection = collections.find((item) => item.id === slug || item.legacy_slug === slug) ?? collections[0];
   const [{ data: profile }, categories, usage] = await Promise.all([
     ctx.supabase.from("users").select("display_name, created_at").eq("id", ctx.userId).maybeSingle(),
-    loadCategories(ctx, collection.kind),
-    loadCategoryUsage(ctx, collection.kind),
+    collection ? loadCategories(ctx, collection.id) : Promise.resolve([]),
+    collection ? loadCategoryUsage(ctx, collection.id) : Promise.resolve({}),
   ]);
 
   return (
@@ -36,29 +38,37 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </CardContent>
         </Card>
 
-        <Card id="categories" className="scroll-mt-20">
+        <Card id="collections" className="scroll-mt-20">
           <CardHeader>
             <CardTitle>Categories</CardTitle>
-            <CardDescription>
-              Labels for {collection.label.toLowerCase()}.
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <nav aria-label="Category entry type" className="mb-4 flex gap-4 border-b border-white/[0.08]">
-              {Object.values(COLLECTIONS).map((item) => (
+            <ul className="mb-4 divide-y divide-border">
+              {collections.map((item) => <li key={item.id} className="flex min-h-12 items-center justify-between gap-3"><Link href={`/${item.id}`} className="min-w-0 break-words text-sm hover:text-amethyst">{item.name}</Link><CollectionActions collection={item} /></li>)}
+            </ul>
+            <NewCategoryButton />
+          </CardContent>
+        </Card>
+
+        {collection ? <Card id="categories" className="scroll-mt-20">
+          <CardHeader><CardTitle>Labels</CardTitle><CardDescription className="break-words">Labels for {collection.name}.</CardDescription></CardHeader>
+          <CardContent>
+            <nav aria-label="Labels by category" className="mb-4 flex gap-4 overflow-x-auto border-b border-white/[0.08]">
+              {collections.map((item) => (
                 <Link
-                  key={item.slug}
-                  href={`/settings?collection=${item.slug}#categories`}
-                  aria-current={item.slug === collection.slug ? "page" : undefined}
-                  className={`border-b-2 px-1 pb-2 text-sm font-medium transition-colors ${item.slug === collection.slug ? "border-amethyst text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+                  key={item.id}
+                  href={`/settings?collection=${item.id}#categories`}
+                  aria-current={item.id === collection.id ? "page" : undefined}
+                  title={item.name}
+                  className={`max-w-48 shrink-0 truncate border-b-2 px-1 pb-2 text-sm font-medium transition-colors ${item.id === collection.id ? "border-amethyst text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
                 >
-                  {item.label}
+                  {item.name}
                 </Link>
               ))}
             </nav>
-            <CategoryManager key={collection.kind} kind={collection.kind} categories={categories} usage={usage} />
+            <CategoryManager key={collection.id} collectionId={collection.id} categories={categories} usage={usage} />
           </CardContent>
-        </Card>
+        </Card> : null}
 
         <Card>
           <CardHeader>

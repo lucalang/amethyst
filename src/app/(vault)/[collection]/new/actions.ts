@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { parseCategoryIds } from "@/lib/categories";
-import { COLLECTIONS, entryPath, isCollectionSlug } from "@/lib/collections";
+import { entryPath } from "@/lib/collections";
+import { loadCollection } from "@/lib/data/collections";
 import { requireUser } from "@/lib/supabase/auth";
 import { newEntrySchema } from "@/lib/validation/entries";
 
@@ -16,12 +17,11 @@ export type NewEntryState = {
 export async function createEntry(_prev: NewEntryState, formData: FormData): Promise<NewEntryState> {
   const ctx = await requireUser();
   const values = Object.fromEntries(["title", "coverUrl", "bannerUrl"].map((key) => [key, String(formData.get(key) ?? "")]));
-  const slug = String(formData.get("collection") ?? "");
-  if (!isCollectionSlug(slug)) return { status: "error", message: "Unknown collection.", values };
-  const kind = COLLECTIONS[slug].kind;
+  const collection = await loadCollection(ctx, String(formData.get("collection") ?? ""));
+  if (!collection) return { status: "error", message: "Category not found.", values };
 
   const parsed = newEntrySchema.safeParse({
-    kind,
+    collectionId: collection.id,
     title: formData.get("title"),
     coverUrl: formData.get("coverUrl") || undefined,
     bannerUrl: formData.get("bannerUrl") || undefined,
@@ -36,12 +36,12 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
   const { data: entry, error } = await ctx.supabase
     .from("entries")
     .insert({
-      kind: input.kind,
+      collection_id: input.collectionId,
       title: input.title,
       cover_url: input.coverUrl,
       banner_url: input.bannerUrl,
     })
-    .select("id, kind")
+    .select("id, collection_id")
     .single();
   if (error || !entry) return { status: "error", message: "Could not create the entry.", values };
 

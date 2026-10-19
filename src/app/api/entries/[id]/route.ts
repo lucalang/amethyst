@@ -14,10 +14,17 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const parsed = await parseJson(request, entryPatchSchema);
   if ("response" in parsed) return parsed.response;
-  const { expectedVersion, coverUrl, bannerUrl, ...rest } = parsed.data;
+  const { expectedVersion, coverUrl, bannerUrl, collectionId, ...rest } = parsed.data;
+
+  if (collectionId) {
+    const { data: destination, error } = await ctx.supabase.from("collections").select("id").eq("id", collectionId).maybeSingle();
+    if (error) return dbError(error);
+    if (!destination) return apiError(404, "not_found", "Destination category not found.");
+  }
 
   const patch = {
     ...rest,
+    ...(collectionId !== undefined ? { collection_id: collectionId } : {}),
     ...(coverUrl !== undefined ? { cover_url: coverUrl } : {}),
     ...(bannerUrl !== undefined ? { banner_url: bannerUrl } : {}),
   };

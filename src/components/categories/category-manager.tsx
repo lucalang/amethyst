@@ -19,12 +19,11 @@ import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api-client";
 import { MAX_CATEGORY_NAME_LENGTH, categoryNameSchema, sortCategories, type Category } from "@/lib/categories";
 import { errorMessage } from "@/components/workspace/client-utils";
-import type { EntryKind } from "@/lib/validation/entries";
 
 const usageLabel = (count: number) => (count === 0 ? "Not used yet" : `${count} ${count === 1 ? "entry" : "entries"}`);
 
 /** Create, rename and delete the account's categories. */
-export function CategoryManager({ categories: initial, usage, kind }: { categories: Category[]; usage: Record<string, number>; kind: EntryKind }) {
+export function CategoryManager({ categories: initial, usage, collectionId }: { categories: Category[]; usage: Record<string, number>; collectionId: string }) {
   const router = useRouter();
   const [categories, setCategories] = useState(initial);
   const [draft, setDraft] = useState("");
@@ -41,7 +40,7 @@ export function CategoryManager({ categories: initial, usage, kind }: { categori
     }
     setAdding(true);
     try {
-      const { category, created } = await apiFetch<{ category: Category; created: boolean }>("/api/categories", { method: "POST", json: { name: parsed.data, kind } });
+      const { category, created } = await apiFetch<{ category: Category; created: boolean }>("/api/categories", { method: "POST", json: { name: parsed.data, collectionId } });
       if (created) {
         setCategories((current) => sortCategories([...current, category]));
         setDraft("");
@@ -96,8 +95,8 @@ export function CategoryManager({ categories: initial, usage, kind }: { categori
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           maxLength={MAX_CATEGORY_NAME_LENGTH}
-          placeholder="New category, e.g. Romance"
-          aria-label="New category name"
+          placeholder="New label, e.g. Romance"
+          aria-label="New label name"
           className="h-10 min-w-0 flex-1"
         />
         <Button type="submit" className="h-10 shrink-0 px-4" disabled={adding || !draft.trim()}>
@@ -107,10 +106,10 @@ export function CategoryManager({ categories: initial, usage, kind }: { categori
 
       {categories.length === 0 ? (
         <p className="rounded-lg border border-dashed border-white/[0.1] px-4 py-6 text-center text-sm text-muted-foreground">
-          No categories yet. Create one here, or while creating or editing an entry.
+          No labels yet.
         </p>
       ) : (
-        <ul aria-label="Your categories" className="divide-y divide-white/[0.06] overflow-hidden rounded-lg border border-white/[0.08]">
+        <ul aria-label="Your labels" className="divide-y divide-white/[0.06] overflow-hidden rounded-lg border border-white/[0.08]">
           {categories.map((category) => {
             const count = usage[category.id] ?? 0;
             const isEditing = editing?.id === category.id;
@@ -194,7 +193,7 @@ export function CategoryManager({ categories: initial, usage, kind }: { categori
             <AlertDialogDescription>
               {deleting && usage[deleting.id]
                 ? `It will be removed from ${usageLabel(usage[deleting.id])}. The entries themselves are not deleted.`
-                : "No entries use this category. Entries are never deleted with a category."}
+                : "No entries use this label. Entries are never deleted with a label."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -204,7 +203,7 @@ export function CategoryManager({ categories: initial, usage, kind }: { categori
                 if (deleting) void remove(deleting);
               }}
             >
-              Delete category
+              Delete label
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

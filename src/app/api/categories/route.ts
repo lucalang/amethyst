@@ -10,11 +10,12 @@ export async function POST(request: Request) {
   const parsed = await parseJson(request, categoryCreateSchema);
   if ("response" in parsed) return parsed.response;
 
-  const { data, error } = await ctx.supabase.from("categories").insert(parsed.data).select("id, name").single();
+  const { name, collectionId } = parsed.data;
+  const { data, error } = await ctx.supabase.from("categories").insert({ name, collection_id: collectionId }).select("id, name").single();
   if (!error) return jsonResponse({ category: data, created: true }, { status: 201 });
   if (error.code !== "23505") return dbError(error);
 
-  const { data: all, error: listError } = await ctx.supabase.from("categories").select("id, name").eq("kind", parsed.data.kind);
+  const { data: all, error: listError } = await ctx.supabase.from("categories").select("id, name").eq("collection_id", collectionId);
   if (listError) return dbError(listError);
   const existing = all.find((category) => categoryKey(category.name) === categoryKey(parsed.data.name));
   return existing ? jsonResponse({ category: existing, created: false }) : dbError(error);

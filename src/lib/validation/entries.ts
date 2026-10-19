@@ -28,12 +28,13 @@ export const entryPatchSchema = z
     coverUrl: artworkUrl.nullable().optional(),
     bannerUrl: artworkUrl.nullable().optional(),
     platform: z.string().trim().max(80).nullable().optional(),
+    collectionId: z.uuid().optional(),
     expectedVersion: z.number().int().positive().optional(),
   })
   .strict();
 
 export const newEntrySchema = z.object({
-  kind: z.enum(ENTRY_KINDS),
+  collectionId: z.uuid(),
   title: z.string().trim().min(1, "Title is required.").max(300),
   platform: z.string().trim().max(80).optional().transform((value) => value || null),
   coverUrl: artworkUrl.optional().transform((value) => value ?? null),

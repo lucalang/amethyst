@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { apiFetch } from "@/lib/api-client";
-import type { Collection } from "@/lib/collections";
+import type { LibraryCategory } from "@/lib/collections";
 import type { Category } from "@/lib/categories";
 import type { Tables } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
@@ -50,13 +50,15 @@ const HIDDEN_KEY = "archive:explorer-hidden";
 
 export function EntryWorkspace({
   collection,
+  collections,
   entry: initialEntry,
   categories,
   categoryIds,
   initialNodes,
   initialFile,
 }: {
-  collection: Collection;
+  collection: LibraryCategory;
+  collections: LibraryCategory[];
   entry: Entry;
   categories: Category[];
   categoryIds: string[];
@@ -69,6 +71,7 @@ export function EntryWorkspace({
     <div>
       <EntryHeader
         collection={collection}
+        collections={collections}
         entry={entry}
         categories={categories}
         categoryIds={categoryIds}

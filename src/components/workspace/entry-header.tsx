@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { Loader2, MoreHorizontal, Pencil, Tag, Trash2 } from "lucide-react";
+import { FolderInput, Loader2, MoreHorizontal, Pencil, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CategorySelect } from "@/components/categories/category-picker";
 import { ImageUrlField } from "@/components/media/image-url-field";
@@ -24,15 +24,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
-import { collectionForKind, type Collection } from "@/lib/collections";
+import { entryPath, type LibraryCategory } from "@/lib/collections";
 import type { Tables } from "@/lib/supabase/database.types";
 import { errorMessage } from "./client-utils";
 
 type Entry = Tables<"entries">;
-
-const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 
 /**
  * Artwork and title. Part of the normal page flow (never sticky): as it scrolls
@@ -40,13 +39,15 @@ const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slic
  */
 export function EntryHeader({
   collection,
+  collections,
   entry,
   categories,
   categoryIds,
   totals,
   onEntryChange,
 }: {
-  collection: Collection;
+  collection: LibraryCategory;
+  collections: LibraryCategory[];
   entry: Entry;
   categories: Category[];
   categoryIds: string[];
@@ -56,9 +57,12 @@ export function EntryHeader({
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveTarget, setMoveTarget] = useState("");
+  const [moving, setMoving] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
   const [savedCategories, setSavedCategories] = useState<Category[] | null>(null);
   const banner = entry.banner_url ?? entry.cover_url;
-  const kindLabel = capitalize(collection.singular);
   // Names always come from the latest server list, so renames show up here too.
   const assigned = sortCategories(
     (savedCategories ?? categoryIds.map((id) => ({ id, name: "" }))).flatMap((category) => {
@@ -86,16 +90,16 @@ export function EntryHeader({
             <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} priority fallbackLabel={entry.title} />
           </div>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>
-            <p className="text-[11px] font-semibold tracking-[0.16em] text-amethyst uppercase">{kindLabel}</p>
+            <Link href={`/${collection.id}`} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase">{collection.name}</Link>
             <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words md:text-[2.1rem]">{entry.title}</h1>
             {entry.platform ? <p className="mt-1 text-sm text-muted-foreground">{entry.platform}</p> : null}
             {assigned.length ? (
-              <ul aria-label="Categories" className="mt-2.5 flex flex-wrap gap-1.5">
+              <ul aria-label="Labels" className="mt-2.5 flex flex-wrap gap-1.5">
                 {assigned.map((category) => (
                   <li key={category.id} className="min-w-0">
                     <Link
-                      href={`/${collection.slug}?${CATEGORY_PARAM}=${category.id}`}
-                      title={`Show ${collection.label.toLowerCase()} in “${category.name}”`}
+                      href={`/${collection.id}?${CATEGORY_PARAM}=${category.id}`}
+                      title={`Show entries in “${category.name}”`}
                       className="group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full bg-amethyst/[0.1] px-2.5 text-xs font-medium text-foreground/90 ring-1 ring-amethyst/25 transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:bg-amethyst/20 hover:text-foreground hover:ring-amethyst/60 hover:shadow-[0_6px_18px_-8px_rgb(165_124_255/0.8)] focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Tag aria-hidden className="size-3 shrink-0 text-amethyst transition-transform duration-200 group-hover/cat:-rotate-12" />
@@ -117,13 +121,16 @@ export function EntryHeader({
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="size-9" aria-label={`More ${collection.singular} actions`}>
+                <Button variant="outline" size="icon" className="size-9" aria-label="More entry actions">
                   <MoreHorizontal aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => { setMoveTarget(""); setMoveError(null); setMoveOpen(true); }}>
+                  <FolderInput aria-hidden /> Move to category
+                </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-                  <Trash2 aria-hidden /> Delete {collection.singular}
+                  <Trash2 aria-hidden /> Delete entry
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -160,6 +167,42 @@ export function EntryHeader({
         }}
       />
 
+      <Dialog open={moveOpen} onOpenChange={(open) => { if (!moving) setMoveOpen(open); }}>
+        <DialogContent className="rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Move to category</DialogTitle>
+            <DialogDescription>Workspace content, progress and labels stay with this entry.</DialogDescription>
+          </DialogHeader>
+          {collections.some((item) => item.id !== entry.collection_id) ? (
+            <div className="space-y-2">
+              <Label htmlFor="move-entry-category">Destination</Label>
+              <Select value={moveTarget} onValueChange={setMoveTarget} disabled={moving}>
+                <SelectTrigger id="move-entry-category" className="w-full"><SelectValue placeholder="Choose a category" /></SelectTrigger>
+                <SelectContent>{collections.filter((item) => item.id !== entry.collection_id).map((item) => <SelectItem key={item.id} value={item.id} className="break-all">{item.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          ) : <p className="text-sm text-muted-foreground">No other categories.</p>}
+          {moveError ? <p role="alert" className="text-sm text-rose">{moveError}</p> : null}
+          <DialogFooter>
+            <Button variant="outline" disabled={moving} onClick={() => setMoveOpen(false)}>Cancel</Button>
+            <Button disabled={moving || !moveTarget} onClick={async () => {
+              setMoving(true);
+              setMoveError(null);
+              try {
+                const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, { method: "PATCH", json: { collectionId: moveTarget, expectedVersion: entry.version } });
+                onEntryChange(updated);
+                setSavedCategories(null);
+                setMoveOpen(false);
+                router.replace(`${entryPath(updated)}${window.location.search}`);
+                router.refresh();
+                toast.success("Entry moved.");
+              } catch (error) { setMoveError(errorMessage(error)); }
+              finally { setMoving(false); }
+            }}>{moving ? <Loader2 aria-hidden className="animate-spin" /> : <FolderInput aria-hidden />}Move entry</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -172,7 +215,7 @@ export function EntryHeader({
               onClick={async () => {
                 try {
                   await apiFetch(`/api/entries/${entry.id}`, { method: "DELETE" });
-                  router.push(`/${collection.slug}`);
+                  router.push(`/${collection.id}`);
                   router.refresh();
                 } catch (error) {
                   toast.error(errorMessage(error));
@@ -248,7 +291,7 @@ function EditDetailsDialog({
             <Input id="edit-title" name="title" defaultValue={entry.title} required maxLength={300} className="h-10" />
           </div>
           <CategorySelect
-            kind={collectionForKind(entry.kind).kind}
+            collectionId={entry.collection_id}
             categories={categories}
             defaultSelected={assigned.map((category) => category.id)}
             onSelectionChange={(selected) => selected.forEach((category) => created.current.set(category.id, category))}

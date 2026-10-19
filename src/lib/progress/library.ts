@@ -10,6 +10,7 @@ export type EntrySummary = {
 
 export type LibraryEntry = {
   id: string;
+  collection_id?: string;
   kind: EntryKind;
   title: string;
   coverUrl: string | null;

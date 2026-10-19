@@ -23,15 +23,21 @@ export type Database = {
           }
         },"public": {
           Tables: {
+            "collections": {
+              Row: { id: string; user_id: string; name: string; legacy_slug: string | null; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; legacy_slug?: string | null; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; legacy_slug?: string | null; created_at?: string; updated_at?: string }
+              Relationships: [{ foreignKeyName: "collections_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
             "categories": {
                   Row: {
-                    "created_at": string,"id": string,"kind": string,"name": string,"updated_at": string,"user_id": string
+                    "collection_id": string,"created_at": string,"id": string,"kind": string | null,"name": string,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "created_at"?: string,"id"?: string,"kind": string,"name": string,"updated_at"?: string,"user_id"?: string
+                    "collection_id": string,"created_at"?: string,"id"?: string,"kind"?: string | null,"name": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"kind"?: string,"name"?: string,"updated_at"?: string,"user_id"?: string
+                    "collection_id"?: string,"created_at"?: string,"id"?: string,"kind"?: string | null,"name"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -44,13 +50,13 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
-                    "banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"title": string,"updated_at": string,"user_id": string,"version": number
+                    "collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"title": string,"updated_at": string,"user_id": string,"version": number
                   }
                   Insert: {
-                    "banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind": string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Update: {
-                    "banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -63,27 +69,27 @@ isOneToOne: false
                   ]
                 },"entry_categories": {
                   Row: {
-                    "category_id": string,"created_at": string,"entry_id": string,"kind": string,"user_id": string
+                    "collection_id": string,"category_id": string,"created_at": string,"entry_id": string,"kind": string | null,"user_id": string
                   }
                   Insert: {
-                    "category_id": string,"created_at"?: string,"entry_id": string,"kind"?: string,"user_id"?: string
+                    "collection_id"?: string,"category_id": string,"created_at"?: string,"entry_id": string,"kind"?: string | null,"user_id"?: string
                   }
                   Update: {
-                    "category_id"?: string,"created_at"?: string,"entry_id"?: string,"kind"?: string,"user_id"?: string
+                    "collection_id"?: string,"category_id"?: string,"created_at"?: string,"entry_id"?: string,"kind"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
       foreignKeyName: "entry_categories_user_id_category_id_fkey"
-      columns: ["user_id","category_id","kind"]
+      columns: ["user_id","category_id","collection_id"]
 isOneToOne: false
       referencedRelation: "categories"
-      referencedColumns: ["user_id","id","kind"]
+      referencedColumns: ["user_id","id","collection_id"]
     },{
       foreignKeyName: "entry_categories_user_id_entry_id_fkey"
-      columns: ["user_id","entry_id","kind"]
+      columns: ["user_id","entry_id","collection_id"]
 isOneToOne: false
       referencedRelation: "entries"
-      referencedColumns: ["user_id","id","kind"]
+      referencedColumns: ["user_id","id","collection_id"]
     },{
       foreignKeyName: "entry_categories_user_id_entry_id_fkey"
       columns: ["user_id","entry_id"]

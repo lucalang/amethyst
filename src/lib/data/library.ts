@@ -1,18 +1,17 @@
 import "server-only";
 import type { AuthContext } from "@/lib/supabase/auth";
 import { EMPTY_SUMMARY, type LibraryEntry } from "@/lib/progress/library";
-import type { EntryKind } from "@/lib/validation/entries";
 import { fetchAll } from "./fetch-all";
 
-/** One collection's entries; other kinds are never loaded into this view. */
-export async function loadLibrary(ctx: AuthContext, kind: EntryKind): Promise<LibraryEntry[]> {
+/** One category's entries, including their label assignments. */
+export async function loadLibrary(ctx: AuthContext, collectionId: string): Promise<LibraryEntry[]> {
   const { supabase } = ctx;
   const [entries, summaries] = await Promise.all([
     fetchAll((from, to) =>
       supabase
         .from("entries")
-        .select("id, kind, title, cover_url, created_at, updated_at, entry_categories(category_id)")
-        .eq("kind", kind)
+        .select("id, collection_id, kind, title, cover_url, created_at, updated_at, entry_categories(category_id)")
+        .eq("collection_id", collectionId)
         .order("updated_at", { ascending: false })
         .range(from, to),
     ),
@@ -24,6 +23,7 @@ export async function loadLibrary(ctx: AuthContext, kind: EntryKind): Promise<Li
     const row = summaryById.get(entry.id);
     return {
       id: entry.id,
+      collection_id: entry.collection_id,
       kind: entry.kind as LibraryEntry["kind"],
       title: entry.title,
       coverUrl: entry.cover_url,

@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
+import type { LibraryCategory } from "@/lib/collections";
 import { ScrollExitFallback } from "./scroll-exit-fallback";
 import { MobileTabBar, TopNav } from "./top-nav";
 
-export function AppShell({ children, displayName, hasOther }: { children: ReactNode; displayName: string; hasOther: boolean }) {
+export function AppShell({ children, displayName, collections }: { children: ReactNode; displayName: string; collections: LibraryCategory[] }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -11,11 +12,11 @@ export function AppShell({ children, displayName, hasOther }: { children: ReactN
       >
         Skip to content
       </a>
-      <TopNav displayName={displayName} hasOther={hasOther} />
+      <TopNav displayName={displayName} collections={collections} />
       <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
         {children}
       </main>
-      <MobileTabBar hasOther={hasOther} />
+      <MobileTabBar collections={collections} />
       <ScrollExitFallback />
     </div>
   );
@@ -29,7 +30,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
   return (
     <div className="enter mb-7 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight break-words md:text-3xl">{title}</h1>
         {description ? <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}

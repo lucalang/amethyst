@@ -9,18 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORY_PARAM, type Category } from "@/lib/categories";
 import type { LibrarySearch } from "@/lib/progress/library";
-import type { EntryKind } from "@/lib/validation/entries";
 
 export function LibraryControls({
   search,
   label,
-  kind,
+  collectionId,
   categories,
   categoryCounts,
 }: {
   search: LibrarySearch;
   label: string;
-  kind: EntryKind;
+  collectionId: string;
   categories: Category[];
   categoryCounts: Record<string, number>;
 }) {
@@ -99,7 +98,7 @@ export function LibraryControls({
       </Select>
       <CategoryFilter
         categories={categories}
-        kind={kind}
+        collectionId={collectionId}
         selected={activeCategories.map((category) => category.id)}
         counts={categoryCounts}
         onChange={updateCategories}
@@ -126,8 +125,8 @@ export function LibraryControls({
       <span role="status" className="sr-only">{pending ? "Updating library" : ""}</span>
     </div>
     {activeCategories.length ? (
-      <div className="flex flex-wrap items-center gap-1.5" aria-label="Active category filters" role="group">
-        <span className="mr-1 text-xs text-muted-foreground">{activeCategories.length === 1 ? "Category" : "All of"}</span>
+      <div className="flex flex-wrap items-center gap-1.5" aria-label="Active label filters" role="group">
+        <span className="mr-1 text-xs text-muted-foreground">{activeCategories.length === 1 ? "Label" : "All of"}</span>
         {activeCategories.map((category) => (
           <CategoryChip
             key={category.id}
@@ -140,7 +139,7 @@ export function LibraryControls({
           onClick={() => updateCategories([])}
           className="ml-1 inline-flex h-7 items-center rounded-full px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-white/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          Clear categories
+          Clear labels
         </button>
       </div>
     ) : null}

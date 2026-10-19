@@ -6,8 +6,6 @@ import { Check, ChevronDown, Loader2, Plus, Search, Settings2, Tags, X } from "l
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiFetch } from "@/lib/api-client";
 import { categoryKey, categoryNameSchema, sortCategories, type Category } from "@/lib/categories";
-import { collectionForKind } from "@/lib/collections";
-import type { EntryKind } from "@/lib/validation/entries";
 import { cn } from "@/lib/utils";
 
 /** Merge server categories with ones created on this page (server names win, e.g. after a rename). */
@@ -21,8 +19,8 @@ function useCategoryList(categories: readonly Category[]) {
   return { all, remember: (category: Category) => setCreated((current) => [...current, category]) };
 }
 
-async function createCategory(name: string, kind: EntryKind): Promise<Category> {
-  const { category } = await apiFetch<{ category: Category }>("/api/categories", { method: "POST", json: { name, kind } });
+async function createCategory(name: string, collectionId: string): Promise<Category> {
+  const { category } = await apiFetch<{ category: Category }>("/api/categories", { method: "POST", json: { name, collectionId } });
   return category;
 }
 
@@ -104,7 +102,7 @@ function CategoryOptions({
           aria-label={label}
           value={query}
           maxLength={80}
-          placeholder={onCreate ? "Search or create…" : "Search categories…"}
+          placeholder={onCreate ? "Search or create…" : "Search labels…"}
           onChange={(event) => {
             setQuery(event.target.value);
             setActive(0);
@@ -181,7 +179,7 @@ function CategoryOptions({
         })}
         {options.length === 0 ? (
           <li role="presentation" className="px-2.5 py-6 text-center text-sm text-muted-foreground">
-            {categories.length === 0 ? (onCreate ? "No categories yet. Type a name to create one." : "No categories yet.") : "No matching categories."}
+            {categories.length === 0 ? (onCreate ? "No labels yet. Type a name to create one." : "No labels yet.") : "No matching labels."}
           </li>
         ) : null}
       </ul>
@@ -225,13 +223,13 @@ export function CategoryChip({ name, onRemove, className }: { name: string; onRe
  */
 export function CategorySelect({
   categories,
-  kind,
+  collectionId,
   defaultSelected = [],
   name = "categoryIds",
   onSelectionChange,
 }: {
   categories: readonly Category[];
-  kind: EntryKind;
+  collectionId: string;
   defaultSelected?: readonly string[];
   name?: string;
   onSelectionChange?: (selected: Category[]) => void;
@@ -252,7 +250,7 @@ export function CategorySelect({
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
         <span id={labelId} className="text-sm leading-none font-medium">
-          Categories
+          Labels
         </span>
         <span className="text-xs text-muted-foreground">Optional</span>
       </div>
@@ -276,23 +274,23 @@ export function CategorySelect({
             <button
               ref={triggerRef}
               type="button"
-              aria-label={chosen.length ? "Add or remove categories" : "Add categories"}
+              aria-label={chosen.length ? "Add or remove labels" : "Add labels"}
               className="group/add inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-muted-foreground transition-[color,background-color] duration-200 outline-none hover:bg-amethyst/10 hover:text-amethyst focus-visible:bg-amethyst/10 focus-visible:text-amethyst focus-visible:ring-2 focus-visible:ring-ring/60 data-[state=open]:bg-amethyst/15 data-[state=open]:text-amethyst"
             >
               <Plus aria-hidden className="size-3.5 transition-transform duration-200 group-hover/add:rotate-90 group-data-[state=open]/add:rotate-45" />
-              {chosen.length ? "Add" : "Add categories"}
+              {chosen.length ? "Add" : "Add labels"}
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] gap-0 overflow-hidden p-0">
             <CategoryOptions
               categories={all}
               selected={selected}
-              label="Categories"
+              label="Labels"
               onToggle={(category) =>
                 update(selected.includes(category.id) ? selected.filter((id) => id !== category.id) : [...selected, category.id])
               }
               onCreate={async (categoryName) => {
-                const category = await createCategory(categoryName, kind);
+                const category = await createCategory(categoryName, collectionId);
                 remember(category);
                 if (!selected.includes(category.id)) update([...selected, category.id], [...all, category]);
               }}
@@ -310,13 +308,13 @@ export function CategorySelect({
 /** Library toolbar filter: entries matching ALL selected categories. */
 export function CategoryFilter({
   categories,
-  kind,
+  collectionId,
   selected,
   counts,
   onChange,
 }: {
   categories: readonly Category[];
-  kind: EntryKind;
+  collectionId: string;
   selected: readonly string[];
   counts: Record<string, number>;
   onChange: (next: string[]) => void;
@@ -328,12 +326,12 @@ export function CategoryFilter({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label={active ? `Categories: ${selected.length} selected` : "Filter by category"}
+          aria-label={active ? `Labels: ${selected.length} selected` : "Filter by label"}
           data-active={active}
           className="group/cat flex h-10 min-w-[9.5rem] flex-1 items-center gap-2 rounded-md border border-input bg-surface px-3 text-left text-sm transition-[color,background-color,border-color,box-shadow] duration-200 outline-none select-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(165_124_255/0.08)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[active=true]:border-amethyst/45 data-[active=true]:bg-amethyst/10 data-[state=open]:border-amethyst/60 sm:w-48 sm:flex-none"
         >
           <Tags aria-hidden className={cn("size-4 shrink-0 max-sm:hidden", active ? "text-amethyst" : "text-muted-foreground")} />
-          <span className="min-w-0 flex-1 truncate">{active ? (selected.length === 1 && first ? first.name : "Categories") : "All categories"}</span>
+          <span className="min-w-0 flex-1 truncate">{active ? (selected.length === 1 && first ? first.name : "Labels") : "All labels"}</span>
           {selected.length > 1 ? (
             <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-amethyst px-1.5 text-[11px] font-semibold text-primary-foreground tabular-nums">
               {selected.length}
@@ -350,12 +348,12 @@ export function CategoryFilter({
           categories={categories}
           selected={selected}
           counts={counts}
-          label="Filter by category"
+          label="Filter by label"
           onToggle={(category) => onChange(selected.includes(category.id) ? selected.filter((id) => id !== category.id) : [...selected, category.id])}
         />
         <div className="flex items-center justify-between gap-2 border-t border-white/[0.07] px-2 py-1.5">
           <Link
-            href={`/settings?collection=${collectionForKind(kind).slug}#categories`}
+            href={`/settings?collection=${collectionId}#categories`}
             className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground transition-colors outline-none hover:bg-white/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             <Settings2 aria-hidden className="size-3.5" /> Manage

@@ -50,7 +50,7 @@ export async function updateSession(request: NextRequest) {
 
   if (signedIn && GUEST_ONLY_PATHS.has(pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/anime";
+    url.pathname = "/";
     url.search = "";
     return withSessionCookies(NextResponse.redirect(url), response);
   }
