@@ -218,6 +218,8 @@ npm run test:e2e          # Playwright journeys (desktop + mobile) on :3100; scr
 npm run build
 ```
 
+Production builds use `tsconfig.build.json`, which inherits the strict application settings but excludes `tests`. Next.js 16.3 runs the TypeScript CLI during builds, so legacy test fixtures otherwise block deployment even when the application compiles. Development and `npm run typecheck` keep the original `tsconfig.json`, including test diagnostics; no application type errors are ignored.
+
 `test:e2e` needs:
 
 - Playwright's Chromium (`npx playwright install chromium`) and its system libraries (`npx playwright install-deps`). Without root, you can extract the missing libraries from `.deb` packages into a user directory and expose them with `LD_LIBRARY_PATH`.

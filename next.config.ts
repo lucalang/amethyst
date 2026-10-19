@@ -28,6 +28,9 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   // Lets the Playwright dev server run next to `npm run dev`.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  typescript: {
+    tsconfigPath: isDev ? "tsconfig.json" : "tsconfig.build.json",
+  },
   poweredByHeader: false,
   async headers() {
     const shared = [
