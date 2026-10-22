@@ -24,13 +24,15 @@ export default async function NewEntryPage({ params }: Props) {
   }
   if (slug !== collection.id) redirect(`/${collection.id}/new`);
   const categories = await loadCategories(ctx, collection.id);
+  const { data: profile, error } = await ctx.supabase.from("users").select("preferred_cover_shape").eq("id", ctx.userId).single();
+  if (error) throw new Error("Could not load your cover shape preference.");
   return (
     <PageContainer>
       <PageHeader
         title={`New entry in ${collection.name}`}
         description="A name is all it needs. Artwork is optional, and the workspace starts empty for your own folders, notes and checklists."
       />
-      <NewEntryForm collection={collection} categories={categories} />
+      <NewEntryForm collection={collection} categories={categories} defaultCoverShape={profile.preferred_cover_shape} />
     </PageContainer>
   );
 }

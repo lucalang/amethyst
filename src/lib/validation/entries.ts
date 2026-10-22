@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isUploadedImagePath } from "@/lib/attachments";
+import { COVER_SHAPES } from "@/lib/cover-shape";
 import { IMAGE_URL_MESSAGES, checkImageUrl } from "./image-url";
 
 export const ENTRY_KINDS = ["anime", "game", "custom"] as const;
@@ -26,6 +27,7 @@ export const entryPatchSchema = z
   .object({
     title: z.string().trim().min(1, "Title is required.").max(300).optional(),
     coverUrl: artworkUrl.nullable().optional(),
+    coverShape: z.enum(COVER_SHAPES).optional(),
     bannerUrl: artworkUrl.nullable().optional(),
     platform: z.string().trim().max(80).nullable().optional(),
     collectionId: z.uuid().optional(),
@@ -38,5 +40,6 @@ export const newEntrySchema = z.object({
   title: z.string().trim().min(1, "Title is required.").max(300),
   platform: z.string().trim().max(80).optional().transform((value) => value || null),
   coverUrl: artworkUrl.optional().transform((value) => value ?? null),
+  coverShape: z.enum(COVER_SHAPES).default("portrait"),
   bannerUrl: artworkUrl.optional().transform((value) => value ?? null),
 });

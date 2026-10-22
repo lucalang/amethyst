@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseCategoryIds } from "@/lib/categories";
+import type { CoverShape } from "@/lib/cover-shape";
 import type { EntryKind } from "@/lib/validation/entries";
 
 export type EntrySummary = {
@@ -14,6 +15,7 @@ export type LibraryEntry = {
   kind: EntryKind;
   title: string;
   coverUrl: string | null;
+  coverShape: CoverShape;
   categoryIds: string[];
   createdAt: string;
   lastActivityAt: string;

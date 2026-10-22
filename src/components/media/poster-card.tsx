@@ -15,7 +15,7 @@ export function PosterCard({ entry, priority }: { entry: LibraryEntry; priority?
     >
       <div className="scroll-fade">
         <div
-          className={`poster-frame relative ${entry.kind === "game" ? "aspect-square" : "aspect-[2/3]"} overflow-hidden rounded-lg border border-border bg-surface`}
+          className={`poster-frame relative ${entry.coverShape === "square" ? "aspect-square" : "aspect-[2/3]"} overflow-hidden rounded-lg border border-border bg-surface`}
         >
           <MediaImage
             src={entry.coverUrl}

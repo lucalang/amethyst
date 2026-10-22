@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { FolderInput, Loader2, MoreHorizontal, Pencil, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CategorySelect } from "@/components/categories/category-picker";
+import { CoverArtworkField } from "@/components/media/cover-artwork-field";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { ProgressMeter } from "@/components/media/progress-meter";
@@ -28,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
 import { entryPath, type LibraryCategory } from "@/lib/collections";
+import type { CoverShape } from "@/lib/cover-shape";
 import type { Tables } from "@/lib/supabase/database.types";
 import { errorMessage } from "./client-utils";
 
@@ -84,7 +86,7 @@ export function EntryHeader({
       <div className="mx-auto max-w-[88rem] px-4 md:px-6">
         <div className="relative -mt-16 flex flex-col gap-4 pb-7 md:-mt-24 md:flex-row md:items-end md:gap-6">
           <div
-            className={`enter enter-card relative ${entry.kind === "game" ? "aspect-square w-28 md:w-36" : "aspect-[2/3] w-24 md:w-32"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_24px_60px_-24px_rgb(165_124_255/0.55)] ring-1 ring-white/10`}
+            className={`enter enter-card relative ${entry.cover_shape === "square" ? "aspect-square w-28 md:w-36" : "aspect-[2/3] w-24 md:w-32"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_24px_60px_-24px_rgb(165_124_255/0.55)] ring-1 ring-white/10`}
             style={{ "--enter-index": 0 } as React.CSSProperties}
           >
             <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} priority fallbackLabel={entry.title} />
@@ -148,6 +150,7 @@ export function EntryHeader({
           const detailsChanged =
             values.title.trim() !== entry.title ||
             (values.coverUrl.trim() || null) !== entry.cover_url ||
+            values.coverShape !== entry.cover_shape ||
             (values.bannerUrl.trim() || null) !== entry.banner_url;
           if (detailsChanged) {
             const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, {
@@ -244,7 +247,7 @@ function EditDetailsDialog({
   entry: Entry;
   categories: Category[];
   assigned: Category[];
-  onSave: (values: { title: string; coverUrl: string; bannerUrl: string }, categories: Category[]) => Promise<void>;
+  onSave: (values: { title: string; coverUrl: string; coverShape: CoverShape; bannerUrl: string }, categories: Category[]) => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -269,6 +272,7 @@ function EditDetailsDialog({
                 {
                   title: String(formData.get("title") ?? ""),
                   coverUrl: String(formData.get("coverUrl") ?? ""),
+                  coverShape: formData.get("coverShape") as CoverShape,
                   bannerUrl: String(formData.get("bannerUrl") ?? ""),
                 },
                 parseCategoryIds(formData.getAll("categoryIds")).flatMap((id) => {
@@ -296,13 +300,10 @@ function EditDetailsDialog({
             defaultSelected={assigned.map((category) => category.id)}
             onSelectionChange={(selected) => selected.forEach((category) => created.current.set(category.id, category))}
           />
-          <ImageUrlField
+          <CoverArtworkField
             id="edit-cover"
-            name="coverUrl"
-            label="Cover image URL"
-            hint={entry.kind === "game" ? "Square artwork (1:1) works best." : "Portrait artwork (2:3) works best."}
+            defaultShape={entry.cover_shape}
             defaultValue={entry.cover_url}
-            shape={entry.kind === "game" ? "square" : "poster"}
           />
           <ImageUrlField id="edit-banner" name="bannerUrl" label="Banner image URL" hint="Optional wide artwork for the header." defaultValue={entry.banner_url} shape="banner" />
           {error ? (

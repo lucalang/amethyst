@@ -50,13 +50,13 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
-                    "collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"title": string,"updated_at": string,"user_id": string,"version": number
+                    "cover_shape": "square" | "portrait","collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"title": string,"updated_at": string,"user_id": string,"version": number
                   }
                   Insert: {
-                    "collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "cover_shape"?: "square" | "portrait","collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Update: {
-                    "collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "cover_shape"?: "square" | "portrait","collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -106,13 +106,13 @@ isOneToOne: false
                   ]
                 },"users": {
                   Row: {
-                    "created_at": string,"display_name": string | null,"id": string,"updated_at": string
+                    "preferred_cover_shape": "square" | "portrait","created_at": string,"display_name": string | null,"id": string,"updated_at": string
                   }
                   Insert: {
-                    "created_at"?: string,"display_name"?: string | null,"id": string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","created_at"?: string,"display_name"?: string | null,"id": string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string | null,"id"?: string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","created_at"?: string,"display_name"?: string | null,"id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     

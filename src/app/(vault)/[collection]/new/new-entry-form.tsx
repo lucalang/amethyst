@@ -4,22 +4,25 @@ import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { CategorySelect } from "@/components/categories/category-picker";
+import { CoverArtworkField } from "@/components/media/cover-artwork-field";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { LibraryCategory } from "@/lib/collections";
 import type { Category } from "@/lib/categories";
+import type { CoverShape } from "@/lib/cover-shape";
 import { createEntry, type NewEntryState } from "./actions";
 
 const initial: NewEntryState = { status: "idle" };
 
-export function NewEntryForm({ collection, categories }: { collection: LibraryCategory; categories: Category[] }) {
+export function NewEntryForm({ collection, categories, defaultCoverShape }: { collection: LibraryCategory; categories: Category[]; defaultCoverShape: CoverShape }) {
   const [state, action, pending] = useActionState(createEntry, initial);
   const [, startTransition] = useTransition();
   const errors = state.fieldErrors ?? {};
   const values = state.values ?? {};
   const [bannerOpen, setBannerOpen] = useState(false);
+  const [shapeBusy, setShapeBusy] = useState(true);
   const showBanner = bannerOpen || Boolean(values.bannerUrl) || Boolean(errors.bannerUrl);
 
   return (
@@ -62,14 +65,13 @@ export function NewEntryForm({ collection, categories }: { collection: LibraryCa
 
         <CategorySelect key={collection.id} collectionId={collection.id} categories={categories} />
 
-        <ImageUrlField
+        <CoverArtworkField
           id="coverUrl"
-          name="coverUrl"
-          label="Cover image URL"
-          hint="Optional. A direct link to an image on any public website."
+          defaultShape={defaultCoverShape}
           defaultValue={values.coverUrl}
           error={errors.coverUrl}
-          shape="poster"
+          useRememberedDefault
+          onBusyChange={setShapeBusy}
         />
 
         {showBanner ? (
@@ -102,7 +104,7 @@ export function NewEntryForm({ collection, categories }: { collection: LibraryCa
           <Button asChild variant="ghost" className="h-10 px-3.5">
             <Link href={`/${collection.id}`}>Cancel</Link>
           </Button>
-          <Button type="submit" disabled={pending} className="h-10 px-4">
+          <Button type="submit" disabled={pending || shapeBusy} className="h-10 px-4">
             {pending ? <Loader2 aria-hidden className="animate-spin" /> : <Plus aria-hidden />}
             Create entry
           </Button>

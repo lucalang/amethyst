@@ -24,6 +24,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
     collectionId: collection.id,
     title: formData.get("title"),
     coverUrl: formData.get("coverUrl") || undefined,
+    coverShape: formData.get("coverShape") || undefined,
     bannerUrl: formData.get("bannerUrl") || undefined,
   });
   if (!parsed.success) {
@@ -39,6 +40,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
       collection_id: input.collectionId,
       title: input.title,
       cover_url: input.coverUrl,
+      cover_shape: input.coverShape,
       banner_url: input.bannerUrl,
     })
     .select("id, collection_id")
