@@ -10,7 +10,7 @@ import type { PinStyle } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: { value: PinStyle; title: string; description: string }[] = [
-  { value: "current", title: "Current style", description: "Pin badge and progress shown on the artwork." },
+  { value: "current", title: "On the artwork", description: "Pin badge and progress shown on the artwork." },
   { value: "clean", title: "Clean covers", description: "Artwork stays clear; title, progress and a pin menu sit below." },
 ];
 
@@ -63,11 +63,11 @@ export function PinStyleSetting({ value, labelId }: { value: PinStyle; labelId: 
     setSaving(true);
     try {
       await apiFetch("/api/preferences", { method: "PATCH", json: { pinStyle: next } });
-      toast.success(next === "clean" ? "Clean covers on" : "Current style on");
+      toast.success(next === "clean" ? "Clean covers on" : "Details on the artwork");
       router.refresh();
     } catch (error) {
       setSelected(previous);
-      toast.error(`Couldn’t save the pinning style: ${errorMessage(error)}`);
+      toast.error(`Couldn’t save the cover details: ${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }

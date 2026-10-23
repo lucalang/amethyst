@@ -1,8 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { serverEnv } from "@/lib/env";
+import { STARTUP_COOKIE, STARTUP_PATH, startupCookieOptions } from "@/lib/startup";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/validation/redirect";
 
@@ -49,7 +51,9 @@ export async function signInWithPassword(_prev: AuthState, formData: FormData): 
 
   const { error: profileError } = await supabase.rpc("ensure_profile");
   if (profileError) return { status: "error", message: "Signed in, but your profile could not be created. Try again.", email };
-  redirect(destination(formData.get("next")));
+  const next = destination(formData.get("next"));
+  (await cookies()).set(STARTUP_COOKIE, "1", startupCookieOptions(serverEnv().APP_URL.startsWith("https:")));
+  redirect(next === "/" ? STARTUP_PATH : next);
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {

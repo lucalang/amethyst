@@ -16,7 +16,14 @@ import { loadCategories } from "@/lib/data/categories";
 import { loadLibrary } from "@/lib/data/library";
 import { loadPreferences } from "@/lib/data/preferences";
 import { filterLibrary, librarySearchSchema } from "@/lib/progress/library";
+import type { LibraryDensity } from "@/lib/preferences";
 import { requireUser } from "@/lib/supabase/auth";
+
+const DENSITY_GRID: Record<LibraryDensity, string> = {
+  comfortable: "grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6",
+  compact: "grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8",
+  large: "grid grid-cols-2 gap-x-6 gap-y-10 md:grid-cols-3 xl:grid-cols-4",
+};
 
 type Props = {
   params: Promise<{ collection: string }>;
@@ -125,10 +132,10 @@ export default async function LibraryPage({ params, searchParams }: Props) {
               }
             />
           ) : (
-            <ul aria-label={collection.name} className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <ul aria-label={collection.name} className={DENSITY_GRID[preferences.libraryDensity]}>
               {visible.map((entry, index) => (
                 <li key={entry.id} className="enter enter-card" style={{ "--enter-index": Math.min(index, 8) + 1 } as React.CSSProperties}>
-                  <PosterCard entry={entry} priority={index < 6} pinStyle={preferences.pinStyle} />
+                  <PosterCard entry={entry} priority={index < (preferences.libraryDensity === "compact" ? 8 : 6)} pinStyle={preferences.pinStyle} />
                 </li>
               ))}
             </ul>

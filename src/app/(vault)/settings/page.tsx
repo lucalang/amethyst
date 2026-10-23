@@ -3,11 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KeyRound, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { loadCollections } from "@/lib/data/collections";
 import { loadPreferences } from "@/lib/data/preferences";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "./forms";
-import { PinStyleSetting } from "./pin-style-setting";
 import { SettingRow, SettingsGroup, SettingsHeader } from "./settings-ui";
+import { StartupSetting } from "./startup-setting";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -17,25 +18,25 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   if (typeof collection === "string" && collection) redirect(`/settings/labels?collection=${encodeURIComponent(collection)}`);
 
   const ctx = await requireUser();
-  const [{ data: profile }, preferences] = await Promise.all([
+  const [{ data: profile }, preferences, collections] = await Promise.all([
     ctx.supabase.from("users").select("display_name").eq("id", ctx.userId).maybeSingle(),
     loadPreferences(ctx),
+    loadCollections(ctx),
   ]);
 
   return (
     <>
-      <SettingsHeader title="Settings" description="General preferences for your account." />
+      <SettingsHeader title="General" description="Your account, where the app opens, and security." />
 
-      <SettingsGroup id="display" title="Display" description="How your archive looks. Changes apply to this account on every device.">
-        <div className="space-y-8">
-          <SettingRow
-            labelId="pin-style-label"
-            label="Pinning style"
-            description="Choose whether pins and progress appear on cover artwork, or keep covers clean with details below."
-          >
-            <PinStyleSetting value={preferences.pinStyle} labelId="pin-style-label" />
-          </SettingRow>
-        </div>
+      <SettingsGroup id="startup" title="Startup">
+        <SettingRow labelId="startup-label" label="Startup destination" description="The first page you see when you open the archive.">
+          <StartupSetting
+            value={preferences.startup}
+            collectionId={preferences.startupCollectionId}
+            collections={collections.map(({ id, name }) => ({ id, name }))}
+            labelId="startup-label"
+          />
+        </SettingRow>
       </SettingsGroup>
 
       <SettingsGroup id="profile" title="Profile" description={<>Signed in as <span className="text-foreground">{ctx.email ?? "unknown email"}</span>.</>}>

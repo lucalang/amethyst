@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
+import { JetBrains_Mono, Literata, Manrope } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
 import "./globals.css";
 
@@ -8,6 +8,10 @@ const manrope = Manrope({
   subsets: ["latin"],
   display: "swap",
 });
+
+// Optional writing fonts (Settings → Editor): not preloaded, so only accounts that pick them download them.
+const literata = Literata({ variable: "--font-literata", subsets: ["latin"], display: "swap", preload: false });
+const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], display: "swap", preload: false });
 
 export const metadata: Metadata = {
   title: { default: "Amethyst Archives", template: "%s · Amethyst Archives" },
@@ -23,7 +27,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`dark ${manrope.variable} h-full`}>
+    <html lang="en" className={`dark ${manrope.variable} ${literata.variable} ${jetbrains.variable} h-full`}>
       <body className="min-h-dvh">
         <Providers>{children}</Providers>
       </body>

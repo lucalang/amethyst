@@ -1,5 +1,5 @@
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
-import { preferencesSchema } from "@/lib/preferences";
+import { preferencesSchema, readSettings } from "@/lib/preferences";
 import type { Database } from "@/lib/supabase/database.types";
 
 type UserUpdate = Database["public"]["Tables"]["users"]["Update"];
@@ -16,8 +16,19 @@ export async function PATCH(request: Request) {
   const update: UserUpdate = {};
   if (parsed.data.pinStyle) update.pin_style = parsed.data.pinStyle;
   if (parsed.data.introSeenOn) update.intro_seen_on = parsed.data.introSeenOn;
-  const { data, error } = await ctx.supabase.from("users").update(update).eq("id", ctx.userId).select("pin_style").maybeSingle();
+  if (Object.keys(update).length > 0) {
+    const { data, error } = await ctx.supabase.from("users").update(update).eq("id", ctx.userId).select("id").maybeSingle();
+    if (error) return dbError(error);
+    if (!data) return apiError(404, "not_found", "Account not found.");
+  }
+  if (parsed.data.settings) {
+    const { data, error } = await ctx.supabase.rpc("update_user_settings", { patch: parsed.data.settings });
+    if (error) return dbError(error);
+    if (data === null) return apiError(404, "not_found", "Account not found.");
+  }
+
+  const { data, error } = await ctx.supabase.from("users").select("pin_style, settings").eq("id", ctx.userId).maybeSingle();
   if (error) return dbError(error);
   if (!data) return apiError(404, "not_found", "Account not found.");
-  return jsonResponse({ pinStyle: data.pin_style });
+  return jsonResponse({ pinStyle: data.pin_style, settings: readSettings(data.settings) });
 }

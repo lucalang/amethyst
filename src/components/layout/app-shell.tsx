@@ -1,7 +1,11 @@
 import type { ReactNode } from "react";
+import { settingsStyle } from "@/lib/appearance";
 import type { LibraryCategory } from "@/lib/collections";
+import type { Preferences } from "@/lib/preferences";
+import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { OpeningIntro } from "./opening-intro";
 import { ScrollExitFallback } from "./scroll-exit-fallback";
+import { SettingsProvider } from "./settings-context";
 import { MobileTabBar, TopNav } from "./top-nav";
 
 export function AppShell({
@@ -10,29 +14,35 @@ export function AppShell({
   collections,
   userId,
   introSeenOn,
+  preferences,
 }: {
   children: ReactNode;
   displayName: string;
   collections: LibraryCategory[];
   userId: string;
   introSeenOn: string | null;
+  preferences: Preferences;
 }) {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <OpeningIntro userId={userId} lastSeen={introSeenOn} />
-      <a
-        href="#main"
-        className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
-      >
-        Skip to content
-      </a>
-      <TopNav displayName={displayName} collections={collections} />
-      <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
-        {children}
-      </main>
-      <MobileTabBar collections={collections} />
-      <ScrollExitFallback />
-    </div>
+    <SettingsProvider value={preferences}>
+      <div className="flex min-h-dvh flex-col" data-motion={preferences.motion} data-shine={preferences.cardShine ? "on" : "off"}>
+        <style>{settingsStyle(preferences)}</style>
+        <OpeningIntro userId={userId} lastSeen={introSeenOn} motion={preferences.motion} />
+        <KeyboardShortcuts collections={collections} />
+        <a
+          href="#main"
+          className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+        >
+          Skip to content
+        </a>
+        <TopNav displayName={displayName} collections={collections} />
+        <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
+          {children}
+        </main>
+        <MobileTabBar collections={collections} />
+        <ScrollExitFallback />
+      </div>
+    </SettingsProvider>
   );
 }
 

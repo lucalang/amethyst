@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { STARTUP_COOKIE, STARTUP_PATH, startupCookieOptions } from "@/lib/startup";
 import type { Database } from "./database.types";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/signout", "/auth/session-expired"];
@@ -53,6 +54,14 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/";
     url.search = "";
     return withSessionCookies(NextResponse.redirect(url), response);
+  }
+
+  // The first page of a browser session: opening Home goes to the startup destination chosen in Settings.
+  if (signedIn && !pathname.startsWith("/api/") && !isPublic(pathname) && !request.cookies.has(STARTUP_COOKIE)) {
+    const opening = pathname === "/" && request.method === "GET" && request.headers.get("sec-fetch-dest") === "document";
+    const target = opening ? withSessionCookies(NextResponse.redirect(new URL(STARTUP_PATH, request.url)), response) : response;
+    target.cookies.set(STARTUP_COOKIE, "1", startupCookieOptions(request.nextUrl.protocol === "https:"));
+    return target;
   }
 
   return response;

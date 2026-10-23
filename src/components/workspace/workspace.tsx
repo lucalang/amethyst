@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { AlertTriangle, ChevronRight, FilePlus2, FileText, FolderInput, FolderPlus, ListPlus, Loader2, MoreHorizontal, PanelLeft, PanelLeftOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/media/empty-state";
@@ -22,6 +22,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { apiFetch } from "@/lib/api-client";
 import type { LibraryCategory } from "@/lib/collections";
 import type { Category } from "@/lib/categories";
+import type { ShortcutAction } from "@/lib/preferences";
+import { WORKSPACE_SHORTCUT_EVENT } from "@/lib/shortcuts";
 import type { Tables } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 import { nodeNameSchema } from "@/lib/validation/workspace";
@@ -159,6 +161,31 @@ function Workspace({
     if (isDesktop()) setHidden(false);
     else setSheetOpen(true);
   }
+
+  function toggleExplorer() {
+    if (!isDesktop()) {
+      setSheetOpen((open) => !open);
+      return;
+    }
+    setHidden(!explorerHidden);
+    if (explorerHidden) {
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('aside[aria-label="Explorer"] [role="treeitem"][tabindex="0"]')?.focus());
+    }
+  }
+
+  // Keyboard shortcuts from Settings → Shortcuts (see KeyboardShortcuts).
+  const onShortcut = useEffectEvent((event: Event) => {
+    const action = (event as CustomEvent<ShortcutAction>).detail;
+    if (action === "newFile") startCreate("note");
+    else if (action === "toggleExplorer") toggleExplorer();
+    else return;
+    event.preventDefault();
+  });
+  useEffect(() => {
+    const listener = (event: Event) => onShortcut(event);
+    window.addEventListener(WORKSPACE_SHORTCUT_EVENT, listener);
+    return () => window.removeEventListener(WORKSPACE_SHORTCUT_EVENT, listener);
+  }, []);
 
   function openFile(id: string) {
     setSelectedId(id);

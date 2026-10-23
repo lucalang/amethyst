@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { Gem } from "lucide-react";
+import type { MotionLevel } from "@/lib/preferences";
 
 const STORAGE_PREFIX = "archive:intro:";
 const SAFETY_MS = 2500;
@@ -13,11 +14,12 @@ const SAFETY_MS = 2500;
  */
 const DECIDE_SCRIPT = `(function(){try{
 var el=document.getElementById("opening-intro");if(!el||el.dataset.decided)return;el.dataset.decided="1";
+var m=el.dataset.motion;if(m==="off")return;
 var d=new Date(),t=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 var k="${STORAGE_PREFIX}"+el.dataset.user,s="";try{s=localStorage.getItem(k)||""}catch(e){}
 if((el.dataset.last||"")>=t||s>=t)return;
 try{localStorage.setItem(k,t)}catch(e){}
-el.dataset.today=t;el.dataset.intro=matchMedia("(prefers-reduced-motion: reduce)").matches?"reduced":"play";
+el.dataset.today=t;el.dataset.intro=m==="subtle"||matchMedia("(prefers-reduced-motion: reduce)").matches?"reduced":"play";
 setTimeout(function(){el.dataset.intro="done"},${SAFETY_MS});
 }catch(e){}})();`;
 
@@ -31,7 +33,8 @@ let playedKey: string | null = null;
 let savedKey: string | null = null;
 
 /** Client-side mounts (arriving from the sign-in page) never ran the inline script: decide here. */
-function decide(el: HTMLElement, userId: string) {
+function decide(el: HTMLElement, userId: string, motion: MotionLevel) {
+  if (motion === "off") return;
   const today = localDate();
   const key = `${userId}:${today}`;
   let stored = "";
@@ -43,11 +46,11 @@ function decide(el: HTMLElement, userId: string) {
     localStorage.setItem(STORAGE_PREFIX + userId, today);
   } catch {}
   el.dataset.today = today;
-  el.dataset.intro = matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "play";
+  el.dataset.intro = motion === "subtle" || matchMedia("(prefers-reduced-motion: reduce)").matches ? "reduced" : "play";
 }
 
 /** A short logo reveal on the first authenticated opening of each local calendar day. */
-export function OpeningIntro({ userId, lastSeen }: { userId: string; lastSeen: string | null }) {
+export function OpeningIntro({ userId, lastSeen, motion }: { userId: string; lastSeen: string | null; motion: MotionLevel }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -55,7 +58,7 @@ export function OpeningIntro({ userId, lastSeen }: { userId: string; lastSeen: s
     if (!el) return;
     if (!el.dataset.decided) {
       el.dataset.decided = "1";
-      decide(el, userId);
+      decide(el, userId, motion);
     }
     const state = el.dataset.intro;
     if (state !== "play" && state !== "reduced") return;
@@ -99,7 +102,7 @@ export function OpeningIntro({ userId, lastSeen }: { userId: string; lastSeen: s
       clearTimeout(timer);
       detach();
     };
-  }, [userId]);
+  }, [userId, motion]);
 
   return <>
     <div
@@ -109,6 +112,7 @@ export function OpeningIntro({ userId, lastSeen }: { userId: string; lastSeen: s
       data-intro="idle"
       data-user={userId}
       data-last={lastSeen ?? ""}
+      data-motion={motion}
       aria-hidden
       suppressHydrationWarning
     >

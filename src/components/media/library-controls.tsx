@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useOptimistic, useTransition } from "react";
+import { useEffect, useOptimistic, useTransition } from "react";
 import { ArrowDownWideNarrow, ListFilter, Loader2, Search, X } from "lucide-react";
 import { CategoryChip, CategoryFilter } from "@/components/categories/category-picker";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORY_PARAM, type Category } from "@/lib/categories";
 import type { LibrarySearch } from "@/lib/progress/library";
+import { FOCUS_SEARCH_KEY } from "@/lib/shortcuts";
 
 export function LibraryControls({
   search,
@@ -28,6 +29,16 @@ export function LibraryControls({
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [selectedCategories, setSelectedCategories] = useOptimistic(search.categories);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(FOCUS_SEARCH_KEY) !== "1") return;
+      sessionStorage.removeItem(FOCUS_SEARCH_KEY);
+    } catch {
+      return;
+    }
+    document.getElementById("library-search")?.focus();
+  }, []);
 
   function update(key: string, value: string, defaultValue: string) {
     const next = new URLSearchParams(params.toString());

@@ -7,13 +7,97 @@ export const DEFAULT_PIN_STYLE: PinStyle = "current";
 
 export const isPinStyle = (value: unknown): value is PinStyle => PIN_STYLES.includes(value as PinStyle);
 
-/** Account-level preferences. Add new fields here and in the users table as settings grow. */
+export const MOTION_LEVELS = ["off", "subtle", "full"] as const;
+export const EDITOR_FONTS = ["sans", "serif", "mono", "system"] as const;
+export const EDITOR_WIDTHS = ["narrow", "medium", "wide", "full"] as const;
+export const LIBRARY_DENSITIES = ["comfortable", "compact", "large"] as const;
+export const CHECKLIST_MODES = ["bottom", "collapse", "keep"] as const;
+export const STARTUP_DESTINATIONS = ["home", "collection", "last"] as const;
+export const HEADING_LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
+export const SHORTCUT_ACTIONS = ["search", "newEntry", "newFile", "toggleExplorer"] as const;
+
+export type MotionLevel = (typeof MOTION_LEVELS)[number];
+export type EditorFont = (typeof EDITOR_FONTS)[number];
+export type EditorWidth = (typeof EDITOR_WIDTHS)[number];
+export type LibraryDensity = (typeof LIBRARY_DENSITIES)[number];
+export type ChecklistMode = (typeof CHECKLIST_MODES)[number];
+export type StartupDestination = (typeof STARTUP_DESTINATIONS)[number];
+export type HeadingLevel = (typeof HEADING_LEVELS)[number];
+export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
+
+export const HOVER_SCALE_RANGE = { min: 0, max: 12 } as const;
+export const FONT_SIZE_RANGE = { min: 14, max: 22 } as const;
+/** Line spacing in hundredths (175 = 1.75). */
+export const LINE_SPACING_RANGE = { min: 130, max: 230, step: 5 } as const;
+
+/** Modifiers in a fixed order, then one key; "" turns the shortcut off. */
+export const SHORTCUT_PATTERN = /^(?:Mod\+)?(?:Alt\+)?(?:Shift\+)?(?:[A-Z0-9]|F(?:[1-9]|1[0-2])|Arrow(?:Up|Down|Left|Right)|Space|Enter|Backspace|Delete|Tab|Escape|Home|End|PageUp|PageDown|Insert|Plus|[^\s+A-Za-z0-9])$/u;
+
+const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Use a hex color like #b36dff.").transform((value) => value.toLowerCase());
+const shortcut = z.string().max(40).refine((value) => value === "" || SHORTCUT_PATTERN.test(value), "Unsupported shortcut.");
+
+export const DEFAULT_SETTINGS = {
+  motion: "full" as MotionLevel,
+  cardShine: true,
+  hoverScale: 5,
+  editorFont: "sans" as EditorFont,
+  editorFontSize: 16,
+  editorLineSpacing: 175,
+  editorWidth: "medium" as EditorWidth,
+  headingColors: { h1: "#dccfff", h2: "#b36dff", h3: "#e24fd9", h4: "#ff7fae", h5: "#c6b9e8", h6: "#a39bbd" } as Record<HeadingLevel, string>,
+  libraryDensity: "comfortable" as LibraryDensity,
+  checklistMode: "bottom" as ChecklistMode,
+  startup: "home" as StartupDestination,
+  startupCollectionId: null as string | null,
+  shortcuts: { search: "/", newEntry: "Alt+Shift+N", newFile: "Alt+N", toggleExplorer: "Alt+E" } as Record<ShortcutAction, string>,
+};
+export type Settings = typeof DEFAULT_SETTINGS;
+
+const settingFields = {
+  motion: z.enum(MOTION_LEVELS),
+  cardShine: z.boolean(),
+  hoverScale: z.number().int().min(HOVER_SCALE_RANGE.min).max(HOVER_SCALE_RANGE.max),
+  editorFont: z.enum(EDITOR_FONTS),
+  editorFontSize: z.number().int().min(FONT_SIZE_RANGE.min).max(FONT_SIZE_RANGE.max),
+  editorLineSpacing: z.number().int().min(LINE_SPACING_RANGE.min).max(LINE_SPACING_RANGE.max),
+  editorWidth: z.enum(EDITOR_WIDTHS),
+  headingColors: z.object(Object.fromEntries(HEADING_LEVELS.map((level) => [level, hexColor])) as Record<HeadingLevel, typeof hexColor>).strict(),
+  libraryDensity: z.enum(LIBRARY_DENSITIES),
+  checklistMode: z.enum(CHECKLIST_MODES),
+  startup: z.enum(STARTUP_DESTINATIONS),
+  startupCollectionId: z.uuid().nullable(),
+  shortcuts: z
+    .object(Object.fromEntries(SHORTCUT_ACTIONS.map((action) => [action, shortcut])) as Record<ShortcutAction, typeof shortcut>)
+    .strict()
+    .refine((value) => {
+      const used = Object.values(value).filter(Boolean);
+      return new Set(used).size === used.length;
+    }, "Two actions cannot share a shortcut."),
+} satisfies { [K in keyof Settings]: z.ZodType };
+
+/** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */
+export const settingsPatchSchema = z.object(settingFields).partial().strict();
+export type SettingsPatch = z.infer<typeof settingsPatchSchema>;
+
+/** Stored settings with each invalid or missing field falling back to its default. */
+export function readSettings(raw: unknown): Settings {
+  const source = raw && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  const settings = structuredClone(DEFAULT_SETTINGS);
+  for (const key of Object.keys(settingFields) as (keyof Settings)[]) {
+    const parsed = settingFields[key].safeParse(source[key]);
+    if (parsed.success) (settings as Record<string, unknown>)[key] = parsed.data;
+  }
+  return settings;
+}
+
+/** Account-level preferences: pin style and intro date are columns, everything else lives in `settings`. */
 export const preferencesSchema = z
   .object({
     pinStyle: z.enum(PIN_STYLES).optional(),
     introSeenOn: z.iso.date().optional(),
+    settings: settingsPatchSchema.refine((value) => Object.keys(value).length > 0, "Nothing to update.").optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, "Nothing to update.");
 
-export type Preferences = { pinStyle: PinStyle };
+export type Preferences = Settings & { pinStyle: PinStyle };

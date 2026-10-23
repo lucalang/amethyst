@@ -23,13 +23,14 @@ import {
   Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiFetch } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { MAX_ITEMS_PER_REQUEST, itemLabelSchema, splitLines, type TaskInput } from "@/lib/validation/workspace";
 import type { ChecklistItem, ChecklistStep, NodeDetail } from "@/lib/workspace/tree";
-import { errorMessage, useLocalStorageValue, writeLocal } from "./client-utils";
+import { errorMessage, writeLocal } from "./client-utils";
 import { describeDue, useToday } from "./due-date";
 import { RoundCheck } from "./round-check";
 import { SaveStatus, type SaveState } from "./save-status";
@@ -37,7 +38,6 @@ import { TaskDetails, notesBackupKey, type Outcome, type TaskActions, type TaskP
 import { InlineNameForm } from "./inline-name-form";
 import { TaskLinesDialog } from "./task-lines-dialog";
 
-const COMPLETED_KEY = "archive:checklist:completed";
 /** How long a just-completed task stays in place so the check and strike-through can play. */
 const SETTLE_MS = 520;
 const FRESH_MS = 600;
@@ -83,16 +83,18 @@ export function ChecklistEditor({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [settling, addSettling] = useTransientIds(SETTLE_MS);
   const [fresh, addFresh] = useTransientIds(FRESH_MS);
-  const storedCompleted = useLocalStorageValue(COMPLETED_KEY);
+  const { checklistMode, motion } = useSettings();
+  // "keep" leaves completed tasks in place; otherwise they gather in a Completed section (collapsed for "collapse").
+  const keepInPlace = checklistMode === "keep";
   const [completedOverride, setCompletedOverride] = useState<boolean | null>(null);
-  const showCompleted = completedOverride ?? storedCompleted !== "hidden";
+  const showCompleted = completedOverride ?? checklistMode !== "collapse";
   const chainRef = useRef<Promise<unknown>>(Promise.resolve());
   const [bulkOpen, setBulkOpen] = useState(false);
   const today = useToday();
 
   // Just-completed tasks linger in the active list until their completion feedback has played.
-  const active = items.filter((item) => !item.checked || settling.has(item.id));
-  const completed = items.filter((item) => item.checked && !settling.has(item.id));
+  const active = keepInPlace ? items : items.filter((item) => !item.checked || settling.has(item.id));
+  const completed = keepInPlace ? [] : items.filter((item) => item.checked && !settling.has(item.id));
   const doneCount = items.filter((item) => item.checked).length;
   const state: SaveState = pending > 0 ? { kind: "saving" } : lastError ? { kind: "error", message: lastError } : { kind: "saved" };
 
@@ -206,21 +208,21 @@ export function ChecklistEditor({
 
   function toggle(item: ChecklistItem, checked: boolean) {
     void patchItem(item, { checked }, `“${item.label}” not saved`);
-    if (checked && !prefersReducedMotion()) addSettling([item.id], () => addFresh([item.id]));
+    if (checked && !keepInPlace && motion !== "off" && !prefersReducedMotion()) addSettling([item.id], () => addFresh([item.id]));
     else addFresh([item.id]);
   }
 
   function setAll(checked: boolean) {
     const changing = items.filter((item) => item.checked !== checked).length;
     if (changing === 0) return;
-    if (!checked && completed.length > 3 && !window.confirm(`Mark all ${completed.length} completed tasks in “${name}” as not completed?`)) return;
+    if (!checked && doneCount > 3 && !window.confirm(`Mark all ${doneCount} completed tasks in “${name}” as not completed?`)) return;
     setItems((current) => current.map((item) => ({ ...item, checked })));
     void run("Checklist not saved", () => apiFetch(`/api/nodes/${fileId}/items`, { method: "PATCH", json: { checked } }), () => void resync());
   }
 
-  /** Move a task within its section (active or completed). */
+  /** Move a task within its section (active or completed, or the whole list when tasks stay in place). */
   function move(item: ChecklistItem, delta: number) {
-    const section = item.checked ? completed : active;
+    const section = keepInPlace || !item.checked ? active : completed;
     const index = section.findIndex((candidate) => candidate.id === item.id);
     const neighbour = section[index + delta];
     if (!neighbour) return;
@@ -268,7 +270,6 @@ export function ChecklistEditor({
 
   function setCompletedVisible(visible: boolean) {
     setCompletedOverride(visible);
-    writeLocal(COMPLETED_KEY, visible ? null : "hidden");
   }
 
   const rowProps = (item: ChecklistItem, index: number, section: ChecklistItem[]) => ({
@@ -315,16 +316,20 @@ export function ChecklistEditor({
                 <ListPlus aria-hidden /> Add multiple tasks
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled={active.length === 0} onSelect={() => setAll(true)}>
+              <DropdownMenuItem disabled={doneCount === items.length} onSelect={() => setAll(true)}>
                 <CheckCheck aria-hidden /> Complete all tasks
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={completed.length === 0} onSelect={() => setAll(false)}>
+              <DropdownMenuItem disabled={doneCount === 0} onSelect={() => setAll(false)}>
                 <Undo2 aria-hidden /> Mark all as not completed
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setCompletedVisible(!showCompleted)}>
-                {showCompleted ? <EyeOff aria-hidden /> : <Eye aria-hidden />} {showCompleted ? "Hide completed tasks" : "Show completed tasks"}
-              </DropdownMenuItem>
+              {keepInPlace ? null : (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => setCompletedVisible(!showCompleted)}>
+                    {showCompleted ? <EyeOff aria-hidden /> : <Eye aria-hidden />} {showCompleted ? "Hide completed tasks" : "Show completed tasks"}
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <TaskLinesDialog

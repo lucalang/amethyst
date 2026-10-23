@@ -123,13 +123,13 @@ isOneToOne: false
                   ]
                 },"users": {
                   Row: {
-                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"created_at": string,"display_name": string | null,"id": string,"updated_at": string
+                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"id": string,"updated_at": string
                   }
                   Insert: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"created_at"?: string,"display_name"?: string | null,"id": string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"id": string,"updated_at"?: string
                   }
                   Update: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"created_at"?: string,"display_name"?: string | null,"id"?: string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -337,6 +337,9 @@ isOneToOne: false
                            },
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined
+                           },
+"update_user_settings":
+{ Args: { "patch": Json }; Returns: Json
                            },
 "add_checklist_step":
 { Args: { "p_item_id": string,"p_label": string }; Returns: {

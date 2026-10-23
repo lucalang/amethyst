@@ -273,7 +273,7 @@
   .poster-card:has(.poster-link:focus-visible) {
     z-index: 3;
     translate: 0 -6px;
-    scale: 1.03;
+    scale: min(1.03, var(--card-hover-scale, 1.05));
     outline: none;
   }
   .poster-card:has(.poster-link:focus-visible) .poster-frame {
@@ -380,7 +380,7 @@
 .poster-card:hover {
   z-index: 3;
   translate: 0 -8px;
-  scale: 1.05;
+  scale: var(--card-hover-scale, 1.05);
 }
 .poster-card:hover .poster-frame {
   border-color: rgb(190 158 255 / 0.9);
@@ -407,7 +407,7 @@
 }
 .poster-card:hover:has(.poster-link:active) {
   translate: 0 -4px;
-  scale: 1.02;
+  scale: max(1, calc(var(--card-hover-scale, 1.05) - 0.03));
 }
 
 /* Home welcome: a fan of the user's own covers that deals in, then lifts on hover. */
@@ -557,6 +557,116 @@
 }
 
 /* ---------------------------------------------------------------------------
+ * Account settings (see AppShell): animation intensity and card shine.
+ * ------------------------------------------------------------------------- */
+[data-shine="off"] .poster-frame::after {
+  display: none;
+}
+
+/* Settings sliders. */
+.settings-range {
+  appearance: none;
+  background: transparent;
+  accent-color: var(--amethyst);
+}
+.settings-range::-webkit-slider-runnable-track {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--amethyst) var(--range-fill, 0%), rgb(255 255 255 / 0.12) var(--range-fill, 0%));
+}
+.settings-range::-moz-range-track {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+}
+.settings-range::-moz-range-progress {
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--amethyst);
+}
+.settings-range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -0.3125rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(165 124 255 / 0.45), 0 2px 8px rgb(0 0 0 / 0.5);
+}
+.settings-range::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(165 124 255 / 0.45), 0 2px 8px rgb(0 0 0 / 0.5);
+}
+.settings-range:focus-visible {
+  outline: none;
+}
+.settings-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px var(--ring), 0 2px 8px rgb(0 0 0 / 0.5);
+}
+.settings-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px var(--ring), 0 2px 8px rgb(0 0 0 / 0.5);
+}
+
+/* Subtle: quick, short-distance entrances and gentle hovers; no scroll-linked fades. */
+[data-motion="subtle"] .enter {
+  --enter-y: 4px;
+  --enter-scale: 1;
+  animation-duration: 180ms;
+  animation-delay: 0ms;
+}
+[data-motion="subtle"] :is(.scroll-fade, .header-scroll-exit) {
+  animation: none;
+}
+[data-motion="subtle"] :is(.scroll-fade, .header-scroll-exit)[data-exit-fallback] {
+  opacity: 1;
+  transform: none;
+}
+[data-motion="subtle"] .poster-card:hover {
+  translate: 0 -3px;
+}
+[data-motion="subtle"] .poster-card:hover .poster-artwork {
+  scale: 1.03;
+}
+[data-motion="subtle"] .home-fan-card {
+  animation-duration: 320ms;
+}
+[data-motion="subtle"] .home-fan-card:hover {
+  translate: 0 -4px;
+}
+
+/* Off: the same as the system's reduced-motion preference, applied to the whole page (dialogs included). */
+:root:has([data-motion="off"]) *,
+:root:has([data-motion="off"]) *::before,
+:root:has([data-motion="off"]) *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+:root:has([data-motion="off"]) :is(.enter, .scroll-fade, .header-scroll-exit, .task-in, .check-pop, .home-fan-card),
+:root:has([data-motion="off"]) .check-pop::before {
+  animation: none !important;
+}
+:root:has([data-motion="off"]) :is(.scroll-fade, .header-scroll-exit)[data-exit-fallback] {
+  opacity: 1;
+  transform: none;
+}
+:root:has([data-motion="off"])
+  :is(.poster-card, .poster-artwork, .home-fan-card, .brand-gem, .tree-icon, [data-slot="button"], [data-slot="button"] svg, .task-row, .task-star) {
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+}
+:root:has([data-motion="off"]) .btn-sheen::after,
+:root:has([data-motion="off"]) .poster-frame::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
  * Opening intro (once per day, see OpeningIntro). Hidden unless the inline
  * script chose to play; the overlay fades itself out even if JS stalls.
  * ------------------------------------------------------------------------- */
@@ -701,13 +811,13 @@
   outline: none;
 }
 .cm-live .cm-scroller {
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  line-height: 1.75;
+  font-family: var(--editor-font, var(--font-sans));
+  font-size: var(--editor-font-size, 1rem);
+  line-height: var(--editor-line-height, 1.75);
   overflow: visible;
 }
 .cm-live .cm-content {
-  max-width: 46rem;
+  max-width: var(--editor-width, 46rem);
   padding: 1.5rem 0 40vh;
   caret-color: var(--amethyst);
 }
@@ -727,7 +837,7 @@
   font-style: normal;
 }
 .cm-live .cm-md-h {
-  font-family: var(--font-heading);
+  font-family: var(--editor-font, var(--font-heading));
   font-weight: 800;
   letter-spacing: -0.015em;
   line-height: 1.25;
