@@ -1,13 +1,14 @@
 "use client";
 
 import type { EditorView } from "@codemirror/view";
-import { useRef, type ReactNode } from "react";
-import { Bold, ChevronDown, Heading, ImagePlus, Italic, Link2, List, ListChecks, ListOrdered, Redo2, Undo2 } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { Bold, ChevronDown, Heading, ImagePlus, Italic, Link2, List, ListChecks, ListOrdered, ListPlus, Redo2, Undo2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TaskLinesDialog } from "@/components/workspace/task-lines-dialog";
 import { cn } from "@/lib/utils";
 import type { EditorStatus } from "./live-markdown-editor";
-import { insertLink, redoEdit, setHeading, toggleInline, toggleList, undoEdit } from "./markdown-commands";
+import { insertLink, insertTaskLines, redoEdit, setHeading, toggleInline, toggleList, undoEdit } from "./markdown-commands";
 
 const HEADING_OPTIONS = [
   { level: 0, label: "Body text", className: "text-sm text-foreground" },
@@ -69,6 +70,7 @@ export function EditorToolbar({
   onInsertImages?: (files: File[]) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [linesOpen, setLinesOpen] = useState(false);
   const run = (command: (view: EditorView) => unknown) => () => {
     const view = getView();
     if (view) command(view);
@@ -144,6 +146,28 @@ export function EditorToolbar({
       <ToolButton label="Task list" onRun={run((view) => toggleList(view, "task"))}>
         <ListChecks aria-hidden />
       </ToolButton>
+      <ToolButton label="Insert checklist from lines" onRun={() => setLinesOpen(true)}>
+        <ListPlus aria-hidden />
+      </ToolButton>
+      <TaskLinesDialog
+        open={linesOpen}
+        onOpenChange={setLinesOpen}
+        title="Insert checklist from lines"
+        description="Each non-empty line becomes a Markdown task at the cursor. Lines starting with “- [x]” stay completed."
+        confirmLabel="Insert tasks"
+        onConfirm={async (tasks) => {
+          const view = getView();
+          if (!view) return "The note isn’t ready yet. Try again in a moment.";
+          insertTaskLines(view, tasks);
+          return null;
+        }}
+        onCloseAutoFocus={(event) => {
+          const view = getView();
+          if (!view) return;
+          event.preventDefault();
+          view.focus();
+        }}
+      />
       <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />
       <ToolButton label="Undo" shortcut="Mod+Z" disabled={!status.canUndo} onRun={run(undoEdit)}>
         <Undo2 aria-hidden />

@@ -88,6 +88,43 @@ export const reorderItemsSchema = z.object({ itemIds: z.array(z.uuid()).max(10_0
 
 export const checkAllSchema = z.object({ checked: z.boolean() }).strict();
 
+export const taskInputSchema = z.object({ label: itemLabelSchema, checked: z.boolean() }).strict();
+
+export const addTasksSchema = z
+  .object({
+    tasks: z
+      .array(taskInputSchema)
+      .min(1, "Enter at least one task.")
+      .max(MAX_ITEMS_PER_REQUEST, `Add at most ${MAX_ITEMS_PER_REQUEST} tasks at once.`),
+  })
+  .strict();
+
+export type TaskInput = z.infer<typeof taskInputSchema>;
+
+const TASK_LINE = /^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\](?:\s+(.*))?$/;
+const BULLET_LINE = /^\s*[-*+]\s+(.*)$/;
+
+/**
+ * One task per non-empty line, in order. Markdown task markers ("- [ ]",
+ * "- [x]") set the completion state and are stripped from the title; plain
+ * bullets are stripped too. Duplicates are kept.
+ */
+export function parseTaskLines(text: string): TaskInput[] {
+  const tasks: TaskInput[] = [];
+  for (const raw of text.split(/\r\n?|\n/)) {
+    const line = raw.replace(/[\u0000-\u001f\u007f]/g, " ");
+    const task = TASK_LINE.exec(line);
+    if (task) {
+      const label = (task[2] ?? "").trim();
+      if (label) tasks.push({ label, checked: task[1] !== " " });
+      continue;
+    }
+    const label = (BULLET_LINE.exec(line)?.[1] ?? line).trim();
+    if (label) tasks.push({ label, checked: false });
+  }
+  return tasks;
+}
+
 /** Split pasted text into checklist labels (one per non-empty line). */
 export function splitLines(text: string): string[] {
   return text

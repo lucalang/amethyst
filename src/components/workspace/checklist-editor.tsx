@@ -11,6 +11,7 @@ import {
   Eye,
   EyeOff,
   ListChecks,
+  ListPlus,
   Loader2,
   MoreHorizontal,
   PanelTopOpen,
@@ -26,7 +27,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiFetch } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
-import { MAX_ITEMS_PER_REQUEST, itemLabelSchema, splitLines } from "@/lib/validation/workspace";
+import { MAX_ITEMS_PER_REQUEST, itemLabelSchema, splitLines, type TaskInput } from "@/lib/validation/workspace";
 import type { ChecklistItem, ChecklistStep, NodeDetail } from "@/lib/workspace/tree";
 import { errorMessage, useLocalStorageValue, writeLocal } from "./client-utils";
 import { describeDue, useToday } from "./due-date";
@@ -34,6 +35,7 @@ import { RoundCheck } from "./round-check";
 import { SaveStatus, type SaveState } from "./save-status";
 import { TaskDetails, notesBackupKey, type Outcome, type TaskActions, type TaskPatch } from "./task-details";
 import { InlineNameForm } from "./inline-name-form";
+import { TaskLinesDialog } from "./task-lines-dialog";
 
 const COMPLETED_KEY = "archive:checklist:completed";
 /** How long a just-completed task stays in place so the check and strike-through can play. */
@@ -85,6 +87,7 @@ export function ChecklistEditor({
   const [completedOverride, setCompletedOverride] = useState<boolean | null>(null);
   const showCompleted = completedOverride ?? storedCompleted !== "hidden";
   const chainRef = useRef<Promise<unknown>>(Promise.resolve());
+  const [bulkOpen, setBulkOpen] = useState(false);
   const today = useToday();
 
   // Just-completed tasks linger in the active list until their completion feedback has played.
@@ -251,6 +254,18 @@ export function ChecklistEditor({
     return true;
   }
 
+  /** Append several tasks, keeping their completion state; returns an error message on failure. */
+  async function addBulk(tasks: TaskInput[]): Promise<string | null> {
+    const result = await run("Tasks not added", () =>
+      apiFetch<{ items: ChecklistItem[] }>(`/api/nodes/${fileId}/items`, { method: "POST", json: { tasks } }),
+    );
+    if (!result.ok) return result.message;
+    setItems((current) => byPosition([...current, ...result.value.items]));
+    addFresh(result.value.items.map((item) => item.id));
+    toast.success(`Added ${result.value.items.length} ${result.value.items.length === 1 ? "task" : "tasks"} to “${name}”`);
+    return null;
+  }
+
   function setCompletedVisible(visible: boolean) {
     setCompletedOverride(visible);
     writeLocal(COMPLETED_KEY, visible ? null : "hidden");
@@ -296,6 +311,10 @@ export function ChecklistEditor({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+              <DropdownMenuItem onSelect={() => setBulkOpen(true)}>
+                <ListPlus aria-hidden /> Add multiple tasks
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem disabled={active.length === 0} onSelect={() => setAll(true)}>
                 <CheckCheck aria-hidden /> Complete all tasks
               </DropdownMenuItem>
@@ -308,6 +327,14 @@ export function ChecklistEditor({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <TaskLinesDialog
+            open={bulkOpen}
+            onOpenChange={setBulkOpen}
+            title="Add multiple tasks"
+            description={`Each non-empty line becomes a task at the end of “${name}”. Lines starting with “- [x]” are added as completed.`}
+            confirmLabel="Add tasks"
+            onConfirm={addBulk}
+          />
         </div>
       </div>
 

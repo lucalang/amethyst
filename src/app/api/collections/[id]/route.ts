@@ -20,6 +20,12 @@ export async function PATCH(request: Request, { params }: Params) {
   return jsonResponse({ collection: data });
 }
 
+const deleteSchema = z.object({ expectedEntries: z.number().int().min(0) }).strict();
+
+/**
+ * Delete a category with its entries and their workspaces. `expectedEntries` is
+ * the count the user confirmed; the database refuses if it no longer matches.
+ */
 export async function DELETE(request: Request, { params }: Params) {
   const rejected = rejectCrossOrigin(request);
   if (rejected) return rejected;
@@ -27,9 +33,10 @@ export async function DELETE(request: Request, { params }: Params) {
   if (ctx instanceof Response) return ctx;
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) return apiError(404, "not_found", "Category not found.");
-  const { data, error } = await ctx.supabase.from("collections").delete().eq("id", id).select("id").maybeSingle();
-  if (error?.code === "23503") return apiError(409, "category_not_empty", "Move all entries to another category before deleting this category.");
+  const parsed = await parseJson(request, deleteSchema);
+  if ("response" in parsed) return parsed.response;
+  const { data, error } = await ctx.supabase.rpc("delete_collection", { p_collection_id: id, p_expected_entries: parsed.data.expectedEntries });
+  if (error?.code === "P0002") return apiError(404, "not_found", "Category not found.");
   if (error) return dbError(error);
-  if (!data) return apiError(404, "not_found", "Category not found.");
-  return jsonResponse({ deleted: true });
+  return jsonResponse({ deleted: true, entries: data ?? 0 });
 }

@@ -24,10 +24,27 @@ export type Database = {
         },"public": {
           Tables: {
             "collections": {
-              Row: { id: string; user_id: string; name: string; legacy_slug: string | null; created_at: string; updated_at: string }
-              Insert: { id?: string; user_id?: string; name: string; legacy_slug?: string | null; created_at?: string; updated_at?: string }
-              Update: { id?: string; user_id?: string; name?: string; legacy_slug?: string | null; created_at?: string; updated_at?: string }
+              Row: { id: string; user_id: string; name: string; legacy_slug: string | null; position: number; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; legacy_slug?: string | null; position?: number; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; legacy_slug?: string | null; position?: number; created_at?: string; updated_at?: string }
               Relationships: [{ foreignKeyName: "collections_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
+            "entry_visits": {
+              Row: { user_id: string; entry_id: string; last_file_id: string | null; visited_at: string }
+              Insert: { user_id?: string; entry_id: string; last_file_id?: string | null; visited_at?: string }
+              Update: { user_id?: string; entry_id?: string; last_file_id?: string | null; visited_at?: string }
+              Relationships: [
+                { foreignKeyName: "entry_visits_user_id_entry_id_fkey"; columns: ["user_id", "entry_id"]; isOneToOne: false; referencedRelation: "entries"; referencedColumns: ["user_id", "id"] },
+                { foreignKeyName: "entry_visits_user_id_entry_id_last_file_id_fkey"; columns: ["user_id", "entry_id", "last_file_id"]; isOneToOne: false; referencedRelation: "workspace_nodes"; referencedColumns: ["user_id", "entry_id", "id"] },
+              ]
+            },
+            "entry_pins": {
+              Row: { user_id: string; entry_id: string; pinned_at: string }
+              Insert: { user_id?: string; entry_id: string; pinned_at?: string }
+              Update: { user_id?: string; entry_id?: string; pinned_at?: string }
+              Relationships: [
+                { foreignKeyName: "entry_pins_user_id_entry_id_fkey"; columns: ["user_id", "entry_id"]; isOneToOne: false; referencedRelation: "entries"; referencedColumns: ["user_id", "id"] },
+              ]
             },
             "categories": {
                   Row: {
@@ -292,6 +309,35 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"add_checklist_tasks":
+{ Args: { "p_file_id": string,"p_labels": (string)[],"p_checked": (boolean)[] }; Returns: {
+              "checked": boolean,
+"created_at": string,
+"due_date": string | null,
+"file_id": string,
+"id": string,
+"label": string,
+"notes": string,
+"position": number,
+"starred": boolean,
+"updated_at": string,
+"user_id": string
+            }[]
+                          SetofOptions: {
+        from: "*"
+        to: "workspace_checklist_items"
+        isOneToOne: false
+        isSetofReturn: true
+      } },
+"delete_collection":
+{ Args: { "p_collection_id": string,"p_expected_entries": number }; Returns: number
+                           },
+"record_entry_visit":
+{ Args: { "p_entry_id": string,"p_file_id"?: string | null }; Returns: undefined
+                           },
+"reorder_collections":
+{ Args: { "p_collection_ids": (string)[] }; Returns: undefined
+                           },
 "add_checklist_step":
 { Args: { "p_item_id": string,"p_label": string }; Returns: {
               "checked": boolean,

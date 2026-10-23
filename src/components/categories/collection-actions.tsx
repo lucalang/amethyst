@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { AlertCircle, FolderPlus, LibraryBig, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { AlertCircle, ArrowRight, FolderPlus, LibraryBig, Loader2, MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -84,12 +85,61 @@ export function NewCategoryButton() {
   </>;
 }
 
-export function CollectionActions({ collection, className }: { collection: LibraryCategory; className?: string }) {
+const CONFIRM_PHRASE = "I understand";
+
+export function CollectionActions({ collection, entryCount, className }: { collection: LibraryCategory; entryCount: number; className?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [renaming, setRenaming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  // "confirm": first question; "final": typed confirmation for categories that still have entries.
+  const [step, setStep] = useState<"confirm" | "final" | null>(null);
+  const [typed, setTyped] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shownFor, setShownFor] = useState(collection.id);
+  if (shownFor !== collection.id) {
+    setShownFor(collection.id);
+    setStep(null);
+    setTyped("");
+    setError(null);
+  }
+  // If the entry count changes while the dialog is open, confirm again with the new number.
+  const [shownCount, setShownCount] = useState(entryCount);
+  if (shownCount !== entryCount) {
+    setShownCount(entryCount);
+    setTyped("");
+    if (step === "final") setStep("confirm");
+  }
+  const populated = entryCount > 0;
+  const entriesLabel = `${entryCount.toLocaleString("en")} ${entryCount === 1 ? "entry" : "entries"}`;
+  const confirmed = typed === CONFIRM_PHRASE;
+
+  function closeDelete() {
+    if (pending) return;
+    setStep(null);
+    setTyped("");
+    setError(null);
+  }
+
+  async function remove() {
+    if (pending || (populated && !confirmed)) return;
+    setPending(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/collections/${collection.id}`, { method: "DELETE", json: { expectedEntries: entryCount } });
+      setStep(null);
+      setTyped("");
+      toast.success(populated ? `Deleted “${collection.name}” and ${entriesLabel}` : `Deleted “${collection.name}”`);
+      if (pathname === `/${collection.id}` || pathname.startsWith(`/${collection.id}/`)) router.push("/");
+      router.refresh();
+    } catch (deleteError) {
+      setError(errorMessage(deleteError));
+      router.refresh();
+    } finally { setPending(false); }
+  }
+
+  const errorBox = error ? <p role="alert" className="flex items-start gap-2 rounded-md border border-rose/20 bg-rose/[0.06] px-3 py-2.5 text-xs leading-5 text-rose"><AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />{error}</p> : null;
+
   return <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className={cn("size-9 shrink-0 border border-white/[0.08] bg-black/20 text-muted-foreground hover:border-amethyst/30 hover:bg-amethyst/[0.08] data-[state=open]:border-amethyst/30 data-[state=open]:bg-amethyst/[0.08]", className)} aria-label={`Manage ${collection.name}`} title={`Manage ${collection.name}`}><MoreHorizontal aria-hidden /></Button></DropdownMenuTrigger>
@@ -97,32 +147,66 @@ export function CollectionActions({ collection, className }: { collection: Libra
         <DropdownMenuLabel className="flex min-w-0 items-center gap-2 px-2 py-2 text-xs font-medium text-muted-foreground"><LibraryBig aria-hidden className="size-3.5 shrink-0 text-amethyst" /><span className="truncate">{collection.name}</span></DropdownMenuLabel>
         <DropdownMenuSeparator className="mx-0 my-1 bg-white/[0.07]" />
         <DropdownMenuItem className="min-h-9 gap-2.5" onSelect={() => setRenaming(true)}><Pencil aria-hidden />Rename category</DropdownMenuItem>
-        <DropdownMenuItem className="min-h-9 gap-2.5" variant="destructive" onSelect={() => { setError(null); setDeleting(true); }}><Trash2 aria-hidden />Delete category</DropdownMenuItem>
+        <DropdownMenuItem className="min-h-9 gap-2.5" variant="destructive" onSelect={() => { setError(null); setTyped(""); setStep("confirm"); }}><Trash2 aria-hidden />Delete category</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
     <CategoryNameDialog open={renaming} onOpenChange={setRenaming} collection={collection} />
-    <AlertDialog open={deleting} onOpenChange={(open) => { if (!pending) setDeleting(open); }}>
-      <AlertDialogContent className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 sm:max-w-[27rem]">
-        <AlertDialogHeader className="text-left">
-          <span aria-hidden className="mb-2 grid size-11 place-items-center rounded-lg border border-destructive/20 bg-destructive/[0.08] text-destructive"><Trash2 className="size-5" /></span>
-          <AlertDialogTitle className="text-lg leading-7 font-semibold tracking-normal break-words">Delete &quot;{collection.name}&quot;?</AlertDialogTitle>
-          <AlertDialogDescription className="text-sm leading-6">Move any entries to another category first. This action never deletes entries or their workspaces.</AlertDialogDescription>
-        </AlertDialogHeader>
-        {error ? <p role="alert" className="flex items-start gap-2 rounded-md border border-rose/20 bg-rose/[0.06] px-3 py-2.5 text-xs leading-5 text-rose"><AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />{error}</p> : null}
-        <AlertDialogFooter className="gap-2 border-t border-white/[0.07] pt-4">
-          <AlertDialogCancel className="h-10 px-4" disabled={pending}>Cancel</AlertDialogCancel>
-          <Button variant="destructive" className="h-10 gap-2 px-4" disabled={pending} onClick={async () => {
-            setPending(true);
-            setError(null);
-            try {
-              await apiFetch(`/api/collections/${collection.id}`, { method: "DELETE" });
-              setDeleting(false);
-              router.push("/");
-              router.refresh();
-            } catch (deleteError) { setError(errorMessage(deleteError)); }
-            finally { setPending(false); }
-          }}>{pending ? <Loader2 aria-hidden className="animate-spin" /> : <Trash2 aria-hidden />}Delete category</Button>
-        </AlertDialogFooter>
+    <AlertDialog open={step !== null} onOpenChange={(open) => { if (!open) closeDelete(); }}>
+      <AlertDialogContent className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 sm:max-w-[28rem]">
+        {step === "final" ? <>
+          <AlertDialogHeader className="text-left">
+            <span aria-hidden className="mb-2 grid size-11 place-items-center rounded-lg border border-destructive/25 bg-destructive/[0.1] text-destructive"><TriangleAlert className="size-5" /></span>
+            <AlertDialogTitle className="text-lg leading-7 font-semibold tracking-normal break-words">Permanently delete everything in &quot;{collection.name}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-6">
+              The category, its {entriesLabel}, and all of their workspace content (folders, notes, checklists and tasks) will be permanently deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-md border border-destructive/20 bg-destructive/[0.05] px-3.5 py-3 text-xs">
+            <dt className="text-muted-foreground">Category</dt>
+            <dd className="truncate font-medium text-foreground" title={collection.name}>{collection.name}</dd>
+            <dt className="text-muted-foreground">Entries</dt>
+            <dd className="font-medium text-foreground tabular-nums">{entriesLabel}</dd>
+          </dl>
+          <form className="space-y-2" onSubmit={(event) => { event.preventDefault(); void remove(); }}>
+            <Label htmlFor={`delete-confirm-${collection.id}`} className="text-xs leading-5 font-medium text-muted-foreground">
+              Type <span className="font-semibold text-foreground">{CONFIRM_PHRASE}</span> to confirm
+            </Label>
+            <Input
+              id={`delete-confirm-${collection.id}`}
+              value={typed}
+              onChange={(event) => setTyped(event.target.value)}
+              className="h-11 border-white/[0.12] bg-black/50 px-3.5 text-sm"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              autoFocus
+              disabled={pending}
+            />
+          </form>
+          {errorBox}
+          <AlertDialogFooter className="gap-2 border-t border-white/[0.07] pt-4">
+            <AlertDialogCancel className="h-10 px-4" disabled={pending}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" className="h-10 gap-2 px-4" disabled={pending || !confirmed} onClick={() => void remove()}>{pending ? <Loader2 aria-hidden className="animate-spin" /> : <Trash2 aria-hidden />}Delete category and entries</Button>
+          </AlertDialogFooter>
+        </> : <>
+          <AlertDialogHeader className="text-left">
+            <span aria-hidden className="mb-2 grid size-11 place-items-center rounded-lg border border-destructive/20 bg-destructive/[0.08] text-destructive"><Trash2 className="size-5" /></span>
+            <AlertDialogTitle className="text-lg leading-7 font-semibold tracking-normal break-words">Delete &quot;{collection.name}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm leading-6">
+              {populated
+                ? <>This category contains <span className="font-medium text-foreground">{entriesLabel}</span>. Deleting it also deletes those entries and their workspaces. To keep them, move them to another category first.</>
+                : "This empty category will be permanently deleted."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {errorBox}
+          <AlertDialogFooter className="gap-2 border-t border-white/[0.07] pt-4">
+            <AlertDialogCancel className="h-10 px-4" disabled={pending}>Cancel</AlertDialogCancel>
+            {populated
+              ? <Button variant="destructive" className="h-10 gap-2 px-4" onClick={() => { setError(null); setTyped(""); setStep("final"); }}>Continue<ArrowRight aria-hidden /></Button>
+              : <Button variant="destructive" className="h-10 gap-2 px-4" disabled={pending} onClick={() => void remove()}>{pending ? <Loader2 aria-hidden className="animate-spin" /> : <Trash2 aria-hidden />}Delete category</Button>}
+          </AlertDialogFooter>
+        </>}
       </AlertDialogContent>
     </AlertDialog>
   </>;

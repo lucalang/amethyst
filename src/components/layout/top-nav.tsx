@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Gem, LibraryBig, LogOut, Settings } from "lucide-react";
+import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,6 +67,7 @@ export function TopNav({ displayName, collections }: { displayName: string; coll
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {collections.length > 1 ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
           <NewCategoryButton />
 
           <DropdownMenu>

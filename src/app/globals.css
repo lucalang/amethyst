@@ -263,22 +263,28 @@
   .poster-title {
     transition: color 200ms ease;
   }
-  .poster-card:focus-visible {
+  .poster-link:focus-visible {
+    outline: none;
+  }
+  .poster-card:has(.poster-link:focus-visible) {
     z-index: 3;
     translate: 0 -6px;
     scale: 1.03;
     outline: none;
   }
-  .poster-card:focus-visible .poster-frame {
+  .poster-card:has(.poster-link:focus-visible) .poster-frame {
     border-color: var(--amethyst);
     box-shadow:
       0 0 0 2px var(--amethyst),
       0 22px 44px -18px rgb(165 124 255 / 0.7);
   }
-  .poster-card:focus-visible .poster-title {
+  .poster-card:has(.poster-link:focus-visible) .poster-title {
     color: var(--amethyst);
   }
-  .poster-card:active {
+  .poster-card:has(.poster-pin:focus-visible) {
+    z-index: 3;
+  }
+  .poster-card:has(.poster-link:active) {
     scale: 0.97;
     transition-duration: 90ms;
   }
@@ -393,7 +399,7 @@
 .poster-card:hover .poster-title {
   color: var(--amethyst);
 }
-.poster-card:hover:active {
+.poster-card:hover:has(.poster-link:active) {
   translate: 0 -4px;
   scale: 1.02;
 }

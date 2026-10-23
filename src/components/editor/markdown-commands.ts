@@ -118,6 +118,26 @@ export function insertLink(view: EditorView): boolean {
   return true;
 }
 
+/** Replace the main selection with Markdown task lines, kept on their own lines. */
+export function insertTaskLines(view: EditorView, tasks: readonly { label: string; checked: boolean }[]): boolean {
+  if (tasks.length === 0) return false;
+  const { state } = view;
+  const range = state.selection.main;
+  const block = tasks.map((task) => `- [${task.checked ? "x" : " "}] ${task.label}`).join("\n");
+  const before = state.sliceDoc(state.doc.lineAt(range.from).from, range.from);
+  const after = state.sliceDoc(range.to, state.doc.lineAt(range.to).to);
+  const prefix = before.length > 0 ? "\n" : "";
+  const insert = `${prefix}${block}${after.length > 0 ? "\n" : ""}`;
+  view.dispatch({
+    changes: { from: range.from, to: range.to, insert },
+    selection: EditorSelection.cursor(range.from + prefix.length + block.length),
+    userEvent: "input.format",
+    scrollIntoView: true,
+  });
+  view.focus();
+  return true;
+}
+
 export function toggleList(view: EditorView, kind: ListKind): boolean {
   const { state } = view;
   const lines = selectedLines(state);

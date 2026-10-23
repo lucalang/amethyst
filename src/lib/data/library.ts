@@ -6,7 +6,7 @@ import { fetchAll } from "./fetch-all";
 /** One category's entries, including their label assignments. */
 export async function loadLibrary(ctx: AuthContext, collectionId: string): Promise<LibraryEntry[]> {
   const { supabase } = ctx;
-  const [entries, summaries] = await Promise.all([
+  const [entries, summaries, pins] = await Promise.all([
     fetchAll((from, to) =>
       supabase
         .from("entries")
@@ -16,7 +16,10 @@ export async function loadLibrary(ctx: AuthContext, collectionId: string): Promi
         .range(from, to),
     ),
     fetchAll((from, to) => supabase.from("entry_workspace_summary").select("*").range(from, to)),
+    fetchAll((from, to) => supabase.from("entry_pins").select("entry_id").order("entry_id").range(from, to)),
   ]);
+
+  const pinned = new Set(pins.map((row) => row.entry_id));
 
   const summaryById = new Map(summaries.map((row) => [row.entry_id, row]));
   return entries.map((entry) => {
@@ -34,6 +37,7 @@ export async function loadLibrary(ctx: AuthContext, collectionId: string): Promi
       summary: row
         ? { filesTotal: row.files_total ?? 0, checklistTotal: row.checklist_total ?? 0, checklistChecked: row.checklist_checked ?? 0 }
         : EMPTY_SUMMARY,
+      pinned: pinned.has(entry.id),
     };
   });
 }

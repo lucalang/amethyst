@@ -20,6 +20,8 @@ export type LibraryEntry = {
   createdAt: string;
   lastActivityAt: string;
   summary: EntrySummary;
+  /** Pinned to Home by the user. */
+  pinned?: boolean;
 };
 
 export type LibraryState = "not_started" | "in_progress" | "completed";

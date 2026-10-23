@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ITEM_COLUMNS, toChecklistItem } from "@/lib/data/workspace";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
-import { addItemsSchema, checkAllSchema, reorderItemsSchema } from "@/lib/validation/workspace";
+import { addItemsSchema, addTasksSchema, checkAllSchema, reorderItemsSchema } from "@/lib/validation/workspace";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -15,16 +15,23 @@ async function prepare(request: Request, params: Params["params"]) {
   return { ctx, id };
 }
 
-/** Append items (one per label). */
+/** Append items: `{ labels }` (all unchecked) or `{ tasks: [{ label, checked }] }`. */
 export async function POST(request: Request, { params }: Params) {
   const prepared = await prepare(request, params);
   if (prepared instanceof Response) return prepared;
-  const parsed = await parseJson(request, addItemsSchema);
+  const parsed = await parseJson(request, z.union([addItemsSchema, addTasksSchema]));
   if ("response" in parsed) return parsed.response;
 
-  const { data, error } = await prepared.ctx.supabase
-    .rpc("add_checklist_items", { p_file_id: prepared.id, p_labels: parsed.data.labels })
-    .select(ITEM_COLUMNS);
+  const body = parsed.data;
+  const { data, error } = "tasks" in body
+    ? await prepared.ctx.supabase
+        .rpc("add_checklist_tasks", {
+          p_file_id: prepared.id,
+          p_labels: body.tasks.map((task) => task.label),
+          p_checked: body.tasks.map((task) => task.checked),
+        })
+        .select(ITEM_COLUMNS)
+    : await prepared.ctx.supabase.rpc("add_checklist_items", { p_file_id: prepared.id, p_labels: body.labels }).select(ITEM_COLUMNS);
   if (error) return dbError(error);
   return jsonResponse({ items: (data ?? []).map((row) => toChecklistItem(row)).sort((a, b) => a.position - b.position) }, { status: 201 });
 }

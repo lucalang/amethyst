@@ -84,7 +84,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
                   <Plus aria-hidden /> New entry
                 </Link>
               </Button>
-              <CollectionActions collection={collection} className="size-10" />
+              <CollectionActions collection={collection} entryCount={library.length} className="size-10" />
             </div>
           </div>
 

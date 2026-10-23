@@ -3,11 +3,12 @@ import Link from "next/link";
 import { ArrowUpRight, KeyRound, LibraryBig, LogOut, Tags } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { CategoryManager } from "@/components/categories/category-manager";
+import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionActions, NewCategoryButton } from "@/components/categories/collection-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadCategories, loadCategoryUsage } from "@/lib/data/categories";
-import { loadCollections } from "@/lib/data/collections";
+import { loadCollectionEntryCounts, loadCollections } from "@/lib/data/collections";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "./forms";
 
@@ -18,10 +19,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const ctx = await requireUser();
   const collections = await loadCollections(ctx);
   const collection = collections.find((item) => item.id === slug || item.legacy_slug === slug) ?? collections[0];
-  const [{ data: profile }, categories, usage] = await Promise.all([
+  const [{ data: profile }, categories, usage, entryCounts] = await Promise.all([
     ctx.supabase.from("users").select("display_name, created_at").eq("id", ctx.userId).maybeSingle(),
     collection ? loadCategories(ctx, collection.id) : Promise.resolve([]),
     collection ? loadCategoryUsage(ctx, collection.id) : Promise.resolve({}),
+    loadCollectionEntryCounts(ctx),
   ]);
 
   return (
@@ -44,7 +46,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <h2 id="collections-heading" className="text-base font-semibold tracking-normal">Categories</h2>
               <span className="grid h-5 min-w-5 place-items-center rounded bg-white/[0.06] px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums" aria-label={`${collections.length} categories`}>{collections.length}</span>
             </div>
-            <NewCategoryButton />
+            <div className="flex flex-wrap items-center gap-2">
+              {collections.length > 1 ? <ArrangeCollectionsButton collections={collections} /> : null}
+              <NewCategoryButton />
+            </div>
           </div>
           {collections.length ? (
             <ul aria-label="Your categories" className="divide-y divide-white/[0.06] border-y border-white/[0.08]">
@@ -55,9 +60,10 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                       <LibraryBig className="size-[18px]" />
                     </span>
                     <span className="min-w-0 flex-1 text-sm font-medium break-words text-foreground transition-colors group-hover/collection:text-amethyst">{item.name}</span>
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{entryCounts[item.id] ?? 0} {(entryCounts[item.id] ?? 0) === 1 ? "entry" : "entries"}</span>
                     <ArrowUpRight aria-hidden className="size-4 shrink-0 text-muted-foreground/40 transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5 group-hover/collection:text-amethyst" />
                   </Link>
-                  <CollectionActions collection={item} />
+                  <CollectionActions collection={item} entryCount={entryCounts[item.id] ?? 0} />
                 </li>
               ))}
             </ul>

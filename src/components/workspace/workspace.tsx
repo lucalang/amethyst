@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronRight, FilePlus2, FileText, FolderInput, FolderPlus, ListPlus, Loader2, MoreHorizontal, PanelLeft, PanelLeftOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/media/empty-state";
@@ -125,6 +125,15 @@ function Workspace({
 
   const byId = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const selected = selectedId ? (byId.get(selectedId) ?? null) : null;
+
+  // Remember this visit (and the open file) for "Continue where you left off" on Home.
+  const visitFileId = selected && selected.kind !== "folder" ? selected.id : null;
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      apiFetch(`/api/entries/${entry.id}/visit`, { method: "POST", json: { fileId: visitFileId } }).catch(() => undefined);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [entry.id, visitFileId]);
 
   function updateExpanded(change: (next: Set<string>) => void) {
     const next = new Set(expanded);
