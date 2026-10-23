@@ -1945,3 +1945,128 @@
 .artwork-viewer-stage {
   touch-action: none;
 }
+
+/* Arcade: each playfield keeps its aspect ratio and fits the viewport height. */
+.arcade-stage {
+  position: relative;
+  container-type: inline-size;
+  margin-inline: auto;
+  width: min(100%, calc(var(--stage-h, min(70dvh, 46rem)) * var(--stage-ratio, 1)));
+  aspect-ratio: var(--stage-ratio, 1);
+}
+[data-arcade-game]:fullscreen {
+  overflow: auto;
+  background: var(--background);
+  max-width: none;
+}
+[data-arcade-game]:fullscreen .arcade-stage {
+  --stage-h: calc(100dvh - 9rem);
+}
+
+/* 2048 board: positions use container units so tiles slide smoothly at any size. */
+.g2048 {
+  --gap: 2.4cqi;
+  --cell: calc((100cqi - 5 * var(--gap)) / 4);
+  position: absolute;
+  inset: 0;
+  border-radius: 2.4cqi;
+  background: color-mix(in oklab, var(--surface) 82%, var(--amethyst));
+  touch-action: none;
+  user-select: none;
+}
+.g2048-cell,
+.g2048-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 1.6cqi;
+  translate: calc(var(--gap) + var(--c) * (var(--cell) + var(--gap))) calc(var(--gap) + var(--r) * (var(--cell) + var(--gap)));
+}
+.g2048-cell {
+  background: color-mix(in oklab, var(--foreground) 6%, transparent);
+}
+.g2048-tile {
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--cell) * var(--fs, 0.46));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--amethyst) calc(var(--t) * 100%), var(--surface));
+  box-shadow: 0 0.6cqi 1.6cqi -0.8cqi rgb(var(--shadow-rgb) / calc(0.8 * var(--shadow-alpha)));
+  transition: translate 110ms ease-out;
+}
+.g2048-tile.is-strong {
+  color: var(--primary-foreground);
+}
+.g2048-tile.is-super {
+  color: var(--primary-foreground);
+  background: linear-gradient(135deg, var(--amethyst), var(--rose));
+}
+.g2048-tile.is-consumed {
+  z-index: 0;
+}
+.g2048-tile.is-merged {
+  z-index: 2;
+  animation: g2048-pop 180ms ease-out 100ms backwards;
+}
+.g2048-tile.is-fresh {
+  animation: g2048-appear 160ms ease-out 110ms backwards;
+}
+.g2048[data-effects="subtle"] .g2048-tile.is-merged {
+  animation-name: g2048-appear;
+}
+.g2048[data-effects="off"] .g2048-tile {
+  transition: none;
+  animation: none;
+}
+.g2048[data-effects="off"] .g2048-tile.is-consumed {
+  visibility: hidden;
+}
+@keyframes g2048-pop {
+  0% {
+    scale: 0.5;
+    opacity: 0;
+  }
+  60% {
+    scale: 1.12;
+    opacity: 1;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes g2048-appear {
+  from {
+    scale: 0;
+    opacity: 0;
+  }
+  to {
+    scale: 1;
+    opacity: 1;
+  }
+}
+.g2048-gain {
+  position: absolute;
+  left: 100%;
+  top: -0.25rem;
+  margin-left: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--amethyst);
+  pointer-events: none;
+  animation: g2048-gain 700ms ease-out forwards;
+}
+@keyframes g2048-gain {
+  from {
+    opacity: 1;
+    translate: 0 0.4rem;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -0.9rem;
+  }
+}

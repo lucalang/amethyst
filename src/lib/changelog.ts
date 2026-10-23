@@ -29,6 +29,59 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    id: "2026-10-24-arcade",
+    date: "2026-10-24",
+    title: "The Arcade: six games for a break",
+    summary: "A new Arcade with 2048, Flutter, Snake, Sudoku, Fruit Slice and Tower Stacker. Your personal bests are saved to your account, and Sudoku remembers your puzzle.",
+    added: [
+      {
+        text: "The Arcade gathers six quick games, each with a preview, a Play button and your personal record. Find it with the Arcade link at the bottom of Home. Every game follows your theme, has Back to Arcade and Home links, and can go full screen.",
+        where: "Home → Arcade",
+        link: { href: "/arcade", label: "Open Arcade" },
+      },
+      {
+        text: "2048: slide tiles with the arrow keys, WASD or a swipe. Matching tiles merge once per move and a new tile appears only after a move that changed the board. Reach 2048 to win, then keep going or start over.",
+        link: { href: "/arcade/2048", label: "Play 2048" },
+      },
+      {
+        text: "Flutter: tap, click or press Space to keep a little gem-bird flying through gaps between crystal pillars. Touching a pillar or the ground ends the run, and a tap starts the next one right away.",
+        link: { href: "/arcade/flutter", label: "Play Flutter" },
+      },
+      {
+        text: "Snake: steer with the arrow keys or WASD, swipe on the board, or use the on-screen pad on touch screens. Eat to grow and speed up; walls and your own tail end the run. You can't reverse straight into yourself, and the speed is the same on every screen.",
+        link: { href: "/arcade/snake", label: "Play Snake" },
+      },
+      {
+        text: "Sudoku: Easy, Medium and Hard puzzles, each with exactly one solution. Type or tap digits, add pencil notes (Notes mode or Shift+digit), erase and undo. Conflicts are highlighted, givens can't be changed, and placing a digit clears that note from the same row, column and box. The timer runs only while you play, and your fastest time is kept for each difficulty.",
+        link: { href: "/arcade/sudoku", label: "Play Sudoku" },
+      },
+      {
+        text: "Your Sudoku is saved as you play, with its values, notes and time. Leave and come back later, even on another device, to continue where you stopped. Starting a new puzzle asks first if the current one isn't finished.",
+        where: "Arcade → Sudoku",
+      },
+      {
+        text: "Fruit Slice: drag the mouse or swipe through flying fruit. Slice three or more in one quick swipe for a combo bonus. Missing 3 fruit ends the run, and slicing a bomb (dark, with a red cross) ends it instantly.",
+        link: { href: "/arcade/fruit-slice", label: "Play Fruit Slice" },
+      },
+      {
+        text: "Tower Stacker: click, tap or press Space to drop the sliding block. Only the part that overlaps the block below stays and the rest falls away. Perfect drops keep the full width, and three or more perfect drops in a row widen the block again. The camera follows your tower as it grows.",
+        link: { href: "/arcade/stacker", label: "Play Tower Stacker" },
+      },
+      {
+        text: "Personal records for every game are saved to your account and shown on each game and in the Arcade. There are no leaderboards; only you see your scores.",
+      },
+    ],
+    improved: [
+      {
+        text: "Action games and the Sudoku timer pause by themselves when you switch tabs or windows, and you can pause with P or the Pause button. Sound effects start only after you interact, and the speaker button mutes them everywhere in the Arcade. Decorative effects follow your animation setting and your system's reduced-motion preference.",
+        where: "Any game → sound and full-screen buttons",
+      },
+      {
+        text: "While you play, game keys such as the arrows and Space control the game instead of scrolling the page or triggering archive shortcuts. Everything works as before once you leave the game.",
+      },
+    ],
+  },
+  {
     id: "2026-10-24-themes-urls",
     date: "2026-10-24",
     title: "Five new themes and readable page addresses",

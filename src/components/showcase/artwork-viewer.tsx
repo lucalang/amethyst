@@ -5,11 +5,11 @@ import { Box, ChevronLeft, ChevronRight, LoaderCircle, Maximize, Minimize, Rotat
 import type { ArtworkFrameId } from "@/lib/frames";
 import { artworkSrc } from "@/lib/attachments";
 import { cn } from "@/lib/utils";
-import { FlatArtwork } from "./flat-artwork";
+import { FlatArtwork } from "@/components/showcase/flat-artwork";
 import { useMotionLevel, webglAvailable } from "./motion";
 import type { ArtworkItem } from "./showcase-context";
 
-const ArtworkCard3D = lazy(() => import("./artwork-card-3d"));
+const ArtworkCard3D = lazy(() => import("@/components/showcase/artwork-card-3d"));
 
 type Mode = "3d" | "flat";
 const MODE_KEY = "archive:artwork-viewer";
@@ -158,7 +158,7 @@ export function ArtworkViewer({
       resetKey={resetKey}
       interactive={interactive}
       onZoom={changeZoom}
-      onSwipe={(direction) => go(index + direction)}
+      onSwipe={(direction: -1 | 1) => go(index + direction)}
     />
   );
 
@@ -187,7 +187,7 @@ export function ArtworkViewer({
                 motion={motion}
                 onZoom={changeZoom}
                 onReady={setReady}
-                onFail={(failed) => setFlatOnly((set) => new Set(set).add(failed))}
+                onFail={(failed: string) => setFlatOnly((set) => new Set(set).add(failed))}
               />
               {ready !== src ? (
                 <span aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">

@@ -53,6 +53,18 @@ export type Database = {
                 { foreignKeyName: "entry_visits_user_id_entry_id_last_file_id_fkey"; columns: ["user_id", "entry_id", "last_file_id"]; isOneToOne: false; referencedRelation: "workspace_nodes"; referencedColumns: ["user_id", "entry_id", "id"] },
               ]
             },
+            "arcade_records": {
+              Row: { user_id: string; game: string; variant: string; score: number; achieved_at: string }
+              Insert: { user_id?: string; game: string; variant?: string; score: number; achieved_at?: string }
+              Update: { user_id?: string; game?: string; variant?: string; score?: number; achieved_at?: string }
+              Relationships: [{ foreignKeyName: "arcade_records_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
+            "sudoku_games": {
+              Row: { user_id: string; id: string; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries: string; notes: number[]; elapsed_ms: number; completed_at: string | null; started_at: string; updated_at: string }
+              Insert: { user_id?: string; id?: string; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
+              Update: { user_id?: string; id?: string; difficulty?: "easy" | "medium" | "hard"; puzzle?: string; solution?: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
+              Relationships: [{ foreignKeyName: "sudoku_games_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
             "entry_pins": {
               Row: { user_id: string; entry_id: string; pinned_at: string }
               Insert: { user_id?: string; entry_id: string; pinned_at?: string }
@@ -352,6 +364,9 @@ isOneToOne: false
                            },
 "record_entry_visit":
 { Args: { "p_entry_id": string,"p_file_id"?: string | null }; Returns: undefined
+                           },
+"record_arcade_score":
+{ Args: { "p_game": string,"p_variant": string,"p_score": number }; Returns: { best: number; improved: boolean }[]
                            },
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined

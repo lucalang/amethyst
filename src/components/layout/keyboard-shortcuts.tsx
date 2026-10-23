@@ -54,6 +54,10 @@ export function KeyboardShortcuts({ collections }: { collections: LibraryCategor
     if (event.target instanceof Element && event.target.closest("[data-shortcut-recorder]")) return;
     // Showcase and the artwork viewer own the keyboard while they are open.
     if (document.querySelector("[data-immersive]")) return;
+    // A focused Arcade game owns the keyboard, so playing never creates files or opens search.
+    const target = event.target;
+    if (target instanceof Element && target.closest("[data-arcade-game]")) return;
+    if ((target === document.body || target === document.documentElement) && document.querySelector("[data-arcade-game]")) return;
     const pressed = shortcutFromEvent(event);
     if (!pressed) return;
     const action = SHORTCUT_ACTIONS.find((candidate) => shortcuts[candidate] === pressed);

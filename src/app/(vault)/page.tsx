@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, ArrowUpRight, CalendarClock, Check, FileText, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CalendarClock, Check, FileText, Gamepad2, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionIcon } from "@/components/categories/collection-icon";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
@@ -499,6 +499,23 @@ export default async function HomePage() {
             coverCount,
           }))}
         />
+
+        <div className={cn(INNER, "pt-2 pb-10 md:pb-12")}>
+          <Link
+            href="/arcade"
+            prefetch={false}
+            className="group/arcade flex w-full max-w-md items-center gap-3 rounded-xl border border-white/[0.08] bg-surface/40 px-4 py-3 transition-colors outline-none hover:border-amethyst/45 hover:bg-amethyst/[0.06] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50"
+          >
+            <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-lg bg-amethyst/[0.12] ring-1 ring-amethyst/25">
+              <Gamepad2 className="size-4 text-amethyst" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">Arcade</span>
+              <span className="block truncate text-xs text-muted-foreground">Six quick games for a break: 2048, Snake, Sudoku and more</span>
+            </span>
+            <ArrowRight aria-hidden className="size-4 shrink-0 text-amethyst transition-transform group-hover/arcade:translate-x-0.5" />
+          </Link>
+        </div>
       </HomeCustomizeProvider>
     </EntranceScope>
   );

@@ -101,6 +101,8 @@ export const DEFAULT_SETTINGS = {
   homeFanCollections: null as string[] | null,
   /** Decoration around artwork in Showcase and the artwork viewer (independent of the theme). */
   artworkFrame: DEFAULT_ARTWORK_FRAME as ArtworkFrameId,
+  /** Sound effects in Arcade games (audio only starts after the player interacts). */
+  arcadeSound: true,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -180,6 +182,7 @@ const settingFields = {
     .transform((ids) => [...new Set(ids)])
     .nullable(),
   artworkFrame: z.enum(ARTWORK_FRAME_IDS),
+  arcadeSound: z.boolean(),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */
