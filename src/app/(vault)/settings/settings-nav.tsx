@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, type LucideIcon } from "lucide-react";
+import { Frame, Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; hint: string; icon: LucideIcon; active: (pathname: string) => boolean };
@@ -21,6 +21,13 @@ const ITEMS: Item[] = [
     hint: "Colors, fonts and style",
     icon: Palette,
     active: (pathname) => pathname.startsWith("/settings/themes"),
+  },
+  {
+    href: "/settings/frames",
+    label: "Artwork frames",
+    hint: "Frames for Showcase artwork",
+    icon: Frame,
+    active: (pathname) => pathname.startsWith("/settings/frames"),
   },
   {
     href: "/settings/appearance",

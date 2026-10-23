@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ARTWORK_FRAME_IDS, DEFAULT_ARTWORK_FRAME, type ArtworkFrameId } from "@/lib/frames";
 import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
 
@@ -98,6 +99,8 @@ export const DEFAULT_SETTINGS = {
   homeFeatured: null as HomeFeatured,
   /** Collections whose covers may appear in the Home cover fan; null = every collection (including new ones), [] = no fan. */
   homeFanCollections: null as string[] | null,
+  /** Decoration around artwork in Showcase and the artwork viewer (independent of the theme). */
+  artworkFrame: DEFAULT_ARTWORK_FRAME as ArtworkFrameId,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -176,6 +179,7 @@ const settingFields = {
     .max(MAX_FAN_COLLECTIONS)
     .transform((ids) => [...new Set(ids)])
     .nullable(),
+  artworkFrame: z.enum(ARTWORK_FRAME_IDS),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

@@ -9,6 +9,7 @@ import { EntranceScope } from "@/components/layout/entrance-scope";
 import { LibraryControls } from "@/components/media/library-controls";
 import { LibraryCount, LibraryResults, LibrarySearchProvider, LibraryTitle } from "@/components/media/library-view";
 import { MediaImage } from "@/components/media/media-image";
+import { ShowcaseButton, ShowcaseProvider } from "@/components/showcase/showcase-provider";
 import { Button } from "@/components/ui/button";
 import { accentStyle } from "@/lib/collection-identity";
 import { cn } from "@/lib/utils";
@@ -103,6 +104,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
         </Link>
       </Button>
       <CollectionActions collection={collection} entryCount={library.length} className={cn("size-10", overlay && "bg-background/60 backdrop-blur-md")} />
+      <ShowcaseButton className={cn("h-10 gap-2 px-3.5", overlay && "bg-background/60 backdrop-blur-md")} />
     </>
   );
 
@@ -110,6 +112,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     <EntranceScope>
       <PageContainer>
         <LibrarySearchProvider library={library} search={search}>
+          <ShowcaseProvider name={collection.name} icon={<CollectionIcon icon={collection.icon} strokeWidth={1.75} />}>
           <section aria-labelledby="library-heading">
             {banner ? (
               <header className="scroll-fade enter enter-soft mb-6" style={accent}>
@@ -166,6 +169,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
               labelNames={labelNames}
             />
           </section>
+          </ShowcaseProvider>
         </LibrarySearchProvider>
       </PageContainer>
     </EntranceScope>

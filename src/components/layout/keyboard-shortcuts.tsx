@@ -52,6 +52,8 @@ export function KeyboardShortcuts({ collections }: { collections: LibraryCategor
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
     if (event.defaultPrevented || event.isComposing || event.repeat) return;
     if (event.target instanceof Element && event.target.closest("[data-shortcut-recorder]")) return;
+    // Showcase and the artwork viewer own the keyboard while they are open.
+    if (document.querySelector("[data-immersive]")) return;
     const pressed = shortcutFromEvent(event);
     if (!pressed) return;
     const action = SHORTCUT_ACTIONS.find((candidate) => shortcuts[candidate] === pressed);

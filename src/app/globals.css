@@ -1403,3 +1403,290 @@
     opacity: 0.55;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Artwork frames (Settings → Artwork frames, see ArtworkFrame). Decorations sit
+ * around the artwork's edges, never over the picture, and ignore pointer events.
+ * They only appear in Showcase, the artwork viewer and the frame previews.
+ * ------------------------------------------------------------------------- */
+@property --holo-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+@property --aurora-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 210deg;
+}
+@keyframes art-aurora {
+  from {
+    --aurora-angle: 0deg;
+  }
+  to {
+    --aurora-angle: 360deg;
+  }
+}
+.art-frame {
+  --fr: calc(8px * var(--radius-unit, 1));
+  --fw: 0px;
+  position: relative;
+  container-type: inline-size;
+}
+.art-frame-deco {
+  position: absolute;
+  inset: calc(-1 * var(--fw));
+  z-index: 2;
+  border-radius: calc(var(--fr) + var(--fw));
+  pointer-events: none;
+}
+.art-frame-deco * {
+  pointer-events: none;
+}
+/* A ring exactly var(--fw) wide, hugging the artwork's outer edge. */
+.art-frame-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: var(--fw);
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  -webkit-mask-clip: content-box, border-box;
+  -webkit-mask-composite: xor;
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-clip: content-box, border-box;
+  mask-composite: exclude;
+}
+.art-frame-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  filter: blur(calc(3px + 1.2cqi));
+  opacity: 0.6;
+}
+.art-frame-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* Gilt edge: a slim brushed champagne-gold rim, an outer hairline and corner studs. */
+.art-frame[data-frame="gilt"] {
+  --fw: clamp(2px, 1.4cqi, 5px);
+}
+.art-frame[data-frame="gilt"] .art-frame-ring {
+  background: linear-gradient(135deg, #fff3d4 0%, #c9a259 16%, #f7e3a9 34%, #8c6529 52%, #e3c47f 70%, #9c7432 86%, #f4dfaa 100%);
+}
+.art-frame[data-frame="gilt"] .art-frame-deco::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * max(3px, 1.1cqi));
+  border: 1px solid rgb(226 196 128 / 0.45);
+  border-radius: calc(var(--fr) + var(--fw) + max(3px, 1.1cqi));
+}
+.art-frame[data-frame="gilt"] .art-frame-deco::after {
+  content: "";
+  position: absolute;
+  inset: var(--fw);
+  border-radius: var(--fr);
+  box-shadow: 0 0 0 1px rgb(46 30 8 / 0.55);
+}
+.art-frame-stud {
+  --s: clamp(5px, 3cqi, 11px);
+  --o: calc(var(--fw) / 2 + (var(--fr) + var(--fw)) * 0.29);
+  position: absolute;
+  z-index: 1;
+  width: var(--s);
+  height: var(--s);
+  background: linear-gradient(135deg, #fff6dc, #d4ad62 45%, #7d5a22);
+  box-shadow:
+    0 0 0 1px rgb(52 36 10 / 0.6),
+    0 1px 3px rgb(0 0 0 / 0.45);
+  rotate: 45deg;
+}
+.art-frame-stud[data-corner="tl"] {
+  top: var(--o);
+  left: var(--o);
+  translate: -50% -50%;
+}
+.art-frame-stud[data-corner="tr"] {
+  top: var(--o);
+  right: var(--o);
+  translate: 50% -50%;
+}
+.art-frame-stud[data-corner="bl"] {
+  bottom: var(--o);
+  left: var(--o);
+  translate: -50% 50%;
+}
+.art-frame-stud[data-corner="br"] {
+  bottom: var(--o);
+  right: var(--o);
+  translate: 50% 50%;
+}
+
+/* Amethyst filigree: a fine violet rim, scrolled corners and a small faceted crest above the art. */
+.art-frame[data-frame="amethyst"] {
+  --fw: clamp(1.5px, 0.9cqi, 3.5px);
+  --orn: clamp(20px, 16cqi, 48px);
+}
+.art-frame[data-frame="amethyst"] .art-frame-deco {
+  filter: drop-shadow(0 0 calc(2px + 1cqi) rgb(168 85 247 / 0.45));
+}
+.art-frame[data-frame="amethyst"] .art-frame-ring {
+  background: linear-gradient(160deg, #f3e8ff 0%, #c084fc 28%, #6d28d9 58%, #e9d5ff 82%, #a855f7 100%);
+}
+.art-frame-corner {
+  position: absolute;
+  width: var(--orn);
+  height: var(--orn);
+  overflow: visible;
+}
+.art-frame-corner[data-corner="tl"] {
+  top: calc(var(--fw) - var(--orn) * 0.25);
+  left: calc(var(--fw) - var(--orn) * 0.25);
+}
+.art-frame-corner[data-corner="tr"] {
+  top: calc(var(--fw) - var(--orn) * 0.25);
+  right: calc(var(--fw) - var(--orn) * 0.25);
+  scale: -1 1;
+}
+.art-frame-corner[data-corner="bl"] {
+  bottom: calc(var(--fw) - var(--orn) * 0.25);
+  left: calc(var(--fw) - var(--orn) * 0.25);
+  scale: 1 -1;
+}
+.art-frame-corner[data-corner="br"] {
+  bottom: calc(var(--fw) - var(--orn) * 0.25);
+  right: calc(var(--fw) - var(--orn) * 0.25);
+  scale: -1 -1;
+}
+.art-frame-crest {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - var(--fw));
+  width: calc(var(--orn) * 0.95);
+  aspect-ratio: 2;
+  translate: -50% 0;
+  overflow: visible;
+}
+
+/* Holographic edge: an iridescent rim with a soft halo; the colors turn when you point at Showcase art. */
+.art-frame[data-frame="holo"] {
+  --fw: clamp(2px, 1.3cqi, 4.5px);
+}
+.art-frame[data-frame="holo"] .art-frame-deco {
+  transition: --holo-angle 1100ms var(--ease-out-soft);
+}
+.art-frame[data-frame="holo"] .art-frame-ring {
+  background: conic-gradient(from var(--holo-angle), #ff9fd6, #ffd29f, #fff6a3, #a6ffd0, #9fe1ff, #b9a6ff, #ff9fd6);
+}
+.art-frame[data-frame="holo"] .art-frame-glow {
+  opacity: 0.5;
+}
+.art-frame[data-frame="holo"] .art-frame-glow > .art-frame-ring {
+  padding: calc(var(--fw) * 1.8);
+}
+
+/* Aurora trace: a faint rim with one slow thread of light travelling around it. */
+.art-frame[data-frame="aurora"] {
+  --fw: clamp(1.5px, 0.8cqi, 3px);
+}
+.art-frame[data-frame="aurora"] .art-frame-deco {
+  animation: art-aurora 11s linear infinite;
+}
+.art-frame[data-frame="aurora"] .art-frame-ring {
+  background: rgb(196 214 255 / 0.28);
+}
+.art-frame[data-frame="aurora"] :is(.art-frame-trace, .art-frame-glow > .art-frame-ring) {
+  background: conic-gradient(from var(--aurora-angle), transparent 0deg 230deg, #6ee7b7 290deg, #93c5fd 325deg, #f0abfc 352deg, transparent 360deg);
+}
+.art-frame[data-frame="aurora"] .art-frame-glow > .art-frame-ring {
+  padding: calc(var(--fw) * 2.2);
+}
+[data-motion="subtle"] .art-frame[data-frame="aurora"] .art-frame-deco {
+  animation-duration: 22s;
+}
+:root:has([data-motion="off"]) .art-frame-deco {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .art-frame-deco {
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Collection Showcase: a full-viewport, justified gallery. Each item grows in
+ * proportion to its cover shape (--ar), so every row shares one height.
+ * ------------------------------------------------------------------------- */
+.showcase {
+  --showcase-row: clamp(10.5rem, 27vw, 23rem);
+  --showcase-gap: clamp(1.25rem, 3vw, 2.75rem);
+  background:
+    radial-gradient(80rem 42rem at 50% -14%, rgb(var(--accent-rgb) / 0.13), transparent 70%),
+    radial-gradient(60rem 40rem at 100% 112%, rgb(var(--rose-rgb) / 0.06), transparent 70%),
+    var(--background);
+}
+.showcase-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--showcase-gap) * 1.15) var(--showcase-gap);
+}
+.showcase-item {
+  min-width: 0;
+  flex: var(--ar) 1 calc(var(--showcase-row) * var(--ar));
+  max-width: calc(var(--showcase-row) * var(--ar) * 1.6);
+}
+.showcase-filler {
+  flex: 1000 1 0;
+}
+.showcase-art .art-frame {
+  transition: translate 420ms var(--ease-spring);
+}
+.showcase-pic {
+  box-shadow: 0 26px 50px -30px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha)));
+  transition: box-shadow 320ms var(--ease-out-soft);
+}
+.showcase-art:focus-visible {
+  outline: none;
+}
+.showcase-art:is(:hover, :focus-visible) .art-frame {
+  translate: 0 -6px;
+}
+.showcase-art:hover .showcase-pic {
+  box-shadow:
+    0 0 0 1px rgb(var(--accent-rgb) / 0.35),
+    0 34px 60px -26px rgb(var(--accent-rgb) / 0.6);
+}
+.showcase-art:focus-visible .showcase-pic {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.showcase-art:is(:hover, :focus-visible) .art-frame[data-frame="holo"] .art-frame-deco,
+.frame-option:is(:hover, :has(:focus-visible)) .art-frame[data-frame="holo"] .art-frame-deco {
+  --holo-angle: 160deg;
+}
+[data-motion="subtle"] .showcase-art:is(:hover, :focus-visible) .art-frame {
+  translate: 0 -3px;
+}
+:root:has([data-motion="off"]) .showcase-art .art-frame {
+  translate: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .showcase-art .art-frame {
+    translate: none !important;
+  }
+}
+
+/* Artwork viewer backdrop: the theme's page color with a soft accent bloom behind the art. */
+.artwork-viewer {
+  background:
+    radial-gradient(56rem 40rem at 50% 45%, rgb(var(--accent-rgb) / 0.16), transparent 68%),
+    rgb(var(--paper-rgb) / 0.97);
+}
+.artwork-viewer-stage {
+  touch-action: none;
+}

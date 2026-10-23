@@ -29,6 +29,32 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    id: "2026-10-23-showcase",
+    date: "2026-10-23",
+    title: "Showcase, a closer look at artwork and artwork frames",
+    summary: "Show off a collection’s artwork full screen, inspect any cover as a 3D card you can turn and zoom, and choose a decorative frame for it.",
+    added: [
+      {
+        text: "Showcase turns a collection into a full-screen gallery of its artwork, with nothing else on screen. It shows exactly what your current search, filters and sort show; hide titles for an even cleaner wall. Exit (or Esc) returns you to the library right where you were.",
+        where: "Any collection → Showcase",
+        link: { href: "/", label: "Choose a collection" },
+      },
+      {
+        text: "Artwork viewer: click any artwork in Showcase, or use View artwork on a library card, to see it fitted to the full screen. Zoom in, browse with the arrows, arrow keys or a swipe, and go browser-full-screen. Opening the entry itself still works as before.",
+        where: "Showcase, or a library card → View artwork",
+      },
+      {
+        text: "In the viewer, artwork becomes a 3D card: drag to turn and tilt it, pinch or scroll to zoom, and Reset view to straighten it. Switch 3D off for a flat, still view; it follows your animation setting and your system’s reduced-motion preference.",
+        where: "Artwork viewer → 3D",
+      },
+      {
+        text: "Artwork frames: pick No frame, Gilt edge, Amethyst filigree, Holographic edge or the animated Aurora trace, previewed on your own portrait and square covers. Frames appear in Showcase and the viewer, follow the 3D card as it turns, and never cover the picture.",
+        where: "Settings → Artwork frames",
+        link: { href: "/settings/frames", label: "Open Artwork frames" },
+      },
+    ],
+  },
+  {
     id: "2026-10-23-themes",
     date: "2026-10-23",
     title: "Themes, a calmer intro and a tighter Home",

@@ -5,7 +5,7 @@ import type { PinStyle } from "@/lib/preferences";
 import { entryProgress, entryState, progressPhrase, type LibraryEntry } from "@/lib/progress/library";
 import { cn } from "@/lib/utils";
 import { MediaImage } from "./media-image";
-import { PinButton, PosterMenu } from "./pin-button";
+import { PinButton, PosterMenu, ViewArtworkButton } from "./pin-button";
 import { ProgressMeter } from "./progress-meter";
 
 /** Which details a library card shows (account setting). Defaults to the original presentation. */
@@ -103,9 +103,12 @@ export function PosterCard({
             ) : null}
           </Link>
           {clean ? (
-            <PosterMenu entryId={entry.id} title={entry.title} href={href} pinned={pinned} className="absolute right-0 bottom-0 z-[3]" />
+            <PosterMenu entryId={entry.id} title={entry.title} href={href} pinned={pinned} coverUrl={entry.coverUrl} className="absolute right-0 bottom-0 z-[3]" />
           ) : (
-            <PinButton entryId={entry.id} title={entry.title} pinned={pinned} />
+            <>
+              <PinButton entryId={entry.id} title={entry.title} pinned={pinned} />
+              <ViewArtworkButton entryId={entry.id} title={entry.title} coverUrl={entry.coverUrl} />
+            </>
           )}
         </div>
       </div>
