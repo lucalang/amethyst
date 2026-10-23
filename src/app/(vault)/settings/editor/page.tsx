@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { loadPreferences } from "@/lib/data/preferences";
 import { requireUser } from "@/lib/supabase/auth";
 import { ChecklistModeSetting, EditorAppearanceSettings } from "../editor-controls";
-import { SettingRow, SettingsGroup, SettingsHeader } from "../settings-ui";
+import { SettingRow, SettingsGroup, SettingsHeader, resetFor } from "../settings-ui";
 
 export const metadata: Metadata = { title: "Editor" };
 
@@ -18,7 +18,12 @@ export default async function EditorSettingsPage() {
       </SettingsGroup>
 
       <SettingsGroup id="checklists" title="Checklists">
-        <SettingRow labelId="checklist-mode-label" label="Completed tasks" description="What happens when you check off a task.">
+        <SettingRow
+          labelId="checklist-mode-label"
+          label="Completed tasks"
+          description="What happens when you check off a task."
+          reset={resetFor(preferences, ["checklistMode"], "Move to bottom")}
+        >
           <ChecklistModeSetting value={preferences.checklistMode} labelId="checklist-mode-label" />
         </SettingRow>
       </SettingsGroup>

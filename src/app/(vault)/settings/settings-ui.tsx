@@ -1,5 +1,14 @@
 import type { ReactNode } from "react";
+import { isDefaultPreference, type PreferenceKey, type Preferences } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
+import { ResetSettingButton } from "./reset-button";
+
+export type ResetSpec = { keys: readonly PreferenceKey[]; changed: boolean; defaultLabel?: string };
+
+/** Reset details for a row: which preferences it covers and whether any differs from its default. */
+export function resetFor(preferences: Preferences, keys: readonly PreferenceKey[], defaultLabel?: string): ResetSpec {
+  return { keys, changed: keys.some((key) => !isDefaultPreference(preferences, key)), defaultLabel };
+}
 
 /** Page title for one settings section. */
 export function SettingsHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
@@ -28,11 +37,26 @@ export function SettingsGroup({ id, title, description, children, className }: {
 }
 
 /** One preference: label and explanation beside (or above, on small screens) its control. */
-export function SettingRow({ label, description, labelId, children }: { label: string; description?: ReactNode; labelId?: string; children: ReactNode }) {
+export function SettingRow({
+  label,
+  description,
+  labelId,
+  reset,
+  children,
+}: {
+  label: string;
+  description?: ReactNode;
+  labelId?: string;
+  reset?: ResetSpec;
+  children: ReactNode;
+}) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-8">
       <div className="min-w-0">
-        <p id={labelId} className="text-sm font-medium text-foreground">{label}</p>
+        <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">
+          <p id={labelId} className="text-sm font-medium text-foreground">{label}</p>
+          {reset ? <ResetSettingButton label={label} {...reset} /> : null}
+        </div>
         {description ? <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p> : null}
       </div>
       <div className="min-w-0">{children}</div>

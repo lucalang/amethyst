@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
 
 /** How pinned/progress details are shown on cover artwork. */
@@ -15,7 +16,10 @@ export const LIBRARY_DENSITIES = ["comfortable", "compact", "large"] as const;
 export const CHECKLIST_MODES = ["bottom", "collapse", "keep"] as const;
 export const STARTUP_DESTINATIONS = ["home", "collection", "last"] as const;
 export const HEADING_LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
-export const SHORTCUT_ACTIONS = ["search", "newEntry", "newFile", "toggleExplorer"] as const;
+export const SHORTCUT_ACTIONS = ["search", "newEntry", "newFile", "newChecklist", "newFolder", "toggleExplorer"] as const;
+/** How often the opening animation plays on a fresh load of the app. */
+export const INTRO_FREQUENCIES = ["every", "daily", "weekly", "never"] as const;
+export const MAX_FAN_COLLECTIONS = 200;
 
 export type MotionLevel = (typeof MOTION_LEVELS)[number];
 export type EditorFont = (typeof EDITOR_FONTS)[number];
@@ -25,6 +29,7 @@ export type ChecklistMode = (typeof CHECKLIST_MODES)[number];
 export type StartupDestination = (typeof STARTUP_DESTINATIONS)[number];
 export type HeadingLevel = (typeof HEADING_LEVELS)[number];
 export type ShortcutAction = (typeof SHORTCUT_ACTIONS)[number];
+export type IntroFrequency = (typeof INTRO_FREQUENCIES)[number];
 
 export const HOVER_SCALE_RANGE = { min: 0, max: 12 } as const;
 export const FONT_SIZE_RANGE = { min: 14, max: 22 } as const;
@@ -61,7 +66,9 @@ function normalizeHomeSections(list: { id: string; hidden: boolean }[]): HomeSec
 }
 
 export const DEFAULT_SETTINGS = {
+  theme: "amethyst" as ThemeId,
   motion: "full" as MotionLevel,
+  introFrequency: "daily" as IntroFrequency,
   cardShine: true,
   hoverScale: 5,
   editorFont: "sans" as EditorFont,
@@ -73,7 +80,14 @@ export const DEFAULT_SETTINGS = {
   checklistMode: "bottom" as ChecklistMode,
   startup: "home" as StartupDestination,
   startupCollectionId: null as string | null,
-  shortcuts: { search: "/", newEntry: "Alt+Shift+N", newFile: "Alt+N", toggleExplorer: "Alt+E" } as Record<ShortcutAction, string>,
+  shortcuts: {
+    search: "/",
+    newEntry: "Alt+Shift+N",
+    newFile: "Alt+N",
+    newChecklist: "Alt+C",
+    newFolder: "Alt+Shift+F",
+    toggleExplorer: "Alt+E",
+  } as Record<ShortcutAction, string>,
   /** Library card details (separate from the pinned-entry presentation, which is `pinStyle`). */
   cardTitle: true,
   cardLabels: false,
@@ -82,11 +96,34 @@ export const DEFAULT_SETTINGS = {
   /** "" keeps the built-in welcome. */
   homeGreeting: "",
   homeFeatured: null as HomeFeatured,
+  /** Collections whose covers may appear in the Home cover fan; null = every collection (including new ones), [] = no fan. */
+  homeFanCollections: null as string[] | null,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
+/**
+ * Saved shortcuts, with actions added after they were saved filled in from the defaults.
+ * A new default that is already taken by another action starts unassigned instead.
+ */
+function completeShortcuts(saved: Partial<Record<ShortcutAction, string>>): Record<ShortcutAction, string> {
+  const used = new Set(Object.values(saved).filter(Boolean));
+  const complete = {} as Record<ShortcutAction, string>;
+  for (const action of SHORTCUT_ACTIONS) {
+    const value = saved[action];
+    if (value !== undefined) complete[action] = value;
+    else {
+      const fallback = DEFAULT_SETTINGS.shortcuts[action];
+      complete[action] = used.has(fallback) ? "" : fallback;
+      if (complete[action]) used.add(fallback);
+    }
+  }
+  return complete;
+}
+
 const settingFields = {
+  theme: z.enum(THEME_IDS),
   motion: z.enum(MOTION_LEVELS),
+  introFrequency: z.enum(INTRO_FREQUENCIES),
   cardShine: z.boolean(),
   hoverScale: z.number().int().min(HOVER_SCALE_RANGE.min).max(HOVER_SCALE_RANGE.max),
   editorFont: z.enum(EDITOR_FONTS),
@@ -99,8 +136,9 @@ const settingFields = {
   startup: z.enum(STARTUP_DESTINATIONS),
   startupCollectionId: z.uuid().nullable(),
   shortcuts: z
-    .object(Object.fromEntries(SHORTCUT_ACTIONS.map((action) => [action, shortcut])) as Record<ShortcutAction, typeof shortcut>)
+    .object(Object.fromEntries(SHORTCUT_ACTIONS.map((action) => [action, shortcut.optional()])) as Record<ShortcutAction, z.ZodOptional<typeof shortcut>>)
     .strict()
+    .transform(completeShortcuts)
     .refine((value) => {
       const used = Object.values(value).filter(Boolean);
       return new Set(used).size === used.length;
@@ -133,6 +171,11 @@ const settingFields = {
         .strict(),
     ])
     .nullable(),
+  homeFanCollections: z
+    .array(z.uuid())
+    .max(MAX_FAN_COLLECTIONS)
+    .transform((ids) => [...new Set(ids)])
+    .nullable(),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */
@@ -161,3 +204,21 @@ export const preferencesSchema = z
   .refine((value) => Object.keys(value).length > 0, "Nothing to update.");
 
 export type Preferences = Settings & { pinStyle: PinStyle };
+
+export const DEFAULT_PREFERENCES: Preferences = { ...DEFAULT_SETTINGS, pinStyle: DEFAULT_PIN_STYLE };
+export type PreferenceKey = keyof Preferences;
+
+/** Whether a preference still has its default value (deep comparison for nested settings). */
+export function isDefaultPreference(preferences: Preferences, key: PreferenceKey): boolean {
+  return JSON.stringify(preferences[key]) === JSON.stringify(DEFAULT_PREFERENCES[key]);
+}
+
+/** The request body that puts the given preferences back to their defaults. */
+export function resetBody(keys: readonly PreferenceKey[]) {
+  const settings: Record<string, unknown> = {};
+  for (const key of keys) if (key !== "pinStyle") settings[key] = structuredClone(DEFAULT_SETTINGS[key]);
+  return {
+    ...(keys.includes("pinStyle") ? { pinStyle: DEFAULT_PIN_STYLE } : {}),
+    ...(Object.keys(settings).length > 0 ? { settings } : {}),
+  };
+}

@@ -177,6 +177,8 @@ function Workspace({
   const onShortcut = useEffectEvent((event: Event) => {
     const action = (event as CustomEvent<ShortcutAction>).detail;
     if (action === "newFile") startCreate("note");
+    else if (action === "newChecklist") startCreate("checklist");
+    else if (action === "newFolder") startCreate("folder");
     else if (action === "toggleExplorer") toggleExplorer();
     else return;
     event.preventDefault();

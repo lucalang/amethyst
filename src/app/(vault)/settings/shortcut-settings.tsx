@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DEFAULT_SETTINGS, SHORTCUT_ACTIONS, SHORTCUT_PATTERN, type ShortcutAction, type Settings } from "@/lib/preferences";
 import { SHORTCUT_LABELS, isMac, shortcutFromEvent, shortcutParts, shortcutProblem, worksWhileTyping } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";
+import { ChangedBadge, ResetIconButton } from "./reset-button";
 import { useSetting } from "./setting-controls";
 
 const noop = () => () => {};
@@ -37,6 +38,15 @@ export function ShortcutSettings({ value }: { value: Settings["shortcuts"] }) {
     if (shortcuts[action] !== shortcut) setShortcuts({ ...shortcuts, [action]: shortcut });
   }
 
+  function resetOne(action: ShortcutAction) {
+    const fallback = DEFAULT_SETTINGS.shortcuts[action];
+    const takenBy = fallback ? SHORTCUT_ACTIONS.find((other) => other !== action && shortcuts[other] === fallback) : undefined;
+    if (takenBy) {
+      setRecording(null);
+      setProblem({ action, message: `The default is used by “${SHORTCUT_LABELS[takenBy].title}”. Change that one first.` });
+    } else assign(action, fallback);
+  }
+
   function record(action: ShortcutAction, event: KeyboardEvent) {
     if (event.key === "Tab" && !event.altKey && !event.ctrlKey && !event.metaKey) {
       setRecording(null);
@@ -65,10 +75,23 @@ export function ShortcutSettings({ value }: { value: Settings["shortcuts"] }) {
           const shortcut = shortcuts[action];
           const active = recording === action;
           const error = problem?.action === action ? problem.message : null;
+          const changed = shortcut !== DEFAULT_SETTINGS.shortcuts[action];
           return (
             <li key={action} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
               <div className="min-w-0 flex-1 basis-56">
-                <p className="text-sm font-medium">{SHORTCUT_LABELS[action].title}</p>
+                <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="text-sm font-medium">{SHORTCUT_LABELS[action].title}</p>
+                  {changed ? (
+                    <span className="inline-flex items-center gap-1">
+                      <ChangedBadge />
+                      <ResetIconButton
+                        label={`the ${SHORTCUT_LABELS[action].title} shortcut`}
+                        defaultLabel={shortcutParts(DEFAULT_SETTINGS.shortcuts[action], mac).join(mac ? "" : "+") || "not set"}
+                        onReset={() => resetOne(action)}
+                      />
+                    </span>
+                  ) : null}
+                </div>
                 <p className="text-xs leading-5 text-muted-foreground">{SHORTCUT_LABELS[action].description}</p>
                 {error ? (
                   <p role="alert" className="mt-1 text-xs text-destructive">
@@ -124,7 +147,7 @@ export function ShortcutSettings({ value }: { value: Settings["shortcuts"] }) {
             setShortcuts({ ...DEFAULT_SETTINGS.shortcuts });
           }}
         >
-          <RotateCcw aria-hidden /> Reset to defaults
+          <RotateCcw aria-hidden /> Reset all shortcuts
         </Button>
       </div>
     </div>

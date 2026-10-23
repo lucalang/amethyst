@@ -5,6 +5,7 @@ import { KeyRound, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { loadCollections } from "@/lib/data/collections";
 import { loadPreferences } from "@/lib/data/preferences";
+import { DEFAULT_SETTINGS } from "@/lib/preferences";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "./forms";
 import { SettingRow, SettingsGroup, SettingsHeader } from "./settings-ui";
@@ -29,7 +30,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <SettingsHeader title="General" description="Your account, where the app opens, and security." />
 
       <SettingsGroup id="startup" title="Startup">
-        <SettingRow labelId="startup-label" label="Startup destination" description="The first page you see when you open the archive.">
+        <SettingRow
+          labelId="startup-label"
+          label="Startup destination"
+          description="The first page you see when you open the archive."
+          reset={{ keys: ["startup", "startupCollectionId"], changed: preferences.startup !== DEFAULT_SETTINGS.startup, defaultLabel: "Home" }}
+        >
           <StartupSetting
             value={preferences.startup}
             collectionId={preferences.startupCollectionId}

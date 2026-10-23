@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { StartupDestination } from "@/lib/preferences";
-import { ChoiceCards, useSaveSettings, type Choice } from "./setting-controls";
+import { DEFAULT_SETTINGS, type StartupDestination } from "@/lib/preferences";
+import { ChoiceCards, useOnReset, useSaveSettings, type Choice } from "./setting-controls";
 
 const OPTIONS: Choice<StartupDestination>[] = [
   { value: "home", title: "Home", description: "Your dashboard with recent and pinned entries." },
@@ -31,6 +31,9 @@ export function StartupSetting({
     setShown(server);
     setLocal(server);
   }
+  useOnReset(["startup", "startupCollectionId"], () =>
+    setLocal({ startup: DEFAULT_SETTINGS.startup, startupCollectionId: DEFAULT_SETTINGS.startupCollectionId }),
+  );
 
   function update(next: typeof local) {
     setLocal(next);

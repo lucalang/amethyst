@@ -328,7 +328,7 @@ export function CategoryFilter({
           type="button"
           aria-label={active ? `Labels: ${selected.length} selected` : "Filter by label"}
           data-active={active}
-          className="group/cat flex h-10 min-w-[9.5rem] flex-1 items-center gap-2 rounded-md border border-input bg-surface px-3 text-left text-sm transition-[color,background-color,border-color,box-shadow] duration-200 outline-none select-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(165_124_255/0.08)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[active=true]:border-amethyst/45 data-[active=true]:bg-amethyst/10 data-[state=open]:border-amethyst/60 sm:w-48 sm:flex-none"
+          className="group/cat flex h-10 min-w-[9.5rem] flex-1 items-center gap-2 rounded-md border border-input bg-surface px-3 text-left text-sm transition-[color,background-color,border-color,box-shadow] duration-200 outline-none select-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 data-[active=true]:border-amethyst/45 data-[active=true]:bg-amethyst/10 data-[state=open]:border-amethyst/60 sm:w-48 sm:flex-none"
         >
           <Tags aria-hidden className={cn("size-4 shrink-0 max-sm:hidden", active ? "text-amethyst" : "text-muted-foreground")} />
           <span className="min-w-0 flex-1 truncate">{active ? (selected.length === 1 && first ? first.name : "Labels") : "All labels"}</span>

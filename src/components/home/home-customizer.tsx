@@ -17,14 +17,13 @@ import {
   LibraryBig,
   Loader2,
   Pin,
-  RotateCcw,
   Search,
   Sparkles,
   SlidersHorizontal,
-  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { useSaveSettings } from "@/app/(vault)/settings/setting-controls";
+import { ChangedBadge, ResetIconButton } from "@/app/(vault)/settings/reset-button";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";
@@ -34,6 +33,7 @@ import { apiFetch } from "@/lib/api-client";
 import type { CoverShape } from "@/lib/cover-shape";
 import {
   HOME_SECTION_IDS,
+  MAX_FAN_COLLECTIONS,
   MAX_FEATURED_CAPTION_LENGTH,
   MAX_GREETING_LENGTH,
   type HomeFeatured,
@@ -117,6 +117,8 @@ export function HomeSections({
   featured,
   featuredTitle,
   featuredMissing,
+  fanCollections,
+  collections,
 }: {
   layout: HomeSection[];
   /** Rendered sections; missing ids have nothing to show right now. */
@@ -126,6 +128,8 @@ export function HomeSections({
   featured: HomeFeatured;
   featuredTitle: string | null;
   featuredMissing: boolean;
+  fanCollections: string[] | null;
+  collections: FanCollection[];
 }) {
   const { customizing, setCustomizing } = useContext(CustomizeContext);
   const [sections, setSections, commitSections] = useLocalSetting("homeSections", layout);
@@ -134,8 +138,8 @@ export function HomeSections({
   return (
     <>
       {customizing ? (
-        <section id="customize-home" aria-labelledby="customize-home-heading" className={cn(INNER, "pt-8 md:pt-11")}>
-          <div className="rounded-xl border border-amethyst/30 bg-[linear-gradient(160deg,rgb(165_124_255/0.07),transparent_60%)] p-4 shadow-[0_24px_60px_-36px_rgb(165_124_255/0.8)] md:p-6">
+        <section id="customize-home" aria-labelledby="customize-home-heading" className={cn(INNER, "pt-6 md:pt-8")}>
+          <div className="rounded-xl border border-amethyst/30 bg-[linear-gradient(160deg,rgb(var(--accent-rgb)/0.07),transparent_60%)] p-4 shadow-[0_24px_60px_-36px_rgb(var(--accent-rgb)/0.8)] md:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 id="customize-home-heading" tabIndex={-1} className="flex items-center gap-2.5 text-lg font-semibold tracking-tight outline-none">
@@ -144,28 +148,32 @@ export function HomeSections({
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">Changes save to your account as you make them.</p>
               </div>
-              <div className="flex gap-2">
-                <Button type="button" variant="ghost" className="h-9 gap-2 px-3 text-muted-foreground" disabled={isDefault} onClick={() => commitSections(DEFAULT_LAYOUT)}>
-                  <RotateCcw aria-hidden className="size-4" /> Reset layout
-                </Button>
-                <Button
-                  type="button"
-                  className="h-9 gap-2 px-4"
-                  onClick={() => {
-                    setCustomizing(false);
-                    requestAnimationFrame(() => document.getElementById("customize-home-button")?.focus());
-                  }}
-                >
-                  <Check aria-hidden className="size-4" /> Done
-                </Button>
-              </div>
+              <Button
+                type="button"
+                className="h-9 gap-2 px-4"
+                onClick={() => {
+                  setCustomizing(false);
+                  requestAnimationFrame(() => document.getElementById("customize-home-button")?.focus());
+                }}
+              >
+                <Check aria-hidden className="size-4" /> Done
+              </Button>
             </div>
             <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               <div className="space-y-6">
                 <GreetingEditor greeting={greeting} defaultGreeting={defaultGreeting} />
                 <FeaturedEditor featured={featured} featuredTitle={featuredTitle} missing={featuredMissing} />
+                <FanEditor value={fanCollections} collections={collections} />
               </div>
-              <SectionArranger sections={sections} available={(id) => Boolean(nodes[id])} onPreview={setSections} onCommit={commitSections} featuredMissing={featuredMissing} />
+              <SectionArranger
+                sections={sections}
+                available={(id) => Boolean(nodes[id])}
+                onPreview={setSections}
+                onCommit={commitSections}
+                featuredMissing={featuredMissing}
+                changed={!isDefault}
+                onReset={() => commitSections(DEFAULT_LAYOUT)}
+              />
             </div>
           </div>
         </section>
@@ -194,21 +202,24 @@ function GreetingEditor({ greeting, defaultGreeting }: { greeting: string; defau
 
   return (
     <div className="space-y-1.5">
-      <Label htmlFor="home-greeting">Greeting</Label>
-      <div className="flex gap-2">
-        <Input
-          id="home-greeting"
-          value={value}
-          maxLength={MAX_GREETING_LENGTH}
-          placeholder={defaultGreeting}
-          onChange={(event) => update(event.target.value)}
-          aria-describedby="home-greeting-hint"
-          className="h-10 min-w-0 flex-1"
-        />
-        <Button type="button" variant="outline" className="h-10 shrink-0 gap-2 px-3" disabled={!value} onClick={() => update("", 0)}>
-          <RotateCcw aria-hidden className="size-4" /> Default
-        </Button>
+      <div className="flex min-h-6 items-center gap-2">
+        <Label htmlFor="home-greeting">Greeting</Label>
+        {value ? (
+          <>
+            <ChangedBadge />
+            <ResetIconButton label="the greeting" defaultLabel={defaultGreeting} onReset={() => update("", 0)} />
+          </>
+        ) : null}
       </div>
+      <Input
+        id="home-greeting"
+        value={value}
+        maxLength={MAX_GREETING_LENGTH}
+        placeholder={defaultGreeting}
+        onChange={(event) => update(event.target.value)}
+        aria-describedby="home-greeting-hint"
+        className="h-10 min-w-0"
+      />
       <p id="home-greeting-hint" className="flex justify-between gap-3 text-xs text-muted-foreground">
         <span>Leave empty to keep “{defaultGreeting}”.</span>
         <span className="tabular-nums">
@@ -245,7 +256,23 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
 
   return (
     <fieldset className="space-y-3">
-      <legend className="text-sm font-medium">Featured</legend>
+      <legend className="flex min-h-6 items-center gap-2 text-sm font-medium">
+        Featured
+        {current ? (
+          <>
+            <ChangedBadge />
+            <ResetIconButton
+              label="the featured item"
+              defaultLabel="nothing featured"
+              onReset={() => {
+                commit(null);
+                setChosenTitle(null);
+                setEditing(true);
+              }}
+            />
+          </>
+        ) : null}
+      </legend>
       {current ? (
         <div className="flex items-center gap-3 rounded-lg border border-white/[0.08] bg-black/30 p-2.5">
           {current.kind === "image" ? (
@@ -266,7 +293,7 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
             ) : missing && !chosenTitle ? (
               <span className="flex items-start gap-1.5 text-amber-200">
                 <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-                The featured entry was deleted, so the section is hidden. Choose another or remove it.
+                The featured entry was deleted, so the section is hidden. Choose another or reset it.
               </span>
             ) : (
               <>
@@ -277,21 +304,6 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
           </span>
           <Button type="button" variant="ghost" size="sm" className="shrink-0" aria-expanded={editing} onClick={() => setEditing(!editing)}>
             Change
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="shrink-0 text-muted-foreground hover:text-rose"
-            aria-label="Remove featured item"
-            title="Remove"
-            onClick={() => {
-              commit(null);
-              setChosenTitle(null);
-              setEditing(true);
-            }}
-          >
-            <Trash2 aria-hidden />
           </Button>
         </div>
       ) : (
@@ -410,18 +422,111 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
   );
 }
 
+export type FanCollection = { id: string; name: string; icon: ReactNode; coverCount: number };
+
+/** Which collections may lend artwork to the cover fan beside the greeting. */
+function FanEditor({ value, collections }: { value: string[] | null; collections: FanCollection[] }) {
+  const [current, , commit] = useLocalSetting("homeFanCollections", value);
+  const allIds = collections.map((collection) => collection.id);
+  // Ids of deleted collections are dropped from what is shown and from the next save.
+  const selected = new Set(current === null ? allIds : current.filter((id) => allIds.includes(id)));
+  const orphaned = current !== null && current.length > 0 && selected.size === 0;
+
+  function save(next: Set<string>) {
+    const ids = allIds.filter((id) => next.has(id)).slice(0, MAX_FAN_COLLECTIONS);
+    commit(ids.length === allIds.length && allIds.length > 0 ? null : ids);
+  }
+
+  function toggle(id: string) {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    save(next);
+  }
+
+  const summary =
+    current === null
+      ? "Artwork from every collection, including new ones."
+      : orphaned
+        ? "The chosen collections were deleted, so the fan is hidden."
+        : selected.size === 0
+          ? "No collections chosen, so the fan is hidden."
+          : `Artwork from ${selected.size} of ${allIds.length} ${allIds.length === 1 ? "collection" : "collections"}.`;
+
+  return (
+    <fieldset className="space-y-2.5" aria-describedby="home-fan-summary">
+      <legend className="flex min-h-6 items-center gap-2 text-sm font-medium">
+        Cover fan
+        {current !== null ? (
+          <>
+            <ChangedBadge />
+            <ResetIconButton label="the cover fan collections" defaultLabel="all collections" onReset={() => commit(null)} />
+          </>
+        ) : null}
+      </legend>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p id="home-fan-summary" className="text-xs text-muted-foreground">
+          {summary}
+        </p>
+        {collections.length > 1 ? (
+          <span className="flex gap-1">
+            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={current === null} onClick={() => commit(null)}>
+              All
+            </Button>
+            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={current !== null && selected.size === 0} onClick={() => commit([])}>
+              None
+            </Button>
+          </span>
+        ) : null}
+      </div>
+      {collections.length ? (
+        <ul className="grid max-h-60 gap-1 overflow-y-auto pr-1 sm:grid-cols-2">
+          {collections.map((collection) => {
+            const checked = selected.has(collection.id);
+            return (
+              <li key={collection.id} className="min-w-0">
+                <label
+                  className={cn(
+                    "flex min-h-10 cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-1.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                    checked ? "border-amethyst/40 bg-amethyst/[0.08]" : "border-white/[0.07] bg-black/30 hover:border-white/[0.14]",
+                  )}
+                >
+                  <input type="checkbox" checked={checked} onChange={() => toggle(collection.id)} className="size-4 shrink-0 accent-[var(--primary)]" />
+                  <span className={cn("flex shrink-0", checked ? "text-amethyst" : "text-muted-foreground")}>{collection.icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium">{collection.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {collection.coverCount ? `${collection.coverCount} with artwork` : "No artwork yet"}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-xs text-muted-foreground">Create a collection and add cover art to fill the fan.</p>
+      )}
+    </fieldset>
+  );
+}
+
 function SectionArranger({
   sections,
   available,
   onPreview,
   onCommit,
   featuredMissing,
+  changed,
+  onReset,
 }: {
   sections: HomeSection[];
   available: (id: HomeSectionId) => boolean;
   onPreview: (sections: HomeSection[]) => void;
   onCommit: (sections: HomeSection[]) => void;
   featuredMissing: boolean;
+  changed: boolean;
+  onReset: () => void;
 }) {
   const [dragId, setDragId] = useState<HomeSectionId | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -496,9 +601,17 @@ function SectionArranger({
 
   return (
     <div className="lg:order-first">
-      <h3 id="home-sections-label" className="text-sm font-medium">
-        Sections
-      </h3>
+      <div className="flex min-h-6 items-center gap-2">
+        <h3 id="home-sections-label" className="text-sm font-medium">
+          Sections
+        </h3>
+        {changed ? (
+          <>
+            <ChangedBadge />
+            <ResetIconButton label="the section layout" defaultLabel="original order, all shown" onReset={onReset} />
+          </>
+        ) : null}
+      </div>
       <p id="home-sections-instructions" className="mt-1 text-xs text-muted-foreground">
         Drag a row by its handle, use the arrows, or focus a handle and press the arrow keys. The order is the same on every screen size.
       </p>

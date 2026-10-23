@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useTransition } from "react";
 import { ArrowDownWideNarrow, ListFilter, Loader2, Search, X } from "lucide-react";
 import { CategoryChip, CategoryFilter } from "@/components/categories/category-picker";
+import { MAX_QUERY_LENGTH, useLibrary } from "@/components/media/library-view";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORY_PARAM, type Category } from "@/lib/categories";
@@ -16,19 +17,17 @@ export function LibraryControls({
   label,
   collectionId,
   categories,
-  categoryCounts,
 }: {
   search: LibrarySearch;
   label: string;
   collectionId: string;
   categories: Category[];
-  categoryCounts: Record<string, number>;
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const params = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [selectedCategories, setSelectedCategories] = useOptimistic(search.categories);
+  const { query, setQuery, flushQuery, categoryCounts } = useLibrary();
 
   useEffect(() => {
     try {
@@ -40,8 +39,14 @@ export function LibraryControls({
     document.getElementById("library-search")?.focus();
   }, []);
 
+  // Typed queries reach the URL after a short pause; write any pending one first so it is kept.
+  function currentParams() {
+    flushQuery();
+    return new URLSearchParams(window.location.search);
+  }
+
   function update(key: string, value: string, defaultValue: string) {
-    const next = new URLSearchParams(params.toString());
+    const next = currentParams();
     if (value === defaultValue) next.delete(key);
     else next.set(key, value);
     const query = next.toString();
@@ -49,9 +54,9 @@ export function LibraryControls({
   }
 
   function updateCategories(ids: string[]) {
+    const next = currentParams();
     startTransition(() => {
       setSelectedCategories(ids);
-      const next = new URLSearchParams(params.toString());
       if (ids.length) next.set(CATEGORY_PARAM, ids.join(","));
       else next.delete(CATEGORY_PARAM);
       const query = next.toString();
@@ -62,7 +67,7 @@ export function LibraryControls({
   const activeCategories = selectedCategories
     .map((id) => categories.find((category) => category.id === id))
     .filter((category): category is Category => Boolean(category));
-  const filtered = search.status !== "all" || search.q || activeCategories.length > 0;
+  const filtered = search.status !== "all" || query.trim() !== "" || activeCategories.length > 0;
 
   return (
     <div className="space-y-3">
@@ -73,9 +78,9 @@ export function LibraryControls({
         role="search"
         onSubmit={(event) => {
           event.preventDefault();
-          update("q", String(new FormData(event.currentTarget).get("q") ?? "").trim(), "");
+          flushQuery();
         }}
-        className="group/search flex h-10 w-full min-w-0 items-center gap-2.5 rounded-md border border-input bg-surface px-3 transition-[border-color,box-shadow,background-color] duration-200 hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(165_124_255/0.08)] focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40 sm:w-80"
+        className="group/search flex h-10 w-full min-w-0 items-center gap-2.5 rounded-md border border-input bg-surface px-3 transition-[border-color,box-shadow,background-color] duration-200 hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40 sm:w-80"
       >
         <label htmlFor="library-search" className="sr-only">
           Search {label}
@@ -83,12 +88,14 @@ export function LibraryControls({
         {pending ? <Loader2 aria-hidden className="size-4 shrink-0 animate-spin text-amethyst" /> : <Search aria-hidden className="size-4 shrink-0 text-muted-foreground transition-[color,scale] duration-200 group-hover/search:text-amethyst group-focus-within/search:scale-110 group-focus-within/search:text-amethyst" />}
         <input
           id="library-search"
-          key={search.q}
           name="q"
           type="search"
-          defaultValue={search.q}
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          maxLength={MAX_QUERY_LENGTH}
           placeholder={`Search ${label.toLowerCase()}`}
           autoComplete="off"
+          enterKeyHint="search"
           className="h-full w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
         {search.status !== "all" ? <input type="hidden" name="status" value={search.status} /> : null}

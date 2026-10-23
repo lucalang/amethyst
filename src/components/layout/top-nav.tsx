@@ -3,9 +3,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gem, LibraryBig, LogOut, Settings } from "lucide-react";
+import { Gem, LibraryBig, LogOut, Megaphone, Settings } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
+import { WhatsNewButton } from "@/components/layout/whats-new";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -78,6 +79,7 @@ export function TopNav({ displayName, collections, icons = {} }: { displayName: 
         <div className="ml-auto flex items-center gap-2">
           {collections.length > 1 ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
           <NewCategoryButton />
+          <WhatsNewButton />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -93,6 +95,11 @@ export function TopNav({ displayName, collections, icons = {} }: { displayName: 
               <DropdownMenuItem asChild>
                 <Link href="/settings">
                   <Settings aria-hidden /> Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/whats-new">
+                  <Megaphone aria-hidden /> What’s new
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

@@ -51,7 +51,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
   const fieldClass = "h-11 border-white/[0.12] bg-black/50 px-3.5 text-sm placeholder:text-muted-foreground/50";
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!pending) { setError(null); onOpenChange(next); } }}>
-      <DialogContent className="max-h-[92dvh] gap-6 overflow-y-auto rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(0_0_0/0.75)] sm:max-w-[34rem]">
+      <DialogContent className="max-h-[92dvh] gap-6 overflow-y-auto rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[34rem]">
         <DialogHeader className="flex-row items-center gap-3.5">
           <span aria-hidden style={accentStyle(accent)} className={cn("grid size-11 shrink-0 place-items-center rounded-lg border", accent ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-[var(--ca)]" : "border-amethyst/25 bg-amethyst/10 text-amethyst")}>
             {icon ? <ClientCollectionIcon icon={icon} className="size-5" /> : collection ? <Pencil className="size-5" /> : <FolderPlus className="size-5" />}

@@ -22,6 +22,8 @@ export type HomeCollection = {
   accentColor: string | null;
   bannerUrl: string | null;
   entryCount: number;
+  /** Entries with cover artwork, i.e. what this collection can contribute to the Home fan. */
+  coverCount: number;
   previews: HomePreview[];
 };
 export type HomeTask = { id: string; label: string; dueDate: string; starred: boolean; href: string; entryTitle: string; fileName: string };
@@ -52,8 +54,11 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
   return result.data;
 }
 
-/** Everything the Home dashboard shows, scoped to the signed-in user by RLS. */
-export async function loadHome(ctx: AuthContext, featuredEntryId: string | null = null): Promise<HomeData> {
+/**
+ * Everything the Home dashboard shows, scoped to the signed-in user by RLS.
+ * `fanCollections` limits the welcome fan's artwork: null means every collection, [] means none.
+ */
+export async function loadHome(ctx: AuthContext, featuredEntryId: string | null = null, fanCollections: string[] | null = null): Promise<HomeData> {
   const { supabase } = ctx;
   const [collections, entries, visits, pins, files, tasks, profile] = await Promise.all([
     loadCollections(ctx),
@@ -151,11 +156,14 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
     href: entryPath(entry),
   });
 
-  // Continue first, then pinned and recently opened, then the most recently updated, all with artwork.
+  // Continue first, then pinned and recently opened, then the most recently updated, all with artwork
+  // and only from the collections chosen for the fan (unknown or deleted ids simply match nothing).
+  const fanSet = fanCollections ? new Set(fanCollections) : null;
   const showcaseIds = new Set<string>();
   for (const id of [...visitRows.map((visit) => visit.entry_id).slice(0, 1), ...pinRows.map((pin) => pin.entry_id), ...visitRows.map((visit) => visit.entry_id), ...entries.map((entry) => entry.id)]) {
-    if (showcaseIds.size >= SHOWCASE_LIMIT) break;
-    if (entryById.get(id)?.cover_url) showcaseIds.add(id);
+    if (showcaseIds.size >= SHOWCASE_LIMIT || fanSet?.size === 0) break;
+    const entry = entryById.get(id);
+    if (entry?.cover_url && (!fanSet || fanSet.has(entry.collection_id))) showcaseIds.add(id);
   }
 
   return {
@@ -172,6 +180,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
         accentColor: collection.accent_color ?? null,
         bannerUrl: collection.banner_url ?? null,
         entryCount: list.length,
+        coverCount: list.filter((entry) => entry.cover_url).length,
         previews: previews.map(preview),
       };
     }),

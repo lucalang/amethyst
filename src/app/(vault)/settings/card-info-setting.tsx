@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
+import { DEFAULT_SETTINGS } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
-import { ChoiceCards, useSaveSettings } from "./setting-controls";
+import { ChoiceCards, useOnReset, useSaveSettings } from "./setting-controls";
 
 type CardInfo = { cardTitle: boolean; cardLabels: boolean; cardProgress: boolean };
 type Preset = "standard" | "detailed" | "artwork";
@@ -42,6 +43,9 @@ export function CardInfoSetting({ value, labelId }: { value: CardInfo; labelId: 
     setShown(value);
     setLocal(value);
   }
+  useOnReset(["cardTitle", "cardLabels", "cardProgress"], () =>
+    setLocal({ cardTitle: DEFAULT_SETTINGS.cardTitle, cardLabels: DEFAULT_SETTINGS.cardLabels, cardProgress: DEFAULT_SETTINGS.cardProgress }),
+  );
 
   function update(next: CardInfo) {
     const previous = local;

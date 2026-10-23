@@ -150,7 +150,7 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
       </Button>
     )}
     <Dialog open={open} onOpenChange={(next) => { if (!pending) setOpen(next); }}>
-      <DialogContent className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(0_0_0/0.75)] sm:max-w-[28rem]">
+      <DialogContent className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[28rem]">
         <DialogHeader className="flex-row items-center gap-3.5">
           <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-lg border border-amethyst/25 bg-amethyst/10 text-amethyst">
             <ArrowUpDown className="size-5" />

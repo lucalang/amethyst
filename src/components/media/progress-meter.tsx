@@ -28,7 +28,7 @@ export function ProgressMeter({ done, total, label, className, compact }: Props)
         {known ? (
           <div className="h-full rounded-sm bg-amethyst transition-[width]" style={{ width: `${percent}%` }} />
         ) : (
-          <div className="h-full w-full bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgb(255_255_255/0.08)_6px_12px)]" />
+          <div className="h-full w-full bg-[repeating-linear-gradient(135deg,transparent_0_6px,rgb(var(--ink-rgb)/0.08)_6px_12px)]" />
         )}
       </div>
       {!compact ? (

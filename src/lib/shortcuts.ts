@@ -3,12 +3,16 @@ import type { ShortcutAction } from "@/lib/preferences";
 export const SHORTCUT_LABELS: Record<ShortcutAction, { title: string; description: string }> = {
   search: { title: "Search", description: "Jump to the search box of the current (or first) collection." },
   newEntry: { title: "New entry", description: "Add an entry to the current (or first) collection." },
-  newFile: { title: "New note", description: "Create a note in the open entry's workspace." },
+  newFile: { title: "New note", description: "Create a note in the open entry’s workspace." },
+  newChecklist: { title: "New checklist", description: "Create a checklist in the open entry’s workspace." },
+  newFolder: { title: "New folder", description: "Create a folder in the open entry’s workspace." },
   toggleExplorer: { title: "Show or hide explorer", description: "Open or close the file explorer in an entry." },
 };
 
 /** Dispatched on window for actions handled by the open workspace; it calls preventDefault when handled. */
 export const WORKSPACE_SHORTCUT_EVENT = "archive:shortcut";
+/** Actions that only make sense inside an open entry. */
+export const WORKSPACE_ACTIONS: readonly ShortcutAction[] = ["newFile", "newChecklist", "newFolder", "toggleExplorer"];
 /** Set before navigating to a collection so its search box takes focus once it mounts. */
 export const FOCUS_SEARCH_KEY = "archive:focus-search";
 

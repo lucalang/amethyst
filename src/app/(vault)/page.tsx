@@ -48,8 +48,8 @@ function Section({
 }) {
   return (
     <section aria-labelledby={`${id}-heading`}>
-      <div className={cn(INNER, "enter py-8 md:py-11")} style={enterIndex(index)}>
-        <div className="mb-6 flex min-h-9 flex-wrap items-end justify-between gap-3">
+      <div className={cn(INNER, "enter py-6 md:py-8")} style={enterIndex(index)}>
+        <div className="mb-4 flex min-h-9 flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             <h2 id={`${id}-heading`} className="flex items-center gap-2.5 text-lg font-semibold tracking-tight md:text-xl">
               <span aria-hidden className="grid size-7 place-items-center rounded-md bg-amethyst/[0.12] ring-1 ring-amethyst/25">
@@ -78,9 +78,9 @@ function ContinueCard({ item }: { item: HomeContinue }) {
   return (
     <Link
       href={item.href}
-      className="group/continue relative flex w-full max-w-2xl min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-white/[0.1] bg-black/45 p-3 pr-4 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-amethyst/[0.07] hover:shadow-[0_22px_48px_-24px_rgb(165_124_255/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:gap-5 sm:pr-5"
+      className="group/continue relative flex w-full max-w-2xl min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-white/[0.1] bg-black/45 p-3 pr-4 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-amethyst/[0.07] hover:shadow-[0_22px_48px_-24px_rgb(var(--accent-rgb)/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:gap-5 sm:pr-5"
     >
-      <span className={cn("relative shrink-0 overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_12px_28px_-12px_rgb(0_0_0/0.9)]", entry.coverShape === "square" ? "size-24" : "h-28 w-[4.75rem]")}>
+      <span className={cn("relative shrink-0 overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_12px_28px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]", entry.coverShape === "square" ? "size-20" : "h-24 w-16")}>
         <MediaImage src={entry.coverUrl} alt="" fallbackLabel={entry.title} priority className="transition-[scale] duration-700 group-hover/continue:scale-105" />
       </span>
       <span className="min-w-0 flex-1">
@@ -111,10 +111,15 @@ function ContinueCard({ item }: { item: HomeContinue }) {
 /** Center first, then alternating left and right. */
 const FAN_SLOTS = [0, -1, 1, -2, 2];
 
+/**
+ * Up to five covers fanned out beside the greeting. Spacing and angles adapt to the number of
+ * covers and the column width (see .home-fan in globals.css); square covers stay square.
+ */
 function CoverFan({ covers }: { covers: HomePreview[] }) {
+  const spread = Math.max(...covers.map((_, index) => Math.abs(FAN_SLOTS[index])));
   return (
-    <div aria-hidden className="relative mx-auto hidden h-80 w-full max-w-[26rem] md:block">
-      <div className="absolute inset-x-6 bottom-2 h-24 rounded-full bg-amethyst/25 blur-3xl" />
+    <div aria-hidden className="home-fan relative mx-auto hidden w-full md:block" style={{ "--fan-max": spread } as CSSProperties}>
+      <div className="absolute inset-x-10 bottom-0 h-20 rounded-full bg-amethyst/25 blur-3xl" />
       {covers.map((cover, index) => {
         const slot = FAN_SLOTS[index];
         return (
@@ -122,15 +127,12 @@ function CoverFan({ covers }: { covers: HomePreview[] }) {
             key={cover.id}
             href={cover.href}
             tabIndex={-1}
-            className={cn(
-              "home-fan-card absolute bottom-6 left-1/2 overflow-hidden rounded-lg border border-white/[0.12] bg-surface shadow-[0_24px_48px_-16px_rgb(0_0_0/0.95)]",
-              cover.coverShape === "square" ? "size-40" : "h-56 w-[9.5rem]",
-            )}
+            data-shape={cover.coverShape === "square" ? "square" : "portrait"}
+            className="home-fan-card overflow-hidden rounded-lg border border-white/[0.12] bg-surface shadow-[0_24px_48px_-16px_rgb(var(--shadow-rgb)/calc(0.95*var(--shadow-alpha)))]"
             style={
               {
-                "--fan-x": `${slot * 4.6}rem`,
-                "--fan-r": `${slot * 7}deg`,
-                "--fan-y": `${Math.abs(slot) * 0.9}rem`,
+                "--fan-slot": slot,
+                "--fan-depth": Math.abs(slot),
                 "--fan-i": index,
                 "--fan-z": 10 - Math.abs(slot),
               } as CSSProperties
@@ -166,26 +168,26 @@ function Hero({ home, categories, greeting }: { home: HomeData; categories: Libr
     <section aria-labelledby="home-heading" className="relative isolate overflow-hidden border-b border-white/[0.06]">
       <div aria-hidden className="absolute inset-0 -z-10">
         {backdrop ? <MediaImage src={backdrop} alt="" priority className="scale-110 opacity-30 blur-2xl saturate-150" /> : null}
-        <div className="absolute inset-0 bg-[radial-gradient(55%_85%_at_12%_0%,rgb(165_124_255/0.26),transparent_70%),radial-gradient(40%_70%_at_88%_15%,rgb(244_114_168/0.13),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(55%_85%_at_12%_0%,rgb(var(--accent-rgb)/0.26),transparent_70%),radial-gradient(40%_70%_at_88%_15%,rgb(var(--rose-rgb)/0.13),transparent_70%)]" />
         <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/55 to-black" />
       </div>
-      <div className={cn(INNER, "grid items-center gap-8 py-9 md:py-12", showFan && "md:grid-cols-[minmax(0,1fr)_22rem] lg:grid-cols-[minmax(0,1fr)_26rem]")}>
+      <div className={cn(INNER, "grid items-center gap-6 py-7 md:gap-8 md:py-9", showFan && "md:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:grid-cols-[minmax(0,1fr)_26rem]")}>
         <div className="enter min-w-0" style={enterIndex(0)}>
           <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Gem aria-hidden className="size-3.5 text-amethyst" />
             Amethyst <span className="-ml-1 text-amethyst">Archives</span>
           </p>
-          <h1 id="home-heading" className="mt-3 text-3xl leading-tight font-semibold tracking-tight text-balance break-words md:text-4xl">
+          <h1 id="home-heading" className="mt-2 text-3xl leading-tight font-semibold tracking-tight text-balance break-words md:text-4xl">
             {greeting ? greeting : <>
               {fresh ? "Welcome" : "Welcome back"}
               {firstName ? <>
                 ,{" "}
-                <span className="bg-linear-to-r from-[#c9b0ff] via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
+                <span className="bg-linear-to-r from-(--primary-hi) via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
               </> : null}
             </>}
           </h1>
-          <p className="mt-2.5 max-w-xl text-base text-pretty text-foreground/70">{subline}</p>
-          <div className="mt-6 flex flex-wrap items-center gap-2.5">
+          <p className="mt-2 max-w-xl text-base text-pretty text-foreground/70">{subline}</p>
+          <div className="mt-5 flex flex-wrap items-center gap-2.5">
             {home.collections.length ? <>
               <NewEntryButton collections={categories} className="h-10 px-4" />
               <NewCategoryButton className="h-10 px-4" />
@@ -195,7 +197,7 @@ function Hero({ home, categories, greeting }: { home: HomeData; categories: Libr
             <CustomizeHomeButton />
           </div>
           {home.continueEntry ? (
-            <div className="mt-7">
+            <div className="mt-5">
               <ContinueCard item={home.continueEntry} />
             </div>
           ) : null}
@@ -225,7 +227,7 @@ function GettingStarted({ home, index }: { home: HomeData; index: number }) {
               aria-current={current ? "step" : undefined}
               className={cn(
                 "relative flex gap-3.5 rounded-xl border p-4",
-                current ? "border-amethyst/40 bg-amethyst/[0.06] shadow-[0_18px_44px_-28px_rgb(165_124_255/0.9)]" : "border-white/[0.07] bg-surface/40",
+                current ? "border-amethyst/40 bg-amethyst/[0.06] shadow-[0_18px_44px_-28px_rgb(var(--accent-rgb)/0.9)]" : "border-white/[0.07] bg-surface/40",
               )}
             >
               <span
@@ -268,7 +270,7 @@ function CollectionCard({ collection }: { collection: HomeCollection }) {
         "group/collection relative isolate flex h-full min-w-0 items-start gap-4 overflow-hidden rounded-xl border bg-surface/50 p-4 transition-[border-color,background-color,translate,box-shadow] duration-200 outline-none hover:-translate-y-0.5 focus-visible:ring-2 motion-reduce:hover:translate-y-0",
         accent
           ? "border-[var(--ca-line)] hover:border-[var(--ca)] hover:bg-[var(--ca-soft)] hover:shadow-[0_18px_40px_-24px_var(--ca-glow)] focus-visible:border-[var(--ca)] focus-visible:ring-[var(--ca)]"
-          : "border-white/[0.08] hover:border-amethyst/40 hover:bg-amethyst/[0.05] hover:shadow-[0_18px_40px_-24px_rgb(165_124_255/0.7)] focus-visible:border-amethyst focus-visible:ring-amethyst/50",
+          : "border-white/[0.08] hover:border-amethyst/40 hover:bg-amethyst/[0.05] hover:shadow-[0_18px_40px_-24px_rgb(var(--accent-rgb)/0.7)] focus-visible:border-amethyst focus-visible:ring-amethyst/50",
       )}
     >
       {collection.bannerUrl ? (
@@ -328,19 +330,19 @@ function FeaturedEntry({ featured }: { featured: HomeFeaturedEntry }) {
   return (
     <Link
       href={featured.href}
-      className="group/featured relative isolate flex min-w-0 items-end gap-5 overflow-hidden rounded-xl border border-white/[0.08] bg-surface/40 p-4 transition-[border-color,box-shadow] duration-200 outline-none hover:border-amethyst/45 hover:shadow-[0_26px_60px_-30px_rgb(165_124_255/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:p-6 md:min-h-72 md:gap-7 md:p-8"
+      className="group/featured relative isolate flex min-w-0 items-end gap-5 overflow-hidden rounded-xl border border-white/[0.08] bg-surface/40 p-4 transition-[border-color,box-shadow] duration-200 outline-none hover:border-amethyst/45 hover:shadow-[0_26px_60px_-30px_rgb(var(--accent-rgb)/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:p-6 md:min-h-60 md:gap-7 md:p-7"
     >
       <span aria-hidden className="absolute inset-0 -z-10">
         {backdrop ? (
           <MediaImage src={backdrop} alt="" className={featured.bannerUrl ? "opacity-55 transition-[scale] duration-700 group-hover/featured:scale-[1.02]" : "scale-110 opacity-35 blur-2xl"} />
         ) : (
-          <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(165_124_255/0.22),transparent_60%)]" />
+          <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%)]" />
         )}
         <span className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/20" />
       </span>
       <span
         className={cn(
-          "relative shrink-0 overflow-hidden rounded-lg border border-white/[0.1] bg-surface shadow-[0_22px_50px_-20px_rgb(0_0_0/0.95)]",
+          "relative shrink-0 overflow-hidden rounded-lg border border-white/[0.1] bg-surface shadow-[0_22px_50px_-20px_rgb(var(--shadow-rgb)/calc(0.95*var(--shadow-alpha)))]",
           entry.coverShape === "square" ? "size-28 md:size-40" : "h-36 w-24 md:h-52 md:w-36",
         )}
       >
@@ -377,7 +379,7 @@ export default async function HomePage() {
   const ctx = await requireUser();
   const preferences = await loadPreferences(ctx);
   const chosen = preferences.homeFeatured;
-  const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null);
+  const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null, preferences.homeFanCollections);
   const { pinStyle } = preferences;
   const categories = home.collections.map(({ id, name, description }) => ({ id, name, description }));
   const hasEntries = home.counts.entries > 0;
@@ -489,6 +491,13 @@ export default async function HomePage() {
           featured={chosen}
           featuredTitle={home.featured?.entry.title ?? null}
           featuredMissing={featuredMissing}
+          fanCollections={preferences.homeFanCollections}
+          collections={home.collections.map(({ id, name, icon, coverCount }) => ({
+            id,
+            name,
+            icon: <CollectionIcon icon={icon} className="size-3.5" />,
+            coverCount,
+          }))}
         />
       </HomeCustomizeProvider>
     </EntranceScope>

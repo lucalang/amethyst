@@ -450,10 +450,10 @@ function TaskRow({
       className={cn(
         "task-row group/task relative rounded-lg transition-[background-color,box-shadow] duration-200 ease-out",
         expanded
-          ? "bg-[#140f1e] shadow-[inset_0_0_0_1px_rgb(165_124_255/0.38),0_18px_40px_-26px_rgb(165_124_255/0.8)]"
+          ? "bg-surface-raised shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.38),0_18px_40px_-26px_rgb(var(--accent-rgb)/0.8)]"
           : item.checked
-            ? "bg-white/[0.022] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.035)] hover:bg-white/[0.045]"
-            : "bg-white/[0.04] shadow-[inset_0_0_0_1px_rgb(255_255_255/0.05)] hover:bg-[#15111d] hover:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.3),0_10px_28px_-20px_rgb(165_124_255/0.9)]",
+            ? "bg-white/[0.022] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.035)] hover:bg-white/[0.045]"
+            : "bg-white/[0.04] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.05)] hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.3),0_10px_28px_-20px_rgb(var(--accent-rgb)/0.9)]",
         "has-[[data-row-button]:focus-visible]:shadow-[inset_0_0_0_2px_var(--amethyst)]",
         fresh && "task-in",
       )}
@@ -532,7 +532,7 @@ function TaskRow({
             aria-hidden
             className={cn(
               "size-[1.1rem] transition-[scale,rotate,filter] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/star:scale-125 group-hover/star:rotate-[18deg]",
-              item.starred && "fill-current drop-shadow-[0_0_6px_rgb(244_114_168/0.7)]",
+              item.starred && "fill-current drop-shadow-[0_0_6px_rgb(var(--rose-rgb)/0.7)]",
             )}
           />
         </button>
@@ -636,9 +636,9 @@ function AddTask({
       <div className="flex items-stretch gap-2">
       <div
         className={cn(
-          "group/add flex min-h-[3.25rem] min-w-0 flex-1 cursor-text items-center gap-3.5 rounded-lg bg-[#0e0b14] py-1.5 pr-2 pl-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07),0_-10px_28px_-14px_rgb(0_0_0/0.95)] transition-[background-color,box-shadow] duration-200",
-          "hover:bg-[#130f1b] hover:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.25),0_-10px_28px_-14px_rgb(0_0_0/0.95)]",
-          "focus-within:bg-[#130f1b] focus-within:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.6),0_0_0_3px_rgb(165_124_255/0.12),0_-10px_28px_-14px_rgb(0_0_0/0.95)]",
+          "group/add flex min-h-[3.25rem] min-w-0 flex-1 cursor-text items-center gap-3.5 rounded-lg bg-surface py-1.5 pr-2 pl-4 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.07),0_-10px_28px_-14px_rgb(var(--shadow-rgb)/calc(0.95*var(--shadow-alpha)))] transition-[background-color,box-shadow] duration-200",
+          "hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.25),0_-10px_28px_-14px_rgb(var(--shadow-rgb)/calc(0.95*var(--shadow-alpha)))]",
+          "focus-within:bg-surface-raised focus-within:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.6),0_0_0_3px_rgb(var(--accent-rgb)/0.12),0_-10px_28px_-14px_rgb(var(--shadow-rgb)/calc(0.95*var(--shadow-alpha)))]",
         )}
         onClick={() => inputRef.current?.focus()}
       >
@@ -679,7 +679,7 @@ function AddTask({
         variant="outline"
         onClick={onAddMultiple}
         aria-haspopup="dialog"
-        className="h-auto min-h-[3.25rem] shrink-0 gap-2 rounded-lg border-white/[0.09] bg-[#0e0b14] px-3 text-sm text-foreground/85 shadow-[0_-10px_28px_-14px_rgb(0_0_0/0.95)] hover:translate-y-0 hover:border-amethyst/40 hover:bg-[#130f1b] hover:text-amethyst sm:px-4 [&_svg]:text-amethyst"
+        className="h-auto min-h-[3.25rem] shrink-0 gap-2 rounded-lg border-white/[0.09] bg-surface px-3 text-sm text-foreground/85 shadow-[0_-10px_28px_-14px_rgb(var(--shadow-rgb)/calc(0.95*var(--shadow-alpha)))] hover:translate-y-0 hover:border-amethyst/40 hover:bg-surface-raised hover:text-amethyst sm:px-4 [&_svg]:text-amethyst"
       >
         <ListPlus aria-hidden />
         <span className="sm:hidden">Multiple</span>

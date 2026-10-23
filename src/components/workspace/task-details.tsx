@@ -30,7 +30,7 @@ export const notesBackupKey = (itemId: string) => `archive:task-notes:${itemId}`
 
 const SECTION_LABEL = "text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase";
 const CARD =
-  "rounded-lg bg-black/50 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] transition-shadow duration-200 focus-within:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.45)]";
+  "rounded-lg bg-black/50 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.06)] transition-shadow duration-200 focus-within:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]";
 
 /** Expanded view of one task, grouped into cards like Microsoft To Do's detail pane. */
 export function TaskDetails({ id, item, today, actions }: { id: string; item: ChecklistItem; today: string | null; actions: TaskActions }) {
@@ -250,7 +250,7 @@ function DueDate({ item, today, actions }: { item: ChecklistItem; today: string 
               timerRef.current = window.setTimeout(() => commit(value), 700);
             }}
             onBlur={(event) => commit(event.target.value)}
-            className="h-8 rounded-md border border-white/10 bg-white/[0.03] px-2 text-xs text-muted-foreground [color-scheme:dark] transition-colors outline-none hover:border-amethyst/40 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="h-8 rounded-md border border-white/10 bg-white/[0.03] px-2 text-xs text-muted-foreground transition-colors outline-none hover:border-amethyst/40 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
           />
           {item.dueDate ? (
             <Button variant="ghost" size="icon-sm" onClick={() => choose("")} aria-label="Remove due date" className="text-muted-foreground">

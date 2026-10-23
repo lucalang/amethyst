@@ -84,22 +84,22 @@ export function EntryHeader({
         {banner ? (
           <MediaImage src={banner} alt="" priority className={entry.banner_url ? "opacity-80" : "scale-110 opacity-45 blur-2xl"} />
         ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(165_124_255/0.22),transparent_60%),radial-gradient(ellipse_at_90%_10%,rgb(244_114_168/0.08),transparent_55%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%),radial-gradient(ellipse_at_90%_10%,rgb(var(--rose-rgb)/0.08),transparent_55%)]" />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 via-55% to-black" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_15%_100%,rgb(0_0_0/0.55),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_15%_100%,rgb(var(--shadow-rgb)/calc(0.55*var(--shadow-alpha))),transparent_70%)]" />
       </div>
       <div className="mx-auto max-w-[88rem] px-4 md:px-6">
         <div className="relative -mt-20 flex flex-col gap-4 pb-7 sm:-mt-24 md:-mt-36 md:flex-row md:items-end md:gap-7 lg:-mt-40 lg:gap-8">
           <div
-            className={`enter enter-card relative ${entry.cover_shape === "square" ? "aspect-square w-32 sm:w-36 md:w-48 lg:w-56" : "aspect-[2/3] w-28 sm:w-32 md:w-44 lg:w-48"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_28px_70px_-24px_rgb(165_124_255/0.6),0_12px_40px_-12px_rgb(0_0_0/0.9)] ring-1 ring-white/10`}
+            className={`enter enter-card relative ${entry.cover_shape === "square" ? "aspect-square w-32 sm:w-36 md:w-48 lg:w-56" : "aspect-[2/3] w-28 sm:w-32 md:w-44 lg:w-48"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_28px_70px_-24px_rgb(var(--accent-rgb)/0.6),0_12px_40px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))] ring-1 ring-white/10`}
             style={{ "--enter-index": 0 } as React.CSSProperties}
           >
             <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} priority fallbackLabel={entry.title} />
           </div>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>
-            <Link href={`/${collection.id}`} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase [text-shadow:0_1px_10px_rgb(0_0_0/0.8)]">{collection.name}</Link>
-            <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words [text-shadow:0_2px_18px_rgb(0_0_0/0.65)] md:text-[2.1rem] lg:text-[2.5rem]">{entry.title}</h1>
+            <Link href={`/${collection.id}`} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.8*var(--shadow-alpha)))]">{collection.name}</Link>
+            <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words [text-shadow:0_2px_18px_rgb(var(--shadow-rgb)/calc(0.65*var(--shadow-alpha)))] md:text-[2.1rem] lg:text-[2.5rem]">{entry.title}</h1>
             {entry.platform ? <p className="mt-1 text-sm text-muted-foreground">{entry.platform}</p> : null}
             {assigned.length ? (
               <ul aria-label="Labels" className="mt-2.5 flex flex-wrap gap-1.5">
@@ -108,7 +108,7 @@ export function EntryHeader({
                     <Link
                       href={`/${collection.id}?${CATEGORY_PARAM}=${category.id}`}
                       title={`Show entries in “${category.name}”`}
-                      className="group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full bg-amethyst/[0.1] px-2.5 text-xs font-medium text-foreground/90 ring-1 ring-amethyst/25 transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:bg-amethyst/20 hover:text-foreground hover:ring-amethyst/60 hover:shadow-[0_6px_18px_-8px_rgb(165_124_255/0.8)] focus-visible:ring-2 focus-visible:ring-ring"
+                      className="group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full bg-amethyst/[0.1] px-2.5 text-xs font-medium text-foreground/90 ring-1 ring-amethyst/25 transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:bg-amethyst/20 hover:text-foreground hover:ring-amethyst/60 hover:shadow-[0_6px_18px_-8px_rgb(var(--accent-rgb)/0.8)] focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <Tag aria-hidden className="size-3 shrink-0 text-amethyst transition-transform duration-200 group-hover/cat:-rotate-12" />
                       <span className="max-w-[14rem] truncate">{category.name}</span>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Keyboard, LayoutTemplate, LibraryBig, Palette, PenLine, SlidersHorizontal, Tags, type LucideIcon } from "lucide-react";
+import { Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; hint: string; icon: LucideIcon; active: (pathname: string) => boolean };
@@ -16,10 +16,17 @@ const ITEMS: Item[] = [
     active: (pathname) => pathname === "/settings" || pathname.startsWith("/settings/password"),
   },
   {
+    href: "/settings/themes",
+    label: "Themes",
+    hint: "Colors, fonts and style",
+    icon: Palette,
+    active: (pathname) => pathname.startsWith("/settings/themes"),
+  },
+  {
     href: "/settings/appearance",
     label: "Appearance",
-    hint: "Motion, effects and density",
-    icon: Palette,
+    hint: "Motion, intro and density",
+    icon: Sparkles,
     active: (pathname) => pathname.startsWith("/settings/appearance"),
   },
   {
@@ -57,6 +64,13 @@ const ITEMS: Item[] = [
     icon: Tags,
     active: (pathname) => pathname.startsWith("/settings/labels"),
   },
+  {
+    href: "/whats-new",
+    label: "What’s new",
+    hint: "Update log",
+    icon: Megaphone,
+    active: (pathname) => pathname.startsWith("/whats-new"),
+  },
 ];
 
 /** Section navigation: a sidebar on wide screens, a sticky segmented strip on small ones. */
@@ -82,7 +96,7 @@ export function SettingsNav() {
                   active && "border-amethyst/25 bg-amethyst/10 text-foreground hover:bg-amethyst/[0.12]",
                 )}
               >
-                {active ? <span aria-hidden className="absolute top-2 bottom-2 -left-px hidden w-0.5 rounded-full bg-amethyst shadow-[0_0_10px_rgb(165_124_255/0.8)] md:block" /> : null}
+                {active ? <span aria-hidden className="absolute top-2 bottom-2 -left-px hidden w-0.5 rounded-full bg-amethyst shadow-[0_0_10px_rgb(var(--accent-rgb)/0.8)] md:block" /> : null}
                 <Icon aria-hidden className={cn("size-4 shrink-0 transition-colors", active ? "text-amethyst" : "text-muted-foreground/70 group-hover/settings-nav:text-amethyst")} />
                 <span className="min-w-0">
                   <span className="block truncate">{item.label}</span>

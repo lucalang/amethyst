@@ -1,4 +1,5 @@
-import { HEADING_LEVELS, type EditorFont, type EditorWidth, type Settings } from "@/lib/preferences";
+import { DEFAULT_SETTINGS, HEADING_LEVELS, type EditorFont, type EditorWidth, type HeadingLevel, type Settings } from "@/lib/preferences";
+import { THEMES } from "@/lib/themes";
 
 export const EDITOR_FONT_STACKS: Record<EditorFont, string> = {
   sans: "var(--font-manrope), ui-sans-serif, system-ui, sans-serif",
@@ -14,6 +15,16 @@ export const EDITOR_WIDTH_VALUES: Record<EditorWidth, string> = {
   full: "none",
 };
 
+/** True while the account has not chosen its own heading colors, so they follow the theme. */
+export function headingsFollowTheme(settings: Pick<Settings, "headingColors">): boolean {
+  return HEADING_LEVELS.every((level) => settings.headingColors[level] === DEFAULT_SETTINGS.headingColors[level]);
+}
+
+/** The heading colors in effect: the account's own, or the active theme's palette. */
+export function effectiveHeadingColors(settings: Pick<Settings, "headingColors" | "theme">): Record<HeadingLevel, string> {
+  return headingsFollowTheme(settings) ? THEMES[settings.theme].headings : settings.headingColors;
+}
+
 /** CSS custom properties for the account's settings. Every value comes from a validated enum, number or hex color. */
 export function settingsStyle(settings: Settings): string {
   const vars: Record<string, string> = {
@@ -23,6 +34,7 @@ export function settingsStyle(settings: Settings): string {
     "--editor-line-height": String(settings.editorLineSpacing / 100),
     "--editor-width": EDITOR_WIDTH_VALUES[settings.editorWidth],
   };
-  for (const level of HEADING_LEVELS) vars[`--md-${level}`] = settings.headingColors[level];
+  const headings = effectiveHeadingColors(settings);
+  for (const level of HEADING_LEVELS) vars[`--md-${level}`] = headings[level];
   return `:root:root{${Object.entries(vars).map(([name, value]) => `${name}:${value}`).join(";")}}`;
 }

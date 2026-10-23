@@ -6,8 +6,9 @@ import { Check, MoreHorizontal, Pin } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/components/workspace/client-utils";
 import { apiFetch } from "@/lib/api-client";
-import type { PinStyle } from "@/lib/preferences";
+import { DEFAULT_PIN_STYLE, type PinStyle } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
+import { useOnReset } from "./setting-controls";
 
 const OPTIONS: { value: PinStyle; title: string; description: string }[] = [
   { value: "current", title: "On the artwork", description: "Pin badge and progress shown on the artwork." },
@@ -55,6 +56,7 @@ export function PinStyleSetting({ value, labelId }: { value: PinStyle; labelId: 
     setShown(value);
     setSelected(value);
   }
+  useOnReset(["pinStyle"], () => setSelected(DEFAULT_PIN_STYLE));
 
   async function choose(next: PinStyle) {
     if (next === selected || saving) return;
@@ -82,7 +84,7 @@ export function PinStyleSetting({ value, labelId }: { value: PinStyle; labelId: 
             key={option.value}
             className={cn(
               "group/option relative flex cursor-pointer flex-col gap-4 rounded-lg border bg-white/[0.02] p-4 transition-[border-color,background-color,box-shadow] duration-200 hover:border-amethyst/40 hover:bg-amethyst/[0.04] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-              checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(165_124_255/0.35),0_14px_40px_-22px_rgb(165_124_255/0.8)]" : "border-white/[0.09]",
+              checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-white/[0.09]",
             )}
           >
             <input

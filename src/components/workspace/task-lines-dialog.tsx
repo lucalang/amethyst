@@ -79,7 +79,7 @@ export function TaskLinesDialog({
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
-        className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(0_0_0/0.75)] sm:max-w-[32rem]"
+        className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[32rem]"
         onCloseAutoFocus={onCloseAutoFocus}
       >
         <DialogHeader className="flex-row items-center gap-3.5">

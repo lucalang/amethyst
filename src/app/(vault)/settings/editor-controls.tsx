@@ -1,8 +1,6 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { EDITOR_FONT_STACKS, EDITOR_WIDTH_VALUES } from "@/lib/appearance";
+import { EDITOR_FONT_STACKS, EDITOR_WIDTH_VALUES, effectiveHeadingColors, headingsFollowTheme } from "@/lib/appearance";
 import {
   DEFAULT_SETTINGS,
   FONT_SIZE_RANGE,
@@ -14,10 +12,16 @@ import {
   type HeadingLevel,
   type Settings,
 } from "@/lib/preferences";
+import { THEMES } from "@/lib/themes";
 import { ChoiceCards, ChoiceSetting, RangeInput, useSetting, type Choice } from "./setting-controls";
-import { SettingRow } from "./settings-ui";
+import { SettingRow, type ResetSpec } from "./settings-ui";
 
-type EditorSettings = Pick<Settings, "editorFont" | "editorFontSize" | "editorLineSpacing" | "editorWidth" | "headingColors">;
+type EditorSettings = Pick<Settings, "editorFont" | "editorFontSize" | "editorLineSpacing" | "editorWidth" | "headingColors" | "theme">;
+
+/** Reset details computed from the live control value, so the marker updates as you edit. */
+function liveReset<K extends keyof Settings>(key: K, value: Settings[K], defaultLabel?: string): ResetSpec {
+  return { keys: [key], changed: JSON.stringify(value) !== JSON.stringify(DEFAULT_SETTINGS[key]), defaultLabel };
+}
 
 const FONT_LABELS: Record<EditorFont, { title: string; description: string }> = {
   sans: { title: "Sans", description: "Manrope, clean and modern." },
@@ -67,19 +71,30 @@ export function EditorAppearanceSettings({ settings }: { settings: EditorSetting
   const [spacing, setSpacing] = useSetting("editorLineSpacing", settings.editorLineSpacing, 400);
   const [width, setWidth] = useSetting("editorWidth", settings.editorWidth);
   const [colors, setColors] = useSetting("headingColors", settings.headingColors, 500);
-  const colorsAreDefault = HEADING_LEVELS.every((level) => colors[level] === DEFAULT_SETTINGS.headingColors[level]);
+  const followsTheme = headingsFollowTheme({ headingColors: colors });
+  const shown = effectiveHeadingColors({ headingColors: colors, theme: settings.theme });
+  const themeName = THEMES[settings.theme].name;
 
   return (
     <div className="space-y-8">
-      <SettingRow labelId="editor-font-label" label="Writing font" description="The typeface for notes and headings.">
+      <SettingRow
+        labelId="editor-font-label"
+        label="Writing font"
+        description="The typeface for notes and headings. Themes never change it."
+        reset={liveReset("editorFont", font, FONT_LABELS[DEFAULT_SETTINGS.editorFont].title)}
+      >
         <ChoiceCards name="editorFont" labelId="editor-font-label" value={font} options={FONT_OPTIONS} onChange={setFont} className="grid-cols-2 sm:grid-cols-4" />
       </SettingRow>
 
-      <SettingRow labelId="editor-size-label" label="Text size">
+      <SettingRow labelId="editor-size-label" label="Text size" reset={liveReset("editorFontSize", size, `${DEFAULT_SETTINGS.editorFontSize}px`)}>
         <RangeInput id="editor-size" labelId="editor-size-label" value={size} min={FONT_SIZE_RANGE.min} max={FONT_SIZE_RANGE.max} format={(px) => `${px}px`} onChange={setSize} marks={["Smaller", "Larger"]} />
       </SettingRow>
 
-      <SettingRow labelId="editor-spacing-label" label="Line spacing">
+      <SettingRow
+        labelId="editor-spacing-label"
+        label="Line spacing"
+        reset={liveReset("editorLineSpacing", spacing, (DEFAULT_SETTINGS.editorLineSpacing / 100).toFixed(2))}
+      >
         <RangeInput
           id="editor-spacing"
           labelId="editor-spacing-label"
@@ -93,11 +108,21 @@ export function EditorAppearanceSettings({ settings }: { settings: EditorSetting
         />
       </SettingRow>
 
-      <SettingRow labelId="editor-width-label" label="Document width" description="The maximum width of a line of text.">
+      <SettingRow
+        labelId="editor-width-label"
+        label="Document width"
+        description="The maximum width of a line of text."
+        reset={liveReset("editorWidth", width, "Medium")}
+      >
         <ChoiceCards name="editorWidth" labelId="editor-width-label" value={width} options={WIDTH_OPTIONS} onChange={setWidth} className="grid-cols-2 sm:grid-cols-4" />
       </SettingRow>
 
-      <SettingRow labelId="heading-colors-label" label="Heading colors" description="Each heading level keeps its own color, independent of the app theme.">
+      <SettingRow
+        labelId="heading-colors-label"
+        label="Heading colors"
+        description="By default headings use your theme’s palette. Pick any color to use your own on every theme."
+        reset={{ keys: ["headingColors"], changed: !followsTheme, defaultLabel: "follow the theme" }}
+      >
         <div className="space-y-3">
           <div role="group" aria-labelledby="heading-colors-label" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {HEADING_LEVELS.map((level) => (
@@ -107,23 +132,25 @@ export function EditorAppearanceSettings({ settings }: { settings: EditorSetting
               >
                 <input
                   type="color"
-                  value={colors[level]}
-                  onChange={(event) => setColors({ ...colors, [level]: event.target.value.toLowerCase() })}
+                  value={shown[level]}
+                  onChange={(event) => setColors({ ...shown, [level]: event.target.value.toLowerCase() })}
                   aria-label={`Heading ${level.slice(1)} color`}
                   className="size-7 shrink-0 cursor-pointer rounded border-0 bg-transparent p-0 [&::-moz-color-swatch]:rounded [&::-moz-color-swatch]:border-white/20 [&::-webkit-color-swatch]:rounded [&::-webkit-color-swatch]:border-white/20 [&::-webkit-color-swatch-wrapper]:p-0"
                 />
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold" style={{ color: colors[level] }}>
+                  <span className="block text-sm font-semibold" style={{ color: shown[level] }}>
                     Heading {level.slice(1)}
                   </span>
-                  <span className="block font-mono text-[11px] text-muted-foreground uppercase">{colors[level]}</span>
+                  <span className="block font-mono text-[11px] text-muted-foreground uppercase">{shown[level]}</span>
                 </span>
               </label>
             ))}
           </div>
-          <Button type="button" variant="ghost" size="sm" disabled={colorsAreDefault} onClick={() => setColors({ ...DEFAULT_SETTINGS.headingColors })}>
-            <RotateCcw aria-hidden /> Reset colors
-          </Button>
+          <p className="text-xs leading-5 text-muted-foreground">
+            {followsTheme
+              ? `Following the ${themeName} theme. Changing a color keeps your palette whichever theme you use.`
+              : "Using your own colors on every theme. Reset to follow the theme again."}
+          </p>
         </div>
       </SettingRow>
 
@@ -139,7 +166,7 @@ export function EditorAppearanceSettings({ settings }: { settings: EditorSetting
             }}
           >
             {HEADING_LEVELS.slice(0, 3).map((level) => (
-              <p key={level} className="font-bold" style={{ color: colors[level], fontSize: HEADING_SIZES[level], fontFamily: font === "sans" ? "var(--font-heading)" : undefined }}>
+              <p key={level} className="font-bold" style={{ color: shown[level], fontSize: HEADING_SIZES[level], fontFamily: font === "sans" ? "var(--font-heading)" : undefined }}>
                 {level === "h1" ? "Chapter notes" : level === "h2" ? "First impressions" : "Characters"}
               </p>
             ))}
@@ -148,7 +175,7 @@ export function EditorAppearanceSettings({ settings }: { settings: EditorSetting
             </p>
             <p className="mt-2 flex flex-wrap gap-x-4 text-[0.85em]">
               {HEADING_LEVELS.slice(3).map((level) => (
-                <span key={level} className="font-semibold" style={{ color: colors[level], fontSize: HEADING_SIZES[level] }}>
+                <span key={level} className="font-semibold" style={{ color: shown[level], fontSize: HEADING_SIZES[level] }}>
                   Heading {level.slice(1)}
                 </span>
               ))}

@@ -50,7 +50,7 @@ export function NewEntryForm({
         const formData = new FormData(event.currentTarget);
         startTransition(() => action(formData));
       }}
-      className="enter max-w-2xl rounded-lg border border-white/[0.08] bg-surface/70 shadow-[0_24px_60px_-40px_rgb(165_124_255/0.5)]"
+      className="enter max-w-2xl rounded-lg border border-white/[0.08] bg-surface/70 shadow-[0_24px_60px_-40px_rgb(var(--accent-rgb)/0.5)]"
       style={{ "--enter-index": 1 } as React.CSSProperties}
       noValidate
     >

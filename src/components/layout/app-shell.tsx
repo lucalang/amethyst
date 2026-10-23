@@ -29,9 +29,14 @@ export function AppShell({
   const icons = collectionIcons;
   return (
     <SettingsProvider value={preferences}>
-      <div className="flex min-h-dvh flex-col" data-motion={preferences.motion} data-shine={preferences.cardShine ? "on" : "off"}>
+      <div
+        className="flex min-h-dvh flex-col"
+        data-app-theme={preferences.theme}
+        data-motion={preferences.motion}
+        data-shine={preferences.cardShine ? "on" : "off"}
+      >
         <style>{settingsStyle(preferences)}</style>
-        <OpeningIntro userId={userId} lastSeen={introSeenOn} motion={preferences.motion} />
+        <OpeningIntro userId={userId} lastSeen={introSeenOn} motion={preferences.motion} frequency={preferences.introFrequency} />
         <KeyboardShortcuts collections={collections} />
         <a
           href="#main"

@@ -111,7 +111,7 @@ export function ImageUrlField({
 
   return (
     <div
-      className={cn("space-y-1.5 rounded-lg transition-[box-shadow,background-color] duration-200", dragging && "bg-amethyst/[0.06] shadow-[0_0_0_2px_rgb(165_124_255/0.5)]")}
+      className={cn("space-y-1.5 rounded-lg transition-[box-shadow,background-color] duration-200", dragging && "bg-amethyst/[0.06] shadow-[0_0_0_2px_rgb(var(--accent-rgb)/0.5)]")}
       onDragOver={(event) => {
         if (!event.dataTransfer.types.includes("Files")) return;
         event.preventDefault();

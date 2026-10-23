@@ -29,9 +29,9 @@ export function RoundCheck({
       className={cn(
         "group/check relative grid shrink-0 place-items-center rounded-full border-[1.5px] border-white/40 text-amethyst outline-none",
         "transition-[border-color,background-color,box-shadow,scale] duration-200 ease-out after:absolute after:-inset-2.5 after:content-['']",
-        "hover:border-amethyst hover:shadow-[0_0_0_4px_rgb(165_124_255/0.14)] active:scale-85",
+        "hover:border-amethyst hover:shadow-[0_0_0_4px_rgb(var(--accent-rgb)/0.14)] active:scale-85",
         "focus-visible:ring-2 focus-visible:ring-amethyst/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
-        "data-[state=checked]:border-amethyst data-[state=checked]:bg-amethyst data-[state=checked]:text-amethyst-foreground data-[state=checked]:hover:shadow-[0_0_0_4px_rgb(165_124_255/0.2)]",
+        "data-[state=checked]:border-amethyst data-[state=checked]:bg-amethyst data-[state=checked]:text-amethyst-foreground data-[state=checked]:hover:shadow-[0_0_0_4px_rgb(var(--accent-rgb)/0.2)]",
         size === "md" ? "size-5" : "size-[1.05rem]",
         celebrate && "check-pop",
         className,

@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { errorMessage } from "@/components/workspace/client-utils";
 import { apiFetch } from "@/lib/api-client";
-import type { Settings, SettingsPatch } from "@/lib/preferences";
+import { DEFAULT_SETTINGS, resetBody, type PreferenceKey, type Settings, type SettingsPatch } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 
 // Saves run one after another so a slow request can never overwrite a newer value.
 let queue: Promise<unknown> = Promise.resolve();
+
+/** Dispatched on window with the reset keys, so open controls show the default at once. */
+const RESET_EVENT = "archive:settings-reset";
 
 /** Returns a function that saves a settings patch and refreshes server-rendered UI. Resolves false on failure. */
 export function useSaveSettings() {
@@ -33,6 +36,43 @@ export function useSaveSettings() {
 }
 
 /**
+ * Returns a function that puts preferences back to their defaults, saved in the same order as
+ * every other change. It never touches content (collections, templates, uploads). The caller
+ * refreshes server-rendered UI. Resolves false on failure.
+ */
+export function useResetPreferences() {
+  return (keys: readonly PreferenceKey[]): Promise<boolean> => {
+    window.dispatchEvent(new CustomEvent<readonly PreferenceKey[]>(RESET_EVENT, { detail: keys }));
+    const run = queue.then(async () => {
+      try {
+        await apiFetch("/api/preferences", { method: "PATCH", json: resetBody(keys) });
+        return true;
+      } catch (error) {
+        toast.error(`Couldn’t reset that setting: ${errorMessage(error)}`);
+        return false;
+      }
+    });
+    queue = run;
+    return run;
+  };
+}
+
+/** Calls `onReset` when any of `keys` is reset, so local state can drop pending edits and show the default. */
+export function useOnReset(keys: readonly PreferenceKey[], onReset: () => void) {
+  const handle = useEffectEvent(onReset);
+  const watched = keys.join(",");
+  useEffect(() => {
+    const list = watched.split(",");
+    const listener = (event: Event) => {
+      const reset = (event as CustomEvent<readonly PreferenceKey[]>).detail;
+      if (reset.some((key) => list.includes(key))) handle();
+    };
+    window.addEventListener(RESET_EVENT, listener);
+    return () => window.removeEventListener(RESET_EVENT, listener);
+  }, [watched]);
+}
+
+/**
  * Local, immediately-updating state for one setting, saved to the server (debounced by `delay` ms).
  * Follows the server value when it changes elsewhere; reverts if saving fails.
  */
@@ -46,6 +86,10 @@ export function useSetting<K extends keyof Settings>(key: K, value: Settings[K],
   }
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
+  useOnReset([key], () => {
+    clearTimeout(timer.current);
+    setLocal(structuredClone(DEFAULT_SETTINGS[key]));
+  });
 
   function update(next: Settings[K]) {
     setLocal(next);
@@ -89,7 +133,7 @@ export function ChoiceCards<T extends string>({
             key={option.value}
             className={cn(
               "group/option relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-white/[0.02] p-3.5 transition-[border-color,background-color,box-shadow] duration-200 hover:border-amethyst/40 hover:bg-amethyst/[0.04] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-              checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(165_124_255/0.35),0_14px_40px_-22px_rgb(165_124_255/0.8)]" : "border-white/[0.09]",
+              checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-white/[0.09]",
             )}
           >
             <input type="radio" name={name} value={option.value} checked={checked} onChange={() => onChange(option.value)} className="sr-only" />

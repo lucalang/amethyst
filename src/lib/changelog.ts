@@ -1,0 +1,205 @@
+/**
+ * The in-app update log ("What's new"). This file is the single source of truth: every
+ * user-visible feature or fix ships with an entry here, newest first. Dates are release
+ * dates (YYYY-MM-DD). Links point at where the feature lives in the app; `action` items
+ * offer a safe in-place preview instead of a link.
+ */
+
+export type ChangeLink = { href: string; label: string };
+export type ChangeAction = "preview-intro";
+
+export type ChangeItem = {
+  text: string;
+  /** Where to find it, in words ("Settings → Themes"). */
+  where?: string;
+  link?: ChangeLink;
+  action?: ChangeAction;
+};
+
+export type ChangelogEntry = {
+  /** Stable id, also used to remember which update was last seen. */
+  id: string;
+  date: string;
+  title: string;
+  summary: string;
+  added?: ChangeItem[];
+  improved?: ChangeItem[];
+  fixed?: ChangeItem[];
+};
+
+export const CHANGELOG: readonly ChangelogEntry[] = [
+  {
+    id: "2026-10-23-themes",
+    date: "2026-10-23",
+    title: "Themes, a calmer intro and a tighter Home",
+    summary: "Five complete themes, control over how often the opening animation plays, a choosier cover fan, live search and this update log.",
+    added: [
+      {
+        text: "Themes: Amethyst (still the default), Rose Noir, Paper & Ink (a light theme), Retro Terminal and Neon Arcade. Each one restyles backgrounds, surfaces, text, fonts, borders and accents, with a live preview. Your choice applies everywhere at once and follows your account.",
+        where: "Settings → Themes",
+        link: { href: "/settings/themes", label: "Open Themes" },
+      },
+      {
+        text: "Choose how often the opening animation plays: every visit, once per day, once per week or never. Only a fresh load or reload counts as a visit. “Preview animation” plays it without using up today’s showing.",
+        where: "Settings → Appearance → Opening animation",
+        link: { href: "/settings/appearance#motion", label: "Open Appearance" },
+        action: "preview-intro",
+      },
+      {
+        text: "Pick which collections lend their artwork to the cover fan beside your greeting. Choosing none hides the fan.",
+        where: "Home → Customize Home → Cover fan",
+        link: { href: "/", label: "Go Home" },
+      },
+      {
+        text: "New checklist and New folder keyboard shortcuts work in the open entry, next to New note. Rebind them like any other shortcut.",
+        where: "Settings → Shortcuts",
+        link: { href: "/settings/shortcuts", label: "Open Shortcuts" },
+      },
+      {
+        text: "This update log. Open it any time from the megaphone button in the top bar or from Settings.",
+        where: "Top bar → What’s new",
+      },
+    ],
+    improved: [
+      {
+        text: "Every setting now has its own reset button and a “Changed” marker when it differs from the default. Resetting never touches your entries or notes.",
+        where: "Settings",
+        link: { href: "/settings", label: "Open Settings" },
+      },
+      {
+        text: "Collection search updates as you type without reloading the page, and keeps your status, label and sort filters. Press Enter to search straight away.",
+        where: "Any collection → Search",
+      },
+      {
+        text: "Collection banners are larger and framed, with the title, icon and accent set into the artwork. Collections without a banner keep a compact header.",
+        where: "Any collection with a banner",
+      },
+      {
+        text: "Home is more compact, and the cover fan keeps square and portrait covers in shape, fits its column on every screen size and lifts more smoothly on hover.",
+        where: "Home",
+        link: { href: "/", label: "Go Home" },
+      },
+      {
+        text: "Heading colors follow the theme until you pick your own, and custom fonts and heading colors are kept when you switch themes.",
+        where: "Settings → Editor → Writing",
+        link: { href: "/settings/editor#writing", label: "Open Editor settings" },
+      },
+    ],
+  },
+  {
+    id: "2026-10-23-personalization",
+    date: "2026-10-23",
+    title: "A Home dashboard and a lot more to personalize",
+    summary: "A new Home page, settings for nearly everything and collections with their own identity.",
+    added: [
+      {
+        text: "Home dashboard: a greeting, a cover fan of your own artwork, a Continue card for the last thing you opened, Featured, Pinned favorites, Recently opened, Your collections, Upcoming tasks and At a glance.",
+        where: "Home",
+        link: { href: "/", label: "Go Home" },
+      },
+      {
+        text: "Customize Home: write your own greeting, feature an entry or image, and reorder or hide sections.",
+        where: "Home → Customize Home",
+        link: { href: "/", label: "Go Home" },
+      },
+      {
+        text: "Collection identity: an icon, accent color, banner and description for each collection.",
+        where: "A collection’s menu → Edit collection",
+        link: { href: "/settings/collections", label: "Open Collections" },
+      },
+      {
+        text: "Settings got a sidebar and new pages: animation level, card shine, hover size and library density; editor font, size, spacing, width and heading colors; checklist behavior; rebindable keyboard shortcuts; and where the app opens.",
+        where: "Settings",
+        link: { href: "/settings", label: "Open Settings" },
+      },
+      {
+        text: "Card info presets choose what library cards show: title, labels and progress.",
+        where: "Settings → Appearance → Library",
+        link: { href: "/settings/appearance#library", label: "Open Appearance" },
+      },
+      { text: "Workspace templates start new entries with your own folders, notes and checklists.", where: "Settings → Templates", link: { href: "/settings/templates", label: "Open Templates" } },
+      { text: "Custom progress names, such as “quests” instead of “tasks”, per entry." },
+      { text: "Arrange collections in the order you like, and delete a collection even when it still has entries." },
+      { text: "Add several tasks at once with Add tasks, next to Add task in checklists and in the note editor toolbar." },
+      { text: "A short opening animation the first time you open the app each day. Click or press any key to skip it." },
+      { text: "Choose how pins look: on the artwork, or a clean cover with the pin in the card menu.", where: "Settings → Appearance → Library", link: { href: "/settings/appearance#library", label: "Open Appearance" } },
+    ],
+  },
+  {
+    id: "2026-10-22-cover-shapes",
+    date: "2026-10-22",
+    title: "Cover shapes",
+    summary: "Covers can be portrait or square, and the app remembers your last choice.",
+    added: [{ text: "Pick a portrait or square cover for each entry; new entries start with the shape you used last.", where: "New entry or Edit entry → Cover" }],
+  },
+  {
+    id: "2026-10-19-collections",
+    date: "2026-10-19",
+    title: "Your own collections",
+    summary: "Collections are now entirely yours to create, rename and delete.",
+    added: [
+      { text: "Create, rename and delete your own collections instead of using a fixed set.", where: "Top bar → New collection", link: { href: "/settings/collections", label: "Open Collections" } },
+    ],
+    improved: [{ text: "A cleaner look for collection pages and the collection bar." }],
+  },
+  {
+    id: "2026-10-08-labels",
+    date: "2026-10-08",
+    title: "Labels per collection and per-file progress",
+    summary: "Labels belong to a collection, filters match all selected labels, and you choose which files count toward progress.",
+    added: [
+      { text: "Labels are scoped to each collection, and filtering by several labels shows entries that have all of them.", where: "Any collection → Labels filter", link: { href: "/settings/labels", label: "Open Labels" } },
+      { text: "Choose which notes and checklists count toward an entry’s cover progress." },
+    ],
+    fixed: [{ text: "Tasks written in Markdown notes now look the same as checklist tasks." }],
+  },
+  {
+    id: "2026-10-03-empty-workspaces",
+    date: "2026-10-03",
+    title: "Clean slate for new entries",
+    summary: "New entries start with an empty workspace.",
+    improved: [{ text: "New entries open with an empty workspace instead of pre-made files." }],
+  },
+  {
+    id: "2026-10-02-uploads",
+    date: "2026-10-02",
+    title: "Upload your own artwork",
+    summary: "Covers and banners can come straight from your device.",
+    added: [{ text: "Upload a cover or banner image from your device, as well as pasting a link.", where: "New entry or Edit entry → Cover / Banner" }],
+  },
+  {
+    id: "2026-10-01-notes-and-labels",
+    date: "2026-10-01",
+    title: "Richer notes, labels and polish",
+    summary: "Images and tasks inside notes, custom labels, and smoother interactions.",
+    added: [
+      { text: "Paste or drop images into notes, or embed them with ![[image]] links." },
+      { text: "Task checkboxes inside notes, shown as To Do-style cards with round checks." },
+      { text: "Custom labels for entries, with a label filter that shows counts." },
+      { text: "Brackets and quotes close automatically while writing notes." },
+    ],
+    improved: [
+      { text: "Livelier library cards: covers lift, glow and shine on hover." },
+      { text: "Redesigned checklist task rows." },
+    ],
+  },
+  {
+    id: "2026-09-30-workspaces",
+    date: "2026-09-30",
+    title: "Amethyst Archives",
+    summary: "A personal archive where every entry has its own workspace.",
+    added: [
+      { text: "A workspace for every entry, with nested folders, Markdown notes and checklists. Changes save automatically and unsaved drafts are recovered." },
+      { text: "A live Markdown editor with colored headings and a formatting toolbar." },
+      { text: "To Do-style checklists with task details: steps, due dates and notes." },
+      { text: "Cover artwork from any public image link, loaded through a secure image proxy." },
+      { text: "Accounts with sign-up, sign-in and password recovery by email." },
+    ],
+  },
+];
+
+export const LATEST_CHANGE_ID = CHANGELOG[0].id;
+
+export function formatChangeDate(date: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+}

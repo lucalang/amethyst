@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { LibraryCategory } from "@/lib/collections";
 import { SHORTCUT_ACTIONS, type ShortcutAction } from "@/lib/preferences";
-import { FOCUS_SEARCH_KEY, WORKSPACE_SHORTCUT_EVENT, isTypingTarget, shortcutFromEvent, worksWhileTyping } from "@/lib/shortcuts";
+import { FOCUS_SEARCH_KEY, WORKSPACE_ACTIONS, WORKSPACE_SHORTCUT_EVENT, isTypingTarget, shortcutFromEvent, worksWhileTyping } from "@/lib/shortcuts";
 import { useSettings } from "./settings-context";
 
 /** Global keyboard shortcuts, as configured in Settings → Shortcuts. */
@@ -21,7 +21,7 @@ export function KeyboardShortcuts({ collections }: { collections: LibraryCategor
   }
 
   function run(action: ShortcutAction) {
-    if (action === "newFile" || action === "toggleExplorer") {
+    if (WORKSPACE_ACTIONS.includes(action)) {
       const event = new CustomEvent(WORKSPACE_SHORTCUT_EVENT, { detail: action, cancelable: true });
       if (window.dispatchEvent(event)) toast.info("Open an entry to use this shortcut.");
       return;

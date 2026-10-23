@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { loadPreferences } from "@/lib/data/preferences";
+import { DEFAULT_SETTINGS } from "@/lib/preferences";
 import { requireUser } from "@/lib/supabase/auth";
-import { DensitySetting, HoverScaleSetting, MotionSetting } from "../appearance-controls";
+import { DensitySetting, HoverScaleSetting, IntroFrequencySetting, MotionSetting } from "../appearance-controls";
 import { CardInfoSetting } from "../card-info-setting";
 import { PinStyleSetting } from "../pin-style-setting";
 import { SwitchSetting } from "../setting-controls";
-import { SettingRow, SettingsGroup, SettingsHeader } from "../settings-ui";
+import { SettingRow, SettingsGroup, SettingsHeader, resetFor } from "../settings-ui";
 
 export const metadata: Metadata = { title: "Appearance" };
 
@@ -14,17 +15,43 @@ export default async function AppearancePage() {
 
   return (
     <>
-      <SettingsHeader title="Appearance" description="Motion, effects and how your library is laid out. Changes follow your account to every device." />
+      <SettingsHeader
+        title="Appearance"
+        description="Motion, effects and how your library is laid out. Changes follow your account to every device. Colors and fonts are in Themes."
+      />
 
       <SettingsGroup id="motion" title="Motion and effects">
         <div className="space-y-8">
-          <SettingRow labelId="motion-label" label="Animation intensity" description="How much the interface moves. Your system’s reduced-motion setting is always respected.">
+          <SettingRow
+            labelId="motion-label"
+            label="Animation intensity"
+            description="How much the interface moves. Your system’s reduced-motion setting is always respected."
+            reset={resetFor(preferences, ["motion"], "Full")}
+          >
             <MotionSetting value={preferences.motion} labelId="motion-label" />
           </SettingRow>
-          <SettingRow labelId="shine-label" label="Card shine" description="The light sweep across a cover when you hover it.">
+          <SettingRow
+            labelId="intro-frequency-label"
+            label="Opening animation"
+            description="How often the logo animation plays when you open the app. Moving between pages never replays it."
+            reset={resetFor(preferences, ["introFrequency"], "Once per day")}
+          >
+            <IntroFrequencySetting value={preferences.introFrequency} labelId="intro-frequency-label" />
+          </SettingRow>
+          <SettingRow
+            labelId="shine-label"
+            label="Card shine"
+            description="The light sweep across a cover when you hover it."
+            reset={resetFor(preferences, ["cardShine"], "On")}
+          >
             <SwitchSetting settingKey="cardShine" value={preferences.cardShine} labelId="shine-label" onLabel="Shine on" offLabel="Shine off" />
           </SettingRow>
-          <SettingRow labelId="hover-scale-label" label="Hover scaling" description="How much a cover grows when you point at it.">
+          <SettingRow
+            labelId="hover-scale-label"
+            label="Hover scaling"
+            description="How much a cover grows when you point at it."
+            reset={resetFor(preferences, ["hoverScale"], `${DEFAULT_SETTINGS.hoverScale}%`)}
+          >
             <HoverScaleSetting value={preferences.hoverScale} labelId="hover-scale-label" />
           </SettingRow>
         </div>
@@ -32,16 +59,27 @@ export default async function AppearancePage() {
 
       <SettingsGroup id="library" title="Library">
         <div className="space-y-8">
-          <SettingRow labelId="density-label" label="Library density" description="Cover size and spacing in your collections.">
+          <SettingRow
+            labelId="density-label"
+            label="Library density"
+            description="Cover size and spacing in your collections."
+            reset={resetFor(preferences, ["libraryDensity"], "Comfortable")}
+          >
             <DensitySetting value={preferences.libraryDensity} labelId="density-label" />
           </SettingRow>
-          <SettingRow labelId="pin-style-label" label="Cover details" description="Show pins and progress on the artwork, or keep covers clean with details below.">
+          <SettingRow
+            labelId="pin-style-label"
+            label="Cover details"
+            description="Show pins and progress on the artwork, or keep covers clean with details below."
+            reset={resetFor(preferences, ["pinStyle"], "On the artwork")}
+          >
             <PinStyleSetting value={preferences.pinStyle} labelId="pin-style-label" />
           </SettingRow>
           <SettingRow
             labelId="card-info-label"
             label="Card information"
             description="Which details appear on collection cards. This doesn’t change your cover details style above."
+            reset={resetFor(preferences, ["cardTitle", "cardLabels", "cardProgress"], "Standard")}
           >
             <CardInfoSetting
               labelId="card-info-label"

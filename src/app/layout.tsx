@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Literata, Manrope } from "next/font/google";
+import { JetBrains_Mono, Literata, Manrope, Playfair_Display, Press_Start_2P, VT323 } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
 import "./globals.css";
 
@@ -12,6 +12,12 @@ const manrope = Manrope({
 // Optional writing fonts (Settings → Editor): not preloaded, so only accounts that pick them download them.
 const literata = Literata({ variable: "--font-literata", subsets: ["latin"], display: "swap", preload: false });
 const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"], display: "swap", preload: false });
+// Theme display fonts (Settings → Themes), likewise only downloaded when a theme or its preview uses them.
+const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap", preload: false });
+const vt323 = VT323({ variable: "--font-vt323", weight: "400", subsets: ["latin"], display: "swap", preload: false });
+const pressStart = Press_Start_2P({ variable: "--font-press-start", weight: "400", subsets: ["latin"], display: "swap", preload: false });
+
+const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart].map((font) => font.variable).join(" ");
 
 export const metadata: Metadata = {
   title: { default: "Amethyst Archives", template: "%s · Amethyst Archives" },
@@ -27,7 +33,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`dark ${manrope.variable} ${literata.variable} ${jetbrains.variable} h-full`}>
+    <html lang="en" className={`dark ${FONT_VARIABLES} h-full`}>
       <body className="min-h-dvh">
         <Providers>{children}</Providers>
       </body>

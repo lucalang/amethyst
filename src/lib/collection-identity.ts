@@ -53,21 +53,32 @@ export function readableAccent(hex: string): string {
   return toHex(rgb);
 }
 
+/** Darkens an accent until it stays readable on the light Paper & Ink theme. */
+export function readableAccentOnLight(hex: string): string {
+  let rgb = channels(hex);
+  for (let step = 0; step < 20 && luminance(rgb) > 0.15; step += 1) {
+    rgb = rgb.map((c) => c * 0.86) as [number, number, number];
+  }
+  return toHex(rgb);
+}
+
 export const isAccentColor = (value: unknown): value is string => typeof value === "string" && /^#[0-9a-f]{6}$/.test(value);
 
 /**
  * Scoped CSS variables for one collection's accent. `--ring` is overridden too, so
  * focus outlines inside the scope follow the collection's (contrast-safe) accent.
+ * Both a dark- and a light-background variant are emitted; `--theme-dark` (set by
+ * the active theme) picks between them.
  */
 export function accentStyle(accent: string | null | undefined): CSSProperties | undefined {
   if (!isAccentColor(accent)) return undefined;
-  const text = readableAccent(accent);
-  const [r, g, b] = channels(text);
   return {
-    "--ca": text,
-    "--ca-soft": `rgb(${r} ${g} ${b} / 0.12)`,
-    "--ca-line": `rgb(${r} ${g} ${b} / 0.35)`,
-    "--ca-glow": `rgb(${r} ${g} ${b} / 0.45)`,
-    "--ring": text,
+    "--ca-d": readableAccent(accent),
+    "--ca-l": readableAccentOnLight(accent),
+    "--ca": "color-mix(in srgb, var(--ca-d) calc(var(--theme-dark, 1) * 100%), var(--ca-l))",
+    "--ca-soft": "color-mix(in srgb, var(--ca) 12%, transparent)",
+    "--ca-line": "color-mix(in srgb, var(--ca) 35%, transparent)",
+    "--ca-glow": "color-mix(in srgb, var(--ca) 45%, transparent)",
+    "--ring": "var(--ca)",
   } as CSSProperties;
 }

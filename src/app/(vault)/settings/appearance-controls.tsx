@@ -1,7 +1,11 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { HOVER_SCALE_RANGE, type LibraryDensity, type MotionLevel } from "@/lib/preferences";
+import { Play } from "lucide-react";
+import { PREVIEW_INTRO_EVENT } from "@/components/layout/opening-intro";
+import { useSettings } from "@/components/layout/settings-context";
+import { Button } from "@/components/ui/button";
+import { HOVER_SCALE_RANGE, type IntroFrequency, type LibraryDensity, type MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { ChoiceSetting, RangeInput, useSetting, type Choice } from "./setting-controls";
 
@@ -19,6 +23,36 @@ const MOTION_OPTIONS: Choice<MotionLevel>[] = [
 
 export function MotionSetting({ value, labelId }: { value: MotionLevel; labelId: string }) {
   return <ChoiceSetting settingKey="motion" value={value} labelId={labelId} options={MOTION_OPTIONS} />;
+}
+
+const INTRO_OPTIONS: Choice<IntroFrequency>[] = [
+  { value: "every", title: "Every visit", description: "Each time you open or reload the app." },
+  { value: "daily", title: "Once per day", description: "Your first visit of each calendar day." },
+  { value: "weekly", title: "Once per week", description: "Your first visit of each week (weeks start on Monday)." },
+  { value: "never", title: "Never", description: "The app opens straight to your page." },
+];
+
+/** How often the opening animation plays, plus a preview that doesn’t count as a visit. */
+export function IntroFrequencySetting({ value, labelId }: { value: IntroFrequency; labelId: string }) {
+  const { motion } = useSettings();
+  return (
+    <div className="space-y-4">
+      <ChoiceSetting settingKey="introFrequency" value={value} labelId={labelId} options={INTRO_OPTIONS} className="sm:grid-cols-2 xl:grid-cols-4" />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" size="sm" disabled={motion === "off"} onClick={() => window.dispatchEvent(new Event(PREVIEW_INTRO_EVENT))}>
+          <Play className="size-3.5" />
+          Preview animation
+        </Button>
+        <p className="text-xs leading-5 text-muted-foreground">
+          {motion === "off"
+            ? "Animation intensity is Off, so the intro never plays. Turn animations on above to see it."
+            : motion === "subtle"
+              ? "With Subtle animations (or your system’s reduced motion) it plays as a short fade."
+              : "Previewing doesn’t change how often it plays. Click or press any key to skip it."}
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function DensityPreview({ columns, gap }: { columns: number; gap: string }) {

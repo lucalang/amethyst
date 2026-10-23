@@ -267,7 +267,7 @@ function TreeItem({ node, ctx, tabStop }: { node: TreeNode; ctx: TreeContext; ta
           className={cn(
             "tree-row group relative mx-1.5 flex h-7 cursor-pointer items-center gap-1.5 rounded-md pr-1 text-[13px] transition-[background-color,color] duration-150 select-none pointer-coarse:h-10",
             selected
-              ? "bg-[linear-gradient(90deg,rgb(165_124_255/0.22),rgb(165_124_255/0.06))] font-medium text-foreground"
+              ? "bg-[linear-gradient(90deg,rgb(var(--accent-rgb)/0.22),rgb(var(--accent-rgb)/0.06))] font-medium text-foreground"
               : "text-foreground/80 hover:bg-white/[0.055] hover:text-foreground",
             dropHere && "bg-amethyst/15 ring-1 ring-amethyst/50 ring-inset",
             ctx.dragId === node.id && "opacity-50",

@@ -29,7 +29,7 @@ export function MediaImage({ src, alt, className, priority, fallbackLabel }: Pro
         role={alt ? "img" : undefined}
         aria-label={alt || undefined}
         className={cn(
-          "absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_30%_20%,rgb(165_124_255/0.22),transparent_60%),linear-gradient(160deg,var(--surface-raised),#000)] text-lg font-semibold text-muted-foreground",
+          "absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_30%_20%,rgb(var(--accent-rgb)/0.22),transparent_60%),linear-gradient(160deg,var(--surface-raised),var(--background))] text-lg font-semibold text-muted-foreground",
           className,
         )}
       >
