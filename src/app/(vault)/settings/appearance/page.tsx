@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { loadPreferences } from "@/lib/data/preferences";
 import { requireUser } from "@/lib/supabase/auth";
 import { DensitySetting, HoverScaleSetting, MotionSetting } from "../appearance-controls";
+import { CardInfoSetting } from "../card-info-setting";
 import { PinStyleSetting } from "../pin-style-setting";
 import { SwitchSetting } from "../setting-controls";
 import { SettingRow, SettingsGroup, SettingsHeader } from "../settings-ui";
@@ -36,6 +37,16 @@ export default async function AppearancePage() {
           </SettingRow>
           <SettingRow labelId="pin-style-label" label="Cover details" description="Show pins and progress on the artwork, or keep covers clean with details below.">
             <PinStyleSetting value={preferences.pinStyle} labelId="pin-style-label" />
+          </SettingRow>
+          <SettingRow
+            labelId="card-info-label"
+            label="Card information"
+            description="Which details appear on collection cards. This doesn’t change your cover details style above."
+          >
+            <CardInfoSetting
+              labelId="card-info-label"
+              value={{ cardTitle: preferences.cardTitle, cardLabels: preferences.cardLabels, cardProgress: preferences.cardProgress }}
+            />
           </SettingRow>
         </div>
       </SettingsGroup>

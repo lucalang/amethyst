@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, LibraryBig, Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
+import { ClientCollectionIcon } from "@/components/categories/collection-identity-fields";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { accentStyle } from "@/lib/collection-identity";
 import type { LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +34,9 @@ export function NewEntryButton({ collections, className, label = "New entry" }: 
         {collections.map((collection) => (
           <DropdownMenuItem key={collection.id} asChild className="min-h-9 gap-2.5">
             <Link href={`/${collection.id}/new`}>
-              <LibraryBig aria-hidden className="text-amethyst/80" />
+              <span aria-hidden style={accentStyle(collection.accent_color)} className={cn("size-4 shrink-0", collection.accent_color ? "text-[var(--ca)]" : "text-amethyst/80")}>
+                <ClientCollectionIcon icon={collection.icon} className="size-full" />
+              </span>
               <span className="truncate">{collection.name}</span>
             </Link>
           </DropdownMenuItem>

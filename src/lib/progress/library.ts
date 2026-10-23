@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { parseCategoryIds } from "@/lib/categories";
 import type { CoverShape } from "@/lib/cover-shape";
+import { progressLabel } from "@/lib/progress/label";
 import type { EntryKind } from "@/lib/validation/entries";
 
 export type EntrySummary = {
@@ -22,6 +23,8 @@ export type LibraryEntry = {
   summary: EntrySummary;
   /** Pinned to Home by the user. */
   pinned?: boolean;
+  /** Custom wording for aggregate progress ("tasks" when unset). */
+  progressLabel?: string | null;
 };
 
 export type LibraryState = "not_started" | "in_progress" | "completed";
@@ -34,9 +37,20 @@ export function entryState(summary: EntrySummary): LibraryState {
 }
 
 /** Headline progress for a library card: checked items across every checklist. */
-export function entryProgress(entry: Pick<LibraryEntry, "summary">): { done: number; total: number | null; label: string } {
+export function entryProgress(entry: Pick<LibraryEntry, "summary" | "progressLabel">): { done: number; total: number | null; label: string; custom: boolean } {
   const { summary } = entry;
-  return { done: summary.checklistChecked, total: summary.checklistTotal > 0 ? summary.checklistTotal : null, label: "tasks" };
+  return {
+    done: summary.checklistChecked,
+    total: summary.checklistTotal > 0 ? summary.checklistTotal : null,
+    label: progressLabel(entry.progressLabel),
+    custom: Boolean(entry.progressLabel?.trim()),
+  };
+}
+
+/** Screen-reader wording, e.g. "3 of 10 tasks done" or "Quests: 3 of 10". */
+export function progressPhrase(progress: { done: number; total: number | null; label: string; custom: boolean }): string {
+  if (progress.custom) return progress.total ? `${progress.label}: ${progress.done} of ${progress.total}` : `no ${progress.label} yet`;
+  return `${progress.done} of ${progress.total ?? "no"} ${progress.label} done`;
 }
 
 export const librarySearchSchema = z.object({

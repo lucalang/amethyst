@@ -14,7 +14,16 @@ const PREVIEW_LIMIT = 3;
 const SHOWCASE_LIMIT = 5;
 
 export type HomePreview = { id: string; title: string; coverUrl: string | null; coverShape: CoverShape; href: string };
-export type HomeCollection = { id: string; name: string; description: string; entryCount: number; previews: HomePreview[] };
+export type HomeCollection = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string | null;
+  accentColor: string | null;
+  bannerUrl: string | null;
+  entryCount: number;
+  previews: HomePreview[];
+};
 export type HomeTask = { id: string; label: string; dueDate: string; starred: boolean; href: string; entryTitle: string; fileName: string };
 export type HomeContinue = {
   entry: LibraryEntry;
@@ -23,6 +32,7 @@ export type HomeContinue = {
   file: { name: string; kind: string } | null;
   href: string;
 };
+export type HomeFeaturedEntry = { entry: LibraryEntry; collectionName: string; bannerUrl: string | null; href: string };
 export type HomeData = {
   displayName: string;
   collections: HomeCollection[];
@@ -33,6 +43,8 @@ export type HomeData = {
   tasks: HomeTask[];
   /** Artwork from the user's own archive for the welcome area, most relevant first. */
   showcase: HomePreview[];
+  /** The entry featured on Home; null when none is set or it was deleted. */
+  featured: HomeFeaturedEntry | null;
 };
 
 function check<T>(result: { data: T; error: { code?: string } | null }): T {
@@ -41,7 +53,7 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
 }
 
 /** Everything the Home dashboard shows, scoped to the signed-in user by RLS. */
-export async function loadHome(ctx: AuthContext): Promise<HomeData> {
+export async function loadHome(ctx: AuthContext, featuredEntryId: string | null = null): Promise<HomeData> {
   const { supabase } = ctx;
   const [collections, entries, visits, pins, files, tasks, profile] = await Promise.all([
     loadCollections(ctx),
@@ -49,7 +61,7 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
       (from, to) =>
         supabase
           .from("entries")
-          .select("id, collection_id, kind, title, cover_url, cover_shape, banner_url, created_at, updated_at")
+          .select("id, collection_id, kind, title, cover_url, cover_shape, banner_url, progress_label, created_at, updated_at")
           .order("updated_at", { ascending: false })
           .order("id")
           .range(from, to),
@@ -78,7 +90,8 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
   const pinnedIds = new Set(pinRows.map((pin) => pin.entry_id));
   const last = visitRows[0];
   const fileIds = [...new Set([...(tasks ?? []).map((task) => task.file_id), ...(last?.last_file_id ? [last.last_file_id] : [])])];
-  const shownIds = [...new Set([...visitRows.map((visit) => visit.entry_id), ...pinRows.map((pin) => pin.entry_id)])];
+  const featuredId = featuredEntryId && entryById.has(featuredEntryId) ? featuredEntryId : null;
+  const shownIds = [...new Set([...visitRows.map((visit) => visit.entry_id), ...pinRows.map((pin) => pin.entry_id), ...(featuredId ? [featuredId] : [])])];
 
   const [summaries, nodes] = await Promise.all([
     shownIds.length ? supabase.from("entry_workspace_summary").select("*").in("entry_id", shownIds).then(check) : [],
@@ -104,6 +117,7 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
         ? { filesTotal: row.files_total ?? 0, checklistTotal: row.checklist_total ?? 0, checklistChecked: row.checklist_checked ?? 0 }
         : EMPTY_SUMMARY,
       pinned: pinnedIds.has(id),
+      progressLabel: entry.progress_label,
     };
   };
 
@@ -154,6 +168,9 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
         id: collection.id,
         name: collection.name,
         description: collection.description,
+        icon: collection.icon ?? null,
+        accentColor: collection.accent_color ?? null,
+        bannerUrl: collection.banner_url ?? null,
         entryCount: list.length,
         previews: previews.map(preview),
       };
@@ -162,6 +179,13 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
     continueEntry,
     recent: visitRows.slice(1).map((visit) => toLibraryEntry(visit.entry_id)),
     pinned: pinRows.map((pin) => toLibraryEntry(pin.entry_id)),
+    featured: featuredId
+      ? (() => {
+          const entry = toLibraryEntry(featuredId);
+          const row = entryById.get(featuredId)!;
+          return { entry, collectionName: collectionNames.get(row.collection_id) ?? "", bannerUrl: row.banner_url, href: entryPath(entry) };
+        })()
+      : null,
     tasks: (tasks ?? []).flatMap((task) => {
       const node = nodeById.get(task.file_id);
       const entry = node ? entryById.get(node.entry_id) : undefined;

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+import { CollectionIcon } from "@/components/categories/collection-icon";
 import { AppShell } from "@/components/layout/app-shell";
 import { loadCollections } from "@/lib/data/collections";
 import { loadPreferences } from "@/lib/data/preferences";
@@ -14,10 +15,12 @@ export default async function VaultLayout({ children }: { children: ReactNode })
   }
   const displayName = profile?.display_name || ctx.email || "Account";
   const [collections, preferences] = await Promise.all([loadCollections(ctx), loadPreferences(ctx)]);
+  const collectionIcons = Object.fromEntries(collections.map((item) => [item.id, <CollectionIcon key={item.id} icon={item.icon} className="size-full" />]));
   return (
     <AppShell
       displayName={displayName}
       collections={collections}
+      collectionIcons={collectionIcons}
       userId={ctx.userId}
       introSeenOn={profile?.intro_seen_on ?? null}
       preferences={preferences}

@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, ArrowUpRight, CalendarClock, Check, FileText, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CalendarClock, Check, FileText, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
+import { CollectionIcon } from "@/components/categories/collection-icon";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
+import { CustomizeHomeButton, HomeCustomizeProvider, HomeSections } from "@/components/home/home-customizer";
 import { NewEntryButton } from "@/components/home/new-entry-button";
 import { UpcomingTasks } from "@/components/home/upcoming-tasks";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { MediaImage } from "@/components/media/media-image";
 import { PosterCard } from "@/components/media/poster-card";
 import { ProgressMeter } from "@/components/media/progress-meter";
-import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomePreview } from "@/lib/data/home";
+import { accentStyle } from "@/lib/collection-identity";
+import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomeFeaturedEntry, type HomePreview } from "@/lib/data/home";
 import { loadPreferences } from "@/lib/data/preferences";
 import type { LibraryCategory } from "@/lib/collections";
+import type { HomeSectionId } from "@/lib/preferences";
 import { entryProgress } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
 import { cn } from "@/lib/utils";
@@ -96,7 +100,7 @@ function ContinueCard({ item }: { item: HomeContinue }) {
         {progress.total ? (
           <ProgressMeter done={progress.done} total={progress.total} label={progress.label} className="mt-2.5 max-w-xs" />
         ) : (
-          <span className="mt-2 block text-xs text-muted-foreground">No tasks yet</span>
+          <span className="mt-2 block truncate text-xs text-muted-foreground">No {progress.label} yet</span>
         )}
       </span>
       <ArrowRight aria-hidden className="hidden size-5 shrink-0 text-amethyst transition-transform group-hover/continue:translate-x-1 sm:block" />
@@ -140,7 +144,12 @@ function CoverFan({ covers }: { covers: HomePreview[] }) {
   );
 }
 
-function Hero({ home, categories }: { home: HomeData; categories: LibraryCategory[] }) {
+function defaultGreeting(home: HomeData) {
+  const firstName = home.displayName.split(/\s+/)[0] ?? "";
+  return `${home.counts.entries === 0 ? "Welcome" : "Welcome back"}${firstName ? `, ${firstName}` : ""}`;
+}
+
+function Hero({ home, categories, greeting }: { home: HomeData; categories: LibraryCategory[]; greeting: string }) {
   const firstName = home.displayName.split(/\s+/)[0] ?? "";
   const fresh = home.counts.entries === 0;
   const backdrop = home.continueEntry?.bannerUrl ?? home.continueEntry?.entry.coverUrl ?? home.showcase[0]?.coverUrl ?? null;
@@ -166,12 +175,14 @@ function Hero({ home, categories }: { home: HomeData; categories: LibraryCategor
             <Gem aria-hidden className="size-3.5 text-amethyst" />
             Amethyst <span className="-ml-1 text-amethyst">Archives</span>
           </p>
-          <h1 id="home-heading" className="mt-3 text-3xl leading-tight font-semibold tracking-tight text-balance md:text-4xl">
-            {fresh ? "Welcome" : "Welcome back"}
-            {firstName ? <>
-              ,{" "}
-              <span className="bg-linear-to-r from-[#c9b0ff] via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
-            </> : null}
+          <h1 id="home-heading" className="mt-3 text-3xl leading-tight font-semibold tracking-tight text-balance break-words md:text-4xl">
+            {greeting ? greeting : <>
+              {fresh ? "Welcome" : "Welcome back"}
+              {firstName ? <>
+                ,{" "}
+                <span className="bg-linear-to-r from-[#c9b0ff] via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
+              </> : null}
+            </>}
           </h1>
           <p className="mt-2.5 max-w-xl text-base text-pretty text-foreground/70">{subline}</p>
           <div className="mt-6 flex flex-wrap items-center gap-2.5">
@@ -181,6 +192,7 @@ function Hero({ home, categories }: { home: HomeData; categories: LibraryCategor
             </> : (
               <NewCategoryButton label="Create your first collection" className="h-10 border-amethyst/50 bg-amethyst/15 px-4 text-foreground hover:bg-amethyst/25" />
             )}
+            <CustomizeHomeButton />
           </div>
           {home.continueEntry ? (
             <div className="mt-7">
@@ -246,12 +258,25 @@ function GettingStarted({ home, index }: { home: HomeData; index: number }) {
 }
 
 function CollectionCard({ collection }: { collection: HomeCollection }) {
+  const accent = accentStyle(collection.accentColor);
   return (
     <Link
       href={`/${collection.id}`}
       title={collection.name}
-      className="group/collection flex h-full min-w-0 items-start gap-4 rounded-xl border border-white/[0.08] bg-surface/50 p-4 transition-[border-color,background-color,translate,box-shadow] duration-200 outline-none hover:-translate-y-0.5 hover:border-amethyst/40 hover:bg-amethyst/[0.05] hover:shadow-[0_18px_40px_-24px_rgb(165_124_255/0.7)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 motion-reduce:hover:translate-y-0"
+      style={accent}
+      className={cn(
+        "group/collection relative isolate flex h-full min-w-0 items-start gap-4 overflow-hidden rounded-xl border bg-surface/50 p-4 transition-[border-color,background-color,translate,box-shadow] duration-200 outline-none hover:-translate-y-0.5 focus-visible:ring-2 motion-reduce:hover:translate-y-0",
+        accent
+          ? "border-[var(--ca-line)] hover:border-[var(--ca)] hover:bg-[var(--ca-soft)] hover:shadow-[0_18px_40px_-24px_var(--ca-glow)] focus-visible:border-[var(--ca)] focus-visible:ring-[var(--ca)]"
+          : "border-white/[0.08] hover:border-amethyst/40 hover:bg-amethyst/[0.05] hover:shadow-[0_18px_40px_-24px_rgb(165_124_255/0.7)] focus-visible:border-amethyst focus-visible:ring-amethyst/50",
+      )}
     >
+      {collection.bannerUrl ? (
+        <span aria-hidden className="absolute inset-0 -z-10">
+          <MediaImage src={collection.bannerUrl} alt="" className="opacity-35 transition-opacity duration-300 group-hover/collection:opacity-45" />
+          <span className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
+        </span>
+      ) : null}
       {collection.previews.length ? (
         <span aria-hidden className="flex h-24 shrink-0 items-end">
           {collection.previews.map((preview, index) => (
@@ -271,14 +296,19 @@ function CollectionCard({ collection }: { collection: HomeCollection }) {
           ))}
         </span>
       ) : (
-        <span aria-hidden className="grid h-24 w-16 shrink-0 place-items-center rounded-md border border-dashed border-white/[0.12] text-amethyst/70">
-          <LibraryBig className="size-5" />
+        <span aria-hidden className={cn("grid h-24 w-16 shrink-0 place-items-center rounded-md border border-dashed", accent ? "border-[var(--ca-line)] text-[var(--ca)]" : "border-white/[0.12] text-amethyst/70")}>
+          <CollectionIcon icon={collection.icon} className="size-5" />
         </span>
       )}
       <span className="min-w-0 flex-1 self-center">
         <span className="flex items-start justify-between gap-2">
-          <span className="min-w-0 truncate text-base font-semibold transition-colors group-hover/collection:text-amethyst">{collection.name}</span>
-          <ArrowUpRight aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground/40 transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5 group-hover/collection:text-amethyst" />
+          <span className={cn("flex min-w-0 items-center gap-2 text-base font-semibold transition-colors", accent ? "group-hover/collection:text-[var(--ca)]" : "group-hover/collection:text-amethyst")}>
+            {collection.icon && collection.previews.length ? (
+              <CollectionIcon icon={collection.icon} className={cn("size-4 shrink-0", accent ? "text-[var(--ca)]" : "text-amethyst")} />
+            ) : null}
+            <span className="truncate">{collection.name}</span>
+          </span>
+          <ArrowUpRight aria-hidden className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground/40 transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5", accent ? "group-hover/collection:text-[var(--ca)]" : "group-hover/collection:text-amethyst")} />
         </span>
         <span className="mt-0.5 block text-xs text-muted-foreground tabular-nums">
           {collection.entryCount.toLocaleString("en")} {collection.entryCount === 1 ? "entry" : "entries"}
@@ -291,26 +321,87 @@ function CollectionCard({ collection }: { collection: HomeCollection }) {
   );
 }
 
+function FeaturedEntry({ featured }: { featured: HomeFeaturedEntry }) {
+  const { entry } = featured;
+  const progress = entryProgress(entry);
+  const backdrop = featured.bannerUrl ?? entry.coverUrl;
+  return (
+    <Link
+      href={featured.href}
+      className="group/featured relative isolate flex min-w-0 items-end gap-5 overflow-hidden rounded-xl border border-white/[0.08] bg-surface/40 p-4 transition-[border-color,box-shadow] duration-200 outline-none hover:border-amethyst/45 hover:shadow-[0_26px_60px_-30px_rgb(165_124_255/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:p-6 md:min-h-72 md:gap-7 md:p-8"
+    >
+      <span aria-hidden className="absolute inset-0 -z-10">
+        {backdrop ? (
+          <MediaImage src={backdrop} alt="" className={featured.bannerUrl ? "opacity-55 transition-[scale] duration-700 group-hover/featured:scale-[1.02]" : "scale-110 opacity-35 blur-2xl"} />
+        ) : (
+          <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(165_124_255/0.22),transparent_60%)]" />
+        )}
+        <span className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/20" />
+      </span>
+      <span
+        className={cn(
+          "relative shrink-0 overflow-hidden rounded-lg border border-white/[0.1] bg-surface shadow-[0_22px_50px_-20px_rgb(0_0_0/0.95)]",
+          entry.coverShape === "square" ? "size-28 md:size-40" : "h-36 w-24 md:h-52 md:w-36",
+        )}
+      >
+        <MediaImage src={entry.coverUrl} alt="" fallbackLabel={entry.title} />
+      </span>
+      <span className="min-w-0 flex-1 pb-1">
+        <span className="block truncate text-[11px] font-semibold tracking-[0.16em] text-amethyst uppercase">{featured.collectionName}</span>
+        <span className="mt-1.5 line-clamp-2 text-xl leading-tight font-semibold tracking-tight break-words transition-colors group-hover/featured:text-amethyst md:text-3xl">{entry.title}</span>
+        {progress.total ? (
+          <ProgressMeter done={progress.done} total={progress.total} label={progress.label} className="mt-3 max-w-xs" />
+        ) : (
+          <span className="mt-2 block truncate text-xs text-muted-foreground">No {progress.label} yet</span>
+        )}
+        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-foreground/85">
+          Open workspace <ArrowRight aria-hidden className="size-4 text-amethyst transition-transform group-hover/featured:translate-x-1" />
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+function FeaturedImage({ url, caption }: { url: string; caption: string }) {
+  return (
+    <figure className="overflow-hidden rounded-xl border border-white/[0.08] bg-surface/40">
+      <div className="relative aspect-[16/9] md:aspect-[21/8]">
+        <MediaImage src={url} alt={caption || "Featured image"} />
+      </div>
+      {caption ? <figcaption className="border-t border-white/[0.06] px-4 py-3 text-sm break-words text-foreground/80">{caption}</figcaption> : null}
+    </figure>
+  );
+}
+
 export default async function HomePage() {
   const ctx = await requireUser();
-  const [home, preferences] = await Promise.all([loadHome(ctx), loadPreferences(ctx)]);
+  const preferences = await loadPreferences(ctx);
+  const chosen = preferences.homeFeatured;
+  const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null);
   const { pinStyle } = preferences;
   const categories = home.collections.map(({ id, name, description }) => ({ id, name, description }));
   const hasEntries = home.counts.entries > 0;
+  const featuredMissing = chosen?.kind === "entry" && !home.featured;
   let index = 1;
 
-  return (
-    <EntranceScope>
-      <Hero home={home} categories={categories} />
-
-      {!hasEntries ? <GettingStarted home={home} index={index++} /> : null}
-
-      {hasEntries ? (
-        <Section id="pinned" title="Pinned favorites" icon={Pin} index={index++}>
+  const builders: Record<HomeSectionId, (index: number) => ReactNode> = {
+    featured: (position) =>
+      chosen?.kind === "image" ? (
+        <Section id="featured" title="Featured" icon={Sparkles} index={position}>
+          <FeaturedImage url={chosen.url} caption={chosen.caption} />
+        </Section>
+      ) : home.featured ? (
+        <Section id="featured" title="Featured" icon={Sparkles} index={position}>
+          <FeaturedEntry featured={home.featured} />
+        </Section>
+      ) : null,
+    pinned: (position) =>
+      hasEntries ? (
+        <Section id="pinned" title="Pinned favorites" icon={Pin} index={position}>
           {home.pinned.length ? (
             <ul aria-label="Pinned entries" className={PINNED_GRID}>
-              {home.pinned.map((entry, position) => (
-                <li key={entry.id}><PosterCard entry={entry} pinStyle={pinStyle} priority={position < 5} /></li>
+              {home.pinned.map((entry, slot) => (
+                <li key={entry.id}><PosterCard entry={entry} pinStyle={pinStyle} priority={slot < 5} /></li>
               ))}
             </ul>
           ) : (
@@ -322,24 +413,24 @@ export default async function HomePage() {
             </Hint>
           )}
         </Section>
-      ) : null}
-
-      {home.recent.length ? (
-        <Section id="recent" title="Recently opened" icon={History} index={index++}>
+      ) : null,
+    recent: (position) =>
+      home.recent.length ? (
+        <Section id="recent" title="Recently opened" icon={History} index={position}>
           <ul aria-label="Recently opened" className={POSTER_GRID}>
             {home.recent.map((entry) => (
               <li key={entry.id}><PosterCard entry={entry} pinStyle={pinStyle} /></li>
             ))}
           </ul>
         </Section>
-      ) : null}
-
-      {home.collections.length ? (
+      ) : null,
+    collections: (position) =>
+      home.collections.length ? (
         <Section
           id="collections"
           title="Your collections"
           icon={LibraryBig}
-          index={index++}
+          index={position}
           action={home.collections.length > 1 ? <ArrangeCollectionsButton collections={categories} /> : null}
         >
           <ul aria-label="Your collections" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -348,30 +439,58 @@ export default async function HomePage() {
             ))}
           </ul>
         </Section>
-      ) : null}
-
-      {hasEntries ? (
-        <Section id="tasks" title="Upcoming tasks" icon={CalendarClock} index={index++}>
+      ) : null,
+    tasks: (position) =>
+      hasEntries ? (
+        <Section id="tasks" title="Upcoming tasks" icon={CalendarClock} index={position}>
           {home.tasks.length ? <UpcomingTasks tasks={home.tasks} /> : <Hint>No open tasks with due dates. Add a due date to a checklist task to see it here.</Hint>}
         </Section>
-      ) : null}
-
-      {hasEntries ? (
-        <Section id="glance" title="At a glance" icon={Layers} index={index++}>
+      ) : null,
+    glance: (position) =>
+      hasEntries ? (
+        <Section id="glance" title="At a glance" icon={Layers} index={position}>
           <dl className="grid grid-cols-3 rounded-xl border border-white/[0.07] bg-surface/30 px-4 py-5 md:px-6">
             {[
               { label: home.counts.collections === 1 ? "Collection" : "Collections", value: home.counts.collections },
               { label: home.counts.entries === 1 ? "Entry" : "Entries", value: home.counts.entries },
               { label: home.counts.files === 1 ? "Workspace file" : "Workspace files", value: home.counts.files },
-            ].map((stat, position) => (
-              <div key={stat.label} className={cn("min-w-0", position > 0 && "border-l border-white/[0.06] pl-4 md:pl-8")}>
+            ].map((stat, slot) => (
+              <div key={stat.label} className={cn("min-w-0", slot > 0 && "border-l border-white/[0.06] pl-4 md:pl-8")}>
                 <dt className="truncate text-xs text-muted-foreground">{stat.label}</dt>
                 <dd className="mt-1 text-2xl font-semibold tabular-nums md:text-3xl">{stat.value.toLocaleString("en")}</dd>
               </div>
             ))}
           </dl>
         </Section>
-      ) : null}
+      ) : null,
+  };
+
+  const gettingStarted = !hasEntries ? <GettingStarted home={home} index={index++} /> : null;
+  const nodes: Partial<Record<HomeSectionId, ReactNode>> = {};
+  for (const section of preferences.homeSections) {
+    const node = builders[section.id](index);
+    if (!node) continue;
+    nodes[section.id] = node;
+    if (!section.hidden) index += 1;
+  }
+
+  return (
+    <EntranceScope>
+      <HomeCustomizeProvider>
+        <Hero home={home} categories={categories} greeting={preferences.homeGreeting} />
+
+        {gettingStarted}
+
+        <HomeSections
+          layout={preferences.homeSections}
+          nodes={nodes}
+          greeting={preferences.homeGreeting}
+          defaultGreeting={defaultGreeting(home)}
+          featured={chosen}
+          featuredTitle={home.featured?.entry.title ?? null}
+          featuredMissing={featuredMissing}
+        />
+      </HomeCustomizeProvider>
     </EntranceScope>
   );
 }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { artworkUrl } from "@/lib/validation/entries";
 
 /** How pinned/progress details are shown on cover artwork. */
 export const PIN_STYLES = ["current", "clean"] as const;
@@ -35,6 +36,29 @@ export const SHORTCUT_PATTERN = /^(?:Mod\+)?(?:Alt\+)?(?:Shift\+)?(?:[A-Z0-9]|F(
 
 const hexColor = z.string().regex(/^#[0-9a-f]{6}$/i, "Use a hex color like #b36dff.").transform((value) => value.toLowerCase());
 const shortcut = z.string().max(40).refine((value) => value === "" || SHORTCUT_PATTERN.test(value), "Unsupported shortcut.");
+const hasControls = (value: string) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
+
+/** Home sections below the welcome header, in their default order. */
+export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "glance"] as const;
+export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
+export type HomeSection = { id: HomeSectionId; hidden: boolean };
+export const MAX_GREETING_LENGTH = 80;
+export const MAX_FEATURED_CAPTION_LENGTH = 120;
+
+export type HomeFeatured = { kind: "entry"; entryId: string } | { kind: "image"; url: string; caption: string } | null;
+
+/** Known sections once each, in the saved order; sections added later are appended. */
+function normalizeHomeSections(list: { id: string; hidden: boolean }[]): HomeSection[] {
+  const seen = new Set<string>();
+  const sections: HomeSection[] = [];
+  for (const item of list) {
+    if (seen.has(item.id) || !HOME_SECTION_IDS.includes(item.id as HomeSectionId)) continue;
+    seen.add(item.id);
+    sections.push({ id: item.id as HomeSectionId, hidden: item.hidden });
+  }
+  for (const id of HOME_SECTION_IDS) if (!seen.has(id)) sections.push({ id, hidden: false });
+  return sections;
+}
 
 export const DEFAULT_SETTINGS = {
   motion: "full" as MotionLevel,
@@ -50,6 +74,14 @@ export const DEFAULT_SETTINGS = {
   startup: "home" as StartupDestination,
   startupCollectionId: null as string | null,
   shortcuts: { search: "/", newEntry: "Alt+Shift+N", newFile: "Alt+N", toggleExplorer: "Alt+E" } as Record<ShortcutAction, string>,
+  /** Library card details (separate from the pinned-entry presentation, which is `pinStyle`). */
+  cardTitle: true,
+  cardLabels: false,
+  cardProgress: true,
+  homeSections: HOME_SECTION_IDS.map((id) => ({ id, hidden: false })) as HomeSection[],
+  /** "" keeps the built-in welcome. */
+  homeGreeting: "",
+  homeFeatured: null as HomeFeatured,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -73,6 +105,34 @@ const settingFields = {
       const used = Object.values(value).filter(Boolean);
       return new Set(used).size === used.length;
     }, "Two actions cannot share a shortcut."),
+  cardTitle: z.boolean(),
+  cardLabels: z.boolean(),
+  cardProgress: z.boolean(),
+  homeSections: z
+    .array(z.object({ id: z.string().max(40), hidden: z.boolean() }).strict())
+    .max(40)
+    .transform(normalizeHomeSections),
+  homeGreeting: z
+    .string()
+    .trim()
+    .max(MAX_GREETING_LENGTH, `Greetings can be at most ${MAX_GREETING_LENGTH} characters.`)
+    .refine((value) => !hasControls(value), "Greetings cannot contain line breaks or control characters."),
+  homeFeatured: z
+    .discriminatedUnion("kind", [
+      z.object({ kind: z.literal("entry"), entryId: z.uuid() }).strict(),
+      z
+        .object({
+          kind: z.literal("image"),
+          url: artworkUrl.pipe(z.string({ error: "Add an image link or upload an image." })),
+          caption: z
+            .string()
+            .trim()
+            .max(MAX_FEATURED_CAPTION_LENGTH, `Captions can be at most ${MAX_FEATURED_CAPTION_LENGTH} characters.`)
+            .refine((value) => !hasControls(value), "Captions cannot contain line breaks or control characters."),
+        })
+        .strict(),
+    ])
+    .nullable(),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

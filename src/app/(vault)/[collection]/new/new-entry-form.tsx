@@ -9,14 +9,27 @@ import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { LibraryCategory } from "@/lib/collections";
 import type { Category } from "@/lib/categories";
 import type { CoverShape } from "@/lib/cover-shape";
+import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
+import { NO_TEMPLATE, type TemplateSummary } from "@/lib/templates";
 import { createEntry, type NewEntryState } from "./actions";
 
 const initial: NewEntryState = { status: "idle" };
 
-export function NewEntryForm({ collection, categories, defaultCoverShape }: { collection: LibraryCategory; categories: Category[]; defaultCoverShape: CoverShape }) {
+export function NewEntryForm({
+  collection,
+  categories,
+  templates,
+  defaultCoverShape,
+}: {
+  collection: LibraryCategory;
+  categories: Category[];
+  templates: TemplateSummary[];
+  defaultCoverShape: CoverShape;
+}) {
   const [state, action, pending] = useActionState(createEntry, initial);
   const [, startTransition] = useTransition();
   const errors = state.fieldErrors ?? {};
@@ -24,6 +37,9 @@ export function NewEntryForm({ collection, categories, defaultCoverShape }: { co
   const [bannerOpen, setBannerOpen] = useState(false);
   const [shapeBusy, setShapeBusy] = useState(true);
   const showBanner = bannerOpen || Boolean(values.bannerUrl) || Boolean(errors.bannerUrl);
+  const collectionDefault = templates.find((template) => template.id === collection.default_template_id);
+  const [template, setTemplate] = useState(collectionDefault?.id ?? NO_TEMPLATE);
+  const chosen = templates.find((item) => item.id === template);
 
   return (
     <form
@@ -97,6 +113,58 @@ export function NewEntryForm({ collection, categories, defaultCoverShape }: { co
             <span className="text-xs font-normal text-muted-foreground/70">optional</span>
           </button>
         )}
+
+        <div className="grid gap-5 border-t border-white/[0.06] pt-6 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="templateId" className="text-sm">Workspace template</Label>
+            <Select name="templateId" value={template} onValueChange={setTemplate}>
+              <SelectTrigger
+                id="templateId"
+                className="h-11 w-full bg-black/40"
+                aria-invalid={Boolean(errors.templateId)}
+                aria-describedby="templateId-hint"
+              >
+                <SelectValue placeholder="No template" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_TEMPLATE}>No template</SelectItem>
+                {templates.map((item) => (
+                  <SelectItem key={item.id} value={item.id} className="break-all">
+                    {item.name}{item.id === collectionDefault?.id ? " (default)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p id="templateId-hint" className={errors.templateId ? "text-xs text-rose" : "text-xs text-muted-foreground"}>
+              {errors.templateId
+                ? errors.templateId
+                : chosen
+                  ? `Starts with ${chosen.folders + chosen.files === 0 ? "nothing (the template is empty)" : [chosen.folders ? `${chosen.folders} ${chosen.folders === 1 ? "folder" : "folders"}` : "", chosen.files ? `${chosen.files} ${chosen.files === 1 ? "file" : "files"}` : ""].filter(Boolean).join(" and ")}. Starter tasks begin unchecked.`
+                  : templates.length
+                    ? "The workspace starts empty."
+                    : <>The workspace starts empty. <Link href="/settings/templates" className="text-amethyst underline-offset-4 hover:underline">Create templates in Settings</Link>.</>}
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="progressLabel" className="text-sm">
+              Progress name <span className="text-xs font-normal text-muted-foreground/70">optional</span>
+            </Label>
+            <Input
+              id="progressLabel"
+              name="progressLabel"
+              defaultValue={values.progressLabel ?? collection.progress_label ?? ""}
+              maxLength={MAX_PROGRESS_LABEL_LENGTH}
+              placeholder={DEFAULT_PROGRESS_LABEL}
+              autoComplete="off"
+              aria-invalid={Boolean(errors.progressLabel)}
+              aria-describedby="progressLabel-hint"
+              className="h-11 bg-black/40 px-3.5"
+            />
+            <p id="progressLabel-hint" className={errors.progressLabel ? "text-xs text-rose" : "text-xs text-muted-foreground"}>
+              {errors.progressLabel ?? "What this entry’s checklist progress is called, like “quests” or “chapters”."}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-3 border-t border-white/[0.06] px-5 py-4 md:px-7">

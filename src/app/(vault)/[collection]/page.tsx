@@ -2,13 +2,17 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CollectionActions } from "@/components/categories/collection-actions";
+import { CollectionIcon } from "@/components/categories/collection-icon";
 import { LibraryBig, Plus, SearchX } from "lucide-react";
 import { PageContainer } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { EmptyState } from "@/components/media/empty-state";
 import { LibraryControls } from "@/components/media/library-controls";
+import { MediaImage } from "@/components/media/media-image";
 import { PosterCard } from "@/components/media/poster-card";
 import { Button } from "@/components/ui/button";
+import { accentStyle } from "@/lib/collection-identity";
+import { cn } from "@/lib/utils";
 import { loadCollection } from "@/lib/data/collections";
 import { isLegacyCollection } from "@/lib/collections";
 import { CATEGORY_PARAM } from "@/lib/categories";
@@ -67,19 +71,35 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   const visible = filterLibrary(library, search);
   const categoryCounts: Record<string, number> = {};
   for (const entry of visible) for (const id of entry.categoryIds) categoryCounts[id] = (categoryCounts[id] ?? 0) + 1;
+  const labelNames = new Map(categories.map((category) => [category.id, category.name]));
+  const display = { title: preferences.cardTitle, labels: preferences.cardLabels, progress: preferences.cardProgress };
+  const accent = accentStyle(collection.accent_color);
 
   return (
     <EntranceScope>
       <PageContainer>
         <section aria-labelledby="library-heading">
-          <div className="scroll-fade mb-6 flex flex-wrap items-center justify-between gap-5 border-b border-white/[0.08] pb-6">
+          {collection.banner_url ? (
+            <div aria-hidden className="scroll-fade enter enter-soft relative mb-6 h-32 overflow-hidden rounded-lg border border-white/[0.06] bg-surface sm:h-40 md:h-48" style={accent}>
+              <MediaImage src={collection.banner_url} alt="" priority className="opacity-85" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
+              {accent ? <div className="absolute inset-x-0 bottom-0 h-px bg-[var(--ca-line)]" /> : null}
+            </div>
+          ) : null}
+          <div className="scroll-fade mb-6 flex flex-wrap items-center justify-between gap-5 border-b border-white/[0.08] pb-6" style={accent}>
             <div className="enter flex min-w-0 flex-1 basis-full items-start gap-3.5 sm:basis-0">
-              <span aria-hidden className="mt-0.5 grid size-12 shrink-0 place-items-center rounded-lg border border-amethyst/20 bg-amethyst/[0.07] text-amethyst">
-                <LibraryBig className="size-5" strokeWidth={1.75} />
+              <span
+                aria-hidden
+                className={cn(
+                  "mt-0.5 grid size-12 shrink-0 place-items-center rounded-lg border",
+                  accent ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-[var(--ca)]" : "border-amethyst/20 bg-amethyst/[0.07] text-amethyst",
+                )}
+              >
+                <CollectionIcon icon={collection.icon} className="size-5" strokeWidth={1.75} />
               </span>
               <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-                  <span>Collection</span>
+                  <span className={accent ? "font-medium text-[var(--ca)]" : undefined}>Collection</span>
                   <span className="border-l border-white/[0.12] pl-2.5 tabular-nums">
                     {visible.length === library.length ? library.length : `${visible.length} of ${library.length}`}{" "}
                     {library.length === 1 ? "entry" : "entries"}
@@ -135,7 +155,13 @@ export default async function LibraryPage({ params, searchParams }: Props) {
             <ul aria-label={collection.name} className={DENSITY_GRID[preferences.libraryDensity]}>
               {visible.map((entry, index) => (
                 <li key={entry.id} className="enter enter-card" style={{ "--enter-index": Math.min(index, 8) + 1 } as React.CSSProperties}>
-                  <PosterCard entry={entry} priority={index < (preferences.libraryDensity === "compact" ? 8 : 6)} pinStyle={preferences.pinStyle} />
+                  <PosterCard
+                    entry={entry}
+                    priority={index < (preferences.libraryDensity === "compact" ? 8 : 6)}
+                    pinStyle={preferences.pinStyle}
+                    display={display}
+                    labels={display.labels ? entry.categoryIds.flatMap((id) => labelNames.get(id) ?? []) : undefined}
+                  />
                 </li>
               ))}
             </ul>

@@ -12,6 +12,7 @@ export function AppShell({
   children,
   displayName,
   collections,
+  collectionIcons,
   userId,
   introSeenOn,
   preferences,
@@ -22,7 +23,10 @@ export function AppShell({
   userId: string;
   introSeenOn: string | null;
   preferences: Preferences;
+  /** Server-rendered collection icons keyed by collection id. */
+  collectionIcons?: Record<string, ReactNode>;
 }) {
+  const icons = collectionIcons;
   return (
     <SettingsProvider value={preferences}>
       <div className="flex min-h-dvh flex-col" data-motion={preferences.motion} data-shine={preferences.cardShine ? "on" : "off"}>
@@ -35,11 +39,11 @@ export function AppShell({
         >
           Skip to content
         </a>
-        <TopNav displayName={displayName} collections={collections} />
+        <TopNav displayName={displayName} collections={collections} icons={icons} />
         <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
           {children}
         </main>
-        <MobileTabBar collections={collections} />
+        <MobileTabBar collections={collections} icons={icons} />
         <ScrollExitFallback />
       </div>
     </SettingsProvider>

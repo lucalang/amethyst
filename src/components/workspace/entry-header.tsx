@@ -31,6 +31,7 @@ import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
 import { entryPath, type LibraryCategory } from "@/lib/collections";
 import type { CoverShape } from "@/lib/cover-shape";
+import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
 import type { Tables } from "@/lib/supabase/database.types";
 import { errorMessage } from "./client-utils";
 
@@ -118,7 +119,7 @@ export function EntryHeader({
             ) : null}
             {totals.total > 0 ? (
               <div className="mt-3 max-w-sm">
-                <ProgressMeter done={totals.checked} total={totals.total} label="tasks done" />
+                <ProgressMeter done={totals.checked} total={totals.total} label={entry.progress_label?.trim() || "tasks done"} />
               </div>
             ) : null}
           </div>
@@ -159,7 +160,8 @@ export function EntryHeader({
             values.title.trim() !== entry.title ||
             (values.coverUrl.trim() || null) !== entry.cover_url ||
             values.coverShape !== entry.cover_shape ||
-            (values.bannerUrl.trim() || null) !== entry.banner_url;
+            (values.bannerUrl.trim() || null) !== entry.banner_url ||
+            (values.progressLabel.trim() || null) !== entry.progress_label;
           if (detailsChanged) {
             const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, {
               method: "PATCH",
@@ -255,7 +257,7 @@ function EditDetailsDialog({
   entry: Entry;
   categories: Category[];
   assigned: Category[];
-  onSave: (values: { title: string; coverUrl: string; coverShape: CoverShape; bannerUrl: string }, categories: Category[]) => Promise<void>;
+  onSave: (values: { title: string; coverUrl: string; coverShape: CoverShape; bannerUrl: string; progressLabel: string }, categories: Category[]) => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -282,6 +284,7 @@ function EditDetailsDialog({
                   coverUrl: String(formData.get("coverUrl") ?? ""),
                   coverShape: formData.get("coverShape") as CoverShape,
                   bannerUrl: String(formData.get("bannerUrl") ?? ""),
+                  progressLabel: String(formData.get("progressLabel") ?? ""),
                 },
                 parseCategoryIds(formData.getAll("categoryIds")).flatMap((id) => {
                   const category =
@@ -314,6 +317,21 @@ function EditDetailsDialog({
             defaultValue={entry.cover_url}
           />
           <ImageUrlField id="edit-banner" name="bannerUrl" label="Banner image URL" hint="Optional wide artwork for the header." defaultValue={entry.banner_url} shape="banner" />
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-progress-label">Progress name</Label>
+            <Input
+              id="edit-progress-label"
+              name="progressLabel"
+              defaultValue={entry.progress_label ?? ""}
+              placeholder={DEFAULT_PROGRESS_LABEL}
+              maxLength={MAX_PROGRESS_LABEL_LENGTH}
+              aria-describedby="edit-progress-label-hint"
+              className="h-10"
+            />
+            <p id="edit-progress-label-hint" className="text-xs text-muted-foreground">
+              What checklist items are called in this entry’s progress, like “quests” or “episodes”. Leave empty for “{DEFAULT_PROGRESS_LABEL}”.
+            </p>
+          </div>
           {error ? (
             <p role="alert" className="text-sm text-destructive">
               {error}

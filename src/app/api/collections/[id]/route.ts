@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { collectionInputSchema } from "@/lib/collections";
+import { isKnownIcon } from "@/components/categories/collection-icon";
+import { COLLECTION_COLUMNS, collectionColumns, collectionInputSchema } from "@/lib/collections";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 
 type Params = { params: Promise<{ id: string }> };
@@ -13,8 +14,10 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!z.uuid().safeParse(id).success) return apiError(404, "not_found", "Collection not found.");
   const parsed = await parseJson(request, collectionInputSchema);
   if ("response" in parsed) return parsed.response;
-  const { data, error } = await ctx.supabase.from("collections").update(parsed.data).eq("id", id).select("id, name, description").maybeSingle();
+  if (parsed.data.icon && !isKnownIcon(parsed.data.icon)) return apiError(422, "invalid_input", "Choose an icon from the list.");
+  const { data, error } = await ctx.supabase.from("collections").update(collectionColumns(parsed.data)).eq("id", id).select(COLLECTION_COLUMNS).maybeSingle();
   if (error?.code === "23505") return apiError(409, "name_taken", "You already have a collection with that name.");
+  if (error?.code === "23503") return apiError(404, "not_found", "That template no longer exists. Choose another one.");
   if (error) return dbError(error);
   if (!data) return apiError(404, "not_found", "Collection not found.");
   return jsonResponse({ collection: data });

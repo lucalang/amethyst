@@ -14,7 +14,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const parsed = await parseJson(request, entryPatchSchema);
   if ("response" in parsed) return parsed.response;
-  const { expectedVersion, coverUrl, coverShape, bannerUrl, collectionId, ...rest } = parsed.data;
+  const { expectedVersion, coverUrl, coverShape, bannerUrl, progressLabel, collectionId, ...rest } = parsed.data;
 
   if (collectionId) {
     const { data: destination, error } = await ctx.supabase.from("collections").select("id").eq("id", collectionId).maybeSingle();
@@ -28,6 +28,7 @@ export async function PATCH(request: Request, { params }: Params) {
     ...(coverUrl !== undefined ? { cover_url: coverUrl } : {}),
     ...(coverShape !== undefined ? { cover_shape: coverShape } : {}),
     ...(bannerUrl !== undefined ? { banner_url: bannerUrl } : {}),
+    ...(progressLabel !== undefined ? { progress_label: progressLabel } : {}),
   };
   if (Object.keys(patch).length === 0) return apiError(422, "invalid_input", "Nothing to update.");
 

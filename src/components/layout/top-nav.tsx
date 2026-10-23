@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Gem, LibraryBig, LogOut, Settings } from "lucide-react";
@@ -14,8 +15,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { accentStyle } from "@/lib/collection-identity";
 import type { LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
+
+/** Server-rendered collection icons keyed by collection id. */
+type CollectionIcons = Record<string, ReactNode>;
 
 export function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -34,7 +39,7 @@ export function BrandMark({ className }: { className?: string }) {
   );
 }
 
-export function TopNav({ displayName, collections }: { displayName: string; collections: LibraryCategory[] }) {
+export function TopNav({ displayName, collections, icons = {} }: { displayName: string; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const pathname = usePathname();
 
   return (
@@ -48,18 +53,22 @@ export function TopNav({ displayName, collections }: { displayName: string; coll
           {collections.map((item) => {
             const href = `/${item.id}`;
             const active = isActive(pathname, href);
+            const accent = accentStyle(item.accent_color);
             return (
               <Link
                 key={item.id}
                 href={href}
                 title={item.name}
                 aria-current={active ? "page" : undefined}
+                style={accent}
                 className={cn(
                   "nav-link relative flex h-9 shrink-0 items-center gap-2 rounded-md border border-transparent px-3 text-sm font-medium text-muted-foreground transition-[color,background-color,border-color] duration-200 outline-none hover:border-white/[0.08] hover:bg-white/[0.035] hover:text-foreground focus-visible:text-foreground",
-                  active && "border-amethyst/25 bg-amethyst/10 text-foreground",
+                  active && (accent ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-foreground" : "border-amethyst/25 bg-amethyst/10 text-foreground"),
                 )}
               >
-                <LibraryBig aria-hidden className={cn("size-3.5 shrink-0", active ? "text-amethyst" : "text-muted-foreground/65")} />
+                <span aria-hidden className={cn("size-3.5 shrink-0", accent ? (active ? "text-[var(--ca)]" : "text-[var(--ca)] opacity-75") : active ? "text-amethyst" : "text-muted-foreground/65")}>
+                  {icons[item.id] ?? <LibraryBig className="size-full" />}
+                </span>
                 <span className="max-w-40 truncate">{item.name}</span>
               </Link>
             );
@@ -102,7 +111,7 @@ export function TopNav({ displayName, collections }: { displayName: string; coll
   );
 }
 
-export function MobileTabBar({ collections }: { collections: LibraryCategory[] }) {
+export function MobileTabBar({ collections, icons = {} }: { collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const pathname = usePathname();
   const settingsActive = isActive(pathname, "/settings");
   return (
@@ -111,19 +120,28 @@ export function MobileTabBar({ collections }: { collections: LibraryCategory[] }
         {collections.map((collection) => {
           const href = `/${collection.id}`;
           const active = isActive(pathname, href);
+          const accent = accentStyle(collection.accent_color);
           return (
             <li key={collection.id} className="w-24 shrink-0">
               <Link
                 href={href}
                 title={collection.name}
                 aria-current={active ? "page" : undefined}
+                style={accent}
                 className={cn(
-                  "flex min-h-16 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium text-muted-foreground transition-colors active:bg-amethyst/10",
-                  active && "text-amethyst",
+                  "flex min-h-16 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium text-muted-foreground transition-colors",
+                  accent ? "active:bg-[var(--ca-soft)]" : "active:bg-amethyst/10",
+                  active && (accent ? "text-[var(--ca)]" : "text-amethyst"),
                 )}
               >
-                <span className={cn("grid h-7 w-11 place-items-center rounded-md transition-colors", active && "bg-amethyst/15 ring-1 ring-amethyst/25")}>
-                  <LibraryBig aria-hidden className="size-4" />
+                <span
+                  className={cn(
+                    "grid h-7 w-11 place-items-center rounded-md transition-colors",
+                    accent && !active && "text-[var(--ca)] opacity-80",
+                    active && (accent ? "bg-[var(--ca-soft)] ring-1 ring-[var(--ca-line)]" : "bg-amethyst/15 ring-1 ring-amethyst/25"),
+                  )}
+                >
+                  <span aria-hidden className="size-4">{icons[collection.id] ?? <LibraryBig className="size-full" />}</span>
                 </span>
                 <span className="w-full truncate px-2">{collection.name}</span>
               </Link>

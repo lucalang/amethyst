@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Keyboard, LibraryBig, Palette, PenLine, SlidersHorizontal, Tags, type LucideIcon } from "lucide-react";
+import { Keyboard, LayoutTemplate, LibraryBig, Palette, PenLine, SlidersHorizontal, Tags, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; hint: string; icon: LucideIcon; active: (pathname: string) => boolean };
@@ -39,9 +39,16 @@ const ITEMS: Item[] = [
   {
     href: "/settings/collections",
     label: "Collections",
-    hint: "Names, descriptions and order",
+    hint: "Names, looks and order",
     icon: LibraryBig,
     active: (pathname) => pathname.startsWith("/settings/collections"),
+  },
+  {
+    href: "/settings/templates",
+    label: "Templates",
+    hint: "Starter workspaces for entries",
+    icon: LayoutTemplate,
+    active: (pathname) => pathname.startsWith("/settings/templates"),
   },
   {
     href: "/settings/labels",

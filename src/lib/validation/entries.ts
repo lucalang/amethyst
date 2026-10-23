@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isUploadedImagePath } from "@/lib/attachments";
 import { COVER_SHAPES } from "@/lib/cover-shape";
+import { progressLabelSchema } from "@/lib/progress/label";
 import { IMAGE_URL_MESSAGES, checkImageUrl } from "./image-url";
 
 export const ENTRY_KINDS = ["anime", "game", "custom"] as const;
@@ -29,6 +30,7 @@ export const entryPatchSchema = z
     coverUrl: artworkUrl.nullable().optional(),
     coverShape: z.enum(COVER_SHAPES).optional(),
     bannerUrl: artworkUrl.nullable().optional(),
+    progressLabel: progressLabelSchema.nullable().optional(),
     platform: z.string().trim().max(80).nullable().optional(),
     collectionId: z.uuid().optional(),
     expectedVersion: z.number().int().positive().optional(),
@@ -42,4 +44,5 @@ export const newEntrySchema = z.object({
   coverUrl: artworkUrl.optional().transform((value) => value ?? null),
   coverShape: z.enum(COVER_SHAPES).default("portrait"),
   bannerUrl: artworkUrl.optional().transform((value) => value ?? null),
+  progressLabel: progressLabelSchema.optional().transform((value) => value ?? null),
 });

@@ -2,14 +2,16 @@
 
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, GripVertical, LibraryBig, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, GripVertical, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { errorMessage } from "@/components/workspace/client-utils";
 import { apiFetch } from "@/lib/api-client";
+import { accentStyle } from "@/lib/collection-identity";
 import type { LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
+import { ClientCollectionIcon } from "./collection-identity-fields";
 
 const EDGE = 36;
 
@@ -194,7 +196,9 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
                     <GripVertical aria-hidden className="size-4" />
                   </button>
                   <span aria-hidden className="w-5 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{index + 1}</span>
-                  <LibraryBig aria-hidden className="ml-1 size-3.5 shrink-0 text-amethyst/70" />
+                  <span aria-hidden style={accentStyle(item.accent_color)} className={cn("ml-1 size-3.5 shrink-0", item.accent_color ? "text-[var(--ca)]" : "text-amethyst/70")}>
+                    <ClientCollectionIcon icon={item.icon} className="size-full" />
+                  </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium" title={item.name}>{item.name}</span>
                   <Button
                     id={`arrange-${item.id}-up`}

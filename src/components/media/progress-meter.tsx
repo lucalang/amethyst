@@ -32,7 +32,7 @@ export function ProgressMeter({ done, total, label, className, compact }: Props)
         )}
       </div>
       {!compact ? (
-        <p className="text-xs text-muted-foreground tabular-nums">
+        <p className="truncate text-xs text-muted-foreground tabular-nums" title={text}>
           {text}
           {!known ? <span className="sr-only"> (total unknown)</span> : null}
         </p>

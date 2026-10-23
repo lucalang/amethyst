@@ -1,13 +1,14 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
+import { COLLECTION_COLUMNS } from "@/lib/collections";
 import type { AuthContext } from "@/lib/supabase/auth";
 import { fetchAll } from "./fetch-all";
 
 /** The user's collections in their saved order. */
 export const loadCollections = cache(async (ctx: AuthContext) =>
   fetchAll((from, to) =>
-    ctx.supabase.from("collections").select("id, name, description, legacy_slug").order("position").order("created_at").order("id").range(from, to),
+    ctx.supabase.from("collections").select(`${COLLECTION_COLUMNS}, legacy_slug`).order("position").order("created_at").order("id").range(from, to),
   ),
 );
 
