@@ -99,7 +99,7 @@ export function TaskLinesDialog({
           }}
         >
           <div className="space-y-2">
-            <Label htmlFor={`${id}-lines`} className="text-xs font-medium text-muted-foreground">One task per line</Label>
+            <Label htmlFor={`${id}-lines`} className="text-xs font-medium text-muted-foreground">Paste or type one task per line</Label>
             <Textarea
               id={`${id}-lines`}
               value={text}

@@ -44,7 +44,7 @@ export function TopNav({ displayName, collections }: { displayName: string; coll
           <BrandMark className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
         </Link>
 
-        <nav aria-label="Categories" className="collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4 md:flex">
+        <nav aria-label="Collections" className="collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4 md:flex">
           {collections.map((item) => {
             const href = `/${item.id}`;
             const active = isActive(pathname, href);

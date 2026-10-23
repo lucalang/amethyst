@@ -4,10 +4,10 @@ import { z } from "zod";
 import type { AuthContext } from "@/lib/supabase/auth";
 import { fetchAll } from "./fetch-all";
 
-/** The user's categories in their saved order. */
+/** The user's collections in their saved order. */
 export const loadCollections = cache(async (ctx: AuthContext) =>
   fetchAll((from, to) =>
-    ctx.supabase.from("collections").select("id, name, legacy_slug").order("position").order("created_at").order("id").range(from, to),
+    ctx.supabase.from("collections").select("id, name, description, legacy_slug").order("position").order("created_at").order("id").range(from, to),
   ),
 );
 

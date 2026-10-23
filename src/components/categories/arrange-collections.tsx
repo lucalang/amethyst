@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 const EDGE = 36;
 
-/** Opens a dialog to reorder categories by dragging or with move buttons / arrow keys. */
+/** Opens a dialog to reorder collections by dragging or with move buttons / arrow keys. */
 export function ArrangeCollectionsButton({ collections, compact, className }: { collections: LibraryCategory[]; compact?: boolean; className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -115,7 +115,7 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
     try {
       await apiFetch("/api/collections/order", { method: "PUT", json: { ids: order.map((item) => item.id) } });
       setOpen(false);
-      toast.success("Category order saved");
+      toast.success("Collection order saved");
       router.refresh();
     } catch (saveError) {
       setError(errorMessage(saveError));
@@ -130,8 +130,8 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
         variant="ghost"
         size="icon"
         className={cn("size-9 shrink-0 text-muted-foreground hover:bg-amethyst/[0.08] hover:text-amethyst", className)}
-        aria-label="Arrange categories"
-        title="Arrange categories"
+        aria-label="Arrange collections"
+        title="Arrange collections"
         onClick={show}
       >
         <ArrowUpDown aria-hidden className="size-4" />
@@ -154,15 +154,15 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
             <ArrowUpDown className="size-5" />
           </span>
           <div className="min-w-0">
-            <DialogTitle className="text-lg leading-6 font-semibold tracking-normal">Arrange categories</DialogTitle>
+            <DialogTitle className="text-lg leading-6 font-semibold tracking-normal">Arrange collections</DialogTitle>
             <DialogDescription className="mt-1 text-xs leading-5">
-              The first category comes first in the navigation and on Home. Drag a row by its handle, or use the arrows.
+              The first collection comes first in the navigation and on Home. Drag a row by its handle, or use the arrows.
             </DialogDescription>
           </div>
         </DialogHeader>
-        <p id="arrange-instructions" className="sr-only">Press the up or down arrow key on a handle to move that category.</p>
+        <p id="arrange-instructions" className="sr-only">Press the up or down arrow key on a handle to move that collection.</p>
         <div ref={scrollRef} className="-mx-2 max-h-[55vh] overflow-y-auto px-2 py-1">
-          <ol ref={listRef} aria-label="Category order" className={cn("space-y-1.5", dragId && "select-none")}>
+          <ol ref={listRef} aria-label="Collection order" className={cn("space-y-1.5", dragId && "select-none")}>
             {order.map((item, index) => {
               const dragging = dragId === item.id;
               return (

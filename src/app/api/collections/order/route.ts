@@ -3,7 +3,7 @@ import { dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } f
 
 const orderSchema = z.object({ ids: z.array(z.uuid()).max(1000) }).strict();
 
-/** Persist the complete order of the user's categories. */
+/** Persist the complete order of the user's collections. */
 export async function PUT(request: Request) {
   const rejected = rejectCrossOrigin(request);
   if (rejected) return rejected;

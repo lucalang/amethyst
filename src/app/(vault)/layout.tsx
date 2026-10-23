@@ -6,15 +6,15 @@ import { ensureProfile, requireUser } from "@/lib/supabase/auth";
 
 export default async function VaultLayout({ children }: { children: ReactNode }) {
   const ctx = await requireUser();
-  let { data: profile } = await ctx.supabase.from("users").select("display_name").eq("id", ctx.userId).maybeSingle();
+  let { data: profile } = await ctx.supabase.from("users").select("display_name, intro_seen_on").eq("id", ctx.userId).maybeSingle();
   if (!profile) {
     if (!(await ensureProfile(ctx))) redirect("/auth/session-expired");
-    ({ data: profile } = await ctx.supabase.from("users").select("display_name").eq("id", ctx.userId).maybeSingle());
+    ({ data: profile } = await ctx.supabase.from("users").select("display_name, intro_seen_on").eq("id", ctx.userId).maybeSingle());
   }
   const displayName = profile?.display_name || ctx.email || "Account";
   const collections = await loadCollections(ctx);
   return (
-    <AppShell displayName={displayName} collections={collections}>
+    <AppShell displayName={displayName} collections={collections} userId={ctx.userId} introSeenOn={profile?.intro_seen_on ?? null}>
       {children}
     </AppShell>
   );

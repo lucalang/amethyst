@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { FolderInput, Loader2, MoreHorizontal, Pencil, Tag, Trash2 } from "lucide-react";
+import { FolderInput, Loader2, MoreHorizontal, Pencil, Pin, PinOff, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CategorySelect } from "@/components/categories/category-picker";
 import { CoverArtworkField } from "@/components/media/cover-artwork-field";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
+import { usePinToggle } from "@/components/media/pin-button";
 import { ProgressMeter } from "@/components/media/progress-meter";
 import {
   AlertDialog,
@@ -46,6 +47,7 @@ export function EntryHeader({
   categories,
   categoryIds,
   totals,
+  pinned,
   onEntryChange,
 }: {
   collection: LibraryCategory;
@@ -54,6 +56,7 @@ export function EntryHeader({
   categories: Category[];
   categoryIds: string[];
   totals: { total: number; checked: number };
+  pinned: boolean;
   onEntryChange: (entry: Entry) => void;
 }) {
   const router = useRouter();
@@ -64,6 +67,7 @@ export function EntryHeader({
   const [moving, setMoving] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
   const [savedCategories, setSavedCategories] = useState<Category[] | null>(null);
+  const pin = usePinToggle(entry.id, entry.title, pinned);
   const banner = entry.banner_url ?? entry.cover_url;
   // Names always come from the latest server list, so renames show up here too.
   const assigned = sortCategories(
@@ -75,25 +79,26 @@ export function EntryHeader({
 
   return (
     <header data-testid="entry-header" className="header-scroll-exit">
-      <div aria-hidden className="relative h-32 overflow-hidden md:h-48">
+      <div aria-hidden className="relative h-44 overflow-hidden sm:h-56 md:h-72 lg:h-80">
         {banner ? (
-          <MediaImage src={banner} alt="" className={entry.banner_url ? "opacity-55" : "scale-110 opacity-40 blur-2xl"} />
+          <MediaImage src={banner} alt="" priority className={entry.banner_url ? "opacity-80" : "scale-110 opacity-45 blur-2xl"} />
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(165_124_255/0.22),transparent_60%),radial-gradient(ellipse_at_90%_10%,rgb(244_114_168/0.08),transparent_55%)]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/60 to-black" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 via-55% to-black" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_15%_100%,rgb(0_0_0/0.55),transparent_70%)]" />
       </div>
       <div className="mx-auto max-w-[88rem] px-4 md:px-6">
-        <div className="relative -mt-16 flex flex-col gap-4 pb-7 md:-mt-24 md:flex-row md:items-end md:gap-6">
+        <div className="relative -mt-20 flex flex-col gap-4 pb-7 sm:-mt-24 md:-mt-36 md:flex-row md:items-end md:gap-7 lg:-mt-40 lg:gap-8">
           <div
-            className={`enter enter-card relative ${entry.cover_shape === "square" ? "aspect-square w-28 md:w-36" : "aspect-[2/3] w-24 md:w-32"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_24px_60px_-24px_rgb(165_124_255/0.55)] ring-1 ring-white/10`}
+            className={`enter enter-card relative ${entry.cover_shape === "square" ? "aspect-square w-32 sm:w-36 md:w-48 lg:w-56" : "aspect-[2/3] w-28 sm:w-32 md:w-44 lg:w-48"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_28px_70px_-24px_rgb(165_124_255/0.6),0_12px_40px_-12px_rgb(0_0_0/0.9)] ring-1 ring-white/10`}
             style={{ "--enter-index": 0 } as React.CSSProperties}
           >
             <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} priority fallbackLabel={entry.title} />
           </div>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>
-            <Link href={`/${collection.id}`} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase">{collection.name}</Link>
-            <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words md:text-[2.1rem]">{entry.title}</h1>
+            <Link href={`/${collection.id}`} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase [text-shadow:0_1px_10px_rgb(0_0_0/0.8)]">{collection.name}</Link>
+            <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words [text-shadow:0_2px_18px_rgb(0_0_0/0.65)] md:text-[2.1rem] lg:text-[2.5rem]">{entry.title}</h1>
             {entry.platform ? <p className="mt-1 text-sm text-muted-foreground">{entry.platform}</p> : null}
             {assigned.length ? (
               <ul aria-label="Labels" className="mt-2.5 flex flex-wrap gap-1.5">
@@ -128,8 +133,11 @@ export function EntryHeader({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled={pin.pending} onSelect={() => void pin.toggle()}>
+                  {pin.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />} {pin.pinned ? "Unpin from Home" : "Pin to Home"}
+                </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => { setMoveTarget(""); setMoveError(null); setMoveOpen(true); }}>
-                  <FolderInput aria-hidden /> Move to category
+                  <FolderInput aria-hidden /> Move to collection
                 </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
                   <Trash2 aria-hidden /> Delete entry
@@ -173,18 +181,18 @@ export function EntryHeader({
       <Dialog open={moveOpen} onOpenChange={(open) => { if (!moving) setMoveOpen(open); }}>
         <DialogContent className="rounded-lg">
           <DialogHeader>
-            <DialogTitle>Move to category</DialogTitle>
+            <DialogTitle>Move to collection</DialogTitle>
             <DialogDescription>Workspace content, progress and labels stay with this entry.</DialogDescription>
           </DialogHeader>
           {collections.some((item) => item.id !== entry.collection_id) ? (
             <div className="space-y-2">
               <Label htmlFor="move-entry-category">Destination</Label>
               <Select value={moveTarget} onValueChange={setMoveTarget} disabled={moving}>
-                <SelectTrigger id="move-entry-category" className="w-full"><SelectValue placeholder="Choose a category" /></SelectTrigger>
+                <SelectTrigger id="move-entry-category" className="w-full"><SelectValue placeholder="Choose a collection" /></SelectTrigger>
                 <SelectContent>{collections.filter((item) => item.id !== entry.collection_id).map((item) => <SelectItem key={item.id} value={item.id} className="break-all">{item.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-          ) : <p className="text-sm text-muted-foreground">No other categories.</p>}
+          ) : <p className="text-sm text-muted-foreground">No other collections.</p>}
           {moveError ? <p role="alert" className="text-sm text-rose">{moveError}</p> : null}
           <DialogFooter>
             <Button variant="outline" disabled={moving} onClick={() => setMoveOpen(false)}>Cancel</Button>

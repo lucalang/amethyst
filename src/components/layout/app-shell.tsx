@@ -1,11 +1,25 @@
 import type { ReactNode } from "react";
 import type { LibraryCategory } from "@/lib/collections";
+import { OpeningIntro } from "./opening-intro";
 import { ScrollExitFallback } from "./scroll-exit-fallback";
 import { MobileTabBar, TopNav } from "./top-nav";
 
-export function AppShell({ children, displayName, collections }: { children: ReactNode; displayName: string; collections: LibraryCategory[] }) {
+export function AppShell({
+  children,
+  displayName,
+  collections,
+  userId,
+  introSeenOn,
+}: {
+  children: ReactNode;
+  displayName: string;
+  collections: LibraryCategory[];
+  userId: string;
+  introSeenOn: string | null;
+}) {
   return (
     <div className="flex min-h-dvh flex-col">
+      <OpeningIntro userId={userId} lastSeen={introSeenOn} />
       <a
         href="#main"
         className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"

@@ -24,9 +24,9 @@ export type Database = {
         },"public": {
           Tables: {
             "collections": {
-              Row: { id: string; user_id: string; name: string; legacy_slug: string | null; position: number; created_at: string; updated_at: string }
-              Insert: { id?: string; user_id?: string; name: string; legacy_slug?: string | null; position?: number; created_at?: string; updated_at?: string }
-              Update: { id?: string; user_id?: string; name?: string; legacy_slug?: string | null; position?: number; created_at?: string; updated_at?: string }
+              Row: { id: string; user_id: string; name: string; description: string; legacy_slug: string | null; position: number; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; description?: string; legacy_slug?: string | null; position?: number; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; description?: string; legacy_slug?: string | null; position?: number; created_at?: string; updated_at?: string }
               Relationships: [{ foreignKeyName: "collections_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "entry_visits": {
@@ -123,13 +123,13 @@ isOneToOne: false
                   ]
                 },"users": {
                   Row: {
-                    "preferred_cover_shape": "square" | "portrait","created_at": string,"display_name": string | null,"id": string,"updated_at": string
+                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"created_at": string,"display_name": string | null,"id": string,"updated_at": string
                   }
                   Insert: {
-                    "preferred_cover_shape"?: "square" | "portrait","created_at"?: string,"display_name"?: string | null,"id": string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"created_at"?: string,"display_name"?: string | null,"id": string,"updated_at"?: string
                   }
                   Update: {
-                    "preferred_cover_shape"?: "square" | "portrait","created_at"?: string,"display_name"?: string | null,"id"?: string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"created_at"?: string,"display_name"?: string | null,"id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     

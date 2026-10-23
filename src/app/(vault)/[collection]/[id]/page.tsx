@@ -36,8 +36,9 @@ export default async function EntryPage({ params, searchParams }: Props) {
   const requested = typeof file === "string" ? data.nodes.find((node) => node.id === file && node.kind !== "folder") : undefined;
   const initialId = requested?.id ?? firstFile(buildTree(data.nodes))?.id ?? null;
   const initialFile = initialId ? await loadNodeDetail(ctx.supabase, initialId, id) : null;
-  const [currentCollection, collections, categories, categoryIds] = await Promise.all([
+  const [currentCollection, collections, categories, categoryIds, pin] = await Promise.all([
     loadCollection(ctx, data.entry.collection_id), loadCollections(ctx), loadCategories(ctx, data.entry.collection_id), loadEntryCategoryIds(ctx, id),
+    ctx.supabase.from("entry_pins").select("entry_id").eq("entry_id", id).maybeSingle(),
   ]);
   if (!currentCollection) notFound();
 
@@ -49,6 +50,7 @@ export default async function EntryPage({ params, searchParams }: Props) {
       entry={data.entry}
       categories={categories}
       categoryIds={categoryIds}
+      pinned={Boolean(pin.data)}
       initialNodes={data.nodes}
       initialFile={initialFile}
     />

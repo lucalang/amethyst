@@ -1,4 +1,4 @@
-import { categoryInputSchema } from "@/lib/categories";
+import { collectionInputSchema } from "@/lib/collections";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 
 export async function POST(request: Request) {
@@ -6,10 +6,10 @@ export async function POST(request: Request) {
   if (rejected) return rejected;
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;
-  const parsed = await parseJson(request, categoryInputSchema);
+  const parsed = await parseJson(request, collectionInputSchema);
   if ("response" in parsed) return parsed.response;
-  const { data, error } = await ctx.supabase.from("collections").insert(parsed.data).select("id, name").single();
-  if (error?.code === "23505") return apiError(409, "name_taken", "You already have a category with that name.");
+  const { data, error } = await ctx.supabase.from("collections").insert(parsed.data).select("id, name, description").single();
+  if (error?.code === "23505") return apiError(409, "name_taken", "You already have a collection with that name.");
   if (error) return dbError(error);
   return jsonResponse({ collection: data }, { status: 201 });
 }

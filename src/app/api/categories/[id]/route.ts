@@ -4,7 +4,7 @@ import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireA
 
 type Params = { params: Promise<{ id: string }> };
 
-const notFound = () => apiError(404, "not_found", "Category not found.");
+const notFound = () => apiError(404, "not_found", "Label not found.");
 
 /** Rename; every assignment shows the new name because entries reference the category by id. */
 export async function PATCH(request: Request, { params }: Params) {
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if ("response" in parsed) return parsed.response;
 
   const { data, error } = await ctx.supabase.from("categories").update({ name: parsed.data.name }).eq("id", id).select("id, name").maybeSingle();
-  if (error?.code === "23505") return apiError(409, "conflict", `A category named “${parsed.data.name}” already exists.`);
+  if (error?.code === "23505") return apiError(409, "conflict", `A label named “${parsed.data.name}” already exists.`);
   if (error) return dbError(error);
   return data ? jsonResponse({ category: data }) : notFound();
 }

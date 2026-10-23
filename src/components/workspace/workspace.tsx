@@ -54,6 +54,7 @@ export function EntryWorkspace({
   entry: initialEntry,
   categories,
   categoryIds,
+  pinned,
   initialNodes,
   initialFile,
 }: {
@@ -62,6 +63,7 @@ export function EntryWorkspace({
   entry: Entry;
   categories: Category[];
   categoryIds: string[];
+  pinned: boolean;
   initialNodes: WorkspaceNode[];
   initialFile: NodeDetail | null;
 }) {
@@ -76,6 +78,7 @@ export function EntryWorkspace({
         categories={categories}
         categoryIds={categoryIds}
         totals={checklistTotals(nodes)}
+        pinned={pinned}
         onEntryChange={setEntry}
       />
       <Workspace entry={entry} nodes={nodes} setNodes={setNodes} initialFile={initialFile} />

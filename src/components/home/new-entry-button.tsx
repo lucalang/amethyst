@@ -5,15 +5,16 @@ import { ChevronDown, LibraryBig, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { LibraryCategory } from "@/lib/collections";
+import { cn } from "@/lib/utils";
 
-/** "New entry": goes straight to the only category, or asks which one. */
-export function NewEntryButton({ collections }: { collections: LibraryCategory[] }) {
+/** "New entry": goes straight to the only collection, or asks which one. */
+export function NewEntryButton({ collections, className, label = "New entry" }: { collections: LibraryCategory[]; className?: string; label?: string }) {
   if (collections.length === 0) return null;
   if (collections.length === 1) {
     return (
-      <Button asChild size="sm" className="h-9 gap-2 px-3">
+      <Button asChild size="sm" className={cn("h-9 gap-2 px-3", className)}>
         <Link href={`/${collections[0].id}/new`}>
-          <Plus aria-hidden /> New entry
+          <Plus aria-hidden /> {label}
         </Link>
       </Button>
     );
@@ -21,12 +22,12 @@ export function NewEntryButton({ collections }: { collections: LibraryCategory[]
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" className="h-9 gap-2 px-3">
-          <Plus aria-hidden /> New entry <ChevronDown aria-hidden className="-mr-0.5 size-3.5 opacity-80" />
+        <Button size="sm" className={cn("h-9 gap-2 px-3", className)}>
+          <Plus aria-hidden /> {label} <ChevronDown aria-hidden className="-mr-0.5 size-3.5 opacity-80" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="max-h-80 w-60 overflow-y-auto border border-white/[0.08] bg-surface-raised p-1.5 shadow-xl shadow-black/50">
-        <DropdownMenuLabel className="px-2 py-2 text-xs font-medium text-muted-foreground">Add to category</DropdownMenuLabel>
+        <DropdownMenuLabel className="px-2 py-2 text-xs font-medium text-muted-foreground">Add to collection</DropdownMenuLabel>
         <DropdownMenuSeparator className="mx-0 my-1 bg-white/[0.07]" />
         {collections.map((collection) => (
           <DropdownMenuItem key={collection.id} asChild className="min-h-9 gap-2.5">

@@ -18,7 +18,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
   const ctx = await requireUser();
   const values = Object.fromEntries(["title", "coverUrl", "bannerUrl"].map((key) => [key, String(formData.get(key) ?? "")]));
   const collection = await loadCollection(ctx, String(formData.get("collection") ?? ""));
-  if (!collection) return { status: "error", message: "Category not found.", values };
+  if (!collection) return { status: "error", message: "Collection not found.", values };
 
   const parsed = newEntrySchema.safeParse({
     collectionId: collection.id,
@@ -52,7 +52,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
     const { error: categoriesError } = await ctx.supabase.rpc("set_entry_categories", { p_entry_id: entry.id, p_category_ids: categoryIds });
     if (categoriesError) {
       await ctx.supabase.from("entries").delete().eq("id", entry.id);
-      return { status: "error", message: "A selected category no longer exists. Check the categories and try again.", values };
+      return { status: "error", message: "A selected label no longer exists. Check the labels and try again.", values };
     }
   }
 

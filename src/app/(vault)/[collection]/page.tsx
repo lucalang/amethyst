@@ -14,6 +14,7 @@ import { isLegacyCollection } from "@/lib/collections";
 import { CATEGORY_PARAM } from "@/lib/categories";
 import { loadCategories } from "@/lib/data/categories";
 import { loadLibrary } from "@/lib/data/library";
+import { loadPreferences } from "@/lib/data/preferences";
 import { filterLibrary, librarySearchSchema } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -49,8 +50,12 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     sort: query.sort,
     categories: query[CATEGORY_PARAM],
   });
-  const [library, categories] = await Promise.all([loadLibrary(ctx, collection.id), loadCategories(ctx, collection.id)]);
-  // Ignore ids of categories deleted since the link was made.
+  const [library, categories, preferences] = await Promise.all([
+    loadLibrary(ctx, collection.id),
+    loadCategories(ctx, collection.id),
+    loadPreferences(ctx),
+  ]);
+  // Ignore ids of labels deleted since the link was made.
   search.categories = search.categories.filter((id) => categories.some((category) => category.id === id));
   const visible = filterLibrary(library, search);
   const categoryCounts: Record<string, number> = {};
@@ -67,7 +72,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
               </span>
               <div className="min-w-0">
                 <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-                  <span>Library</span>
+                  <span>Collection</span>
                   <span className="border-l border-white/[0.12] pl-2.5 tabular-nums">
                     {visible.length === library.length ? library.length : `${visible.length} of ${library.length}`}{" "}
                     {library.length === 1 ? "entry" : "entries"}
@@ -76,6 +81,9 @@ export default async function LibraryPage({ params, searchParams }: Props) {
                 <h1 id="library-heading" className="mt-1 text-2xl leading-tight font-semibold tracking-normal break-words md:text-3xl">
                   {search.q ? `“${search.q}” in ${collection.name}` : collection.name}
                 </h1>
+                {collection.description ? (
+                  <p className="mt-2 max-w-[68ch] text-sm leading-6 whitespace-pre-line break-words text-muted-foreground">{collection.description}</p>
+                ) : null}
               </div>
             </div>
             <div className="enter flex w-full shrink-0 items-center gap-2 sm:w-auto" style={{ "--enter-index": 1 } as React.CSSProperties}>
@@ -96,7 +104,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
             <EmptyState
               icon={LibraryBig}
               title="No entries yet"
-              description={collection.name}
+              description={`Add your first entry to ${collection.name}.`}
               action={
                 <Button asChild>
                   <Link href={`/${slug}/new`}>
@@ -120,7 +128,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
             <ul aria-label={collection.name} className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {visible.map((entry, index) => (
                 <li key={entry.id} className="enter enter-card" style={{ "--enter-index": Math.min(index, 8) + 1 } as React.CSSProperties}>
-                  <PosterCard entry={entry} priority={index < 6} />
+                  <PosterCard entry={entry} priority={index < 6} pinStyle={preferences.pinStyle} />
                 </li>
               ))}
             </ul>

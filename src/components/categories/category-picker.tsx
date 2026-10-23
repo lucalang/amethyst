@@ -83,7 +83,7 @@ function CategoryOptions({
       setQuery("");
       setActive(0);
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Could not create the category.");
+      setError(createError instanceof Error ? createError.message : "Could not create the label.");
     } finally {
       setCreating(false);
     }
@@ -353,7 +353,7 @@ export function CategoryFilter({
         />
         <div className="flex items-center justify-between gap-2 border-t border-white/[0.07] px-2 py-1.5">
           <Link
-            href={`/settings?collection=${collectionId}#categories`}
+            href={`/settings/labels?collection=${collectionId}`}
             className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground transition-colors outline-none hover:bg-white/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             <Settings2 aria-hidden className="size-3.5" /> Manage

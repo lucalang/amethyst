@@ -331,7 +331,7 @@ export function ChecklistEditor({
             open={bulkOpen}
             onOpenChange={setBulkOpen}
             title="Add multiple tasks"
-            description={`Each non-empty line becomes a task at the end of “${name}”. Lines starting with “- [x]” are added as completed.`}
+            description={`Each non-empty line becomes a task at the end of “${name}”, in the same order. Lines starting with “- [x]” are added as completed.`}
             confirmLabel="Add tasks"
             onConfirm={addBulk}
           />
@@ -352,7 +352,7 @@ export function ChecklistEditor({
           </div>
         )}
 
-        <AddTask name={name} autoFocus={autoFocus} onAdd={addTasks} />
+        <AddTask name={name} autoFocus={autoFocus} onAdd={addTasks} onAddMultiple={() => setBulkOpen(true)} />
 
         {completed.length > 0 ? (
           <section className="mt-7">
@@ -582,7 +582,17 @@ function TaskRow({
   );
 }
 
-function AddTask({ name, autoFocus, onAdd }: { name: string; autoFocus?: boolean; onAdd: (labels: string[]) => Promise<boolean> }) {
+function AddTask({
+  name,
+  autoFocus,
+  onAdd,
+  onAddMultiple,
+}: {
+  name: string;
+  autoFocus?: boolean;
+  onAdd: (labels: string[]) => Promise<boolean>;
+  onAddMultiple: () => void;
+}) {
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -618,9 +628,10 @@ function AddTask({ name, autoFocus, onAdd }: { name: string; autoFocus?: boolean
   return (
     // Docked like To Do's input: stays reachable at the bottom while scrolling long lists.
     <form onSubmit={submit} className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-[5] mt-1.5 md:bottom-4">
+      <div className="flex items-stretch gap-2">
       <div
         className={cn(
-          "group/add flex min-h-[3.25rem] cursor-text items-center gap-3.5 rounded-lg bg-[#0e0b14] py-1.5 pr-2 pl-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07),0_-10px_28px_-14px_rgb(0_0_0/0.95)] transition-[background-color,box-shadow] duration-200",
+          "group/add flex min-h-[3.25rem] min-w-0 flex-1 cursor-text items-center gap-3.5 rounded-lg bg-[#0e0b14] py-1.5 pr-2 pl-4 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.07),0_-10px_28px_-14px_rgb(0_0_0/0.95)] transition-[background-color,box-shadow] duration-200",
           "hover:bg-[#130f1b] hover:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.25),0_-10px_28px_-14px_rgb(0_0_0/0.95)]",
           "focus-within:bg-[#130f1b] focus-within:shadow-[inset_0_0_0_1px_rgb(165_124_255/0.6),0_0_0_3px_rgb(165_124_255/0.12),0_-10px_28px_-14px_rgb(0_0_0/0.95)]",
         )}
@@ -657,6 +668,18 @@ function AddTask({ name, autoFocus, onAdd }: { name: string; autoFocus?: boolean
             Add
           </Button>
         ) : null}
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onAddMultiple}
+        aria-haspopup="dialog"
+        className="h-auto min-h-[3.25rem] shrink-0 gap-2 rounded-lg border-white/[0.09] bg-[#0e0b14] px-3 text-sm text-foreground/85 shadow-[0_-10px_28px_-14px_rgb(0_0_0/0.95)] hover:translate-y-0 hover:border-amethyst/40 hover:bg-[#130f1b] hover:text-amethyst sm:px-4 [&_svg]:text-amethyst"
+      >
+        <ListPlus aria-hidden />
+        <span className="sm:hidden">Multiple</span>
+        <span className="hidden sm:inline">Add multiple</span>
+      </Button>
       </div>
       <p className="mt-1.5 pl-[3.1rem] text-xs text-muted-foreground empty:hidden" aria-live="polite">
         {lines.length > 1 ? `${lines.length} tasks will be added, one per line.` : draft ? "Enter adds the task. Shift+Enter starts a new line." : ""}

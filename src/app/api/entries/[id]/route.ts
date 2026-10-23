@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (collectionId) {
     const { data: destination, error } = await ctx.supabase.from("collections").select("id").eq("id", collectionId).maybeSingle();
     if (error) return dbError(error);
-    if (!destination) return apiError(404, "not_found", "Destination category not found.");
+    if (!destination) return apiError(404, "not_found", "Destination collection not found.");
   }
 
   const patch = {

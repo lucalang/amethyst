@@ -11,23 +11,28 @@ const VISIT_LIMIT = 7;
 const PIN_LIMIT = 48;
 const TASK_LIMIT = 8;
 const PREVIEW_LIMIT = 3;
+const SHOWCASE_LIMIT = 5;
 
-export type HomePreview = { id: string; title: string; coverUrl: string | null; coverShape: CoverShape };
-export type HomeCollection = { id: string; name: string; entryCount: number; previews: HomePreview[] };
+export type HomePreview = { id: string; title: string; coverUrl: string | null; coverShape: CoverShape; href: string };
+export type HomeCollection = { id: string; name: string; description: string; entryCount: number; previews: HomePreview[] };
 export type HomeTask = { id: string; label: string; dueDate: string; starred: boolean; href: string; entryTitle: string; fileName: string };
 export type HomeContinue = {
   entry: LibraryEntry;
   collectionName: string;
+  bannerUrl: string | null;
   file: { name: string; kind: string } | null;
   href: string;
 };
 export type HomeData = {
+  displayName: string;
   collections: HomeCollection[];
   counts: { collections: number; entries: number; files: number };
   continueEntry: HomeContinue | null;
   recent: LibraryEntry[];
   pinned: LibraryEntry[];
   tasks: HomeTask[];
+  /** Artwork from the user's own archive for the welcome area, most relevant first. */
+  showcase: HomePreview[];
 };
 
 function check<T>(result: { data: T; error: { code?: string } | null }): T {
@@ -38,13 +43,13 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
 /** Everything the Home dashboard shows, scoped to the signed-in user by RLS. */
 export async function loadHome(ctx: AuthContext): Promise<HomeData> {
   const { supabase } = ctx;
-  const [collections, entries, visits, pins, files, tasks] = await Promise.all([
+  const [collections, entries, visits, pins, files, tasks, profile] = await Promise.all([
     loadCollections(ctx),
     fetchAll(
       (from, to) =>
         supabase
           .from("entries")
-          .select("id, collection_id, kind, title, cover_url, cover_shape, created_at, updated_at")
+          .select("id, collection_id, kind, title, cover_url, cover_shape, banner_url, created_at, updated_at")
           .order("updated_at", { ascending: false })
           .order("id")
           .range(from, to),
@@ -63,6 +68,7 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
       .order("id")
       .limit(TASK_LIMIT)
       .then(check),
+    supabase.from("users").select("display_name").eq("id", ctx.userId).maybeSingle().then(check),
   ]);
   if (files.error) throw new Error(`Query failed (${files.error.code ?? "unknown"})`);
 
@@ -110,6 +116,7 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
     continueEntry = {
       entry,
       collectionName: collectionNames.get(entryById.get(entry.id)!.collection_id) ?? "",
+      bannerUrl: entryById.get(entry.id)!.banner_url,
       file: file ? { name: file.name, kind: file.kind } : null,
       href: file ? `${entryPath(entry)}?file=${file.id}` : entryPath(entry),
     };
@@ -122,15 +129,33 @@ export async function loadHome(ctx: AuthContext): Promise<HomeData> {
     else byCollection.set(entry.collection_id, [entry]);
   }
 
+  const preview = (entry: (typeof entries)[number]): HomePreview => ({
+    id: entry.id,
+    title: entry.title,
+    coverUrl: entry.cover_url,
+    coverShape: entry.cover_shape,
+    href: entryPath(entry),
+  });
+
+  // Continue first, then pinned and recently opened, then the most recently updated, all with artwork.
+  const showcaseIds = new Set<string>();
+  for (const id of [...visitRows.map((visit) => visit.entry_id).slice(0, 1), ...pinRows.map((pin) => pin.entry_id), ...visitRows.map((visit) => visit.entry_id), ...entries.map((entry) => entry.id)]) {
+    if (showcaseIds.size >= SHOWCASE_LIMIT) break;
+    if (entryById.get(id)?.cover_url) showcaseIds.add(id);
+  }
+
   return {
+    displayName: profile?.display_name?.trim() || ctx.email?.split("@")[0] || "",
+    showcase: [...showcaseIds].map((id) => preview(entryById.get(id)!)),
     collections: collections.map((collection) => {
       const list = byCollection.get(collection.id) ?? [];
       const previews = [...list.filter((entry) => entry.cover_url), ...list.filter((entry) => !entry.cover_url)].slice(0, PREVIEW_LIMIT);
       return {
         id: collection.id,
         name: collection.name,
+        description: collection.description,
         entryCount: list.length,
-        previews: previews.map((entry) => ({ id: entry.id, title: entry.title, coverUrl: entry.cover_url, coverShape: entry.cover_shape })),
+        previews: previews.map(preview),
       };
     }),
     counts: { collections: collections.length, entries: entries.length, files: files.count ?? 0 },

@@ -12,15 +12,15 @@ const hasControlCharacters = (value: string) => [...value].some((char) => char.c
 export const categoryNameSchema = z
   .string()
   .trim()
-  .min(1, "Enter a category name.")
-  .max(MAX_CATEGORY_NAME_LENGTH, `Category names can be at most ${MAX_CATEGORY_NAME_LENGTH} characters.`)
-  .refine((value) => !hasControlCharacters(value), "Category names cannot contain line breaks.");
+  .min(1, "Enter a name.")
+  .max(MAX_CATEGORY_NAME_LENGTH, `Names can be at most ${MAX_CATEGORY_NAME_LENGTH} characters.`)
+  .refine((value) => !hasControlCharacters(value), "Names cannot contain line breaks.");
 
 export const categoryInputSchema = z.object({ name: categoryNameSchema }).strict();
 export const categoryCreateSchema = categoryInputSchema.extend({ collectionId: z.uuid() });
 
 export const entryCategoriesSchema = z
-  .object({ categoryIds: z.array(z.uuid()).max(MAX_CATEGORIES_PER_ENTRY, `An entry can have at most ${MAX_CATEGORIES_PER_ENTRY} categories.`) })
+  .object({ categoryIds: z.array(z.uuid()).max(MAX_CATEGORIES_PER_ENTRY, `An entry can have at most ${MAX_CATEGORIES_PER_ENTRY} labels.`) })
   .strict();
 
 /** Case-insensitive identity of a name; the database enforces the same per account. */

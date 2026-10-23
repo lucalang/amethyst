@@ -146,14 +146,26 @@ export function EditorToolbar({
       <ToolButton label="Task list" onRun={run((view) => toggleList(view, "task"))}>
         <ListChecks aria-hidden />
       </ToolButton>
-      <ToolButton label="Insert checklist from lines" onRun={() => setLinesOpen(true)}>
-        <ListPlus aria-hidden />
-      </ToolButton>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => setLinesOpen(true)}
+            className="ml-0.5 flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-white/[0.08] px-2 text-xs font-medium text-muted-foreground transition-[color,background-color,border-color,scale] duration-150 hover:border-amethyst/35 hover:bg-amethyst/12 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-95 pointer-coarse:h-10 [&_svg]:size-4"
+          >
+            <ListPlus aria-hidden className="text-amethyst" />
+            Add tasks
+          </button>
+        </TooltipTrigger>
+        <TooltipContent>Paste a list: one task per line</TooltipContent>
+      </Tooltip>
       <TaskLinesDialog
         open={linesOpen}
         onOpenChange={setLinesOpen}
-        title="Insert checklist from lines"
-        description="Each non-empty line becomes a Markdown task at the cursor. Lines starting with “- [x]” stay completed."
+        title="Add multiple tasks"
+        description="Each non-empty line becomes a Markdown task at the cursor, in the same order. Lines starting with “- [x]” stay completed."
         confirmLabel="Insert tasks"
         onConfirm={async (tasks) => {
           const view = getView();
