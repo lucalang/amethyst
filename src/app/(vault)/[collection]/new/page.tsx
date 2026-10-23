@@ -1,43 +1,18 @@
-import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { PageContainer, PageHeader } from "@/components/layout/app-shell";
-import { loadCollection } from "@/lib/data/collections";
-import { isLegacyCollection } from "@/lib/collections";
-import { loadCategories } from "@/lib/data/categories";
-import { loadTemplates } from "@/lib/data/templates";
+import { z } from "zod";
+import { collectionPath } from "@/lib/collections";
+import { loadCollections } from "@/lib/data/collections";
 import { requireUser } from "@/lib/supabase/auth";
-import { NewEntryForm } from "./new-entry-form";
 
-type Props = { params: Promise<{ collection: string }> };
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const collection = await loadCollection(await requireUser(), (await params).collection);
-  return { title: collection ? `New entry in ${collection.name}` : "Not found" };
-}
-
-export default async function NewEntryPage({ params }: Props) {
-  const { collection: slug } = await params;
-  const ctx = await requireUser();
-  const collection = await loadCollection(ctx, slug);
+// Old /<collection id>/new links now live at /collections/<slug>/new.
+export default async function LegacyNewEntryPage({ params }: { params: Promise<{ collection: string }> }) {
+  const { collection: param } = await params;
+  const collections = await loadCollections(await requireUser());
+  const isId = z.uuid().safeParse(param).success;
+  const collection = collections.find((item) => (isId ? item.id === param : item.legacy_slug === param));
   if (!collection) {
-    if (isLegacyCollection(slug)) redirect("/");
+    if (!isId) redirect("/");
     notFound();
   }
-  if (slug !== collection.id) redirect(`/${collection.id}/new`);
-  const [categories, templates, profileResult] = await Promise.all([
-    loadCategories(ctx, collection.id),
-    loadTemplates(ctx),
-    ctx.supabase.from("users").select("preferred_cover_shape").eq("id", ctx.userId).single(),
-  ]);
-  const { data: profile, error } = profileResult;
-  if (error) throw new Error("Could not load your cover shape preference.");
-  return (
-    <PageContainer>
-      <PageHeader
-        title={`New entry in ${collection.name}`}
-        description="A name is all it needs. Artwork is optional, and the workspace can start empty or from one of your templates."
-      />
-      <NewEntryForm collection={collection} categories={categories} templates={templates} defaultCoverShape={profile.preferred_cover_shape} />
-    </PageContainer>
-  );
+  redirect(`${collectionPath(collection)}/new`);
 }

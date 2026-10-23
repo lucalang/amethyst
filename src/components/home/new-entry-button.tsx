@@ -6,7 +6,7 @@ import { ClientCollectionIcon } from "@/components/categories/collection-identit
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { accentStyle } from "@/lib/collection-identity";
-import type { LibraryCategory } from "@/lib/collections";
+import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
 
 /** "New entry": goes straight to the only collection, or asks which one. */
@@ -15,7 +15,7 @@ export function NewEntryButton({ collections, className, label = "New entry" }: 
   if (collections.length === 1) {
     return (
       <Button asChild size="sm" className={cn("h-9 gap-2 px-3", className)}>
-        <Link href={`/${collections[0].id}/new`}>
+        <Link href={`${collectionPath(collections[0])}/new`}>
           <Plus aria-hidden /> {label}
         </Link>
       </Button>
@@ -33,7 +33,7 @@ export function NewEntryButton({ collections, className, label = "New entry" }: 
         <DropdownMenuSeparator className="mx-0 my-1 bg-white/[0.07]" />
         {collections.map((collection) => (
           <DropdownMenuItem key={collection.id} asChild className="min-h-9 gap-2.5">
-            <Link href={`/${collection.id}/new`}>
+            <Link href={`${collectionPath(collection)}/new`}>
               <span aria-hidden style={accentStyle(collection.accent_color)} className={cn("size-4 shrink-0", collection.accent_color ? "text-[var(--ca)]" : "text-amethyst/80")}>
                 <ClientCollectionIcon icon={collection.icon} className="size-full" />
               </span>

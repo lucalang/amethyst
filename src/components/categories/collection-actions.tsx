@@ -19,7 +19,7 @@ import { errorMessage } from "@/components/workspace/client-utils";
 import { apiFetch } from "@/lib/api-client";
 import { MAX_CATEGORY_NAME_LENGTH } from "@/lib/categories";
 import { accentStyle } from "@/lib/collection-identity";
-import { collectionInputSchema, MAX_COLLECTION_DESCRIPTION_LENGTH, type LibraryCategory } from "@/lib/collections";
+import { collectionInputSchema, collectionPath, MAX_COLLECTION_DESCRIPTION_LENGTH, type LibraryCategory } from "@/lib/collections";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
 import { NO_TEMPLATE, type TemplateSummary } from "@/lib/templates";
 import { cn } from "@/lib/utils";
@@ -82,7 +82,15 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
               method: collection ? "PATCH" : "POST", json: parsed.data,
             });
             onOpenChange(false);
-            if (!collection) router.push(`/${result.collection.id}`);
+            if (!collection) router.push(collectionPath(result.collection));
+            else if (result.collection.slug !== collection.slug) {
+              // Renamed: move to the new readable address (the old one keeps redirecting).
+              const current = collectionPath(collection);
+              const { pathname, search } = window.location;
+              if (pathname === current || pathname.startsWith(`${current}/`)) {
+                router.replace(`${collectionPath(result.collection)}${pathname.slice(current.length)}${search}`);
+              }
+            }
             router.refresh();
           } catch (saveError) { setError(errorMessage(saveError)); }
           finally { setPending(false); }
@@ -248,7 +256,8 @@ export function CollectionActions({ collection, entryCount, className }: { colle
       setStep(null);
       setTyped("");
       toast.success(populated ? `Deleted “${collection.name}” and ${entriesLabel}` : `Deleted “${collection.name}”`);
-      if (pathname === `/${collection.id}` || pathname.startsWith(`/${collection.id}/`)) router.push("/");
+      const current = collectionPath(collection);
+      if (pathname === current || pathname.startsWith(`${current}/`)) router.push("/");
       router.refresh();
     } catch (deleteError) {
       setError(errorMessage(deleteError));

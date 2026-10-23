@@ -16,6 +16,7 @@ const SHOWCASE_LIMIT = 5;
 export type HomePreview = { id: string; title: string; coverUrl: string | null; coverShape: CoverShape; href: string };
 export type HomeCollection = {
   id: string;
+  slug: string;
   name: string;
   description: string;
   icon: string | null;
@@ -66,7 +67,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
       (from, to) =>
         supabase
           .from("entries")
-          .select("id, collection_id, kind, title, cover_url, cover_shape, banner_url, progress_label, created_at, updated_at")
+          .select("id, slug, collection_id, kind, title, cover_url, cover_shape, banner_url, progress_label, created_at, updated_at")
           .order("updated_at", { ascending: false })
           .order("id")
           .range(from, to),
@@ -110,6 +111,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
     const row = summaryById.get(id);
     return {
       id: entry.id,
+      slug: entry.slug,
       collection_id: entry.collection_id,
       kind: entry.kind as LibraryEntry["kind"],
       title: entry.title,
@@ -174,6 +176,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
       const previews = [...list.filter((entry) => entry.cover_url), ...list.filter((entry) => !entry.cover_url)].slice(0, PREVIEW_LIMIT);
       return {
         id: collection.id,
+        slug: collection.slug,
         name: collection.name,
         description: collection.description,
         icon: collection.icon ?? null,

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { LibraryCategory } from "@/lib/collections";
+import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import type { Category } from "@/lib/categories";
 import type { CoverShape } from "@/lib/cover-shape";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
@@ -170,7 +170,7 @@ export function NewEntryForm({
       <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-3 border-t border-white/[0.06] px-5 py-4 md:px-7">
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" className="h-10 px-3.5">
-            <Link href={`/${collection.id}`}>Cancel</Link>
+            <Link href={collectionPath(collection)}>Cancel</Link>
           </Button>
           <Button type="submit" disabled={pending || shapeBusy} className="h-10 px-4">
             {pending ? <Loader2 aria-hidden className="animate-spin" /> : <Plus aria-hidden />}

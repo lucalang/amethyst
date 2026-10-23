@@ -293,6 +293,236 @@
   color-scheme: dark;
 }
 
+/* Ocean Glass: deep-sea navy, frosted surfaces, aqua accent and a warm coral highlight. */
+:root:has([data-app-theme="ocean"]),
+[data-theme-preview="ocean"] {
+  --ink-rgb: 220 242 248;
+  --paper-rgb: 3 14 22;
+  --accent-rgb: 79 214 236;
+  --accent-soft-rgb: 150 230 244;
+  --rose-rgb: 255 154 133;
+  --shadow-rgb: 0 6 12;
+  --shadow-alpha: 1;
+  --primary-hi: #8ce6f4;
+  --primary-lo: #23a9c4;
+  --strong: #effcff;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-manrope);
+  --heading-adjust: none;
+  --heading-tracking: -0.02em;
+  --radius-unit: 1;
+  --background: #030e16;
+  --foreground: #e3f3f7;
+  --surface: #071a26;
+  --surface-raised: #0c2433;
+  --card: #071a26;
+  --card-foreground: #e3f3f7;
+  --popover: #0d2636;
+  --popover-foreground: #e3f3f7;
+  --primary: #4fd6ec;
+  --primary-foreground: #02161c;
+  --secondary: #0f2a3a;
+  --secondary-foreground: #e3f3f7;
+  --muted: #0a2130;
+  --muted-foreground: #92b4c1;
+  --accent: #123246;
+  --accent-foreground: #e3f3f7;
+  --destructive: #ff7b6e;
+  --border: rgb(var(--ink-rgb) / 0.11);
+  --input: rgb(var(--ink-rgb) / 0.18);
+  --ring: #4fd6ec;
+  --amethyst: #4fd6ec;
+  --amethyst-foreground: #02161c;
+  --rose: #ff9a85;
+  --rose-foreground: #2a0a04;
+  color-scheme: dark;
+}
+
+/* Crimson Night: near-black with a red glow, crimson accent, cool steel secondary. */
+:root:has([data-app-theme="crimson"]),
+[data-theme-preview="crimson"] {
+  --ink-rgb: 255 236 237;
+  --paper-rgb: 10 4 5;
+  --accent-rgb: 255 77 94;
+  --accent-soft-rgb: 255 140 150;
+  --rose-rgb: 185 196 217;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --primary-hi: #ff8a94;
+  --primary-lo: #d61f36;
+  --strong: #fff5f5;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-manrope);
+  --heading-adjust: none;
+  --heading-tracking: -0.035em;
+  --radius-unit: 0.75;
+  --background: #0a0405;
+  --foreground: #f4e6e7;
+  --surface: #140809;
+  --surface-raised: #1d0c0e;
+  --card: #140809;
+  --card-foreground: #f4e6e7;
+  --popover: #200e10;
+  --popover-foreground: #f4e6e7;
+  --primary: #ff4d5e;
+  --primary-foreground: #1f0306;
+  --secondary: #221012;
+  --secondary-foreground: #f4e6e7;
+  --muted: #1a0b0d;
+  --muted-foreground: #b8a1a4;
+  --accent: #2b1215;
+  --accent-foreground: #f4e6e7;
+  --destructive: #ff8a4d;
+  --border: rgb(var(--ink-rgb) / 0.1);
+  --input: rgb(var(--ink-rgb) / 0.17);
+  --ring: #ff4d5e;
+  --amethyst: #ff4d5e;
+  --amethyst-foreground: #1f0306;
+  --rose: #b9c4d9;
+  --rose-foreground: #0d1220;
+  color-scheme: dark;
+}
+
+/* Soft Sakura: pale blossom page, cherry accent, leaf-green secondary, serif display. */
+:root:has([data-app-theme="sakura"]),
+[data-theme-preview="sakura"] {
+  --ink-rgb: 58 26 38;
+  --paper-rgb: 255 245 247;
+  --accent-rgb: 184 51 106;
+  --accent-soft-rgb: 214 92 142;
+  --rose-rgb: 77 122 69;
+  --shadow-rgb: 120 40 70;
+  --shadow-alpha: 0.24;
+  --primary-hi: #d9558c;
+  --primary-lo: #9c2558;
+  --strong: #2a0f1a;
+  --theme-dark: 0;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-playfair);
+  --heading-adjust: none;
+  --heading-tracking: -0.01em;
+  --radius-unit: 1;
+  --background: #fff5f7;
+  --foreground: #3a1a26;
+  --surface: #fffafb;
+  --surface-raised: #ffffff;
+  --card: #fffafb;
+  --card-foreground: #3a1a26;
+  --popover: #ffffff;
+  --popover-foreground: #3a1a26;
+  --primary: #b8336a;
+  --primary-foreground: #fff7fa;
+  --secondary: #fbe7ed;
+  --secondary-foreground: #3a1a26;
+  --muted: #f9e8ee;
+  --muted-foreground: #6e5560;
+  --accent: #f6dce5;
+  --accent-foreground: #3a1a26;
+  --destructive: #b42318;
+  --border: rgb(var(--ink-rgb) / 0.13);
+  --input: rgb(var(--ink-rgb) / 0.22);
+  --ring: #b8336a;
+  --amethyst: #b8336a;
+  --amethyst-foreground: #fff7fa;
+  --rose: #4d7a45;
+  --rose-foreground: #f6fff2;
+  color-scheme: light;
+}
+
+/* Monochrome OLED: true black, white accent, neutral greys only. */
+:root:has([data-app-theme="oled"]),
+[data-theme-preview="oled"] {
+  --ink-rgb: 255 255 255;
+  --paper-rgb: 0 0 0;
+  --accent-rgb: 240 240 240;
+  --accent-soft-rgb: 200 200 200;
+  --rose-rgb: 160 160 160;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --primary-hi: #ffffff;
+  --primary-lo: #cfcfcf;
+  --strong: #ffffff;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-manrope);
+  --heading-adjust: none;
+  --heading-tracking: -0.03em;
+  --radius-unit: 0.5;
+  --background: #000000;
+  --foreground: #ededed;
+  --surface: #050505;
+  --surface-raised: #0d0d0d;
+  --card: #050505;
+  --card-foreground: #ededed;
+  --popover: #0f0f0f;
+  --popover-foreground: #ededed;
+  --primary: #f0f0f0;
+  --primary-foreground: #000000;
+  --secondary: #141414;
+  --secondary-foreground: #ededed;
+  --muted: #0d0d0d;
+  --muted-foreground: #a3a3a3;
+  --accent: #1a1a1a;
+  --accent-foreground: #ededed;
+  --destructive: #ff6b6b;
+  --border: rgb(var(--ink-rgb) / 0.14);
+  --input: rgb(var(--ink-rgb) / 0.22);
+  --ring: #ffffff;
+  --amethyst: #f0f0f0;
+  --amethyst-foreground: #000000;
+  --rose: #a0a0a0;
+  --rose-foreground: #000000;
+  color-scheme: dark;
+}
+
+/* Mint Paper: cool mint page, deep green ink, plum secondary. */
+:root:has([data-app-theme="mint"]),
+[data-theme-preview="mint"] {
+  --ink-rgb: 16 38 30;
+  --paper-rgb: 236 246 240;
+  --accent-rgb: 29 107 82;
+  --accent-soft-rgb: 52 140 110;
+  --rose-rgb: 138 63 107;
+  --shadow-rgb: 20 60 45;
+  --shadow-alpha: 0.26;
+  --primary-hi: #2f8a6c;
+  --primary-lo: #14523e;
+  --strong: #08170f;
+  --theme-dark: 0;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-manrope);
+  --heading-adjust: none;
+  --heading-tracking: -0.025em;
+  --radius-unit: 1;
+  --background: #ecf6f0;
+  --foreground: #10261e;
+  --surface: #f6fbf8;
+  --surface-raised: #ffffff;
+  --card: #f6fbf8;
+  --card-foreground: #10261e;
+  --popover: #ffffff;
+  --popover-foreground: #10261e;
+  --primary: #1d6b52;
+  --primary-foreground: #f2fbf6;
+  --secondary: #dcede4;
+  --secondary-foreground: #10261e;
+  --muted: #e1efe8;
+  --muted-foreground: #4b5f57;
+  --accent: #d3e8dd;
+  --accent-foreground: #10261e;
+  --destructive: #b42318;
+  --border: rgb(var(--ink-rgb) / 0.14);
+  --input: rgb(var(--ink-rgb) / 0.24);
+  --ring: #1d6b52;
+  --amethyst: #1d6b52;
+  --amethyst-foreground: #f2fbf6;
+  --rose: #8a3f6b;
+  --rose-foreground: #fff5fb;
+  color-scheme: light;
+}
+
 /* Theme previews paint their own page, since text and fonts are inherited as resolved values. */
 [data-theme-preview] {
   background: var(--background);
@@ -336,6 +566,31 @@
 :root:has([data-app-theme="rose-noir"]) body {
   background-image: radial-gradient(80rem 40rem at 85% -10%, rgb(var(--accent-rgb) / 0.07), transparent 70%);
   background-attachment: fixed;
+}
+:root:has([data-app-theme="ocean"]) body {
+  background-image:
+    radial-gradient(70rem 36rem at 10% -10%, rgb(var(--accent-rgb) / 0.09), transparent 70%),
+    radial-gradient(60rem 30rem at 100% 110%, rgb(var(--rose-rgb) / 0.05), transparent 70%);
+  background-attachment: fixed;
+}
+:root:has([data-app-theme="ocean"]) .glass {
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
+}
+:root:has([data-app-theme="crimson"]) body {
+  background-image: radial-gradient(90rem 34rem at 50% -14%, rgb(var(--accent-rgb) / 0.1), transparent 70%);
+  background-attachment: fixed;
+}
+:root:has([data-app-theme="sakura"]) body {
+  background-image: radial-gradient(70rem 34rem at 90% -10%, rgb(var(--accent-soft-rgb) / 0.1), transparent 70%);
+  background-attachment: fixed;
+}
+[data-theme-preview="ocean"] {
+  background-image: radial-gradient(circle at 15% 0%, rgb(var(--accent-rgb) / 0.14), transparent 65%);
+}
+[data-theme-preview="crimson"] {
+  background-image: radial-gradient(circle at 50% -20%, rgb(var(--accent-rgb) / 0.16), transparent 65%);
 }
 
 @layer base {

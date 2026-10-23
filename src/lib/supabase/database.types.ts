@@ -24,13 +24,19 @@ export type Database = {
         },"public": {
           Tables: {
             "collections": {
-              Row: { id: string; user_id: string; name: string; description: string; legacy_slug: string | null; position: number; icon: string | null; accent_color: string | null; banner_url: string | null; progress_label: string | null; default_template_id: string | null; created_at: string; updated_at: string }
-              Insert: { id?: string; user_id?: string; name: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; created_at?: string; updated_at?: string }
-              Update: { id?: string; user_id?: string; name?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; created_at?: string; updated_at?: string }
+              Row: { id: string; user_id: string; name: string; slug: string; description: string; legacy_slug: string | null; position: number; icon: string | null; accent_color: string | null; banner_url: string | null; progress_label: string | null; default_template_id: string | null; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; created_at?: string; updated_at?: string }
               Relationships: [
                 { foreignKeyName: "collections_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
                 { foreignKeyName: "collections_default_template_fkey"; columns: ["user_id", "default_template_id"]; isOneToOne: false; referencedRelation: "workspace_templates"; referencedColumns: ["user_id", "id"] },
               ]
+            },
+            "slug_redirects": {
+              Row: { user_id: string; kind: "collection" | "entry"; slug: string; target_id: string; created_at: string }
+              Insert: { user_id: string; kind: "collection" | "entry"; slug: string; target_id: string; created_at?: string }
+              Update: { user_id?: string; kind?: "collection" | "entry"; slug?: string; target_id?: string; created_at?: string }
+              Relationships: [{ foreignKeyName: "slug_redirects_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "workspace_templates": {
               Row: { id: string; user_id: string; name: string; structure: NonNullable<Json>; created_at: string; updated_at: string }
@@ -76,13 +82,13 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
-                    "cover_shape": "square" | "portrait","collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"progress_label": string | null,"title": string,"updated_at": string,"user_id": string,"version": number
+                    "cover_shape": "square" | "portrait","collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"progress_label": string | null,"slug": string,"title": string,"updated_at": string,"user_id": string,"version": number
                   }
                   Insert: {
-                    "cover_shape"?: "square" | "portrait","collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "cover_shape"?: "square" | "portrait","collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Update: {
-                    "cover_shape"?: "square" | "portrait","collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "cover_shape"?: "square" | "portrait","collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {

@@ -29,6 +29,27 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    id: "2026-10-24-themes-urls",
+    date: "2026-10-24",
+    title: "Five new themes and readable page addresses",
+    summary: "Pick from five new light and dark themes, and pages now have addresses you can read, like /collections/anime and /entries/one-piece.",
+    added: [
+      {
+        text: "Five new themes: Ocean Glass (deep-sea navy with aqua and coral), Crimson Night (near-black with crimson and steel), Monochrome OLED (true black and white, no color), Soft Sakura (light blossom pink) and Mint Paper (light cool mint). Your current theme stays as it is, and your own editor and heading colors still apply.",
+        where: "Settings → Themes",
+        link: { href: "/settings/themes", label: "Open Themes" },
+      },
+    ],
+    improved: [
+      {
+        text: "Collections and entries now have readable addresses based on their names, such as /collections/anime and /entries/one-piece. Entries with the same name get a short number (one-piece-2).",
+      },
+      {
+        text: "Saved links keep working: old addresses redirect to the new ones, and renaming a collection or entry keeps its previous address pointing to it.",
+      },
+    ],
+  },
+  {
     id: "2026-10-23-showcase",
     date: "2026-10-23",
     title: "Showcase, a closer look at artwork and artwork frames",

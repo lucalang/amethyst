@@ -29,7 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
-import { entryPath, type LibraryCategory } from "@/lib/collections";
+import { collectionPath, entryPath, type LibraryCategory } from "@/lib/collections";
 import type { CoverShape } from "@/lib/cover-shape";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
 import type { Tables } from "@/lib/supabase/database.types";
@@ -98,7 +98,7 @@ export function EntryHeader({
             <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} priority fallbackLabel={entry.title} />
           </div>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>
-            <Link href={`/${collection.id}`} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.8*var(--shadow-alpha)))]">{collection.name}</Link>
+            <Link href={collectionPath(collection)} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.8*var(--shadow-alpha)))]">{collection.name}</Link>
             <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words [text-shadow:0_2px_18px_rgb(var(--shadow-rgb)/calc(0.65*var(--shadow-alpha)))] md:text-[2.1rem] lg:text-[2.5rem]">{entry.title}</h1>
             {entry.platform ? <p className="mt-1 text-sm text-muted-foreground">{entry.platform}</p> : null}
             {assigned.length ? (
@@ -106,7 +106,7 @@ export function EntryHeader({
                 {assigned.map((category) => (
                   <li key={category.id} className="min-w-0">
                     <Link
-                      href={`/${collection.id}?${CATEGORY_PARAM}=${category.id}`}
+                      href={`${collectionPath(collection)}?${CATEGORY_PARAM}=${category.id}`}
                       title={`Show entries in “${category.name}”`}
                       className="group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full bg-amethyst/[0.1] px-2.5 text-xs font-medium text-foreground/90 ring-1 ring-amethyst/25 transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:bg-amethyst/20 hover:text-foreground hover:ring-amethyst/60 hover:shadow-[0_6px_18px_-8px_rgb(var(--accent-rgb)/0.8)] focus-visible:ring-2 focus-visible:ring-ring"
                     >
@@ -168,6 +168,8 @@ export function EntryHeader({
               json: { ...values, expectedVersion: entry.version },
             });
             onEntryChange(updated);
+            // A rename gives the entry a new readable address; the old one keeps redirecting.
+            if (updated.slug !== entry.slug) router.replace(`${entryPath(updated)}${window.location.search}`);
           }
           const before = assigned.map((category) => category.id).sort().join();
           if (selected.map((category) => category.id).sort().join() !== before) {
@@ -228,7 +230,7 @@ export function EntryHeader({
               onClick={async () => {
                 try {
                   await apiFetch(`/api/entries/${entry.id}`, { method: "DELETE" });
-                  router.push(`/${collection.id}`);
+                  router.push(collectionPath(collection));
                   router.refresh();
                 } catch (error) {
                   toast.error(errorMessage(error));

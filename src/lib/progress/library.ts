@@ -12,6 +12,8 @@ export type EntrySummary = {
 
 export type LibraryEntry = {
   id: string;
+  /** Readable URL segment (see entryPath). */
+  slug?: string;
   collection_id?: string;
   kind: EntryKind;
   title: string;

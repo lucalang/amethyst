@@ -17,8 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { accentStyle } from "@/lib/collection-identity";
-import type { LibraryCategory } from "@/lib/collections";
+import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
+import { useCurrentCollectionId } from "./current-collection";
 
 /** Server-rendered collection icons keyed by collection id. */
 type CollectionIcons = Record<string, ReactNode>;
@@ -41,7 +42,7 @@ export function BrandMark({ className }: { className?: string }) {
 }
 
 export function TopNav({ displayName, collections, icons = {} }: { displayName: string; collections: LibraryCategory[]; icons?: CollectionIcons }) {
-  const pathname = usePathname();
+  const currentId = useCurrentCollectionId(collections);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-black/85 backdrop-blur-md">
@@ -52,8 +53,8 @@ export function TopNav({ displayName, collections, icons = {} }: { displayName: 
 
         <nav aria-label="Collections" className="collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4 md:flex">
           {collections.map((item) => {
-            const href = `/${item.id}`;
-            const active = isActive(pathname, href);
+            const href = collectionPath(item);
+            const active = item.id === currentId;
             const accent = accentStyle(item.accent_color);
             return (
               <Link
@@ -120,13 +121,14 @@ export function TopNav({ displayName, collections, icons = {} }: { displayName: 
 
 export function MobileTabBar({ collections, icons = {} }: { collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const pathname = usePathname();
+  const currentId = useCurrentCollectionId(collections);
   const settingsActive = isActive(pathname, "/settings");
   return (
     <nav aria-label="Primary" className="glass fixed inset-x-0 bottom-0 z-40 flex border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden">
       <ul className="collection-nav-strip flex min-w-0 flex-1 overflow-x-auto px-1">
         {collections.map((collection) => {
-          const href = `/${collection.id}`;
-          const active = isActive(pathname, href);
+          const href = collectionPath(collection);
+          const active = collection.id === currentId;
           const accent = accentStyle(collection.accent_color);
           return (
             <li key={collection.id} className="w-24 shrink-0">

@@ -15,7 +15,7 @@ import { ProgressMeter } from "@/components/media/progress-meter";
 import { accentStyle } from "@/lib/collection-identity";
 import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomeFeaturedEntry, type HomePreview } from "@/lib/data/home";
 import { loadPreferences } from "@/lib/data/preferences";
-import type { LibraryCategory } from "@/lib/collections";
+import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import type { HomeSectionId } from "@/lib/preferences";
 import { entryProgress } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
@@ -263,7 +263,7 @@ function CollectionCard({ collection }: { collection: HomeCollection }) {
   const accent = accentStyle(collection.accentColor);
   return (
     <Link
-      href={`/${collection.id}`}
+      href={collectionPath(collection)}
       title={collection.name}
       style={accent}
       className={cn(
@@ -381,7 +381,7 @@ export default async function HomePage() {
   const chosen = preferences.homeFeatured;
   const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null, preferences.homeFanCollections);
   const { pinStyle } = preferences;
-  const categories = home.collections.map(({ id, name, description }) => ({ id, name, description }));
+  const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const hasEntries = home.counts.entries > 0;
   const featuredMissing = chosen?.kind === "entry" && !home.featured;
   let index = 1;

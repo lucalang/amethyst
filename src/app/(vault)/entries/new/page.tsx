@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { collectionPath } from "@/lib/collections";
 import { loadCollections } from "@/lib/data/collections";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -7,5 +8,5 @@ export default async function LegacyNewEntryPage({ searchParams }: { searchParam
   const collections = await loadCollections(await requireUser());
   const legacy = kind === "game" ? "games" : kind === "anime" ? "anime" : kind === "custom" ? "other" : null;
   const collection = collections.find((item) => item.legacy_slug === legacy) ?? collections[0];
-  redirect(collection ? `/${collection.id}/new` : "/");
+  redirect(collection ? `${collectionPath(collection)}/new` : "/");
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { settingsStyle } from "@/lib/appearance";
 import type { LibraryCategory } from "@/lib/collections";
 import type { Preferences } from "@/lib/preferences";
+import { CurrentCollectionProvider } from "./current-collection";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { OpeningIntro } from "./opening-intro";
 import { ScrollExitFallback } from "./scroll-exit-fallback";
@@ -29,6 +30,7 @@ export function AppShell({
   const icons = collectionIcons;
   return (
     <SettingsProvider value={preferences}>
+      <CurrentCollectionProvider>
       <div
         className="flex min-h-dvh flex-col"
         data-app-theme={preferences.theme}
@@ -51,6 +53,7 @@ export function AppShell({
         <MobileTabBar collections={collections} icons={icons} />
         <ScrollExitFallback />
       </div>
+      </CurrentCollectionProvider>
     </SettingsProvider>
   );
 }

@@ -5,6 +5,7 @@ import { ArrangeCollectionsButton } from "@/components/categories/arrange-collec
 import { CollectionActions, NewCategoryButton } from "@/components/categories/collection-actions";
 import { CollectionIcon } from "@/components/categories/collection-icon";
 import { accentStyle } from "@/lib/collection-identity";
+import { collectionPath } from "@/lib/collections";
 import { loadCollectionEntryCounts, loadCollections } from "@/lib/data/collections";
 import { requireUser } from "@/lib/supabase/auth";
 import { cn } from "@/lib/utils";
@@ -35,7 +36,7 @@ export default async function CollectionsSettingsPage() {
             const accent = accentStyle(item.accent_color);
             return (
               <li key={item.id} style={accent} className="group/collection flex items-center gap-3 px-3 transition-colors hover:bg-white/[0.025] focus-within:bg-white/[0.025]">
-                <Link href={`/${item.id}`} title={item.name} className="flex min-h-18 min-w-0 flex-1 items-center gap-3.5 py-3.5">
+                <Link href={collectionPath(item)} title={item.name} className="flex min-h-18 min-w-0 flex-1 items-center gap-3.5 py-3.5">
                   <span
                     aria-hidden
                     className={cn(

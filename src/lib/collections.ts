@@ -8,6 +8,8 @@ import { artworkUrl } from "@/lib/validation/entries";
 export type LibraryCategory = {
   id: string;
   name: string;
+  /** Readable URL segment, unique per account; assigned by the database. */
+  slug?: string;
   description?: string;
   /** Lucide icon name; null keeps the default library icon. */
   icon?: string | null;
@@ -56,7 +58,7 @@ export const collectionInputSchema = z
 export type CollectionInput = z.input<typeof collectionInputSchema>;
 
 /** Columns every collection read needs for names, identity and entry defaults. */
-export const COLLECTION_COLUMNS = "id, name, description, icon, accent_color, banner_url, progress_label, default_template_id";
+export const COLLECTION_COLUMNS = "id, name, slug, description, icon, accent_color, banner_url, progress_label, default_template_id";
 
 /** API input → table columns (only the keys that were sent). */
 export function collectionColumns(input: z.output<typeof collectionInputSchema>) {
@@ -75,6 +77,12 @@ export function isLegacyCollection(value: string): boolean {
   return ["anime", "games", "other"].includes(value);
 }
 
-export function entryPath(entry: { id: string; collection_id?: string; kind?: string }): string {
-  return entry.collection_id ? `/${entry.collection_id}/${entry.id}` : `/entries/${entry.id}`;
+/** Readable URL of a collection; falls back to the id (which redirects) when no slug was loaded. */
+export function collectionPath(collection: { id: string; slug?: string | null }): string {
+  return `/collections/${encodeURIComponent(collection.slug || collection.id)}`;
+}
+
+/** Readable URL of an entry; falls back to the id (which redirects) when no slug was loaded. */
+export function entryPath(entry: { id: string; slug?: string | null }): string {
+  return `/entries/${encodeURIComponent(entry.slug || entry.id)}`;
 }

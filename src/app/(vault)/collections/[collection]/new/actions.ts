@@ -52,7 +52,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
       banner_url: input.bannerUrl,
       progress_label: input.progressLabel,
     })
-    .select("id, collection_id")
+    .select("id, slug")
     .single();
   if (error || !entry) return { status: "error", message: "Could not create the entry.", values };
 

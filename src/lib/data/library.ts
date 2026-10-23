@@ -10,7 +10,7 @@ export async function loadLibrary(ctx: AuthContext, collectionId: string): Promi
     fetchAll((from, to) =>
       supabase
         .from("entries")
-        .select("id, collection_id, kind, title, cover_url, cover_shape, progress_label, created_at, updated_at, entry_categories(category_id)")
+        .select("id, slug, collection_id, kind, title, cover_url, cover_shape, progress_label, created_at, updated_at, entry_categories(category_id)")
         .eq("collection_id", collectionId)
         .order("updated_at", { ascending: false })
         .range(from, to),
@@ -26,6 +26,7 @@ export async function loadLibrary(ctx: AuthContext, collectionId: string): Promi
     const row = summaryById.get(entry.id);
     return {
       id: entry.id,
+      slug: entry.slug,
       collection_id: entry.collection_id,
       kind: entry.kind as LibraryEntry["kind"],
       title: entry.title,

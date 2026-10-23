@@ -1,23 +1,23 @@
 "use client";
 
 import { useEffect, useEffectEvent } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import type { LibraryCategory } from "@/lib/collections";
+import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { SHORTCUT_ACTIONS, type ShortcutAction } from "@/lib/preferences";
 import { FOCUS_SEARCH_KEY, WORKSPACE_ACTIONS, WORKSPACE_SHORTCUT_EVENT, isTypingTarget, shortcutFromEvent, worksWhileTyping } from "@/lib/shortcuts";
+import { useCurrentCollectionId } from "./current-collection";
 import { useSettings } from "./settings-context";
 
 /** Global keyboard shortcuts, as configured in Settings → Shortcuts. */
 export function KeyboardShortcuts({ collections }: { collections: LibraryCategory[] }) {
   const { shortcuts } = useSettings();
   const router = useRouter();
-  const pathname = usePathname();
+  const currentId = useCurrentCollectionId(collections);
 
   /** The collection being viewed (or the entry's collection), else the first one. */
   function currentCollection() {
-    const segment = pathname.split("/")[1] ?? "";
-    return collections.find((collection) => collection.id === segment) ?? collections[0];
+    return collections.find((collection) => collection.id === currentId) ?? collections[0];
   }
 
   function run(action: ShortcutAction) {
@@ -43,9 +43,9 @@ export function KeyboardShortcuts({ collections }: { collections: LibraryCategor
       try {
         sessionStorage.setItem(FOCUS_SEARCH_KEY, "1");
       } catch {}
-      router.push(`/${collection.id}`);
+      router.push(collectionPath(collection));
     } else {
-      router.push(`/${collection.id}/new`);
+      router.push(`${collectionPath(collection)}/new`);
     }
   }
 
