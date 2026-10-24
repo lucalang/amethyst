@@ -4,10 +4,13 @@ import { useEffect, useEffectEvent, useRef } from "react";
 import {
   AdditiveBlending,
   AmbientLight,
+  BackSide,
+  BoxGeometry,
   CanvasTexture,
   Color,
   DirectionalLight,
   ExtrudeGeometry,
+  FrontSide,
   Group,
   LinearMipmapLinearFilter,
   Mesh,
@@ -18,56 +21,113 @@ import {
   PerspectiveCamera,
   PlaneGeometry,
   PMREMGenerator,
+  Quaternion,
   Scene,
   ShaderMaterial,
   Shape,
   ShapeGeometry,
   SRGBColorSpace,
   Texture,
+  Vector2,
+  Vector3,
   WebGLRenderer,
   type BufferGeometry,
   type Material,
   type MeshPhysicalMaterialParameters,
 } from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import type { ArtworkFrameId } from "@/lib/frames";
 import type { MotionLevel } from "@/lib/preferences";
 
 const MAX_YAW = 0.85;
 const MAX_PITCH = 0.5;
 const DRAG_SPEED = 0.0075;
-const HOVER_TILT: Record<MotionLevel, number> = { full: 0.13, subtle: 0.055, off: 0 };
-const DEPTH = 0.022;
-const BEVEL = 0.004;
+/** How far the card leans toward the pointer (radians), per motion level. */
+const HOVER: Record<MotionLevel, { yaw: number; pitch: number }> = {
+  full: { yaw: 0.3, pitch: 0.22 },
+  subtle: { yaw: 0.13, pitch: 0.1 },
+  off: { yaw: 0, pitch: 0 },
+};
+/** Smoothing times (seconds) of the critically damped follow: lower is snappier. */
+const FOLLOW = { hover: 0.07, hoverSubtle: 0.1, release: 0.22, drag: 0.05, settle: 0.14, view: 0.11 };
+const DEPTH = 0.03;
+const BEVEL = 0.006;
+/** Direction of the softbox whose reflection drifts across the art as the card turns. */
+const SOFTBOX = new Vector3(-0.45, 0.55, 1).normalize();
 
-type FrameSpec = { margin: number; band: MeshPhysicalMaterialParameters; edge: MeshPhysicalMaterialParameters };
+/** Band overlay effects (see FX_FRAGMENT). */
+const FX = { gilt: 1, amethyst: 2, holo: 3, aurora: 4 } as const;
 
-/** The 3D build of each frame: margin (fraction of the art's short side), the band's material and the card edge. */
+type BandBox = { width: number; height: number; margin: number };
+type Glint = [x: number, y: number, phase: number];
+
+/** One glint per corner jewel, each catching the light at its own angle. */
+const cornerGlints = ({ width, height, margin }: BandBox, phases: (number | null)[]): Glint[] =>
+  [[-1, 1], [1, 1], [1, -1], [-1, -1]].flatMap(([sx, sy], i): Glint[] => {
+    const phase = phases[i];
+    return phase == null ? [] : [[sx * (width / 2 - margin / 2), sy * (height / 2 - margin / 2), phase]];
+  });
+
+type FrameSpec = {
+  /** Visible band width as a fraction of the art's short side (0 = unframed). */
+  margin: number;
+  /** How far the band stands proud of the card face, so the art sits recessed. */
+  relief: number;
+  band: MeshPhysicalMaterialParameters;
+  edge: MeshPhysicalMaterialParameters;
+  /** Colours mixed into the theme's accent (rim a) and secondary (rim b) lights, and how strongly. */
+  light: { a: number; b: number; mix: number } | null;
+  /** The band's light overlay and its two colours. */
+  fx: { kind: (typeof FX)[keyof typeof FX]; a: number; b: number } | null;
+  /** Jewels and crests that flash at particular angles (at most five). */
+  glints: (band: BandBox) => Glint[];
+};
+
+/** The 3D build of each frame. New frames only need an entry here (plus a painter in paintBand). */
 const SPECS: Record<ArtworkFrameId, FrameSpec> = {
   none: {
-    margin: 0.012,
-    band: { color: 0x141218, metalness: 0.3, roughness: 0.55 },
-    edge: { color: 0x1b1822, metalness: 0.3, roughness: 0.5 },
+    margin: 0,
+    relief: 0,
+    band: {},
+    edge: { color: 0x1a1820, metalness: 0.6, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.18 },
+    light: null,
+    fx: null,
+    glints: () => [],
   },
   gilt: {
     margin: 0.034,
-    band: { metalness: 0.9, roughness: 0.3, clearcoat: 0.3, clearcoatRoughness: 0.25 },
-    edge: { color: 0xc9a259, metalness: 1, roughness: 0.32 },
+    relief: 0.004,
+    band: { metalness: 0.92, roughness: 0.26, clearcoat: 0.35, clearcoatRoughness: 0.2 },
+    edge: { color: 0xd4ab62, metalness: 1, roughness: 0.24, clearcoat: 0.4, clearcoatRoughness: 0.2 },
+    light: { a: 0xffd59a, b: 0xfff1d6, mix: 0.65 },
+    fx: { kind: FX.gilt, a: 0xffe2a8, b: 0xfff6e0 },
+    glints: (band) => cornerGlints(band, [1.1, 2.5, 3.8, 5.1]),
   },
   amethyst: {
     margin: 0.052,
-    band: { metalness: 0.55, roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.2 },
-    edge: { color: 0x6d28d9, metalness: 0.6, roughness: 0.35 },
+    relief: 0.006,
+    band: { metalness: 0.5, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 },
+    edge: { color: 0x5b21b6, metalness: 0.7, roughness: 0.26, clearcoat: 1, clearcoatRoughness: 0.12 },
+    light: { a: 0xa77bff, b: 0xf0abfc, mix: 0.5 },
+    fx: { kind: FX.amethyst, a: 0xd8b4fe, b: 0xfdf4ff },
+    glints: (band) => [...cornerGlints(band, [1.3, 2.9, 4.4, 5.4]), [0, band.height / 2 - band.margin / 2, 3.5]],
   },
   holo: {
     margin: 0.03,
+    relief: 0.003,
     band: { metalness: 0.3, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.1, iridescence: 1, iridescenceIOR: 1.6, iridescenceThicknessRange: [180, 820] },
-    edge: { color: 0xdcd6ff, metalness: 0.55, roughness: 0.22, iridescence: 1, iridescenceIOR: 1.5 },
+    edge: { color: 0xe6e0ff, metalness: 0.75, roughness: 0.18, iridescence: 1, iridescenceIOR: 1.5, iridescenceThicknessRange: [200, 700] },
+    light: { a: 0x8be9ff, b: 0xff9fd6, mix: 0.55 },
+    fx: { kind: FX.holo, a: 0xf5f3ff, b: 0xc4f1ff },
+    glints: (band) => cornerGlints(band, [2.0, null, 5.0]),
   },
   aurora: {
     margin: 0.026,
-    band: { metalness: 0.45, roughness: 0.42 },
-    edge: { color: 0x1b2442, metalness: 0.5, roughness: 0.4 },
+    relief: 0.0035,
+    band: { metalness: 0.5, roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3 },
+    edge: { color: 0x1d2a4f, metalness: 0.6, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2, sheen: 1, sheenColor: 0x6ee7b7, sheenRoughness: 0.4 },
+    light: { a: 0x6ee7b7, b: 0xc4a5ff, mix: 0.6 },
+    fx: { kind: FX.aurora, a: 0x6ee7b7, b: 0xf0abfc },
+    glints: () => [],
   },
 };
 
@@ -79,33 +139,123 @@ const PLANE_VERTEX = /* glsl */ `
   }
 `;
 
-/** A faint, soft highlight that follows the card's tilt; additive and capped so it never washes out the art. */
-const GLARE_FRAGMENT = /* glsl */ `
+/**
+ * The artwork itself: drawn exactly as the image, then lit in display space with a screen blend
+ * (a soft softbox reflection, a narrow streak that slides with the angle and the reveal sweep),
+ * capped so highlights never wash the picture out.
+ */
+const ART_FRAGMENT = /* glsl */ `
   varying vec2 vUv;
-  uniform vec2 uLight;
-  uniform float uStrength;
+  uniform sampler2D uMap;
+  uniform vec2 uArt;
+  uniform vec2 uCard;
+  uniform vec2 uSpot;
+  uniform float uLight;
+  uniform float uGloss;
+  uniform float uInset;
+  uniform vec3 uTint;
+  uniform float uSweep;
+  uniform float uSweepStrength;
   void main() {
-    vec2 d = vUv - uLight;
-    float spot = exp(-dot(d, d) * 5.0);
-    float band = exp(-pow(d.x + d.y, 2.0) * 22.0) * 0.45;
-    gl_FragColor = vec4(vec3((spot * 0.8 + band) * uStrength), 1.0);
+    gl_FragColor = vec4(texture2D(uMap, vUv).rgb, 1.0);
+    #include <colorspace_fragment>
+    vec2 p = (vUv - 0.5) * uArt;
+    vec2 e = uArt * 0.5 - abs(p);
+    gl_FragColor.rgb *= 1.0 - uInset * exp(-min(e.x, e.y) / uCard.y * 160.0);
+    vec2 d = (p - uSpot) / uCard.y;
+    float spot = exp(-dot(d, d) * 7.0) * 0.75 + exp(-dot(d, d) * 70.0) * 0.25;
+    float s = 0.5 + dot(p, vec2(0.8, 0.6)) / dot(uCard, vec2(0.8, 0.6));
+    float streak = exp(-pow((s - uLight) * 7.0, 2.0)) * 0.6 + exp(-pow((s - uLight - 0.06) * 30.0, 2.0)) * 0.4;
+    vec3 glow = (vec3(spot) + uTint * streak * 0.6) * uGloss;
+    float x = s - mix(-0.25, 1.25, uSweep);
+    glow += vec3(exp(-x * x * 300.0) * 0.75 + exp(-x * x * 20.0) * 0.1) * uSweepStrength;
+    gl_FragColor.rgb = 1.0 - (1.0 - gl_FragColor.rgb) * (1.0 - min(glow, vec3(0.6)));
   }
 `;
 
-/** One slow thread of light travelling around the aurora frame. */
-const TRACE_FRAGMENT = /* glsl */ `
+/** Additive light over a frame band: each frame's own sheen, its glints and the reveal sweep. */
+const FX_FRAGMENT = /* glsl */ `
   varying vec2 vUv;
+  uniform float uKind;
   uniform float uTime;
-  uniform vec2 uSize;
+  uniform vec2 uCard;
+  uniform vec2 uHole;
+  uniform float uMargin;
+  uniform vec2 uTilt;
+  uniform float uLight;
+  uniform vec3 uFxA;
+  uniform vec3 uFxB;
+  uniform float uSweep;
+  uniform float uSweepStrength;
+  uniform vec3 uGlints[5];
+  uniform int uGlintCount;
+  uniform float uGlintStrength;
   const float TAU = 6.2831853;
+
+  float star(vec2 d, float size) {
+    d /= size;
+    float core = exp(-dot(d, d) * 16.0);
+    float rays = exp(-abs(d.x) * 30.0 - d.y * d.y * 1.6) + exp(-abs(d.y) * 30.0 - d.x * d.x * 1.6);
+    return core + rays * 0.5;
+  }
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+
   void main() {
-    vec2 p = (vUv - 0.5) * uSize;
-    float angle = atan(p.y, p.x);
-    float head = mod(uTime * 0.57, TAU) - 3.1415927;
-    float diff = mod(angle - head + 3.1415927, TAU) - 3.1415927;
-    float glow = diff < 0.0 ? exp(diff * 2.4) : exp(-diff * 28.0);
-    vec3 color = mix(vec3(0.43, 0.91, 0.72), vec3(0.94, 0.67, 0.99), smoothstep(-1.4, 0.0, diff));
-    gl_FragColor = vec4(color * glow * 0.85, 1.0);
+    vec2 p = (vUv - 0.5) * uCard;
+    vec2 q = abs(p);
+    float w = max(uMargin, 1e-4);
+    float dOut = min(uCard.x * 0.5 - q.x, uCard.y * 0.5 - q.y);
+    float dIn = max(q.x - uHole.x * 0.5, q.y - uHole.y * 0.5);
+    float inner = exp(-pow(dIn / (w * 0.1), 2.0));
+    float outer = exp(-pow(dOut / (w * 0.08), 2.0));
+    float s = 0.5 + dot(p, vec2(0.8, 0.6)) / dot(uCard, vec2(0.8, 0.6));
+    float streak = exp(-pow((s - uLight) * 5.5, 2.0));
+    float a = uTilt.x * 5.7 + uTilt.y * 4.1;
+    float tilt = min(1.0, length(uTilt));
+    vec3 color;
+
+    if (uKind < 1.5) {
+      // Gilt: a broad metallic sheen with bright beaded edges.
+      float sheen = streak * 0.3 + exp(-pow((s - uLight - 0.05) * 18.0, 2.0)) * 0.2;
+      color = uFxA * (sheen + (inner * 0.35 + outer * 0.28) * (0.3 + streak));
+    } else if (uKind < 2.5) {
+      // Amethyst: lavender rim light and a scatter of facets that each catch the light at their own angle.
+      float cellSize = w * 0.45;
+      vec2 cell = floor(p / cellSize);
+      vec2 local = (fract(p / cellSize) - 0.5) * cellSize;
+      float flash = pow(max(0.0, cos(a * 1.3 + hash(cell) * TAU)), 40.0) * step(0.72, hash(cell + 17.0));
+      color = uFxA * ((inner * 0.42 + outer * 0.2) * (0.35 + streak) + streak * 0.1)
+        + uFxB * star(local, cellSize * 0.35) * flash * 0.5 * uGlintStrength;
+    } else if (uKind < 3.5) {
+      // Holographic: a thin-film rainbow whose hues slide with the angle, over fine diffraction lines.
+      float hue = fract(s * 1.3 + uTilt.x * 0.35 - uTilt.y * 0.25 + dIn / w * 0.12);
+      vec3 film = 0.5 + 0.5 * cos(TAU * (hue + vec3(0.0, 0.33, 0.67)));
+      float lines = 0.85 + 0.15 * sin(dot(p, vec2(1.0, -1.0)) * 520.0);
+      color = film * (0.08 + 0.22 * streak + 0.08 * tilt) * lines + uFxA * (inner * 0.22 + outer * 0.18) * (0.4 + streak);
+    } else {
+      // Aurora: one slow thread of light around the edge, and a curtain that shifts colour with the angle.
+      float angle = atan(p.y, p.x);
+      float head = mod(uTime * 0.57, TAU) - 3.1415927;
+      float diff = mod(angle - head + 3.1415927, TAU) - 3.1415927;
+      float glow = diff < 0.0 ? exp(diff * 2.4) : exp(-diff * 28.0);
+      vec3 thread = mix(uFxA, uFxB, smoothstep(-1.4, 0.0, diff));
+      vec3 curtain = mix(uFxA, uFxB, clamp(s + uTilt.x * 0.4, 0.0, 1.0));
+      color = thread * glow * 0.8 + curtain * inner * (0.2 + 0.35 * streak);
+    }
+
+    for (int i = 0; i < 5; i++) {
+      if (i >= uGlintCount) break;
+      vec3 g = uGlints[i];
+      float on = pow(max(0.0, cos(a + g.z)), 30.0);
+      color += mix(vec3(1.0), uFxB, 0.3) * star(p - g.xy, w * 0.7) * on * 0.85 * uGlintStrength;
+    }
+
+    float x = s - mix(-0.25, 1.25, uSweep);
+    color += mix(vec3(1.0), uFxA, 0.4) * exp(-x * x * 300.0) * uSweepStrength * 0.9;
+    gl_FragColor = vec4(color, 1.0);
   }
 `;
 
@@ -125,16 +275,20 @@ function roundedRect<T extends Path>(target: T, width: number, height: number, r
   return target;
 }
 
-/** A flat rounded rectangle (optionally with a rounded hole) whose UVs span its full extent. */
-function panel(width: number, height: number, radius: number, hole?: { width: number; height: number; radius: number }) {
-  const shape = roundedRect(new Shape(), width, height, radius);
-  if (hole) shape.holes.push(roundedRect(new Path(), hole.width, hole.height, hole.radius));
-  const geometry = new ShapeGeometry(shape, 14);
+/** Points every vertex's UV at its x/y position across a width × height box. */
+function spanUv<T extends BufferGeometry>(geometry: T, width: number, height: number): T {
   const position = geometry.attributes.position;
   const uv = geometry.attributes.uv;
   for (let i = 0; i < position.count; i++) uv.setXY(i, position.getX(i) / width + 0.5, position.getY(i) / height + 0.5);
   uv.needsUpdate = true;
   return geometry;
+}
+
+/** A flat rounded rectangle (optionally with a rounded hole) whose UVs span its full extent. */
+function panel(width: number, height: number, radius: number, hole?: { width: number; height: number; radius: number }) {
+  const shape = roundedRect(new Shape(), width, height, radius);
+  if (hole) shape.holes.push(roundedRect(new Path(), hole.width, hole.height, hole.radius));
+  return spanUv(new ShapeGeometry(shape, 14), width, height);
 }
 
 type Layout = { cw: number; ch: number; aw: number; ah: number; m: number; r: number; ra: number };
@@ -299,13 +453,97 @@ function paintBand(frame: ArtworkFrameId, { cw, ch, m, r, ra }: Layout): HTMLCan
   return canvas;
 }
 
-function cssColor(name: string, fallback: string): Color {
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  const parts = value.split(/[\s,]+/).map(Number);
-  return parts.length >= 3 && parts.every((part) => Number.isFinite(part)) ? new Color(parts[0] / 255, parts[1] / 255, parts[2] / 255) : new Color(fallback);
+/** A theme colour channel triple (e.g. `--accent-rgb: 165 124 255`) as a three.js colour. */
+function cssColor(styles: CSSStyleDeclaration, name: string, fallback: string): Color {
+  const parts = styles.getPropertyValue(name).trim().split(/[\s,]+/).map(Number);
+  return parts.length >= 3 && parts.every((part) => Number.isFinite(part)) ? new Color().setRGB(parts[0] / 255, parts[1] / 255, parts[2] / 255, SRGBColorSpace) : new Color(fallback);
 }
 
-type Callbacks = { zoom: (zoom: number) => void; ready: (src: string) => void; fail: (src: string) => void; manualRotate: () => void };
+/** Writes a colour into a shader vector in display (sRGB) values, for overlays that add light on screen. */
+function display(color: Color, target: Vector3) {
+  const rgb = { r: 0, g: 0, b: 0 };
+  color.getRGB(rgb, SRGBColorSpace);
+  return target.set(rgb.r, rgb.g, rgb.b);
+}
+
+/** A small studio for reflections: a softbox above, a fill behind the viewer and two strips in the theme's colours. */
+function studioEnvironment(renderer: WebGLRenderer, accent: Color, secondary: Color, dark: boolean): Texture {
+  const scene = new Scene();
+  const box = new BoxGeometry(1, 1, 1);
+  const materials: MeshBasicMaterial[] = [];
+  const light = (color: Color, intensity: number, position: [number, number, number], scale: [number, number, number], inside = false) => {
+    const material = new MeshBasicMaterial({ color: color.clone().multiplyScalar(intensity), side: inside ? BackSide : FrontSide });
+    materials.push(material);
+    const mesh = new Mesh(box, material);
+    mesh.position.set(...position);
+    mesh.scale.set(...scale);
+    scene.add(mesh);
+  };
+  const white = new Color(0xffffff);
+  light(new Color(dark ? 0x121019 : 0x5c5866), 1, [0, 0, 0], [16, 16, 16], true);
+  light(white, 6, [-3.4, 4.2, 2.6], [3.2, 0.15, 2.4]);
+  light(new Color(0xfff2e2), 1.6, [0, 0.6, 7], [5, 2.6, 0.15]);
+  light(accent, 4, [6, 0.6, 0.4], [0.15, 6, 1]);
+  light(secondary, 3, [-6, -0.8, -0.6], [0.15, 5, 0.8]);
+  light(white, 1.4, [0.4, -5.2, 1.2], [6, 0.15, 1.6]);
+  const pmrem = new PMREMGenerator(renderer);
+  const texture = pmrem.fromScene(scene, 0.035).texture;
+  pmrem.dispose();
+  box.dispose();
+  for (const material of materials) material.dispose();
+  return texture;
+}
+
+/** A soft round sprite (shadow or glow) painted once. */
+function radialTexture(stops: [number, string][]) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const fade = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    for (const [stop, color] of stops) fade.addColorStop(stop, color);
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, 0, 128, 128);
+  }
+  return new CanvasTexture(canvas);
+}
+
+type Spring = { value: number; target: number; velocity: number };
+const spring = (value = 0): Spring => ({ value, target: value, velocity: 0 });
+
+/** Critically damped follow: frame-rate independent, quick to respond and never overshoots. */
+function follow(s: Spring, time: number, dt: number) {
+  const omega = 2 / time;
+  const x = omega * dt;
+  const decay = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = s.value - s.target;
+  const temp = (s.velocity + omega * change) * dt;
+  const next = s.target + (change + temp) * decay;
+  if (change !== 0 && change < 0 === next > s.target) {
+    s.value = s.target;
+    s.velocity = 0;
+  } else {
+    s.value = next;
+    s.velocity = (s.velocity - omega * temp) * decay;
+  }
+}
+
+const clamp = (value: number, limit: number) => Math.min(limit, Math.max(-limit, value));
+
+/** An offset layered over the user's view for entrances and exits, so it never blocks input. */
+type Pose = { x: number; y: number; z: number; yaw: number; pitch: number };
+const REST: Pose = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 };
+const POSE_KEYS = ["x", "y", "z", "yaw", "pitch"] as const;
+const easeOut = (t: number) => 1 - (1 - t) ** 3;
+const easeIn = (t: number) => t * t * t;
+
+type Callbacks = {
+  zoom: (zoom: number) => void;
+  ready: (src: string) => void;
+  fail: (src: string) => void;
+  manualRotate: () => void;
+  inspect: (active: boolean) => void;
+};
 
 function createEngine(host: HTMLElement, cb: Callbacks) {
   const renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
@@ -320,61 +558,81 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   canvas.style.touchAction = "none";
   host.appendChild(canvas);
 
+  // Lighting follows the active theme; each frame then tints it (see FrameSpec.light).
+  const styles = getComputedStyle(host);
+  const accent = cssColor(styles, "--accent-rgb", "#a57cff");
+  const secondary = cssColor(styles, "--rose-rgb", "#f472a8");
+  const dark = styles.getPropertyValue("--theme-dark").trim() !== "0";
+  const shadowAlpha = Number.parseFloat(styles.getPropertyValue("--shadow-alpha")) || 1;
+
   const scene = new Scene();
-  const pmrem = new PMREMGenerator(renderer);
-  const room = new RoomEnvironment();
-  const environment = pmrem.fromScene(room, 0.04).texture;
-  room.dispose();
-  pmrem.dispose();
+  const environment = studioEnvironment(renderer, accent, secondary, dark);
   scene.environment = environment;
-  scene.environmentIntensity = 0.85;
 
   const camera = new PerspectiveCamera(30, 1, 0.05, 60);
-  const key = new DirectionalLight(0xffffff, 1.5);
-  key.position.set(-2.4, 3, 4);
-  const rim = new DirectionalLight(cssColor("--accent-rgb", "#a78bfa"), 0.7);
-  rim.position.set(3, -1.6, 2);
-  scene.add(key, rim, new AmbientLight(0xffffff, 0.3));
+  const key = new DirectionalLight(0xfff6ec, 1.35);
+  key.position.set(-2.2, 2.8, 4);
+  // Two rims from behind light the card's edges as they turn toward the viewer.
+  const rimA = new DirectionalLight(accent, 2.2);
+  rimA.position.set(3.2, 0.6, -1.6);
+  const rimB = new DirectionalLight(secondary, 1.6);
+  rimB.position.set(-3.2, -0.8, -1.4);
+  scene.add(key, rimA, rimB, new AmbientLight(0xffffff, 0.2));
 
-  const shadowCanvas = document.createElement("canvas");
-  shadowCanvas.width = shadowCanvas.height = 128;
-  const shadowCtx = shadowCanvas.getContext("2d");
-  if (shadowCtx) {
-    const alpha = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--shadow-alpha")) || 1;
-    const fade = shadowCtx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    fade.addColorStop(0, `rgba(0,0,0,${0.55 * alpha})`);
-    fade.addColorStop(1, "rgba(0,0,0,0)");
-    shadowCtx.fillStyle = fade;
-    shadowCtx.fillRect(0, 0, 128, 128);
-  }
-  const shadowTexture = new CanvasTexture(shadowCanvas);
-  const shadowGeometry = new PlaneGeometry(1, 1);
+  const quad = new PlaneGeometry(1, 1);
+  const shadowTexture = radialTexture([
+    [0, `rgba(0,0,0,${0.6 * shadowAlpha})`],
+    [0.55, `rgba(0,0,0,${0.22 * shadowAlpha})`],
+    [1, "rgba(0,0,0,0)"],
+  ]);
+  const glowTexture = radialTexture([
+    [0, "rgba(255,255,255,1)"],
+    [0.4, "rgba(255,255,255,0.35)"],
+    [1, "rgba(255,255,255,0)"],
+  ]);
   const shadowMaterial = new MeshBasicMaterial({ map: shadowTexture, transparent: true, depthWrite: false, toneMapped: false });
-  const shadow = new Mesh(shadowGeometry, shadowMaterial);
-  scene.add(shadow);
+  const glowMaterial = new MeshBasicMaterial({ map: glowTexture, color: accent, transparent: true, depthWrite: false, toneMapped: false, blending: AdditiveBlending, opacity: dark ? 0.2 : 0.1 });
+  const shadow = new Mesh(quad, shadowMaterial);
+  const glow = new Mesh(quad, glowMaterial);
+  scene.add(glow, shadow);
 
   const pivot = new Group();
   scene.add(pivot);
 
-  const glareUniforms = { uLight: { value: [0.3, 0.75] as [number, number] }, uStrength: { value: 0.035 } };
-  const traceUniforms = { uTime: { value: 0 }, uSize: { value: [1, 1] as [number, number] } };
+  const shared = {
+    uTilt: { value: new Vector2() },
+    uLight: { value: 0.5 },
+    uCard: { value: new Vector2(1, 1) },
+    uSweep: { value: 0 },
+    uSweepStrength: { value: 0 },
+  };
+  const artUniforms = {
+    ...shared,
+    uMap: { value: null as Texture | null },
+    uArt: { value: new Vector2(1, 1) },
+    uSpot: { value: new Vector2() },
+    uGloss: { value: 0.1 },
+    uInset: { value: 0 },
+    uTint: { value: new Vector3(1, 1, 1) },
+  };
+  const fxUniforms = {
+    ...shared,
+    uKind: { value: 0 },
+    uTime: { value: 0 },
+    uHole: { value: new Vector2() },
+    uMargin: { value: 0.02 },
+    uFxA: { value: new Vector3() },
+    uFxB: { value: new Vector3() },
+    uGlints: { value: Array.from({ length: 5 }, () => new Vector3()) },
+    uGlintCount: { value: 0 },
+    uGlintStrength: { value: 1 },
+  };
 
+  const turn = { yaw: spring(), pitch: spring() };
+  const hover = { yaw: spring(), pitch: spring() };
+  const view = { zoom: spring(1), panX: spring(), panY: spring() };
   const state = {
-    yaw: 0,
-    pitch: 0,
-    targetYaw: 0,
-    targetPitch: 0,
-    hoverYaw: 0,
-    hoverPitch: 0,
-    targetHoverYaw: 0,
-    targetHoverPitch: 0,
-    zoom: 1,
-    targetZoom: 1,
     maxZoom: 3,
-    panX: 0,
-    panY: 0,
-    targetPanX: 0,
-    targetPanY: 0,
     motion: "full" as MotionLevel,
     width: 1,
     height: 1,
@@ -383,12 +641,24 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     animated: false,
     dirty: true,
     disposed: false,
+    hovering: false,
+    leaving: false,
+    turnTime: FOLLOW.settle,
   };
+  let pose: Pose = { ...REST };
+  let tween: { from: Pose; to: Pose; start: number; duration: number; ease: (t: number) => number } | null = null;
+  let sweep: { start: number; duration: number; strength: number } | null = null;
+  // After a drag the mouse tilts relative to where it let go, so the card doesn't jump.
+  let anchor: { x: number; y: number } | null = null;
+  // The hover tilt folded into the turn when a press began (handed back if the press wasn't a drag).
+  let folded = { yaw: 0, pitch: 0 };
 
   let card: { group: Group; dispose: () => void } | null = null;
   let image: HTMLImageElement | null = null;
   let src = "";
+  let shown = "";
   let frame: ArtworkFrameId = "none";
+  let direction = 1;
   let loadToken = 0;
   let builds = 0;
 
@@ -401,49 +671,78 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       return item;
     };
 
+    const spec = SPECS[frame];
+    const framed = spec.margin > 0;
     const aspect = image.naturalWidth / image.naturalHeight || 2 / 3;
     const ah = aspect >= 1 ? 1 / aspect : 1;
     const aw = ah * aspect;
-    const spec = SPECS[frame];
     const m = spec.margin * Math.min(aw, ah);
-    const cw = aw + m * 2;
-    const ch = ah + m * 2;
-    const r = 0.04 * Math.min(cw, ch);
-    const ra = Math.min(r, Math.max(0.006, r - m * 0.6));
-    const layout: Layout = { cw, ch, aw, ah, m, r, ra };
+    // The face (band or art) covers the body's front cap; the body's bevel forms the card's rim.
+    const bw = aw + m * 2;
+    const bh = ah + m * 2;
+    const cw = bw + BEVEL * 2;
+    const ch = bh + BEVEL * 2;
+    const r = 0.045 * Math.min(cw, ch);
+    const rb = Math.max(0.002, r - BEVEL);
+    const ra = framed ? Math.min(rb, Math.max(0.006, rb - m * 0.6)) : rb;
     state.cw = cw;
     state.ch = ch;
 
     const group = new Group();
     const front = DEPTH / 2 + BEVEL;
 
-    const bodyShape = roundedRect(new Shape(), cw - BEVEL * 2, ch - BEVEL * 2, Math.max(0.002, r - BEVEL));
-    const body = track(new ExtrudeGeometry(bodyShape, { depth: DEPTH, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: BEVEL, bevelSegments: 3, curveSegments: 14 }));
+    const body = track(
+      new ExtrudeGeometry(roundedRect(new Shape(), bw, bh, rb), { depth: DEPTH, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: BEVEL, bevelSegments: 5, curveSegments: 16 }),
+    );
     body.translate(0, 0, -DEPTH / 2);
-    const edge = track(new MeshPhysicalMaterial(spec.edge));
-    group.add(new Mesh(body, edge));
+    group.add(new Mesh(body, track(new MeshPhysicalMaterial(spec.edge))));
 
-    const bandCanvas = paintBand(frame, layout);
-    const bandMap = bandCanvas ? track(new CanvasTexture(bandCanvas)) : null;
-    if (bandMap) {
-      bandMap.colorSpace = SRGBColorSpace;
-      bandMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    // Theme light, tinted by the frame.
+    const tintA = accent.clone();
+    const tintB = secondary.clone();
+    if (spec.light) {
+      tintA.lerp(new Color(spec.light.a), spec.light.mix);
+      tintB.lerp(new Color(spec.light.b), spec.light.mix);
     }
-    const bandGeometry = track(panel(cw, ch, r, { width: aw, height: ah, radius: ra }));
-    const band = new Mesh(bandGeometry, track(new MeshPhysicalMaterial({ ...spec.band, map: bandMap })));
-    band.position.z = front + 0.0006;
-    group.add(band);
+    rimA.color.copy(tintA);
+    rimB.color.copy(tintB);
+    glowMaterial.color.copy(tintA);
+    display(new Color(0xffffff).lerp(tintA, 0.35), artUniforms.uTint.value);
+    shared.uCard.value.set(bw, bh);
 
-    if (frame === "aurora") {
-      traceUniforms.uSize.value = [cw, ch];
-      const trace = new Mesh(
-        bandGeometry,
-        track(new ShaderMaterial({ uniforms: traceUniforms, vertexShader: PLANE_VERTEX, fragmentShader: TRACE_FRAGMENT, blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false })),
+    if (framed && spec.fx) {
+      // A raised band with bevelled inner and outer edges, so the art sits recessed inside it.
+      const shape = roundedRect(new Shape(), bw, bh, rb);
+      shape.holes.push(roundedRect(new Path(), aw, ah, ra));
+      const lip = 0.0012;
+      const bandGeometry = track(
+        spanUv(new ExtrudeGeometry(shape, { depth: spec.relief, bevelEnabled: true, bevelThickness: lip, bevelSize: Math.min(0.002, m * 0.1), bevelSegments: 3, curveSegments: 14 }), bw, bh),
       );
-      trace.position.z = front + 0.0012;
-      group.add(trace);
+      bandGeometry.translate(0, 0, front + lip);
+      const map = paintBand(frame, { cw: bw, ch: bh, aw, ah, m, r: rb, ra });
+      const bandMap = map ? track(new CanvasTexture(map)) : null;
+      if (bandMap) {
+        bandMap.colorSpace = SRGBColorSpace;
+        bandMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      }
+      group.add(new Mesh(bandGeometry, track(new MeshPhysicalMaterial({ ...spec.band, map: bandMap }))));
+
+      fxUniforms.uKind.value = spec.fx.kind;
+      fxUniforms.uHole.value.set(aw, ah);
+      fxUniforms.uMargin.value = m;
+      display(new Color(spec.fx.a), fxUniforms.uFxA.value);
+      display(new Color(spec.fx.b), fxUniforms.uFxB.value);
+      const glints = spec.glints({ width: bw, height: bh, margin: m }).slice(0, 5);
+      glints.forEach(([x, y, phase], i) => fxUniforms.uGlints.value[i].set(x, y, phase));
+      fxUniforms.uGlintCount.value = glints.length;
+      const fx = new Mesh(
+        track(panel(bw, bh, rb, { width: aw, height: ah, radius: ra })),
+        track(new ShaderMaterial({ uniforms: fxUniforms, vertexShader: PLANE_VERTEX, fragmentShader: FX_FRAGMENT, blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false })),
+      );
+      fx.position.z = front + spec.relief + lip * 2 + 0.0004;
+      group.add(fx);
     }
-    state.animated = frame === "aurora";
+    state.animated = spec.fx?.kind === FX.aurora;
 
     const texture = track(new Texture(image));
     texture.colorSpace = SRGBColorSpace;
@@ -451,20 +750,12 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     texture.minFilter = LinearMipmapLinearFilter;
     texture.generateMipmaps = true;
     texture.needsUpdate = true;
-    const artGeometry = track(panel(aw, ah, ra));
-    const art = new Mesh(artGeometry, track(new MeshBasicMaterial({ map: texture, toneMapped: false })));
-    art.position.z = front + 0.0009;
+    artUniforms.uMap.value = texture;
+    artUniforms.uArt.value.set(aw, ah);
+    artUniforms.uInset.value = framed ? 0.16 : 0;
+    const art = new Mesh(track(panel(aw, ah, ra)), track(new ShaderMaterial({ uniforms: artUniforms, vertexShader: PLANE_VERTEX, fragmentShader: ART_FRAGMENT, toneMapped: false })));
+    art.position.z = front + 0.0006;
     group.add(art);
-
-    const glare = new Mesh(
-      artGeometry,
-      track(new ShaderMaterial({ uniforms: glareUniforms, vertexShader: PLANE_VERTEX, fragmentShader: GLARE_FRAGMENT, blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false })),
-    );
-    glare.position.z = front + 0.0015;
-    group.add(glare);
-
-    shadow.scale.set(cw * 1.7, ch * 1.45, 1);
-    shadow.position.set(0, -ch * 0.04, -0.4);
 
     pivot.add(group);
     card = {
@@ -474,21 +765,46 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
         for (const item of disposables) item.dispose();
       },
     };
-
-    // A brief settle into place when a card appears; nothing keeps moving afterwards.
     builds += 1;
-    if (state.motion === "full") {
-      state.yaw = builds === 1 ? -0.38 : -0.16;
-      state.pitch = builds === 1 ? 0.12 : 0.05;
-    } else if (state.motion === "subtle") {
-      state.yaw = -0.08;
+    wake();
+  }
+
+  function animatePose(to: Pose, seconds: number, ease: (t: number) => number) {
+    tween = { from: { ...pose }, to, start: performance.now(), duration: seconds * 1000, ease };
+    wake();
+  }
+
+  /** The card glides in (from deeper in the scene on open, from the side when browsing), then a light sweep crosses it. */
+  function entrance(kind: "open" | "next") {
+    sweep = null;
+    if (state.motion === "off") {
+      pose = { ...REST };
+      tween = null;
+      return;
     }
-    state.dirty = true;
+    const subtle = state.motion === "subtle";
+    const d = direction;
+    const from: Pose =
+      kind === "open"
+        ? subtle
+          ? { x: 0, y: 0, z: -0.3, yaw: -0.1, pitch: 0.04 }
+          : { x: 0, y: -0.05, z: -1.1, yaw: -0.48, pitch: 0.18 }
+        : subtle
+          ? { x: d * 0.12, y: 0, z: -0.15, yaw: -d * 0.08, pitch: 0 }
+          : { x: d * 0.45, y: 0, z: -0.5, yaw: -d * 0.42, pitch: 0.06 };
+    const seconds = subtle ? 0.38 : kind === "open" ? 0.56 : 0.46;
+    const now = performance.now();
+    pose = { ...from };
+    tween = { from, to: REST, start: now, duration: seconds * 1000, ease: easeOut };
+    sweep = { start: now + seconds * 450, duration: subtle ? 380 : 440, strength: subtle ? 0.4 : 0.8 };
+    wake();
   }
 
   function load(nextSrc: string) {
     const token = ++loadToken;
     src = nextSrc;
+    // The current card steps aside while the next one loads.
+    if (card && state.motion !== "off") animatePose({ x: -direction * 0.3, y: 0, z: -0.45, yaw: direction * 0.3, pitch: 0 }, 0.2, easeIn);
     const next = new Image();
     next.crossOrigin = "anonymous";
     next.decoding = "async";
@@ -504,6 +820,8 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
         probe?.getImageData(0, 0, 1, 1);
         image = next;
         build();
+        shown = nextSrc;
+        entrance(builds === 1 ? "open" : "next");
         cb.ready(nextSrc);
       })
       .catch(() => {
@@ -526,13 +844,21 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     return { x: Math.max(0, state.cw / 2 - halfW * 0.85), y: Math.max(0, state.ch / 2 - halfH * 0.85) };
   }
 
+  function releaseHover() {
+    state.hovering = false;
+    hover.yaw.target = hover.pitch.target = 0;
+    wake();
+  }
+
   function setZoom(zoom: number, report = false) {
     const next = Math.round(Math.min(state.maxZoom, Math.max(1, zoom)) * 100) / 100;
-    state.targetZoom = next;
+    view.zoom.target = next;
     const limit = panLimit(next);
-    state.targetPanX = Math.min(limit.x, Math.max(-limit.x, state.targetPanX));
-    state.targetPanY = Math.min(limit.y, Math.max(-limit.y, state.targetPanY));
-    state.dirty = true;
+    view.panX.target = clamp(view.panX.target, limit.x);
+    view.panY.target = clamp(view.panY.target, limit.y);
+    // Zoomed in, the card holds still for close inspection.
+    if (next > 1.01) releaseHover();
+    wake();
     if (report) cb.zoom(next);
   }
 
@@ -544,13 +870,34 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    state.dirty = true;
+    wake();
   }
   const observer = new ResizeObserver(resize);
   observer.observe(host);
-  resize();
 
-  // Pointer input: drag turns the card (or moves it when zoomed), two fingers pinch, the mouse tilts gently.
+  /** The pointer's offset from the card's centre, in card half-sizes, eased so it saturates gently. */
+  function pointerOffset(clientX: number, clientY: number) {
+    const rect = canvas.getBoundingClientRect();
+    const t = Math.tan((camera.fov * Math.PI) / 360);
+    const distance = fitDistance();
+    const halfY = (state.ch / 2 / (t * distance)) * (rect.height / 2);
+    const halfX = (state.cw / 2 / (t * distance * camera.aspect)) * (rect.width / 2);
+    const soft = (n: number) => clamp(Math.tanh(n * 1.2) / Math.tanh(1.2), 1);
+    return { x: soft((clientX - rect.left - rect.width / 2) / (halfX * 1.1)), y: soft((clientY - rect.top - rect.height / 2) / (halfY * 1.1)) };
+  }
+
+  function hoverAt(clientX: number, clientY: number) {
+    const range = HOVER[state.motion];
+    if (!range.yaw || pointers.size || view.zoom.target > 1.01 || state.leaving) return;
+    const at = pointerOffset(clientX, clientY);
+    hover.yaw.target = clamp(at.x - (anchor?.x ?? 0), 1) * range.yaw;
+    hover.pitch.target = clamp(at.y - (anchor?.y ?? 0), 1) * range.pitch;
+    state.hovering = true;
+    wake();
+  }
+
+  // Pointer input: drag turns the card (or moves it when zoomed), two fingers pinch, the mouse tilts it.
+  // Only the canvas listens, so the viewer's controls (layered above it) never tilt the card.
   const pointers = new Map<number, { x: number; y: number }>();
   let drag: { mode: "turn" | "pan"; x: number; y: number; yaw: number; pitch: number; panX: number; panY: number } | null = null;
   let pinch: { distance: number; zoom: number } | null = null;
@@ -559,27 +906,35 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     return Math.hypot(a.x - b.x, a.y - b.y);
   };
   const startDrag = (x: number, y: number) => {
-    drag = { mode: state.targetZoom > 1.01 ? "pan" : "turn", x, y, yaw: state.targetYaw, pitch: state.targetPitch, panX: state.targetPanX, panY: state.targetPanY };
+    drag = { mode: view.zoom.target > 1.01 ? "pan" : "turn", x, y, yaw: turn.yaw.target, pitch: turn.pitch.target, panX: view.panX.target, panY: view.panY.target };
+    state.turnTime = FOLLOW.drag;
   };
 
   const onPointerDown = (event: PointerEvent) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     canvas.setPointerCapture(event.pointerId);
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    state.targetHoverYaw = state.targetHoverPitch = 0;
+    if (pointers.size === 1) {
+      cb.inspect(true);
+      // Fold the hover tilt into the turn, so grabbing the card never makes it jump.
+      folded = { yaw: hover.yaw.value, pitch: hover.pitch.value };
+      for (const axis of ["yaw", "pitch"] as const) {
+        turn[axis].value += hover[axis].value;
+        turn[axis].velocity += hover[axis].velocity;
+        turn[axis].target = clamp(turn[axis].target + hover[axis].value, axis === "yaw" ? MAX_YAW : MAX_PITCH);
+        hover[axis].value = hover[axis].target = hover[axis].velocity = 0;
+      }
+      state.hovering = false;
+      anchor = null;
+    }
     if (pointers.size === 2) {
       drag = null;
-      pinch = { distance: spread(), zoom: state.targetZoom };
+      pinch = { distance: spread(), zoom: view.zoom.target };
     } else if (pointers.size === 1) startDrag(event.clientX, event.clientY);
   };
   const onPointerMove = (event: PointerEvent) => {
     if (!pointers.has(event.pointerId)) {
-      if (event.pointerType === "mouse") {
-        const rect = canvas.getBoundingClientRect();
-        const tilt = HOVER_TILT[state.motion];
-        state.targetHoverYaw = (((event.clientX - rect.left) / rect.width) * 2 - 1) * tilt;
-        state.targetHoverPitch = (((event.clientY - rect.top) / rect.height) * 2 - 1) * tilt;
-      }
+      if (event.pointerType !== "touch" && event.buttons === 0) hoverAt(event.clientX, event.clientY);
       return;
     }
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -591,43 +946,64 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     const dx = event.clientX - drag.x;
     const dy = event.clientY - drag.y;
     if (drag.mode === "turn") {
-      state.targetYaw = Math.min(MAX_YAW, Math.max(-MAX_YAW, drag.yaw + dx * DRAG_SPEED));
-      state.targetPitch = Math.min(MAX_PITCH, Math.max(-MAX_PITCH, drag.pitch + dy * DRAG_SPEED));
+      turn.yaw.target = clamp(drag.yaw + dx * DRAG_SPEED, MAX_YAW);
+      turn.pitch.target = clamp(drag.pitch + dy * DRAG_SPEED, MAX_PITCH);
     } else {
-      const perPixel = (2 * Math.tan((camera.fov * Math.PI) / 360) * fitDistance()) / state.targetZoom / state.height;
-      const limit = panLimit(state.targetZoom);
-      state.targetPanX = Math.min(limit.x, Math.max(-limit.x, drag.panX - dx * perPixel));
-      state.targetPanY = Math.min(limit.y, Math.max(-limit.y, drag.panY + dy * perPixel));
+      const perPixel = (2 * Math.tan((camera.fov * Math.PI) / 360) * fitDistance()) / view.zoom.target / state.height;
+      const limit = panLimit(view.zoom.target);
+      view.panX.target = clamp(drag.panX - dx * perPixel, limit.x);
+      view.panY.target = clamp(drag.panY + dy * perPixel, limit.y);
     }
-    state.dirty = true;
+    wake();
   };
   const onPointerUp = (event: PointerEvent) => {
-    if (drag?.mode === "turn" && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= 6 && (state.targetYaw !== drag.yaw || state.targetPitch !== drag.pitch)) {
-      cb.manualRotate();
-    }
+    const turned = drag?.mode === "turn" && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= 6 && (turn.yaw.target !== drag.yaw || turn.pitch.target !== drag.pitch);
+    if (turned) cb.manualRotate();
     if (!pointers.delete(event.pointerId)) return;
     pinch = null;
     const [remaining] = [...pointers.values()];
-    if (remaining) startDrag(remaining.x, remaining.y);
-    else drag = null;
+    if (remaining) {
+      startDrag(remaining.x, remaining.y);
+      return;
+    }
+    drag = null;
+    state.turnTime = FOLLOW.settle;
+    if (event.pointerType !== "touch" && event.type === "pointerup") {
+      if (turned) anchor = pointerOffset(event.clientX, event.clientY);
+      else {
+        // A click, not a drag: hand the folded tilt back to hover so it still eases away on leave.
+        for (const axis of ["yaw", "pitch"] as const) {
+          turn[axis].target -= folded[axis];
+          turn[axis].value -= folded[axis];
+          hover[axis].value += folded[axis];
+        }
+        hoverAt(event.clientX, event.clientY);
+      }
+    }
+    folded = { yaw: 0, pitch: 0 };
+    cb.inspect(false);
   };
   const onPointerLeave = (event: PointerEvent) => {
-    if (event.pointerType !== "mouse") return;
-    state.targetHoverYaw = state.targetHoverPitch = 0;
+    if (event.pointerType === "touch" || pointers.has(event.pointerId)) return;
+    anchor = null;
+    releaseHover();
   };
   const onWheel = (event: WheelEvent) => {
     event.preventDefault();
-    setZoom(state.targetZoom * Math.exp(-event.deltaY * (event.ctrlKey ? 0.01 : 0.0015)), true);
+    setZoom(view.zoom.target * Math.exp(-event.deltaY * (event.ctrlKey ? 0.01 : 0.0015)), true);
   };
   const onDoubleClick = () => {
-    if (state.targetZoom > 1) {
-      state.targetPanX = state.targetPanY = 0;
+    if (view.zoom.target > 1) {
+      view.panX.target = view.panY.target = 0;
       setZoom(1, true);
     } else setZoom(2, true);
   };
   const onContextLost = (event: Event) => {
     event.preventDefault();
     if (!state.disposed) cb.fail(src);
+  };
+  const onVisibility = () => {
+    if (!document.hidden) wake();
   };
   canvas.addEventListener("pointerdown", onPointerDown);
   canvas.addEventListener("pointermove", onPointerMove);
@@ -637,49 +1013,104 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   canvas.addEventListener("wheel", onWheel, { passive: false });
   canvas.addEventListener("dblclick", onDoubleClick);
   canvas.addEventListener("webglcontextlost", onContextLost);
+  document.addEventListener("visibilitychange", onVisibility);
 
+  // Frames are only drawn while something changes; the loop sleeps when the card is still or the tab is hidden.
   let raf = 0;
-  let last = performance.now();
-  const EPSILON = 0.0002;
-  function tick(now: number) {
+  let last = 0;
+  function wake() {
+    state.dirty = true;
+    if (raf || state.disposed || document.hidden) return;
+    last = performance.now();
     raf = requestAnimationFrame(tick);
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-    const k = state.motion === "off" ? 1 : 1 - Math.exp(-dt * (state.motion === "subtle" ? 14 : 9));
-    let moving = false;
-    const ease = (from: number, to: number) => {
-      const delta = to - from;
-      if (Math.abs(delta) < EPSILON) return to;
-      moving = true;
-      return from + delta * k;
-    };
-    state.yaw = ease(state.yaw, state.targetYaw);
-    state.pitch = ease(state.pitch, state.targetPitch);
-    state.hoverYaw = ease(state.hoverYaw, state.targetHoverYaw);
-    state.hoverPitch = ease(state.hoverPitch, state.targetHoverPitch);
-    state.zoom = ease(state.zoom, state.targetZoom);
-    state.panX = ease(state.panX, state.targetPanX);
-    state.panY = ease(state.panY, state.targetPanY);
-    if (state.animated && state.motion !== "off") {
-      traceUniforms.uTime.value += dt * (state.motion === "subtle" ? 0.5 : 1);
-      moving = true;
-    }
-    if (!moving && !state.dirty) return;
-    state.dirty = false;
+  }
 
-    const yaw = state.yaw + state.hoverYaw;
-    const pitch = state.pitch + state.hoverPitch;
+  const softbox = new Vector3();
+  const inverse = new Quaternion();
+  function render() {
+    const yaw = clamp(turn.yaw.value + hover.yaw.value, MAX_YAW + 0.1) + pose.yaw;
+    const pitch = clamp(turn.pitch.value + hover.pitch.value, MAX_PITCH + 0.1) + pose.pitch;
+    pivot.position.set(pose.x, pose.y, pose.z);
     pivot.rotation.set(pitch, yaw, 0);
-    const tilt = Math.min(1, Math.hypot(yaw / MAX_YAW, pitch / MAX_PITCH));
-    glareUniforms.uLight.value = [0.3 - (yaw / MAX_YAW) * 0.5, 0.72 + (pitch / MAX_PITCH) * 0.45];
-    glareUniforms.uStrength.value = 0.035 + 0.075 * tilt;
-    camera.position.set(state.panX, state.panY, fitDistance() / state.zoom);
+
+    const tx = clamp(yaw / MAX_YAW, 1);
+    const ty = clamp(pitch / MAX_PITCH, 1);
+    shared.uTilt.value.set(tx, ty);
+    shared.uLight.value = 0.5 - tx * 0.7 + ty * 0.5;
+    artUniforms.uGloss.value = 0.1 + 0.08 * Math.min(1, Math.hypot(tx, ty));
+    softbox.copy(SOFTBOX).applyQuaternion(inverse.copy(pivot.quaternion).invert());
+    const z = Math.max(0.05, softbox.z);
+    artUniforms.uSpot.value.set((softbox.x / z) * 1.1, (softbox.y / z) * 1.1);
+    fxUniforms.uGlintStrength.value = state.motion === "off" ? 0.5 : 1;
+
+    // A soft shadow that shifts as the card leans, and a faint glow in the frame's light behind it.
+    shadow.position.set(pose.x + state.cw * 0.05 + Math.sin(yaw) * 0.12, pose.y - state.ch * 0.06 - Math.sin(pitch) * 0.1, pose.z - 0.55);
+    shadow.scale.set(state.cw * 1.32 * (0.82 + 0.18 * Math.cos(yaw)), state.ch * 1.22 * (0.82 + 0.18 * Math.cos(pitch)), 1);
+    glow.position.set(pose.x - Math.sin(yaw) * 0.08, pose.y + Math.sin(pitch) * 0.06, pose.z - 0.6);
+    glow.scale.set(state.cw * 2.3, state.ch * 1.9, 1);
+
+    camera.position.set(view.panX.value, view.panY.value, fitDistance() / view.zoom.value);
     renderer.render(scene, camera);
   }
-  raf = requestAnimationFrame(tick);
+
+  function tick(now: number) {
+    raf = 0;
+    if (state.disposed || document.hidden) return;
+    const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
+    last = now;
+    const instant = state.motion === "off";
+    let active = false;
+    const step = (s: Spring, time: number) => {
+      if (s.value === s.target && s.velocity === 0) return;
+      if (instant || (Math.abs(s.value - s.target) < 1e-4 && Math.abs(s.velocity) < 1e-3)) {
+        s.value = s.target;
+        s.velocity = 0;
+        return;
+      }
+      follow(s, time, dt);
+      active = true;
+    };
+    step(turn.yaw, state.turnTime);
+    step(turn.pitch, state.turnTime);
+    const hoverTime = state.hovering ? (state.motion === "subtle" ? FOLLOW.hoverSubtle : FOLLOW.hover) : FOLLOW.release;
+    step(hover.yaw, hoverTime);
+    step(hover.pitch, hoverTime);
+    step(view.zoom, FOLLOW.view);
+    step(view.panX, FOLLOW.view);
+    step(view.panY, FOLLOW.view);
+
+    if (tween) {
+      const t = Math.min(1, Math.max(0, (now - tween.start) / tween.duration));
+      const eased = tween.ease(t);
+      for (const axis of POSE_KEYS) pose[axis] = tween.from[axis] + (tween.to[axis] - tween.from[axis]) * eased;
+      if (t >= 1) tween = null;
+      active = true;
+    }
+    shared.uSweepStrength.value = 0;
+    if (sweep) {
+      const t = (now - sweep.start) / sweep.duration;
+      if (t >= 1) sweep = null;
+      else if (t >= 0) {
+        shared.uSweep.value = t;
+        shared.uSweepStrength.value = sweep.strength * Math.sin(Math.PI * t);
+      }
+      active = true;
+    }
+    if (state.animated && !instant) {
+      fxUniforms.uTime.value += dt * (state.motion === "subtle" ? 0.5 : 1);
+      active = true;
+    }
+
+    if (active || state.dirty) render();
+    state.dirty = false;
+    if (active) raf = requestAnimationFrame(tick);
+  }
+
+  resize();
 
   return {
-    setArtwork(nextSrc: string, nextFrame: ArtworkFrameId) {
+    setArtwork(nextSrc: string, nextFrame: ArtworkFrameId, nextDirection: number) {
+      direction = nextDirection < 0 ? -1 : 1;
       const frameChanged = nextFrame !== frame;
       frame = nextFrame;
       if (nextSrc !== src) load(nextSrc);
@@ -691,14 +1122,27 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     },
     setMotion(motion: MotionLevel) {
       state.motion = motion;
-      if (motion === "off") state.targetHoverYaw = state.targetHoverPitch = 0;
-      state.dirty = true;
+      if (motion === "off") {
+        releaseHover();
+        tween = null;
+        sweep = null;
+        pose = { ...REST };
+      }
+      wake();
     },
     reset() {
-      state.targetYaw = state.targetPitch = state.targetPanX = state.targetPanY = 0;
-      state.targetHoverYaw = state.targetHoverPitch = 0;
-      state.targetZoom = 1;
-      state.dirty = true;
+      turn.yaw.target = turn.pitch.target = view.panX.target = view.panY.target = 0;
+      view.zoom.target = 1;
+      state.turnTime = FOLLOW.settle;
+      anchor = null;
+      releaseHover();
+      // A quick sweep acknowledges the reset (not while the next artwork is on its way).
+      if (state.motion !== "off" && card && shown === src) sweep = { start: performance.now(), duration: 360, strength: 0.5 };
+    },
+    leave() {
+      state.leaving = true;
+      releaseHover();
+      if (state.motion !== "off") animatePose({ x: 0, y: -0.03, z: -0.8, yaw: 0.2, pitch: 0.08 }, 0.2, easeIn);
     },
     dispose() {
       state.disposed = true;
@@ -712,10 +1156,13 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("dblclick", onDoubleClick);
       canvas.removeEventListener("webglcontextlost", onContextLost);
+      document.removeEventListener("visibilitychange", onVisibility);
       card?.dispose();
-      shadowGeometry.dispose();
+      quad.dispose();
       shadowMaterial.dispose();
       shadowTexture.dispose();
+      glowMaterial.dispose();
+      glowTexture.dispose();
       environment.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
@@ -730,23 +1177,31 @@ type Engine = ReturnType<typeof createEngine>;
 export default function ArtworkCard3D({
   src,
   frame,
+  direction,
   zoom,
   maxZoom,
   resetKey,
   motion,
+  leaving,
   onZoom,
   onManualRotate,
+  onInspect,
   onReady,
   onFail,
 }: {
   src: string;
   frame: ArtworkFrameId;
+  /** Which way the visitor browsed (1 = next, -1 = previous), so cards arrive from that side. */
+  direction: number;
   zoom: number;
   maxZoom: number;
   resetKey: number;
   motion: MotionLevel;
+  /** The viewer is closing: the card recedes. */
+  leaving: boolean;
   onZoom: (zoom: number) => void;
   onManualRotate: () => void;
+  onInspect: (active: boolean) => void;
   onReady: (src: string) => void;
   onFail: (src: string) => void;
 }) {
@@ -754,9 +1209,11 @@ export default function ArtworkCard3D({
   const engineRef = useRef<Engine | null>(null);
   const reportZoom = useEffectEvent((next: number) => onZoom(next));
   const reportManualRotate = useEffectEvent(() => onManualRotate());
+  const reportInspect = useEffectEvent((active: boolean) => onInspect(active));
   const reportReady = useEffectEvent((loaded: string) => onReady(loaded));
   const reportFail = useEffectEvent((failed: string) => onFail(failed));
-  const initial = useEffectEvent(() => ({ src, frame, motion, maxZoom }));
+  const initial = useEffectEvent(() => ({ src, frame, direction, motion, maxZoom }));
+  const showArtwork = useEffectEvent(() => engineRef.current?.setArtwork(src, frame, direction));
 
   useEffect(() => {
     const host = hostRef.current;
@@ -764,14 +1221,14 @@ export default function ArtworkCard3D({
     const start = initial();
     let engine: Engine;
     try {
-      engine = createEngine(host, { zoom: reportZoom, ready: reportReady, fail: reportFail, manualRotate: reportManualRotate });
+      engine = createEngine(host, { zoom: reportZoom, ready: reportReady, fail: reportFail, manualRotate: reportManualRotate, inspect: reportInspect });
     } catch {
       reportFail(start.src);
       return;
     }
     engine.setMotion(start.motion);
     engine.setMaxZoom(start.maxZoom);
-    engine.setArtwork(start.src, start.frame);
+    engine.setArtwork(start.src, start.frame, start.direction);
     engineRef.current = engine;
     return () => {
       engineRef.current = null;
@@ -779,13 +1236,16 @@ export default function ArtworkCard3D({
     };
   }, []);
 
-  useEffect(() => engineRef.current?.setArtwork(src, frame), [src, frame]);
+  useEffect(() => showArtwork(), [src, frame]);
   useEffect(() => engineRef.current?.setMotion(motion), [motion]);
   useEffect(() => engineRef.current?.setMaxZoom(maxZoom), [maxZoom]);
   useEffect(() => engineRef.current?.setZoom(zoom), [zoom]);
   useEffect(() => {
     if (resetKey) engineRef.current?.reset();
   }, [resetKey]);
+  useEffect(() => {
+    if (leaving) engineRef.current?.leave();
+  }, [leaving]);
 
   return <div ref={hostRef} className="absolute inset-0 cursor-grab select-none active:cursor-grabbing" />;
 }

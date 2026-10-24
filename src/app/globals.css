@@ -1936,14 +1936,47 @@
   }
 }
 
-/* Artwork viewer backdrop: the theme's page color with a soft accent bloom behind the art. */
+/*
+ * Artwork viewer backdrop: the theme's page color, a soft bloom behind the art in the frame's
+ * light (the theme accent when unframed), a faint secondary floor glow and a gentle vignette.
+ */
 .artwork-viewer {
+  --viewer-glow-rgb: var(--accent-rgb);
+  --viewer-floor-rgb: var(--rose-rgb);
   background:
-    radial-gradient(56rem 40rem at 50% 45%, rgb(var(--accent-rgb) / 0.16), transparent 68%),
+    radial-gradient(52rem 38rem at 50% 44%, rgb(var(--viewer-glow-rgb) / 0.17), transparent 68%),
+    radial-gradient(70rem 26rem at 50% 108%, rgb(var(--viewer-floor-rgb) / 0.08), transparent 70%),
+    radial-gradient(140% 110% at 50% 45%, transparent 55%, rgb(var(--shadow-rgb) / calc(0.45 * var(--shadow-alpha))) 100%),
     rgb(var(--paper-rgb) / 0.97);
+  transition: opacity 200ms ease-in;
+}
+.artwork-viewer[data-frame="gilt"] {
+  --viewer-glow-rgb: 226 186 116;
+  --viewer-floor-rgb: var(--accent-rgb);
+}
+.artwork-viewer[data-frame="amethyst"] {
+  --viewer-glow-rgb: 167 123 255;
+}
+.artwork-viewer[data-frame="holo"] {
+  --viewer-glow-rgb: 139 220 255;
+}
+.artwork-viewer[data-frame="aurora"] {
+  --viewer-glow-rgb: 110 231 183;
+  --viewer-floor-rgb: 196 165 255;
+}
+.artwork-viewer[data-leaving] {
+  opacity: 0;
+  pointer-events: none;
 }
 .artwork-viewer-stage {
   touch-action: none;
+}
+/* Controls step back while the card is being turned or moved. */
+.artwork-viewer-ui:not(button) {
+  transition: opacity 220ms ease;
+}
+.artwork-viewer[data-inspecting] .artwork-viewer-ui {
+  opacity: 0.4;
 }
 
 /* Arcade: each playfield keeps its aspect ratio and fits the viewport height. */

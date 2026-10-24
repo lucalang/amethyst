@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { artworkSrc } from "@/lib/attachments";
 import { apiFetch } from "@/lib/api-client";
 import { ArtworkViewer } from "./artwork-viewer";
+import { useMotionLevel } from "./motion";
 import { ShowcaseContext, useShowcase, type ArtworkItem, type ShowcaseApi } from "./showcase-context";
 import { ShowcaseGallery } from "./showcase-gallery";
 
@@ -49,6 +50,8 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
   const { artworkFrame } = useSettings();
   const [showcaseOpen, setShowcaseOpen] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const motion = useMotionLevel();
   const showcaseOpener = useRef<HTMLElement | null>(null);
   const viewerOpener = useRef<HTMLElement | null>(null);
 
@@ -65,18 +68,27 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
   const open = showcaseOpen || index !== -1;
 
   function closeViewer() {
+    if (leaving) return;
     const last = viewing;
-    setViewing(null);
-    requestAnimationFrame(() => {
-      const inGallery = last ? document.querySelector<HTMLElement>(`[data-showcase-entry="${CSS.escape(last)}"]`) : null;
-      if (inGallery) {
-        inGallery.focus({ preventScroll: true });
-        inGallery.scrollIntoView({ block: "nearest" });
-      } else restoreFocus(viewerOpener.current);
-    });
+    const finish = () => {
+      setLeaving(false);
+      setViewing(null);
+      requestAnimationFrame(() => {
+        const inGallery = last ? document.querySelector<HTMLElement>(`[data-showcase-entry="${CSS.escape(last)}"]`) : null;
+        if (inGallery) {
+          inGallery.focus({ preventScroll: true });
+          inGallery.scrollIntoView({ block: "nearest" });
+        } else restoreFocus(viewerOpener.current);
+      });
+    };
+    if (motion === "off") return finish();
+    // A short exit: the card recedes while the viewer fades (see .artwork-viewer[data-leaving]).
+    setLeaving(true);
+    window.setTimeout(finish, 200);
   }
 
   function closeShowcase() {
+    setLeaving(false);
     setViewing(null);
     setShowcaseOpen(false);
     requestAnimationFrame(() => restoreFocus(showcaseOpener.current));
@@ -149,6 +161,7 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
                   items={items}
                   index={index}
                   frame={artworkFrame}
+                  leaving={leaving}
                   onIndex={(next) => setViewing(items[next]?.id ?? null)}
                   onClose={closeViewer}
                   onManualRotate={() => void apiFetch("/api/achievements/events", { method: "POST", json: { type: "manual_rotation" }, keepalive: true }).catch(() => {})}

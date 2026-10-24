@@ -48,6 +48,7 @@ export function ArtworkViewer({
   items,
   index,
   frame,
+  leaving = false,
   onIndex,
   onClose,
   onManualRotate,
@@ -55,6 +56,8 @@ export function ArtworkViewer({
   items: ArtworkItem[];
   index: number;
   frame: ArtworkFrameId;
+  /** Closing: the card recedes and the viewer fades before it unmounts. */
+  leaving?: boolean;
   onIndex: (index: number) => void;
   onClose: () => void;
   onManualRotate: () => void;
@@ -68,6 +71,8 @@ export function ArtworkViewer({
   const [ready, setReady] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [resetKey, setResetKey] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [inspecting, setInspecting] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [canFullscreen, setCanFullscreen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -100,9 +105,10 @@ export function ArtworkViewer({
   }, [items, index]);
 
   function go(next: number) {
-    if (next < 0 || next >= items.length || next === index) return;
+    if (next < 0 || next >= items.length || next === index || leaving) return;
     setZoom(1);
     setResetKey((key) => key + 1);
+    setDirection(next > index ? 1 : -1);
     onIndex(next);
   }
 
@@ -119,6 +125,7 @@ export function ArtworkViewer({
     const next: Mode = use3d ? "flat" : "3d";
     setMode(next);
     setZoom(1);
+    setInspecting(false);
     setResetKey((key) => key + 1);
     if (next === "3d") setFlatOnly(new Set());
     try {
@@ -174,6 +181,9 @@ export function ArtworkViewer({
       aria-modal="true"
       aria-labelledby="artwork-viewer-title"
       aria-describedby="artwork-viewer-hint"
+      data-frame={frame}
+      data-inspecting={inspecting || undefined}
+      data-leaving={leaving || undefined}
       className="artwork-viewer fixed inset-0 z-[95] overflow-hidden animate-in duration-200 fade-in-0"
     >
       <div className="artwork-viewer-stage absolute inset-0" role="img" aria-label={`Artwork for ${item.title}`}>
@@ -183,12 +193,15 @@ export function ArtworkViewer({
               <ArtworkCard3D
                 src={src}
                 frame={frame}
+                direction={direction}
                 zoom={zoom}
                 maxZoom={MAX_ZOOM["3d"]}
                 resetKey={resetKey}
                 motion={motion}
+                leaving={leaving}
                 onZoom={changeZoom}
                 onManualRotate={onManualRotate}
+                onInspect={setInspecting}
                 onReady={setReady}
                 onFail={(failed: string) => setFlatOnly((set) => new Set(set).add(failed))}
               />
@@ -204,7 +217,7 @@ export function ArtworkViewer({
         )}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3 md:p-5">
+      <div className="artwork-viewer-ui pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3 md:p-5">
         <div className={cn("pointer-events-auto min-w-0 rounded-lg px-3.5 py-2", glass)}>
           <h2 id="artwork-viewer-title" className="truncate text-sm font-semibold md:text-base">
             {item.title}
@@ -231,7 +244,7 @@ export function ArtworkViewer({
         disabled={!hasPrev}
         aria-label="Previous artwork"
         title="Previous (←)"
-        className={cn(control, glass, "absolute top-1/2 left-4 z-10 hidden size-12 -translate-y-1/2 md:grid lg:left-6")}
+        className={cn(control, glass, "artwork-viewer-ui absolute top-1/2 left-4 z-10 hidden size-12 -translate-y-1/2 md:grid lg:left-6")}
       >
         <ChevronLeft aria-hidden />
       </button>
@@ -241,12 +254,12 @@ export function ArtworkViewer({
         disabled={!hasNext}
         aria-label="Next artwork"
         title="Next (→)"
-        className={cn(control, glass, "absolute top-1/2 right-4 z-10 hidden size-12 -translate-y-1/2 md:grid lg:right-6")}
+        className={cn(control, glass, "artwork-viewer-ui absolute top-1/2 right-4 z-10 hidden size-12 -translate-y-1/2 md:grid lg:right-6")}
       >
         <ChevronRight aria-hidden />
       </button>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 px-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] md:pb-6">
+      <div className="artwork-viewer-ui pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 px-3 pb-[max(0.875rem,env(safe-area-inset-bottom))] md:pb-6">
         <p id="artwork-viewer-hint" className="hidden rounded-full bg-black/40 px-3 py-1 text-[11px] text-muted-foreground backdrop-blur-sm sm:block">
           {hint}
         </p>

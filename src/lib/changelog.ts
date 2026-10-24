@@ -29,6 +29,37 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    id: "2026-10-24-showcase-3d",
+    date: "2026-10-24",
+    title: "A more dimensional 3D Showcase",
+    summary: "The 3D artwork viewer now responds instantly to your pointer and presents each cover as a thicker, richly lit collectible card. Every frame has its own light and materials, and each card arrives with a short reveal.",
+    improved: [
+      {
+        text: "Hover rotation is much faster and follows your pointer closely, with a slightly wider lean so the card's depth shows. Movement is smooth at any frame rate, and the card glides back to rest when the pointer leaves. Grabbing the card continues from wherever it is without jumping, hovering the toolbar or arrows never tilts it, and the tilt pauses while you're zoomed in so close inspection stays steady.",
+        where: "Any collection → Showcase → open an artwork",
+        link: { href: "/", label: "Choose a collection" },
+      },
+      {
+        text: "Cards are thicker, with rounded edges and rim lighting that catches as they turn. A soft shadow shifts with the angle, and a gentle highlight drifts across the art without washing it out. The lighting takes its colours from your theme and the selected frame instead of always being purple.",
+        where: "Showcase, or a library card → View artwork",
+      },
+      {
+        text: "Frames are more spectacular. Gilt gets a moving metallic sheen and glinting corner studs, and Amethyst gets glittering facets and a crest that flashes. Holographic gets a rainbow film that shifts with the angle, and Aurora gets its travelling thread plus a colour-shifting curtain. Frames are now raised above the art for real depth, and No frame stays completely bare.",
+        where: "Settings → Artwork frames",
+        link: { href: "/settings/frames", label: "Choose a frame" },
+      },
+      {
+        text: "Each card arrives with a short reveal: it glides into place and a single light sweep crosses it. When you browse, the next card comes in from the side you're heading to. Reset gives a quick sweep and closing sends the card back into the scene. You can interact straight away, and controls fade back while you turn the card.",
+        where: "Showcase → open an artwork",
+      },
+      {
+        text: "Your Motion setting and reduced-motion preference are respected. Subtle shortens everything, and Off gives a still, static inspection view. Rendering pauses whenever the card is still or the tab is hidden, and the flat 2D view is unchanged.",
+        where: "Settings → Appearance → Motion and effects",
+        link: { href: "/settings/appearance#motion", label: "Adjust motion" },
+      },
+    ],
+  },
+  {
     id: "2026-10-24-achievement-cabinet",
     date: "2026-10-24",
     title: "A medal cabinet for your achievements",
