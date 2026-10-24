@@ -5,7 +5,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Pause, Play } from "lucide-r
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { livePalette, observeCanvas, startLoop, swipeDirection, withAlpha, mix, type CanvasSize } from "./engine";
-import { GameOverlay, GameShell, Stat, keyDirection, useArcade, useAway, useGameKeys, useRecord } from "./game-shell";
+import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
 
 const GRID = 20;
@@ -250,6 +250,8 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
   const [score, setScore] = useState(0);
   const [won, setWon] = useState(false);
 
+  useGameAchievementTracking("snake", phase);
+
   useEffect(() => {
     live.current = { play, effects };
   });
@@ -257,6 +259,7 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
   const finish = useEffectEvent((final: number, didWin: boolean) => {
     setWon(didWin);
     submit(final);
+    sendAchievementEvent({ type: "run_finished", game: "snake", length: final + 3 });
   });
 
   useEffect(() => {
@@ -271,6 +274,7 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      if (game.score > 0) sendAchievementEvent({ type: "run_progress", game: "snake", length: game.score + 3 });
       game.destroy();
       gameRef.current = null;
     };
@@ -355,6 +359,7 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
   return (
     <GameShell
       title="Snake"
+      active={phase === "playing" || phase === "paused"}
       stats={
         <>
           <Stat label="Score" value={score} />

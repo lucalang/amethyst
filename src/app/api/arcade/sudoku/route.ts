@@ -1,6 +1,7 @@
 import { generate, getUniqueSolution, type Board, type Difficulty } from "sudoku-core";
 import { sudokuSaveSchema, sudokuStartSchema, SUDOKU_CELLS, type SudokuDifficulty } from "@/lib/arcade";
 import { loadSudoku, SUDOKU_COLUMNS, toSudokuSave } from "@/lib/data/arcade";
+import { recordVerifiedSudokuCompletion } from "@/lib/data/achievements";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 
 /** sudoku-core levels to try, first choice first (a lower level is the fallback if generation runs out of time). */
@@ -117,5 +118,6 @@ export async function PATCH(request: Request) {
     p_score: seconds,
   });
   if (recordError) return dbError(recordError, "Puzzle saved, but the time could not be recorded.");
-  return jsonResponse({ saved: true, best: record?.[0]?.best ?? seconds, improved: record?.[0]?.improved ?? false });
+  const achievementUnlocks = await recordVerifiedSudokuCompletion(ctx, current.difficulty);
+  return jsonResponse({ saved: true, best: record?.[0]?.best ?? seconds, improved: record?.[0]?.improved ?? false, achievementUnlocks });
 }

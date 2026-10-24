@@ -23,6 +23,30 @@ export type Database = {
           }
         },"public": {
           Tables: {
+            "achievement_definitions": {
+              Row: { id: string; metric: string; target: number; display_order: number }
+              Insert: { id: string; metric: string; target: number; display_order: number }
+              Update: { id?: string; metric?: string; target?: number; display_order?: number }
+              Relationships: []
+            },
+            "user_achievement_progress": {
+              Row: { user_id: string; achievement_id: string; progress: number; details: Json; updated_at: string }
+              Insert: { user_id?: string; achievement_id: string; progress?: number; details?: Json; updated_at?: string }
+              Update: { user_id?: string; achievement_id?: string; progress?: number; details?: Json; updated_at?: string }
+              Relationships: [
+                { foreignKeyName: "user_achievement_progress_achievement_id_fkey"; columns: ["achievement_id"]; isOneToOne: false; referencedRelation: "achievement_definitions"; referencedColumns: ["id"] },
+                { foreignKeyName: "user_achievement_progress_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+              ]
+            },
+            "user_achievements": {
+              Row: { user_id: string; achievement_id: string; earned_at: string; source: "event" | "backfill"; notification_claimed_at: string | null }
+              Insert: { user_id?: string; achievement_id: string; earned_at?: string; source: "event" | "backfill"; notification_claimed_at?: string | null }
+              Update: { user_id?: string; achievement_id?: string; earned_at?: string; source?: "event" | "backfill"; notification_claimed_at?: string | null }
+              Relationships: [
+                { foreignKeyName: "user_achievements_achievement_id_fkey"; columns: ["achievement_id"]; isOneToOne: false; referencedRelation: "achievement_definitions"; referencedColumns: ["id"] },
+                { foreignKeyName: "user_achievements_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+              ]
+            },
             "collections": {
               Row: { id: string; user_id: string; name: string; slug: string; description: string; legacy_slug: string | null; position: number; icon: string | null; accent_color: string | null; banner_url: string | null; progress_label: string | null; default_template_id: string | null; created_at: string; updated_at: string }
               Insert: { id?: string; user_id?: string; name: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; created_at?: string; updated_at?: string }
@@ -366,7 +390,13 @@ isOneToOne: false
 { Args: { "p_entry_id": string,"p_file_id"?: string | null }; Returns: undefined
                            },
 "record_arcade_score":
-{ Args: { "p_game": string,"p_variant": string,"p_score": number }; Returns: { best: number; improved: boolean }[]
+{ Args: { "p_game": string,"p_variant": string,"p_score": number }; Returns: { best: number; improved: boolean; had_previous: boolean }[]
+                           },
+"record_achievement_event":
+{ Args: { "p_event": string,"p_payload"?: Json }; Returns: Json
+                           },
+"claim_achievement_notifications":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined

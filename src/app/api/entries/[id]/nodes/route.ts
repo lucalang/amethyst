@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { NODE_COLUMNS, loadWorkspaceNodes, nodeWriteError, toWorkspaceNode } from "@/lib/data/workspace";
 import { apiError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
+import { refreshArchiveAchievements } from "@/lib/data/achievements";
 import { createNodeSchema } from "@/lib/validation/workspace";
 
 type Params = { params: Promise<{ id: string }> };
@@ -36,5 +37,6 @@ export async function POST(request: Request, { params }: Params) {
     if (error.code === "23503" && !parentId) return apiError(404, "not_found", "Entry not found.");
     return nodeWriteError(error, name);
   }
-  return jsonResponse({ node: toWorkspaceNode(data) }, { status: 201 });
+  const achievementUnlocks = kind === "note" ? await refreshArchiveAchievements(ctx) : [];
+  return jsonResponse({ node: toWorkspaceNode(data), achievementUnlocks }, { status: 201 });
 }

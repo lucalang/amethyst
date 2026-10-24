@@ -29,6 +29,29 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    id: "2026-10-24-achievements",
+    date: "2026-10-24",
+    title: "Achievements for your Arcade and archive milestones",
+    summary: "A personal recognition system now tracks Arcade challenges, saved archive milestones and feature discoveries, with progress and earned dates on one page.",
+    added: [
+      {
+        text: "Achievements recognize what you do across the six Arcade games, workspace notes and checklists, collection customization, templates, Showcase and the 3D artwork viewer. Progress is based on saved archive state and completed game runs. Earned achievements stay earned if you later change or remove the content that proved them. There are no rewards, currencies, levels or feature unlocks.",
+        where: "Achievements",
+        link: { href: "/achievements", label: "View achievements" },
+      },
+      {
+        text: "See all milestones grouped into Arcade, Archive and Discovery. Filter to all, earned or in-progress achievements, and narrow Arcade milestones by game. Progress shows the best qualifying run or streak where a challenge is about one run, and earned milestones include their date.",
+        where: "Arcade → Achievements, or Settings → Achievements",
+        link: { href: "/achievements", label: "Open your progress" },
+      },
+      {
+        text: "New unlocks appear in a small queued notification when you are not typing or playing. Turn achievement notifications off in Settings → Appearance; milestone tracking continues. An earned-achievements section is also available in Customize Home and starts hidden.",
+        where: "Settings → Appearance, or Home → Customize Home",
+        link: { href: "/settings/appearance", label: "Adjust notifications" },
+      },
+    ],
+  },
+  {
     id: "2026-10-24-arcade",
     date: "2026-10-24",
     title: "The Arcade: six games for a break",

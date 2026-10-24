@@ -1,0 +1,57 @@
+import {
+  AlignVerticalJustifyCenter,
+  Award,
+  Bird,
+  Blocks,
+  Brain,
+  ChartNoAxesCombined,
+  Cherry,
+  CircleCheckBig,
+  Crosshair,
+  Gamepad2,
+  Grid2X2,
+  Grid3X3,
+  Images,
+  LayoutTemplate,
+  LibraryBig,
+  ListChecks,
+  Maximize2,
+  MoveUpRight,
+  NotebookPen,
+  Paintbrush,
+  Rotate3D,
+  Trophy,
+  Wind,
+  type LucideIcon,
+} from "lucide-react";
+
+const ICONS: Record<string, LucideIcon> = {
+  AlignVerticalJustifyCenter,
+  Award,
+  Bird,
+  Blocks,
+  Brain,
+  ChartNoAxesCombined,
+  Cherry,
+  CircleCheckBig,
+  Crosshair,
+  Gamepad2,
+  Grid2X2,
+  Grid3X3,
+  Images,
+  LayoutTemplate,
+  LibraryBig,
+  ListChecks,
+  Maximize2,
+  MoveUpRight,
+  NotebookPen,
+  Paintbrush,
+  Rotate3D,
+  Trophy,
+  Wind,
+};
+
+export function AchievementIcon({ name, className }: { name: string; className?: string }) {
+  const Icon = ICONS[name] ?? Award;
+  return <Icon aria-hidden className={className} />;
+}

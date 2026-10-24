@@ -1,6 +1,7 @@
 import { loadTemplates, storedStructure } from "@/lib/data/templates";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { templateInputSchema } from "@/lib/templates";
+import { refreshArchiveAchievements } from "@/lib/data/achievements";
 
 export async function GET() {
   const ctx = await requireApiUser();
@@ -26,5 +27,6 @@ export async function POST(request: Request) {
     .single();
   if (error?.code === "23505") return apiError(409, "name_taken", "You already have a template with that name.");
   if (error) return dbError(error);
-  return jsonResponse({ template: { id: data.id, name: data.name, updatedAt: data.updated_at } }, { status: 201 });
+  const achievementUnlocks = await refreshArchiveAchievements(ctx);
+  return jsonResponse({ template: { id: data.id, name: data.name, updatedAt: data.updated_at }, achievementUnlocks }, { status: 201 });
 }

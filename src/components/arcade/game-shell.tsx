@@ -21,7 +21,8 @@ import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
-import type { ScoreGame } from "@/lib/arcade";
+import type { AchievementEvent } from "@/lib/achievements";
+import type { ArcadeGameId, ScoreGame } from "@/lib/arcade";
 import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { closeAudio, playSound, type SoundName } from "./sound";
@@ -34,6 +35,10 @@ type ArcadeContextValue = {
   sound: boolean;
   toggleSound: () => void;
 };
+
+export function sendAchievementEvent(event: AchievementEvent) {
+  void apiFetch("/api/achievements/events", { method: "POST", json: event, keepalive: true }).catch(() => {});
+}
 
 const ArcadeContext = createContext<ArcadeContextValue | null>(null);
 
@@ -89,12 +94,14 @@ const noSubscribe = () => () => {};
 /** Frame shared by every game: navigation, compact stats, sound and fullscreen, with the playfield as the focus. */
 export function GameShell({
   title,
+  active = false,
   stats,
   actions,
   help,
   children,
 }: {
   title: string;
+  active?: boolean;
   stats?: ReactNode;
   actions?: ReactNode;
   help?: ReactNode;
@@ -118,6 +125,7 @@ export function GameShell({
         ref={rootRef}
         tabIndex={-1}
         data-arcade-game
+          data-game-active={active ? "true" : "false"}
         className="arcade-shell mx-auto flex w-full max-w-6xl flex-col gap-3 px-3 py-4 outline-none md:px-6 md:py-6"
       >
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
@@ -167,6 +175,18 @@ export function GameShell({
         {help ? <div className="text-xs leading-5 text-muted-foreground">{help}</div> : null}
       </div>
   );
+}
+
+export function useGameAchievementTracking(game: ArcadeGameId, phase: string) {
+  const started = useRef(false);
+  useEffect(() => {
+    if (phase !== "playing" || started.current) return;
+    started.current = true;
+    sendAchievementEvent({ type: "game_started", game });
+  }, [game, phase]);
+  useEffect(() => {
+    window.dispatchEvent(new Event("archive:arcade-activity"));
+  }, [phase]);
 }
 
 export function Stat({ label, value, highlight = false, className }: { label: string; value: ReactNode; highlight?: boolean; className?: string }) {

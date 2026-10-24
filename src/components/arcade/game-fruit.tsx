@@ -6,7 +6,7 @@ import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { fitWorld, livePalette, mix, observeCanvas, random, startLoop, withAlpha, type CanvasSize } from "./engine";
-import { GameOverlay, GameShell, Stat, useArcade, useAway, useGameKeys, useRecord } from "./game-shell";
+import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
 
 const HEIGHT = 600;
@@ -35,8 +35,8 @@ type Point = { x: number; y: number; t: number };
 
 type Hooks = {
   onPhase: (phase: Phase) => void;
-  onScore: (score: number, misses: number) => void;
-  onOver: (score: number, reason: "bomb" | "misses") => void;
+  onScore: (score: number, misses: number, fruitsSliced: number, maxCombo: number) => void;
+  onOver: (score: number, reason: "bomb" | "misses", fruitsSliced: number, maxCombo: number) => void;
   live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
 };
 
@@ -58,6 +58,8 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
   let score = 0;
   let misses = 0;
   let launchedFruit = 0;
+  let fruitsSliced = 0;
+  let maxCombo = 0;
   let time = 0;
   let nextWave = 700;
   let queue: { at: number; bomb: boolean }[] = [];
@@ -69,7 +71,7 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
     phase = next;
     hooks.onPhase(next);
   };
-  const report = () => hooks.onScore(score, misses);
+  const report = () => hooks.onScore(score, misses, fruitsSliced, maxCombo);
 
   function clearBodies() {
     Matter.Composite.clear(engine.world, false);
@@ -84,6 +86,8 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
     score = 0;
     misses = 0;
     launchedFruit = 0;
+    fruitsSliced = 0;
+    maxCombo = 0;
     time = 0;
     nextWave = 500;
     queue = [];
@@ -116,7 +120,7 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
   function over(reason: "bomb" | "misses") {
     setPhase("over");
     trail = [];
-    hooks.onOver(score, reason);
+    hooks.onOver(score, reason, fruitsSliced, maxCombo);
     if (reason === "misses") window.setTimeout(() => hooks.live().play("over"), 200);
   }
 
@@ -147,6 +151,8 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
     score += 1;
     const now = performance.now();
     combo = now - combo.last <= COMBO_WINDOW ? { count: combo.count + 1, last: now, x: body.position.x, y: body.position.y } : { count: 1, last: now, x: body.position.x, y: body.position.y };
+    fruitsSliced += 1;
+    maxCombo = Math.max(maxCombo, combo.count);
     hooks.live().play("slice", 0.9 + Math.min(combo.count, 6) * 0.08);
     report();
   }
@@ -488,14 +494,18 @@ export default function GameFruit({ best: initialBest }: { best: number | null }
   const [score, setScore] = useState(0);
   const [misses, setMisses] = useState(0);
   const [reason, setReason] = useState<"bomb" | "misses">("misses");
+  const runMetrics = useRef({ fruitsSliced: 0, maxCombo: 0 });
+
+  useGameAchievementTracking("fruit-slice", phase);
 
   useEffect(() => {
     live.current = { play, effects };
   });
 
-  const finish = useEffectEvent((final: number, why: "bomb" | "misses") => {
+  const finish = useEffectEvent((final: number, why: "bomb" | "misses", sliced: number, combo: number) => {
     setReason(why);
     submit(final);
+    sendAchievementEvent({ type: "run_finished", game: "fruit-slice", fruitsSliced: sliced, maxCombo: combo, reason: why });
   });
 
   useEffect(() => {
@@ -503,16 +513,18 @@ export default function GameFruit({ best: initialBest }: { best: number | null }
     if (!canvas) return;
     const game = createFruit(canvas, {
       onPhase: setPhase,
-      onScore: (next, missed) => {
+      onScore: (next, missed, sliced, combo) => {
         setScore(next);
         setMisses(missed);
+        runMetrics.current = { fruitsSliced: sliced, maxCombo: combo };
       },
-      onOver: (final, why) => finish(final, why),
+      onOver: (final, why, sliced, combo) => finish(final, why, sliced, combo),
       live: () => live.current,
     });
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      if (game.phase !== "over" && runMetrics.current.fruitsSliced > 0) sendAchievementEvent({ type: "run_progress", game: "fruit-slice", ...runMetrics.current });
       game.destroy();
       gameRef.current = null;
     };
@@ -583,6 +595,7 @@ export default function GameFruit({ best: initialBest }: { best: number | null }
   return (
     <GameShell
       title="Fruit Slice"
+      active={phase === "playing" || phase === "paused"}
       stats={
         <>
           <Stat label="Score" value={score} />

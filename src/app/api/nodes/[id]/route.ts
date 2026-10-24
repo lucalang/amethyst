@@ -3,6 +3,7 @@ import { NODE_COLUMNS, loadNodeDetail, nodeWriteError, toWorkspaceNode } from "@
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { updateNodeSchema } from "@/lib/validation/workspace";
 import { markdownTaskCounts } from "@/lib/progress/markdown";
+import { refreshArchiveAchievements } from "@/lib/data/achievements";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -61,12 +62,14 @@ export async function PATCH(request: Request, { params }: Params) {
       ? apiError(409, "version_conflict", "This file was changed somewhere else (another tab or device).")
       : notFound();
   }
+  let achievementUnlocks: Awaited<ReturnType<typeof refreshArchiveAchievements>> = [];
+  if (content !== undefined || includeInCoverProgress !== undefined) achievementUnlocks = await refreshArchiveAchievements(ctx);
   if (data.kind === "checklist" && includeInCoverProgress !== undefined) {
     const { data: counts, error } = await ctx.supabase.from("workspace_tree").select("items_total, items_checked").eq("id", id).single();
     if (error) return dbError(error);
-    return jsonResponse({ node: toWorkspaceNode(data, { total: counts.items_total ?? 0, checked: counts.items_checked ?? 0 }) });
+    return jsonResponse({ node: toWorkspaceNode(data, { total: counts.items_total ?? 0, checked: counts.items_checked ?? 0 }), achievementUnlocks });
   }
-  return jsonResponse({ node: toWorkspaceNode(data) });
+  return jsonResponse({ node: toWorkspaceNode(data), achievementUnlocks });
 }
 
 export async function DELETE(request: Request, { params }: Params) {
@@ -79,5 +82,7 @@ export async function DELETE(request: Request, { params }: Params) {
 
   const { data, error } = await ctx.supabase.from("workspace_nodes").delete().eq("id", id).select("id").maybeSingle();
   if (error) return dbError(error);
-  return data ? jsonResponse({ deleted: true }) : notFound();
+  if (!data) return notFound();
+  const achievementUnlocks = await refreshArchiveAchievements(ctx);
+  return jsonResponse({ deleted: true, achievementUnlocks });
 }

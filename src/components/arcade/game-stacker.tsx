@@ -6,7 +6,7 @@ import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { livePalette, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
-import { GameOverlay, GameShell, Stat, useArcade, useAway, useGameKeys, useRecord } from "./game-shell";
+import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
 
 const WIDTH = 400;
@@ -24,8 +24,8 @@ type Debris = { body: Matter.Body; level: number };
 
 type Hooks = {
   onPhase: (phase: Phase) => void;
-  onScore: (score: number, streak: number) => void;
-  onOver: (score: number) => void;
+  onScore: (score: number, streak: number, bestStreak: number) => void;
+  onOver: (score: number, perfectStreak: number) => void;
   live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
 };
 
@@ -45,6 +45,7 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks) {
   let debris: Debris[] = [];
   let moving = { x: 0, prevX: 0, w: BASE_WIDTH, dir: 1 };
   let streak = 0;
+  let bestStreak = 0;
   let camera = 0;
   let prevCamera = 0;
   let endedAt = 0;
@@ -92,13 +93,14 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks) {
     towerBodies = [];
     debris = [];
     streak = 0;
+    bestStreak = 0;
     popup = null;
     const base: Block = { x: (WIDTH - BASE_WIDTH) / 2, w: BASE_WIDTH, level: 0, placedAt: 0, perfect: false };
     tower.push(base);
     addStatic(base);
     nextMover();
     camera = prevCamera = cameraTarget();
-    hooks.onScore(0, 0);
+    hooks.onScore(0, 0, 0);
     setPhase("ready");
   }
 
@@ -110,6 +112,7 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks) {
     const now = performance.now();
     if (Math.abs(x - top.x) <= PERFECT) {
       streak += 1;
+      bestStreak = Math.max(bestStreak, streak);
       let nextW = top.w;
       let nextX = top.x;
       if (streak >= 3 && nextW < BASE_WIDTH) {
@@ -132,7 +135,7 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks) {
         endedAt = now;
         setPhase("over");
         hooks.live().play("over");
-        hooks.onOver(height());
+        hooks.onOver(height(), bestStreak);
         return;
       }
       const block = { x: left, w: right - left, level, placedAt: now, perfect: false };
@@ -145,7 +148,7 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks) {
       popup = null;
     }
     if (effects === "off") camera = prevCamera = cameraTarget();
-    hooks.onScore(height(), streak);
+    hooks.onScore(height(), streak, bestStreak);
     nextMover();
   }
 
@@ -329,27 +332,36 @@ export default function GameStacker({ best: initialBest }: { best: number | null
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
 
+  const bestStreak = useRef(0);
+
+  useGameAchievementTracking("stacker", phase);
+
   useEffect(() => {
     live.current = { play, effects };
   });
 
-  const finish = useEffectEvent((final: number) => submit(final));
+  const finish = useEffectEvent((final: number, perfectStreak: number) => {
+    submit(final);
+    sendAchievementEvent({ type: "run_finished", game: "stacker", height: final, perfectStreak });
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const game = createStacker(canvas, {
       onPhase: setPhase,
-      onScore: (next, run) => {
+      onScore: (next, run, bestRun) => {
         setScore(next);
         setStreak(run);
+        bestStreak.current = bestRun;
       },
-      onOver: (final) => finish(final),
+      onOver: (final, perfectStreak) => finish(final, perfectStreak),
       live: () => live.current,
     });
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      if (game.score > 0) sendAchievementEvent({ type: "run_progress", game: "stacker", height: game.score, perfectStreak: bestStreak.current });
       game.destroy();
       gameRef.current = null;
     };
@@ -390,6 +402,7 @@ export default function GameStacker({ best: initialBest }: { best: number | null
   return (
     <GameShell
       title="Tower Stacker"
+      active={phase === "playing" || phase === "paused"}
       stats={
         <>
           <Stat label="Height" value={score} />

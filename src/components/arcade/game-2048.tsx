@@ -5,7 +5,7 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { swipeDirection } from "./engine";
-import { GameOverlay, GameShell, Stat, keyDirection, useArcade, useGameKeys, useRecord } from "./game-shell";
+import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useArcade, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import { GOAL, SIZE, hasMoves, newBoard, slide, type Board, type Direction } from "./logic-2048";
 
 type Phase = "playing" | "won" | "over";
@@ -27,14 +27,19 @@ export default function Game2048({ best: initialBest }: { best: number | null })
   const [continued, setContinued] = useState(false);
   const [gain, setGain] = useState<{ key: number; value: number } | null>(null);
   const scoreRef = useRef(0);
+    const maxTile = useRef(2);
   const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+
+  useGameAchievementTracking("2048", phase);
 
   // Leaving mid-game still keeps a new best.
   useEffect(() => {
     const score = scoreRef;
+    const tile = maxTile;
     return () => {
       submit(score.current, { keepalive: true });
+      if (tile.current > 2) sendAchievementEvent({ type: "run_progress", game: "2048", maxTile: tile.current });
     };
   }, [submit]);
 
@@ -44,6 +49,7 @@ export default function Game2048({ best: initialBest }: { best: number | null })
     if (!result.moved) return;
     setBoard(result.board);
     scoreRef.current = result.board.score;
+    maxTile.current = Math.max(maxTile.current, result.largestMerge);
     if (result.gained) {
       setGain({ key: result.board.score, value: result.gained });
       play("merge", Math.min(1.8, 0.85 + Math.log2(result.largestMerge) / 14));
@@ -53,17 +59,21 @@ export default function Game2048({ best: initialBest }: { best: number | null })
     if (!continued && result.largestMerge >= GOAL) {
       setPhase("won");
       submit(result.board.score);
+      sendAchievementEvent({ type: "run_finished", game: "2048", maxTile: maxTile.current });
       play("win");
     } else if (!hasMoves(result.board)) {
       setPhase("over");
       submit(result.board.score);
+      sendAchievementEvent({ type: "run_finished", game: "2048", maxTile: maxTile.current });
       play("over");
     }
   }
 
   function restart() {
+    if (phase !== "playing") sendAchievementEvent({ type: "run_finished", game: "2048", maxTile: maxTile.current });
     submit(scoreRef.current);
     scoreRef.current = 0;
+    maxTile.current = 2;
     setBoard(newBoard());
     setPhase("playing");
     setContinued(false);
@@ -102,6 +112,7 @@ export default function Game2048({ best: initialBest }: { best: number | null })
   return (
     <GameShell
       title="2048"
+      active={phase === "playing"}
       stats={
         <>
           <Stat

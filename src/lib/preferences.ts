@@ -45,7 +45,7 @@ const shortcut = z.string().max(40).refine((value) => value === "" || SHORTCUT_P
 const hasControls = (value: string) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
 
 /** Home sections below the welcome header, in their default order. */
-export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "glance"] as const;
+export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "glance", "achievements"] as const;
 export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
 export type HomeSection = { id: HomeSectionId; hidden: boolean };
 export const MAX_GREETING_LENGTH = 80;
@@ -62,7 +62,7 @@ function normalizeHomeSections(list: { id: string; hidden: boolean }[]): HomeSec
     seen.add(item.id);
     sections.push({ id: item.id as HomeSectionId, hidden: item.hidden });
   }
-  for (const id of HOME_SECTION_IDS) if (!seen.has(id)) sections.push({ id, hidden: false });
+  for (const id of HOME_SECTION_IDS) if (!seen.has(id)) sections.push({ id, hidden: id === "achievements" });
   return sections;
 }
 
@@ -93,7 +93,7 @@ export const DEFAULT_SETTINGS = {
   cardTitle: true,
   cardLabels: false,
   cardProgress: true,
-  homeSections: HOME_SECTION_IDS.map((id) => ({ id, hidden: false })) as HomeSection[],
+  homeSections: HOME_SECTION_IDS.map((id) => ({ id, hidden: id === "achievements" })) as HomeSection[],
   /** "" keeps the built-in welcome. */
   homeGreeting: "",
   homeFeatured: null as HomeFeatured,
@@ -103,6 +103,7 @@ export const DEFAULT_SETTINGS = {
   artworkFrame: DEFAULT_ARTWORK_FRAME as ArtworkFrameId,
   /** Sound effects in Arcade games (audio only starts after the player interacts). */
   arcadeSound: true,
+  achievementNotifications: true,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -183,6 +184,7 @@ const settingFields = {
     .nullable(),
   artworkFrame: z.enum(ARTWORK_FRAME_IDS),
   arcadeSound: z.boolean(),
+  achievementNotifications: z.boolean(),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

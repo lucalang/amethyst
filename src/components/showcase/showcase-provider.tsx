@@ -7,6 +7,7 @@ import { useSettings } from "@/components/layout/settings-context";
 import { useLibrary } from "@/components/media/library-view";
 import { Button } from "@/components/ui/button";
 import { artworkSrc } from "@/lib/attachments";
+import { apiFetch } from "@/lib/api-client";
 import { ArtworkViewer } from "./artwork-viewer";
 import { ShowcaseContext, useShowcase, type ArtworkItem, type ShowcaseApi } from "./showcase-context";
 import { ShowcaseGallery } from "./showcase-gallery";
@@ -116,6 +117,7 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
     openShowcase: (opener) => {
       showcaseOpener.current = opener ?? (document.activeElement as HTMLElement | null);
       setShowcaseOpen(true);
+      void apiFetch("/api/achievements/events", { method: "POST", json: { type: "gallery_open" }, keepalive: true }).catch(() => {});
     },
     viewArtwork: (entryId, opener) => {
       viewerOpener.current = opener ?? (document.activeElement as HTMLElement | null);
@@ -143,7 +145,14 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
                 />
               ) : null}
               {index !== -1 ? (
-                <ArtworkViewer items={items} index={index} frame={artworkFrame} onIndex={(next) => setViewing(items[next]?.id ?? null)} onClose={closeViewer} />
+                <ArtworkViewer
+                  items={items}
+                  index={index}
+                  frame={artworkFrame}
+                  onIndex={(next) => setViewing(items[next]?.id ?? null)}
+                  onClose={closeViewer}
+                  onManualRotate={() => void apiFetch("/api/achievements/events", { method: "POST", json: { type: "manual_rotation" }, keepalive: true }).catch(() => {})}
+                />
               ) : null}
             </>,
             overlayHost(),

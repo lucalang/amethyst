@@ -1,4 +1,5 @@
 import { recordScoreSchema } from "@/lib/arcade";
+import { claimAchievementNotifications } from "@/lib/data/achievements";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 
 /** Submit a finished run; the saved record only ever improves. */
@@ -14,5 +15,6 @@ export async function POST(request: Request) {
   if (error) return dbError(error, "Could not save your record.");
   const row = data?.[0];
   if (!row) return apiError(500, "server_error", "Could not save your record.");
-  return jsonResponse({ best: row.best, improved: row.improved });
+  const achievementUnlocks = await claimAchievementNotifications(ctx);
+  return jsonResponse({ best: row.best, improved: row.improved, hadPrevious: row.had_previous, achievementUnlocks });
 }

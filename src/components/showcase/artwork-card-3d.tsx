@@ -305,7 +305,7 @@ function cssColor(name: string, fallback: string): Color {
   return parts.length >= 3 && parts.every((part) => Number.isFinite(part)) ? new Color(parts[0] / 255, parts[1] / 255, parts[2] / 255) : new Color(fallback);
 }
 
-type Callbacks = { zoom: (zoom: number) => void; ready: (src: string) => void; fail: (src: string) => void };
+type Callbacks = { zoom: (zoom: number) => void; ready: (src: string) => void; fail: (src: string) => void; manualRotate: () => void };
 
 function createEngine(host: HTMLElement, cb: Callbacks) {
   const renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
@@ -602,6 +602,9 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     state.dirty = true;
   };
   const onPointerUp = (event: PointerEvent) => {
+    if (drag?.mode === "turn" && Math.hypot(event.clientX - drag.x, event.clientY - drag.y) >= 6 && (state.targetYaw !== drag.yaw || state.targetPitch !== drag.pitch)) {
+      cb.manualRotate();
+    }
     if (!pointers.delete(event.pointerId)) return;
     pinch = null;
     const [remaining] = [...pointers.values()];
@@ -732,6 +735,7 @@ export default function ArtworkCard3D({
   resetKey,
   motion,
   onZoom,
+  onManualRotate,
   onReady,
   onFail,
 }: {
@@ -742,12 +746,14 @@ export default function ArtworkCard3D({
   resetKey: number;
   motion: MotionLevel;
   onZoom: (zoom: number) => void;
+  onManualRotate: () => void;
   onReady: (src: string) => void;
   onFail: (src: string) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const reportZoom = useEffectEvent((next: number) => onZoom(next));
+  const reportManualRotate = useEffectEvent(() => onManualRotate());
   const reportReady = useEffectEvent((loaded: string) => onReady(loaded));
   const reportFail = useEffectEvent((failed: string) => onFail(failed));
   const initial = useEffectEvent(() => ({ src, frame, motion, maxZoom }));
@@ -758,7 +764,7 @@ export default function ArtworkCard3D({
     const start = initial();
     let engine: Engine;
     try {
-      engine = createEngine(host, { zoom: reportZoom, ready: reportReady, fail: reportFail });
+      engine = createEngine(host, { zoom: reportZoom, ready: reportReady, fail: reportFail, manualRotate: reportManualRotate });
     } catch {
       reportFail(start.src);
       return;

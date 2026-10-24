@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { settingsStyle } from "@/lib/appearance";
 import type { LibraryCategory } from "@/lib/collections";
 import type { Preferences } from "@/lib/preferences";
+import { AchievementNotifications } from "@/components/achievements/achievement-notifications";
 import { CurrentCollectionProvider } from "./current-collection";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { OpeningIntro } from "./opening-intro";
@@ -50,6 +51,7 @@ export function AppShell({
         <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
           {children}
         </main>
+        <AchievementNotifications enabled={preferences.achievementNotifications} />
         <MobileTabBar collections={collections} icons={icons} />
         <ScrollExitFallback />
       </div>

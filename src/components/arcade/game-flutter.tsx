@@ -6,7 +6,7 @@ import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { fitWorld, livePalette, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
-import { GameOverlay, GameShell, Stat, useArcade, useAway, useGameKeys, useRecord } from "./game-shell";
+import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
 
 const WIDTH = 480;
@@ -369,11 +369,16 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
   const [phase, setPhase] = useState<Phase>("ready");
   const [score, setScore] = useState(0);
 
+  useGameAchievementTracking("flutter", phase);
+
   useEffect(() => {
     live.current = { play, effects };
   });
 
-  const finish = useEffectEvent((final: number) => submit(final));
+  const finish = useEffectEvent((final: number) => {
+    submit(final);
+    sendAchievementEvent({ type: "run_finished", game: "flutter", obstacles: final });
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -387,6 +392,7 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      if (game.score > 0) sendAchievementEvent({ type: "run_progress", game: "flutter", obstacles: game.score });
       game.destroy();
       gameRef.current = null;
     };
@@ -429,6 +435,7 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
   return (
     <GameShell
       title="Flutter"
+      active={phase === "playing" || phase === "paused"}
       stats={
         <>
           <Stat label="Score" value={score} />

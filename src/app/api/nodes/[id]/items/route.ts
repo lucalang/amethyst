@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ITEM_COLUMNS, toChecklistItem } from "@/lib/data/workspace";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { addItemsSchema, addTasksSchema, checkAllSchema, reorderItemsSchema } from "@/lib/validation/workspace";
+import { refreshArchiveAchievements } from "@/lib/data/achievements";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -33,7 +34,8 @@ export async function POST(request: Request, { params }: Params) {
         .select(ITEM_COLUMNS)
     : await prepared.ctx.supabase.rpc("add_checklist_items", { p_file_id: prepared.id, p_labels: body.labels }).select(ITEM_COLUMNS);
   if (error) return dbError(error);
-  return jsonResponse({ items: (data ?? []).map((row) => toChecklistItem(row)).sort((a, b) => a.position - b.position) }, { status: 201 });
+  const achievementUnlocks = await refreshArchiveAchievements(prepared.ctx);
+  return jsonResponse({ items: (data ?? []).map((row) => toChecklistItem(row)).sort((a, b) => a.position - b.position), achievementUnlocks }, { status: 201 });
 }
 
 /** Persist a complete item order. */
@@ -57,5 +59,6 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const { data, error } = await prepared.ctx.supabase.rpc("set_checklist_checked", { p_file_id: prepared.id, p_checked: parsed.data.checked });
   if (error) return dbError(error);
-  return jsonResponse({ changed: data ?? 0 });
+  const achievementUnlocks = await refreshArchiveAchievements(prepared.ctx);
+  return jsonResponse({ changed: data ?? 0, achievementUnlocks });
 }

@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { SUDOKU_CELLS, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type SudokuDifficulty, type SudokuSave } from "@/lib/arcade";
 import { cn } from "@/lib/utils";
-import { GameOverlay, GameShell, Stat, useArcade, useAway, useGameKeys } from "./game-shell";
+import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameKeys } from "./game-shell";
 
 type Snapshot = { entries: string; notes: number[] };
 type Result = { seconds: number; best: number | null; improved: boolean };
@@ -91,6 +91,7 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
   const dirty = useRef(false);
   const warned = useRef(false);
   const cellRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const startedGame = useRef<string | null>(null);
 
   useEffect(() => {
     latest.current = { game, entries, notes };
@@ -98,6 +99,12 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
 
   const unfinished = game !== null && !game.completed;
   const running = view === "board" && unfinished && !paused && !finishing;
+
+  useEffect(() => {
+    if (!running || !game || startedGame.current === game.id) return;
+    startedGame.current = game.id;
+    sendAchievementEvent({ type: "game_started", game: "sudoku" });
+  }, [game, running]);
 
   useEffect(() => {
     if (!running) return;
@@ -387,6 +394,7 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
   return (
     <GameShell
       title="Sudoku"
+      active={view === "board" && unfinished}
       stats={
         view === "board" && game ? (
           <>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, ArrowUpRight, CalendarClock, Check, FileText, Gamepad2, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Award, CalendarClock, Check, FileText, Gamepad2, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionIcon } from "@/components/categories/collection-icon";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
@@ -14,6 +14,8 @@ import { PosterCard } from "@/components/media/poster-card";
 import { ProgressMeter } from "@/components/media/progress-meter";
 import { accentStyle } from "@/lib/collection-identity";
 import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomeFeaturedEntry, type HomePreview } from "@/lib/data/home";
+import { loadAchievementCards } from "@/lib/data/achievements";
+import { ACHIEVEMENTS } from "@/lib/achievements";
 import { loadPreferences } from "@/lib/data/preferences";
 import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import type { HomeSectionId } from "@/lib/preferences";
@@ -380,6 +382,8 @@ export default async function HomePage() {
   const preferences = await loadPreferences(ctx);
   const chosen = preferences.homeFeatured;
   const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null, preferences.homeFanCollections);
+  const showAchievements = preferences.homeSections.some((section) => section.id === "achievements" && !section.hidden);
+  const achievementCards = showAchievements ? await loadAchievementCards(ctx) : [];
   const { pinStyle } = preferences;
   const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const hasEntries = home.counts.entries > 0;
@@ -465,6 +469,30 @@ export default async function HomePage() {
           </dl>
         </Section>
       ) : null,
+    achievements: (position) => {
+      const earnedIds = new Set(achievementCards.filter((item) => item.earnedAt).map((item) => item.id));
+      const earned = ACHIEVEMENTS.filter((item) => earnedIds.has(item.id)).slice(0, 6);
+      return showAchievements ? (
+        <Section
+          id="achievements"
+          title="Earned achievements"
+          icon={Award}
+          index={position}
+          action={<Link href="/achievements" className="text-sm font-medium text-amethyst underline-offset-4 hover:underline">View all</Link>}
+        >
+          {earned.length ? (
+            <ul className="grid gap-x-6 gap-y-3 border-y border-white/[0.08] py-3 sm:grid-cols-2 lg:grid-cols-3">
+              {earned.map((item) => (
+                <li key={item.id} className="flex min-w-0 items-center gap-2.5 text-sm">
+                  <Award aria-hidden className="size-4 shrink-0 text-amethyst" />
+                  <span className="min-w-0 truncate font-medium">{item.name}</span>
+                </li>
+              ))}
+            </ul>
+          ) : <Hint>No achievements earned yet. Your milestones will appear here.</Hint>}
+        </Section>
+      ) : null;
+    },
   };
 
   const gettingStarted = !hasEntries ? <GettingStarted home={home} index={index++} /> : null;

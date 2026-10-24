@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { House, Play, Trophy } from "lucide-react";
+import { Award, House, Play, Trophy } from "lucide-react";
 import { ArcadePreview } from "@/components/arcade/previews";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -47,12 +47,14 @@ export default async function ArcadePage() {
           title="Arcade"
           description="Six quick games for a break. Your personal records and Sudoku progress are saved to your account."
           actions={
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/">
-                <House aria-hidden />
-                Home
-              </Link>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/achievements"><Award aria-hidden />Achievements</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/"><House aria-hidden />Home</Link>
+              </Button>
+            </div>
           }
         />
         <ul aria-label="Games" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

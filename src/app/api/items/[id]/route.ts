@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ITEM_COLUMNS, STEP_COLUMNS, toChecklistItem } from "@/lib/data/workspace";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { updateItemSchema } from "@/lib/validation/workspace";
+import { refreshArchiveAchievements } from "@/lib/data/achievements";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -25,7 +26,9 @@ export async function PATCH(request: Request, { params }: Params) {
     .select(`${ITEM_COLUMNS}, steps:workspace_checklist_steps(${STEP_COLUMNS})`)
     .maybeSingle();
   if (error) return dbError(error);
-  return data ? jsonResponse({ item: toChecklistItem(data, data.steps) }) : notFound();
+  if (!data) return notFound();
+  const achievementUnlocks = parsed.data.checked !== undefined ? await refreshArchiveAchievements(ctx) : [];
+  return jsonResponse({ item: toChecklistItem(data, data.steps), achievementUnlocks });
 }
 
 export async function DELETE(request: Request, { params }: Params) {
@@ -38,5 +41,7 @@ export async function DELETE(request: Request, { params }: Params) {
 
   const { data, error } = await ctx.supabase.from("workspace_checklist_items").delete().eq("id", id).select("id").maybeSingle();
   if (error) return dbError(error);
-  return data ? jsonResponse({ deleted: true }) : notFound();
+  if (!data) return notFound();
+  const achievementUnlocks = await refreshArchiveAchievements(ctx);
+  return jsonResponse({ deleted: true, achievementUnlocks });
 }

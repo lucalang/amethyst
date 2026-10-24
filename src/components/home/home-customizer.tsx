@@ -4,6 +4,7 @@ import { createContext, Fragment, useContext, useEffect, useId, useRef, useState
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  Award,
   ArrowDown,
   ArrowUp,
   CalendarClock,
@@ -53,9 +54,10 @@ const SECTION_META: Record<HomeSectionId, { title: string; icon: LucideIcon }> =
   collections: { title: "Your collections", icon: LibraryBig },
   tasks: { title: "Upcoming tasks", icon: CalendarClock },
   glance: { title: "At a glance", icon: Layers },
+  achievements: { title: "Earned achievements", icon: Award },
 };
 
-const DEFAULT_LAYOUT: HomeSection[] = HOME_SECTION_IDS.map((id) => ({ id, hidden: false }));
+const DEFAULT_LAYOUT: HomeSection[] = HOME_SECTION_IDS.map((id) => ({ id, hidden: id === "achievements" }));
 
 type CustomizeState = { customizing: boolean; setCustomizing: (value: boolean) => void };
 const CustomizeContext = createContext<CustomizeState>({ customizing: false, setCustomizing: () => {} });

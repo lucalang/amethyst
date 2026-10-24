@@ -47,6 +47,20 @@ export default async function AppearancePage() {
             <SwitchSetting settingKey="cardShine" value={preferences.cardShine} labelId="shine-label" onLabel="Shine on" offLabel="Shine off" />
           </SettingRow>
           <SettingRow
+            labelId="achievement-notifications-label"
+            label="Achievement notifications"
+            description="Show a quiet notification when you earn an achievement. Progress tracking stays on when notifications are off."
+            reset={resetFor(preferences, ["achievementNotifications"], "On")}
+          >
+            <SwitchSetting
+              settingKey="achievementNotifications"
+              value={preferences.achievementNotifications}
+              labelId="achievement-notifications-label"
+              onLabel="Notifications on"
+              offLabel="Notifications off"
+            />
+          </SettingRow>
+          <SettingRow
             labelId="hover-scale-label"
             label="Hover scaling"
             description="How much a cover grows when you point at it."

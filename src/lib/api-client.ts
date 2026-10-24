@@ -27,5 +27,9 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit & { j
     const error = (body as { error?: { message?: string; code?: string } } | null)?.error;
     throw new ApiError(error?.message ?? `Request failed (${response.status})`, response.status, error?.code);
   }
+  const achievementUnlocks = (body as { achievementUnlocks?: unknown } | null)?.achievementUnlocks;
+  if (typeof window !== "undefined" && Array.isArray(achievementUnlocks) && achievementUnlocks.length) {
+    window.dispatchEvent(new CustomEvent("archive:achievement-unlocked", { detail: achievementUnlocks }));
+  }
   return body as T;
 }

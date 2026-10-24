@@ -50,12 +50,14 @@ export function ArtworkViewer({
   frame,
   onIndex,
   onClose,
+  onManualRotate,
 }: {
   items: ArtworkItem[];
   index: number;
   frame: ArtworkFrameId;
   onIndex: (index: number) => void;
   onClose: () => void;
+  onManualRotate: () => void;
 }) {
   const motion = useMotionLevel();
   const item = items[index];
@@ -186,6 +188,7 @@ export function ArtworkViewer({
                 resetKey={resetKey}
                 motion={motion}
                 onZoom={changeZoom}
+                onManualRotate={onManualRotate}
                 onReady={setReady}
                 onFail={(failed: string) => setFlatOnly((set) => new Set(set).add(failed))}
               />
