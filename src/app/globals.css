@@ -2070,3 +2070,550 @@
     translate: 0 -0.9rem;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Achievement cabinet. Badges are self-lit objects (gold rim, enamel face) so
+ * they read on every theme; surrounding surfaces use theme tokens. Group
+ * colors and silhouettes come from BADGE_STYLES via --ach-* variables.
+ * ------------------------------------------------------------------------- */
+.ach-badge {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--ach-size);
+  height: var(--ach-size);
+  isolation: isolate;
+}
+.ach-badge-halo {
+  position: absolute;
+  inset: -24%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--ach-glow) / 0.42), rgb(var(--ach-glow) / 0.12) 45%, transparent 68%);
+  opacity: 0.8;
+  pointer-events: none;
+  transition: opacity 300ms ease, scale 300ms ease;
+}
+.ach-badge-body {
+  position: absolute;
+  inset: 0;
+  transform: perspective(calc(var(--ach-size) * 6)) rotateX(var(--ach-rx, 0deg)) rotateY(var(--ach-ry, 0deg));
+  scale: var(--ach-scale, 1);
+  filter: drop-shadow(0 calc(var(--ach-size) * 0.07) calc(var(--ach-size) * 0.07) rgb(var(--shadow-rgb) / calc(0.55 * var(--shadow-alpha))));
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1), scale 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.ach-badge-rim,
+.ach-badge-bevel,
+.ach-badge-face,
+.ach-badge-gloss,
+.ach-badge-sweep {
+  position: absolute;
+  clip-path: var(--ach-shape);
+}
+.ach-badge-rim {
+  inset: 0;
+  background: conic-gradient(from 210deg, #fff6d2, #e7b546 11%, #8c5810 24%, #f6d27c 38%, #b07818 52%, #fff0b4 66%, #a26c17 80%, #fff6d2);
+}
+.ach-badge-bevel {
+  inset: 6%;
+  background: linear-gradient(160deg, #5f3a06, #c99434 45%, #fff3c8);
+}
+.ach-badge-face {
+  inset: 9.5%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 34% 26%, var(--ach-hi), var(--ach-mid) 48%, var(--ach-lo) 100%);
+}
+/* Engraved sunburst and fine rings, like a struck medal. */
+.ach-badge-engrave {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 4px),
+    repeating-conic-gradient(from 0deg, rgb(255 255 255 / 0.07) 0deg 4deg, transparent 4deg 12deg);
+  mix-blend-mode: overlay;
+}
+.ach-badge-icon {
+  position: relative;
+  width: calc(var(--ach-size) * 0.36);
+  height: calc(var(--ach-size) * 0.36);
+  color: #fff;
+  stroke-width: 2.1;
+  filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.45)) drop-shadow(0 0 calc(var(--ach-size) * 0.07) rgb(var(--ach-glow) / 0.95));
+}
+.ach-badge-gloss {
+  inset: 9.5%;
+  background:
+    linear-gradient(168deg, rgb(255 255 255 / 0.4) 0%, rgb(255 255 255 / 0.1) 36%, transparent 37%),
+    radial-gradient(circle at 70% 88%, rgb(255 255 255 / 0.14), transparent 40%);
+  pointer-events: none;
+}
+.ach-badge-sweep {
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ach-badge-sweep::before {
+  content: "";
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.75) 50%, transparent 60%);
+  opacity: 0;
+  translate: -70% 0;
+}
+/* Archive medals hang from a short ribbon. */
+.ach-badge-ribbon {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 60%;
+  height: 52%;
+  z-index: -1;
+  filter: drop-shadow(0 3px 4px rgb(var(--shadow-rgb) / calc(0.45 * var(--shadow-alpha))));
+}
+.ach-badge-ribbon::before,
+.ach-badge-ribbon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--ach-lo), var(--ach-mid) 35%, var(--ach-hi) 50%, var(--ach-mid) 65%, var(--ach-lo));
+}
+.ach-badge-ribbon::before {
+  clip-path: polygon(10% 0, 48% 0, 36% 100%, 19% 86%, 0 100%);
+}
+.ach-badge-ribbon::after {
+  clip-path: polygon(52% 0, 90% 0, 100% 100%, 81% 86%, 64% 100%);
+}
+.ach-badge-lock {
+  position: absolute;
+  left: 50%;
+  bottom: -5%;
+  display: grid;
+  place-items: center;
+  width: max(18px, calc(var(--ach-size) * 0.28));
+  height: max(18px, calc(var(--ach-size) * 0.28));
+  translate: -50% 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #666b76, #23262c);
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 3px 8px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 rgb(255 255 255 / 0.28);
+  color: #dfe2e8;
+}
+.ach-badge-lock svg {
+  width: 52%;
+  height: 52%;
+}
+
+/* Locked: dark iron and obsidian, the icon debossed, with an ember of the group color. */
+.ach-badge[data-state="locked"] .ach-badge-halo {
+  display: none;
+}
+.ach-badge[data-state="locked"] .ach-badge-rim {
+  background: conic-gradient(from 210deg, #8d929e, #3a3e47 13%, #60656f 28%, #22252b 45%, #737884 62%, #2c2f36 80%, #8d929e);
+}
+.ach-badge[data-state="locked"] .ach-badge-bevel {
+  background: linear-gradient(160deg, #0b0c0f, #3f434b 55%, #737782);
+}
+.ach-badge[data-state="locked"] .ach-badge-face {
+  background:
+    radial-gradient(70% 45% at 50% 108%, rgb(var(--ach-glow) / 0.3), transparent 70%),
+    radial-gradient(circle at 34% 26%, #30333b, #17191e 55%, #0a0b0e);
+}
+.ach-badge[data-state="locked"] .ach-badge-engrave {
+  opacity: 0.45;
+}
+.ach-badge[data-state="locked"] .ach-badge-icon {
+  color: #464a54;
+  filter: drop-shadow(0 1px 0 rgb(255 255 255 / 0.14)) drop-shadow(0 -1px 0 rgb(0 0 0 / 0.75));
+}
+.ach-badge[data-state="locked"] .ach-badge-gloss {
+  opacity: 0.4;
+}
+.ach-badge[data-state="locked"] .ach-badge-ribbon::before,
+.ach-badge[data-state="locked"] .ach-badge-ribbon::after {
+  background: linear-gradient(90deg, #1d1f24, #3b3f47 50%, #1d1f24);
+}
+
+@keyframes ach-sweep {
+  from {
+    opacity: 1;
+    translate: -70% 0;
+  }
+  to {
+    opacity: 1;
+    translate: 70% 0;
+  }
+}
+
+/* Cabinet tiles. */
+.ach-tile {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0.875rem 1rem;
+  border: 1px solid rgb(var(--ink-rgb) / 0.08);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(90% 55% at 50% 0%, rgb(var(--ach-glow) / 0.16), transparent 72%),
+    linear-gradient(180deg, rgb(var(--ink-rgb) / 0.045), rgb(var(--ink-rgb) / 0.012));
+  text-align: center;
+  outline: none;
+  cursor: pointer;
+  transition:
+    translate 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 200ms ease,
+    box-shadow 260ms ease;
+}
+.ach-tile[data-state="locked"] {
+  background: linear-gradient(180deg, rgb(var(--ink-rgb) / 0.022), rgb(var(--ink-rgb) / 0.008));
+  box-shadow: inset 0 2px 14px rgb(var(--shadow-rgb) / calc(0.22 * var(--shadow-alpha)));
+}
+/* Edge light: a gradient border that brightens on hover and focus. */
+.ach-tile::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgb(var(--ach-glow) / 0.9), rgb(var(--ach-glow) / 0) 60%);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+}
+.ach-tile[data-state="earned"]::before {
+  opacity: 0.5;
+}
+.ach-tile:is(:hover, :focus-visible) {
+  translate: 0 -4px;
+  border-color: rgb(var(--ach-glow) / 0.4);
+  box-shadow:
+    0 22px 44px -24px rgb(var(--ach-glow) / 0.7),
+    0 12px 26px -18px rgb(var(--shadow-rgb) / calc(0.6 * var(--shadow-alpha)));
+}
+.ach-tile:is(:hover, :focus-visible)::before {
+  opacity: 1;
+}
+.ach-tile:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring),
+    0 22px 44px -24px rgb(var(--ach-glow) / 0.7);
+}
+.ach-tile:is(:hover, :focus-visible) .ach-badge {
+  --ach-scale: 1.07;
+}
+.ach-tile:is(:hover, :focus-visible) .ach-badge-halo {
+  opacity: 1;
+  scale: 1.1;
+}
+.ach-tile:is(:hover, :focus-visible) .ach-badge-sweep::before {
+  animation: ach-sweep 750ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+.ach-tile[data-state="locked"]:is(:hover, :focus-visible) .ach-badge-sweep::before {
+  background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.28) 50%, transparent 60%);
+}
+
+.ach-meter {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / 0.09);
+}
+.ach-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgb(var(--ach-glow) / 0.55), rgb(var(--ach-glow)));
+  box-shadow: 0 0 8px rgb(var(--ach-glow) / 0.5);
+  transition: width 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Header pips: one notch per achievement. */
+.ach-pip {
+  display: block;
+  width: 0.625rem;
+  height: 0.625rem;
+  rotate: 45deg;
+  border-radius: 2px;
+  background: rgb(var(--ink-rgb) / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / 0.08);
+}
+.ach-pip[data-earned="true"] {
+  background: linear-gradient(135deg, var(--ach-hi), var(--ach-mid));
+  box-shadow:
+    0 0 0 1px #e7b546,
+    0 0 8px rgb(var(--ach-glow) / 0.6);
+}
+
+/* Details: a lit stage for the large badge. */
+.ach-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 2.25rem 1rem 2rem;
+  background:
+    radial-gradient(60% 70% at 50% 0%, rgb(var(--ach-glow) / 0.28), transparent 70%),
+    radial-gradient(50% 30% at 50% 100%, rgb(var(--shadow-rgb) / calc(0.3 * var(--shadow-alpha))), transparent 70%),
+    linear-gradient(180deg, rgb(var(--ink-rgb) / 0.04), transparent);
+}
+.ach-stage-rays {
+  position: absolute;
+  inset: -40%;
+  background: repeating-conic-gradient(from 0deg, rgb(var(--ach-glow) / 0.12) 0deg 6deg, transparent 6deg 24deg);
+  mask: radial-gradient(circle, #000 12%, transparent 55%);
+  pointer-events: none;
+}
+.ach-stage[data-state="locked"] .ach-stage-rays {
+  display: none;
+}
+.ach-ring {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  rotate: -90deg;
+  pointer-events: none;
+}
+@keyframes ach-reveal {
+  0% {
+    opacity: 0;
+    transform: perspective(900px) rotateY(-80deg) scale(0.55);
+  }
+  60% {
+    opacity: 1;
+    transform: perspective(900px) rotateY(12deg) scale(1.05);
+  }
+  100% {
+    transform: perspective(900px) rotateY(0deg) scale(1);
+  }
+}
+.ach-badge--reveal .ach-badge-body {
+  animation: ach-reveal 680ms cubic-bezier(0.2, 0.8, 0.25, 1) backwards;
+}
+.ach-badge--reveal .ach-badge-sweep::before {
+  animation: ach-sweep 820ms 560ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+.ach-badge--reveal .ach-badge-halo {
+  animation: ach-halo-in 900ms 200ms ease-out backwards;
+}
+@keyframes ach-halo-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+/* Unlock celebration. */
+@keyframes ach-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-30deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.14) rotate(5deg);
+  }
+  78% {
+    transform: scale(0.97) rotate(-1deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes ach-rim-in {
+  from {
+    opacity: 0;
+    transform: scale(1.45) rotate(-60deg);
+  }
+}
+@keyframes ach-grow-in {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-18deg);
+  }
+}
+@keyframes ach-soft-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+}
+.ach-badge--assemble .ach-badge-body {
+  animation: ach-pop 760ms 120ms cubic-bezier(0.2, 0.9, 0.3, 1.15) backwards;
+}
+.ach-badge--assemble .ach-badge-rim {
+  animation: ach-rim-in 620ms 120ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.ach-badge--assemble .ach-badge-face {
+  animation: ach-grow-in 520ms 260ms cubic-bezier(0.2, 0.9, 0.3, 1.3) backwards;
+}
+.ach-badge--assemble .ach-badge-icon {
+  animation: ach-grow-in 420ms 480ms cubic-bezier(0.2, 0.9, 0.3, 1.4) backwards;
+}
+.ach-badge--assemble .ach-badge-sweep::before {
+  animation: ach-sweep 820ms 820ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+.ach-badge--assemble .ach-badge-halo {
+  animation: ach-halo-in 1000ms 380ms ease-out backwards;
+}
+.ach-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ach-rays {
+  position: absolute;
+  inset: -60%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgb(var(--ach-glow) / 0.34) 0deg 5deg, transparent 5deg 22.5deg);
+  mask: radial-gradient(circle, #000 16%, transparent 66%);
+  opacity: 0;
+  animation: ach-rays 1900ms 360ms ease-out both;
+}
+@keyframes ach-rays {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) scale(0.6);
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(50deg) scale(1.05);
+  }
+}
+.ach-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 1.5px;
+  background: var(--spark);
+  box-shadow: 0 0 6px var(--spark);
+  opacity: 0;
+  animation: ach-spark 950ms var(--delay) cubic-bezier(0.15, 0.7, 0.3, 1) both;
+}
+@keyframes ach-spark {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(0) scale(0.6);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0) rotate(45deg);
+  }
+}
+.ach-toast {
+  position: relative;
+  border: 1px solid rgb(var(--ach-glow) / 0.42);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(120deg, rgb(var(--ach-glow) / 0.16), transparent 50%),
+    var(--popover);
+  box-shadow:
+    0 26px 60px -26px rgb(var(--ach-glow) / 0.6),
+    0 18px 48px -20px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha)));
+  animation: ach-toast-in 440ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.ach-toast::before {
+  content: "";
+  position: absolute;
+  inset: 0 12% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  pointer-events: none;
+}
+@keyframes ach-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+}
+@keyframes ach-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.ach-toast-text > * {
+  animation: ach-rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.ach-toast-text > :nth-child(1) {
+  animation-delay: 420ms;
+}
+.ach-toast-text > :nth-child(2) {
+  animation-delay: 520ms;
+}
+.ach-toast-text > :nth-child(3) {
+  animation-delay: 620ms;
+}
+.ach-toast-text > :nth-child(4) {
+  animation-delay: 720ms;
+}
+
+/* Subtle motion: quick pops, a short lift, no tilt, rays or sparks. */
+:root:has([data-motion="subtle"]) .ach-badge-body {
+  transform: none;
+}
+:root:has([data-motion="subtle"]) .ach-tile:is(:hover, :focus-visible) {
+  translate: 0 -2px;
+}
+:root:has([data-motion="subtle"]) .ach-tile:is(:hover, :focus-visible) .ach-badge {
+  --ach-scale: 1.03;
+}
+:root:has([data-motion="subtle"]) :is(.ach-rays, .ach-spark) {
+  display: none;
+}
+:root:has([data-motion="subtle"]) :is(.ach-badge--assemble, .ach-badge--reveal) .ach-badge-body {
+  animation: ach-soft-in 280ms ease-out backwards;
+}
+:root:has([data-motion="subtle"]) .ach-badge--assemble :is(.ach-badge-rim, .ach-badge-face, .ach-badge-icon) {
+  animation: none;
+}
+:root:has([data-motion="subtle"]) :is(.ach-toast, .ach-toast-text > *) {
+  animation-duration: 220ms;
+  animation-delay: 0ms;
+}
+
+/* Off, or the system asks for reduced motion: everything appears in place. */
+:root:has([data-motion="off"]) :is(.ach-rays, .ach-spark, .ach-badge-sweep, .ach-stage-rays) {
+  display: none;
+}
+:root:has([data-motion="off"]) :is(.ach-tile, .ach-badge-body, .ach-badge-halo) {
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+}
+:root:has([data-motion="off"]) :is(.ach-toast, .ach-toast-text > *, .ach-badge-body, .ach-badge-rim, .ach-badge-face, .ach-badge-icon, .ach-badge-halo) {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.ach-rays, .ach-spark, .ach-badge-sweep) {
+    display: none;
+  }
+  :is(.ach-tile, .ach-badge-body, .ach-badge-halo) {
+    transform: none !important;
+    translate: none !important;
+    scale: none !important;
+  }
+  :is(.ach-toast, .ach-toast-text > *, .ach-badge-body, .ach-badge-rim, .ach-badge-face, .ach-badge-icon, .ach-badge-halo) {
+    animation: none !important;
+  }
+}

@@ -29,6 +29,40 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    id: "2026-10-24-achievement-cabinet",
+    date: "2026-10-24",
+    title: "A medal cabinet for your achievements",
+    summary: "Achievements now live in a redesigned cabinet of dimensional medals, open into a detailed view, and arrive with a short celebration. Find them on Home, right beside the Arcade.",
+    added: [
+      {
+        text: "Every achievement is now a layered medal with a metal rim, enamel face and engraved icon. Arcade, Archive and Discovery each have their own shape and color, earned medals shine, and locked ones rest in dark iron with their goal still readable. The header shows your overall completion and progress per group, and the earned, in-progress, group and game filters are still there.",
+        where: "Achievements",
+        link: { href: "/achievements", label: "Open the cabinet" },
+      },
+      {
+        text: "Select any medal (by click, tap or keyboard) to see it up close: a larger badge, its description, the exact goal, your progress and the date and time you earned it. Earned medals have a Replay celebration button that plays the unlock moment again without changing anything.",
+        where: "Achievements → select a medal",
+        link: { href: "/achievements", label: "View achievements" },
+      },
+      {
+        text: "New unlocks get a short celebration: the medal assembles, catches the light and gives off a brief burst of sparks, then settles into a notification with View achievement and Dismiss. Several unlocks queue one after another. It never takes focus and waits while you type or play. It follows your Motion setting and reduced-motion preference, with no sound and no flashing.",
+        where: "Anywhere in the app",
+      },
+      {
+        text: "An Achievements link now sits beside Arcade at the bottom of Home and shows how many medals you have earned.",
+        where: "Home",
+        link: { href: "/", label: "Go to Home" },
+      },
+    ],
+    improved: [
+      {
+        text: "Achievements no longer appear in the Settings sidebar; open them from Home, the Arcade or a direct link. The celebrations toggle moved to a new Notifications group in Settings → General, and your existing choice is kept.",
+        where: "Settings → General",
+        link: { href: "/settings", label: "Adjust celebrations" },
+      },
+    ],
+  },
+  {
     id: "2026-10-24-achievements",
     date: "2026-10-24",
     title: "Achievements for your Arcade and archive milestones",

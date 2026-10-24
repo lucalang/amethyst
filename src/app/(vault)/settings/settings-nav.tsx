@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Award, Frame, Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, type LucideIcon } from "lucide-react";
+import { Frame, Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; hint: string; icon: LucideIcon; active: (pathname: string) => boolean };
@@ -11,7 +11,7 @@ const ITEMS: Item[] = [
   {
     href: "/settings",
     label: "General",
-    hint: "Startup, profile and security",
+    hint: "Startup, notifications and security",
     icon: SlidersHorizontal,
     active: (pathname) => pathname === "/settings" || pathname.startsWith("/settings/password"),
   },
@@ -70,13 +70,6 @@ const ITEMS: Item[] = [
     hint: "Tags inside each collection",
     icon: Tags,
     active: (pathname) => pathname.startsWith("/settings/labels"),
-  },
-  {
-    href: "/achievements",
-    label: "Achievements",
-    hint: "Personal milestones",
-    icon: Award,
-    active: (pathname) => pathname.startsWith("/achievements"),
   },
   {
     href: "/whats-new",

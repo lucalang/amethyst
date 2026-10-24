@@ -1,20 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AchievementIcon } from "@/components/achievements/achievement-icon";
+import { AchievementBadge, BADGE_STYLES, badgeVars } from "@/components/achievements/achievement-badge";
 import { achievementDefinition, type AchievementNotice } from "@/lib/achievements";
 import { apiFetch } from "@/lib/api-client";
 
+type Celebration = AchievementNotice & { key: string; replay: boolean };
+
+const SHOW_DELAY_MS = 700;
+const VISIBLE_MS = 8000;
+const SPARKS = Array.from({ length: 14 }, (_, index) => ({
+  "--a": `${index * (360 / 14) + (index % 2 ? 9 : -5)}deg`,
+  "--d": `${46 + (index % 3) * 11}px`,
+  "--delay": `${640 + (index % 4) * 35}ms`,
+  "--spark": index % 3 === 0 ? "#ffe08a" : index % 3 === 1 ? "rgb(var(--ach-glow))" : "#ffffff",
+})) as CSSProperties[];
+
+/** Plays the celebration again for an earned achievement. Purely visual: nothing is sent to the server. */
+export function replayAchievementCelebration(id: string) {
+  window.dispatchEvent(new CustomEvent("archive:achievement-celebrate", { detail: id }));
+}
+
 export function AchievementNotifications({ enabled }: { enabled: boolean }) {
-  const [queue, setQueue] = useState<AchievementNotice[]>([]);
+  const [queue, setQueue] = useState<Celebration[]>([]);
   const [safeToShow, setSafeToShow] = useState(false);
-  const [shownId, setShownId] = useState<string | null>(null);
+  const [shownKey, setShownKey] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
   const seen = useRef(new Set<string>());
   const active = queue[0];
   const definition = active ? achievementDefinition(active.id) : undefined;
+  const allowed = Boolean(active && (enabled || active.replay));
 
   useEffect(() => {
     const receive = (event: Event) => {
@@ -23,10 +41,19 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
       if (!Array.isArray(notices)) return;
       const added = notices.filter((notice) => achievementDefinition(notice.id) && !seen.current.has(notice.id));
       for (const notice of added) seen.current.add(notice.id);
-      if (added.length) setQueue((current) => [...current, ...added]);
+      if (added.length) setQueue((current) => [...current, ...added.map((notice) => ({ ...notice, key: `unlock:${notice.id}`, replay: false }))]);
+    };
+    const replay = (event: Event) => {
+      const id = String((event as CustomEvent<string>).detail);
+      if (!achievementDefinition(id)) return;
+      setQueue((current) => [...current, { id, earnedAt: "", key: `replay:${id}:${Date.now()}`, replay: true }]);
     };
     window.addEventListener("archive:achievement-unlocked", receive);
-    return () => window.removeEventListener("archive:achievement-unlocked", receive);
+    window.addEventListener("archive:achievement-celebrate", replay);
+    return () => {
+      window.removeEventListener("archive:achievement-unlocked", receive);
+      window.removeEventListener("archive:achievement-celebrate", replay);
+    };
   }, [enabled]);
 
   useEffect(() => {
@@ -56,36 +83,77 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
     };
   }, []);
 
-  const activeId = active?.id;
+  const activeKey = active?.key;
   useEffect(() => {
-    if (!activeId || !safeToShow || !enabled) return;
-    const timer = window.setTimeout(() => setShownId(activeId), 700);
+    if (!activeKey || !safeToShow || !allowed) return;
+    const timer = window.setTimeout(() => setShownKey(activeKey), SHOW_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [activeId, enabled, safeToShow]);
+  }, [activeKey, allowed, safeToShow]);
+
+  const visible = Boolean(active && definition && allowed && safeToShow && shownKey === active.key);
+  useEffect(() => {
+    if (!visible || paused) return;
+    const timer = window.setTimeout(() => setQueue((current) => current.slice(1)), VISIBLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [visible, paused, activeKey]);
 
   function dismiss() {
+    setPaused(false);
     setQueue((current) => current.slice(1));
   }
 
-  if (!active || !definition || !enabled || !safeToShow || shownId !== active.id) return null;
+  function view() {
+    if (active) window.dispatchEvent(new CustomEvent("archive:achievement-open", { detail: active.id }));
+    dismiss();
+  }
+
   return (
-    <aside aria-live="polite" aria-label="Achievement notification" className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[120] w-[min(24rem,calc(100vw-2rem))] motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2">
-      <div className="flex items-start gap-3 rounded-lg border border-amethyst/35 bg-background/95 p-3.5 shadow-[0_18px_48px_-20px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))] backdrop-blur-md">
-        <span className="grid size-9 shrink-0 place-items-center rounded-md bg-amethyst/10 text-amethyst">
-          <AchievementIcon name={definition.icon} className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold text-amethyst">Achievement unlocked</p>
-          <p className="mt-0.5 truncate text-sm font-semibold">{definition.name}</p>
-          <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-muted-foreground">{definition.description}</p>
-          <Link href={`/achievements#${definition.id}`} onClick={dismiss} className="mt-2 inline-flex min-h-8 items-center text-xs font-semibold text-amethyst underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            View details
-          </Link>
-        </div>
-        <Button type="button" variant="ghost" size="icon-sm" className="size-7 shrink-0" aria-label="Dismiss achievement notification" title="Dismiss" onClick={dismiss}>
-          <X aria-hidden className="size-4" />
-        </Button>
-      </div>
-    </aside>
+    <div
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-[120] flex justify-end md:inset-x-auto md:right-6 md:bottom-6"
+    >
+      {visible && active && definition ? (
+        <aside
+          key={active.key}
+          aria-label="Achievement unlocked"
+          className="ach-toast pointer-events-auto w-full md:w-[26rem]"
+          style={badgeVars(definition.group)}
+          onPointerEnter={() => setPaused(true)}
+          onPointerLeave={() => setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={() => setPaused(false)}
+        >
+          <div className="flex items-center gap-4 p-4 pr-11">
+            <div className="relative grid size-[76px] shrink-0 place-items-center">
+              <span aria-hidden className="ach-burst">
+                <span className="ach-rays" />
+                {SPARKS.map((style, index) => (
+                  <span key={index} className="ach-spark" style={style} />
+                ))}
+              </span>
+              <AchievementBadge achievement={definition} earned size={68} motion="assemble" />
+            </div>
+            <div className="ach-toast-text min-w-0 flex-1">
+              <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                <span aria-hidden className="size-1.5 rotate-45 rounded-[1px] bg-[rgb(var(--ach-glow))] shadow-[0_0_6px_rgb(var(--ach-glow))]" />
+                {active.replay ? "Achievement replay" : "Achievement unlocked"}
+              </p>
+              <p className="mt-1 font-heading text-lg leading-tight font-bold text-balance">{definition.name}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{BADGE_STYLES[definition.group].label} achievement</p>
+              <div className="mt-2.5">
+                <Button asChild size="sm" variant="secondary" className="h-8">
+                  <Link href={`/achievements#${definition.id}`} onClick={view}>
+                    View achievement
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+          <Button type="button" variant="ghost" size="icon-sm" className="absolute top-2 right-2 size-7" aria-label="Dismiss achievement notification" title="Dismiss" onClick={dismiss}>
+            <X aria-hidden className="size-4" />
+          </Button>
+        </aside>
+      ) : null}
+    </div>
   );
 }

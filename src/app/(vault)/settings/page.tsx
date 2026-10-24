@@ -8,7 +8,8 @@ import { loadPreferences } from "@/lib/data/preferences";
 import { DEFAULT_SETTINGS } from "@/lib/preferences";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "./forms";
-import { SettingRow, SettingsGroup, SettingsHeader } from "./settings-ui";
+import { SwitchSetting } from "./setting-controls";
+import { SettingRow, SettingsGroup, SettingsHeader, resetFor } from "./settings-ui";
 import { StartupSetting } from "./startup-setting";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -27,7 +28,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <SettingsHeader title="General" description="Your account, where the app opens, and security." />
+      <SettingsHeader title="General" description="Your account, where the app opens, notifications and security." />
 
       <SettingsGroup id="startup" title="Startup">
         <SettingRow
@@ -41,6 +42,23 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             collectionId={preferences.startupCollectionId}
             collections={collections.map(({ id, name }) => ({ id, name }))}
             labelId="startup-label"
+          />
+        </SettingRow>
+      </SettingsGroup>
+
+      <SettingsGroup id="notifications" title="Notifications">
+        <SettingRow
+          labelId="achievement-notifications-label"
+          label="Achievement celebrations"
+          description="Play a short celebration when you earn an achievement. It never takes focus and waits until you finish typing or playing. Progress tracking stays on when this is off."
+          reset={resetFor(preferences, ["achievementNotifications"], "On")}
+        >
+          <SwitchSetting
+            settingKey="achievementNotifications"
+            value={preferences.achievementNotifications}
+            labelId="achievement-notifications-label"
+            onLabel="Celebrations on"
+            offLabel="Celebrations off"
           />
         </SettingRow>
       </SettingsGroup>
