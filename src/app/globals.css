@@ -1862,6 +1862,129 @@
 [data-motion="subtle"] .art-frame[data-frame="aurora"] .art-frame-deco {
   animation-duration: 22s;
 }
+
+/* Pixel quest (Arcade shop): a chunky two-tone pixel checker, gold pixel brackets and a pixel coin on top. */
+.art-frame[data-frame="pixel-quest"] {
+  --fw: clamp(3px, 2.4cqi, 8px);
+  --orn: clamp(12px, 10cqi, 30px);
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-ring {
+  background: repeating-conic-gradient(#6d28d9 0 25%, #a78bfa 0 50%) 0 0 / calc(var(--fw) / 1.5) calc(var(--fw) / 1.5);
+  image-rendering: pixelated;
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-deco::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid #1e1037;
+  border-radius: calc(var(--fr) + var(--fw) + 2px);
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-deco::after {
+  content: "";
+  position: absolute;
+  inset: var(--fw);
+  border-radius: var(--fr);
+  box-shadow: 0 0 0 2px #1e1037;
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-corner {
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-corner[data-corner="tl"] {
+  top: -2px;
+  left: -2px;
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-corner[data-corner="tr"] {
+  top: -2px;
+  right: -2px;
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-corner[data-corner="bl"] {
+  bottom: -2px;
+  left: -2px;
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-corner[data-corner="br"] {
+  bottom: -2px;
+  right: -2px;
+}
+.art-frame[data-frame="pixel-quest"] .art-frame-crest {
+  width: calc(var(--orn) * 1.25);
+  bottom: calc(100% - var(--fw) * 0.6);
+}
+
+/* Marquee lights (Arcade shop): a dark band of steady warm bulbs between a pink outer tube and a cyan inner tube. */
+.art-frame[data-frame="neon-marquee"] {
+  --fw: clamp(5px, 3.4cqi, 12px);
+}
+.art-frame[data-frame="neon-marquee"] .art-frame-ring {
+  background:
+    radial-gradient(circle, #fffbeb 0 18%, #fcd34d 30%, rgb(245 158 11 / 0.35) 44%, transparent 56%) 50% 50% / var(--fw) var(--fw) round,
+    #170b22;
+}
+.art-frame[data-frame="neon-marquee"] .art-frame-glow {
+  opacity: 0.55;
+}
+.art-frame[data-frame="neon-marquee"] .art-frame-glow > .art-frame-ring {
+  background: linear-gradient(135deg, #f472b6, #a78bfa 50%, #67e8f9);
+  padding: calc(var(--fw) * 1.2);
+}
+.art-frame[data-frame="neon-marquee"] .art-frame-deco::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1.5px solid #f9a8d4;
+  border-radius: calc(var(--fr) + var(--fw) + 1px);
+  box-shadow:
+    0 0 6px rgb(244 114 182 / 0.75),
+    inset 0 0 4px rgb(244 114 182 / 0.5);
+}
+.art-frame[data-frame="neon-marquee"] .art-frame-deco::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--fw) - 1px);
+  border-radius: calc(var(--fr) + 1px);
+  box-shadow:
+    0 0 0 1.5px #a5f3fc,
+    0 0 7px 1px rgb(103 232 249 / 0.6);
+  transition: box-shadow 360ms var(--ease-out-soft);
+}
+.showcase-art:is(:hover, :focus-visible) .art-frame[data-frame="neon-marquee"] .art-frame-deco::after,
+.frame-option:is(:hover, :has(:focus-visible)) .art-frame[data-frame="neon-marquee"] .art-frame-deco::after {
+  box-shadow:
+    0 0 0 1.5px #cffafe,
+    0 0 12px 2px rgb(103 232 249 / 0.75);
+}
+
+/* Constellation (Arcade shop): a night-sky rim of scattered stars, gold hairlines and four-point corner stars. */
+.art-frame[data-frame="constellation"] {
+  --fw: clamp(3px, 2.2cqi, 8px);
+  --orn: clamp(16px, 13cqi, 40px);
+}
+.art-frame[data-frame="constellation"] .art-frame-ring {
+  background:
+    radial-gradient(circle at 22% 30%, #fef3c7 0 0.7px, transparent 1.3px) 0 0 / 23px 17px,
+    radial-gradient(circle at 70% 64%, #e0e7ff 0 0.6px, transparent 1.2px) 0 0 / 31px 23px,
+    radial-gradient(circle at 45% 80%, rgb(224 231 255 / 0.7) 0 0.5px, transparent 1px) 0 0 / 13px 11px,
+    linear-gradient(160deg, #24205a, #0b1026 50%, #1e1b4b);
+}
+.art-frame[data-frame="constellation"] .art-frame-deco::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid rgb(240 214 140 / 0.75);
+  border-radius: calc(var(--fr) + var(--fw) + 1px);
+}
+.art-frame[data-frame="constellation"] .art-frame-deco::after {
+  content: "";
+  position: absolute;
+  inset: var(--fw);
+  border-radius: var(--fr);
+  box-shadow: 0 0 0 1px rgb(240 214 140 / 0.8);
+}
+.art-frame[data-frame="constellation"] .art-frame-deco {
+  filter: drop-shadow(0 0 calc(2px + 0.8cqi) rgb(129 140 248 / 0.4));
+}
 :root:has([data-motion="off"]) .art-frame-deco {
   animation: none !important;
 }
@@ -1971,6 +2094,18 @@
 .artwork-viewer[data-frame="aurora"] {
   --viewer-glow-rgb: 110 231 183;
   --viewer-floor-rgb: 196 165 255;
+}
+.artwork-viewer[data-frame="pixel-quest"] {
+  --viewer-glow-rgb: 167 139 250;
+  --viewer-floor-rgb: 251 191 36;
+}
+.artwork-viewer[data-frame="neon-marquee"] {
+  --viewer-glow-rgb: 244 114 182;
+  --viewer-floor-rgb: 103 232 249;
+}
+.artwork-viewer[data-frame="constellation"] {
+  --viewer-glow-rgb: 129 140 248;
+  --viewer-floor-rgb: 253 230 138;
 }
 .artwork-viewer[data-leaving] {
   opacity: 0;
@@ -2656,5 +2791,450 @@
   }
   :is(.ach-toast, .ach-toast-text > *, .ach-badge-body, .ach-badge-rim, .ach-badge-face, .ach-badge-icon, .ach-badge-halo) {
     animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Arcade hall, Home marquee and the coin shop. Signs, screens and coins are
+ * self-lit objects (dark backplates, their own light) so they read on every
+ * theme; surrounding surfaces use theme tokens. Hover light plays once per
+ * hover, never on a loop, and holds still with reduced motion.
+ * ------------------------------------------------------------------------- */
+.coin-ink {
+  color: color-mix(in oklab, #ffd36b calc(var(--theme-dark, 1) * 100%), #8a5a00);
+}
+.coin-reward[data-tone="paid"] {
+  color: color-mix(in oklab, #fde68a calc(var(--theme-dark, 1) * 100%), #7a4f00);
+  border-color: color-mix(in oklab, #ffd36b 45%, transparent);
+  background-color: color-mix(in oklab, #ffd36b 12%, transparent);
+}
+
+/* Home: the ARCADE marquee. */
+.arcade-marquee {
+  --mq-neon: color-mix(in oklab, var(--amethyst) 45%, #fff);
+  --mq-glow: color-mix(in oklab, var(--amethyst) 70%, #ff4fd8);
+  --mq-bulb: #ffd36b;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 4.25rem;
+  overflow: hidden;
+  border-radius: calc(0.8rem * var(--radius-unit, 1));
+  padding: 0.75rem 1rem 0.75rem 0.75rem;
+  color: #f2ecff;
+  background:
+    radial-gradient(110% 150% at 28% 0%, color-mix(in oklab, var(--amethyst) 26%, transparent), transparent 62%),
+    linear-gradient(180deg, #1b1131, #0a0614);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.09),
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 8px 20px -12px rgb(var(--shadow-rgb) / calc(0.8 * var(--shadow-alpha, 1)));
+  outline: none;
+  transition:
+    box-shadow 220ms ease,
+    scale 120ms ease,
+    filter 160ms ease;
+}
+.arcade-marquee-bulbs {
+  position: absolute;
+  inset: 3px 8px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, var(--mq-bulb) 0 1.1px, transparent 1.7px) top center / 9px 5px repeat-x,
+    radial-gradient(circle, var(--mq-bulb) 0 1.1px, transparent 1.7px) bottom center / 9px 5px repeat-x;
+  opacity: 0.45;
+  transition:
+    opacity 220ms ease,
+    filter 220ms ease;
+}
+.arcade-marquee-art {
+  flex: none;
+  width: 3.5rem;
+  aspect-ratio: 64 / 44;
+  overflow: hidden;
+  border-radius: calc(0.4rem * var(--radius-unit, 1));
+  background: radial-gradient(90% 90% at 50% 40%, #1d1236, #07040e);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    0 0 0 2px rgb(0 0 0 / 0.45);
+  transition: filter 220ms ease;
+}
+.arcade-marquee-pillar {
+  fill: var(--mq-neon);
+  opacity: 0.5;
+}
+.arcade-marquee-title {
+  display: flex;
+  gap: 0.14em;
+  font-family: var(--font-press-start), ui-monospace, monospace;
+  font-size: 0.95rem;
+  line-height: 1.15;
+  color: var(--mq-neon);
+  text-shadow:
+    0 0 4px color-mix(in oklab, var(--mq-glow) 65%, transparent),
+    0 0 12px color-mix(in oklab, var(--mq-glow) 35%, transparent),
+    2px 2px 0 rgb(0 0 0 / 0.55);
+}
+.arcade-marquee-title > span {
+  display: inline-block;
+}
+.arcade-marquee-sub {
+  margin-top: 0.4rem;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgb(236 228 255 / 0.7);
+}
+.arcade-marquee-coins {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  color: #ffd36b;
+  font-variant-numeric: tabular-nums;
+}
+.arcade-marquee-arrow {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: var(--mq-neon);
+  transition: translate 220ms var(--ease-out-soft);
+}
+.arcade-marquee-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.12) 47%, rgb(255 236 190 / 0.22) 50%, transparent 60%);
+  mix-blend-mode: screen;
+  translate: -110% 0;
+}
+.arcade-marquee:is(:hover, :focus-visible) {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--mq-glow) 45%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 10px 26px -12px color-mix(in oklab, var(--mq-glow) 55%, transparent);
+}
+.arcade-marquee:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--mq-glow) 45%, transparent),
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.arcade-marquee:is(:hover, :focus-visible) .arcade-marquee-bulbs {
+  opacity: 1;
+  filter: drop-shadow(0 0 2px var(--mq-bulb));
+}
+.arcade-marquee:is(:hover, :focus-visible) .arcade-marquee-art {
+  filter: brightness(1.15) saturate(1.15);
+}
+.arcade-marquee:is(:hover, :focus-visible) .arcade-marquee-title {
+  color: color-mix(in oklab, var(--mq-neon) 60%, #fff);
+  text-shadow:
+    0 0 5px color-mix(in oklab, var(--mq-glow) 85%, transparent),
+    0 0 16px color-mix(in oklab, var(--mq-glow) 55%, transparent),
+    2px 2px 0 rgb(0 0 0 / 0.55);
+}
+.arcade-marquee:is(:hover, :focus-visible) .arcade-marquee-title > span {
+  animation: mq-letter 520ms ease-out calc(var(--i) * 60ms + 120ms) 1 backwards;
+}
+.arcade-marquee:is(:hover, :focus-visible) .arcade-marquee-sweep {
+  animation: mq-sweep 760ms var(--ease-out-soft) 1 forwards;
+}
+.arcade-marquee:is(:hover, :focus-visible) .arcade-marquee-arrow {
+  translate: 3px 0;
+}
+.arcade-marquee:active {
+  scale: 0.985;
+  filter: brightness(0.9);
+  box-shadow:
+    inset 0 2px 8px rgb(0 0 0 / 0.65),
+    inset 0 0 0 1px color-mix(in oklab, var(--mq-glow) 35%, transparent);
+}
+@keyframes mq-letter {
+  45% {
+    color: #fff;
+    text-shadow:
+      0 0 6px #fff,
+      0 0 14px var(--mq-glow),
+      0 0 26px var(--mq-glow);
+  }
+}
+@keyframes mq-sweep {
+  from {
+    translate: -110% 0;
+  }
+  to {
+    translate: 110% 0;
+  }
+}
+
+/* Arcade hall: the prize counter strip and the game cabinets. */
+.arcade-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  border-radius: calc(0.9rem * var(--radius-unit, 1));
+  border: 1px solid color-mix(in oklab, #ffd36b 28%, var(--border));
+  background:
+    radial-gradient(40rem 8rem at 0% 0%, color-mix(in oklab, #ffd36b 9%, transparent), transparent 70%),
+    color-mix(in oklab, var(--surface) 70%, transparent);
+  padding: 0.75rem 0.875rem 0.75rem 0.75rem;
+  outline: none;
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+a.arcade-counter:hover {
+  border-color: color-mix(in oklab, #ffd36b 50%, var(--border));
+  box-shadow: 0 12px 30px -22px color-mix(in oklab, #ffd36b 70%, transparent);
+}
+:is(a.arcade-counter, .arcade-counter-cta):focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.arcade-counter-coin {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  color: #6b4300;
+  background: radial-gradient(circle at 35% 30%, #fff1b8, #ffd36b 45%, #d79a1e);
+  box-shadow:
+    inset 0 -2px 0 rgb(120 70 0 / 0.35),
+    inset 0 0 0 2px rgb(255 255 255 / 0.25),
+    0 4px 12px -4px rgb(215 154 30 / 0.6);
+}
+.arcade-counter-cta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--primary-foreground);
+  background: var(--primary);
+  transition: filter 160ms ease;
+}
+.arcade-counter-cta svg:last-child {
+  transition: translate 220ms var(--ease-out-soft);
+}
+:is(a.arcade-counter:hover .arcade-counter-cta, a.arcade-counter-cta:hover) {
+  filter: brightness(1.08);
+}
+:is(a.arcade-counter:hover .arcade-counter-cta, a.arcade-counter-cta:hover) svg:last-child {
+  translate: 2px 0;
+}
+:is(a.arcade-counter:active .arcade-counter-cta, a.arcade-counter-cta:active) {
+  filter: brightness(0.92);
+}
+
+.arcade-cab {
+  --cab-neon: color-mix(in oklab, var(--cab) 72%, #fff);
+  --cab-tint: color-mix(in oklab, var(--cab) 55%, var(--amethyst));
+  position: relative;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  border-radius: calc(1rem * var(--radius-unit, 1));
+  border: 1px solid color-mix(in oklab, var(--cab-tint) 22%, var(--border));
+  background: linear-gradient(180deg, color-mix(in oklab, var(--cab-tint) 9%, var(--surface)), var(--surface) 60%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 18px 40px -30px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha, 1)));
+  transition:
+    translate 280ms var(--ease-out-soft),
+    border-color 240ms ease,
+    box-shadow 280ms ease;
+}
+.arcade-cab:is(:hover, :focus-within) {
+  translate: 0 -3px;
+  border-color: color-mix(in oklab, var(--cab-tint) 50%, var(--border));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 24px 50px -28px color-mix(in oklab, var(--cab) 50%, transparent);
+}
+.arcade-cab-marquee {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.5rem 0.5rem 0;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.7rem 0.9rem 0.65rem;
+  background:
+    radial-gradient(120% 170% at 50% 0%, color-mix(in oklab, var(--cab) 30%, transparent), transparent 68%),
+    linear-gradient(180deg, #180f2a, #0a0613);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    inset 0 -10px 18px -14px var(--cab);
+}
+.arcade-cab-title {
+  min-width: 0;
+  font-family: var(--font-press-start), ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.35 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--cab-neon);
+  text-shadow:
+    0 0 6px color-mix(in oklab, var(--cab) 65%, transparent),
+    2px 2px 0 rgb(0 0 0 / 0.55) !important;
+  transition:
+    color 240ms ease,
+    text-shadow 240ms ease;
+}
+.arcade-cab:is(:hover, :focus-within) .arcade-cab-title {
+  color: color-mix(in oklab, var(--cab-neon) 55%, #fff);
+  text-shadow:
+    0 0 6px var(--cab),
+    0 0 16px color-mix(in oklab, var(--cab) 60%, transparent),
+    2px 2px 0 rgb(0 0 0 / 0.55) !important;
+}
+.arcade-cab-genre {
+  flex: none;
+  border-radius: 999px;
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cab-neon);
+  background: color-mix(in oklab, var(--cab) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--cab) 35%, transparent);
+}
+.arcade-cab-screen {
+  position: relative;
+  display: block;
+  margin: 0.875rem 0.875rem 0;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: calc(0.55rem * var(--radius-unit, 1));
+  background: #05030a;
+  box-shadow:
+    0 0 0 5px #0b0714,
+    0 0 0 6px color-mix(in oklab, var(--cab) 25%, rgb(255 255 255 / 0.08));
+}
+.arcade-cab-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition:
+    scale 600ms var(--ease-out-soft),
+    filter 300ms ease;
+}
+.arcade-cab-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.07) 0 1px, transparent 1px 3px),
+    radial-gradient(110% 80% at 25% 0%, rgb(255 255 255 / 0.1), transparent 55%),
+    linear-gradient(0deg, color-mix(in oklab, var(--cab) 16%, transparent), transparent 45%);
+  box-shadow: inset 0 0 28px rgb(0 0 0 / 0.35);
+}
+.arcade-cab-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgb(255 255 255 / 0.16) 50%, transparent 60%);
+  translate: -120% 0;
+}
+.arcade-cab:is(:hover, :focus-within) .arcade-cab-art {
+  scale: 1.04;
+  filter: brightness(1.08) saturate(1.1);
+}
+.arcade-cab:is(:hover, :focus-within) .arcade-cab-glass::after {
+  animation: mq-sweep-wide 900ms var(--ease-out-soft) 1 forwards;
+}
+@keyframes mq-sweep-wide {
+  from {
+    translate: -120% 0;
+  }
+  to {
+    translate: 120% 0;
+  }
+}
+.arcade-cab-deck {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.75rem 1rem 0.5rem;
+}
+.arcade-cab-deck i {
+  display: block;
+  border-radius: 999px;
+}
+.arcade-cab-stick {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-right: auto;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, var(--cab) 45%, color-mix(in oklab, var(--cab) 60%, #000));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+.arcade-cab-button {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: color-mix(in oklab, var(--cab) 35%, var(--surface-raised));
+  box-shadow: inset 0 -1px 0 rgb(0 0 0 / 0.3);
+  transition:
+    background-color 240ms ease,
+    box-shadow 240ms ease;
+}
+.arcade-cab:is(:hover, :focus-within) .arcade-cab-button {
+  background: var(--cab);
+  box-shadow:
+    inset 0 -1px 0 rgb(0 0 0 / 0.25),
+    0 0 8px color-mix(in oklab, var(--cab) 70%, transparent);
+}
+.arcade-cab-trophy {
+  color: var(--cab-tint);
+}
+
+/* Subtle: keep the glow, drop the travelling light. Off or reduced: everything holds still. */
+[data-motion="subtle"] .arcade-marquee-title > span,
+[data-motion="subtle"] .arcade-cab-glass::after {
+  animation: none !important;
+}
+[data-motion="subtle"] .arcade-cab:is(:hover, :focus-within) {
+  translate: 0 -1px;
+}
+:root:has([data-motion="off"]) .arcade-marquee-sweep,
+:root:has([data-motion="off"]) .arcade-cab-glass::after {
+  display: none;
+}
+:root:has([data-motion="off"]) .arcade-marquee-title > span {
+  animation: none !important;
+}
+:root:has([data-motion="off"]) :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow) {
+  translate: none !important;
+  scale: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-marquee-sweep,
+  .arcade-cab-glass::after {
+    display: none;
+  }
+  .arcade-marquee-title > span {
+    animation: none !important;
+  }
+  :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow) {
+    translate: none !important;
+    scale: none !important;
   }
 }

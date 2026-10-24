@@ -3,9 +3,10 @@
 import { useId } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { MediaImage } from "@/components/media/media-image";
-import { ARTWORK_FRAME_IDS, ARTWORK_FRAMES, resolveFrame, type ArtworkFrameId } from "@/lib/frames";
+import { ARTWORK_FRAMES, availableFrames, resolveFrame, type ArtworkFrameId } from "@/lib/frames";
 import type { CoverShape } from "@/lib/cover-shape";
 import { cn } from "@/lib/utils";
 
@@ -36,10 +37,12 @@ export function FramePicker({
   name?: string;
 }) {
   const id = useId();
+  const { owned } = useCosmetics();
   const shown = value === "default" ? accountFrame : value;
+  const frames = availableFrames(owned).concat(value !== "default" && !availableFrames(owned).includes(value) ? [value] : []);
   const options: { value: FrameChoice; label: string }[] = [
     { value: "default", label: `Use my default (${ARTWORK_FRAMES[accountFrame].name})` },
-    ...ARTWORK_FRAME_IDS.map((frame) => ({ value: frame, label: ARTWORK_FRAMES[frame].name })),
+    ...frames.map((frame) => ({ value: frame, label: ARTWORK_FRAMES[frame].name })),
   ];
   return (
     <div className="space-y-2">
@@ -85,7 +88,11 @@ export function FramePicker({
         <Link href="/settings/frames" className="text-amethyst underline-offset-4 hover:underline">
           account frame
         </Link>{" "}
-        when it changes; “No frame” keeps this entry unframed.
+        when it changes; “No frame” keeps this entry unframed. More frames are in the{" "}
+        <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
+          Arcade shop
+        </Link>
+        .
       </p>
     </div>
   );

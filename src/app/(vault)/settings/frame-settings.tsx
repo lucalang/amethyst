@@ -1,15 +1,16 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { MediaImage } from "@/components/media/media-image";
-import { ARTWORK_FRAME_IDS, ARTWORK_FRAMES, type ArtworkFrameId } from "@/lib/frames";
+import { ARTWORK_FRAMES, availableFrames, isShopFrameId, type ArtworkFrameId } from "@/lib/frames";
 import { cn } from "@/lib/utils";
 import { useSetting } from "./setting-controls";
 
 export type FrameSample = { title: string; coverUrl: string };
 
-function SampleArt({ sample, shape }: { sample: FrameSample | null; shape: "portrait" | "square" }) {
+export function SampleArt({ sample, shape }: { sample: FrameSample | null; shape: "portrait" | "square" }) {
   return (
     <span className={cn("relative block overflow-hidden rounded-lg bg-surface", shape === "square" ? "aspect-square" : "aspect-[2/3]")}>
       {sample ? (
@@ -34,10 +35,12 @@ export function FrameSettings({
   square: FrameSample | null;
 }) {
   const [frame, setFrame] = useSetting("artworkFrame", value);
+  const { owned } = useCosmetics();
+  const frames = availableFrames(owned).concat(availableFrames(owned).includes(frame) ? [] : [frame]);
 
   return (
     <fieldset aria-labelledby={labelId} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {ARTWORK_FRAME_IDS.map((id) => {
+      {frames.map((id) => {
         const info = ARTWORK_FRAMES[id];
         const checked = frame === id;
         return (
@@ -74,6 +77,7 @@ export function FrameSettings({
                 <span className="flex items-center gap-2">
                   <span className="text-sm font-medium text-foreground">{info.name}</span>
                   {info.animated ? <span className="text-[11px] text-muted-foreground">Animated</span> : null}
+                  {isShopFrameId(id) ? <span className="coin-ink text-[11px]">Arcade shop</span> : null}
                 </span>
                 <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{info.description}</span>
               </span>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { livePalette, observeCanvas, startLoop, swipeDirection, withAlpha, mix, type CanvasSize } from "./engine";
 import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
+import { CoinReward, useArcadeRun } from "./coin-reward";
 import type { SoundName } from "./sound";
 
 const GRID = 20;
@@ -249,8 +250,13 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
   const [phase, setPhase] = useState<Phase>("ready");
   const [score, setScore] = useState(0);
   const [won, setWon] = useState(false);
+  const { begin: beginRun, finish: finishRun, coins } = useArcadeRun("snake");
 
   useGameAchievementTracking("snake", phase);
+
+  useEffect(() => {
+    if (phase === "playing") beginRun();
+  }, [phase, beginRun]);
 
   useEffect(() => {
     live.current = { play, effects };
@@ -259,6 +265,7 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
   const finish = useEffectEvent((final: number, didWin: boolean) => {
     setWon(didWin);
     submit(final);
+    finishRun(final, { length: final + 3 });
     sendAchievementEvent({ type: "run_finished", game: "snake", length: final + 3 });
   });
 
@@ -274,11 +281,12 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      finishRun(game.score, { length: game.score + 3 }, { keepalive: true });
       if (game.score > 0) sendAchievementEvent({ type: "run_progress", game: "snake", length: game.score + 3 });
       game.destroy();
       gameRef.current = null;
     };
-  }, [submit]);
+  }, [submit, finishRun]);
 
   useAway(() => gameRef.current?.pause());
 
@@ -404,6 +412,7 @@ export default function GameSnake({ best: initialBest }: { best: number | null }
             <GameOverlay title={won ? "Board cleared!" : "Game over"} actions={<Button size="sm" onClick={restart}>Play again</Button>}>
               Score {score}
               {score > 0 && score >= best ? " · new best!" : ` · best ${shownBest}`}
+              <CoinReward state={coins} />
             </GameOverlay>
           ) : null}
         </div>

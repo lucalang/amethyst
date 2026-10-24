@@ -40,6 +40,49 @@ export const recordScoreSchema = z
   .strict();
 
 export const SUDOKU_CELLS = 81;
+
+/** Most coins rewards pay in any 24 hours; the database (`daily_limit` in _credit_coins) enforces it. */
+export const DAILY_COIN_LIMIT = 600;
+
+export const startRunSchema = z.object({ game: z.enum(SCORE_GAMES) }).strict();
+
+/** A finished run: the score plus the few numbers the server cross-checks it against. */
+export const finishRunSchema = z
+  .object({
+    score: z.number().int().min(0).max(MAX_ARCADE_SCORE),
+    metrics: z
+      .record(z.string().regex(/^[a-zA-Z]{1,24}$/), z.number().finite().min(0).max(MAX_ARCADE_SCORE))
+      .refine((metrics) => Object.keys(metrics).length <= 8, "Too many metrics.")
+      .default({}),
+  })
+  .strict();
+
+export type RunStatus = "paid" | "unpaid" | "rejected" | "expired" | "started";
+
+/** The server's verdict on a run or a solved Sudoku. */
+export type RunReward = {
+  status: RunStatus;
+  coins: number;
+  balance: number;
+  /** Why a run paid nothing (or less): below_minimum, too_short, implausible, daily_limit, not_eligible. */
+  reason: string | null;
+  minScore: number;
+  minSeconds: number;
+};
+
+export function toRunReward(value: unknown): RunReward {
+  const raw = (value ?? {}) as Record<string, unknown>;
+  const status = typeof raw.status === "string" ? (raw.status as RunStatus) : "unpaid";
+  const number = (key: string) => (typeof raw[key] === "number" ? (raw[key] as number) : 0);
+  return {
+    status,
+    coins: number("coins"),
+    balance: number("balance"),
+    reason: typeof raw.reason === "string" ? raw.reason : null,
+    minScore: number("minScore"),
+    minSeconds: number("minSeconds"),
+  };
+}
 const board = z.string().regex(/^[0-9]{81}$/, "Boards have 81 digits.");
 
 export const sudokuStartSchema = z.object({ difficulty: z.enum(SUDOKU_DIFFICULTIES) }).strict();

@@ -6,6 +6,7 @@ import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { fitWorld, livePalette, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { CoinReward, useArcadeRun } from "./coin-reward";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
 
@@ -368,8 +369,13 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
   const live = useRef({ play, effects });
   const [phase, setPhase] = useState<Phase>("ready");
   const [score, setScore] = useState(0);
+  const { begin: beginRun, finish: finishRun, coins } = useArcadeRun("flutter");
 
   useGameAchievementTracking("flutter", phase);
+
+  useEffect(() => {
+    if (phase === "playing") beginRun();
+  }, [phase, beginRun]);
 
   useEffect(() => {
     live.current = { play, effects };
@@ -377,6 +383,7 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
 
   const finish = useEffectEvent((final: number) => {
     submit(final);
+    finishRun(final, { obstacles: final });
     sendAchievementEvent({ type: "run_finished", game: "flutter", obstacles: final });
   });
 
@@ -392,11 +399,12 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      finishRun(game.score, { obstacles: game.score }, { keepalive: true });
       if (game.score > 0) sendAchievementEvent({ type: "run_progress", game: "flutter", obstacles: game.score });
       game.destroy();
       gameRef.current = null;
     };
-  }, [submit]);
+  }, [submit, finishRun]);
 
   useAway(() => gameRef.current?.pause());
 
@@ -472,6 +480,7 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
           <GameOverlay title="Game over" actions={<Button size="sm" onClick={() => gameRef.current?.press()}>Play again</Button>}>
             Score {score}
             {score > 0 && score >= best ? " · new best!" : ` · best ${shownBest}`}
+            <CoinReward state={coins} />
             <span className="mt-1 block text-xs">Tap or press Space to fly again.</span>
           </GameOverlay>
         ) : null}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { livePalette, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
+import { CoinReward, useArcadeRun } from "./coin-reward";
 import type { SoundName } from "./sound";
 
 const WIDTH = 400;
@@ -333,8 +334,13 @@ export default function GameStacker({ best: initialBest }: { best: number | null
   const [streak, setStreak] = useState(0);
 
   const bestStreak = useRef(0);
+  const { begin: beginRun, finish: finishRun, coins } = useArcadeRun("stacker");
 
   useGameAchievementTracking("stacker", phase);
+
+  useEffect(() => {
+    if (phase === "playing") beginRun();
+  }, [phase, beginRun]);
 
   useEffect(() => {
     live.current = { play, effects };
@@ -342,6 +348,7 @@ export default function GameStacker({ best: initialBest }: { best: number | null
 
   const finish = useEffectEvent((final: number, perfectStreak: number) => {
     submit(final);
+    finishRun(final, { height: final, perfectStreak });
     sendAchievementEvent({ type: "run_finished", game: "stacker", height: final, perfectStreak });
   });
 
@@ -361,11 +368,12 @@ export default function GameStacker({ best: initialBest }: { best: number | null
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      finishRun(game.score, { height: game.score, perfectStreak: bestStreak.current }, { keepalive: true });
       if (game.score > 0) sendAchievementEvent({ type: "run_progress", game: "stacker", height: game.score, perfectStreak: bestStreak.current });
       game.destroy();
       gameRef.current = null;
     };
-  }, [submit]);
+  }, [submit, finishRun]);
 
   useAway(() => gameRef.current?.pause());
 
@@ -440,6 +448,7 @@ export default function GameStacker({ best: initialBest }: { best: number | null
           <GameOverlay title="Tower complete" actions={<Button size="sm" onClick={() => gameRef.current?.press()}>Play again</Button>}>
             Height {score}
             {score > 0 && score >= best ? " · new best!" : ` · best ${shownBest}`}
+            <CoinReward state={coins} />
           </GameOverlay>
         ) : null}
       </div>

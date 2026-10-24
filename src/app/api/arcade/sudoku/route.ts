@@ -1,5 +1,5 @@
 import { generate, getUniqueSolution, type Board, type Difficulty } from "sudoku-core";
-import { sudokuSaveSchema, sudokuStartSchema, SUDOKU_CELLS, type SudokuDifficulty } from "@/lib/arcade";
+import { sudokuSaveSchema, sudokuStartSchema, SUDOKU_CELLS, toRunReward, type SudokuDifficulty } from "@/lib/arcade";
 import { loadSudoku, SUDOKU_COLUMNS, toSudokuSave } from "@/lib/data/arcade";
 import { recordVerifiedSudokuCompletion } from "@/lib/data/achievements";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
@@ -111,6 +111,11 @@ export async function PATCH(request: Request) {
   if (!saved) return apiError(409, "replaced", "This puzzle was finished or replaced in another window.");
   if (!solved) return jsonResponse({ saved: true });
 
+  // Coins first, so a failure recording the time can't cost the reward (the claim is idempotent).
+  const { data: claimed, error: claimError } = await ctx.supabase.rpc("claim_sudoku_reward", { p_game: id });
+  if (claimError) console.error("sudoku reward", claimError.code);
+  const reward = claimError ? null : toRunReward(claimed);
+
   const seconds = Math.max(1, Math.round(elapsedMs / 1000));
   const { data: record, error: recordError } = await ctx.supabase.rpc("record_arcade_score", {
     p_game: "sudoku",
@@ -119,5 +124,5 @@ export async function PATCH(request: Request) {
   });
   if (recordError) return dbError(recordError, "Puzzle saved, but the time could not be recorded.");
   const achievementUnlocks = await recordVerifiedSudokuCompletion(ctx, current.difficulty);
-  return jsonResponse({ saved: true, best: record?.[0]?.best ?? seconds, improved: record?.[0]?.improved ?? false, achievementUnlocks });
+  return jsonResponse({ saved: true, best: record?.[0]?.best ?? seconds, improved: record?.[0]?.improved ?? false, reward, achievementUnlocks });
 }

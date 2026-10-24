@@ -5,6 +5,7 @@ import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { swipeDirection } from "./engine";
+import { CoinReward, useArcadeRun } from "./coin-reward";
 import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useArcade, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import { GOAL, SIZE, hasMoves, newBoard, slide, type Board, type Direction } from "./logic-2048";
 
@@ -28,25 +29,35 @@ export default function Game2048({ best: initialBest }: { best: number | null })
   const [gain, setGain] = useState<{ key: number; value: number } | null>(null);
   const scoreRef = useRef(0);
     const maxTile = useRef(2);
+  // After "Keep going", coins count only the points scored since the win (the win already paid).
+  const baseline = useRef(0);
+  const { begin: beginRun, finish: finishRun, coins } = useArcadeRun("2048");
   const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
   useGameAchievementTracking("2048", phase);
 
-  // Leaving mid-game still keeps a new best.
+  // Leaving mid-game still keeps a new best (and counts the run's coins).
   useEffect(() => {
     const score = scoreRef;
     const tile = maxTile;
+    const from = baseline;
     return () => {
       submit(score.current, { keepalive: true });
+      finishRun(score.current - from.current, { maxTile: tile.current }, { keepalive: true });
       if (tile.current > 2) sendAchievementEvent({ type: "run_progress", game: "2048", maxTile: tile.current });
     };
-  }, [submit]);
+  }, [submit, finishRun]);
+
+  function settle(total: number, options?: { announce?: boolean }) {
+    finishRun(total - baseline.current, { maxTile: maxTile.current }, options);
+  }
 
   function move(direction: Direction) {
     if (phase !== "playing") return;
     const result = slide(board, direction);
     if (!result.moved) return;
+    beginRun();
     setBoard(result.board);
     scoreRef.current = result.board.score;
     maxTile.current = Math.max(maxTile.current, result.largestMerge);
@@ -59,11 +70,13 @@ export default function Game2048({ best: initialBest }: { best: number | null })
     if (!continued && result.largestMerge >= GOAL) {
       setPhase("won");
       submit(result.board.score);
+      settle(result.board.score);
       sendAchievementEvent({ type: "run_finished", game: "2048", maxTile: maxTile.current });
       play("win");
     } else if (!hasMoves(result.board)) {
       setPhase("over");
       submit(result.board.score);
+      settle(result.board.score);
       sendAchievementEvent({ type: "run_finished", game: "2048", maxTile: maxTile.current });
       play("over");
     }
@@ -72,7 +85,9 @@ export default function Game2048({ best: initialBest }: { best: number | null })
   function restart() {
     if (phase !== "playing") sendAchievementEvent({ type: "run_finished", game: "2048", maxTile: maxTile.current });
     submit(scoreRef.current);
+    settle(scoreRef.current, { announce: true });
     scoreRef.current = 0;
+    baseline.current = 0;
     maxTile.current = 2;
     setBoard(newBoard());
     setPhase("playing");
@@ -82,6 +97,7 @@ export default function Game2048({ best: initialBest }: { best: number | null })
   }
 
   function keepPlaying() {
+    baseline.current = scoreRef.current;
     setContinued(true);
     setPhase("playing");
     boardRef.current?.focus({ preventScroll: true });
@@ -187,6 +203,7 @@ export default function Game2048({ best: initialBest }: { best: number | null })
           >
             Score {score.toLocaleString("en")}
             {score >= best ? " · new best" : ""}
+            <CoinReward state={coins} />
           </GameOverlay>
         ) : phase === "over" ? (
           <GameOverlay
@@ -195,6 +212,7 @@ export default function Game2048({ best: initialBest }: { best: number | null })
           >
             Score {score.toLocaleString("en")}
             {score > 0 && score >= best ? " · new best!" : ` · best ${shownBest.toLocaleString("en")}`}
+            <CoinReward state={coins} />
           </GameOverlay>
         ) : null}
       </div>

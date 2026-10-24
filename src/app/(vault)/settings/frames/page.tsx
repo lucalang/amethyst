@@ -43,7 +43,11 @@ export default async function ArtworkFramesPage() {
           <Link href="/" className="text-amethyst underline-offset-4 hover:underline">
             Showcase
           </Link>{" "}
-          to see yours.
+          to see yours. Unlock more frames with coins from the{" "}
+          <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
+            Arcade shop
+          </Link>
+          .
         </p>
       </SettingsGroup>
     </>

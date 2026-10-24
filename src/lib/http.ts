@@ -55,8 +55,19 @@ export async function parseJson<T extends z.ZodType>(
 const collectionWording = (message: string) =>
   message.replace(/\bcategories\b/g, "collections").replace(/\bcategory\b/g, "collection");
 
+/** Errors raised by database functions with a `hint` naming the case, and their HTTP status. */
+const HINTED: Record<string, number> = {
+  cosmetic_not_owned: 403,
+  insufficient_funds: 409,
+  price_changed: 409,
+  item_unavailable: 404,
+  run_not_found: 404,
+  rate_limited: 429,
+};
+
 /** Map a PostgREST/Postgres error to a safe client response without leaking internals. */
-export function dbError(error: { code?: string; message: string }, fallback = "Database request failed.") {
+export function dbError(error: { code?: string; message: string; hint?: string | null }, fallback = "Database request failed.") {
+  if (error.hint && error.hint in HINTED) return apiError(HINTED[error.hint], error.hint, error.message);
   if (error.code === "22023" || error.code === "23514") return apiError(422, "rejected", collectionWording(error.message));
   if (error.code === "23505") return apiError(409, "conflict", "That already exists.");
   if (error.code === "23503") return apiError(404, "not_found", "A referenced item no longer exists. Reload and try again.");

@@ -91,8 +91,41 @@ export type Database = {
               Update: { user_id?: string; game?: string; variant?: string; score?: number; achieved_at?: string }
               Relationships: [{ foreignKeyName: "arcade_records_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
+            "coin_wallets": {
+              Row: { user_id: string; balance: number; earned: number; spent: number; updated_at: string }
+              Insert: { user_id: string; balance?: number; earned?: number; spent?: number; updated_at?: string }
+              Update: { user_id?: string; balance?: number; earned?: number; spent?: number; updated_at?: string }
+              Relationships: [{ foreignKeyName: "coin_wallets_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
+            "coin_transactions": {
+              Row: { id: number; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase"; reference: string; details: NonNullable<Json>; created_at: string }
+              Insert: { id?: never; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase"; reference: string; details?: NonNullable<Json>; created_at?: string }
+              Update: { id?: never; user_id?: string; amount?: number; balance_after?: number; kind?: "reward" | "purchase"; reference?: string; details?: NonNullable<Json>; created_at?: string }
+              Relationships: [{ foreignKeyName: "coin_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
+            "cosmetic_items": {
+              Row: { id: string; kind: "frame" | "avatar_decoration"; price: number; available: boolean; created_at: string }
+              Insert: { id: string; kind: "frame" | "avatar_decoration"; price: number; available?: boolean; created_at?: string }
+              Update: { id?: string; kind?: "frame" | "avatar_decoration"; price?: number; available?: boolean; created_at?: string }
+              Relationships: []
+            },
+            "user_cosmetics": {
+              Row: { user_id: string; item_id: string; acquired_at: string; transaction_id: number | null }
+              Insert: { user_id: string; item_id: string; acquired_at?: string; transaction_id?: number | null }
+              Update: { user_id?: string; item_id?: string; acquired_at?: string; transaction_id?: number | null }
+              Relationships: [
+                { foreignKeyName: "user_cosmetics_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+                { foreignKeyName: "user_cosmetics_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "cosmetic_items"; referencedColumns: ["id"] },
+              ]
+            },
+            "arcade_reward_rules": {
+              Row: { game: string; variant: string; min_score: number; min_seconds: number; points_per_coin: number; flat_coins: number; max_coins: number; max_score_per_second: number; score_allowance: number; max_score: number }
+              Insert: { game: string; variant?: string; min_score?: number; min_seconds?: number; points_per_coin?: number; flat_coins?: number; max_coins: number; max_score_per_second: number; score_allowance?: number; max_score: number }
+              Update: { game?: string; variant?: string; min_score?: number; min_seconds?: number; points_per_coin?: number; flat_coins?: number; max_coins?: number; max_score_per_second?: number; score_allowance?: number; max_score?: number }
+              Relationships: []
+            },
             "sudoku_games": {
-              Row: { user_id: string; id: string; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries: string; notes: number[]; elapsed_ms: number; completed_at: string | null; started_at: string; updated_at: string }
+              Row: { user_id: string; id: string; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries: string; notes: number[]; elapsed_ms: number; completed_at: string | null; started_at: string; updated_at: string; reward_eligible: boolean }
               Insert: { user_id?: string; id?: string; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
               Update: { user_id?: string; id?: string; difficulty?: "easy" | "medium" | "hard"; puzzle?: string; solution?: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
               Relationships: [{ foreignKeyName: "sudoku_games_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "users"; referencedColumns: ["id"] }]
@@ -182,13 +215,13 @@ isOneToOne: false
                   ]
                 },"users": {
                   Row: {
-                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"avatar_url": string | null,"motto": string | null,"id": string,"updated_at": string
+                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"avatar_url": string | null,"motto": string | null,"avatar_decoration": string | null,"id": string,"updated_at": string
                   }
                   Insert: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"id": string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"id": string,"updated_at"?: string
                   }
                   Update: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"id"?: string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -402,6 +435,18 @@ isOneToOne: false
                            },
 "record_achievement_event":
 { Args: { "p_event": string,"p_payload"?: Json }; Returns: Json
+                           },
+"start_arcade_run":
+{ Args: { "p_game": string }; Returns: string
+                           },
+"finish_arcade_run":
+{ Args: { "p_run": string,"p_score": number,"p_metrics"?: Json }; Returns: Json
+                           },
+"claim_sudoku_reward":
+{ Args: { "p_game": string }; Returns: Json
+                           },
+"purchase_cosmetic":
+{ Args: { "p_item": string,"p_expected_price": number }; Returns: Json
                            },
 "claim_achievement_notifications":
 { Args: Record<PropertyKey, never>; Returns: Json

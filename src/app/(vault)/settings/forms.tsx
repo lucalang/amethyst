@@ -1,12 +1,16 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { Loader2, X } from "lucide-react";
+import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AVATAR_DECORATION_IDS, AVATAR_DECORATIONS, type AvatarDecorationId } from "@/lib/cosmetics";
+import { cn } from "@/lib/utils";
 import { updatePassword, updateProfile, type FormState } from "./actions";
 
 const initial: FormState = { status: "idle" };
@@ -22,6 +26,9 @@ function StatusLine({ state }: { state: FormState }) {
 
 export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: string; motto: string; avatarUrl: string }) {
   const [state, action, pending] = useActionState(updateProfile, initial);
+  const cosmetics = useCosmetics();
+  const ownedDecorations = AVATAR_DECORATION_IDS.filter((id) => cosmetics.owned.includes(id));
+  const [decoration, setDecoration] = useState<AvatarDecorationId | null>(cosmetics.avatarDecoration);
   const [name, setName] = useState(displayName);
   const [line, setLine] = useState(motto);
   const [avatar, setAvatar] = useState(avatarUrl);
@@ -31,7 +38,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
   return (
     <form action={action} className="space-y-5">
       <div className="flex flex-wrap items-center gap-4 rounded-lg border border-white/[0.07] bg-white/[0.02] p-4">
-        <ProfileAvatar name={name} src={avatar} className="size-16 text-xl" />
+        <ProfileAvatar name={name} src={avatar} decoration={decoration} className="size-16 text-xl" />
         <div className="min-w-0">
           <p className="truncate text-base font-semibold">{name.trim() || "Your account"}</p>
           <p className="line-clamp-2 text-sm break-words text-muted-foreground">{line.trim() || "No motto yet"}</p>
@@ -79,6 +86,38 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
           </Button>
         ) : null}
       </div>
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">Avatar decoration</legend>
+        <div className="flex flex-wrap gap-2">
+          {[null, ...ownedDecorations].map((id) => {
+            const checked = decoration === id;
+            return (
+              <label
+                key={id ?? "none"}
+                className={cn(
+                  "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                  checked ? "border-amethyst/60 bg-amethyst/[0.08] text-foreground" : "border-white/[0.09] text-muted-foreground hover:border-amethyst/35 hover:text-foreground",
+                )}
+              >
+                <input type="radio" name="avatarDecoration" value={id ?? ""} checked={checked} onChange={() => setDecoration(id)} className="sr-only" />
+                <span className="grid size-11 place-items-center">
+                  <ProfileAvatar name={name} src={avatar} decoration={id} className="size-7 text-[10px]" />
+                </span>
+                {id ? AVATAR_DECORATIONS[id].name : "None"}
+              </label>
+            );
+          })}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {ownedDecorations.length
+            ? "Drawn around your picture everywhere it appears; the picture itself isn't changed."
+            : "Decorations are drawn around your picture without changing it. "}
+          <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
+            {ownedDecorations.length ? " Visit the Arcade shop" : "Earn coins in the Arcade to buy one in the shop"}
+          </Link>
+          .
+        </p>
+      </fieldset>
       <div className="space-y-1.5">
         <Label htmlFor="motto">Motto</Label>
         <Input

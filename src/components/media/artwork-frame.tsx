@@ -32,7 +32,7 @@ function FrameDecoration({ frame }: { frame: Exclude<ArtworkFrameId, "none"> }) 
   const id = useId();
   return (
     <span aria-hidden className="art-frame-deco">
-      {frame === "holo" || frame === "aurora" ? (
+      {frame === "holo" || frame === "aurora" || frame === "neon-marquee" ? (
         <span className="art-frame-glow">
           <span className="art-frame-ring" />
         </span>
@@ -48,7 +48,50 @@ function FrameDecoration({ frame }: { frame: Exclude<ArtworkFrameId, "none"> }) 
         </>
       ) : null}
       {frame === "amethyst" ? <AmethystOrnaments id={id} /> : null}
+      {frame === "pixel-quest" ? <PixelOrnaments /> : null}
+      {frame === "constellation" ? <ConstellationOrnaments /> : null}
     </span>
+  );
+}
+
+const CORNERS = ["tl", "tr", "bl", "br"] as const;
+
+/** Gold pixel brackets in the corners and a pixel coin on top; crisp edges keep it 8-bit at any size. */
+function PixelOrnaments() {
+  const coin = ["..###..", ".#####.", "##+####", "##+####", "#######", ".#####.", "..###.."];
+  return (
+    <>
+      {CORNERS.map((position) => (
+        <svg key={position} className="art-frame-corner" data-corner={position} viewBox="0 0 8 8" shapeRendering="crispEdges" focusable="false">
+          <path d="M1 1h4v1H2v3H1z" fill="#fbbf24" />
+          <path d="M1 1h1v1H1z" fill="#fffbeb" />
+          <path d="M0 0h6v1H1v5H0z" fill="#1e1037" />
+        </svg>
+      ))}
+      <svg className="art-frame-crest" viewBox="-6.5 -1 20 10" shapeRendering="crispEdges" focusable="false">
+        <rect x="-1" y="-1" width="9" height="9" fill="#1e1037" />
+        {coin.flatMap((row, y) =>
+          [...row].map((cell, x) => (cell === "." ? null : <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill={cell === "+" ? "#fffbeb" : "#f59e0b"} />)),
+        )}
+      </svg>
+    </>
+  );
+}
+
+/** Four-point gold stars on the corners, one joined to a faint constellation along the top edge. */
+function ConstellationOrnaments() {
+  const star = "M10 2 L11.4 8.6 L18 10 L11.4 11.4 L10 18 L8.6 11.4 L2 10 L8.6 8.6Z";
+  return (
+    <>
+      {CORNERS.map((position) => (
+        <svg key={position} className="art-frame-corner" data-corner={position} viewBox="0 0 40 40" focusable="false">
+          <path d={star} fill="#fde68a" transform="translate(-1 -1)" />
+          <path d="M9 9 L24 3.5 L34 6" fill="none" stroke="#e0e7ff" strokeOpacity="0.45" strokeWidth="0.7" />
+          <circle cx="24" cy="3.5" r="1.2" fill="#e0e7ff" />
+          <circle cx="34" cy="6" r="0.9" fill="#fde68a" />
+        </svg>
+      ))}
+    </>
   );
 }
 

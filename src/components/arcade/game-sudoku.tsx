@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { SUDOKU_CELLS, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type SudokuDifficulty, type SudokuSave } from "@/lib/arcade";
+import { SUDOKU_CELLS, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type RunReward, type SudokuDifficulty, type SudokuSave } from "@/lib/arcade";
 import { cn } from "@/lib/utils";
+import { CoinReward, type CoinState } from "./coin-reward";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameKeys } from "./game-shell";
 
 type Snapshot = { entries: string; notes: number[] };
@@ -82,6 +83,7 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
   const [view, setView] = useState<"board" | "picker">(initial && !initial.completed ? "board" : "picker");
   const [records, setRecords] = useState<Records>(initialRecords);
   const [result, setResult] = useState<Result | null>(null);
+  const [coins, setCoins] = useState<CoinState>({ status: "idle" });
   const [creating, setCreating] = useState<SudokuDifficulty | null>(null);
   const [confirming, setConfirming] = useState<SudokuDifficulty | null>(null);
   const [finishing, setFinishing] = useState(false);
@@ -124,6 +126,7 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
       setHistory([]);
       setSelected(firstEmpty(save));
       setResult(null);
+      setCoins({ status: "idle" });
       setPaused(false);
       setView(save && !save.completed ? "board" : "picker");
       clock.stop();
@@ -275,16 +278,27 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
     dirty.current = false;
     play("win");
     const seconds = Math.max(1, Math.round(ms / 1000));
+    setCoins({ status: "pending" });
     try {
-      const response = await apiFetch<{ best: number; improved: boolean }>("/api/arcade/sudoku", {
+      const response = await apiFetch<{ best: number; improved: boolean; reward: RunReward | null }>("/api/arcade/sudoku", {
         method: "PATCH",
         json: { id: game.id, entries: finalEntries, notes: finalNotes, elapsedMs: ms, complete: true },
       });
       setRecords((current) => ({ ...current, [game.difficulty]: response.best }));
       setResult({ seconds, best: response.best, improved: response.improved });
+      // The solve is saved; if counting its coins hiccuped, ask once more (it can only pay once).
+      const reward =
+        response.reward ??
+        (await apiFetch<{ reward: RunReward }>("/api/arcade/sudoku/reward", { method: "POST", json: { id: game.id } }).then(
+          (body) => body.reward,
+          () => null,
+        ));
+      setCoins(reward ? { status: "done", reward } : { status: "error" });
+      if (reward?.status === "paid") window.dispatchEvent(new CustomEvent("archive:coins", { detail: reward.balance }));
     } catch {
       toast.error("Solved! But the time could not be saved.");
       setResult({ seconds, best: records[game.difficulty] ?? null, improved: false });
+      setCoins({ status: "error" });
     }
     setGame({ ...game, entries: finalEntries, notes: finalNotes, elapsedMs: ms, completed: true });
     setFinishing(false);
@@ -360,6 +374,7 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
         <p className="mb-3 text-sm text-muted-foreground">
           Solved {SUDOKU_LABELS[game.difficulty]} in <span className="font-semibold text-foreground">{formatDuration(result.seconds)}</span>
           {result.improved ? " — a new best!" : ""}
+          <CoinReward state={coins} />
         </p>
       ) : null}
       <h2 className="text-base font-semibold">New puzzle</h2>
@@ -505,6 +520,7 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
               >
                 {SUDOKU_LABELS[game.difficulty]} in {formatDuration(result.seconds)}
                 {result.improved ? " · new best!" : result.best ? ` · best ${formatDuration(result.best)}` : ""}
+                <CoinReward state={coins} />
               </GameOverlay>
             ) : null}
           </div>

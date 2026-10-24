@@ -137,6 +137,33 @@ const SPECS: Record<ArtworkFrameId, FrameSpec> = {
     fx: { kind: FX.aurora, a: 0x6ee7b7, b: 0xf0abfc },
     glints: () => [],
   },
+  "pixel-quest": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.1, roughness: 0.55, clearcoat: 0.3, clearcoatRoughness: 0.4 },
+    edge: { color: 0x2a1650, metalness: 0.3, roughness: 0.5 },
+    light: { a: 0xa78bfa, b: 0xfbbf24, mix: 0.5 },
+    fx: { kind: FX.gilt, a: 0xc4b5fd, b: 0xfde68a },
+    glints: (band) => [[0, band.height / 2 - band.margin / 2, 2.6]],
+  },
+  "neon-marquee": {
+    margin: 0.06,
+    relief: 0.007,
+    band: { metalness: 0.2, roughness: 0.4, clearcoat: 0.9, clearcoatRoughness: 0.15 },
+    edge: { color: 0x14081f, metalness: 0.6, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.12 },
+    light: { a: 0xf472b6, b: 0x67e8f9, mix: 0.6 },
+    fx: { kind: FX.amethyst, a: 0xf9a8d4, b: 0xfef3c7 },
+    glints: () => [],
+  },
+  constellation: {
+    margin: 0.042,
+    relief: 0.005,
+    band: { metalness: 0.35, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.18 },
+    edge: { color: 0xc9a85a, metalness: 1, roughness: 0.26, clearcoat: 0.4, clearcoatRoughness: 0.2 },
+    light: { a: 0x818cf8, b: 0xfde68a, mix: 0.55 },
+    fx: { kind: FX.amethyst, a: 0xc7d2fe, b: 0xfef3c7 },
+    glints: (band) => cornerGlints(band, [1.6, 3.1, 4.6, 5.8]),
+  },
 };
 
 const PLANE_VERTEX = /* glsl */ `
@@ -450,7 +477,7 @@ function paintBand(frame: ArtworkFrameId, { cw, ch, m, r, ra }: Layout): HTMLCan
     ctx.fillStyle = sheen;
     ctx.fillRect(0, 0, W, H);
     line(art.x - 1, Math.max(1.5, M * 0.06), "rgba(30, 20, 60, 0.35)", art.r + 1);
-  } else {
+  } else if (frame === "aurora") {
     const night = ctx.createLinearGradient(0, 0, W, H);
     night.addColorStop(0, "#111a35");
     night.addColorStop(1, "#0a0f22");
@@ -458,6 +485,107 @@ function paintBand(frame: ArtworkFrameId, { cw, ch, m, r, ra }: Layout): HTMLCan
     ctx.fillRect(0, 0, W, H);
     line(M * 0.3, Math.max(1, M * 0.05), "rgba(196, 214, 255, 0.2)", r * scale - M * 0.3);
     line(art.x - 1, Math.max(1.5, M * 0.07), "rgba(196, 214, 255, 0.38)", art.r + 1);
+  } else if (frame === "pixel-quest") {
+    // Chunky two-tone pixel checker, a gold pixel bracket in each corner and a pixel coin on top.
+    const px = Math.max(2, Math.round(M / 4));
+    for (let y = 0; y < H; y += px) {
+      for (let x = 0; x < W; x += px) {
+        ctx.fillStyle = ((x / px + y / px) & 1) === 0 ? "#6d28d9" : "#a78bfa";
+        ctx.fillRect(x, y, px, px);
+      }
+    }
+    ctx.fillStyle = "#1e1037";
+    ctx.fillRect(0, 0, W, px * 0.6);
+    ctx.fillRect(0, H - px * 0.6, W, px * 0.6);
+    ctx.fillRect(0, 0, px * 0.6, H);
+    ctx.fillRect(W - px * 0.6, 0, px * 0.6, H);
+    line(art.x - px * 0.3, px * 0.6, "#1e1037", art.r + px * 0.3);
+    corners(() => {
+      ctx.fillStyle = "#fbbf24";
+      for (const [x, y] of [[0, 0], [1, 0], [2, 0], [0, 1], [0, 2]]) ctx.fillRect(px * (x + 0.6), px * (y + 0.6), px, px);
+      ctx.fillStyle = "#fef3c7";
+      ctx.fillRect(px * 0.6, px * 0.6, px, px);
+    });
+    const coin = ["..###..", ".#####.", "##+####", "##+####", "#######", ".#####.", "..###.."];
+    const unit = M / 9;
+    const ox = W / 2 - unit * 3.5;
+    const oy = M / 2 - unit * 3.5;
+    coin.forEach((row, y) =>
+      [...row].forEach((cell, x) => {
+        if (cell === ".") return;
+        ctx.fillStyle = cell === "+" ? "#fffbeb" : "#f59e0b";
+        ctx.fillRect(ox + x * unit, oy + y * unit, unit + 0.5, unit + 0.5);
+      }),
+    );
+  } else if (frame === "neon-marquee") {
+    // A dark marquee band set with warm bulbs, between a pink outer tube and a cyan inner tube.
+    ctx.fillStyle = "#170b22";
+    ctx.fillRect(0, 0, W, H);
+    const spacing = M * 0.9;
+    const bulb = (x: number, y: number) => {
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, M * 0.26);
+      glow.addColorStop(0, "#fffbeb");
+      glow.addColorStop(0.45, "#fcd34d");
+      glow.addColorStop(1, "rgba(245, 158, 11, 0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(x, y, M * 0.26, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    const c = M / 2;
+    for (let x = c; x <= W - c + 0.5; x += (W - 2 * c) / Math.max(1, Math.round((W - 2 * c) / spacing))) {
+      bulb(x, c);
+      bulb(x, H - c);
+    }
+    const stepY = (H - 2 * c) / Math.max(1, Math.round((H - 2 * c) / spacing));
+    for (let y = c + stepY; y < H - c - 0.5; y += stepY) {
+      bulb(c, y);
+      bulb(W - c, y);
+    }
+    ctx.save();
+    ctx.shadowBlur = M * 0.35;
+    ctx.shadowColor = "#f472b6";
+    line(M * 0.1, Math.max(2, M * 0.08), "#f9a8d4", r * scale - M * 0.1);
+    ctx.shadowColor = "#67e8f9";
+    line(art.x - M * 0.08, Math.max(2, M * 0.08), "#a5f3fc", art.r + M * 0.08);
+    ctx.restore();
+  } else if (frame === "constellation") {
+    // A night-sky rim scattered with stars, a gold hairline each side and a four-point star in each corner.
+    const sky = ctx.createLinearGradient(0, 0, W, H);
+    sky.addColorStop(0, "#1e1b4b");
+    sky.addColorStop(0.5, "#0b1026");
+    sky.addColorStop(1, "#24205a");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+    let seed = 7;
+    const random = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+    const count = Math.min(4000, Math.round((W * H) / (M * M * 0.6)));
+    for (let i = 0; i < count; i++) {
+      const x = random() * W;
+      const y = random() * H;
+      if (x > M * 1.05 && x < W - M * 1.05 && y > M * 1.05 && y < H - M * 1.05) continue;
+      ctx.fillStyle = random() > 0.8 ? "rgba(253, 230, 138, 0.9)" : `rgba(224, 231, 255, ${0.35 + random() * 0.6})`;
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(0.6, M * (0.025 + random() * 0.04)), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    line(M * 0.2, Math.max(1, M * 0.035), "rgba(240, 214, 140, 0.85)", r * scale - M * 0.2);
+    line(art.x - M * 0.05, Math.max(1, M * 0.04), "rgba(240, 214, 140, 0.9)", art.r + M * 0.05);
+    corners(() => {
+      const s = M * 0.62;
+      ctx.save();
+      ctx.translate(M / 2, M / 2);
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const a = (k * Math.PI) / 4;
+        const d = k % 2 === 0 ? s : s * 0.22;
+        ctx.lineTo(Math.cos(a) * d, Math.sin(a) * d);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "#fde68a";
+      ctx.fill();
+      ctx.restore();
+    });
   }
   return canvas;
 }

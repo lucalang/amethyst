@@ -20,6 +20,7 @@ import { accentStyle } from "@/lib/collection-identity";
 import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
+import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { ProfileAvatar } from "./profile-avatar";
 
 /** Server-rendered collection icons keyed by collection id. */
@@ -43,7 +44,7 @@ export function BrandMark({ className }: { className?: string }) {
 }
 
 /** The signed-in account as shown in the private account menu. */
-export type AccountSummary = { name: string | null; avatarUrl: string | null; email: string | null };
+export type AccountSummary = { name: string | null; avatarUrl: string | null; decoration: AvatarDecorationId | null; email: string | null };
 
 export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const currentId = useCurrentCollectionId(collections);
@@ -89,12 +90,12 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Account menu" className="shrink-0">
-                <ProfileAvatar name={account.name} src={account.avatarUrl} className="size-7 text-xs" />
+                <ProfileAvatar name={account.name} src={account.avatarUrl} decoration={account.decoration} className="size-7 text-xs" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-60">
               <DropdownMenuLabel className="flex items-center gap-2.5">
-                <ProfileAvatar name={account.name} src={account.avatarUrl} className="size-8 text-xs" />
+                <ProfileAvatar name={account.name} src={account.avatarUrl} decoration={account.decoration} className="size-8 text-xs" />
                 <span className="min-w-0">
                   <span className="block truncate">{account.name ?? "Your account"}</span>
                   {account.email ? <span className="block truncate text-xs font-normal text-muted-foreground">{account.email}</span> : null}

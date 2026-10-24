@@ -42,6 +42,62 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-24-arcade-shop",
+    date: "2026-10-24",
+    title: "Arcade coins and the prize shop",
+    intro: "Good Arcade runs now earn coins, and a new shop trades them for artwork frames and avatar decorations.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Arcade shop", text: "Six original cosmetics: three artwork frames and three avatar decorations, previewed on your own artwork and picture before you buy." },
+      { kind: "new", feature: "Coins from play", text: "All six games pay coins for qualifying runs, shown in the result card. Sudoku pays by difficulty." },
+      { kind: "improved", feature: "Arcade hall", text: "The Arcade is now a hall of game cabinets, each with its own light, artwork, records and Play button." },
+      { kind: "improved", feature: "Home marquee", text: "Home's Arcade link is now a small illuminated ARCADE sign that shows your coins." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Arcade shop",
+          body: "Spend coins on Pixel Quest, Neon Marquee and Constellation frames, and Laurel wreath, Orbit ring and Gem crown avatar decorations. Preview any item on your own artwork or picture without changing what you're using. Every purchase asks you to confirm the item, price and balance afterwards, then offers Equip now or Keep for later.",
+          points: [
+            "Bought items are yours for good and never need buying again.",
+            "Filter by frames, avatar decorations or what you own.",
+            "Not enough coins, a changed price or a connection problem is always shown clearly, and no coins are taken.",
+            "Cosmetics only: nothing in the shop changes how games play, and coins can't be bought with money.",
+          ],
+          where: "Arcade → Visit the shop",
+          link: { href: "/arcade/shop", label: "Open the shop" },
+        },
+        {
+          title: "Coins from play",
+          body: "2048, Flutter, Snake, Fruit Slice and Tower Stacker pay coins for runs that reach a minimum score and length, with more for better scores up to a limit per run. Solving a Sudoku pays 20, 35 or 60 coins by difficulty. Each run or puzzle pays once, even after a reload, and play pays at most 600 coins in any 24 hours. Coins are counted from now on; earlier games don't pay retroactively.",
+          points: ["The result card shows the coins earned, or why a run didn't qualify.", "The shop lists the earning rules and your recent coin history."],
+          where: "Arcade",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+        {
+          title: "Shop items in your settings",
+          body: "Frames you own appear in Artwork frames and in each entry's frame choice, alongside the free frames and No frame. Avatar decorations are chosen in Profile and are drawn around your picture without changing it.",
+          where: "Settings → Artwork frames, Settings → Profile",
+          link: { href: "/settings/profile", label: "Open Profile" },
+        },
+      ],
+      improved: [
+        {
+          title: "Arcade hall",
+          body: "Each game sits in its own cabinet with a lit title, its artwork on a screen, your records and a Play button. A prize counter at the top shows your coins and leads to the shop. Cabinets light up on hover and hold still when animations are reduced or off.",
+          where: "Home → Arcade",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+        {
+          title: "Home marquee",
+          body: "The Arcade link on Home is now a compact ARCADE sign with tiny game artwork and your coin balance. A short light sweep plays when you point at it, and it stays still when motion is reduced. Achievements stays right next to it.",
+          where: "Home",
+          link: { href: "/", label: "Go Home" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-24-update-log",
     date: "2026-10-24",
     title: "A clearer update log",

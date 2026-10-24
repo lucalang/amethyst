@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
 import { fitWorld, livePalette, mix, observeCanvas, random, startLoop, withAlpha, type CanvasSize } from "./engine";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
+import { CoinReward, useArcadeRun } from "./coin-reward";
 import type { SoundName } from "./sound";
 
 const HEIGHT = 600;
@@ -495,8 +496,13 @@ export default function GameFruit({ best: initialBest }: { best: number | null }
   const [misses, setMisses] = useState(0);
   const [reason, setReason] = useState<"bomb" | "misses">("misses");
   const runMetrics = useRef({ fruitsSliced: 0, maxCombo: 0 });
+  const { begin: beginRun, finish: finishRun, coins } = useArcadeRun("fruit-slice");
 
   useGameAchievementTracking("fruit-slice", phase);
+
+  useEffect(() => {
+    if (phase === "playing") beginRun();
+  }, [phase, beginRun]);
 
   useEffect(() => {
     live.current = { play, effects };
@@ -505,6 +511,7 @@ export default function GameFruit({ best: initialBest }: { best: number | null }
   const finish = useEffectEvent((final: number, why: "bomb" | "misses", sliced: number, combo: number) => {
     setReason(why);
     submit(final);
+    finishRun(final, { fruitsSliced: sliced, maxCombo: combo });
     sendAchievementEvent({ type: "run_finished", game: "fruit-slice", fruitsSliced: sliced, maxCombo: combo, reason: why });
   });
 
@@ -524,11 +531,12 @@ export default function GameFruit({ best: initialBest }: { best: number | null }
     gameRef.current = game;
     return () => {
       submit(game.score, { keepalive: true });
+      finishRun(game.score, { ...runMetrics.current }, { keepalive: true });
       if (game.phase !== "over" && runMetrics.current.fruitsSliced > 0) sendAchievementEvent({ type: "run_progress", game: "fruit-slice", ...runMetrics.current });
       game.destroy();
       gameRef.current = null;
     };
-  }, [submit]);
+  }, [submit, finishRun]);
 
   useAway(() => gameRef.current?.pause());
 
@@ -636,6 +644,7 @@ export default function GameFruit({ best: initialBest }: { best: number | null }
           <GameOverlay title={reason === "bomb" ? "Boom! You hit a bomb" : `${MAX_MISSES} fruit missed`} actions={<Button size="sm" onClick={restart}>Play again</Button>}>
             Score {score}
             {score > 0 && score >= best ? " · new best!" : ` · best ${shownBest}`}
+            <CoinReward state={coins} />
           </GameOverlay>
         ) : null}
       </div>

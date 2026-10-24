@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/auth";
+import { AVATAR_DECORATION_IDS } from "@/lib/cosmetics";
 import { artworkUrl } from "@/lib/validation/entries";
 
 export type FormState = { status: "idle" | "success" | "error"; message?: string };
@@ -22,6 +23,7 @@ const profileSchema = z.object({
     .pipe(z.string().max(160, "Keep your motto to 160 characters.").refine((value) => !hasControls(value), "Mottos cannot contain control characters."))
     .transform((value) => value || null),
   avatarUrl: artworkUrl.transform((value) => value || null),
+  avatarDecoration: z.union([z.literal(""), z.enum(AVATAR_DECORATION_IDS)]).transform((value) => value || null),
 });
 
 /** Private profile details (name, avatar, motto). Sign-in email and password are handled separately. */
@@ -31,13 +33,20 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
     displayName: formData.get("displayName") ?? "",
     motto: formData.get("motto") ?? "",
     avatarUrl: formData.get("avatarUrl") ?? "",
+    avatarDecoration: formData.get("avatarDecoration") ?? "",
   });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Check your profile details." };
 
   const { error } = await ctx.supabase
     .from("users")
-    .update({ display_name: parsed.data.displayName, motto: parsed.data.motto, avatar_url: parsed.data.avatarUrl })
+    .update({
+      display_name: parsed.data.displayName,
+      motto: parsed.data.motto,
+      avatar_url: parsed.data.avatarUrl,
+      avatar_decoration: parsed.data.avatarDecoration,
+    })
     .eq("id", ctx.userId);
+  if (error?.hint === "cosmetic_not_owned") return { status: "error", message: "That decoration isn't in your collection yet. Find it in the Arcade shop." };
   if (error) return { status: "error", message: "Could not save your profile." };
   revalidatePath("/", "layout");
   return { status: "success", message: "Profile saved." };
