@@ -43,7 +43,7 @@ function useUnread() {
 /** Top-bar entry point to the update log, with a dot while there is something unread. */
 export function WhatsNewButton({ className }: { className?: string }) {
   const unread = useUnread();
-  const active = usePathname() === "/whats-new";
+  const active = usePathname().startsWith("/whats-new");
   const label = unread ? "What’s new (new update)" : "What’s new";
   return (
     <Tooltip>

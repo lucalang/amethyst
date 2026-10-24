@@ -1,93 +1,94 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Megaphone, Plus, Sparkles, Wrench } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
-import { MarkUpdatesSeen, PreviewIntroButton } from "@/components/layout/whats-new";
-import { CHANGELOG, formatChangeDate, type ChangeItem } from "@/lib/changelog";
+import { MarkUpdatesSeen } from "@/components/layout/whats-new";
+import { CHANGELOG, formatChangeDate, releasePath } from "@/lib/changelog";
 import { requireUser } from "@/lib/supabase/auth";
 import { cn } from "@/lib/utils";
+import { HighlightList, KindLegend, ReleaseGlyph, ReleaseNotice, kindCounts } from "./release-ui";
 
 export const metadata: Metadata = { title: "What’s new" };
 
-const GROUPS = [
-  { key: "added", title: "New", icon: Plus, tone: "text-amethyst bg-amethyst/10 ring-amethyst/25" },
-  { key: "improved", title: "Improved", icon: Sparkles, tone: "text-rose bg-rose/10 ring-rose/25" },
-  { key: "fixed", title: "Fixed", icon: Wrench, tone: "text-muted-foreground bg-white/[0.04] ring-white/[0.1]" },
-] as const;
-
-function Item({ item }: { item: ChangeItem }) {
-  return (
-    <li className="min-w-0 rounded-lg border border-white/[0.06] bg-surface/40 px-4 py-3">
-      <p className="text-sm leading-6 text-pretty text-foreground/90">{item.text}</p>
-      {item.where || item.link || item.action ? (
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
-          {item.where ? <span className="text-xs text-muted-foreground">{item.where}</span> : null}
-          {item.link ? (
-            <Link
-              href={item.link.href}
-              className="inline-flex items-center gap-1 rounded text-xs font-medium text-amethyst underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {item.link.label}
-              <ArrowRight aria-hidden className="size-3" />
-            </Link>
-          ) : null}
-          {item.action === "preview-intro" ? <PreviewIntroButton /> : null}
-        </div>
-      ) : null}
-    </li>
-  );
+function shortDate(date: string): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 export default async function WhatsNewPage() {
   await requireUser();
   return (
     <EntranceScope>
-      <PageContainer className="max-w-4xl">
+      <PageContainer className="max-w-5xl">
         <MarkUpdatesSeen />
-        <PageHeader title="What’s new" description="Every update to Amethyst Archives, newest first, and where to find each change." />
-        <ol className="space-y-10">
-          {CHANGELOG.map((entry, index) => (
-            <li key={entry.id} className="enter" style={{ "--enter-index": Math.min(index, 4) + 1 } as React.CSSProperties}>
-              <article aria-labelledby={`${entry.id}-title`} className="relative border-l border-white/[0.08] pl-5 md:pl-7">
-                <span aria-hidden className={cn("absolute top-1.5 -left-[5px] size-2.5 rounded-full ring-4 ring-background", index === 0 ? "bg-amethyst" : "bg-white/25")} />
-                <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <time dateTime={entry.date}>{formatChangeDate(entry.date)}</time>
-                  {index === 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amethyst/10 px-2 py-px text-[10px] font-semibold tracking-wide text-amethyst uppercase">
-                      <Megaphone aria-hidden className="size-3" /> Latest
-                    </span>
-                  ) : null}
-                </p>
-                <h2 id={`${entry.id}-title`} className="mt-1 text-xl font-semibold tracking-tight">
-                  {entry.title}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">{entry.summary}</p>
-                <div className="mt-4 space-y-5">
-                  {GROUPS.map((group) => {
-                    const items = entry[group.key];
-                    if (!items?.length) return null;
-                    return (
-                      <section key={group.key} aria-label={`${group.title} in ${entry.title}`}>
-                        <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                          <span aria-hidden className={cn("grid size-5 place-items-center rounded ring-1", group.tone)}>
-                            <group.icon className="size-3" />
-                          </span>
-                          {group.title}
-                        </h3>
-                        <ul className="space-y-2">
-                          {items.map((item) => (
-                            <Item key={item.text} item={item} />
-                          ))}
-                        </ul>
-                      </section>
-                    );
-                  })}
-                </div>
-              </article>
-            </li>
-          ))}
-        </ol>
+        <PageHeader
+          title="What’s new"
+          description="The latest changes to Amethyst Archives at a glance. Open any update for its full notes."
+          actions={<KindLegend />}
+        />
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_13rem]">
+          <ol aria-label="Updates, newest first" className="min-w-0">
+            {CHANGELOG.map((release, index) => (
+              <li key={release.id} className="enter" style={{ "--enter-index": Math.min(index, 4) + 1 } as React.CSSProperties}>
+                <article
+                  id={release.id}
+                  aria-labelledby={`${release.id}-title`}
+                  className={cn("grid scroll-mt-24 gap-x-8 gap-y-3 py-8 sm:grid-cols-[8.5rem_minmax(0,1fr)]", index > 0 && "border-t border-white/[0.07]", index === 0 && "pt-0")}
+                >
+                  <div className="flex items-center gap-3 sm:flex-col sm:items-start sm:gap-2">
+                    <ReleaseGlyph icon={release.icon} className="size-9 sm:size-10" />
+                    <div className="text-xs leading-5 text-muted-foreground">
+                      <time dateTime={release.date} className="block font-medium text-foreground/80">
+                        {formatChangeDate(release.date)}
+                      </time>
+                      {index === 0 ? <span className="font-semibold tracking-wide text-amethyst uppercase">Latest</span> : <span>{kindCounts(release.highlights)}</span>}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <h2 id={`${release.id}-title`} className="text-xl font-bold tracking-tight text-balance md:text-2xl">
+                      <Link href={releasePath(release.id)} className="rounded outline-none hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring">
+                        {release.title}
+                      </Link>
+                    </h2>
+                    <p className="mt-1.5 max-w-2xl text-[15px] leading-6 text-pretty text-foreground/80">{release.intro}</p>
+                    {release.notice ? (
+                      <div className="mt-4 max-w-2xl">
+                        <ReleaseNotice>{release.notice}</ReleaseNotice>
+                      </div>
+                    ) : null}
+                    <HighlightList highlights={release.highlights} className="mt-5 max-w-2xl" />
+                    <Link
+                      href={releasePath(release.id)}
+                      className="group mt-5 inline-flex items-center gap-1.5 rounded text-sm font-medium text-amethyst underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      Read full update
+                      <span className="sr-only">: {release.title}</span>
+                      <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+                </article>
+              </li>
+            ))}
+          </ol>
+          <nav aria-label="All updates" className="hidden lg:block">
+            <div className="sticky top-24">
+              <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">All updates</p>
+              <ol className="max-h-[calc(100dvh-9rem)] space-y-0.5 overflow-y-auto border-l border-white/[0.08]">
+                {CHANGELOG.map((release) => (
+                  <li key={release.id}>
+                    <a
+                      href={`#${release.id}`}
+                      className="-ml-px block border-l border-transparent py-1.5 pl-3 text-xs leading-snug text-muted-foreground outline-none hover:border-amethyst hover:text-foreground focus-visible:border-amethyst focus-visible:text-foreground"
+                    >
+                      <span className="block tabular-nums text-muted-foreground/70">{shortDate(release.date)}</span>
+                      <span className="line-clamp-2">{release.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </nav>
+        </div>
       </PageContainer>
     </EntranceScope>
   );
