@@ -6,6 +6,7 @@ import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionIcon } from "@/components/categories/collection-icon";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
+import { CoverFan } from "@/components/home/cover-fan";
 import { CustomizeHomeButton, HomeCustomizeProvider, HomeSections } from "@/components/home/home-customizer";
 import { NewEntryButton } from "@/components/home/new-entry-button";
 import { ArcadeMarquee } from "@/components/home/arcade-marquee";
@@ -16,7 +17,7 @@ import { MediaImage } from "@/components/media/media-image";
 import { PosterCard } from "@/components/media/poster-card";
 import { ProgressMeter } from "@/components/media/progress-meter";
 import { accentStyle } from "@/lib/collection-identity";
-import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomeFeaturedEntry, type HomePreview } from "@/lib/data/home";
+import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomeFeaturedEntry } from "@/lib/data/home";
 import { loadAchievementCards } from "@/lib/data/achievements";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { loadPreferences } from "@/lib/data/preferences";
@@ -114,44 +115,6 @@ function ContinueCard({ item }: { item: HomeContinue }) {
   );
 }
 
-/** Center first, then alternating left and right. */
-const FAN_SLOTS = [0, -1, 1, -2, 2];
-
-/**
- * Up to five covers fanned out beside the greeting. Spacing and angles adapt to the number of
- * covers and the column width (see .home-fan in globals.css); square covers stay square.
- */
-function CoverFan({ covers }: { covers: HomePreview[] }) {
-  const spread = Math.max(...covers.map((_, index) => Math.abs(FAN_SLOTS[index])));
-  return (
-    <div aria-hidden className="home-fan relative mx-auto hidden w-full md:block" style={{ "--fan-max": spread } as CSSProperties}>
-      <div className="absolute inset-x-10 bottom-0 h-20 rounded-full bg-amethyst/25 blur-3xl" />
-      {covers.map((cover, index) => {
-        const slot = FAN_SLOTS[index];
-        return (
-          <Link
-            key={cover.id}
-            href={cover.href}
-            tabIndex={-1}
-            data-shape={cover.coverShape === "square" ? "square" : "portrait"}
-            className="home-fan-card overflow-hidden rounded-lg border border-white/[0.12] bg-surface shadow-[0_24px_48px_-16px_rgb(var(--shadow-rgb)/calc(0.95*var(--shadow-alpha)))]"
-            style={
-              {
-                "--fan-slot": slot,
-                "--fan-depth": Math.abs(slot),
-                "--fan-i": index,
-                "--fan-z": 10 - Math.abs(slot),
-              } as CSSProperties
-            }
-          >
-            <MediaImage src={cover.coverUrl} alt="" fallbackLabel={cover.title} priority={index < 3} />
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
 function defaultGreeting(home: HomeData) {
   const firstName = home.displayName.split(/\s+/)[0] ?? "";
   return `${home.counts.entries === 0 ? "Welcome" : "Welcome back"}${firstName ? `, ${firstName}` : ""}`;
@@ -160,8 +123,9 @@ function defaultGreeting(home: HomeData) {
 function Hero({ home, categories, greeting }: { home: HomeData; categories: LibraryCategory[]; greeting: string }) {
   const firstName = home.displayName.split(/\s+/)[0] ?? "";
   const fresh = home.counts.entries === 0;
-  const backdrop = home.continueEntry?.bannerUrl ?? home.continueEntry?.entry.coverUrl ?? home.showcase[0]?.coverUrl ?? null;
-  const showFan = home.showcase.length > 0;
+  const fanArt = home.fan.flatMap((item) => (item.kind === "image" ? [item.url] : item.coverUrl ? [item.coverUrl] : []));
+  const backdrop = home.continueEntry?.bannerUrl ?? home.continueEntry?.entry.coverUrl ?? fanArt[0] ?? null;
+  const showFan = fanArt.length > 0;
   const subline = !home.collections.length
     ? "Your archive is ready. Start with a collection, a shelf for anything you want to keep track of."
     : fresh
@@ -177,7 +141,7 @@ function Hero({ home, categories, greeting }: { home: HomeData; categories: Libr
         <div className="absolute inset-0 bg-[radial-gradient(55%_85%_at_12%_0%,rgb(var(--accent-rgb)/0.26),transparent_70%),radial-gradient(40%_70%_at_88%_15%,rgb(var(--rose-rgb)/0.13),transparent_70%)]" />
         <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/55 to-black" />
       </div>
-      <div className={cn(INNER, "grid items-center gap-6 py-7 md:gap-8 md:py-9", showFan && "md:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:grid-cols-[minmax(0,1fr)_26rem]")}>
+      <div className={cn(INNER, "grid items-center gap-6 py-7 md:gap-8 md:py-9", showFan && "md:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)] lg:grid-cols-[minmax(0,1fr)_29rem] xl:grid-cols-[minmax(0,1fr)_32rem]")}>
         <div className="enter min-w-0" style={enterIndex(0)}>
           <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Gem aria-hidden className="size-3.5 text-amethyst" />
@@ -214,7 +178,7 @@ function Hero({ home, categories, greeting }: { home: HomeData; categories: Libr
             </div>
           ) : null}
         </div>
-        {showFan ? <CoverFan covers={home.showcase} /> : null}
+        {showFan ? <CoverFan items={home.fan} className="mx-auto max-w-md md:max-w-none" /> : null}
       </div>
     </section>
   );
@@ -391,7 +355,7 @@ export default async function HomePage() {
   const ctx = await requireUser();
   const preferences = await loadPreferences(ctx);
   const chosen = preferences.homeFeatured;
-  const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null, preferences.homeFanCollections);
+  const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null);
   const showAchievements = preferences.homeSections.some((section) => section.id === "achievements" && !section.hidden);
   const [achievementCards, coinBalance] = await Promise.all([loadAchievementCards(ctx), loadCoinBalance(ctx).catch(() => null)]);
   const { pinStyle } = preferences;
@@ -529,7 +493,7 @@ export default async function HomePage() {
           featured={chosen}
           featuredTitle={home.featured?.entry.title ?? null}
           featuredMissing={featuredMissing}
-          fanCollections={preferences.homeFanCollections}
+          fan={home.fan}
           collections={home.collections.map(({ id, name, icon, coverCount }) => ({
             id,
             name,

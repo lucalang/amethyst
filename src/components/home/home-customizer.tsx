@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useSaveSettings } from "@/app/(vault)/settings/setting-controls";
 import { ChangedBadge, ResetIconButton } from "@/app/(vault)/settings/reset-button";
+import { FanEditor, type FanCollection } from "@/components/home/fan-editor";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";
@@ -32,9 +33,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/api-client";
 import type { CoverShape } from "@/lib/cover-shape";
+import type { FanItem } from "@/lib/home-fan";
 import {
   HOME_SECTION_IDS,
-  MAX_FAN_COLLECTIONS,
   MAX_FEATURED_CAPTION_LENGTH,
   MAX_GREETING_LENGTH,
   type HomeFeatured,
@@ -119,7 +120,7 @@ export function HomeSections({
   featured,
   featuredTitle,
   featuredMissing,
-  fanCollections,
+  fan,
   collections,
 }: {
   layout: HomeSection[];
@@ -130,7 +131,7 @@ export function HomeSections({
   featured: HomeFeatured;
   featuredTitle: string | null;
   featuredMissing: boolean;
-  fanCollections: string[] | null;
+  fan: FanItem[];
   collections: FanCollection[];
 }) {
   const { customizing, setCustomizing } = useContext(CustomizeContext);
@@ -165,7 +166,7 @@ export function HomeSections({
               <div className="space-y-6">
                 <GreetingEditor greeting={greeting} defaultGreeting={defaultGreeting} />
                 <FeaturedEditor featured={featured} featuredTitle={featuredTitle} missing={featuredMissing} />
-                <FanEditor value={fanCollections} collections={collections} />
+                <FanEditor fan={fan} collections={collections} />
               </div>
               <SectionArranger
                 sections={sections}
@@ -420,95 +421,6 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
           )}
         </div>
       ) : null}
-    </fieldset>
-  );
-}
-
-export type FanCollection = { id: string; name: string; icon: ReactNode; coverCount: number };
-
-/** Which collections may lend artwork to the cover fan beside the greeting. */
-function FanEditor({ value, collections }: { value: string[] | null; collections: FanCollection[] }) {
-  const [current, , commit] = useLocalSetting("homeFanCollections", value);
-  const allIds = collections.map((collection) => collection.id);
-  // Ids of deleted collections are dropped from what is shown and from the next save.
-  const selected = new Set(current === null ? allIds : current.filter((id) => allIds.includes(id)));
-  const orphaned = current !== null && current.length > 0 && selected.size === 0;
-
-  function save(next: Set<string>) {
-    const ids = allIds.filter((id) => next.has(id)).slice(0, MAX_FAN_COLLECTIONS);
-    commit(ids.length === allIds.length && allIds.length > 0 ? null : ids);
-  }
-
-  function toggle(id: string) {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    save(next);
-  }
-
-  const summary =
-    current === null
-      ? "Artwork from every collection, including new ones."
-      : orphaned
-        ? "The chosen collections were deleted, so the fan is hidden."
-        : selected.size === 0
-          ? "No collections chosen, so the fan is hidden."
-          : `Artwork from ${selected.size} of ${allIds.length} ${allIds.length === 1 ? "collection" : "collections"}.`;
-
-  return (
-    <fieldset className="space-y-2.5" aria-describedby="home-fan-summary">
-      <legend className="flex min-h-6 items-center gap-2 text-sm font-medium">
-        Cover fan
-        {current !== null ? (
-          <>
-            <ChangedBadge />
-            <ResetIconButton label="the cover fan collections" defaultLabel="all collections" onReset={() => commit(null)} />
-          </>
-        ) : null}
-      </legend>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p id="home-fan-summary" className="text-xs text-muted-foreground">
-          {summary}
-        </p>
-        {collections.length > 1 ? (
-          <span className="flex gap-1">
-            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={current === null} onClick={() => commit(null)}>
-              All
-            </Button>
-            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" disabled={current !== null && selected.size === 0} onClick={() => commit([])}>
-              None
-            </Button>
-          </span>
-        ) : null}
-      </div>
-      {collections.length ? (
-        <ul className="grid max-h-60 gap-1 overflow-y-auto pr-1 sm:grid-cols-2">
-          {collections.map((collection) => {
-            const checked = selected.has(collection.id);
-            return (
-              <li key={collection.id} className="min-w-0">
-                <label
-                  className={cn(
-                    "flex min-h-10 cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-1.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                    checked ? "border-amethyst/40 bg-amethyst/[0.08]" : "border-white/[0.07] bg-black/30 hover:border-white/[0.14]",
-                  )}
-                >
-                  <input type="checkbox" checked={checked} onChange={() => toggle(collection.id)} className="size-4 shrink-0 accent-[var(--primary)]" />
-                  <span className={cn("flex shrink-0", checked ? "text-amethyst" : "text-muted-foreground")}>{collection.icon}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium">{collection.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">
-                      {collection.coverCount ? `${collection.coverCount} with artwork` : "No artwork yet"}
-                    </span>
-                  </span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="text-xs text-muted-foreground">Create a collection and add cover art to fill the fan.</p>
-      )}
     </fieldset>
   );
 }

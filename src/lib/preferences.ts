@@ -21,7 +21,6 @@ export const HEADING_LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
 export const SHORTCUT_ACTIONS = ["search", "newEntry", "newFile", "newChecklist", "newFolder", "toggleExplorer"] as const;
 /** How often the opening animation plays on a fresh load of the app. */
 export const INTRO_FREQUENCIES = ["every", "daily", "weekly", "never"] as const;
-export const MAX_FAN_COLLECTIONS = 200;
 
 export type MotionLevel = (typeof MOTION_LEVELS)[number];
 export type EditorFont = (typeof EDITOR_FONTS)[number];
@@ -98,8 +97,6 @@ export const DEFAULT_SETTINGS = {
   /** "" keeps the built-in welcome. */
   homeGreeting: "",
   homeFeatured: null as HomeFeatured,
-  /** Collections whose covers may appear in the Home cover fan; null = every collection (including new ones), [] = no fan. */
-  homeFanCollections: null as string[] | null,
   /** Decoration around artwork in Showcase and the artwork viewer (independent of the theme). */
   artworkFrame: DEFAULT_ARTWORK_FRAME as ArtworkFrameId,
   /** Sound effects in Arcade games (audio only starts after the player interacts). */
@@ -181,11 +178,6 @@ const settingFields = {
         })
         .strict(),
     ])
-    .nullable(),
-  homeFanCollections: z
-    .array(z.uuid())
-    .max(MAX_FAN_COLLECTIONS)
-    .transform((ids) => [...new Set(ids)])
     .nullable(),
   artworkFrame: z.enum(ARTWORK_FRAME_IDS),
   arcadeSound: z.boolean(),

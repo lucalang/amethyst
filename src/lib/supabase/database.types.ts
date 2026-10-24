@@ -130,6 +130,15 @@ export type Database = {
               Update: { user_id?: string; id?: string; difficulty?: "easy" | "medium" | "hard"; puzzle?: string; solution?: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
               Relationships: [{ foreignKeyName: "sudoku_games_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
+            "home_fan_items": {
+              Row: { id: string; user_id: string; position: number; entry_id: string | null; image_url: string | null; image_shape: "square" | "portrait"; created_at: string }
+              Insert: { id?: string; user_id?: string; position: number; entry_id?: string | null; image_url?: string | null; image_shape?: "square" | "portrait"; created_at?: string }
+              Update: { id?: string; user_id?: string; position?: number; entry_id?: string | null; image_url?: string | null; image_shape?: "square" | "portrait"; created_at?: string }
+              Relationships: [
+                { foreignKeyName: "home_fan_items_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+                { foreignKeyName: "home_fan_items_user_id_entry_id_fkey"; columns: ["user_id", "entry_id"]; isOneToOne: false; referencedRelation: "entries"; referencedColumns: ["user_id", "id"] },
+              ]
+            },
             "entry_pins": {
               Row: { user_id: string; entry_id: string; pinned_at: string }
               Insert: { user_id?: string; entry_id: string; pinned_at?: string }
@@ -453,6 +462,9 @@ isOneToOne: false
                            },
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined
+                           },
+"set_home_fan":
+{ Args: { "p_items": Json }; Returns: undefined
                            },
 "update_user_settings":
 { Args: { "patch": Json }; Returns: Json

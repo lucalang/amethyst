@@ -931,61 +931,291 @@
 }
 
 /*
- * Home welcome: a fan of the user's own covers that deals in, then lifts on hover.
- * The fan is a size container, so spacing shrinks with its column instead of clipping;
- * --fan-max (the outermost slot) spreads fewer covers wider and tilts them less.
+ * Home cover fan (components/home/cover-fan.tsx): hand-picked artwork dealt from a small stack
+ * into an arc, left to right in saved order. Each slot holds the resting pose and is the hit
+ * area; the card inside lifts on hover/focus, so nothing moves out from under the pointer.
+ * Registered properties let every motion interpolate inside one transform per element.
+ * The fan is a size container: spacing shrinks with its column, accounting for how far the
+ * tilted outer cards swing (--fan-swing = sin of the edge angle), so it never overflows.
  */
-@keyframes fan-in {
+@property --fan-deal {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --fan-hover {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --fan-part {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --fan-t {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --fan-u {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --fan-au {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --fan-spread {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+@property --fan-n {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+@property --fan-swing {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@keyframes fan-deal {
+  from {
+    --fan-deal: 0;
+  }
+}
+@keyframes fan-fade {
   from {
     opacity: 0;
-    translate: 0 2.5rem;
   }
 }
 .home-fan {
-  --fan-w: 8rem;
+  --fan-w: 6.25rem;
+  --fan-lift: 1.35rem;
+  --fan-arc: 1.1rem;
+  --fan-part-gap: 0.7rem;
+  --fan-motion: 1;
+  --fan-grow: calc((var(--card-hover-scale, 1.05) - 1) * 1.3);
+  position: relative;
+  isolation: isolate;
   container-type: inline-size;
-  height: calc(var(--fan-w) * 1.5 + 3rem);
+  width: 100%;
+  height: calc(var(--fan-w) * 1.5 + var(--fan-arc) + var(--fan-lift) + 3rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition:
+    --fan-spread 560ms var(--ease-out-soft),
+    --fan-n 560ms var(--ease-out-soft),
+    --fan-swing 560ms var(--ease-out-soft);
+}
+@media (min-width: 40rem) {
+  .home-fan {
+    --fan-w: 7.25rem;
+  }
 }
 @media (min-width: 64rem) {
   .home-fan {
-    --fan-w: 9rem;
+    --fan-w: 8.5rem;
   }
 }
-.home-fan-card {
-  --fan-step: min(5.25rem, calc((100cqi - var(--fan-w) - 4.5rem) / max(1, 2 * var(--fan-max, 2))));
-  --fan-angle: min(6deg, calc(11deg / max(1, var(--fan-max, 2))));
+/* Theme-tinted floor light and a soft contact shadow under the hand. */
+.home-fan::before,
+.home-fan::after {
+  content: "";
   position: absolute;
-  bottom: 1.5rem;
+  z-index: -1;
   left: 50%;
+  translate: -50% 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.home-fan::before {
+  bottom: 0;
+  width: 92%;
+  height: 46%;
+  background: radial-gradient(closest-side, rgb(var(--accent-rgb) / 0.32), rgb(var(--rose-rgb) / 0.1) 62%, transparent);
+  filter: blur(20px);
+}
+.home-fan::after {
+  bottom: 1.1rem;
+  width: min(84%, calc(var(--fan-w) * 3.2));
+  height: 1.25rem;
+  background: radial-gradient(closest-side, rgb(var(--shadow-rgb) / calc(0.95 * var(--shadow-alpha))), transparent);
+  filter: blur(6px);
+}
+.home-fan-slot {
+  --fan-step: max(
+    0px,
+    min(calc(var(--fan-w) * 0.56), calc((100cqi - var(--fan-w) * (1 + 3 * var(--fan-swing)) - 2 * var(--fan-part-gap) - 1rem) / max(1, var(--fan-n) - 1)))
+  );
+  position: absolute;
+  left: 50%;
+  bottom: 1.75rem;
   width: var(--fan-w);
-  aspect-ratio: 2 / 3;
   z-index: var(--fan-z, 1);
   transform-origin: 50% 100%;
-  transform: translateX(-50%) translateX(calc(var(--fan-slot, 0) * var(--fan-step))) translateY(calc(var(--fan-depth, 0) * 0.55rem))
-    rotate(calc(var(--fan-slot, 0) * var(--fan-angle)));
-  animation: fan-in 720ms var(--ease-out-soft) backwards;
-  animation-delay: calc(140ms + var(--fan-i, 0) * 80ms);
+  transform: translateX(-50%)
+    translate(
+      calc(var(--fan-t) * var(--fan-step) * var(--fan-deal) + var(--fan-part) * var(--fan-part-gap) * var(--fan-motion)),
+      calc(var(--fan-u) * var(--fan-u) * var(--fan-arc) * var(--fan-deal) + (1 - var(--fan-deal)) * 2.75rem)
+    )
+    rotate(calc(var(--fan-u) * var(--fan-spread) * var(--fan-deal) + (1 - var(--fan-deal)) * var(--fan-tilt, 0deg)))
+    scale(calc(1 - (1 - var(--fan-deal)) * 0.08));
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  animation:
+    fan-deal 980ms cubic-bezier(0.2, 1.16, 0.32, 1) backwards,
+    fan-fade 300ms ease-out backwards;
+  animation-delay: calc(120ms + var(--fan-i, 0) * 75ms);
+  /* Leaving: ease back down, and only drop behind neighbours once nearly settled. */
   transition:
-    translate 360ms var(--ease-spring),
-    rotate 360ms var(--ease-spring),
-    scale 360ms var(--ease-spring),
-    border-color 200ms ease,
-    box-shadow 320ms var(--ease-out-soft);
+    --fan-t 560ms var(--ease-out-soft),
+    --fan-u 560ms var(--ease-out-soft),
+    --fan-au 560ms var(--ease-out-soft),
+    --fan-part 480ms var(--ease-out-soft),
+    --fan-hover 560ms var(--ease-out-soft),
+    z-index 460ms linear;
 }
-.home-fan-card[data-shape="square"] {
-  width: calc(var(--fan-w) * 1.14);
+.home-fan-slot[data-shape="square"] {
+  width: calc(var(--fan-w) * 1.2);
+}
+.home-fan[data-dealt] .home-fan-slot {
+  animation: none;
+}
+.home-fan-slot:is(:hover, :focus-visible) {
+  --fan-hover: 1;
+  z-index: 60;
+  transition:
+    --fan-t 560ms var(--ease-out-soft),
+    --fan-u 560ms var(--ease-out-soft),
+    --fan-au 560ms var(--ease-out-soft),
+    --fan-part 480ms var(--ease-out-soft),
+    --fan-hover 640ms cubic-bezier(0.3, 1.3, 0.5, 1),
+    z-index 0s;
+}
+/* Neighbours ease aside so the raised card has room. */
+.home-fan-slot:is(:hover, :focus-visible) ~ .home-fan-slot {
+  --fan-part: 1;
+}
+.home-fan-slot:has(~ .home-fan-slot:is(:hover, :focus-visible)) {
+  --fan-part: -1;
+}
+.home-fan-card {
+  display: block;
+  transform-origin: 50% 100%;
+  transform: translateY(calc(var(--fan-hover) * var(--fan-lift) * -1 * var(--fan-motion)))
+    rotate(calc(var(--fan-u) * var(--fan-spread) * var(--fan-hover) * -0.8 * var(--fan-motion)))
+    scale(calc(1 + var(--fan-hover) * var(--fan-grow) * var(--fan-motion)));
+}
+.home-fan-art {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--fr, 8px);
+  background: var(--surface);
+  box-shadow:
+    0 1px 1px rgb(var(--shadow-rgb) / calc(0.45 * var(--shadow-alpha))),
+    0 10px 18px -8px rgb(var(--shadow-rgb) / calc(0.75 * var(--shadow-alpha))),
+    0 28px 48px -20px rgb(var(--shadow-rgb) / calc(0.95 * var(--shadow-alpha)));
+  transition: box-shadow 460ms var(--ease-out-soft);
+}
+.home-fan-slot[data-shape="square"] .home-fan-art {
   aspect-ratio: 1;
 }
-.home-fan-card:hover {
-  z-index: 20;
-  translate: 0 -0.75rem;
-  rotate: calc(var(--fan-slot, 0) * var(--fan-angle) * -0.4);
-  scale: 1.03;
-  border-color: rgb(var(--accent-soft-rgb) / 0.8);
+.home-fan-slot:is(:hover, :focus-visible) .home-fan-art {
   box-shadow:
-    0 0 0 1px rgb(var(--accent-rgb) / 0.5),
-    0 28px 54px -18px rgb(var(--accent-rgb) / 0.7),
-    0 10px 64px -24px rgb(var(--rose-rgb) / 0.35);
+    0 0 0 1px rgb(var(--accent-soft-rgb) / 0.55),
+    0 18px 30px -12px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha))),
+    0 40px 70px -26px rgb(var(--accent-rgb) / 0.6),
+    0 14px 60px -22px rgb(var(--rose-rgb) / 0.35);
+}
+.home-fan-slot:focus-visible .home-fan-art {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring),
+    0 40px 70px -26px rgb(var(--accent-rgb) / 0.6);
+}
+/* Edge highlight on top, a little falloff at the foot, and outer cards a touch dimmer for depth. */
+.home-fan-shade {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.09), transparent 20%, transparent 78%, rgb(0 0 0 / 0.16));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    inset 0 0 0 1px rgb(255 255 255 / 0.09);
+}
+.home-fan-shade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgb(var(--shadow-rgb));
+  opacity: calc(var(--fan-au) * 0.2 * (1 - min(1, var(--fan-hover))));
+}
+/* One controlled reflective pass on lift; it fades out (never sweeps back) on leave. */
+.home-fan-gloss {
+  position: absolute;
+  inset: -20% -60%;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgb(255 255 255 / 0.05) 44%,
+    rgb(255 255 255 / 0.3) 49%,
+    rgb(var(--accent-soft-rgb) / 0.2) 52%,
+    transparent 60%
+  );
+  mix-blend-mode: screen;
+  translate: -70% 0;
+  opacity: 0;
+  transition:
+    opacity 240ms ease,
+    translate 0s linear 260ms;
+}
+.home-fan-slot:is(:hover, :focus-visible) .home-fan-gloss {
+  translate: 70% 0;
+  opacity: 1;
+  transition:
+    translate 1100ms cubic-bezier(0.25, 0.8, 0.3, 1) 80ms,
+    opacity 160ms ease 80ms;
+}
+[data-shine="off"] .home-fan-gloss {
+  display: none;
+}
+/* Customize Home preview: a small static copy with position numbers. */
+.home-fan[data-preview] {
+  --fan-w: 3.5rem;
+  --fan-lift: 0rem;
+  --fan-arc: 0.55rem;
+  height: calc(var(--fan-w) * 1.5 + var(--fan-arc) + 2.75rem);
+  pointer-events: none;
+}
+.home-fan[data-preview] .home-fan-slot {
+  bottom: 1.6rem;
+}
+.home-fan-number {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  translate: -50% 0.3rem;
+  min-width: 1.1rem;
+  border-radius: 999px;
+  background: rgb(var(--accent-rgb) / 0.2);
+  padding: 0 0.3rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.1rem;
+  text-align: center;
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.4);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -1078,8 +1308,14 @@
   .task-in,
   .check-pop,
   .check-pop::before,
-  .home-fan-card {
+  .home-fan-slot {
     animation: none !important;
+  }
+  .home-fan {
+    --fan-motion: 0;
+  }
+  .home-fan-gloss {
+    display: none;
   }
   .scroll-fade[data-exit-fallback],
   .header-scroll-exit[data-exit-fallback] {
@@ -1089,7 +1325,6 @@
   /* Keep the color and glow feedback, drop the movement. */
   .poster-card,
   .poster-artwork,
-  .home-fan-card,
   .brand-gem,
   .tree-icon,
   [data-slot="button"],
@@ -1181,11 +1416,13 @@
 [data-motion="subtle"] .poster-card:hover .poster-artwork {
   scale: 1.03;
 }
-[data-motion="subtle"] .home-fan-card {
-  animation-duration: 320ms;
+[data-motion="subtle"] .home-fan {
+  --fan-motion: 0.5;
 }
-[data-motion="subtle"] .home-fan-card:hover {
-  translate: 0 -4px;
+[data-motion="subtle"] .home-fan-slot {
+  animation-duration: 420ms, 200ms;
+  animation-timing-function: var(--ease-out-soft), ease-out;
+  animation-delay: calc(var(--fan-i, 0) * 30ms);
 }
 
 /* Off: the same as the system's reduced-motion preference, applied to the whole page (dialogs included). */
@@ -1197,16 +1434,22 @@
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
-:root:has([data-motion="off"]) :is(.enter, .scroll-fade, .header-scroll-exit, .task-in, .check-pop, .home-fan-card),
+:root:has([data-motion="off"]) :is(.enter, .scroll-fade, .header-scroll-exit, .task-in, .check-pop, .home-fan-slot),
 :root:has([data-motion="off"]) .check-pop::before {
   animation: none !important;
+}
+:root:has([data-motion="off"]) .home-fan {
+  --fan-motion: 0;
+}
+:root:has([data-motion="off"]) .home-fan-gloss {
+  display: none;
 }
 :root:has([data-motion="off"]) :is(.scroll-fade, .header-scroll-exit)[data-exit-fallback] {
   opacity: 1;
   transform: none;
 }
 :root:has([data-motion="off"])
-  :is(.poster-card, .poster-artwork, .home-fan-card, .brand-gem, .tree-icon, [data-slot="button"], [data-slot="button"] svg, .task-row, .task-star) {
+  :is(.poster-card, .poster-artwork, .brand-gem, .tree-icon, [data-slot="button"], [data-slot="button"] svg, .task-row, .task-star) {
   translate: none !important;
   scale: none !important;
   rotate: none !important;

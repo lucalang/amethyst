@@ -1,6 +1,7 @@
 import "server-only";
 import { entryPath } from "@/lib/collections";
 import type { CoverShape } from "@/lib/cover-shape";
+import { fanKey, type FanItem } from "@/lib/home-fan";
 import { EMPTY_SUMMARY, type LibraryEntry } from "@/lib/progress/library";
 import type { AuthContext } from "@/lib/supabase/auth";
 import { loadCollections } from "./collections";
@@ -11,7 +12,6 @@ const VISIT_LIMIT = 7;
 const PIN_LIMIT = 48;
 const TASK_LIMIT = 8;
 const PREVIEW_LIMIT = 3;
-const SHOWCASE_LIMIT = 5;
 
 export type HomePreview = { id: string; title: string; coverUrl: string | null; coverShape: CoverShape; href: string };
 export type HomeCollection = {
@@ -23,7 +23,7 @@ export type HomeCollection = {
   accentColor: string | null;
   bannerUrl: string | null;
   entryCount: number;
-  /** Entries with cover artwork, i.e. what this collection can contribute to the Home fan. */
+  /** Entries with cover artwork, i.e. what the fan picker can offer from this collection. */
   coverCount: number;
   previews: HomePreview[];
 };
@@ -46,8 +46,8 @@ export type HomeData = {
   recent: LibraryEntry[];
   pinned: LibraryEntry[];
   tasks: HomeTask[];
-  /** Artwork from the user's own archive for the welcome area, most relevant first. */
-  showcase: HomePreview[];
+  /** The artwork the user picked for the cover fan, in order. Never derived from visits. */
+  fan: FanItem[];
   /** The entry featured on Home; null when none is set or it was deleted. */
   featured: HomeFeaturedEntry | null;
 };
@@ -59,17 +59,16 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
 
 /**
  * Everything the Home dashboard shows, scoped to the signed-in user by RLS.
- * `fanCollections` limits the welcome fan's artwork: null means every collection, [] means none.
  */
-export async function loadHome(ctx: AuthContext, featuredEntryId: string | null = null, fanCollections: string[] | null = null): Promise<HomeData> {
+export async function loadHome(ctx: AuthContext, featuredEntryId: string | null = null): Promise<HomeData> {
   const { supabase } = ctx;
-  const [collections, entries, visits, pins, files, tasks, profile] = await Promise.all([
+  const [collections, entries, visits, pins, files, tasks, profile, fanRows] = await Promise.all([
     loadCollections(ctx),
     fetchAll(
       (from, to) =>
         supabase
           .from("entries")
-          .select("id, slug, collection_id, kind, title, cover_url, cover_shape, banner_url, progress_label, created_at, updated_at")
+          .select("id, slug, collection_id, kind, title, cover_url, cover_shape, banner_url, frame, progress_label, created_at, updated_at")
           .order("updated_at", { ascending: false })
           .order("id")
           .range(from, to),
@@ -89,6 +88,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
       .limit(TASK_LIMIT)
       .then(check),
     supabase.from("users").select("display_name, avatar_url, motto").eq("id", ctx.userId).maybeSingle().then(check),
+    supabase.from("home_fan_items").select("id, entry_id, image_url, image_shape").order("position").then(check),
   ]);
   if (files.error) throw new Error(`Query failed (${files.error.code ?? "unknown"})`);
 
@@ -160,22 +160,29 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
     href: entryPath(entry),
   });
 
-  // Continue first, then pinned and recently opened, then the most recently updated, all with artwork
-  // and only from the collections chosen for the fan (unknown or deleted ids simply match nothing).
-  const fanSet = fanCollections ? new Set(fanCollections) : null;
-  const showcaseIds = new Set<string>();
-  for (const id of [...visitRows.map((visit) => visit.entry_id).slice(0, 1), ...pinRows.map((pin) => pin.entry_id), ...visitRows.map((visit) => visit.entry_id), ...entries.map((entry) => entry.id)]) {
-    if (showcaseIds.size >= SHOWCASE_LIMIT || fanSet?.size === 0) break;
-    const entry = entryById.get(id);
-    if (entry?.cover_url && (!fanSet || fanSet.has(entry.collection_id))) showcaseIds.add(id);
-  }
+  // Exactly what the user picked; an entry that is gone is skipped, never replaced.
+  const fan: FanItem[] = (fanRows ?? []).flatMap((row): FanItem[] => {
+    if (row.image_url) return [{ key: fanKey({ imageUrl: row.image_url }), kind: "image", url: row.image_url, shape: row.image_shape }];
+    const entry = row.entry_id ? entryById.get(row.entry_id) : undefined;
+    if (!entry) return [];
+    return [{
+      key: fanKey({ entryId: entry.id }),
+      kind: "entry",
+      entryId: entry.id,
+      title: entry.title,
+      collectionName: collectionNames.get(entry.collection_id) ?? "",
+      coverUrl: entry.cover_url,
+      coverShape: entry.cover_shape,
+      frame: entry.frame,
+    }];
+  });
 
   return {
     // Only the chosen profile name; the sign-in email is never turned into a name.
     displayName: profile?.display_name?.trim() || "",
     avatarUrl: profile?.avatar_url ?? null,
     motto: profile?.motto?.trim() || null,
-    showcase: [...showcaseIds].map((id) => preview(entryById.get(id)!)),
+    fan,
     collections: collections.map((collection) => {
       const list = byCollection.get(collection.id) ?? [];
       const previews = [...list.filter((entry) => entry.cover_url), ...list.filter((entry) => !entry.cover_url)].slice(0, PREVIEW_LIMIT);

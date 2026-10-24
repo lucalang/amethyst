@@ -42,6 +42,45 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-24-home-cover-fan",
+    date: "2026-10-24",
+    title: "A cover fan you arrange yourself",
+    intro: "The cover fan on Home is now your own display: pick the artwork, set the order, and enjoy a redesigned, livelier fan.",
+    icon: "home",
+    highlights: [
+      { kind: "new", feature: "Choose your fan", text: "Pick up to 9 entry covers or your own images. Opening entries no longer changes the fan." },
+      { kind: "new", feature: "Arrange the order", text: "Drag, use the arrow buttons or the keyboard, with a live preview of the fan." },
+      { kind: "improved", feature: "Fan redesign", text: "Cards now have depth, shadows and a dealing entrance, and lift, straighten and shine when hovered or focused." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Choose your fan",
+          body: "Open Customize Home, then Customize fan to search your entries with cover art, filter by collection and select several at once, or add an image by link or upload. Your choices save to your account.",
+          points: [
+            "Removing artwork from the fan never deletes the entry or the image.",
+            "If a chosen entry is deleted, it simply leaves the fan, and nothing replaces it.",
+            "With nothing chosen, Home leaves the fan out entirely.",
+          ],
+          where: "Home → Customize Home → Cover fan → Customize fan",
+          link: { href: "/", label: "Open Home" },
+        },
+        {
+          title: "Arrange the order",
+          body: "Number 1 sits on the left. Reorder by dragging a handle, with the move buttons, or by focusing a handle and pressing the arrow keys. The preview shows exactly how the fan will look.",
+          where: "Home → Customize Home → Cover fan",
+        },
+      ],
+      improved: [
+        {
+          title: "Fan redesign",
+          body: "The fan deals its cards in once per visit. Hovering or focusing a card lifts it upright, scales it up and sweeps a reflection across it. Artwork stays sharp, keeps its shape and uses your frames and theme colors. The fan now also fits on phones.",
+          points: ["Follows your animation intensity and hover scale settings, and stays still with reduced motion.", "Cards are decorative and don't open entries."],
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-24-arcade-shop",
     date: "2026-10-24",
     title: "Arcade coins and the prize shop",
