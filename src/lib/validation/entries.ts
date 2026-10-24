@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isUploadedImagePath } from "@/lib/attachments";
 import { COVER_SHAPES } from "@/lib/cover-shape";
+import { ARTWORK_FRAME_IDS } from "@/lib/frames";
 import { progressLabelSchema } from "@/lib/progress/label";
 import { IMAGE_URL_MESSAGES, checkImageUrl } from "./image-url";
 
@@ -32,6 +33,8 @@ export const entryPatchSchema = z
     bannerUrl: artworkUrl.nullable().optional(),
     progressLabel: progressLabelSchema.nullable().optional(),
     platform: z.string().trim().max(80).nullable().optional(),
+    /** null follows the account default frame; "none" keeps this entry unframed. */
+    frame: z.enum(ARTWORK_FRAME_IDS).nullable().optional(),
     collectionId: z.uuid().optional(),
     expectedVersion: z.number().int().positive().optional(),
   })
@@ -45,4 +48,9 @@ export const newEntrySchema = z.object({
   coverShape: z.enum(COVER_SHAPES).default("portrait"),
   bannerUrl: artworkUrl.optional().transform((value) => value ?? null),
   progressLabel: progressLabelSchema.optional().transform((value) => value ?? null),
+  /** The picker's "default" (or nothing) means inherit the account frame. */
+  frame: z
+    .enum(["default", ...ARTWORK_FRAME_IDS])
+    .optional()
+    .transform((value) => (!value || value === "default" ? null : value)),
 });

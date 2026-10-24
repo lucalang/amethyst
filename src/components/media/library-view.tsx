@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { createContext, use, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LibraryBig, Plus, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/media/empty-state";
+import { useCollectionLayout } from "@/components/media/collection-layout";
+import { EntryListRow, EntryTable } from "@/components/media/entry-rows";
 import { PosterCard, type CardDisplay } from "@/components/media/poster-card";
 import { Button } from "@/components/ui/button";
 import type { LibraryDensity, PinStyle } from "@/lib/preferences";
@@ -166,6 +168,7 @@ export function LibraryResults({
   labelNames: Record<string, string>;
 }) {
   const { visible, total, searched } = useLibrary();
+  const layout = useCollectionLayout();
 
   if (total === 0) {
     return (
@@ -198,6 +201,28 @@ export function LibraryResults({
           </Button>
         }
       />
+    );
+  }
+
+  if (layout === "table") {
+    return (
+      <div data-entrance={searched ? "skip" : undefined} className="enter enter-soft">
+        <EntryTable name={name} entries={visible} labelNames={labelNames} />
+      </div>
+    );
+  }
+
+  if (layout === "list") {
+    return (
+      <div data-entrance={searched ? "skip" : undefined} className="contents">
+        <ul aria-label={name} className="divide-y divide-white/[0.04]">
+          {visible.map((entry, index) => (
+            <li key={entry.id} className="enter enter-soft py-0.5" style={{ "--enter-index": Math.min(index, 8) + 1 } as React.CSSProperties}>
+              <EntryListRow entry={entry} labels={entry.categoryIds.flatMap((id) => labelNames[id] ?? [])} />
+            </li>
+          ))}
+        </ul>
+      </div>
     );
   }
 

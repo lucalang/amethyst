@@ -38,6 +38,8 @@ export type HomeContinue = {
 export type HomeFeaturedEntry = { entry: LibraryEntry; collectionName: string; bannerUrl: string | null; href: string };
 export type HomeData = {
   displayName: string;
+  avatarUrl: string | null;
+  motto: string | null;
   collections: HomeCollection[];
   counts: { collections: number; entries: number; files: number };
   continueEntry: HomeContinue | null;
@@ -86,7 +88,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
       .order("id")
       .limit(TASK_LIMIT)
       .then(check),
-    supabase.from("users").select("display_name").eq("id", ctx.userId).maybeSingle().then(check),
+    supabase.from("users").select("display_name, avatar_url, motto").eq("id", ctx.userId).maybeSingle().then(check),
   ]);
   if (files.error) throw new Error(`Query failed (${files.error.code ?? "unknown"})`);
 
@@ -169,7 +171,10 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
   }
 
   return {
-    displayName: profile?.display_name?.trim() || ctx.email?.split("@")[0] || "",
+    // Only the chosen profile name; the sign-in email is never turned into a name.
+    displayName: profile?.display_name?.trim() || "",
+    avatarUrl: profile?.avatar_url ?? null,
+    motto: profile?.motto?.trim() || null,
     showcase: [...showcaseIds].map((id) => preview(entryById.get(id)!)),
     collections: collections.map((collection) => {
       const list = byCollection.get(collection.id) ?? [];

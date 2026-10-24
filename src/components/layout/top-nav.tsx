@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gem, LibraryBig, LogOut, Megaphone, Settings } from "lucide-react";
+import { Gem, LibraryBig, LogOut, Megaphone, Settings, UserRound } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -20,6 +20,7 @@ import { accentStyle } from "@/lib/collection-identity";
 import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
+import { ProfileAvatar } from "./profile-avatar";
 
 /** Server-rendered collection icons keyed by collection id. */
 type CollectionIcons = Record<string, ReactNode>;
@@ -41,7 +42,10 @@ export function BrandMark({ className }: { className?: string }) {
   );
 }
 
-export function TopNav({ displayName, collections, icons = {} }: { displayName: string; collections: LibraryCategory[]; icons?: CollectionIcons }) {
+/** The signed-in account as shown in the private account menu. */
+export type AccountSummary = { name: string | null; avatarUrl: string | null; email: string | null };
+
+export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const currentId = useCurrentCollectionId(collections);
 
   return (
@@ -85,14 +89,23 @@ export function TopNav({ displayName, collections, icons = {} }: { displayName: 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Account menu" className="shrink-0">
-                <span aria-hidden className="grid size-7 place-items-center rounded-full bg-secondary text-xs font-semibold uppercase ring-1 ring-border">
-                  {displayName.slice(0, 1) || "?"}
-                </span>
+                <ProfileAvatar name={account.name} src={account.avatarUrl} className="size-7 text-xs" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="truncate">{displayName}</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabel className="flex items-center gap-2.5">
+                <ProfileAvatar name={account.name} src={account.avatarUrl} className="size-8 text-xs" />
+                <span className="min-w-0">
+                  <span className="block truncate">{account.name ?? "Your account"}</span>
+                  {account.email ? <span className="block truncate text-xs font-normal text-muted-foreground">{account.email}</span> : null}
+                </span>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/settings/profile">
+                  <UserRound aria-hidden /> Profile
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/settings">
                   <Settings aria-hidden /> Settings

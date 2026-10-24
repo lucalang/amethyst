@@ -10,7 +10,7 @@ export async function loadLibrary(ctx: AuthContext, collectionId: string): Promi
     fetchAll((from, to) =>
       supabase
         .from("entries")
-        .select("id, slug, collection_id, kind, title, cover_url, cover_shape, progress_label, created_at, updated_at, entry_categories(category_id)")
+        .select("id, slug, collection_id, kind, title, cover_url, cover_shape, frame, progress_label, created_at, updated_at, entry_categories(category_id)")
         .eq("collection_id", collectionId)
         .order("updated_at", { ascending: false })
         .range(from, to),
@@ -40,6 +40,7 @@ export async function loadLibrary(ctx: AuthContext, collectionId: string): Promi
         : EMPTY_SUMMARY,
       pinned: pinned.has(entry.id),
       progressLabel: entry.progress_label,
+      frame: entry.frame,
     };
   });
 }

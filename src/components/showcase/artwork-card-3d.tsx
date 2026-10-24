@@ -37,18 +37,26 @@ import {
 } from "three";
 import type { ArtworkFrameId } from "@/lib/frames";
 import type { MotionLevel } from "@/lib/preferences";
+import { CLASSIC_VIEWER_LOOK, type ViewerLighting, type ViewerLook } from "@/lib/viewer-looks";
 
 const MAX_YAW = 0.85;
 const MAX_PITCH = 0.5;
 const DRAG_SPEED = 0.0075;
-/** How far the card leans toward the pointer (radians), per motion level. */
-const HOVER: Record<MotionLevel, { yaw: number; pitch: number }> = {
-  full: { yaw: 0.3, pitch: 0.22 },
-  subtle: { yaw: 0.13, pitch: 0.1 },
-  off: { yaw: 0, pitch: 0 },
-};
+/** How much of the look's hover tilt applies at each motion level. */
+const HOVER_SCALE: Record<MotionLevel, number> = { full: 1, subtle: 0.43, off: 0 };
 /** Smoothing times (seconds) of the critically damped follow: lower is snappier. */
-const FOLLOW = { hover: 0.07, hoverSubtle: 0.1, release: 0.22, drag: 0.05, settle: 0.14, view: 0.11 };
+const FOLLOW = { release: 0.22, drag: 0.05, settle: 0.14, view: 0.11 };
+
+/** Light rigs for each lighting style (intensities before the look's own intensity). */
+const LIGHTING: Record<
+  ViewerLighting,
+  { key: number; rimA: number; rimB: number; ambient: number; tint: number; env: "themed" | "neutral"; keyAt: [number, number, number] }
+> = {
+  studio: { key: 1.35, rimA: 2.2, rimB: 1.6, ambient: 0.2, tint: 1, env: "themed", keyAt: [-2.2, 2.8, 4] },
+  neutral: { key: 1.25, rimA: 1.3, rimB: 1, ambient: 0.35, tint: 0.15, env: "neutral", keyAt: [-2.2, 2.8, 4] },
+  dramatic: { key: 1.9, rimA: 3.2, rimB: 2.3, ambient: 0.04, tint: 1, env: "themed", keyAt: [-3.4, 2.2, 2.2] },
+  soft: { key: 0.85, rimA: 0.9, rimB: 0.7, ambient: 0.6, tint: 0.35, env: "neutral", keyAt: [-1.2, 2, 5] },
+};
 const DEPTH = 0.03;
 const BEVEL = 0.006;
 /** Direction of the softbox whose reflection drifts across the art as the card turns. */
@@ -190,6 +198,7 @@ const FX_FRAGMENT = /* glsl */ `
   uniform vec3 uGlints[5];
   uniform int uGlintCount;
   uniform float uGlintStrength;
+  uniform float uFxStrength;
   const float TAU = 6.2831853;
 
   float star(vec2 d, float size) {
@@ -255,7 +264,7 @@ const FX_FRAGMENT = /* glsl */ `
 
     float x = s - mix(-0.25, 1.25, uSweep);
     color += mix(vec3(1.0), uFxA, 0.4) * exp(-x * x * 300.0) * uSweepStrength * 0.9;
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color * uFxStrength, 1.0);
   }
 `;
 
@@ -567,6 +576,8 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
 
   const scene = new Scene();
   const environment = studioEnvironment(renderer, accent, secondary, dark);
+  // A colour-neutral studio for the neutral and soft rigs, built the first time it's needed.
+  let neutralEnvironment: Texture | null = null;
   scene.environment = environment;
 
   const camera = new PerspectiveCamera(30, 1, 0.05, 60);
@@ -577,7 +588,8 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   rimA.position.set(3.2, 0.6, -1.6);
   const rimB = new DirectionalLight(secondary, 1.6);
   rimB.position.set(-3.2, -0.8, -1.4);
-  scene.add(key, rimA, rimB, new AmbientLight(0xffffff, 0.2));
+  const ambient = new AmbientLight(0xffffff, 0.2);
+  scene.add(key, rimA, rimB, ambient);
 
   const quad = new PlaneGeometry(1, 1);
   const shadowTexture = radialTexture([
@@ -626,11 +638,16 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     uGlints: { value: Array.from({ length: 5 }, () => new Vector3()) },
     uGlintCount: { value: 0 },
     uGlintStrength: { value: 1 },
+    uFxStrength: { value: 1 },
   };
 
   const turn = { yaw: spring(), pitch: spring() };
   const hover = { yaw: spring(), pitch: spring() };
   const view = { zoom: spring(1), panX: spring(), panY: spring() };
+  // Idle sway: a slow drift that fades in while nobody is touching the card (when the look asks for it).
+  const idle = spring();
+  let idleTime = 0;
+  let look: ViewerLook = CLASSIC_VIEWER_LOOK;
   const state = {
     maxZoom: 3,
     motion: "full" as MotionLevel,
@@ -661,6 +678,36 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   let direction = 1;
   let loadToken = 0;
   let builds = 0;
+
+  /** Lights, reflections and glow from the look, tinted by the frame. Cheap: nothing is rebuilt. */
+  function applyLighting() {
+    const spec = SPECS[frame];
+    const rig = LIGHTING[look.lighting];
+    const k = look.lightIntensity / 100;
+    const tintA = accent.clone();
+    const tintB = secondary.clone();
+    if (spec.light) {
+      tintA.lerp(new Color(spec.light.a), spec.light.mix);
+      tintB.lerp(new Color(spec.light.b), spec.light.mix);
+    }
+    rimA.color.set(0xffffff).lerp(tintA, rig.tint);
+    rimB.color.set(0xffffff).lerp(tintB, rig.tint);
+    key.intensity = rig.key * k;
+    key.position.set(...rig.keyAt);
+    rimA.intensity = rig.rimA * k;
+    rimB.intensity = rig.rimB * k;
+    ambient.intensity = rig.ambient * k;
+    if (rig.env === "neutral") neutralEnvironment ??= studioEnvironment(renderer, new Color(0xd9d9de), new Color(0xbfbfc4), dark);
+    scene.environment = rig.env === "neutral" ? neutralEnvironment : environment;
+    scene.environmentIntensity = look.reflections / 100;
+    const glowLevel = look.glow / 100;
+    glowMaterial.color.copy(tintA);
+    glowMaterial.opacity = (dark ? 0.2 : 0.1) * glowLevel;
+    glow.visible = glowLevel > 0;
+    fxUniforms.uFxStrength.value = glowLevel;
+    display(new Color(0xffffff).lerp(tintA, 0.35 * rig.tint), artUniforms.uTint.value);
+    wake();
+  }
 
   function build() {
     if (!image) return;
@@ -698,16 +745,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     group.add(new Mesh(body, track(new MeshPhysicalMaterial(spec.edge))));
 
     // Theme light, tinted by the frame.
-    const tintA = accent.clone();
-    const tintB = secondary.clone();
-    if (spec.light) {
-      tintA.lerp(new Color(spec.light.a), spec.light.mix);
-      tintB.lerp(new Color(spec.light.b), spec.light.mix);
-    }
-    rimA.color.copy(tintA);
-    rimB.color.copy(tintB);
-    glowMaterial.color.copy(tintA);
-    display(new Color(0xffffff).lerp(tintA, 0.35), artUniforms.uTint.value);
+    applyLighting();
     shared.uCard.value.set(bw, bh);
 
     if (framed && spec.fx) {
@@ -887,11 +925,11 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   }
 
   function hoverAt(clientX: number, clientY: number) {
-    const range = HOVER[state.motion];
-    if (!range.yaw || pointers.size || view.zoom.target > 1.01 || state.leaving) return;
+    const yawRange = ((look.hoverTilt * Math.PI) / 180) * HOVER_SCALE[state.motion];
+    if (!yawRange || pointers.size || view.zoom.target > 1.01 || state.leaving) return;
     const at = pointerOffset(clientX, clientY);
-    hover.yaw.target = clamp(at.x - (anchor?.x ?? 0), 1) * range.yaw;
-    hover.pitch.target = clamp(at.y - (anchor?.y ?? 0), 1) * range.pitch;
+    hover.yaw.target = clamp(at.x - (anchor?.x ?? 0), 1) * yawRange;
+    hover.pitch.target = clamp(at.y - (anchor?.y ?? 0), 1) * yawRange * 0.73;
     state.hovering = true;
     wake();
   }
@@ -1028,8 +1066,9 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   const softbox = new Vector3();
   const inverse = new Quaternion();
   function render() {
-    const yaw = clamp(turn.yaw.value + hover.yaw.value, MAX_YAW + 0.1) + pose.yaw;
-    const pitch = clamp(turn.pitch.value + hover.pitch.value, MAX_PITCH + 0.1) + pose.pitch;
+    const sway = idle.value;
+    const yaw = clamp(turn.yaw.value + hover.yaw.value, MAX_YAW + 0.1) + pose.yaw + Math.sin(idleTime * 0.55) * 0.14 * sway;
+    const pitch = clamp(turn.pitch.value + hover.pitch.value, MAX_PITCH + 0.1) + pose.pitch + Math.sin(idleTime * 0.4 + 1) * 0.05 * sway;
     pivot.position.set(pose.x, pose.y, pose.z);
     pivot.rotation.set(pitch, yaw, 0);
 
@@ -1037,7 +1076,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     const ty = clamp(pitch / MAX_PITCH, 1);
     shared.uTilt.value.set(tx, ty);
     shared.uLight.value = 0.5 - tx * 0.7 + ty * 0.5;
-    artUniforms.uGloss.value = 0.1 + 0.08 * Math.min(1, Math.hypot(tx, ty));
+    artUniforms.uGloss.value = (0.1 + 0.08 * Math.min(1, Math.hypot(tx, ty))) * (look.reflections / 100);
     softbox.copy(SOFTBOX).applyQuaternion(inverse.copy(pivot.quaternion).invert());
     const z = Math.max(0.05, softbox.z);
     artUniforms.uSpot.value.set((softbox.x / z) * 1.1, (softbox.y / z) * 1.1);
@@ -1072,12 +1111,21 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     };
     step(turn.yaw, state.turnTime);
     step(turn.pitch, state.turnTime);
-    const hoverTime = state.hovering ? (state.motion === "subtle" ? FOLLOW.hoverSubtle : FOLLOW.hover) : FOLLOW.release;
+    const hoverFollow = 0.35 * 0.1 ** (look.hoverSpeed / 100) * (state.motion === "subtle" ? 1.43 : 1);
+    const hoverTime = state.hovering ? hoverFollow : FOLLOW.release;
     step(hover.yaw, hoverTime);
     step(hover.pitch, hoverTime);
     step(view.zoom, FOLLOW.view);
     step(view.panX, FOLLOW.view);
     step(view.panY, FOLLOW.view);
+
+    const swaying = look.idleMotion && !instant && card !== null && !state.hovering && !pointers.size && view.zoom.target <= 1.01 && !state.leaving;
+    idle.target = swaying ? (state.motion === "subtle" ? 0.5 : 1) : 0;
+    step(idle, swaying ? 1.1 : 0.2);
+    if (swaying || idle.value !== 0) {
+      idleTime += dt;
+      active = true;
+    }
 
     if (tween) {
       const t = Math.min(1, Math.max(0, (now - tween.start) / tween.duration));
@@ -1092,7 +1140,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       if (t >= 1) sweep = null;
       else if (t >= 0) {
         shared.uSweep.value = t;
-        shared.uSweepStrength.value = sweep.strength * Math.sin(Math.PI * t);
+        shared.uSweepStrength.value = sweep.strength * Math.sin(Math.PI * t) * Math.min(1.5, look.glow / 100);
       }
       active = true;
     }
@@ -1119,6 +1167,11 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     setZoom: (zoom: number) => setZoom(zoom),
     setMaxZoom(max: number) {
       state.maxZoom = max;
+    },
+    /** Live look changes: only lights and uniforms update, the card is never rebuilt. */
+    setLook(next: ViewerLook) {
+      look = next;
+      applyLighting();
     },
     setMotion(motion: MotionLevel) {
       state.motion = motion;
@@ -1164,6 +1217,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       glowMaterial.dispose();
       glowTexture.dispose();
       environment.dispose();
+      neutralEnvironment?.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       canvas.remove();
@@ -1182,6 +1236,7 @@ export default function ArtworkCard3D({
   maxZoom,
   resetKey,
   motion,
+  look,
   leaving,
   onZoom,
   onManualRotate,
@@ -1197,6 +1252,8 @@ export default function ArtworkCard3D({
   maxZoom: number;
   resetKey: number;
   motion: MotionLevel;
+  /** Lighting, reflections, glow and motion (never the frame or the artwork). */
+  look: ViewerLook;
   /** The viewer is closing: the card recedes. */
   leaving: boolean;
   onZoom: (zoom: number) => void;
@@ -1212,7 +1269,7 @@ export default function ArtworkCard3D({
   const reportInspect = useEffectEvent((active: boolean) => onInspect(active));
   const reportReady = useEffectEvent((loaded: string) => onReady(loaded));
   const reportFail = useEffectEvent((failed: string) => onFail(failed));
-  const initial = useEffectEvent(() => ({ src, frame, direction, motion, maxZoom }));
+  const initial = useEffectEvent(() => ({ src, frame, direction, motion, maxZoom, look }));
   const showArtwork = useEffectEvent(() => engineRef.current?.setArtwork(src, frame, direction));
 
   useEffect(() => {
@@ -1228,6 +1285,7 @@ export default function ArtworkCard3D({
     }
     engine.setMotion(start.motion);
     engine.setMaxZoom(start.maxZoom);
+    engine.setLook(start.look);
     engine.setArtwork(start.src, start.frame, start.direction);
     engineRef.current = engine;
     return () => {
@@ -1238,6 +1296,7 @@ export default function ArtworkCard3D({
 
   useEffect(() => showArtwork(), [src, frame]);
   useEffect(() => engineRef.current?.setMotion(motion), [motion]);
+  useEffect(() => engineRef.current?.setLook(look), [look]);
   useEffect(() => engineRef.current?.setMaxZoom(maxZoom), [maxZoom]);
   useEffect(() => engineRef.current?.setZoom(zoom), [zoom]);
   useEffect(() => {

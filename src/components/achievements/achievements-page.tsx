@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import { PageContainer } from "@/components/layout/app-shell";
+import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AchievementBadge, BADGE_STYLES, badgeVars } from "@/components/achievements/achievement-badge";
@@ -41,7 +42,9 @@ function untilt(event: PointerEvent<HTMLElement>) {
   event.currentTarget.style.removeProperty("--ach-ry");
 }
 
-export function AchievementsPage({ items }: { items: AchievementCardData[] }) {
+export type CabinetOwner = { name: string; avatarUrl: string | null };
+
+export function AchievementsPage({ items, owner }: { items: AchievementCardData[]; owner: CabinetOwner }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [groupFilter, setGroupFilter] = useState("all");
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -85,7 +88,7 @@ export function AchievementsPage({ items }: { items: AchievementCardData[] }) {
 
   return (
     <PageContainer>
-      <CabinetHeader byId={byId} earnedCount={earnedCount} />
+      <CabinetHeader byId={byId} earnedCount={earnedCount} owner={owner} />
 
       <div className="enter mb-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div role="group" aria-label="Filter by status" className="flex w-full rounded-md border border-white/[0.1] bg-white/[0.02] p-0.5 sm:w-auto">
@@ -173,7 +176,7 @@ export function AchievementsPage({ items }: { items: AchievementCardData[] }) {
   );
 }
 
-function CabinetHeader({ byId, earnedCount }: { byId: Map<string, AchievementCardData>; earnedCount: number }) {
+function CabinetHeader({ byId, earnedCount, owner }: { byId: Map<string, AchievementCardData>; earnedCount: number; owner: CabinetOwner }) {
   const total = ACHIEVEMENTS.length;
   const ratio = total ? earnedCount / total : 0;
   const radius = 30;
@@ -199,7 +202,11 @@ function CabinetHeader({ byId, earnedCount }: { byId: Map<string, AchievementCar
           </span>
         </div>
         <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">Achievements</h1>
+          <p className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+            {owner.name || owner.avatarUrl ? <ProfileAvatar name={owner.name} src={owner.avatarUrl} className="size-5 shrink-0 text-[9px]" /> : null}
+            <span className="truncate">{owner.name ? `${owner.name}’s cabinet` : "Your cabinet"}</span>
+          </p>
+          <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight md:text-3xl">Achievements</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             <span className="font-semibold text-foreground tabular-nums">{Math.round(ratio * 100)}% complete.</span> Medals for play, archive milestones and discoveries. Recognition only; nothing to unlock.
           </p>

@@ -7,6 +7,16 @@ export const ARTWORK_FRAME_IDS = ["none", "gilt", "amethyst", "holo", "aurora"] 
 export type ArtworkFrameId = (typeof ARTWORK_FRAME_IDS)[number];
 export const DEFAULT_ARTWORK_FRAME: ArtworkFrameId = "none";
 
+export const isArtworkFrameId = (value: unknown): value is ArtworkFrameId => ARTWORK_FRAME_IDS.includes(value as ArtworkFrameId);
+
+/**
+ * The frame an entry shows: its own choice when it has one (including an explicit "none"),
+ * otherwise the account default. Entries store null to inherit, so default changes reach them.
+ */
+export function resolveFrame(entryFrame: string | null | undefined, accountFrame: ArtworkFrameId): ArtworkFrameId {
+  return isArtworkFrameId(entryFrame) ? entryFrame : accountFrame;
+}
+
 export type ArtworkFrameInfo = { name: string; description: string; animated?: boolean };
 
 export const ARTWORK_FRAMES: Record<ArtworkFrameId, ArtworkFrameInfo> = {

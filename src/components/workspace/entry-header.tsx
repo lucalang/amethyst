@@ -7,6 +7,8 @@ import { FolderInput, Loader2, MoreHorizontal, Pencil, Pin, PinOff, Tag, Trash2 
 import { toast } from "sonner";
 import { CategorySelect } from "@/components/categories/category-picker";
 import { CoverArtworkField } from "@/components/media/cover-artwork-field";
+import { FramePicker, frameChoice } from "@/components/media/frame-picker";
+import { useSettings } from "@/components/layout/settings-context";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { usePinToggle } from "@/components/media/pin-button";
@@ -31,11 +33,19 @@ import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
 import { collectionPath, entryPath, type LibraryCategory } from "@/lib/collections";
 import type { CoverShape } from "@/lib/cover-shape";
+import { isArtworkFrameId, type ArtworkFrameId } from "@/lib/frames";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
 import type { Tables } from "@/lib/supabase/database.types";
 import { errorMessage } from "./client-utils";
 
 type Entry = Tables<"entries">;
+
+/** The entry's own frame (posted as `frame`); remounts with the dialog's form, so it starts from the saved value. */
+function EntryFrameField({ entry }: { entry: Entry }) {
+  const { artworkFrame } = useSettings();
+  const [value, setValue] = useState(() => frameChoice(entry.frame));
+  return <FramePicker value={value} onChange={setValue} accountFrame={artworkFrame} coverUrl={entry.cover_url} coverShape={entry.cover_shape} title={entry.title} />;
+}
 
 /**
  * Artwork and title. Part of the normal page flow (never sticky): as it scrolls
@@ -161,7 +171,8 @@ export function EntryHeader({
             (values.coverUrl.trim() || null) !== entry.cover_url ||
             values.coverShape !== entry.cover_shape ||
             (values.bannerUrl.trim() || null) !== entry.banner_url ||
-            (values.progressLabel.trim() || null) !== entry.progress_label;
+            (values.progressLabel.trim() || null) !== entry.progress_label ||
+            values.frame !== (entry.frame ?? null);
           if (detailsChanged) {
             const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, {
               method: "PATCH",
@@ -259,7 +270,7 @@ function EditDetailsDialog({
   entry: Entry;
   categories: Category[];
   assigned: Category[];
-  onSave: (values: { title: string; coverUrl: string; coverShape: CoverShape; bannerUrl: string; progressLabel: string }, categories: Category[]) => Promise<void>;
+  onSave: (values: { title: string; coverUrl: string; coverShape: CoverShape; bannerUrl: string; progressLabel: string; frame: ArtworkFrameId | null }, categories: Category[]) => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -287,6 +298,7 @@ function EditDetailsDialog({
                   coverShape: formData.get("coverShape") as CoverShape,
                   bannerUrl: String(formData.get("bannerUrl") ?? ""),
                   progressLabel: String(formData.get("progressLabel") ?? ""),
+                  frame: isArtworkFrameId(formData.get("frame")) ? (formData.get("frame") as ArtworkFrameId) : null,
                 },
                 parseCategoryIds(formData.getAll("categoryIds")).flatMap((id) => {
                   const category =
@@ -319,6 +331,7 @@ function EditDetailsDialog({
             defaultValue={entry.cover_url}
           />
           <ImageUrlField id="edit-banner" name="bannerUrl" label="Banner image URL" hint="Optional wide artwork for the header." defaultValue={entry.banner_url} shape="banner" />
+          <EntryFrameField entry={entry} />
           <div className="space-y-1.5">
             <Label htmlFor="edit-progress-label">Progress name</Label>
             <Input

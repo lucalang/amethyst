@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { AlertTriangle, CheckCircle2, ImageIcon, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ export function ImageUrlField({
   defaultValue,
   error,
   shape,
+  onValueChange,
 }: {
   id: string;
   name: string;
@@ -35,6 +36,8 @@ export function ImageUrlField({
   defaultValue?: string | null;
   error?: string;
   shape: "poster" | "square" | "banner";
+  /** Called with the settled value (after typing pauses, or once an upload finishes). */
+  onValueChange?: (value: string) => void;
 }) {
   const [value, setValue] = useState(defaultValue ?? "");
   const [debounced, setDebounced] = useState((defaultValue ?? "").trim());
@@ -48,6 +51,9 @@ export function ImageUrlField({
     const timer = window.setTimeout(() => setDebounced(value.trim()), 450);
     return () => window.clearTimeout(timer);
   }, [value]);
+
+  const report = useEffectEvent((settled: string) => onValueChange?.(settled));
+  useEffect(() => report(debounced), [debounced]);
 
   async function upload(file: File | undefined) {
     if (!file) return;

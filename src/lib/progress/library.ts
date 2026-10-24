@@ -27,6 +27,8 @@ export type LibraryEntry = {
   pinned?: boolean;
   /** Custom wording for aggregate progress ("tasks" when unset). */
   progressLabel?: string | null;
+  /** The entry's own artwork frame ("none" = explicitly unframed); null/undefined follows the account default. */
+  frame?: string | null;
 };
 
 export type LibraryState = "not_started" | "in_progress" | "completed";

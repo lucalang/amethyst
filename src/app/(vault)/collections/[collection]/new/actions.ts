@@ -34,6 +34,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
     coverShape: formData.get("coverShape") || undefined,
     bannerUrl: formData.get("bannerUrl") || undefined,
     progressLabel: values.progressLabel,
+    frame: formData.get("frame") || undefined,
   });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -51,6 +52,7 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
       cover_shape: input.coverShape,
       banner_url: input.bannerUrl,
       progress_label: input.progressLabel,
+      frame: input.frame,
     })
     .select("id, slug")
     .single();

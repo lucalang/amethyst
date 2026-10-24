@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { PageContainer } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { LibraryControls } from "@/components/media/library-controls";
+import { CollectionLayoutProvider } from "@/components/media/collection-layout";
 import { LibraryCount, LibraryResults, LibrarySearchProvider, LibraryTitle } from "@/components/media/library-view";
 import { MediaImage } from "@/components/media/media-image";
 import { ShowcaseButton, ShowcaseProvider } from "@/components/showcase/showcase-provider";
@@ -19,6 +20,7 @@ import { CATEGORY_PARAM } from "@/lib/categories";
 import { loadCategories } from "@/lib/data/categories";
 import { loadLibrary } from "@/lib/data/library";
 import { loadPreferences } from "@/lib/data/preferences";
+import { loadViewerPresets } from "@/lib/data/viewer-presets";
 import { librarySearchSchema } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -52,10 +54,11 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     sort: query.sort,
     categories: query[CATEGORY_PARAM],
   });
-  const [library, categories, preferences] = await Promise.all([
+  const [library, categories, preferences, viewerPresets] = await Promise.all([
     loadLibrary(ctx, collection.id),
     loadCategories(ctx, collection.id),
     loadPreferences(ctx),
+    loadViewerPresets(ctx),
   ]);
   // Ignore ids of labels deleted since the link was made.
   search.categories = search.categories.filter((id) => categories.some((category) => category.id === id));
@@ -110,7 +113,8 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     <EntranceScope>
       <PageContainer>
         <LibrarySearchProvider library={library} search={search}>
-          <ShowcaseProvider name={collection.name} icon={<CollectionIcon icon={collection.icon} strokeWidth={1.75} />}>
+          <CollectionLayoutProvider collectionId={collection.id} initial={collection.layout}>
+          <ShowcaseProvider name={collection.name} viewerPresets={viewerPresets} icon={<CollectionIcon icon={collection.icon} strokeWidth={1.75} />}>
           <section aria-labelledby="library-heading">
             {banner ? (
               <header className="scroll-fade enter enter-soft mb-6" style={accent}>
@@ -168,6 +172,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
             />
           </section>
           </ShowcaseProvider>
+          </CollectionLayoutProvider>
         </LibrarySearchProvider>
       </PageContainer>
     </EntranceScope>

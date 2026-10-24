@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useTransition } from "react";
 import { ArrowDownWideNarrow, ListFilter, Loader2, Search, X } from "lucide-react";
 import { CategoryChip, CategoryFilter } from "@/components/categories/category-picker";
+import { LayoutSwitcher } from "@/components/media/collection-layout";
 import { MAX_QUERY_LENGTH, useLibrary } from "@/components/media/library-view";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -141,6 +142,7 @@ export function LibraryControls({
         </Button>
       ) : null}
       <span role="status" className="sr-only">{pending ? "Updating library" : ""}</span>
+      <LayoutSwitcher className="ml-auto" />
     </div>
     {activeCategories.length ? (
       <div className="flex flex-wrap items-center gap-1.5" aria-label="Active label filters" role="group">

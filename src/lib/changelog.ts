@@ -29,6 +29,34 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    id: "2026-10-24-make-it-yours",
+    date: "2026-10-24",
+    title: "Make it yours: layouts, profiles, Showcase looks and per-entry frames",
+    summary: "Each collection can now have its own layout, you have a personal profile, the 3D Showcase has looks you can save, and individual entries can wear their own artwork frame.",
+    added: [
+      {
+        text: "Collection layouts. Pick Cover gallery, Compact list or Information table from the layout switcher beside a collection's filters. Each collection remembers its own layout, and existing collections keep the cover gallery until you change it. Search, filters, sorting and labels work the same in every layout.",
+        where: "Any collection → layout switcher next to the filters",
+        link: { href: "/", label: "Choose a collection" },
+      },
+      {
+        text: "Personal profile. Set a display name, a profile picture from any public image link, and a short motto. They appear in the account menu, on your home page greeting and on your achievement cabinet. Your email stays private and is only shown to you.",
+        where: "Settings → Profile, or the account menu → Profile",
+        link: { href: "/settings/profile", label: "Edit your profile" },
+      },
+      {
+        text: "3D Showcase looks. Choose from Classic, Neutral studio, Dramatic and Minimal, or fine-tune the background, lighting, reflections, glow, hover tilt, follow speed and idle sway. Save your tweaks as named presets that you can update, rename or delete. Classic matches the previous look, and Reset brings it back at any time.",
+        where: "Settings → 3D Showcase, or the sliders button inside the artwork viewer",
+        link: { href: "/settings/showcase", label: "Customize the Showcase" },
+      },
+      {
+        text: "Per-entry artwork frames. When you create an entry or edit its details, choose Use my default, No frame, or any specific frame, with a live preview on the entry's artwork. Choosing Use my default again removes the override. The frame is used everywhere the artwork is shown: the Showcase, the 3D viewer and the flat view. Existing entries keep following your account frame.",
+        where: "Entry → ⋯ → Edit details → Artwork frame",
+        link: { href: "/settings/frames", label: "Your default frame" },
+      },
+    ],
+  },
+  {
     id: "2026-10-24-showcase-3d",
     date: "2026-10-24",
     title: "A more dimensional 3D Showcase",

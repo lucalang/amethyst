@@ -10,6 +10,7 @@ import { CustomizeHomeButton, HomeCustomizeProvider, HomeSections } from "@/comp
 import { NewEntryButton } from "@/components/home/new-entry-button";
 import { UpcomingTasks } from "@/components/home/upcoming-tasks";
 import { EntranceScope } from "@/components/layout/entrance-scope";
+import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { MediaImage } from "@/components/media/media-image";
 import { PosterCard } from "@/components/media/poster-card";
 import { ProgressMeter } from "@/components/media/progress-meter";
@@ -180,15 +181,21 @@ function Hero({ home, categories, greeting }: { home: HomeData; categories: Libr
             <Gem aria-hidden className="size-3.5 text-amethyst" />
             Amethyst <span className="-ml-1 text-amethyst">Archives</span>
           </p>
-          <h1 id="home-heading" className="mt-2 text-3xl leading-tight font-semibold tracking-tight text-balance break-words md:text-4xl">
-            {greeting ? greeting : <>
-              {fresh ? "Welcome" : "Welcome back"}
-              {firstName ? <>
-                ,{" "}
-                <span className="bg-linear-to-r from-(--primary-hi) via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
-              </> : null}
-            </>}
-          </h1>
+          <div className="mt-2 flex items-center gap-3 md:gap-4">
+            {home.displayName || home.avatarUrl ? (
+              <ProfileAvatar name={home.displayName} src={home.avatarUrl} className="size-11 shrink-0 text-base ring-2 ring-white/10 md:size-14 md:text-lg" />
+            ) : null}
+            <h1 id="home-heading" className="min-w-0 text-3xl leading-tight font-semibold tracking-tight text-balance break-words md:text-4xl">
+              {greeting ? greeting : <>
+                {fresh ? "Welcome" : "Welcome back"}
+                {firstName ? <>
+                  ,{" "}
+                  <span className="bg-linear-to-r from-(--primary-hi) via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
+                </> : null}
+              </>}
+            </h1>
+          </div>
+          {home.motto ? <p className="mt-2 max-w-xl text-sm italic text-pretty break-words text-foreground/60">“{home.motto}”</p> : null}
           <p className="mt-2 max-w-xl text-base text-pretty text-foreground/70">{subline}</p>
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
             {home.collections.length ? <>

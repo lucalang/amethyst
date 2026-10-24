@@ -8,11 +8,11 @@ import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { OpeningIntro } from "./opening-intro";
 import { ScrollExitFallback } from "./scroll-exit-fallback";
 import { SettingsProvider } from "./settings-context";
-import { MobileTabBar, TopNav } from "./top-nav";
+import { MobileTabBar, TopNav, type AccountSummary } from "./top-nav";
 
 export function AppShell({
   children,
-  displayName,
+  account,
   collections,
   collectionIcons,
   userId,
@@ -20,7 +20,7 @@ export function AppShell({
   preferences,
 }: {
   children: ReactNode;
-  displayName: string;
+  account: AccountSummary;
   collections: LibraryCategory[];
   userId: string;
   introSeenOn: string | null;
@@ -47,7 +47,7 @@ export function AppShell({
         >
           Skip to content
         </a>
-        <TopNav displayName={displayName} collections={collections} icons={icons} />
+        <TopNav account={account} collections={collections} icons={icons} />
         <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
           {children}
         </main>

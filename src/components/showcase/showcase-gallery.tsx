@@ -5,7 +5,6 @@ import { Captions, CaptionsOff, ImageOff, X } from "lucide-react";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";
-import type { ArtworkFrameId } from "@/lib/frames";
 import { cn } from "@/lib/utils";
 import type { ArtworkItem } from "./showcase-context";
 
@@ -26,7 +25,6 @@ export function ShowcaseGallery({
   items,
   filtered,
   withoutArtwork,
-  frame,
   covered,
   onView,
   onExit,
@@ -38,7 +36,6 @@ export function ShowcaseGallery({
   filtered: boolean;
   /** Entries in the current results that have no artwork to show. */
   withoutArtwork: number;
-  frame: ArtworkFrameId;
   /** The artwork viewer is open on top. */
   covered: boolean;
   onView: (entryId: string, opener: HTMLElement) => void;
@@ -113,7 +110,7 @@ export function ShowcaseGallery({
                   onClick={(event) => onView(item.id, event.currentTarget)}
                   className="showcase-art block w-full cursor-zoom-in rounded-lg"
                 >
-                  <ArtworkFrame frame={frame}>
+                  <ArtworkFrame frame={item.frame}>
                     <span className={cn("showcase-pic relative block overflow-hidden rounded-lg bg-surface", item.coverShape === "square" ? "aspect-square" : "aspect-[2/3]")}>
                       <MediaImage src={item.coverUrl} alt="" priority={index < 8} fallbackLabel={item.title} />
                     </span>

@@ -27,7 +27,7 @@ export default async function ArtworkFramesPage() {
     <>
       <SettingsHeader
         title="Artwork frames"
-        description="A decorative frame around artwork in Showcase and the artwork viewer, including the 3D card. Frames sit around the edges, never over the picture, and follow your account to every device."
+        description="A decorative frame around artwork in Showcase and the artwork viewer, including the 3D card. Frames sit around the edges, never over the picture, and follow your account to every device. This is your default: any entry can choose its own frame in Edit details, and entries set to “Use my default” follow this choice."
       />
       <SettingsGroup id="frame" title="Frame">
         <div className="mb-4 flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">

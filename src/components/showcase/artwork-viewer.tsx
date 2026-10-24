@@ -1,13 +1,14 @@
 "use client";
 
 import { Component, lazy, Suspense, useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
-import { Box, ChevronLeft, ChevronRight, LoaderCircle, Maximize, Minimize, RotateCcw, X, ZoomIn, ZoomOut } from "lucide-react";
-import type { ArtworkFrameId } from "@/lib/frames";
+import { Box, ChevronLeft, ChevronRight, LoaderCircle, Maximize, Minimize, RotateCcw, SlidersHorizontal, X, ZoomIn, ZoomOut } from "lucide-react";
 import { artworkSrc } from "@/lib/attachments";
 import { cn } from "@/lib/utils";
+import type { CustomViewerPreset } from "@/lib/viewer-looks";
 import { FlatArtwork } from "@/components/showcase/flat-artwork";
 import { useMotionLevel, webglAvailable } from "./motion";
 import type { ArtworkItem } from "./showcase-context";
+import { useViewerAppearance, viewerBackdropProps, ViewerCustomizer } from "./viewer-customizer";
 
 const ArtworkCard3D = lazy(() => import("@/components/showcase/artwork-card-3d"));
 
@@ -47,7 +48,7 @@ const glass = "glass border border-white/[0.09] shadow-[0_12px_40px_-16px_rgb(va
 export function ArtworkViewer({
   items,
   index,
-  frame,
+  viewerPresets,
   leaving = false,
   onIndex,
   onClose,
@@ -55,7 +56,7 @@ export function ArtworkViewer({
 }: {
   items: ArtworkItem[];
   index: number;
-  frame: ArtworkFrameId;
+  viewerPresets: CustomViewerPreset[];
   /** Closing: the card recedes and the viewer fades before it unmounts. */
   leaving?: boolean;
   onIndex: (index: number) => void;
@@ -64,6 +65,9 @@ export function ArtworkViewer({
 }) {
   const motion = useMotionLevel();
   const item = items[index];
+  const frame = item.frame;
+  const appearance = useViewerAppearance(viewerPresets);
+  const [panelOpen, setPanelOpen] = useState(false);
   const src = artworkSrc(item.coverUrl) ?? "";
   const [mode, setMode] = useState<Mode>(() => initialMode(motion === "off"));
   // Items whose artwork can't be drawn in 3D (e.g. the image host refuses WebGL use) stay flat.
@@ -182,8 +186,15 @@ export function ArtworkViewer({
       aria-labelledby="artwork-viewer-title"
       aria-describedby="artwork-viewer-hint"
       data-frame={frame}
+      {...viewerBackdropProps(appearance.look)}
       data-inspecting={inspecting || undefined}
       data-leaving={leaving || undefined}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && panelOpen) {
+          event.preventDefault();
+          setPanelOpen(false);
+        }
+      }}
       className="artwork-viewer fixed inset-0 z-[95] overflow-hidden animate-in duration-200 fade-in-0"
     >
       <div className="artwork-viewer-stage absolute inset-0" role="img" aria-label={`Artwork for ${item.title}`}>
@@ -198,6 +209,7 @@ export function ArtworkViewer({
                 maxZoom={MAX_ZOOM["3d"]}
                 resetKey={resetKey}
                 motion={motion}
+                look={appearance.look}
                 leaving={leaving}
                 onZoom={changeZoom}
                 onManualRotate={onManualRotate}
@@ -227,6 +239,17 @@ export function ArtworkViewer({
           </p>
         </div>
         <div className={cn("pointer-events-auto flex shrink-0 items-center gap-0.5 rounded-full p-1", glass)}>
+          <button
+            type="button"
+            className={cn(control, panelOpen && "bg-amethyst/15 text-amethyst")}
+            onClick={() => setPanelOpen((open) => !open)}
+            aria-expanded={panelOpen}
+            aria-controls="artwork-viewer-look"
+            aria-label="Showcase look"
+            title="Showcase look: lighting, glow and motion"
+          >
+            <SlidersHorizontal aria-hidden />
+          </button>
           {canFullscreen ? (
             <button type="button" className={control} onClick={toggleFullscreen} aria-label={fullscreen ? "Exit full screen" : "Full screen"} title={fullscreen ? "Exit full screen" : "Full screen"}>
               {fullscreen ? <Minimize aria-hidden /> : <Maximize aria-hidden />}
@@ -237,6 +260,25 @@ export function ArtworkViewer({
           </button>
         </div>
       </div>
+
+      {panelOpen ? (
+        <section
+          id="artwork-viewer-look"
+          aria-label="Showcase look"
+          className={cn(
+            "absolute top-[4.25rem] right-3 z-20 max-h-[calc(100dvh-9.5rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto rounded-lg p-4 md:top-[5.25rem] md:right-5",
+            glass,
+          )}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold">Showcase look</h3>
+            <button type="button" className={cn(control, "size-8")} onClick={() => setPanelOpen(false)} aria-label="Close look panel">
+              <X aria-hidden />
+            </button>
+          </div>
+          <ViewerCustomizer appearance={appearance} motion={motion} compact />
+        </section>
+      ) : null}
 
       <button
         type="button"

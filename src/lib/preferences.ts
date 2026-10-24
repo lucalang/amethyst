@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ARTWORK_FRAME_IDS, DEFAULT_ARTWORK_FRAME, type ArtworkFrameId } from "@/lib/frames";
 import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
+import { BUILTIN_VIEWER_PRESET_IDS, DEFAULT_VIEWER_PRESET, viewerLookSchema, type ViewerLook } from "@/lib/viewer-looks";
 
 /** How pinned/progress details are shown on cover artwork. */
 export const PIN_STYLES = ["current", "clean"] as const;
@@ -104,6 +105,10 @@ export const DEFAULT_SETTINGS = {
   /** Sound effects in Arcade games (audio only starts after the player interacts). */
   arcadeSound: true,
   achievementNotifications: true,
+  /** The 3D Showcase preset: a built-in id or the id of one of the account's saved presets. */
+  viewerPreset: DEFAULT_VIEWER_PRESET as string,
+  /** Unsaved adjustments on top of the preset; null = the preset exactly. */
+  viewerTweaks: null as ViewerLook | null,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -185,6 +190,8 @@ const settingFields = {
   artworkFrame: z.enum(ARTWORK_FRAME_IDS),
   arcadeSound: z.boolean(),
   achievementNotifications: z.boolean(),
+  viewerPreset: z.union([z.enum(BUILTIN_VIEWER_PRESET_IDS), z.uuid()]),
+  viewerTweaks: viewerLookSchema.nullable(),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

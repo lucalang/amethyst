@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Frame, Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, type LucideIcon } from "lucide-react";
+import { Box, Frame, Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, UserRound, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; hint: string; icon: LucideIcon; active: (pathname: string) => boolean };
@@ -14,6 +14,13 @@ const ITEMS: Item[] = [
     hint: "Startup, notifications and security",
     icon: SlidersHorizontal,
     active: (pathname) => pathname === "/settings" || pathname.startsWith("/settings/password"),
+  },
+  {
+    href: "/settings/profile",
+    label: "Profile",
+    hint: "Name, picture and motto",
+    icon: UserRound,
+    active: (pathname) => pathname.startsWith("/settings/profile"),
   },
   {
     href: "/settings/themes",
@@ -28,6 +35,13 @@ const ITEMS: Item[] = [
     hint: "Frames for Showcase artwork",
     icon: Frame,
     active: (pathname) => pathname.startsWith("/settings/frames"),
+  },
+  {
+    href: "/settings/showcase",
+    label: "3D Showcase",
+    hint: "Viewer lighting, motion and presets",
+    icon: Box,
+    active: (pathname) => pathname.startsWith("/settings/showcase"),
   },
   {
     href: "/settings/appearance",

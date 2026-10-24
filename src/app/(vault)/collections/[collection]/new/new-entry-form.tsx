@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useActionState, useState, useTransition } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { CategorySelect } from "@/components/categories/category-picker";
+import { useSettings } from "@/components/layout/settings-context";
 import { CoverArtworkField } from "@/components/media/cover-artwork-field";
+import { FramePicker, type FrameChoice } from "@/components/media/frame-picker";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +42,8 @@ export function NewEntryForm({
   const collectionDefault = templates.find((template) => template.id === collection.default_template_id);
   const [template, setTemplate] = useState(collectionDefault?.id ?? NO_TEMPLATE);
   const chosen = templates.find((item) => item.id === template);
+  const { artworkFrame } = useSettings();
+  const [frame, setFrame] = useState<FrameChoice>("default");
 
   return (
     <form
@@ -113,6 +117,10 @@ export function NewEntryForm({
             <span className="text-xs font-normal text-muted-foreground/70">optional</span>
           </button>
         )}
+
+        <div className="border-t border-white/[0.06] pt-6">
+          <FramePicker value={frame} onChange={setFrame} accountFrame={artworkFrame} coverShape={defaultCoverShape} />
+        </div>
 
         <div className="grid gap-5 border-t border-white/[0.06] pt-6 sm:grid-cols-2">
           <div className="space-y-2">

@@ -1943,12 +1943,20 @@
 .artwork-viewer {
   --viewer-glow-rgb: var(--accent-rgb);
   --viewer-floor-rgb: var(--rose-rgb);
+  --viewer-glow: 1;
   background:
-    radial-gradient(52rem 38rem at 50% 44%, rgb(var(--viewer-glow-rgb) / 0.17), transparent 68%),
-    radial-gradient(70rem 26rem at 50% 108%, rgb(var(--viewer-floor-rgb) / 0.08), transparent 70%),
+    radial-gradient(52rem 38rem at 50% 44%, rgb(var(--viewer-glow-rgb) / calc(0.17 * var(--viewer-glow))), transparent 68%),
+    radial-gradient(70rem 26rem at 50% 108%, rgb(var(--viewer-floor-rgb) / calc(0.08 * var(--viewer-glow))), transparent 70%),
     radial-gradient(140% 110% at 50% 45%, transparent 55%, rgb(var(--shadow-rgb) / calc(0.45 * var(--shadow-alpha))) 100%),
     rgb(var(--paper-rgb) / 0.97);
   transition: opacity 200ms ease-in;
+}
+/* A Showcase look with its own solid backdrop (the glow still follows the frame). */
+.artwork-viewer[data-backdrop="color"] {
+  background:
+    radial-gradient(52rem 38rem at 50% 44%, rgb(var(--viewer-glow-rgb) / calc(0.17 * var(--viewer-glow))), transparent 68%),
+    radial-gradient(140% 110% at 50% 45%, transparent 55%, rgb(0 0 0 / 0.4) 100%),
+    var(--viewer-bg, #0d0b12);
 }
 .artwork-viewer[data-frame="gilt"] {
   --viewer-glow-rgb: 226 186 116;

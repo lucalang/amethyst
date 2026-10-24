@@ -3,19 +3,40 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/auth";
+import { artworkUrl } from "@/lib/validation/entries";
 
 export type FormState = { status: "idle" | "success" | "error"; message?: string };
 
-const profileSchema = z.object({ displayName: z.string().trim().min(1, "Enter a name.").max(80) });
+const hasControls = (value: string) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
 
+const profileSchema = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .max(80, "Names can be at most 80 characters.")
+    .refine((value) => !hasControls(value), "Names cannot contain control characters.")
+    .transform((value) => value || null),
+  motto: z
+    .string()
+    .transform((value) => value.replace(/\s+/g, " ").trim())
+    .pipe(z.string().max(160, "Keep your motto to 160 characters.").refine((value) => !hasControls(value), "Mottos cannot contain control characters."))
+    .transform((value) => value || null),
+  avatarUrl: artworkUrl.transform((value) => value || null),
+});
+
+/** Private profile details (name, avatar, motto). Sign-in email and password are handled separately. */
 export async function updateProfile(_prev: FormState, formData: FormData): Promise<FormState> {
   const ctx = await requireUser();
-  const parsed = profileSchema.safeParse({ displayName: formData.get("displayName") });
-  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Invalid name." };
+  const parsed = profileSchema.safeParse({
+    displayName: formData.get("displayName") ?? "",
+    motto: formData.get("motto") ?? "",
+    avatarUrl: formData.get("avatarUrl") ?? "",
+  });
+  if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Check your profile details." };
 
   const { error } = await ctx.supabase
     .from("users")
-    .update({ display_name: parsed.data.displayName })
+    .update({ display_name: parsed.data.displayName, motto: parsed.data.motto, avatar_url: parsed.data.avatarUrl })
     .eq("id", ctx.userId);
   if (error) return { status: "error", message: "Could not save your profile." };
   revalidatePath("/", "layout");

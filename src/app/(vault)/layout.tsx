@@ -8,17 +8,18 @@ import { ensureProfile, requireUser } from "@/lib/supabase/auth";
 
 export default async function VaultLayout({ children }: { children: ReactNode }) {
   const ctx = await requireUser();
-  let { data: profile } = await ctx.supabase.from("users").select("display_name, intro_seen_on").eq("id", ctx.userId).maybeSingle();
+  let { data: profile } = await ctx.supabase.from("users").select("display_name, avatar_url, intro_seen_on").eq("id", ctx.userId).maybeSingle();
   if (!profile) {
     if (!(await ensureProfile(ctx))) redirect("/auth/session-expired");
-    ({ data: profile } = await ctx.supabase.from("users").select("display_name, intro_seen_on").eq("id", ctx.userId).maybeSingle());
+    ({ data: profile } = await ctx.supabase.from("users").select("display_name, avatar_url, intro_seen_on").eq("id", ctx.userId).maybeSingle());
   }
-  const displayName = profile?.display_name || ctx.email || "Account";
+  // The email is never used as a name; it only appears as private account detail.
+  const account = { name: profile?.display_name?.trim() || null, avatarUrl: profile?.avatar_url ?? null, email: ctx.email ?? null };
   const [collections, preferences] = await Promise.all([loadCollections(ctx), loadPreferences(ctx)]);
   const collectionIcons = Object.fromEntries(collections.map((item) => [item.id, <CollectionIcon key={item.id} icon={item.icon} className="size-full" />]));
   return (
     <AppShell
-      displayName={displayName}
+      account={account}
       collections={collections}
       collectionIcons={collectionIcons}
       userId={ctx.userId}

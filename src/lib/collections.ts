@@ -18,6 +18,8 @@ export type LibraryCategory = {
   /** Default progress name copied into new entries. */
   progress_label?: string | null;
   default_template_id?: string | null;
+  /** Saved layout id (see lib/collection-layouts); unknown values show the gallery. */
+  layout?: string;
 };
 
 export const MAX_COLLECTION_DESCRIPTION_LENGTH = 1000;
@@ -58,7 +60,7 @@ export const collectionInputSchema = z
 export type CollectionInput = z.input<typeof collectionInputSchema>;
 
 /** Columns every collection read needs for names, identity and entry defaults. */
-export const COLLECTION_COLUMNS = "id, name, slug, description, icon, accent_color, banner_url, progress_label, default_template_id";
+export const COLLECTION_COLUMNS = "id, name, slug, description, icon, accent_color, banner_url, progress_label, default_template_id, layout";
 
 /** API input → table columns (only the keys that were sent). */
 export function collectionColumns(input: z.output<typeof collectionInputSchema>) {

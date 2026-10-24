@@ -47,10 +47,18 @@ export type Database = {
                 { foreignKeyName: "user_achievements_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
               ]
             },
+            "viewer_presets": {
+              Row: { id: string; user_id: string; name: string; look: NonNullable<Json>; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; look: NonNullable<Json>; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; look?: NonNullable<Json>; created_at?: string; updated_at?: string }
+              Relationships: [
+                { foreignKeyName: "viewer_presets_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+              ]
+            },
             "collections": {
-              Row: { id: string; user_id: string; name: string; slug: string; description: string; legacy_slug: string | null; position: number; icon: string | null; accent_color: string | null; banner_url: string | null; progress_label: string | null; default_template_id: string | null; created_at: string; updated_at: string }
-              Insert: { id?: string; user_id?: string; name: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; created_at?: string; updated_at?: string }
-              Update: { id?: string; user_id?: string; name?: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; created_at?: string; updated_at?: string }
+              Row: { id: string; user_id: string; name: string; slug: string; description: string; legacy_slug: string | null; position: number; icon: string | null; accent_color: string | null; banner_url: string | null; progress_label: string | null; default_template_id: string | null; layout: string; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; layout?: string; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; layout?: string; created_at?: string; updated_at?: string }
               Relationships: [
                 { foreignKeyName: "collections_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
                 { foreignKeyName: "collections_default_template_fkey"; columns: ["user_id", "default_template_id"]; isOneToOne: false; referencedRelation: "workspace_templates"; referencedColumns: ["user_id", "id"] },
@@ -118,13 +126,13 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
-                    "cover_shape": "square" | "portrait","collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"progress_label": string | null,"slug": string,"title": string,"updated_at": string,"user_id": string,"version": number
+                    "cover_shape": "square" | "portrait","frame": string | null,"collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"progress_label": string | null,"slug": string,"title": string,"updated_at": string,"user_id": string,"version": number
                   }
                   Insert: {
-                    "cover_shape"?: "square" | "portrait","collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "cover_shape"?: "square" | "portrait","frame"?: string | null,"collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Update: {
-                    "cover_shape"?: "square" | "portrait","collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
+                    "cover_shape"?: "square" | "portrait","frame"?: string | null,"collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [
                     {
@@ -174,13 +182,13 @@ isOneToOne: false
                   ]
                 },"users": {
                   Row: {
-                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"id": string,"updated_at": string
+                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"avatar_url": string | null,"motto": string | null,"id": string,"updated_at": string
                   }
                   Insert: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"id": string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"id": string,"updated_at"?: string
                   }
                   Update: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"id"?: string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     

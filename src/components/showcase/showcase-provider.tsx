@@ -8,6 +8,8 @@ import { useLibrary } from "@/components/media/library-view";
 import { Button } from "@/components/ui/button";
 import { artworkSrc } from "@/lib/attachments";
 import { apiFetch } from "@/lib/api-client";
+import { resolveFrame } from "@/lib/frames";
+import type { CustomViewerPreset } from "@/lib/viewer-looks";
 import { ArtworkViewer } from "./artwork-viewer";
 import { useMotionLevel } from "./motion";
 import { ShowcaseContext, useShowcase, type ArtworkItem, type ShowcaseApi } from "./showcase-context";
@@ -45,7 +47,7 @@ function restoreFocus(element: HTMLElement | null | undefined) {
  * the Showcase gallery and the artwork viewer. The library stays mounted underneath, so
  * closing them returns to the same filters and scroll position.
  */
-export function ShowcaseProvider({ name, icon, children }: { name: string; icon: ReactNode; children: ReactNode }) {
+export function ShowcaseProvider({ name, icon, viewerPresets, children }: { name: string; icon: ReactNode; viewerPresets: CustomViewerPreset[]; children: ReactNode }) {
   const { visible, total } = useLibrary();
   const { artworkFrame } = useSettings();
   const [showcaseOpen, setShowcaseOpen] = useState(false);
@@ -58,9 +60,11 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
   const items = useMemo<ArtworkItem[]>(
     () =>
       visible.flatMap((entry) =>
-        entry.coverUrl && artworkSrc(entry.coverUrl) ? [{ id: entry.id, title: entry.title, coverUrl: entry.coverUrl, coverShape: entry.coverShape }] : [],
+        entry.coverUrl && artworkSrc(entry.coverUrl)
+          ? [{ id: entry.id, title: entry.title, coverUrl: entry.coverUrl, coverShape: entry.coverShape, frame: resolveFrame(entry.frame, artworkFrame) }]
+          : [],
       ),
-    [visible],
+    [visible, artworkFrame],
   );
   const index = viewing ? items.findIndex((item) => item.id === viewing) : -1;
   // The entry left the results (deleted elsewhere, or filters changed): close the viewer.
@@ -150,7 +154,6 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
                   items={items}
                   filtered={visible.length < total}
                   withoutArtwork={visible.length - items.length}
-                  frame={artworkFrame}
                   covered={index !== -1}
                   onView={(id, opener) => api.viewArtwork(id, opener)}
                   onExit={closeShowcase}
@@ -160,7 +163,7 @@ export function ShowcaseProvider({ name, icon, children }: { name: string; icon:
                 <ArtworkViewer
                   items={items}
                   index={index}
-                  frame={artworkFrame}
+                  viewerPresets={viewerPresets}
                   leaving={leaving}
                   onIndex={(next) => setViewing(items[next]?.id ?? null)}
                   onClose={closeViewer}
