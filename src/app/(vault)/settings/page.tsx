@@ -10,6 +10,7 @@ import { requireUser } from "@/lib/supabase/auth";
 import { SwitchSetting } from "./setting-controls";
 import { SettingRow, SettingsGroup, SettingsHeader, resetFor } from "./settings-ui";
 import { StartupSetting } from "./startup-setting";
+import { TimeZoneSetting } from "./time-zone-setting";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -38,6 +39,17 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             collections={collections.map(({ id, name }) => ({ id, name }))}
             labelId="startup-label"
           />
+        </SettingRow>
+      </SettingsGroup>
+
+      <SettingsGroup id="time" title="Date and time">
+        <SettingRow
+          labelId="time-zone-label"
+          label="Time zone"
+          description="Decides when a new day starts for My Day in Tasks and how due dates count as today. By default this follows the device you're using."
+          reset={resetFor(preferences, ["timeZone"], "Device time zone")}
+        >
+          <TimeZoneSetting value={preferences.timeZone} labelId="time-zone-label" />
         </SettingRow>
       </SettingsGroup>
 

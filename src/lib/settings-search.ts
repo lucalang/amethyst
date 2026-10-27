@@ -15,6 +15,7 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
   {
     area: "Settings", section: "General", path: "/settings", keywords: "account security notifications", settings: [
       { label: "Startup destination", target: "startup-label-setting", keywords: "opening home first page collection" },
+      { label: "Time zone", target: "time-zone-label-setting", keywords: "timezone date day my day tasks midnight clock region" },
       { label: "Achievement celebrations", target: "achievement-notifications-label-setting", keywords: "notification popup confetti" },
       { label: "New password", target: "password", path: "/settings/password", keywords: "change password security login sign in" },
       { label: "Confirm password", target: "confirm", path: "/settings/password", keywords: "change password repeat confirmation security" },

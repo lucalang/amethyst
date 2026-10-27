@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, ArrowUpRight, Award, CalendarClock, Check, FileText, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Award, CalendarClock, Check, FileText, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, Sun, type LucideIcon } from "lucide-react";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionIcon } from "@/components/categories/collection-icon";
@@ -11,6 +11,7 @@ import { CustomizeHomeButton, HomeCustomizeProvider, HomeSections } from "@/comp
 import { NewEntryButton } from "@/components/home/new-entry-button";
 import { ArcadeMarquee } from "@/components/home/arcade-marquee";
 import { UpcomingTasks } from "@/components/home/upcoming-tasks";
+import { HomeMyDay } from "@/components/tasks/home-my-day";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { MediaImage } from "@/components/media/media-image";
@@ -19,6 +20,7 @@ import { ProgressMeter } from "@/components/media/progress-meter";
 import { accentStyle } from "@/lib/collection-identity";
 import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomeFeaturedEntry } from "@/lib/data/home";
 import { loadAchievementCards } from "@/lib/data/achievements";
+import { loadMyDayPreview } from "@/lib/data/tasks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { loadPreferences } from "@/lib/data/preferences";
 import { loadCoinBalance } from "@/lib/data/shop";
@@ -357,7 +359,11 @@ export default async function HomePage() {
   const chosen = preferences.homeFeatured;
   const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null);
   const showAchievements = preferences.homeSections.some((section) => section.id === "achievements" && !section.hidden);
-  const [achievementCards, coinBalance] = await Promise.all([loadAchievementCards(ctx), loadCoinBalance(ctx).catch(() => null)]);
+  const [achievementCards, coinBalance, myDay] = await Promise.all([
+    loadAchievementCards(ctx),
+    loadCoinBalance(ctx).catch(() => null),
+    loadMyDayPreview(ctx),
+  ]);
   const { pinStyle } = preferences;
   const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const hasEntries = home.counts.entries > 0;
@@ -467,6 +473,17 @@ export default async function HomePage() {
         </Section>
       ) : null;
     },
+    myDay: (position) => (
+      <Section
+        id="my-day"
+        title="My Day"
+        icon={Sun}
+        index={position}
+        action={<Link href="/tasks" className="text-sm font-medium text-amethyst underline-offset-4 hover:underline">Open Tasks</Link>}
+      >
+        <HomeMyDay tasks={myDay.tasks} lists={myDay.lists} />
+      </Section>
+    ),
   };
 
   const gettingStarted = !hasEntries ? <GettingStarted home={home} index={index++} /> : null;

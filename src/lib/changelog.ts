@@ -8,7 +8,7 @@
 export type ChangeKind = "new" | "improved" | "fixed";
 export type ChangeLink = { href: string; label: string };
 export type ChangeAction = "preview-intro";
-export type ReleaseIcon = "megaphone" | "palette" | "box" | "medal" | "trophy" | "gamepad" | "link" | "image" | "home" | "shapes" | "folder" | "tag" | "upload" | "notebook" | "sparkles";
+export type ReleaseIcon = "megaphone" | "palette" | "box" | "medal" | "trophy" | "gamepad" | "link" | "image" | "home" | "shapes" | "folder" | "tag" | "upload" | "notebook" | "sparkles" | "tasks";
 
 /** One line of the overview: a recognizable feature name and a short explanation. */
 export type Highlight = { kind: ChangeKind; feature: string; text: string };
@@ -41,6 +41,60 @@ export type Release = {
 export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
+  {
+    id: "2026-10-27-tasks",
+    date: "2026-10-27",
+    title: "Tasks: a to-do workspace next to your archive",
+    intro: "Switch between Archive and Tasks next to the logo. Tasks has its own lists, groups and smart views, and stays in sync across your devices.",
+    icon: "tasks",
+    highlights: [
+      { kind: "new", feature: "Lists and groups", text: "A permanent Inbox plus your own lists with icons and colors, organized into collapsible groups by drag and drop or menus." },
+      { kind: "new", feature: "Task details", text: "Importance, due dates, Markdown notes, ordered steps and an optional link to an archive entry." },
+      { kind: "new", feature: "Smart views", text: "My Day, Important, Planned, All and Completed gather tasks from every list without copying them." },
+      { kind: "new", feature: "Fast capture and search", text: "Press Enter to add, paste several lines to add many at once, and search titles, steps and notes." },
+      { kind: "new", feature: "Sync", text: "Changes from another device appear without reloading." },
+    ],
+    details: {
+      new: [
+        {
+          title: "A separate Tasks workspace",
+          body: "Use the Archive | Tasks switch beside the logo. Each side remembers where you were. The logo still takes you to Home. Tasks keeps its own lists, separate from entry checklists and cover progress.",
+          link: { href: "/tasks", label: "Open Tasks" },
+        },
+        {
+          title: "Lists and groups",
+          body: "Every task lives in exactly one list. Inbox is always there; create, rename, color, reorder and delete your own lists, and put them in groups.",
+          points: [
+            "Drag lists and groups in the sidebar, or use Move up/down and Move to group from their menus. Order and collapsed groups are saved to your account.",
+            "Deleting a group keeps its lists. Deleting a list asks first and says how many tasks, steps and notes go with it.",
+          ],
+          where: "Tasks → sidebar",
+        },
+        {
+          title: "Tasks, steps and notes",
+          body: "Open a task to edit its title, steps, due date, list, notes and linked archive entry. Completing every step offers to complete the task, but never does it on its own.",
+          points: [
+            "Notes use the same live Markdown editor as the archive. They save automatically and keep a local copy until saved. If another device changed them, you choose which version to keep.",
+            "Reorder tasks by dragging in a list or with Alt+↑/↓. A collapsible Completed section keeps finished work out of the way.",
+            "Use “Add multiple” or paste several lines; “- [x]” lines are added as completed.",
+          ],
+        },
+        {
+          title: "Smart views",
+          body: "My Day holds what you pick for today, whatever the due date, and starts empty each new day. Important shows starred open tasks, Planned groups due tasks into overdue, today and later, All shows every open task, and Completed lists finished tasks by completion date.",
+          points: ["Outside its own list, a task shows which list it belongs to."],
+        },
+      ],
+      improved: [
+        {
+          title: "My Day on Home, and a time zone setting",
+          body: "An optional My Day section can be turned on under Customize Home. A new Time zone setting decides when the day rolls over; by default it follows your device.",
+          where: "Home → Customize Home; Settings → General → Date and time",
+          link: { href: "/settings#time", label: "Time zone setting" },
+        },
+      ],
+    },
+  },
   {
     id: "2026-10-27-settings-customization-search",
     date: "2026-10-27",

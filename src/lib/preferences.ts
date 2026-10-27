@@ -45,7 +45,9 @@ const shortcut = z.string().max(40).refine((value) => value === "" || SHORTCUT_P
 const hasControls = (value: string) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
 
 /** Home sections below the welcome header, in their default order. */
-export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "glance", "achievements"] as const;
+export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "glance", "achievements", "myDay"] as const;
+/** Sections that start hidden (opt-in) for accounts that never arranged Home. */
+export const HIDDEN_BY_DEFAULT: readonly string[] = ["achievements", "myDay"];
 export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
 export type HomeSection = { id: HomeSectionId; hidden: boolean };
 export const MAX_GREETING_LENGTH = 80;
@@ -62,7 +64,7 @@ function normalizeHomeSections(list: { id: string; hidden: boolean }[]): HomeSec
     seen.add(item.id);
     sections.push({ id: item.id as HomeSectionId, hidden: item.hidden });
   }
-  for (const id of HOME_SECTION_IDS) if (!seen.has(id)) sections.push({ id, hidden: id === "achievements" });
+  for (const id of HOME_SECTION_IDS) if (!seen.has(id)) sections.push({ id, hidden: HIDDEN_BY_DEFAULT.includes(id) });
   return sections;
 }
 
@@ -81,6 +83,8 @@ export const DEFAULT_SETTINGS = {
   checklistMode: "bottom" as ChecklistMode,
   startup: "home" as StartupDestination,
   startupCollectionId: null as string | null,
+  /** IANA zone that decides when a new day (My Day, due dates) starts; "" follows the device. */
+  timeZone: "",
   shortcuts: {
     search: "/",
     newEntry: "Alt+Shift+N",
@@ -93,7 +97,7 @@ export const DEFAULT_SETTINGS = {
   cardTitle: true,
   cardLabels: false,
   cardProgress: true,
-  homeSections: HOME_SECTION_IDS.map((id) => ({ id, hidden: id === "achievements" })) as HomeSection[],
+  homeSections: HOME_SECTION_IDS.map((id) => ({ id, hidden: HIDDEN_BY_DEFAULT.includes(id) })) as HomeSection[],
   /** "" keeps the built-in welcome. */
   homeGreeting: "",
   homeFeatured: null as HomeFeatured,
@@ -143,6 +147,18 @@ const settingFields = {
   checklistMode: z.enum(CHECKLIST_MODES),
   startup: z.enum(STARTUP_DESTINATIONS),
   startupCollectionId: z.uuid().nullable(),
+  timeZone: z
+    .string()
+    .max(64)
+    .refine((value) => {
+      if (value === "") return true;
+      try {
+        new Intl.DateTimeFormat("en", { timeZone: value });
+        return true;
+      } catch {
+        return false;
+      }
+    }, "Choose a known time zone."),
   shortcuts: z
     .object(Object.fromEntries(SHORTCUT_ACTIONS.map((action) => [action, shortcut.optional()])) as Record<ShortcutAction, z.ZodOptional<typeof shortcut>>)
     .strict()

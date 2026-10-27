@@ -21,6 +21,15 @@ export function KeyboardShortcuts({ collections }: { collections: LibraryCategor
   }
 
   function run(action: ShortcutAction) {
+    // Tasks is its own workspace: shortcuts search or add tasks there and never create archive files.
+    if (document.querySelector("[data-tasks-app]")) {
+      const target = document.getElementById(action === "search" ? "tasks-search" : "tasks-quick-add");
+      if (action !== "toggleExplorer" && action !== "newFolder" && target instanceof HTMLElement) {
+        target.focus();
+        if (target instanceof HTMLInputElement) target.select();
+      }
+      return;
+    }
     if (WORKSPACE_ACTIONS.includes(action)) {
       const event = new CustomEvent(WORKSPACE_SHORTCUT_EVENT, { detail: action, cancelable: true });
       if (window.dispatchEvent(event)) toast.info("Open an entry to use this shortcut.");

@@ -21,6 +21,7 @@ import {
   Search,
   Sparkles,
   SlidersHorizontal,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { useSaveSettings } from "@/app/(vault)/settings/setting-controls";
@@ -35,6 +36,7 @@ import { apiFetch } from "@/lib/api-client";
 import type { CoverShape } from "@/lib/cover-shape";
 import type { FanItem } from "@/lib/home-fan";
 import {
+  HIDDEN_BY_DEFAULT,
   HOME_SECTION_IDS,
   MAX_FEATURED_CAPTION_LENGTH,
   MAX_GREETING_LENGTH,
@@ -56,9 +58,10 @@ const SECTION_META: Record<HomeSectionId, { title: string; icon: LucideIcon }> =
   tasks: { title: "Upcoming tasks", icon: CalendarClock },
   glance: { title: "At a glance", icon: Layers },
   achievements: { title: "Earned achievements", icon: Award },
+  myDay: { title: "My Day", icon: Sun },
 };
 
-const DEFAULT_LAYOUT: HomeSection[] = HOME_SECTION_IDS.map((id) => ({ id, hidden: id === "achievements" }));
+const DEFAULT_LAYOUT: HomeSection[] = HOME_SECTION_IDS.map((id) => ({ id, hidden: HIDDEN_BY_DEFAULT.includes(id) }));
 
 type CustomizeState = { customizing: boolean; setCustomizing: (value: boolean) => void };
 const CustomizeContext = createContext<CustomizeState>({ customizing: false, setCustomizing: () => {} });

@@ -55,6 +55,30 @@ export type Database = {
                 { foreignKeyName: "viewer_presets_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
               ]
             },
+            "task_groups": {
+              Row: { id: string; user_id: string; name: string; position: number; collapsed: boolean; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; position?: number; collapsed?: boolean; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; position?: number; collapsed?: boolean; created_at?: string; updated_at?: string }
+              Relationships: []
+            },
+            "task_lists": {
+              Row: { id: string; user_id: string; group_id: string | null; name: string; icon: string | null; accent_color: string | null; is_inbox: boolean; position: number; show_completed: boolean; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; group_id?: string | null; name: string; icon?: string | null; accent_color?: string | null; is_inbox?: boolean; position?: number; show_completed?: boolean; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; group_id?: string | null; name?: string; icon?: string | null; accent_color?: string | null; is_inbox?: boolean; position?: number; show_completed?: boolean; created_at?: string; updated_at?: string }
+              Relationships: []
+            },
+            "tasks": {
+              Row: { id: string; user_id: string; list_id: string; title: string; notes: string; notes_rev: number; has_notes: boolean; important: boolean; due_date: string | null; my_day_on: string | null; completed_at: string | null; entry_id: string | null; position: number; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; list_id: string; title: string; notes?: string; notes_rev?: number; important?: boolean; due_date?: string | null; my_day_on?: string | null; completed_at?: string | null; entry_id?: string | null; position?: number; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; list_id?: string; title?: string; notes?: string; notes_rev?: number; important?: boolean; due_date?: string | null; my_day_on?: string | null; completed_at?: string | null; entry_id?: string | null; position?: number; created_at?: string; updated_at?: string }
+              Relationships: []
+            },
+            "task_steps": {
+              Row: { id: string; user_id: string; task_id: string; title: string; completed: boolean; position: number; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; task_id: string; title: string; completed?: boolean; position?: number; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; task_id?: string; title?: string; completed?: boolean; position?: number; created_at?: string; updated_at?: string }
+              Relationships: []
+            },
             "attachment_objects": {
               Row: { user_id: string; name: string; origin: "supabase" | "r2"; r2_state: "pending" | "verified" | null; content_type: string; size_bytes: number; md5: string | null; sha256: string | null; created_at: string; verified_at: string | null }
               Insert: { user_id: string; name: string; origin: "supabase" | "r2"; r2_state?: "pending" | "verified" | null; content_type: string; size_bytes: number; md5?: string | null; sha256?: string | null; created_at?: string; verified_at?: string | null }
@@ -470,6 +494,33 @@ isOneToOne: false
                            },
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined
+                           },
+"ensure_task_inbox":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"task_changes":
+{ Args: { "p_since"?: string | null }; Returns: Json
+                           },
+"add_tasks":
+{ Args: { "p_list_id": string,"p_titles": (string)[],"p_completed": (boolean)[],"p_important"?: boolean,"p_due_date"?: string | null,"p_my_day"?: string | null }; Returns: Database["public"]["Tables"]["tasks"]["Row"][]
+                           },
+"reorder_tasks":
+{ Args: { "p_task_ids": (string)[] }; Returns: undefined
+                           },
+"set_task_layout":
+{ Args: { "p_layout": Json }; Returns: undefined
+                           },
+"delete_task_group":
+{ Args: { "p_group_id": string }; Returns: undefined
+                           },
+"delete_task_list":
+{ Args: { "p_list_id": string,"p_expected_tasks": number }; Returns: undefined
+                           },
+"add_task_step":
+{ Args: { "p_task_id": string,"p_title": string }; Returns: Database["public"]["Tables"]["task_steps"]["Row"]
+                           },
+"reorder_task_steps":
+{ Args: { "p_task_id": string,"p_step_ids": (string)[] }; Returns: undefined
                            },
 "set_home_fan":
 { Args: { "p_items": Json }; Returns: undefined

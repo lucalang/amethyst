@@ -7,6 +7,7 @@ import {
   House,
   ImageIcon,
   Link2,
+  ListChecks,
   Medal,
   Megaphone,
   NotebookPen,
@@ -47,6 +48,7 @@ const RELEASE_ICONS: Record<ReleaseIcon, LucideIcon> = {
   upload: Upload,
   notebook: NotebookPen,
   sparkles: Sparkles,
+  tasks: ListChecks,
 };
 
 export function ReleaseGlyph({ icon, className }: { icon: ReleaseIcon; className?: string }) {

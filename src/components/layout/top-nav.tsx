@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
 import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { ProfileAvatar } from "./profile-avatar";
+import { isTasksPath, WorkspaceSwitch } from "./workspace-switch";
 
 /** Server-rendered collection icons keyed by collection id. */
 type CollectionIcons = Record<string, ReactNode>;
@@ -48,15 +49,19 @@ export type AccountSummary = { name: string | null; avatarUrl: string | null; de
 
 export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const currentId = useCurrentCollectionId(collections);
+  const inTasks = isTasksPath(usePathname());
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-black/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[88rem] items-center gap-3 px-4 md:gap-6 md:px-6">
-        <Link href="/" className="shrink-0 rounded-md" aria-label="Amethyst Archives home">
-          <BrandMark className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline" />
-        </Link>
+        <div className="flex shrink-0 items-center gap-2.5 md:gap-4">
+          <Link href="/" className="shrink-0 rounded-md" aria-label="Amethyst Archives home">
+            <BrandMark className="[&>span:last-child]:hidden lg:[&>span:last-child]:inline" />
+          </Link>
+          <WorkspaceSwitch />
+        </div>
 
-        <nav aria-label="Collections" className="collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4 md:flex">
+        <nav aria-label="Collections" className={cn("collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4", !inTasks && "md:flex")}>
           {collections.map((item) => {
             const href = collectionPath(item);
             const active = item.id === currentId;
@@ -83,8 +88,8 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          {collections.length > 1 ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
-          <NewCategoryButton />
+          {collections.length > 1 && !inTasks ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
+          {inTasks ? null : <NewCategoryButton />}
           <WhatsNewButton />
 
           <DropdownMenu>
@@ -137,6 +142,8 @@ export function MobileTabBar({ collections, icons = {} }: { collections: Library
   const pathname = usePathname();
   const currentId = useCurrentCollectionId(collections);
   const settingsActive = isActive(pathname, "/settings");
+  // Tasks has its own list navigation (sidebar / drawer).
+  if (isTasksPath(pathname)) return null;
   return (
     <nav aria-label="Primary" className="glass fixed inset-x-0 bottom-0 z-40 flex border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden">
       <ul className="collection-nav-strip flex min-w-0 flex-1 overflow-x-auto px-1">
