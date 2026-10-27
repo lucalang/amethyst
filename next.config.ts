@@ -2,23 +2,26 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
 
-// Note images upload straight to Supabase Storage and load from signed Storage URLs.
-const supabaseOrigin = (() => {
+// Legacy note images load from signed Supabase Storage URLs; R2 images from presigned R2 URLs.
+const originOf = (value: string | undefined) => {
   try {
-    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").origin;
+    return new URL(value ?? "").origin;
   } catch {
     return "";
   }
-})();
+};
+const supabaseOrigin = originOf(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const r2Origin = originOf(process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : ""));
+const storageOrigins = [supabaseOrigin, r2Origin].filter(Boolean).join(" ");
 
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   // Remote artwork is served same-origin by the authenticated /api/image proxy.
-  `img-src 'self' data: blob: ${supabaseOrigin}`.trim(),
+  `img-src 'self' data: blob: ${storageOrigins}`.trim(),
   "font-src 'self'",
-  `connect-src 'self' ${supabaseOrigin}`.trim(),
+  `connect-src 'self' ${storageOrigins}`.trim(),
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

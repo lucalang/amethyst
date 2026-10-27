@@ -55,6 +55,14 @@ export type Database = {
                 { foreignKeyName: "viewer_presets_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
               ]
             },
+            "attachment_objects": {
+              Row: { user_id: string; name: string; origin: "supabase" | "r2"; r2_state: "pending" | "verified" | null; content_type: string; size_bytes: number; md5: string | null; sha256: string | null; created_at: string; verified_at: string | null }
+              Insert: { user_id: string; name: string; origin: "supabase" | "r2"; r2_state?: "pending" | "verified" | null; content_type: string; size_bytes: number; md5?: string | null; sha256?: string | null; created_at?: string; verified_at?: string | null }
+              Update: { user_id?: string; name?: string; origin?: "supabase" | "r2"; r2_state?: "pending" | "verified" | null; content_type?: string; size_bytes?: number; md5?: string | null; sha256?: string | null; created_at?: string; verified_at?: string | null }
+              Relationships: [
+                { foreignKeyName: "attachment_objects_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+              ]
+            },
             "collections": {
               Row: { id: string; user_id: string; name: string; slug: string; description: string; legacy_slug: string | null; position: number; icon: string | null; accent_color: string | null; banner_url: string | null; progress_label: string | null; default_template_id: string | null; layout: string; created_at: string; updated_at: string }
               Insert: { id?: string; user_id?: string; name: string; slug?: string; description?: string; legacy_slug?: string | null; position?: number; icon?: string | null; accent_color?: string | null; banner_url?: string | null; progress_label?: string | null; default_template_id?: string | null; layout?: string; created_at?: string; updated_at?: string }
@@ -465,6 +473,15 @@ isOneToOne: false
                            },
 "set_home_fan":
 { Args: { "p_items": Json }; Returns: undefined
+                           },
+"reserve_attachment":
+{ Args: { "p_name": string,"p_content_type": string,"p_size": number,"p_origin": "supabase" | "r2" }; Returns: boolean
+                           },
+"confirm_attachment":
+{ Args: { "p_name": string,"p_size": number,"p_md5": string }; Returns: boolean
+                           },
+"attachment_inventory":
+{ Args: Record<PropertyKey, never>; Returns: { object_name: string; size_bytes: number | null; content_type: string | null; etag: string | null; uploaded_at: string; origin: "supabase" | "r2" | null; r2_state: "pending" | "verified" | null; manifest_size: number | null; manifest_md5: string | null }[]
                            },
 "update_user_settings":
 { Args: { "patch": Json }; Returns: Json

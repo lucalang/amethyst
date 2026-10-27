@@ -42,6 +42,34 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-27-private-image-storage",
+    date: "2026-10-27",
+    title: "A new private home for your images",
+    intro: "Images you upload are moving to new private storage built for frequent viewing. Nothing changes in how you add, embed or view them.",
+    icon: "upload",
+    highlights: [
+      { kind: "improved", feature: "Image storage", text: "New uploads can be stored in a private Cloudflare R2 bucket, and existing images are copied over and checked one by one." },
+      { kind: "improved", feature: "Same links", text: "Note embeds, covers, banners, avatars and Home artwork keep their names and links. Nothing needs to be re-added." },
+      { kind: "improved", feature: "Fewer repeat downloads", text: "Your browser reuses an image privately for several hours instead of downloading it again." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Private image storage",
+          body: "Uploaded images are only ever delivered to your signed-in account, through short-lived links. Images are moved only after each copy has been verified, and the originals are kept as a fallback.",
+          points: [
+            "Pasting, dropping and uploading images works as before, with the same formats (PNG, JPEG, GIF, WebP, AVIF, BMP) and the same 10 MB limit.",
+            "Duplicate file names still get a number, like “Pasted image … 1.png”.",
+            "Signing out clears cached images from this browser, so the next person to sign in never sees yours.",
+            "Images linked from other websites still load through the secure image proxy and are not copied.",
+          ],
+          where: "Notes, covers, banners, profile picture and Home artwork",
+          link: { href: "/settings/profile", label: "Open your profile" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-24-home-cover-fan",
     date: "2026-10-24",
     title: "A cover fan you arrange yourself",

@@ -56,3 +56,6 @@ next-env.d.ts
 
 # local demo credentials
 /.demo-credentials
+
+# image migration reports
+/.r2-migration

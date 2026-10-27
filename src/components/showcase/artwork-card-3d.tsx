@@ -35,6 +35,7 @@ import {
   type Material,
   type MeshPhysicalMaterialParameters,
 } from "three";
+import { isUploadedImagePath } from "@/lib/attachments";
 import type { ArtworkFrameId } from "@/lib/frames";
 import type { MotionLevel } from "@/lib/preferences";
 import { CLASSIC_VIEWER_LOOK, type ViewerLighting, type ViewerLook } from "@/lib/viewer-looks";
@@ -974,7 +975,8 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     const next = new Image();
     next.crossOrigin = "anonymous";
     next.decoding = "async";
-    next.src = nextSrc;
+    // Uploaded images redirect to storage; the CORS variant never reuses a cached non-CORS copy.
+    next.src = isUploadedImagePath(nextSrc) ? `${nextSrc}?cors` : nextSrc;
     next
       .decode()
       .then(() => {
