@@ -23,7 +23,8 @@ import { errorMessage } from "@/components/workspace/client-utils";
 import { useTasks } from "./store";
 import { useTasksNav } from "./nav";
 
-export type ListDialogState = { mode: "create"; groupId: string | null } | { mode: "edit"; list: TaskList } | null;
+/** `onCreated` keeps the current view (e.g. choosing where quick add puts tasks) instead of opening the new list. */
+export type ListDialogState = { mode: "create"; groupId: string | null; onCreated?: (list: TaskList) => void } | { mode: "edit"; list: TaskList } | null;
 
 /** Create a list or edit its name, icon and color. */
 export function ListDialog({ state, onClose }: { state: ListDialogState; onClose: () => void }) {
@@ -46,7 +47,7 @@ function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onC
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    const parsed = editing?.isInbox ? { success: true as const, data: editing.name } : taskNameSchema.safeParse(name);
+    const parsed = taskNameSchema.safeParse(name);
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Enter a name.");
       return;
@@ -55,11 +56,12 @@ function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onC
     setError(null);
     try {
       if (editing) {
-        const message = await actions.updateList(editing.id, { ...(editing.isInbox ? {} : { name: parsed.data }), icon, accentColor: accent }, { quiet: true });
+        const message = await actions.updateList(editing.id, { name: parsed.data, icon, accentColor: accent }, { quiet: true });
         if (message) throw new Error(message);
-      } else {
-        const list = await actions.createList({ name: parsed.data, groupId: state.mode === "create" ? state.groupId : null, icon, accentColor: accent });
-        nav.go(`/tasks/lists/${list.id}`);
+      } else if (state.mode === "create") {
+        const list = await actions.createList({ name: parsed.data, groupId: state.groupId, icon, accentColor: accent });
+        if (state.onCreated) state.onCreated(list);
+        else nav.go(`/tasks/lists/${list.id}`);
         requestAnimationFrame(() => document.getElementById("tasks-quick-add")?.focus());
       }
       onClose();
@@ -72,24 +74,22 @@ function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onC
   return (
     <form onSubmit={submit} className="grid gap-4">
       <DialogHeader>
-        <DialogTitle>{editing ? (editing.isInbox ? "Inbox appearance" : "Edit list") : "New list"}</DialogTitle>
-        <DialogDescription>{editing?.isInbox ? "The Inbox keeps its name, but you can pick an icon and color." : "Name the list and optionally give it an icon and color."}</DialogDescription>
+        <DialogTitle>{editing ? "Edit list" : "New list"}</DialogTitle>
+        <DialogDescription>Name the list and optionally give it an icon and color.</DialogDescription>
       </DialogHeader>
-      {editing?.isInbox ? null : (
-        <div className="grid gap-1.5">
-          <Label htmlFor="task-list-name">Name</Label>
-          <Input
-            id="task-list-name"
-            value={name}
-            autoFocus
-            maxLength={120}
-            onChange={(event) => setName(event.target.value)}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? "task-list-error" : undefined}
-            placeholder="e.g. Groceries"
-          />
-        </div>
-      )}
+      <div className="grid gap-1.5">
+        <Label htmlFor="task-list-name">Name</Label>
+        <Input
+          id="task-list-name"
+          value={name}
+          autoFocus
+          maxLength={120}
+          onChange={(event) => setName(event.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "task-list-error" : undefined}
+          placeholder="e.g. Groceries"
+        />
+      </div>
       <div className="grid gap-1.5">
         <Label htmlFor="task-list-icon">Icon</Label>
         <IconPicker id="task-list-icon" value={icon} onChange={setIcon} accent={accent} disabled={busy} />
@@ -207,7 +207,7 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
 
 /** Confirms deleting a list, spelling out what goes with it. */
 export function DeleteListDialog({ list, onClose }: { list: TaskList | null; onClose: () => void }) {
-  const { actions, allTasks, inbox, stepsByTask } = useTasks();
+  const { actions, allTasks, stepsByTask } = useTasks();
   const nav = useTasksNav();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -227,7 +227,7 @@ export function DeleteListDialog({ list, onClose }: { list: TaskList | null; onC
       setError(message);
       return;
     }
-    if (nav.view?.kind === "list" && nav.view.id === list.id) nav.go(inbox ? "/tasks/inbox" : "/tasks", { replace: true });
+    if (nav.view?.kind === "list" && nav.view.id === list.id) nav.go("/tasks", { replace: true });
     onClose();
   }
 

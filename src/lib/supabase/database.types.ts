@@ -495,9 +495,6 @@ isOneToOne: false
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined
                            },
-"ensure_task_inbox":
-{ Args: Record<PropertyKey, never>; Returns: string
-                           },
 "task_changes":
 { Args: { "p_since"?: string | null }; Returns: Json
                            },

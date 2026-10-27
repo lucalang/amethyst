@@ -47,7 +47,7 @@ const SNAKE: [number, number][] = [
 ];
 
 /** A tiny attract-mode screen: a coin, a pixel snake, a gem-bird and a crystal pillar. */
-function MarqueeArt() {
+export function MarqueeArt() {
   return (
     <svg viewBox="0 0 64 44" className="size-full">
       <g fill="#fff" opacity="0.45">

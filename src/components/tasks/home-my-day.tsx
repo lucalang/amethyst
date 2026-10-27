@@ -12,6 +12,27 @@ const subscribe = (onChange: () => void) => {
   return () => window.clearInterval(timer);
 };
 
+/** One line for Home's To Do card: what's left in today's My Day. */
+export function MyDaySummary({ tasks }: { tasks: Task[] }) {
+  const { timeZone } = useSettings();
+  const today = useSyncExternalStore(
+    subscribe,
+    () => dateInZone(new Date(), timeZone),
+    () => null,
+  );
+  if (!today) return <span className="invisible">My Day</span>;
+  const picked = tasks.filter((task) => task.myDayOn === today);
+  const open = picked.filter((task) => !task.completedAt).length;
+  if (picked.length === 0) return <>Nothing planned for today yet</>;
+  if (open === 0) return <>Everything in My Day is done</>;
+  return (
+    <>
+      <span className="font-semibold text-foreground tabular-nums">{open}</span> left in My Day
+      {picked.length > open ? <span className="text-muted-foreground"> · {picked.length - open} done</span> : null}
+    </>
+  );
+}
+
 /** Today's My Day tasks on Home; the server sends candidates and the viewer's day picks them. */
 export function HomeMyDay({ tasks, lists }: { tasks: Task[]; lists: TaskList[] }) {
   const { timeZone } = useSettings();
@@ -22,7 +43,7 @@ export function HomeMyDay({ tasks, lists }: { tasks: Task[]; lists: TaskList[] }
   );
   if (!today) return <div className="h-24" aria-hidden />;
   const names = new Map(lists.map((list) => [list.id, list.name]));
-  const order = new Map(lists.map((list, index) => [list.id, list.isInbox ? -1 : index]));
+  const order = new Map(lists.map((list, index) => [list.id, index]));
   const picked = tasks.filter((task) => task.myDayOn === today);
   const open = sortTasks(
     picked.filter((task) => !task.completedAt),
@@ -36,7 +57,7 @@ export function HomeMyDay({ tasks, lists }: { tasks: Task[]; lists: TaskList[] }
       <p className="rounded-lg border border-dashed border-white/[0.1] px-4 py-3.5 text-sm text-muted-foreground">
         Nothing picked for today yet.{" "}
         <Link href="/tasks" className="font-medium text-amethyst underline-offset-4 hover:underline">
-          Plan your day in Tasks
+          Plan your day in To Do
         </Link>
       </p>
     );

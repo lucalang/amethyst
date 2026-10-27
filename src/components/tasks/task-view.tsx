@@ -1,10 +1,11 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownUp,
   Check,
+  ChevronDown,
   ChevronRight,
   Eye,
   EyeOff,
@@ -27,17 +28,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLocalStorageValue, writeLocal } from "@/components/workspace/client-utils";
+import { errorMessage, useLocalStorageValue, writeLocal } from "@/components/workspace/client-utils";
 import { TaskLinesDialog } from "@/components/workspace/task-lines-dialog";
 import { apiFetch } from "@/lib/api-client";
 import { accentStyle } from "@/lib/collection-identity";
 import {
   byCompletedDesc,
-  dateInZone,
   PLANNED_LABELS,
   plannedBucket,
-  shiftDate,
   smartView,
   sortTasks,
   TASK_SORTS,
@@ -46,6 +46,7 @@ import {
   type TaskSort,
 } from "@/lib/tasks/model";
 import { cn } from "@/lib/utils";
+import { taskNameSchema } from "@/lib/validation/tasks";
 import { parseTaskLines } from "@/lib/validation/workspace";
 import { DeleteListDialog, ListDialog, type ListDialogState } from "./list-dialogs";
 import { useTasksNav } from "./nav";
@@ -58,7 +59,6 @@ const CELEBRATE_MS = 700;
 const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const dayHeading = new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
-const shortDay = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
 /** A set of ids that each drop out again after `ms`. */
 function useTransientIds(ms: number) {
@@ -96,9 +96,9 @@ function useStoredFlag(key: string, fallback: boolean): [boolean, (value: boolea
 
 export function TaskView() {
   const store = useTasks();
-  const { data, today, allTasks, listOrder, inbox, ghosts, actions, stepsByTask } = store;
+  const { data, today, allTasks, listOrder, ghosts, actions, stepsByTask } = store;
   const nav = useTasksNav();
-  const { motion, timeZone } = useSettings();
+  const { motion } = useSettings();
   const view = nav.view;
   const list = view?.kind === "list" ? (data.lists[view.id] ?? null) : null;
   const viewKey = view ? (view.kind === "list" ? "list" : view.kind === "search" ? "search" : view.id) : "none";
@@ -262,39 +262,26 @@ export function TaskView() {
         : "\u00a0"
       : view.kind === "list"
         ? `${sorted.length} open${completed.length ? ` · ${completed.length} completed` : ""}`
-        : view.kind === "smart" && view.id !== "completed"
+        : view.kind === "smart"
           ? today
             ? `${sorted.length} open`
             : "\u00a0"
           : null;
-  const sortable = view.kind === "list" || (view.kind === "smart" && ["my-day", "important", "all"].includes(view.id)) || view.kind === "search";
+  const sortable = view.kind === "list" || (view.kind === "smart" && ["my-day", "important"].includes(view.id)) || view.kind === "search";
 
   // ---- Quick add target ---------------------------------------------------------------------
-  const addTarget: { listId: string; extras: { important?: boolean; dueDate?: string | null; myDay?: string | null }; hint: string } | null =
+  // Smart views have no list of their own; quick add asks where tasks go (listId null).
+  const addTarget: AddTarget | null =
     view.kind === "list"
       ? { listId: view.id, extras: {}, hint: `Add a task to ${list!.name}` }
-      : view.kind === "smart" && view.id !== "completed" && inbox && today
+      : view.kind === "smart" && today
         ? {
-            listId: inbox.id,
-            extras:
-              view.id === "my-day"
-                ? { myDay: today }
-                : view.id === "important"
-                  ? { important: true }
-                  : view.id === "planned"
-                    ? { dueDate: today }
-                    : {},
-            hint:
-              view.id === "my-day"
-                ? "Add a task to My Day"
-                : view.id === "important"
-                  ? "Add an important task"
-                  : view.id === "planned"
-                    ? "Add a task due today"
-                    : "Add a task",
+            listId: null,
+            extras: view.id === "my-day" ? { myDay: today } : view.id === "important" ? { important: true } : { dueDate: today },
+            hint: view.id === "my-day" ? "Add a task to My Day" : view.id === "important" ? "Add an important task" : "Add a task due today",
           }
         : null;
-  const viewGhosts = addTarget ? ghosts.filter((ghost) => ghost.listId === addTarget.listId) : [];
+  const viewGhosts = addTarget ? ghosts.filter((ghost) => !addTarget.listId || ghost.listId === addTarget.listId) : [];
   const loading = view.kind === "smart" && !today;
 
   const header = (
@@ -337,20 +324,16 @@ export function TaskView() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuItem onSelect={() => setListDialog({ mode: "edit", list })}>
-                <Pencil aria-hidden /> {list.isInbox ? "Icon and color…" : "Edit list…"}
+                <Pencil aria-hidden /> Edit list…
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => void actions.updateList(list.id, { showCompleted: !list.showCompleted }, { quiet: true })}>
                 {list.showCompleted ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
                 {list.showCompleted ? "Hide completed tasks" : "Show completed tasks"}
               </DropdownMenuItem>
-              {!list.isInbox ? (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onSelect={() => setDeletingList(list)}>
-                    <Trash2 aria-hidden /> Delete list
-                  </DropdownMenuItem>
-                </>
-              ) : null}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={() => setDeletingList(list)}>
+                <Trash2 aria-hidden /> Delete list
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
@@ -411,29 +394,6 @@ export function TaskView() {
           )}
         </div>
       );
-  } else if (view.kind === "smart" && view.id === "completed") {
-    const days = new Map<string, Task[]>();
-    const zone = timeZone || undefined;
-    for (const task of completed) {
-      const day = dateInZone(new Date(task.completedAt!), zone);
-      days.set(day, [...(days.get(day) ?? []), task]);
-    }
-    body =
-      completed.length === 0 ? (
-        <ViewEmpty viewId="completed" />
-      ) : (
-        <div className="space-y-5">
-          {[...days].map(([day, tasks]) => (
-            <TaskSection
-              key={day}
-              title={day === today ? "Today" : today && day === shiftDate(today, -1) ? "Yesterday" : shortDay.format(new Date(`${day}T12:00:00Z`))}
-              count={tasks.length}
-            >
-              {tasks.map((task) => row(task))}
-            </TaskSection>
-          ))}
-        </div>
-      );
   } else {
     const showsCompleted = view.kind === "list" || (view.kind === "smart" && smartView(view.id).showsCompletedSection);
     const completedOpen = view.kind === "list" ? list!.showCompleted : smartCompletedOpen;
@@ -466,7 +426,7 @@ export function TaskView() {
               onClick={() =>
                 view.kind === "list" ? void actions.updateList(list!.id, { showCompleted: !completedOpen }, { quiet: true }) : setSmartCompletedOpen(!completedOpen)
               }
-              className="mb-2 inline-flex items-center gap-1.5 rounded-md bg-white/[0.04] px-2.5 py-1.5 text-sm font-medium text-foreground/85 transition-colors outline-none hover:bg-white/[0.08] focus-visible:ring-2 focus-visible:ring-amethyst/60"
+              className="mb-2 inline-flex items-center gap-1.5 rounded-md bg-foreground/[0.04] px-2.5 py-1.5 text-sm font-medium text-foreground/85 transition-colors outline-none hover:bg-foreground/[0.08] focus-visible:ring-2 focus-visible:ring-amethyst/60 motion-reduce:transition-none"
             >
               <ChevronRight aria-hidden className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", completedOpen && "rotate-90")} />
               Completed
@@ -486,7 +446,7 @@ export function TaskView() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {header}
-      {addTarget ? <QuickAdd key={`${viewKey}:${addTarget.listId}`} target={addTarget} /> : null}
+      {addTarget ? <QuickAdd key={`${viewKey}:${addTarget.listId ?? "pick"}`} target={addTarget} /> : null}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-1 pb-24 sm:px-8 md:pb-10">{body}</div>
       <DeleteTaskDialog
         task={deleting}
@@ -501,25 +461,33 @@ export function TaskView() {
   );
 }
 
-function QuickAdd({ target }: { target: { listId: string; extras: { important?: boolean; dueDate?: string | null; myDay?: string | null }; hint: string } }) {
-  const { actions } = useTasks();
+type AddTarget = { listId: string | null; extras: { important?: boolean; dueDate?: string | null; myDay?: string | null }; hint: string };
+
+function QuickAdd({ target }: { target: AddTarget }) {
+  const { actions, data, lists, defaultList } = useTasks();
   const [draft, setDraft] = useState("");
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  const [listDialog, setListDialog] = useState<ListDialogState>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const lines = parseTaskLines(draft);
+  const destination = target.listId ? (data.lists[target.listId] ?? null) : ((chosenId && data.lists[chosenId]) || defaultList);
+
+  if (!destination) return <FirstListForm onCreated={(created) => setChosenId(created.id)} />;
+  const listId = destination.id;
 
   async function submit() {
     const items = parseTaskLines(draft).map((line) => ({ title: line.label, completed: line.checked }));
     if (items.length === 0) return;
     const text = draft;
     setDraft("");
-    const error = await actions.addTasks(target.listId, items, target.extras);
+    const error = await actions.addTasks(listId, items, target.extras);
     if (error) setDraft((current) => current || text);
   }
 
   return (
     <div className="px-4 pb-3 sm:px-8">
-      <div className="flex items-start gap-2 rounded-lg bg-white/[0.045] py-1 pr-1 pl-3 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.07)] transition-shadow focus-within:shadow-[inset_0_0_0_2px_var(--amethyst)]">
+      <div className="flex items-start gap-2 rounded-xl bg-foreground/[0.04] py-1 pr-1 pl-3 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.08)] transition-shadow focus-within:shadow-[inset_0_0_0_2px_var(--amethyst)] motion-reduce:transition-none">
         <Plus aria-hidden className="mt-3 size-[1.1rem] shrink-0 text-amethyst" />
         <label htmlFor="tasks-quick-add" className="sr-only">
           {target.hint}
@@ -555,20 +523,114 @@ function QuickAdd({ target }: { target: { listId: string; extras: { important?: 
           </Button>
         )}
       </div>
-      {lines.length > 1 ? <p className="mt-1.5 pl-1 text-xs text-muted-foreground">Each line becomes a task · Shift+Enter for a new line</p> : null}
+      {target.listId === null || lines.length > 1 ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 pl-1 text-xs text-muted-foreground">
+          {target.listId === null ? (
+            <span className="inline-flex items-center gap-1">
+              Adds to
+              <DropdownMenu modal={false}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    style={accentStyle(destination.accent)}
+                    aria-label={`Adds to ${destination.name}. Choose another list`}
+                    className="inline-flex h-7 max-w-56 items-center gap-1.5 rounded-md px-1.5 font-medium text-foreground/85 outline-none hover:bg-foreground/[0.06] focus-visible:ring-2 focus-visible:ring-ring/60 aria-expanded:bg-foreground/[0.06]"
+                  >
+                    <ListGlyph list={destination} className={cn("size-3.5 shrink-0", destination.accent ? "text-[var(--ca)]" : "text-amethyst")} />
+                    <span className="truncate">{destination.name}</span>
+                    <ChevronDown aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto">
+                  <DropdownMenuLabel>Add tasks to</DropdownMenuLabel>
+                  {lists.map((option) => (
+                    <DropdownMenuItem key={option.id} onSelect={() => setChosenId(option.id)}>
+                      <Check aria-hidden className={cn(option.id !== destination.id && "invisible")} />
+                      <span style={accentStyle(option.accent)} className={cn("grid shrink-0 place-items-center", option.accent && "text-[var(--ca)]")}>
+                        <ListGlyph list={option} className="size-4" />
+                      </span>
+                      <span className="truncate">{option.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => setListDialog({ mode: "create", groupId: null, onCreated: (created) => setChosenId(created.id) })}>
+                    <Plus aria-hidden /> New list…
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </span>
+          ) : null}
+          {lines.length > 1 ? <span>Each line becomes a task · Shift+Enter for a new line</span> : null}
+        </div>
+      ) : null}
+      <ListDialog state={listDialog} onClose={() => setListDialog(null)} />
       <TaskLinesDialog
         open={bulkOpen}
         onOpenChange={setBulkOpen}
         title="Add multiple tasks"
-        description="One task per line. Lines starting with “- [x]” are added as completed; list markers are removed."
+        description={`One task per line, added to ${destination.name}. Lines starting with “- [x]” are added as completed; list markers are removed.`}
         confirmLabel="Add tasks"
-        onConfirm={(tasks) => actions.addTasks(target.listId, tasks.map((task) => ({ title: task.label, completed: task.checked })), target.extras)}
+        onConfirm={(tasks) => actions.addTasks(listId, tasks.map((task) => ({ title: task.label, completed: task.checked })), target.extras)}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           inputRef.current?.focus();
         }}
       />
     </div>
+  );
+}
+
+function FirstListForm({ onCreated }: { onCreated: (list: TaskList) => void }) {
+  const { actions } = useTasks();
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    const parsed = taskNameSchema.safeParse(name);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Enter a name.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      onCreated(await actions.createList({ name: parsed.data }));
+    } catch (caught) {
+      setError(errorMessage(caught));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="mx-4 mb-3 rounded-xl border border-dashed border-border p-4 sm:mx-8">
+      <p className="text-sm font-medium">Create your first list</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">Every task lives in a list. Name one to start adding tasks here.</p>
+      <div className="mt-3 flex gap-2">
+        <label htmlFor="tasks-first-list" className="sr-only">
+          List name
+        </label>
+        <Input
+          id="tasks-first-list"
+          value={name}
+          maxLength={120}
+          placeholder="e.g. Personal"
+          onChange={(event) => setName(event.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "tasks-first-list-error" : undefined}
+        />
+        <Button type="submit" disabled={busy} className="shrink-0">
+          {busy ? <Loader2 aria-hidden className="animate-spin motion-reduce:animate-none" /> : <Plus aria-hidden />}
+          Create list
+        </Button>
+      </div>
+      {error ? (
+        <p id="tasks-first-list-error" role="alert" className="mt-2 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+    </form>
   );
 }
 
@@ -588,8 +650,6 @@ const EMPTY_COPY = {
   "my-day": { title: "Focus on your day", body: "Add tasks here, or pick them from any list with “Add to My Day”. Tomorrow starts fresh." },
   important: { title: "Nothing starred", body: "Star a task to see it here." },
   planned: { title: "Nothing planned", body: "Tasks with a due date show up here, grouped by when they're due." },
-  all: { title: "All clear", body: "There are no open tasks in any list." },
-  completed: { title: "Nothing completed yet", body: "Finished tasks are collected here with the date you completed them." },
 } as const;
 
 function ViewEmpty({ viewId }: { viewId: keyof typeof EMPTY_COPY }) {
@@ -638,8 +698,7 @@ function SearchResults({
   };
   row: (task: Task, snippet?: ReactNode) => ReactNode;
 }) {
-  const { inbox, sidebar } = useTasks();
-  const lists = [...(inbox ? [inbox] : []), ...sidebar.flatMap((item) => (item.kind === "group" ? item.lists : [item.list]))];
+  const { lists } = useTasks();
   const needle = query.toLowerCase();
   const snippets = new Map((notes ?? []).map((match) => [match.id, match.snippet]));
   const results = needle
@@ -661,7 +720,7 @@ function SearchResults({
       onClick={onClick}
       className={cn(
         "h-8 rounded-full px-3 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-amethyst/60",
-        active ? "bg-amethyst/20 text-foreground shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]" : "bg-white/[0.05] text-muted-foreground hover:bg-white/[0.09]",
+        active ? "bg-amethyst/20 text-foreground shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]" : "bg-foreground/[0.05] text-muted-foreground hover:bg-foreground/[0.09]",
       )}
     >
       {label}

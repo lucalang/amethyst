@@ -442,8 +442,7 @@ function DueDate({ task }: { task: Task }) {
 }
 
 function ListPicker({ task }: { task: Task }) {
-  const { inbox, sidebar, actions } = useTasks();
-  const lists = [...(inbox ? [inbox] : []), ...sidebar.flatMap((item) => (item.kind === "group" ? item.lists : [item.list]))];
+  const { lists, actions } = useTasks();
   return (
     <div className={cn(CARD, "flex min-h-12 items-center gap-3 px-3.5 py-2")}>
       <span className="text-sm font-medium" id={`task-list-label-${task.id}`}>

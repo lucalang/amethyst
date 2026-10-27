@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, ArrowUpRight, Award, CalendarClock, Check, FileText, Gem, History, Layers, LibraryBig, ListChecks, Pin, PlayCircle, Sparkles, Sun, type LucideIcon } from "lucide-react";
+import { ArrowRight, Award, CalendarClock, Check, Gem, History, Layers, LibraryBig, Pin, Sparkles, Sun, type LucideIcon } from "lucide-react";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionIcon } from "@/components/categories/collection-icon";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
+import { CollectionCard, ContinueCard } from "@/components/home/archive-cards";
 import { CoverFan } from "@/components/home/cover-fan";
+import { DestinationHub, type HubData } from "@/components/home/destination-hub";
 import { CustomizeHomeButton, HomeCustomizeProvider, HomeSections } from "@/components/home/home-customizer";
 import { NewEntryButton } from "@/components/home/new-entry-button";
-import { ArcadeMarquee } from "@/components/home/arcade-marquee";
 import { UpcomingTasks } from "@/components/home/upcoming-tasks";
 import { HomeMyDay } from "@/components/tasks/home-my-day";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -17,14 +18,12 @@ import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { MediaImage } from "@/components/media/media-image";
 import { PosterCard } from "@/components/media/poster-card";
 import { ProgressMeter } from "@/components/media/progress-meter";
-import { accentStyle } from "@/lib/collection-identity";
-import { loadHome, type HomeCollection, type HomeContinue, type HomeData, type HomeFeaturedEntry } from "@/lib/data/home";
+import { loadHome, type HomeData, type HomeFeaturedEntry } from "@/lib/data/home";
 import { loadAchievementCards } from "@/lib/data/achievements";
 import { loadMyDayPreview } from "@/lib/data/tasks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { loadPreferences } from "@/lib/data/preferences";
 import { loadCoinBalance } from "@/lib/data/shop";
-import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import type { HomeSectionId } from "@/lib/preferences";
 import { entryProgress } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
@@ -80,49 +79,12 @@ function Hint({ children }: { children: ReactNode }) {
   return <p className="rounded-lg border border-dashed border-white/[0.1] px-4 py-3.5 text-sm text-muted-foreground">{children}</p>;
 }
 
-function ContinueCard({ item }: { item: HomeContinue }) {
-  const { entry, file } = item;
-  const progress = entryProgress(entry);
-  const FileIcon = file?.kind === "checklist" ? ListChecks : FileText;
-  return (
-    <Link
-      href={item.href}
-      className="group/continue relative flex w-full max-w-2xl min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-white/[0.1] bg-black/45 p-3 pr-4 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-amethyst/[0.07] hover:shadow-[0_22px_48px_-24px_rgb(var(--accent-rgb)/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:gap-5 sm:pr-5"
-    >
-      <span className={cn("relative shrink-0 overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_12px_28px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]", entry.coverShape === "square" ? "size-20" : "h-24 w-16")}>
-        <MediaImage src={entry.coverUrl} alt="" fallbackLabel={entry.title} priority className="transition-[scale] duration-700 group-hover/continue:scale-105" />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-1.5 text-xs font-medium text-amethyst">
-          <PlayCircle aria-hidden className="size-3.5" />
-          Continue where you left off
-        </span>
-        <span className="mt-1 block truncate text-lg leading-snug font-semibold transition-colors group-hover/continue:text-amethyst">{entry.title}</span>
-        <span className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-foreground/75">
-          {file ? <>
-            <FileIcon aria-hidden className="size-3.5 shrink-0 text-amethyst/80" />
-            <span className="truncate">{file.name}</span>
-            <span aria-hidden className="text-muted-foreground/60">·</span>
-          </> : null}
-          <span className="truncate text-muted-foreground">{item.collectionName}</span>
-        </span>
-        {progress.total ? (
-          <ProgressMeter done={progress.done} total={progress.total} label={progress.label} className="mt-2.5 max-w-xs" />
-        ) : (
-          <span className="mt-2 block truncate text-xs text-muted-foreground">No {progress.label} yet</span>
-        )}
-      </span>
-      <ArrowRight aria-hidden className="hidden size-5 shrink-0 text-amethyst transition-transform group-hover/continue:translate-x-1 sm:block" />
-    </Link>
-  );
-}
-
 function defaultGreeting(home: HomeData) {
   const firstName = home.displayName.split(/\s+/)[0] ?? "";
   return `${home.counts.entries === 0 ? "Welcome" : "Welcome back"}${firstName ? `, ${firstName}` : ""}`;
 }
 
-function Hero({ home, categories, greeting }: { home: HomeData; categories: LibraryCategory[]; greeting: string }) {
+function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: HubData }) {
   const firstName = home.displayName.split(/\s+/)[0] ?? "";
   const fresh = home.counts.entries === 0;
   const fanArt = home.fan.flatMap((item) => (item.kind === "image" ? [item.url] : item.coverUrl ? [item.coverUrl] : []));
@@ -166,10 +128,7 @@ function Hero({ home, categories, greeting }: { home: HomeData; categories: Libr
           {home.motto ? <p className="mt-2 max-w-xl text-sm italic text-pretty break-words text-foreground/60">“{home.motto}”</p> : null}
           <p className="mt-2 max-w-xl text-base text-pretty text-foreground/70">{subline}</p>
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
-            {home.collections.length ? <>
-              <NewEntryButton collections={categories} className="h-10 px-4" />
-              <NewCategoryButton className="h-10 px-4" />
-            </> : (
+            {home.collections.length ? null : (
               <NewCategoryButton label="Create your first collection" className="h-10 border-amethyst/50 bg-amethyst/15 px-4 text-foreground hover:bg-amethyst/25" />
             )}
             <CustomizeHomeButton />
@@ -181,6 +140,9 @@ function Hero({ home, categories, greeting }: { home: HomeData; categories: Libr
           ) : null}
         </div>
         {showFan ? <CoverFan items={home.fan} className="mx-auto max-w-md md:max-w-none" /> : null}
+        <div className="col-span-full">
+          <DestinationHub data={hub} />
+        </div>
       </div>
     </section>
   );
@@ -234,70 +196,6 @@ function GettingStarted({ home, index }: { home: HomeData; index: number }) {
         })}
       </ol>
     </Section>
-  );
-}
-
-function CollectionCard({ collection }: { collection: HomeCollection }) {
-  const accent = accentStyle(collection.accentColor);
-  return (
-    <Link
-      href={collectionPath(collection)}
-      title={collection.name}
-      style={accent}
-      className={cn(
-        "group/collection relative isolate flex h-full min-w-0 items-start gap-4 overflow-hidden rounded-xl border bg-surface/50 p-4 transition-[border-color,background-color,translate,box-shadow] duration-200 outline-none hover:-translate-y-0.5 focus-visible:ring-2 motion-reduce:hover:translate-y-0",
-        accent
-          ? "border-[var(--ca-line)] hover:border-[var(--ca)] hover:bg-[var(--ca-soft)] hover:shadow-[0_18px_40px_-24px_var(--ca-glow)] focus-visible:border-[var(--ca)] focus-visible:ring-[var(--ca)]"
-          : "border-white/[0.08] hover:border-amethyst/40 hover:bg-amethyst/[0.05] hover:shadow-[0_18px_40px_-24px_rgb(var(--accent-rgb)/0.7)] focus-visible:border-amethyst focus-visible:ring-amethyst/50",
-      )}
-    >
-      {collection.bannerUrl ? (
-        <span aria-hidden className="absolute inset-0 -z-10">
-          <MediaImage src={collection.bannerUrl} alt="" className="opacity-35 transition-opacity duration-300 group-hover/collection:opacity-45" />
-          <span className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
-        </span>
-      ) : null}
-      {collection.previews.length ? (
-        <span aria-hidden className="flex h-24 shrink-0 items-end">
-          {collection.previews.map((preview, index) => (
-            <span
-              key={preview.id}
-              className={cn(
-                "relative overflow-hidden rounded-md border border-black bg-surface ring-1 ring-white/[0.1] transition-[rotate,translate] duration-300",
-                preview.coverShape === "square" ? "size-[4.5rem]" : "h-24 w-16",
-                index > 0 && "-ml-6",
-                index === 1 && "group-hover/collection:translate-x-1",
-                index === 2 && "group-hover/collection:translate-x-2",
-              )}
-              style={{ zIndex: collection.previews.length - index }}
-            >
-              <MediaImage src={preview.coverUrl} alt="" fallbackLabel={preview.title} className="text-xs" />
-            </span>
-          ))}
-        </span>
-      ) : (
-        <span aria-hidden className={cn("grid h-24 w-16 shrink-0 place-items-center rounded-md border border-dashed", accent ? "border-[var(--ca-line)] text-[var(--ca)]" : "border-white/[0.12] text-amethyst/70")}>
-          <CollectionIcon icon={collection.icon} className="size-5" />
-        </span>
-      )}
-      <span className="min-w-0 flex-1 self-center">
-        <span className="flex items-start justify-between gap-2">
-          <span className={cn("flex min-w-0 items-center gap-2 text-base font-semibold transition-colors", accent ? "group-hover/collection:text-[var(--ca)]" : "group-hover/collection:text-amethyst")}>
-            {collection.icon && collection.previews.length ? (
-              <CollectionIcon icon={collection.icon} className={cn("size-4 shrink-0", accent ? "text-[var(--ca)]" : "text-amethyst")} />
-            ) : null}
-            <span className="truncate">{collection.name}</span>
-          </span>
-          <ArrowUpRight aria-hidden className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground/40 transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5", accent ? "group-hover/collection:text-[var(--ca)]" : "group-hover/collection:text-amethyst")} />
-        </span>
-        <span className="mt-0.5 block text-xs text-muted-foreground tabular-nums">
-          {collection.entryCount.toLocaleString("en")} {collection.entryCount === 1 ? "entry" : "entries"}
-        </span>
-        {collection.description ? (
-          <span className="mt-2 line-clamp-2 text-sm break-words whitespace-pre-line text-foreground/70">{collection.description}</span>
-        ) : null}
-      </span>
-    </Link>
   );
 }
 
@@ -368,6 +266,15 @@ export default async function HomePage() {
   const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const hasEntries = home.counts.entries > 0;
   const featuredMissing = chosen?.kind === "entry" && !home.featured;
+  const hub: HubData = {
+    archive: {
+      collections: home.counts.collections,
+      entries: home.counts.entries,
+      covers: home.collections.flatMap((collection) => collection.previews.filter((preview) => preview.coverUrl)).slice(0, 3),
+    },
+    todo: { tasks: myDay.tasks },
+    arcade: { balance: coinBalance },
+  };
   let index = 1;
 
   const builders: Record<HomeSectionId, (index: number) => ReactNode> = {
@@ -479,7 +386,7 @@ export default async function HomePage() {
         title="My Day"
         icon={Sun}
         index={position}
-        action={<Link href="/tasks" className="text-sm font-medium text-amethyst underline-offset-4 hover:underline">Open Tasks</Link>}
+        action={<Link href="/tasks" className="text-sm font-medium text-amethyst underline-offset-4 hover:underline">Open To Do</Link>}
       >
         <HomeMyDay tasks={myDay.tasks} lists={myDay.lists} />
       </Section>
@@ -498,7 +405,7 @@ export default async function HomePage() {
   return (
     <EntranceScope>
       <HomeCustomizeProvider>
-        <Hero home={home} categories={categories} greeting={preferences.homeGreeting} />
+        <Hero home={home} greeting={preferences.homeGreeting} hub={hub} />
 
         {gettingStarted}
 
@@ -519,8 +426,7 @@ export default async function HomePage() {
           }))}
         />
 
-        <div className={cn(INNER, "grid max-w-3xl gap-3 pt-2 pb-10 sm:grid-cols-2 md:pb-12")}>
-          <ArcadeMarquee balance={coinBalance} />
+        <div className={cn(INNER, "max-w-md pt-2 pb-10 md:pb-12")}>
           <Link
             href="/achievements"
             prefetch={false}

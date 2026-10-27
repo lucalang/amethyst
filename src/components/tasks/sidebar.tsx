@@ -5,17 +5,14 @@ import {
   ArrowDown,
   ArrowUp,
   CalendarDays,
+  ChevronDown,
   ChevronRight,
-  CircleCheckBig,
   FolderInput,
   FolderPlus,
   GripVertical,
-  Inbox,
-  InfinityIcon,
   List,
   ListPlus,
   MoreHorizontal,
-  Palette,
   Pencil,
   Plus,
   Star,
@@ -47,13 +44,11 @@ export const SMART_ICONS: Record<SmartViewId, LucideIcon> = {
   "my-day": Sun,
   important: Star,
   planned: CalendarDays,
-  all: InfinityIcon,
-  completed: CircleCheckBig,
 };
 
-export function ListGlyph({ list, className }: { list: Pick<TaskList, "icon" | "isInbox">; className?: string }) {
+export function ListGlyph({ list, className }: { list: Pick<TaskList, "icon">; className?: string }) {
   if (list.icon) return <ClientCollectionIcon icon={list.icon} className={className} />;
-  return list.isInbox ? <Inbox aria-hidden className={className} /> : <List aria-hidden className={className} />;
+  return <List aria-hidden className={className} />;
 }
 
 const toLayout = (sidebar: SidebarItem[]): TaskLayoutItem[] =>
@@ -84,9 +79,9 @@ function placeList(layout: TaskLayoutItem[], listId: string, groupId: string | n
 
 const topIndexOf = (layout: TaskLayoutItem[], id: string) => layout.findIndex((item) => ("group" in item ? item.group : item.list) === id);
 
-/** Sidebar of smart views, the Inbox and the account's groups and lists. */
+/** Sidebar of smart views and the account's groups and lists. */
 export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { sidebar, inbox, allTasks, today, data, actions } = useTasks();
+  const { sidebar, allTasks, today, data, actions } = useTasks();
   const nav = useTasksNav();
   const [preview, setPreview] = useState<TaskLayoutItem[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -105,7 +100,6 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
     for (const task of open) byList.set(task.listId, (byList.get(task.listId) ?? 0) + 1);
     const smart: Partial<Record<SmartViewId, number>> = {};
     for (const view of SMART_VIEWS) {
-      if (view.id === "completed") continue;
       smart[view.id] = today === null && view.id === "my-day" ? 0 : open.filter((task) => view.includes(task, today ?? "")).length;
     }
     return { byList, smart };
@@ -321,30 +315,10 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
                 </li>
               );
             })}
-            {inbox ? (
-              <li>
-                <NavRow
-                  href="/tasks/inbox"
-                  active={nav.view?.kind === "list" && nav.view.id === inbox.id}
-                  onNavigate={navigate}
-                  icon={<ListGlyph list={inbox} className="size-4" />}
-                  accent={inbox.accent}
-                  label="Inbox"
-                  count={counts.byList.get(inbox.id)}
-                  menu={
-                    <RowMenu label="Inbox">
-                      <DropdownMenuItem onSelect={() => setListDialog({ mode: "edit", list: inbox })}>
-                        <Palette aria-hidden /> Icon and color
-                      </DropdownMenuItem>
-                    </RowMenu>
-                  }
-                />
-              </li>
-            ) : null}
           </ul>
         </nav>
 
-        <div aria-hidden className="mx-2 my-3 h-px bg-white/[0.07]" />
+        <div aria-hidden className="mx-3 my-3 h-px bg-border/70" />
 
         <nav aria-label="Your lists">
           <div ref={containerRef}>
@@ -362,8 +336,8 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
                   const expanded = !group.collapsed || dragId === group.id;
                   const open = item.lists.reduce((sum, id) => sum + (counts.byList.get(id) ?? 0), 0);
                   return (
-                    <li key={group.id} data-top-block data-id={group.id} className={cn("rounded-lg", dragId === group.id && "bg-white/[0.04] opacity-90")}>
-                      <div data-drag-row data-kind="group" data-id={group.id} data-collapsed={String(group.collapsed)} className="group/nav flex h-9 items-center gap-1 rounded-md pr-1 pl-1 hover:bg-white/[0.04]">
+                    <li key={group.id} data-top-block data-id={group.id} className={cn("rounded-lg pt-1", dragId === group.id && "bg-foreground/[0.04] opacity-90")}>
+                      <div data-drag-row data-kind="group" data-id={group.id} data-collapsed={String(group.collapsed)} className="group/nav flex h-9 items-center gap-1 rounded-md pr-1 pl-1 hover:bg-foreground/[0.04]">
                         <button
                           type="button"
                           aria-label={`Reorder group ${group.name}. Drag, or use the arrow keys.`}
@@ -382,11 +356,11 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
                           type="button"
                           aria-expanded={!group.collapsed}
                           onClick={() => void actions.updateGroup(group.id, { collapsed: !group.collapsed })}
-                          className="flex h-8 min-w-0 flex-1 items-center gap-1.5 rounded-md px-1 text-left text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+                          className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left text-[13px] font-semibold text-foreground/80 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
                         >
-                          <ChevronRight aria-hidden className={cn("size-3.5 shrink-0 transition-transform duration-200", !group.collapsed && "rotate-90")} />
+                          <ChevronRight aria-hidden className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none", !group.collapsed && "rotate-90")} />
                           <span className="truncate">{group.name}</span>
-                          {group.collapsed && open ? <span className="ml-auto pr-1 font-normal tracking-normal tabular-nums normal-case">{open}</span> : null}
+                          {group.collapsed && open ? <span className="ml-auto pr-1 text-xs font-normal text-muted-foreground tabular-nums">{open}</span> : null}
                         </button>
                         <RowMenu label={`group ${group.name}`}>
                           <DropdownMenuItem onSelect={() => setListDialog({ mode: "create", groupId: group.id })}>
@@ -409,14 +383,14 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
                       </div>
                       {expanded ? (
                         item.lists.length ? (
-                          <ul className="space-y-0.5 pb-1">
+                          <ul className="relative space-y-0.5 pb-1 before:absolute before:top-0 before:bottom-1 before:left-[1.4rem] before:w-px before:bg-border/70">
                             {item.lists.map((id, inner) => {
                               const list = data.lists[id];
                               return list ? listRow(list, group.id, inner, item.lists.length) : null;
                             })}
                           </ul>
                         ) : (
-                          <p className="py-1.5 pr-2 pl-10 text-xs text-muted-foreground/80">Empty group — drag lists here or use “Move to group”.</p>
+                          <p className="py-1.5 pr-2 pl-10 text-xs text-muted-foreground">Empty group — drag lists here or use “Move to group”.</p>
                         )
                       ) : null}
                     </li>
@@ -431,13 +405,22 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </p>
       </div>
 
-      <div className="flex items-center gap-1 border-t border-white/[0.07] p-2">
+      <div className="flex items-center gap-1 border-t border-border/70 p-2">
         <Button variant="ghost" className="h-10 flex-1 justify-start gap-2.5 px-3 text-sm font-medium text-amethyst" onClick={() => setListDialog({ mode: "create", groupId: null })}>
           <Plus aria-hidden className="size-4" /> New list
         </Button>
-        <Button variant="ghost" size="icon-lg" aria-label="New group" title="New group" className="text-muted-foreground" onClick={() => setGroupDialog({ mode: "create" })}>
-          <FolderPlus aria-hidden />
-        </Button>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-lg" aria-label="More ways to organize" className="text-muted-foreground">
+              <ChevronDown aria-hidden />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-48">
+            <DropdownMenuItem onSelect={() => setGroupDialog({ mode: "create" })}>
+              <FolderPlus aria-hidden /> New group
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <ListDialog state={listDialog} onClose={() => setListDialog(null)} />
@@ -499,10 +482,10 @@ function NavRow({
     <div
       style={accentStyle(accent)}
       className={cn(
-        "group/nav relative flex h-10 items-center gap-1 rounded-md pr-1 transition-[background-color,box-shadow] duration-150",
+        "group/nav relative flex h-10 items-center gap-1 rounded-lg pr-1 transition-[background-color,box-shadow] duration-150 motion-reduce:transition-none",
         handle ? "pl-1" : "pl-2",
-        indent && "pl-5",
-        active ? "bg-amethyst/[0.13] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.22)]" : "hover:bg-white/[0.05]",
+        indent && "pl-6",
+        active ? "bg-amethyst/[0.13] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.22)]" : "hover:bg-foreground/[0.05]",
         dragging && "bg-surface-raised shadow-[0_10px_30px_-12px_rgb(var(--shadow-rgb)/0.8),inset_0_0_0_1px_rgb(var(--accent-rgb)/0.4)]",
       )}
     >

@@ -113,6 +113,34 @@ const subscribeToMinutes = (onChange: () => void) => {
   };
 };
 
+const LAST_LIST_EVENT = "archive:tasks-last-list";
+const lastListKey = (userId: string) => `archive:tasks-last-list:${userId}`;
+
+function readLastList(userId: string): string | null {
+  try {
+    return window.localStorage.getItem(lastListKey(userId));
+  } catch {
+    return null;
+  }
+}
+
+/** Remember the list a task was last added to; quick add outside a list defaults to it. */
+function rememberLastList(userId: string, listId: string) {
+  try {
+    window.localStorage.setItem(lastListKey(userId), listId);
+  } catch {}
+  window.dispatchEvent(new Event(LAST_LIST_EVENT));
+}
+
+const subscribeToLastList = (onChange: () => void) => {
+  window.addEventListener(LAST_LIST_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(LAST_LIST_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+};
+
 /** Today's date in the account's time zone (or the device's); a new day re-renders. */
 export function useTasksToday(): string | null {
   const { timeZone } = useSettings();
@@ -289,6 +317,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
       pull: () => schedulePull(0),
 
       async addTasks(listId: string, items: { title: string; completed: boolean }[], extras: { important?: boolean; dueDate?: string | null; myDay?: string | null } = {}) {
+        rememberLastList(userId, listId);
         const batch = items.map((item, offset) => ({ key: `${Date.now()}-${offset}-${Math.random()}`, listId, title: item.title }));
         setGhosts((current) => [...batch, ...current]);
         try {
@@ -490,25 +519,29 @@ function useStoreValue(userId: string, initial: TaskChanges) {
         }
       },
     };
-  }, [commit, enqueue, mutate, schedulePull]);
+  }, [commit, enqueue, mutate, schedulePull, userId]);
+
+  const rememberedListId = useSyncExternalStore(
+    subscribeToLastList,
+    () => readLastList(userId),
+    () => null,
+  );
 
   // ---- Derived -----------------------------------------------------------------------------
   const derived = useMemo(() => {
     const lists = Object.values(data.lists);
-    const inbox = lists.find((list) => list.isInbox) ?? null;
     const groups = Object.values(data.groups).sort(byPosition);
     const sidebar: SidebarItem[] = [
       ...groups.map((group) => ({ kind: "group" as const, group, lists: lists.filter((list) => list.groupId === group.id).sort(byPosition) })),
-      ...lists.filter((list) => !list.isInbox && (!list.groupId || !data.groups[list.groupId])).map((list) => ({ kind: "list" as const, list })),
+      ...lists.filter((list) => !list.groupId || !data.groups[list.groupId]).map((list) => ({ kind: "list" as const, list })),
     ].sort((a, b) => {
       const pa = a.kind === "group" ? a.group.position : a.list.position;
       const pb = b.kind === "group" ? b.group.position : b.list.position;
       return pa - pb || (a.kind === b.kind ? 0 : a.kind === "group" ? -1 : 1);
     });
-    // Inbox first, then the sidebar order; used to sort tasks from many lists.
-    const listOrder = new Map<string, number>();
-    if (inbox) listOrder.set(inbox.id, 0);
-    for (const item of sidebar) for (const list of item.kind === "group" ? item.lists : [item.list]) listOrder.set(list.id, listOrder.size);
+    // Every list in sidebar order; also used to sort tasks from many lists.
+    const orderedLists = sidebar.flatMap((item) => (item.kind === "group" ? item.lists : [item.list]));
+    const listOrder = new Map(orderedLists.map((list, position) => [list.id, position]));
     const stepsByTask = new Map<string, TaskStep[]>();
     for (const step of Object.values(data.steps)) {
       const bucket = stepsByTask.get(step.taskId);
@@ -516,8 +549,10 @@ function useStoreValue(userId: string, initial: TaskChanges) {
       else stepsByTask.set(step.taskId, [step]);
     }
     for (const bucket of stepsByTask.values()) bucket.sort(byPosition);
-    return { inbox, sidebar, listOrder, stepsByTask, allTasks: Object.values(data.tasks) };
-  }, [data]);
+    // Where new tasks land outside a list: the last list used, else the first list.
+    const defaultList = (rememberedListId && data.lists[rememberedListId]) || orderedLists[0] || null;
+    return { sidebar, lists: orderedLists, listOrder, defaultList, stepsByTask, allTasks: Object.values(data.tasks) };
+  }, [data, rememberedListId]);
 
   return { userId, today, live, data, ghosts, ...derived, actions };
 }

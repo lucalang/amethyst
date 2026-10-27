@@ -3488,3 +3488,300 @@ a.arcade-counter:hover {
     scale: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Home hub: one card per destination (registry: lib/destinations.ts). Each
+ * card tints itself with its destination color (--hub, an "r g b" triple) and
+ * has its own artwork. Hover lifts the card, lights its edge and moves the art
+ * a little; --hub-lift scales that movement (0 with motion off or reduced).
+ * ------------------------------------------------------------------------- */
+.hub-card {
+  --hub: var(--accent-rgb);
+  --hub-lift: 1;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-width: 0;
+  min-height: 7.5rem;
+  overflow: hidden;
+  border-radius: calc(1rem * var(--radius-unit, 1));
+  color: var(--foreground);
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgb(var(--hub) / 0.12), transparent 60%),
+    var(--surface-raised);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--ink-rgb) / 0.09),
+    0 10px 30px -22px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha, 1)));
+  outline: none;
+  transition:
+    translate 260ms var(--ease-out-soft),
+    box-shadow 260ms ease;
+}
+.hub-card[data-destination="todo"] {
+  --hub: 236 178 72;
+}
+.hub-card[data-destination="arcade"] {
+  --hub: var(--rose-rgb);
+}
+.hub-card:is(:hover, :focus-visible) {
+  translate: 0 calc(-3px * var(--hub-lift));
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--hub) / 0.55),
+    0 22px 48px -26px rgb(var(--hub) / 0.7);
+}
+.hub-card:focus-visible {
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--hub) / 0.55),
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.hub-card:active {
+  translate: 0 calc(-1px * var(--hub-lift));
+}
+.hub-card-art {
+  position: relative;
+  flex: none;
+  width: 7.5rem;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 80% at 50% 30%, rgb(var(--hub) / 0.26), transparent 70%),
+    rgb(var(--hub) / 0.05);
+  box-shadow: inset -1px 0 0 rgb(var(--ink-rgb) / 0.07);
+}
+.hub-card-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.9rem 2.75rem 0.9rem 1rem;
+}
+.hub-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.hub-card-title > svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+  color: rgb(var(--hub));
+}
+.hub-card-arrow {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: rgb(var(--hub));
+  transition: translate 260ms var(--ease-out-soft);
+}
+.hub-card:is(:hover, :focus-visible) .hub-card-arrow {
+  translate: calc(4px * var(--hub-lift)) 0;
+}
+@media (min-width: 40rem) {
+  .hub-card {
+    flex-direction: column;
+    min-height: 17rem;
+  }
+  .hub-card-art {
+    width: auto;
+    height: 9.5rem;
+    box-shadow: inset 0 -1px 0 rgb(var(--ink-rgb) / 0.07);
+  }
+  .hub-card-body {
+    justify-content: flex-start;
+    padding: 1rem 3rem 1.15rem 1.25rem;
+  }
+  .hub-card-title {
+    font-size: 1.35rem;
+  }
+}
+
+/* Archive: a small fan of covers that spreads on hover (or the collection glyph when there are none). */
+.hub-cover {
+  --spread: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3.4rem;
+  margin: -2.55rem 0 0 -1.7rem;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: calc(0.4rem * var(--radius-unit, 1));
+  background: var(--surface);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.45),
+    0 10px 24px -10px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha, 1)));
+  translate: calc(var(--cx, 0%) * (1 + var(--spread))) calc(var(--cy, 0%) - var(--spread) * 5%);
+  rotate: calc(var(--cr, 0deg) * (1 + var(--spread)));
+  transition:
+    translate 320ms var(--ease-out-soft),
+    rotate 320ms var(--ease-out-soft);
+}
+.hub-cover[data-slot="left"] {
+  --cx: -42%;
+  --cy: 5%;
+  --cr: -9deg;
+}
+.hub-cover[data-slot="right"] {
+  --cx: 42%;
+  --cy: 5%;
+  --cr: 9deg;
+}
+.hub-cover[data-slot="center"] {
+  z-index: 1;
+}
+.hub-card:is(:hover, :focus-visible) .hub-cover {
+  --spread: calc(0.45 * var(--hub-lift));
+}
+.hub-glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: rgb(var(--hub));
+}
+.hub-glyph > svg {
+  width: 2.5rem;
+  height: 2.5rem;
+  filter: drop-shadow(0 0 14px rgb(var(--hub) / 0.55));
+}
+@media (min-width: 40rem) {
+  .hub-cover {
+    width: 4.4rem;
+    margin: -3.3rem 0 0 -2.2rem;
+  }
+}
+
+/* To Do: a tiny list whose next task ticks itself off on hover, under a sun. */
+.hub-todo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.75rem;
+}
+.hub-todo-row {
+  display: flex;
+  height: 1.4rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+  border-radius: calc(0.45rem * var(--radius-unit, 1));
+  background: rgb(var(--ink-rgb) / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / 0.07);
+}
+.hub-todo-check {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: none;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px rgb(var(--hub) / 0.85);
+  transition:
+    background-color 260ms ease,
+    box-shadow 260ms ease;
+}
+.hub-todo-line {
+  height: 0.3rem;
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / 0.24);
+  transition: background-color 260ms ease;
+}
+:is(.hub-todo-row[data-done], .hub-card:is(:hover, :focus-visible) .hub-todo-row[data-next]) .hub-todo-check {
+  background: rgb(var(--hub));
+  box-shadow: none;
+}
+:is(.hub-todo-row[data-done], .hub-card:is(:hover, :focus-visible) .hub-todo-row[data-next]) .hub-todo-line {
+  background: rgb(var(--ink-rgb) / 0.1);
+}
+.hub-todo-sun {
+  display: none;
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(var(--hub)) 0 38%, rgb(var(--hub) / 0.25) 40% 62%, transparent 64%);
+  transition: scale 400ms var(--ease-out-soft);
+}
+.hub-card:is(:hover, :focus-visible) .hub-todo-sun {
+  scale: calc(1 + 0.15 * var(--hub-lift));
+}
+@media (min-width: 40rem) {
+  .hub-todo {
+    padding: 0 3rem 0 1.25rem;
+  }
+  .hub-todo-sun {
+    display: block;
+  }
+}
+
+/* Arcade: a self-lit attract screen (dark on every theme, like the arcade itself). */
+.hub-arcade {
+  --mq-neon: color-mix(in oklab, var(--amethyst) 45%, #fff);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(90% 90% at 50% 35%, color-mix(in oklab, var(--amethyst) 22%, #1d1236), #07040e);
+}
+.hub-arcade::before {
+  content: "";
+  position: absolute;
+  inset: 4px 10px;
+  background:
+    radial-gradient(circle, #ffd36b 0 1.1px, transparent 1.7px) top center / 10px 5px repeat-x,
+    radial-gradient(circle, #ffd36b 0 1.1px, transparent 1.7px) bottom center / 10px 5px repeat-x;
+  opacity: 0.45;
+  transition: opacity 260ms ease;
+}
+.hub-arcade > svg {
+  width: 80%;
+  max-width: 13rem;
+  transition: filter 260ms ease;
+}
+.hub-arcade-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.12) 47%, rgb(255 236 190 / 0.22) 50%, transparent 60%);
+  mix-blend-mode: screen;
+  translate: -110% 0;
+}
+.hub-card:is(:hover, :focus-visible) .hub-arcade::before {
+  opacity: 1;
+}
+.hub-card:is(:hover, :focus-visible) .hub-arcade > svg {
+  filter: brightness(1.15) saturate(1.15);
+}
+.hub-card:is(:hover, :focus-visible) .hub-arcade-sweep {
+  animation: mq-sweep 760ms var(--ease-out-soft) 1 forwards;
+}
+
+[data-motion="subtle"] .hub-card {
+  --hub-lift: 0.5;
+}
+:root:has([data-motion="off"]) .hub-card {
+  --hub-lift: 0;
+}
+:root:has([data-motion="off"]) .hub-arcade-sweep {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-card {
+    --hub-lift: 0;
+  }
+  .hub-arcade-sweep {
+    display: none;
+  }
+}

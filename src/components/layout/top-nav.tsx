@@ -18,11 +18,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { accentStyle } from "@/lib/collection-identity";
 import { collectionPath, type LibraryCategory } from "@/lib/collections";
+import { destinationFor } from "@/lib/destinations";
 import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
 import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { ProfileAvatar } from "./profile-avatar";
-import { isTasksPath, WorkspaceSwitch } from "./workspace-switch";
 
 /** Server-rendered collection icons keyed by collection id. */
 type CollectionIcons = Record<string, ReactNode>;
@@ -49,19 +49,33 @@ export type AccountSummary = { name: string | null; avatarUrl: string | null; de
 
 export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const currentId = useCurrentCollectionId(collections);
-  const inTasks = isTasksPath(usePathname());
+  const area = destinationFor(usePathname());
+  const inArchive = area?.id === "archive";
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-black/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[88rem] items-center gap-3 px-4 md:gap-6 md:px-6">
-        <div className="flex shrink-0 items-center gap-2.5 md:gap-4">
+        <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-3">
           <Link href="/" className="shrink-0 rounded-md" aria-label="Amethyst Archives home">
-            <BrandMark className="[&>span:last-child]:hidden lg:[&>span:last-child]:inline" />
+            <BrandMark className={cn("[&>span:last-child]:hidden", !area && "sm:[&>span:last-child]:inline", "lg:[&>span:last-child]:inline")} />
           </Link>
-          <WorkspaceSwitch />
+          {area ? (
+            <>
+              <span aria-hidden className="text-lg font-light text-muted-foreground/50">
+                /
+              </span>
+              <Link
+                href={area.href}
+                className="flex h-8 items-center gap-1.5 rounded-md px-1.5 text-sm font-semibold text-foreground/90 transition-colors outline-none hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring/60"
+              >
+                <area.icon aria-hidden className="size-4 text-amethyst" />
+                {area.label}
+              </Link>
+            </>
+          ) : null}
         </div>
 
-        <nav aria-label="Collections" className={cn("collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4", !inTasks && "md:flex")}>
+        <nav aria-label="Collections" className={cn("collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4", inArchive && "md:flex")}>
           {collections.map((item) => {
             const href = collectionPath(item);
             const active = item.id === currentId;
@@ -88,8 +102,8 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          {collections.length > 1 && !inTasks ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
-          {inTasks ? null : <NewCategoryButton />}
+          {collections.length > 1 && inArchive ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
+          {inArchive ? <NewCategoryButton /> : null}
           <WhatsNewButton />
 
           <DropdownMenu>
@@ -142,8 +156,8 @@ export function MobileTabBar({ collections, icons = {} }: { collections: Library
   const pathname = usePathname();
   const currentId = useCurrentCollectionId(collections);
   const settingsActive = isActive(pathname, "/settings");
-  // Tasks has its own list navigation (sidebar / drawer).
-  if (isTasksPath(pathname)) return null;
+  // Collection tabs belong to the Archive; other areas have their own navigation (or none).
+  if (destinationFor(pathname)?.id !== "archive") return null;
   return (
     <nav aria-label="Primary" className="glass fixed inset-x-0 bottom-0 z-40 flex border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden">
       <ul className="collection-nav-strip flex min-w-0 flex-1 overflow-x-auto px-1">

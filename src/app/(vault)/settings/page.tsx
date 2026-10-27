@@ -46,7 +46,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <SettingRow
           labelId="time-zone-label"
           label="Time zone"
-          description="Decides when a new day starts for My Day in Tasks and how due dates count as today. By default this follows the device you're using."
+          description="Decides when a new day starts for My Day in To Do and how due dates count as today. By default this follows the device you're using."
           reset={resetFor(preferences, ["timeZone"], "Device time zone")}
         >
           <TimeZoneSetting value={preferences.timeZone} labelId="time-zone-label" />

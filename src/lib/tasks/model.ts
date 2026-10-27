@@ -9,7 +9,6 @@ export type TaskList = {
   name: string;
   icon: string | null;
   accent: string | null;
-  isInbox: boolean;
   position: number;
   showCompleted: boolean;
   updatedAt: string;
@@ -45,13 +44,13 @@ export type TaskChanges = {
 };
 
 type GroupRow = Omit<Tables["task_groups"]["Row"], "user_id">;
-type ListRow = Omit<Tables["task_lists"]["Row"], "user_id">;
+type ListRow = Omit<Tables["task_lists"]["Row"], "user_id" | "is_inbox">;
 type TaskRow = Omit<Tables["tasks"]["Row"], "user_id" | "notes">;
 type StepRow = Omit<Tables["task_steps"]["Row"], "user_id">;
 
 export const TASK_COLUMNS =
   "id, list_id, title, notes_rev, has_notes, important, due_date, my_day_on, completed_at, entry_id, position, created_at, updated_at";
-export const LIST_COLUMNS = "id, group_id, name, icon, accent_color, is_inbox, position, show_completed, created_at, updated_at";
+export const LIST_COLUMNS = "id, group_id, name, icon, accent_color, position, show_completed, created_at, updated_at";
 export const GROUP_COLUMNS = "id, name, position, collapsed, created_at, updated_at";
 export const STEP_COLUMNS = "id, task_id, title, completed, position, created_at, updated_at";
 
@@ -69,7 +68,6 @@ export const mapList = (row: ListRow): TaskList => ({
   name: row.name,
   icon: row.icon,
   accent: row.accent_color,
-  isInbox: row.is_inbox,
   position: row.position,
   showCompleted: row.show_completed,
   updatedAt: row.updated_at,
@@ -152,7 +150,7 @@ export function shiftDate(isoDate: string, days: number): string {
 // ---------------------------------------------------------------------------
 // Views. Smart views only *reference* tasks that live in real lists.
 // ---------------------------------------------------------------------------
-export type SmartViewId = "my-day" | "important" | "planned" | "all" | "completed";
+export type SmartViewId = "my-day" | "important" | "planned";
 export type TaskView = { kind: "smart"; id: SmartViewId } | { kind: "list"; id: string } | { kind: "search" };
 
 export type SmartView = {
@@ -162,7 +160,7 @@ export type SmartView = {
   slug: string;
   description: string;
   includes: (task: Task, today: string) => boolean;
-  /** Smart views with their own completed section (the others are completed-only or open-only). */
+  /** Smart views with their own completed section (the others show open tasks only). */
   showsCompletedSection: boolean;
 };
 
@@ -191,23 +189,10 @@ export const SMART_VIEWS: SmartView[] = [
     includes: (task) => Boolean(task.dueDate) && !task.completedAt,
     showsCompletedSection: false,
   },
-  {
-    id: "all",
-    label: "All tasks",
-    slug: "all",
-    description: "Every open task across your lists.",
-    includes: (task) => !task.completedAt,
-    showsCompletedSection: false,
-  },
-  {
-    id: "completed",
-    label: "Completed",
-    slug: "completed",
-    description: "Everything you've finished, newest first.",
-    includes: (task) => Boolean(task.completedAt),
-    showsCompletedSection: false,
-  },
 ];
+
+/** Retired /tasks/<slug> pages; their URLs now open My Day (or the former Inbox list). */
+export const RETIRED_TASK_SLUGS = ["inbox", "all", "completed"];
 
 export const smartView = (id: SmartViewId) => SMART_VIEWS.find((view) => view.id === id)!;
 
@@ -218,13 +203,13 @@ export function viewPath(view: TaskView): string {
   return slug ? `/tasks/${slug}` : "/tasks";
 }
 
-/** Resolve a /tasks pathname to a view; "inbox" resolves once lists are known. */
-export function parseTasksPath(pathname: string, inboxId: string | null): TaskView | null {
+/** Resolve a /tasks pathname to a view. */
+export function parseTasksPath(pathname: string): TaskView | null {
   const segments = pathname.replace(/^\/tasks\/?/, "").split("/").filter(Boolean);
   if (segments.length === 0) return { kind: "smart", id: "my-day" };
   if (segments.length === 1) {
     if (segments[0] === "search") return { kind: "search" };
-    if (segments[0] === "inbox") return inboxId ? { kind: "list", id: inboxId } : null;
+    if (RETIRED_TASK_SLUGS.includes(segments[0])) return { kind: "smart", id: "my-day" };
     const smart = SMART_VIEWS.find((view) => view.slug === segments[0]);
     return smart ? { kind: "smart", id: smart.id } : null;
   }

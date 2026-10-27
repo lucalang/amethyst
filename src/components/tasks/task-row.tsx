@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, type PointerEvent, type ReactNode } from "react";
+import { type PointerEvent, type ReactNode } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -46,8 +46,6 @@ import { cn } from "@/lib/utils";
 import { ListGlyph } from "./sidebar";
 import { useTasks } from "./store";
 
-const completedFormat = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-
 export function TaskRow({
   task,
   selected,
@@ -83,7 +81,7 @@ export function TaskRow({
     onPointerEnd: () => void;
   };
 }) {
-  const { data, today, stepsByTask, actions, sidebar, inbox } = useTasks();
+  const { data, today, stepsByTask, actions, lists: allLists } = useTasks();
   const list = data.lists[task.listId];
   const steps = stepsByTask.get(task.id) ?? [];
   const doneSteps = steps.filter((step) => step.completed).length;
@@ -93,8 +91,8 @@ export function TaskRow({
   const dueToday = Boolean(task.dueDate && task.dueDate === today && !completed);
   const inMyDay = today !== null && task.myDayOn === today;
   const entry = task.entryId ? data.entries[task.entryId] : null;
-  const allLists = [...(inbox ? [inbox] : []), ...sidebar.flatMap((item) => (item.kind === "group" ? item.lists : [item.list]))];
 
+  // Only what helps at a glance; everything else lives in the details pane.
   const meta = [
     showMyDay && inMyDay ? (
       <span key="day" className="inline-flex items-center gap-1">
@@ -104,35 +102,33 @@ export function TaskRow({
     showList && list ? (
       <span key="list" className="inline-flex min-w-0 items-center gap-1">
         <ListGlyph list={list} className="size-3.5 shrink-0" />
-        <span className="truncate">{list.name}</span>
-      </span>
-    ) : null,
-    steps.length > 0 ? (
-      <span key="steps" className={cn("inline-flex items-center gap-1 tabular-nums", doneSteps === steps.length && "text-amethyst/90")}>
-        <ListChecks aria-hidden className="size-3.5" />
-        {doneSteps} of {steps.length}
+        <span className="max-w-40 truncate">{list.name}</span>
       </span>
     ) : null,
     due ? (
-      <span key="due" className={cn("inline-flex items-center gap-1", overdue ? "text-rose" : dueToday && "text-amethyst")}>
+      <span key="due" className={cn("inline-flex items-center gap-1", overdue ? "font-medium text-rose" : dueToday && "text-amethyst")}>
         <CalendarDays aria-hidden className="size-3.5" />
         {overdue ? `Overdue · ${due.text}` : due.text}
       </span>
     ) : null,
+    steps.length > 0 ? (
+      <span key="steps" className={cn("inline-flex items-center gap-1 tabular-nums", doneSteps === steps.length && "text-amethyst")}>
+        <ListChecks aria-hidden className="size-3.5" />
+        {doneSteps}/{steps.length}
+        <span className="sr-only"> steps done</span>
+      </span>
+    ) : null,
     task.hasNotes ? (
-      <span key="note" className="inline-flex items-center gap-1">
-        <StickyNote aria-hidden className="size-3.5" /> Note
+      <span key="note" className="inline-flex items-center" title="Has notes">
+        <StickyNote aria-hidden className="size-3.5" />
+        <span className="sr-only">Has notes</span>
       </span>
     ) : null,
     entry ? (
       <span key="entry" className="inline-flex min-w-0 items-center gap-1">
         <Link2 aria-hidden className="size-3.5 shrink-0" />
-        <span className="max-w-40 truncate">{entry.title}</span>
-      </span>
-    ) : null,
-    task.completedAt && checkedOverride === undefined ? (
-      <span key="done" className="inline-flex items-center gap-1">
-        Completed {completedFormat.format(new Date(task.completedAt))}
+        <span className="sr-only">Linked to </span>
+        <span className="max-w-32 truncate">{entry.title}</span>
       </span>
     ) : null,
   ].filter(Boolean);
@@ -142,12 +138,12 @@ export function TaskRow({
       data-task-row
       data-id={task.id}
       className={cn(
-        "group/task relative rounded-lg transition-[background-color,box-shadow] duration-200 ease-out",
+        "group/task relative rounded-xl transition-[background-color,box-shadow] duration-200 ease-out motion-reduce:transition-none",
         selected
-          ? "bg-surface-raised shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]"
+          ? "bg-surface-raised shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45),0_8px_24px_-18px_rgb(var(--shadow-rgb)/0.8)]"
           : completed
-            ? "bg-white/[0.022] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.035)] hover:bg-white/[0.045]"
-            : "bg-white/[0.04] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.05)] hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.3)]",
+            ? "hover:bg-foreground/[0.035]"
+            : "bg-foreground/[0.03] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.05)] hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.28)]",
         "has-[[data-row-button]:focus-visible]:shadow-[inset_0_0_0_2px_var(--amethyst)]",
         drag?.active && "z-10 bg-surface-raised shadow-[0_14px_36px_-16px_rgb(var(--shadow-rgb)/0.9),inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]",
       )}
@@ -194,20 +190,7 @@ export function TaskRow({
               {task.title}
             </span>
           </span>
-          {meta.length > 0 ? (
-            <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-              {meta.map((part, index) => (
-                <Fragment key={index}>
-                  {index > 0 ? (
-                    <span aria-hidden className="text-white/20">
-                      •
-                    </span>
-                  ) : null}
-                  {part}
-                </Fragment>
-              ))}
-            </span>
-          ) : null}
+          {meta.length > 0 ? <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">{meta}</span> : null}
           {snippet ? <span className="mt-1 line-clamp-2 block text-xs text-muted-foreground/90">{snippet}</span> : null}
         </button>
         <button
@@ -216,8 +199,8 @@ export function TaskRow({
           aria-label={task.important ? `Remove importance from ${task.title}` : `Mark ${task.title} as important`}
           onClick={() => void actions.updateTask(task.id, { important: !task.important }, { failure: "Importance not saved" })}
           className={cn(
-            "group/star grid size-9 shrink-0 place-items-center rounded-full transition-[background-color,color] duration-200 outline-none hover:bg-rose/10 focus-visible:ring-2 focus-visible:ring-rose/60 active:scale-90",
-            task.important ? "text-rose" : "text-muted-foreground/70 hover:text-rose",
+            "group/star grid size-9 shrink-0 place-items-center rounded-full transition-[background-color,color,scale] duration-200 outline-none hover:bg-rose/10 focus-visible:ring-2 focus-visible:ring-rose/60 active:scale-90 motion-reduce:transition-none",
+            task.important ? "text-rose" : "text-muted-foreground/60 hover:text-rose",
           )}
         >
           <Star

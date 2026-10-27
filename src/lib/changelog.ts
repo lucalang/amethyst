@@ -42,6 +42,56 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-03-hub",
+    date: "2026-11-03",
+    title: "A Home hub, and a calmer To Do",
+    intro: "Home now opens onto Archive, To Do and Arcade, and each area shows only its own navigation. Tasks is now called To Do, with simpler lists and a cleaner layout.",
+    icon: "home",
+    highlights: [
+      { kind: "new", feature: "Home hub", text: "Large Archive, To Do and Arcade cards near the top of Home, each with a live summary. Your personal Home sections are still below." },
+      { kind: "new", feature: "Archive page", text: "Collections have their own page, with buttons to create collections and entries and to arrange collections." },
+      { kind: "improved", feature: "Simpler lists", text: "Inbox, All and Completed are gone. Completed tasks stay inside each list, under a section you can collapse." },
+      { kind: "improved", feature: "Clear quick add", text: "In My Day, Important and Planned, quick add shows which list it adds to and lets you change it." },
+      { kind: "improved", feature: "Calmer layout", text: "Simpler sidebar and task rows. Details open only when you ask, full width on phones." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Home is the hub",
+          body: "The Archive | Tasks switch is gone. Home has a card for each area, and the logo always brings you back. Inside an area, the top bar shows where you are and only that area's navigation: the collection strip appears only in the Archive.",
+          points: [
+            "Archive shows your collection and entry counts and some of your covers.",
+            "To Do shows how much of My Day is left.",
+            "Arcade shows your coin balance.",
+          ],
+          link: { href: "/", label: "Open Home" },
+        },
+        {
+          title: "An Archive page",
+          body: "All your collections, your most recent entry and the create and arrange buttons are now on one page.",
+          link: { href: "/collections", label: "Open Archive" },
+        },
+      ],
+      improved: [
+        {
+          title: "To Do keeps only the views you use",
+          body: "My Day, Important and Planned stay, followed by your lists and groups. Inbox is no longer special. If it had tasks, it is now a normal list named Inbox that you can rename, move or delete. An empty Inbox was removed and won't come back.",
+          points: [
+            "Completed tasks are shown under each list, in a section you can collapse.",
+            "When you add a task in a smart view, it goes to the last list you used. You can pick a different list right next to the input. If you have no lists yet, you can create one there.",
+            "Old links to Inbox, All or Completed still work. They open the list named Inbox if you have one, or My Day.",
+          ],
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+        {
+          title: "Calmer layout",
+          body: "The sidebar has clearer group headings and fewer buttons. New list is still at the bottom, and New group is in its menu. Task rows show less extra information. The details panel opens only when you select a task, and on phones it fills the screen.",
+          where: "To Do",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-27-tasks",
     date: "2026-10-27",
     title: "Tasks: a to-do workspace next to your archive",
