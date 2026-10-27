@@ -85,7 +85,7 @@ export function FramePicker({
       </div>
       <p id={`${id}-hint`} className="text-xs text-muted-foreground">
         Shown in Showcase and the artwork viewer. “Use my default” follows your{" "}
-        <Link href="/settings/frames" className="text-amethyst underline-offset-4 hover:underline">
+        <Link href="/customization/frames" className="text-amethyst underline-offset-4 hover:underline">
           account frame
         </Link>{" "}
         when it changes; “No frame” keeps this entry unframed. More frames are in the{" "}

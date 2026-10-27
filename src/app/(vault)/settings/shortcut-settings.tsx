@@ -77,7 +77,7 @@ export function ShortcutSettings({ value }: { value: Settings["shortcuts"] }) {
           const error = problem?.action === action ? problem.message : null;
           const changed = shortcut !== DEFAULT_SETTINGS.shortcuts[action];
           return (
-            <li key={action} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+            <li key={action} id={`shortcut-${action}`} className="flex scroll-mt-40 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
               <div className="min-w-0 flex-1 basis-56">
                 <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">
                   <p className="text-sm font-medium">{SHORTCUT_LABELS[action].title}</p>

@@ -83,7 +83,7 @@ export function PreviewIntroButton() {
       variant="outline"
       size="sm"
       disabled={off}
-      title={off ? "Animations are turned off in Settings → Appearance" : undefined}
+      title={off ? "Animations are turned off in Customization → Appearance" : undefined}
       onClick={() => window.dispatchEvent(new Event(PREVIEW_INTRO_EVENT))}
       className="h-8 gap-1.5"
     >

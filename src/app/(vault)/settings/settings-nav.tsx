@@ -2,109 +2,87 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Box, Frame, Keyboard, LayoutTemplate, LibraryBig, Megaphone, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, UserRound, type LucideIcon } from "lucide-react";
+import { Frame, Keyboard, LayoutTemplate, LibraryBig, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, UserRound, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Item = { href: string; label: string; hint: string; icon: LucideIcon; active: (pathname: string) => boolean };
+type Item = { href: string; label: string; icon: LucideIcon; active: (pathname: string) => boolean };
 
 const ITEMS: Item[] = [
   {
     href: "/settings",
     label: "General",
-    hint: "Startup, notifications and security",
     icon: SlidersHorizontal,
     active: (pathname) => pathname === "/settings" || pathname.startsWith("/settings/password"),
   },
   {
-    href: "/settings/profile",
+    href: "/customization/profile",
     label: "Profile",
-    hint: "Name, picture and motto",
     icon: UserRound,
-    active: (pathname) => pathname.startsWith("/settings/profile"),
+    active: (pathname) => pathname.startsWith("/customization/profile"),
   },
   {
-    href: "/settings/themes",
+    href: "/customization/themes",
     label: "Themes",
-    hint: "Colors, fonts and style",
     icon: Palette,
-    active: (pathname) => pathname.startsWith("/settings/themes"),
+    active: (pathname) => pathname.startsWith("/customization/themes"),
   },
   {
-    href: "/settings/frames",
+    href: "/customization/frames",
     label: "Artwork frames",
-    hint: "Frames for Showcase artwork",
     icon: Frame,
-    active: (pathname) => pathname.startsWith("/settings/frames"),
+    active: (pathname) => pathname.startsWith("/customization/frames"),
   },
   {
-    href: "/settings/showcase",
-    label: "3D Showcase",
-    hint: "Viewer lighting, motion and presets",
-    icon: Box,
-    active: (pathname) => pathname.startsWith("/settings/showcase"),
-  },
-  {
-    href: "/settings/appearance",
+    href: "/customization/appearance",
     label: "Appearance",
-    hint: "Motion, intro and density",
     icon: Sparkles,
-    active: (pathname) => pathname.startsWith("/settings/appearance"),
+    active: (pathname) => pathname.startsWith("/customization/appearance"),
   },
   {
     href: "/settings/editor",
     label: "Editor",
-    hint: "Fonts, headings and checklists",
     icon: PenLine,
     active: (pathname) => pathname.startsWith("/settings/editor"),
   },
   {
     href: "/settings/shortcuts",
     label: "Shortcuts",
-    hint: "Keyboard shortcuts",
     icon: Keyboard,
     active: (pathname) => pathname.startsWith("/settings/shortcuts"),
   },
   {
     href: "/settings/collections",
     label: "Collections",
-    hint: "Names, looks and order",
     icon: LibraryBig,
     active: (pathname) => pathname.startsWith("/settings/collections"),
   },
   {
     href: "/settings/templates",
     label: "Templates",
-    hint: "Starter workspaces for entries",
     icon: LayoutTemplate,
     active: (pathname) => pathname.startsWith("/settings/templates"),
   },
   {
     href: "/settings/labels",
     label: "Labels",
-    hint: "Tags inside each collection",
     icon: Tags,
     active: (pathname) => pathname.startsWith("/settings/labels"),
-  },
-  {
-    href: "/whats-new",
-    label: "What’s new",
-    hint: "Update log",
-    icon: Megaphone,
-    active: (pathname) => pathname.startsWith("/whats-new"),
   },
 ];
 
 /** Section navigation: a sidebar on wide screens, a sticky segmented strip on small ones. */
-export function SettingsNav() {
+export function SettingsNav({ area = "settings" }: { area?: "settings" | "customization" }) {
   const pathname = usePathname();
+  const title = area === "settings" ? "Settings" : "Customization";
+  const items = ITEMS.filter((item) => item.href.startsWith(`/${area}`));
   return (
     <nav
-      aria-label="Settings sections"
-      className="enter sticky top-14 z-20 -mx-4 border-b border-white/[0.07] bg-black/85 px-4 py-2 backdrop-blur-md md:top-24 md:mx-0 md:self-start md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+      aria-label={`${title} sections`}
+      className="enter sticky top-14 z-20 -mx-4 border-b border-white/[0.07] bg-background/95 px-4 py-2 backdrop-blur-md md:top-24 md:mx-0 md:self-start md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
     >
-      <p className="mb-3 hidden px-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground/70 uppercase md:block">Settings</p>
+      <p className="mb-3 hidden px-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground/70 uppercase md:block">{title}</p>
       <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-1 md:overflow-visible md:px-0">
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const active = item.active(pathname);
           const Icon = item.icon;
           return (
@@ -121,7 +99,6 @@ export function SettingsNav() {
                 <Icon aria-hidden className={cn("size-4 shrink-0 transition-colors", active ? "text-amethyst" : "text-muted-foreground/70 group-hover/settings-nav:text-amethyst")} />
                 <span className="min-w-0">
                   <span className="block truncate">{item.label}</span>
-                  <span className="hidden truncate text-[11px] font-normal text-muted-foreground/70 md:block">{item.hint}</span>
                 </span>
               </Link>
             </li>

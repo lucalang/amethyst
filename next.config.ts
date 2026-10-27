@@ -35,6 +35,13 @@ const nextConfig: NextConfig = {
     tsconfigPath: isDev ? "tsconfig.json" : "tsconfig.build.json",
   },
   poweredByHeader: false,
+  async redirects() {
+    return ["profile", "themes", "frames", "appearance"].map((section) => ({
+      source: `/settings/${section}`,
+      destination: `/customization/${section}`,
+      permanent: true,
+    }));
+  },
   async headers() {
     const shared = [
       { key: "X-Content-Type-Options", value: "nosniff" },

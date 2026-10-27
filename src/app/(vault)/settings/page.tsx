@@ -64,7 +64,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         description={<>Signed in as <span className="text-foreground">{ctx.email ?? "unknown email"}</span>. Your sign-in email and password stay separate from your profile.</>}
       >
         <Button asChild variant="outline">
-          <Link href="/settings/profile">
+          <Link href="/customization/profile">
             <UserRound aria-hidden /> Edit profile
           </Link>
         </Button>

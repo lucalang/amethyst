@@ -1,0 +1,1 @@
+export { default, metadata } from "../../settings/frames/page";

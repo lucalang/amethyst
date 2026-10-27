@@ -13,7 +13,7 @@ export function resetFor(preferences: Preferences, keys: readonly PreferenceKey[
 /** Page title for one settings section. */
 export function SettingsHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div className="enter mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div id="settings-section-title" className="enter mb-8 flex scroll-mt-40 flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         <h1 className="text-2xl font-extrabold tracking-tight break-words md:text-3xl">{title}</h1>
         {description ? <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
@@ -51,7 +51,7 @@ export function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-8">
+    <div id={labelId ? `${labelId}-setting` : undefined} className="grid scroll-mt-40 gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-8">
       <div className="min-w-0">
         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">
           <p id={labelId} className="text-sm font-medium text-foreground">{label}</p>

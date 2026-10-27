@@ -42,6 +42,26 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-27-settings-customization-search",
+    date: "2026-10-27",
+    title: "Settings and Customization, easier to find",
+    intro: "Account tools stay in Settings. Profile, themes, artwork frames and appearance now have their own Customization destination, with one search across both.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Customization", text: "Find your profile and visual preferences together in the account menu. All saved choices stay as they are." },
+      { kind: "new", feature: "Shared search", text: "Find sections or individual controls across both destinations, then jump straight to the matching setting." },
+      { kind: "improved", feature: "Compact navigation", text: "Simpler section lists; What's new keeps its own tab, and Showcase looks and presets stay inside Showcase." },
+    ],
+    details: {
+      improved: [{
+        title: "One search, two destinations",
+        body: "Search by setting name or words such as font, avatar and animation. Results identify their destination and section, and highlight the matching setting when opened. Arrow keys move through results, Enter opens one, and Escape dismisses the list. Old bookmarked preference pages redirect to their new home.",
+        where: "Account menu → Settings or Customization",
+        link: { href: "/customization", label: "Open Customization" },
+      }],
+    },
+  },
+  {
     id: "2026-10-27-private-image-storage",
     date: "2026-10-27",
     title: "A new private home for your images",
@@ -64,7 +84,7 @@ export const CHANGELOG: readonly Release[] = [
             "Images linked from other websites still load through the secure image proxy and are not copied.",
           ],
           where: "Notes, covers, banners, profile picture and Home artwork",
-          link: { href: "/settings/profile", label: "Open your profile" },
+          link: { href: "/customization/profile", label: "Open your profile" },
         },
       ],
     },
@@ -144,8 +164,8 @@ export const CHANGELOG: readonly Release[] = [
         {
           title: "Shop items in your settings",
           body: "Frames you own appear in Artwork frames and in each entry's frame choice, alongside the free frames and No frame. Avatar decorations are chosen in Profile and are drawn around your picture without changing it.",
-          where: "Settings → Artwork frames, Settings → Profile",
-          link: { href: "/settings/profile", label: "Open Profile" },
+          where: "Customization → Artwork frames, Customization → Profile",
+          link: { href: "/customization/profile", label: "Open Profile" },
         },
       ],
       improved: [
@@ -241,8 +261,8 @@ export const CHANGELOG: readonly Release[] = [
             "Without a picture, your initials are shown.",
             "Your profile is private, and your email is only shown to you.",
           ],
-          where: "Settings → Profile, or the account menu → Profile",
-          link: { href: "/settings/profile", label: "Edit your profile" },
+          where: "Account menu → Customization → Profile",
+          link: { href: "/customization/profile", label: "Edit your profile" },
         },
         {
           title: "3D Showcase looks",
@@ -253,8 +273,8 @@ export const CHANGELOG: readonly Release[] = [
             "Save your tweaks as named presets, then update, rename or delete them.",
             "Reset brings Classic back at any time.",
           ],
-          where: "Settings → 3D Showcase, or the sliders button inside the artwork viewer",
-          link: { href: "/settings/showcase", label: "Customize the Showcase" },
+          where: "Collection → Showcase → artwork → sliders button",
+          link: { href: "/", label: "Open your archive" },
         },
         {
           title: "Per-entry artwork frames",
@@ -266,7 +286,7 @@ export const CHANGELOG: readonly Release[] = [
             "Existing entries keep following your account frame.",
           ],
           where: "Entry → ⋯ → Edit details → Artwork frame",
-          link: { href: "/settings/frames", label: "Your default frame" },
+          link: { href: "/customization/frames", label: "Your default frame" },
         },
       ],
     },
@@ -311,8 +331,8 @@ export const CHANGELOG: readonly Release[] = [
             "Holographic: a rainbow film that shifts with the angle.",
             "Aurora: its travelling thread plus a color-shifting curtain.",
           ],
-          where: "Settings → Artwork frames",
-          link: { href: "/settings/frames", label: "Choose a frame" },
+          where: "Customization → Artwork frames",
+          link: { href: "/customization/frames", label: "Choose a frame" },
         },
         {
           title: "Entrances and exits",
@@ -332,8 +352,8 @@ export const CHANGELOG: readonly Release[] = [
             "Rendering pauses when the card is still or the tab is hidden.",
             "The flat 2D view is unchanged.",
           ],
-          where: "Settings → Appearance → Motion and effects",
-          link: { href: "/settings/appearance#motion", label: "Adjust motion" },
+          where: "Customization → Appearance → Motion and effects",
+          link: { href: "/customization/appearance#motion", label: "Adjust motion" },
         },
       ],
     },
@@ -549,8 +569,8 @@ export const CHANGELOG: readonly Release[] = [
             "Soft Sakura: light blossom pink.",
             "Mint Paper: light cool mint.",
           ],
-          where: "Settings → Themes",
-          link: { href: "/settings/themes", label: "Open Themes" },
+          where: "Customization → Themes",
+          link: { href: "/customization/themes", label: "Open Themes" },
         },
       ],
       improved: [
@@ -603,8 +623,8 @@ export const CHANGELOG: readonly Release[] = [
         {
           title: "Artwork frames",
           body: "Pick No frame, Gilt edge, Amethyst filigree, Holographic edge or the animated Aurora trace, previewed on your own portrait and square covers. Frames appear in Showcase and the viewer, follow the 3D card as it turns, and never cover the picture.",
-          where: "Settings → Artwork frames",
-          link: { href: "/settings/frames", label: "Open Artwork frames" },
+          where: "Customization → Artwork frames",
+          link: { href: "/customization/frames", label: "Open Artwork frames" },
         },
       ],
     },
@@ -627,15 +647,15 @@ export const CHANGELOG: readonly Release[] = [
         {
           title: "Themes",
           body: "Amethyst (still the default), Rose Noir, Paper & Ink (a light theme), Retro Terminal and Neon Arcade. Each restyles backgrounds, surfaces, text, fonts, borders and accents, with a live preview. Your choice applies everywhere at once and follows your account.",
-          where: "Settings → Themes",
-          link: { href: "/settings/themes", label: "Open Themes" },
+          where: "Customization → Themes",
+          link: { href: "/customization/themes", label: "Open Themes" },
         },
         {
           title: "Opening animation frequency",
           body: "Choose how often the opening animation plays: every visit, once per day, once per week or never. Only a fresh load or reload counts as a visit.",
           points: ["Preview animation plays it without using up today’s showing."],
-          where: "Settings → Appearance → Opening animation",
-          link: { href: "/settings/appearance#motion", label: "Open Appearance" },
+          where: "Customization → Appearance → Opening animation",
+          link: { href: "/customization/appearance#motion", label: "Open Appearance" },
           action: "preview-intro",
         },
         {
@@ -745,8 +765,8 @@ export const CHANGELOG: readonly Release[] = [
             "Card info presets choose between title, labels and progress.",
             "Pins can sit on the artwork, or stay in the card menu for a clean cover.",
           ],
-          where: "Settings → Appearance → Library",
-          link: { href: "/settings/appearance#library", label: "Open Appearance" },
+          where: "Customization → Appearance → Library",
+          link: { href: "/customization/appearance#library", label: "Open Appearance" },
         },
         {
           title: "Workspace templates",

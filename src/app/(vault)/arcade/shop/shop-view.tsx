@@ -331,7 +331,7 @@ export function ShopView({
               {focus.kind === "frame" ? (
                 <>
                   Equipping a frame makes it your default; entries with their own frame keep it. Change it any time in{" "}
-                  <Link href="/settings/frames" className="text-amethyst underline-offset-4 hover:underline">
+                  <Link href="/customization/frames" className="text-amethyst underline-offset-4 hover:underline">
                     Artwork frames
                   </Link>
                   .
@@ -339,7 +339,7 @@ export function ShopView({
               ) : (
                 <>
                   Your picture itself never changes. Switch decorations any time in{" "}
-                  <Link href="/settings/profile" className="text-amethyst underline-offset-4 hover:underline">
+                  <Link href="/customization/profile" className="text-amethyst underline-offset-4 hover:underline">
                     Profile
                   </Link>
                   .

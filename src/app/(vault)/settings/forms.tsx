@@ -59,7 +59,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
         />
         <p className="text-xs text-muted-foreground">Used in Home’s welcome and your achievement cabinet. Leave it empty to stay unnamed.</p>
       </div>
-      <div className="space-y-1.5">
+      <div id="settings-avatar-picture" className="space-y-1.5">
         <ImageUrlField
           key={fieldKey}
           id="avatarUrl"
@@ -86,7 +86,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
           </Button>
         ) : null}
       </div>
-      <fieldset className="space-y-2">
+      <fieldset id="settings-avatar-decoration" className="space-y-2">
         <legend className="text-sm font-medium">Avatar decoration</legend>
         <div className="flex flex-wrap gap-2">
           {[null, ...ownedDecorations].map((id) => {
