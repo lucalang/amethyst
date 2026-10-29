@@ -24,6 +24,25 @@ export const SOUNDS = {
   ],
   eat: [{ freq: 600, to: 980, duration: 0.08, type: "square", volume: 0.05 }],
   slice: [{ noise: true, duration: 0.11, volume: 0.18, filter: "highpass", freq: 2400 }],
+  squish: [
+    { noise: true, duration: 0.1, volume: 0.16, filter: "highpass", freq: 2600 },
+    { noise: true, duration: 0.12, volume: 0.1, filter: "bandpass", freq: 800, delay: 0.02 },
+    { freq: 520, to: 260, duration: 0.08, type: "sine", volume: 0.05, delay: 0.015 },
+  ],
+  swoosh: [{ noise: true, duration: 0.14, volume: 0.05, filter: "bandpass", freq: 3200 }],
+  penalty: [
+    { noise: true, duration: 0.32, volume: 0.24, filter: "lowpass", freq: 600 },
+    { freq: 220, to: 90, duration: 0.3, type: "sawtooth", volume: 0.07 },
+  ],
+  tick: [{ freq: 1050, duration: 0.03, type: "sine", volume: 0.04 }],
+  perfect: [
+    { freq: 1046, duration: 0.14, type: "sine", volume: 0.08 },
+    { freq: 2093, duration: 0.09, type: "triangle", volume: 0.03, delay: 0.01 },
+  ],
+  thud: [
+    { freq: 150, to: 95, duration: 0.11, type: "triangle", volume: 0.13 },
+    { noise: true, duration: 0.05, volume: 0.06, filter: "lowpass", freq: 1200 },
+  ],
   combo: [
     { freq: 660, duration: 0.07, type: "triangle", volume: 0.08 },
     { freq: 880, duration: 0.07, type: "triangle", volume: 0.08, delay: 0.07 },

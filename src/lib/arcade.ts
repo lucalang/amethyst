@@ -38,10 +38,18 @@ export type ArcadeRecords = Partial<Record<ScoreGame | `sudoku:${SudokuDifficult
 /** 2048 board sizes with their own records; the classic 4×4 keeps the main record (""). */
 export const G2048_SIZE_VARIANTS = ["3x3", "5x5"] as const;
 
+/** Fruit Slice's timed modes; Classic keeps the main record (""). */
+export const FRUIT_MODE_VARIANTS = ["arcade", "zen"] as const;
+
+/** Tower Stacker's strict rules; the main record ("") stays with Casual, the original rules. */
+export const STACKER_CLASSIC = "classic";
+
 function isKnownVariant(game: ScoreGame, variant: string) {
   if (game === "snake") return isSnakeVariant(variant);
   if (game === "2048") return (G2048_SIZE_VARIANTS as readonly string[]).includes(variant) || isRecentDailyVariant(variant);
   if (game === "flutter") return isRecentDailyVariant(variant);
+  if (game === "fruit-slice") return (FRUIT_MODE_VARIANTS as readonly string[]).includes(variant) || isRecentDailyVariant(variant);
+  if (game === "stacker") return variant === STACKER_CLASSIC || isRecentDailyVariant(variant);
   return false;
 }
 
@@ -106,7 +114,24 @@ export function toRunReward(value: unknown): RunReward {
 }
 const board = z.string().regex(/^[0-9]{81}$/, "Boards have 81 digits.");
 
-export const sudokuStartSchema = z.object({ difficulty: z.enum(SUDOKU_DIFFICULTIES) }).strict();
+export const sudokuStartSchema = z.union([
+  z.object({ difficulty: z.enum(SUDOKU_DIFFICULTIES) }).strict(),
+  /** Today's daily puzzle; `replace` confirms dropping an unfinished puzzle from an earlier day. */
+  z.object({ daily: z.literal(true), replace: z.boolean().optional() }).strict(),
+]);
+
+export const sudokuHintSchema = z
+  .object({
+    id: z.uuid(),
+    cell: z.number().int().min(0).max(SUDOKU_CELLS - 1),
+    entries: board,
+    notes: z.array(z.number().int().min(0).max(511)).length(SUDOKU_CELLS),
+    elapsedMs: z.number().int().min(0).max(2_000_000_000),
+  })
+  .strict();
+
+/** The daily puzzle's fixed difficulty. */
+export const SUDOKU_DAILY_DIFFICULTY: SudokuDifficulty = "medium";
 
 export const sudokuSaveSchema = z
   .object({
@@ -127,7 +152,15 @@ export type SudokuSave = {
   notes: number[];
   elapsedMs: number;
   completed: boolean;
+  slot: "regular" | "daily";
+  /** The UTC date a daily puzzle belongs to (null for regular puzzles). */
+  puzzleDate: string | null;
+  /** Cells revealed with hints; any hint makes the solve "assisted". */
+  hints: number;
 };
+
+/** A solved daily puzzle (kept apart from regular fastest times). */
+export type SudokuDailyResult = { date: string; elapsedMs: number; hints: number };
 
 /** 75 → "1:15", 3725 → "1:02:05". */
 export function formatDuration(totalSeconds: number) {

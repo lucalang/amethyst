@@ -1,5 +1,5 @@
 import "server-only";
-import { SCORE_GAMES, SUDOKU_DIFFICULTIES, type ArcadeRecords, type ScoreGame, type SudokuDifficulty, type SudokuSave } from "@/lib/arcade";
+import { SCORE_GAMES, SUDOKU_DIFFICULTIES, type ArcadeRecords, type ScoreGame, type SudokuDailyResult, type SudokuDifficulty, type SudokuSave } from "@/lib/arcade";
 import type { AuthContext } from "@/lib/supabase/auth";
 
 /** The signed-in account's personal records (missing games have none yet). */
@@ -18,10 +18,13 @@ export async function loadArcadeRecords(ctx: AuthContext): Promise<ArcadeRecords
   return records;
 }
 
-export const SUDOKU_COLUMNS = "id, difficulty, puzzle, entries, notes, elapsed_ms, completed_at" as const;
+export const SUDOKU_COLUMNS = "id, slot, puzzle_date, hints, difficulty, puzzle, entries, notes, elapsed_ms, completed_at" as const;
 
 export function toSudokuSave(row: {
   id: string;
+  slot: "regular" | "daily";
+  puzzle_date: string | null;
+  hints: number;
   difficulty: SudokuDifficulty;
   puzzle: string;
   entries: string;
@@ -37,12 +40,32 @@ export function toSudokuSave(row: {
     notes: row.notes,
     elapsedMs: row.elapsed_ms,
     completed: row.completed_at !== null,
+    slot: row.slot,
+    puzzleDate: row.puzzle_date,
+    hints: row.hints,
   };
 }
 
-/** The account's current (or last finished) Sudoku, without its solution. */
-export async function loadSudoku(ctx: AuthContext): Promise<SudokuSave | null> {
-  const { data, error } = await ctx.supabase.from("sudoku_games").select(SUDOKU_COLUMNS).eq("user_id", ctx.userId).maybeSingle();
+/** The account's current (or last finished) Sudoku in a slot, without its solution. */
+export async function loadSudoku(ctx: AuthContext, slot: "regular" | "daily" = "regular"): Promise<SudokuSave | null> {
+  const { data, error } = await ctx.supabase
+    .from("sudoku_games")
+    .select(SUDOKU_COLUMNS)
+    .eq("user_id", ctx.userId)
+    .eq("slot", slot)
+    .maybeSingle();
   if (error) throw new Error(`Could not load the saved Sudoku: ${error.code}`);
   return data ? toSudokuSave(data) : null;
+}
+
+/** The account's result for one daily puzzle, if solved. */
+export async function loadSudokuDailyResult(ctx: AuthContext, date: string): Promise<SudokuDailyResult | null> {
+  const { data, error } = await ctx.supabase
+    .from("sudoku_daily_results")
+    .select("puzzle_date, elapsed_ms, hints")
+    .eq("user_id", ctx.userId)
+    .eq("puzzle_date", date)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load the daily Sudoku result: ${error.code}`);
+  return data ? { date: data.puzzle_date, elapsedMs: data.elapsed_ms, hints: data.hints } : null;
 }

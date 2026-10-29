@@ -42,6 +42,60 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-10-sudoku-fruit-stacker",
+    date: "2026-11-10",
+    title: "Daily Sudoku, Fruit Slice modes and a new Tower Stacker",
+    intro: "Sudoku gets a daily puzzle and reliable saves, Fruit Slice gets sharper slicing, new modes and a daily run, and Tower Stacker is rebuilt in a three-quarter view with precise drops.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Daily Sudoku", text: "One puzzle a day with a single solution, the same for everyone. It resets at midnight UTC, and results are kept separately and marked as assisted if you used hints." },
+      { kind: "new", feature: "Fruit Slice modes and daily run", text: "Choose Classic, Arcade or Zen, each with its own records, or play the seeded daily Arcade run." },
+      { kind: "new", feature: "Daily tower and Casual rules", text: "Tower Stacker has a seeded daily tower plus Classic and Casual rule sets, each with its own records." },
+      { kind: "improved", feature: "Precise slicing and stacking", text: "Fruit Slice cuts along the whole swipe, even quick ones. Tower Stacker drops blocks at the moment you press." },
+      { kind: "improved", feature: "Sudoku saves", text: "Entries, pencil marks, time and hints are saved automatically and restored after a refresh. The timer only runs while the puzzle is on screen." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Daily Sudoku",
+          body: "Open the puzzle picker and choose Daily. Everyone gets the same medium puzzle, and the picker shows when the next one arrives.",
+          points: [
+            "Daily progress is saved separately from your regular puzzle, and the date change never replaces a puzzle you are playing.",
+            "Hints fill in one cell. Any solve that uses a hint is marked as assisted and does not count toward fastest times.",
+          ],
+          where: "Arcade → Sudoku → Daily",
+          link: { href: "/arcade/sudoku", label: "Play Sudoku" },
+        },
+        {
+          title: "Fruit Slice modes",
+          body: "Classic: three misses or a bomb ends the round. Arcade: 60 seconds, and a bomb costs points. Zen: 90 seconds with no bombs. Daily: today's seeded Arcade run, the same for everyone, with unlimited retries.",
+          where: "Arcade → Fruit Slice",
+          link: { href: "/arcade/fruit-slice", label: "Play Fruit Slice" },
+        },
+        {
+          title: "Daily tower and rule sets",
+          body: "Classic and Daily never give width back. Casual widens the block again from the third perfect in a row and continues your existing records. Daily uses the same slider sequence for everyone.",
+          where: "Arcade → Tower Stacker",
+          link: { href: "/arcade/stacker", label: "Play Tower Stacker" },
+        },
+      ],
+      improved: [
+        {
+          title: "Satisfying cuts",
+          body: "Fruit splits along your swipe, with juice and a smooth blade trail. Slicing several fruit in one stroke earns a single combo bonus, and swiping no longer scrolls the page.",
+        },
+        {
+          title: "Tower Stacker, rebuilt",
+          body: "Blocks now have visible depth in a three-quarter view. Overhangs fall away, and the camera follows the tower and pulls back to show it all when the run ends.",
+          points: [
+            "Perfect drops snap within a small, fixed tolerance. Streaks build up feedback and sound.",
+            "Retry straight from the results panel. The press that ends a run can't start the next one by accident.",
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-03-2048-flutter-daily",
     date: "2026-11-03",
     title: "Daily challenges, board sizes and a fairer Flutter",

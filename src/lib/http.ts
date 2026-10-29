@@ -65,6 +65,7 @@ const HINTED: Record<string, number> = {
   rate_limited: 429,
   layout_changed: 409,
   list_changed: 409,
+  replaced: 409,
 };
 
 /** Map a PostgREST/Postgres error to a safe client response without leaking internals. */
