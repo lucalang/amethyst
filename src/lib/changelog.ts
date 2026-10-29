@@ -42,6 +42,46 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-01-snake-v2",
+    date: "2026-11-01",
+    title: "Snake: cartoon look, 15 new modes and Blender",
+    intro: "Snake has a new hand-drawn look, an icon-based setup, many new modes you can play alone or mix in Blender, and more fruit.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "New look", text: "An expressive cartoon snake, outlined fruit and objects, and a compact icon setup with tooltips." },
+      { kind: "new", feature: "Modes", text: "Peace, Wall, Portal, Two Heads, Winged, Yin Yang, Cheese, Ghost, Key, Boxes, Poison, Statue, Light, Dimension and Landmines." },
+      { kind: "new", feature: "Blender", text: "Mix several modes into one round. Combinations that can't work together are greyed out with the reason." },
+      { kind: "new", feature: "More fruit", text: "Lemon, pineapple, pear, peach, kiwi, blueberry, plum and mango join the menu and Fruit Salad." },
+      { kind: "improved", feature: "Separate bests", text: "Every mode and every mix keeps its own best per board size and fruit amount. Wrap is now called No Borders." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Modes and Blender",
+          body: "Pick a mode icon in the setup panel; hover or focus it for a one-line hint. Choose Blender, then tap the modes to mix.",
+          points: [
+            "Peace can't end your run: you pass through yourself and the edges. In a mix it overrides every danger.",
+            "Wall leaves a brick per fruit, Portal opens linked portal pairs, Statue turns your tail to stone now and then. New objects never cut the board apart or appear right in front of you.",
+            "Two Heads swaps head and tail on every fruit; Yin Yang steers two mirrored snakes at once.",
+            "Winged fruit flies around, Key fruit waits in a locked box until you grab its key, and in Boxes you push crates onto their targets to open them.",
+            "Cheese leaves safe holes in your body, Ghost makes your body passable for a few seconds, and Poison scrambles your controls for a while (the chip above the board shows the new mapping).",
+            "Light only shows the area around your head, Dimension flips between two layers each time you eat, and Landmines count down while you stay in a danger zone.",
+          ],
+          where: "Arcade → Snake → Setup",
+          link: { href: "/arcade/snake", label: "Play Snake" },
+        },
+      ],
+      improved: [
+        {
+          title: "Cartoon art and icon setup",
+          body: "The snake has a face that reacts to food, danger and crashes, and every fruit, rock, portal, crate and key shares the same outlined style. The setup panel uses icons instead of descriptions. Reduced motion settings turn off decorative animation.",
+          where: "Arcade → Snake",
+          link: { href: "/arcade/snake", label: "Play Snake" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-31-snake-modes",
     date: "2026-10-31",
     title: "Snake: smoother play, modes, fruits and board sizes",
