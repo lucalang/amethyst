@@ -42,6 +42,48 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-31-snake-modes",
+    date: "2026-10-31",
+    title: "Snake: smoother play, modes, fruits and board sizes",
+    intro: "Snake glides between cells, reacts when it eats or crashes, and now lets you pick a mode, a fruit, how many fruits appear and the board size before each round.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Snake feel", text: "Smooth movement, a rounded snake with a turning head, new fruit art and clear eat, grow and crash feedback." },
+      { kind: "new", feature: "Modes", text: "Classic, Wrap (edges loop around), Obstacles and Timed (60 seconds)." },
+      { kind: "new", feature: "Fruits", text: "Choose apple, cherry, orange, strawberry, grapes, banana, watermelon or a Fruit Salad mix." },
+      { kind: "new", feature: "Fruit amount & board size", text: "Keep 1 to 12 fruits on the board at once, on a Small, Medium or Large board." },
+      { kind: "improved", feature: "Separate bests", text: "Each mode, size and fruit amount keeps its own best. Your existing best stays as Classic · Medium · 1 fruit." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Set up your round",
+          body: "One setup panel next to the board holds every option, each with a short description. Your choices are saved and restored next time. Changes made during a round apply when the next round starts.",
+          points: [
+            "Classic: walls end the round. Wrap: leaving one edge brings you back on the other side. Obstacles: short walls appear across the board, always leaving a path. Timed: score as much as you can in 60 seconds.",
+            "Fruit Salad mixes every fruit; the chosen fruit is what you see on the board.",
+            "Fruit amount presets are 1, 3, 5 and 10, or step anywhere from 1 to 12. Eaten fruit is replaced on a free cell; if the board fills up, the round ends as cleared.",
+            "Boards are Small (14×14), Medium (20×20) and Large (26×26).",
+          ],
+          where: "Arcade → Snake → Setup",
+          link: { href: "/arcade/snake", label: "Play Snake" },
+        },
+      ],
+      improved: [
+        {
+          title: "Smoother, clearer Snake",
+          body: "The snake now moves smoothly between cells with rounded turns and a tapered tail. Eating makes a small burst and a bulge travels down the body; crashing shows a brief shake and dims the snake. Reduced motion settings turn the extra effects off.",
+          points: [
+            "Quick turns are queued, so fast key presses or swipes aren't lost.",
+            "The game pauses when you switch tabs or windows.",
+            "Press R to restart; arrows or WASD, swipes and the on-screen pad still work.",
+          ],
+          link: { href: "/arcade/snake", label: "Play Snake" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-amethyst",
     date: "2026-10-30",
     title: "Meet Amethyst: chosen covers and a calmer Home",

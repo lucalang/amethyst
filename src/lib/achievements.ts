@@ -46,14 +46,14 @@ const gameStarted = z.object({ type: z.literal("game_started"), game: z.enum(ARC
 const runFinished = z.discriminatedUnion("game", [
   z.object({ type: z.literal("run_finished"), game: z.literal("2048"), maxTile: z.number().int().min(0).max(1_048_576) }).strict(),
   z.object({ type: z.literal("run_finished"), game: z.literal("flutter"), obstacles: z.number().int().min(0).max(100_000) }).strict(),
-  z.object({ type: z.literal("run_finished"), game: z.literal("snake"), length: z.number().int().min(3).max(400) }).strict(),
+  z.object({ type: z.literal("run_finished"), game: z.literal("snake"), length: z.number().int().min(3).max(1000) }).strict(),
   z.object({ type: z.literal("run_finished"), game: z.literal("fruit-slice"), fruitsSliced: z.number().int().min(0).max(100_000), maxCombo: z.number().int().min(0).max(100), reason: z.enum(["bomb", "misses"]) }).strict(),
   z.object({ type: z.literal("run_finished"), game: z.literal("stacker"), height: z.number().int().min(0).max(100_000), perfectStreak: z.number().int().min(0).max(100_000) }).strict(),
 ]);
 const runProgress = z.discriminatedUnion("game", [
   z.object({ type: z.literal("run_progress"), game: z.literal("2048"), maxTile: z.number().int().min(0).max(1_048_576) }).strict(),
   z.object({ type: z.literal("run_progress"), game: z.literal("flutter"), obstacles: z.number().int().min(0).max(100_000) }).strict(),
-  z.object({ type: z.literal("run_progress"), game: z.literal("snake"), length: z.number().int().min(3).max(400) }).strict(),
+  z.object({ type: z.literal("run_progress"), game: z.literal("snake"), length: z.number().int().min(3).max(1000) }).strict(),
   z.object({ type: z.literal("run_progress"), game: z.literal("fruit-slice"), fruitsSliced: z.number().int().min(0).max(100_000), maxCombo: z.number().int().min(0).max(100) }).strict(),
   z.object({ type: z.literal("run_progress"), game: z.literal("stacker"), height: z.number().int().min(0).max(100_000), perfectStreak: z.number().int().min(0).max(100_000) }).strict(),
 ]);

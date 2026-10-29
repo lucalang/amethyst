@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ARTWORK_FRAME_IDS, DEFAULT_ARTWORK_FRAME, type ArtworkFrameId } from "@/lib/frames";
+import { DEFAULT_SNAKE_SETUP, snakeSetupSchema, type SnakeSetup } from "@/lib/snake";
 import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
 import { BUILTIN_VIEWER_PRESET_IDS, DEFAULT_VIEWER_PRESET, viewerLookSchema, type ViewerLook } from "@/lib/viewer-looks";
@@ -105,6 +106,8 @@ export const DEFAULT_SETTINGS = {
   artworkFrame: DEFAULT_ARTWORK_FRAME as ArtworkFrameId,
   /** Sound effects in Arcade games (audio only starts after the player interacts). */
   arcadeSound: true,
+  /** Snake's last chosen mode, fruit, fruit amount and board size. */
+  arcadeSnake: DEFAULT_SNAKE_SETUP as SnakeSetup,
   achievementNotifications: true,
   /** The 3D Showcase preset: a built-in id or the id of one of the account's saved presets. */
   viewerPreset: DEFAULT_VIEWER_PRESET as string,
@@ -197,6 +200,7 @@ const settingFields = {
     .nullable(),
   artworkFrame: z.enum(ARTWORK_FRAME_IDS),
   arcadeSound: z.boolean(),
+  arcadeSnake: snakeSetupSchema,
   achievementNotifications: z.boolean(),
   viewerPreset: z.union([z.enum(BUILTIN_VIEWER_PRESET_IDS), z.uuid()]),
   viewerTweaks: viewerLookSchema.nullable(),

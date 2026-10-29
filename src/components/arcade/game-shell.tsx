@@ -268,17 +268,24 @@ export function useAway(onAway: () => void) {
 
 /** The saved personal best for a game; `submit` saves a finished run when it beats the record. */
 export function useRecord(game: ScoreGame, initial: number | null) {
-  const [best, setBest] = useState(initial ?? 0);
-  const saved = useRef(initial ?? 0);
+  const { records, submit } = useRecords(game, initial === null ? {} : { "": initial });
+  return { best: records[""] ?? 0, submit };
+}
+
+/** Personal bests per variant ("" = the game's main record), for games that keep several. */
+export function useRecords(game: ScoreGame, initial: Record<string, number>) {
+  const [records, setRecords] = useState(initial);
+  const saved = useRef(initial);
 
   const submit = useCallback(
-    (score: number, options: { keepalive?: boolean } = {}) => {
-      if (score <= saved.current) return false;
-      const previous = saved.current;
-      saved.current = score;
-      setBest((current) => Math.max(current, score));
-      apiFetch("/api/arcade/records", { method: "POST", json: { game, score }, keepalive: options.keepalive }).catch(() => {
-        if (saved.current === score) saved.current = previous;
+    (score: number, options: { keepalive?: boolean; variant?: string } = {}) => {
+      const variant = options.variant ?? "";
+      const previous = saved.current[variant] ?? 0;
+      if (score <= previous) return false;
+      saved.current = { ...saved.current, [variant]: score };
+      setRecords((current) => ({ ...current, [variant]: Math.max(current[variant] ?? 0, score) }));
+      apiFetch("/api/arcade/records", { method: "POST", json: { game, variant, score }, keepalive: options.keepalive }).catch(() => {
+        if (saved.current[variant] === score) saved.current = { ...saved.current, [variant]: previous };
         if (!options.keepalive) toast.error("Your new best could not be saved. It will be retried after your next run.");
       });
       return true;
@@ -286,7 +293,7 @@ export function useRecord(game: ScoreGame, initial: number | null) {
     [game],
   );
 
-  return { best, submit };
+  return { records, submit };
 }
 
 /** Keyboard key → direction, for arrows and WASD. */

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isSnakeVariant } from "@/lib/snake";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
 export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker"] as const;
@@ -27,17 +28,23 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "stacker", title: "Tower Stacker", href: "/arcade/stacker", blurb: "Drop each sliding block right on top. Only the overlap stays.", recordLabel: "Highest tower" },
 ];
 
-/** Records keyed by game id, and by `sudoku:<difficulty>` for Sudoku times (seconds). */
-export type ArcadeRecords = Partial<Record<ScoreGame | `sudoku:${SudokuDifficulty}`, number>>;
+/** Records keyed by game id, by `sudoku:<difficulty>` for Sudoku times (seconds) and `snake:<variant>` for Snake setups. */
+export type ArcadeRecords = Partial<Record<ScoreGame | `sudoku:${SudokuDifficulty}` | `snake:${string}`, number>>;
 
 export const MAX_ARCADE_SCORE = 100_000_000;
 
 export const recordScoreSchema = z
   .object({
     game: z.enum(SCORE_GAMES),
+    /** Only Snake keeps separate records per setup; "" is a game's main record. */
+    variant: z.string().max(40).default(""),
     score: z.number().int().min(0).max(MAX_ARCADE_SCORE),
   })
-  .strict();
+  .strict()
+  .refine((value) => value.variant === "" || (value.game === "snake" && isSnakeVariant(value.variant)), {
+    message: "Unknown game variant.",
+    path: ["variant"],
+  });
 
 export const SUDOKU_CELLS = 81;
 

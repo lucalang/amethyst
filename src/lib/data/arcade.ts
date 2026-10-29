@@ -10,6 +10,8 @@ export async function loadArcadeRecords(ctx: AuthContext): Promise<ArcadeRecords
   for (const row of data ?? []) {
     if (row.game === "sudoku" && SUDOKU_DIFFICULTIES.includes(row.variant as SudokuDifficulty)) {
       records[`sudoku:${row.variant as SudokuDifficulty}`] = row.score;
+    } else if (row.game === "snake" && row.variant !== "") {
+      records[`snake:${row.variant}`] = row.score;
     } else if (SCORE_GAMES.includes(row.game as ScoreGame)) {
       records[row.game as ScoreGame] = row.score;
     }

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
   const parsed = await parseJson(request, recordScoreSchema);
   if ("response" in parsed) return parsed.response;
 
-  const { data, error } = await ctx.supabase.rpc("record_arcade_score", { p_game: parsed.data.game, p_variant: "", p_score: parsed.data.score });
+  const { data, error } = await ctx.supabase.rpc("record_arcade_score", { p_game: parsed.data.game, p_variant: parsed.data.variant, p_score: parsed.data.score });
   if (error) return dbError(error, "Could not save your record.");
   const row = data?.[0];
   if (!row) return apiError(500, "server_error", "Could not save your record.");

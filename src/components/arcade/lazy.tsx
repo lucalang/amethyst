@@ -31,7 +31,7 @@ type ScoreProps = { best: number | null };
 
 export const Lazy2048 = wrap(dynamic<ScoreProps>(() => import("./game-2048"), { ssr: false, loading: Loading }));
 export const LazyFlutter = wrap(dynamic<ScoreProps>(() => import("./game-flutter"), { ssr: false, loading: Loading }));
-export const LazySnake = wrap(dynamic<ScoreProps>(() => import("./game-snake"), { ssr: false, loading: Loading }));
+export const LazySnake = wrap(dynamic<{ records: Record<string, number> }>(() => import("./game-snake"), { ssr: false, loading: Loading }));
 export const LazyFruit = wrap(dynamic<ScoreProps>(() => import("./game-fruit"), { ssr: false, loading: Loading }));
 export const LazyStacker = wrap(dynamic<ScoreProps>(() => import("./game-stacker"), { ssr: false, loading: Loading }));
 export const LazySudoku = wrap(
