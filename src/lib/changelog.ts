@@ -42,6 +42,46 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-02-snake-speed-game-colors",
+    date: "2026-11-02",
+    title: "Snake speeds, smoother play and game colors",
+    intro: "Snake runs more smoothly and lets you pick a speed, and every Arcade game now has its own colors instead of following your app theme.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Smoother Snake", text: "Movement stays fluid on any display, turns register reliably, and busy boards no longer stutter." },
+      { kind: "new", feature: "Speeds", text: "Choose Slow, Normal or Fast. Each speed keeps its own best, and timers and effects last just as long at every speed." },
+      { kind: "improved", feature: "Game colors", text: "Snake, 2048, Flutter, Fruit Slice, Tower Stacker and Sudoku each have their own look. The Arcade menu and navigation keep your theme." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Snake speeds",
+          body: "Pick the turtle, gauge or rabbit in the setup panel. The speed applies from the next round, and the game speeds up gradually as you eat, just like before.",
+          points: [
+            "Normal is the pace you already know, so your existing bests stay where they are.",
+            "Slow and Fast record their own bests for every mode, mix, board size and fruit amount.",
+            "Landmine fuses now count down in seconds, so they last the same at every speed.",
+          ],
+          where: "Arcade → Snake → Setup",
+          link: { href: "/arcade/snake", label: "Play Snake" },
+        },
+      ],
+      improved: [
+        {
+          title: "Smoother Snake",
+          body: "The snake is drawn between moves in step with your screen's refresh rate, the board and scenery are drawn once and reused, and the setup panel no longer refreshes while you play.",
+          link: { href: "/arcade/snake", label: "Play Snake" },
+        },
+        {
+          title: "Each game has its own colors",
+          body: "Snake has a green snake on a sunny board, 2048 uses its familiar tile colors, Flutter has a daytime sky with green pipes, Fruit Slice a wooden board, Tower Stacker a dusk skyline and Sudoku ink on paper. Scores, overlays and controls in each game stay readable whatever app theme you use.",
+          where: "Arcade",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-01-snake-v2",
     date: "2026-11-01",
     title: "Snake: cartoon look, 15 new modes and Blender",

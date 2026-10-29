@@ -5,7 +5,8 @@ import Matter from "matter-js";
 import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
-import { fitWorld, livePalette, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { fitWorld, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { GAME_PALETTES } from "./palettes";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
@@ -34,7 +35,7 @@ type Hooks = {
 
 function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
   const ctx = canvas.getContext("2d");
-  const palette = livePalette(canvas);
+  const colors = GAME_PALETTES.flutter;
   // Gravity tuned so the bird gains ~0.42 px of fall speed per 60 Hz step.
   const engine = Matter.Engine.create({ gravity: { x: 0, y: 1, scale: 0.001512 } });
   const bird = Matter.Bodies.circle(BIRD_X, HEIGHT / 2, RADIUS, { inertia: Infinity, frictionAir: 0, collisionFilter: { mask: 0 } });
@@ -167,7 +168,6 @@ function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
 
   function draw(alpha: number) {
     if (!ctx) return;
-    const colors = palette();
     const effects = hooks.live().effects;
     const { width, height, dpr } = size;
     const view = fitWorld(size, WIDTH, HEIGHT);
@@ -442,6 +442,7 @@ export default function GameFlutter({ best: initialBest }: { best: number | null
 
   return (
     <GameShell
+      game="flutter"
       title="Flutter"
       active={phase === "playing" || phase === "paused"}
       stats={

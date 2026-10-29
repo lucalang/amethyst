@@ -454,8 +454,54 @@ function paint(ctx: Ctx, x: number, y: number, size: number, body: () => void) {
 }
 
 /** Paint a fruit `size` pixels across, centred on (x, y). */
+function paintFruit(ctx: Ctx, fruit: SnakeFruit, x: number, y: number, size: number, detail: boolean) {
+  paint(ctx, x, y, size, () => PAINTERS[fruit](ctx, detail));
+}
+
+// Painting clips and strokes many paths, so each piece is rendered once per pixel size and stamped.
+const sprites = new Map<string, HTMLCanvasElement>();
+const SPRITE_PAD = 1.7;
+
+function stamp(ctx: Ctx, key: string, x: number, y: number, size: number, body: (c: Ctx, px: number) => void) {
+  if (size < 1) return;
+  const m = ctx.getTransform();
+  const px = Math.max(4, Math.ceil((size * (Math.hypot(m.a, m.b) || 1)) / 2) * 2);
+  const id = `${key}@${px}`;
+  let sprite = sprites.get(id);
+  if (!sprite) {
+    sprite = document.createElement("canvas");
+    sprite.width = sprite.height = Math.ceil(px * SPRITE_PAD);
+    const c = sprite.getContext("2d");
+    if (!c) return;
+    c.translate(sprite.width / 2, sprite.height / 2);
+    body(c, px);
+    if (sprites.size > 600) sprites.clear();
+    sprites.set(id, sprite);
+  }
+  const d = (sprite.width / px) * size;
+  ctx.drawImage(sprite, x - d / 2, y - d / 2, d, d);
+}
+
+/** Paint a fruit `size` pixels across, centred on (x, y). */
 export function drawFruit(ctx: Ctx, fruit: SnakeFruit, x: number, y: number, size: number) {
-  paint(ctx, x, y, size, () => PAINTERS[fruit](ctx, size >= 22));
+  const detail = size >= 22;
+  stamp(ctx, `${fruit}${detail ? "+" : ""}`, x, y, size, (c, px) => paintFruit(c, fruit, 0, 0, px, detail));
+}
+
+export function drawPoison(ctx: Ctx, x: number, y: number, size: number) {
+  stamp(ctx, "poison", x, y, size, (c, px) => paintPoison(c, 0, 0, px));
+}
+
+export function drawKey(ctx: Ctx, x: number, y: number, size: number, hue: string) {
+  stamp(ctx, `key${hue}`, x, y, size, (c, px) => paintKey(c, 0, 0, px, hue));
+}
+
+export function drawLockBox(ctx: Ctx, x: number, y: number, size: number, fruit: SnakeFruit, hue: string) {
+  stamp(ctx, `lock${fruit}${hue}`, x, y, size, (c, px) => paintLockBox(c, 0, 0, px, fruit, hue));
+}
+
+export function drawCrate(ctx: Ctx, x: number, y: number, size: number, fruit: SnakeFruit, hue: string) {
+  stamp(ctx, `crate${fruit}${hue}`, x, y, size, (c, px) => paintCrate(c, 0, 0, px, fruit, hue));
 }
 
 /** A fruit, or a small heap of three for Fruit Salad. */
@@ -467,7 +513,7 @@ export function drawFruitChoice(ctx: Ctx, choice: SnakeFruitChoice, x: number, y
 }
 
 /** Gray poison fruit with a skull: dull, desaturated and marked so it never passes for food. */
-export function drawPoison(ctx: Ctx, x: number, y: number, size: number) {
+function paintPoison(ctx: Ctx, x: number, y: number, size: number) {
   paint(ctx, x, y, size, () => {
     const shape = () => {
       ctx.beginPath();
@@ -497,7 +543,7 @@ export function drawPoison(ctx: Ctx, x: number, y: number, size: number) {
 }
 
 /** A golden key whose bow carries the color of the box it opens. */
-export function drawKey(ctx: Ctx, x: number, y: number, size: number, hue: string) {
+function paintKey(ctx: Ctx, x: number, y: number, size: number, hue: string) {
   paint(ctx, x, y, size, () => {
     ctx.rotate(-0.75);
     const shaft = () => {
@@ -519,7 +565,7 @@ export function drawKey(ctx: Ctx, x: number, y: number, size: number, hue: strin
 }
 
 /** A barred box with the fruit visible inside and a padlock in the matching color. */
-export function drawLockBox(ctx: Ctx, x: number, y: number, size: number, fruit: SnakeFruit, hue: string) {
+function paintLockBox(ctx: Ctx, x: number, y: number, size: number, fruit: SnakeFruit, hue: string) {
   paint(ctx, x, y, size, () => {
     ctx.beginPath();
     ctx.roundRect(-44, -44, 88, 88, 14);
@@ -568,7 +614,7 @@ export function drawLockBox(ctx: Ctx, x: number, y: number, size: number, fruit:
 }
 
 /** A wooden crate with a colored band matching its target and the fruit it holds on a label. */
-export function drawCrate(ctx: Ctx, x: number, y: number, size: number, fruit: SnakeFruit, hue: string) {
+function paintCrate(ctx: Ctx, x: number, y: number, size: number, fruit: SnakeFruit, hue: string) {
   paint(ctx, x, y, size, () => {
     const box = () => {
       ctx.beginPath();

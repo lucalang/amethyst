@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ComponentType, type ReactNode, type SVGProps } from "react";
+import { memo, useEffect, useRef, type ComponentType, type ReactNode, type SVGProps } from "react";
 import {
   ArrowLeftRight,
   Bird,
@@ -11,6 +11,7 @@ import {
   Flashlight,
   Flower2,
   Gamepad2,
+  Gauge,
   Ghost,
   Hourglass,
   InfinityIcon,
@@ -23,9 +24,11 @@ import {
   Orbit,
   Package,
   Plus,
+  Rabbit,
   Skull,
   Timer,
   Trophy,
+  Turtle,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -37,6 +40,8 @@ import {
   SNAKE_MODES,
   SNAKE_SIZE_IDS,
   SNAKE_SIZES,
+  SNAKE_SPEED_IDS,
+  SNAKE_SPEEDS,
   activeModes,
   blendClash,
   snakeVariant,
@@ -45,6 +50,7 @@ import {
   type SnakeMode,
   type SnakeSetup,
   type SnakeSize,
+  type SnakeSpeed,
 } from "@/lib/snake";
 import { cn } from "@/lib/utils";
 import { drawFruitChoice } from "./snake-art";
@@ -93,6 +99,12 @@ export function ModeIcon({ mode, className }: { mode: SnakeMode; className?: str
   return <Glyph aria-hidden className={className} style={{ color }} />;
 }
 
+const SPEED_LOOK: Record<SnakeSpeed, { icon: Icon; color: string }> = {
+  slow: { icon: Turtle, color: "#4fcf6a" },
+  normal: { icon: Gauge, color: "#38bdf8" },
+  fast: { icon: Rabbit, color: "#ff8a3d" },
+};
+
 /** A board-size glyph: more lines for bigger boards. */
 function SizeIcon({ size, className }: { size: SnakeSize; className?: string }) {
   const n = { small: 2, medium: 3, large: 4 }[size];
@@ -135,7 +147,7 @@ export function setupTitle(setup: SnakeSetup) {
 }
 
 export function describeSetup(setup: SnakeSetup) {
-  return `${setupTitle(setup)} · ${SNAKE_SIZES[setup.size].label} · ${setup.fruitCount} × ${SNAKE_FRUIT_LABELS[setup.fruit]}`;
+  return `${setupTitle(setup)} · ${SNAKE_SIZES[setup.size].label} · ${SNAKE_SPEEDS[setup.speed].label} · ${setup.fruitCount} × ${SNAKE_FRUIT_LABELS[setup.fruit]}`;
 }
 
 const tile =
@@ -169,8 +181,8 @@ function Group({ title, value, children }: { title: string; value: ReactNode; ch
   );
 }
 
-/** Mode, fruit, fruit amount and board size. Changes wait for the next round while one is under way. */
-export function SnakeSetupPanel({
+/** Mode, fruit, fruit amount, board size and speed. Changes wait for the next round while one is under way. */
+export const SnakeSetupPanel = memo(function SnakeSetupPanel({
   setup,
   onChange,
   locked,
@@ -259,7 +271,7 @@ export function SnakeSetupPanel({
                   aria-checked={setup.fruit === fruit}
                   aria-label={SNAKE_FRUIT_LABELS[fruit]}
                   className={cn(tile, "aspect-square")}
-                  style={setup.fruit === fruit ? picked("#a57cff") : undefined}
+                  style={setup.fruit === fruit ? picked("#ffd54a") : undefined}
                   onClick={() => update({ fruit })}
                 >
                   <FruitIcon fruit={fruit} size={26} />
@@ -269,7 +281,7 @@ export function SnakeSetupPanel({
           </div>
         </Group>
 
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Group title="Board" value={SNAKE_SIZES[setup.size].label}>
             <div className="flex gap-1.5" role="radiogroup" aria-label="Board size">
               {SNAKE_SIZE_IDS.map((size) => {
@@ -293,7 +305,32 @@ export function SnakeSetupPanel({
             </div>
           </Group>
 
-          <Group title="Amount" value={`× ${count}`}>
+          <Group title="Speed" value={SNAKE_SPEEDS[setup.speed].label}>
+            <div className="flex gap-1.5" role="radiogroup" aria-label="Speed">
+              {SNAKE_SPEED_IDS.map((speed) => {
+                const { label, tip } = SNAKE_SPEEDS[speed];
+                const look = SPEED_LOOK[speed];
+                return (
+                  <Tip key={speed} label={label} tip={tip}>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={setup.speed === speed}
+                      aria-label={`${label} speed`}
+                      className={cn(tile, "size-10")}
+                      style={setup.speed === speed ? picked(look.color) : undefined}
+                      onClick={() => update({ speed })}
+                    >
+                      <look.icon aria-hidden className="size-6" style={{ color: look.color }} />
+                    </button>
+                  </Tip>
+                );
+              })}
+            </div>
+          </Group>
+        </div>
+
+        <Group title="Amount" value={`× ${count}`}>
             <div className="flex flex-col gap-1.5">
               <div className="flex h-10 items-center justify-between rounded-xl border-2 border-border bg-surface/50">
                 <button
@@ -338,8 +375,7 @@ export function SnakeSetupPanel({
               </div>
             </div>
           </Group>
-        </div>
       </fieldset>
     </section>
   );
-}
+});

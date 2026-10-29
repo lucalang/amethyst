@@ -408,6 +408,7 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
 
   return (
     <GameShell
+      game="sudoku"
       title="Sudoku"
       active={view === "board" && unfinished}
       stats={

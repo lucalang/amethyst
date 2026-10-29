@@ -127,6 +127,7 @@ export default function Game2048({ best: initialBest }: { best: number | null })
 
   return (
     <GameShell
+      game="2048"
       title="2048"
       active={phase === "playing"}
       stats={

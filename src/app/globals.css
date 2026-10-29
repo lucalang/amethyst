@@ -2401,6 +2401,163 @@
   --stage-h: calc(100dvh - 9rem);
 }
 
+/*
+ * Game skins. Each Arcade game keeps its own colors whatever the app theme: stats, playfield,
+ * overlays and help sit inside [data-game-skin], which redefines the theme tokens locally (so
+ * nothing leaks out), while the Arcade navigation above it stays on the app theme. A game sets
+ * the base colors below; everything else is derived here.
+ */
+[data-game-skin] {
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface-raised);
+  --popover-foreground: var(--foreground);
+  --primary: var(--amethyst);
+  --primary-foreground: var(--amethyst-foreground);
+  --primary-hi: var(--amethyst);
+  --primary-lo: var(--amethyst);
+  --secondary: var(--surface-raised);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface);
+  --accent: var(--surface-raised);
+  --accent-foreground: var(--foreground);
+  --accent-soft-rgb: var(--accent-rgb);
+  --border: rgb(var(--ink-rgb) / 0.16);
+  --input: rgb(var(--ink-rgb) / 0.26);
+  --ring: var(--amethyst);
+  --strong: var(--foreground);
+  --warning-rgb: calc(138 + 107 * var(--theme-dark)) calc(83 + 112 * var(--theme-dark)) calc(91 * var(--theme-dark));
+  --warning: rgb(var(--warning-rgb));
+  background: var(--background);
+  color: var(--foreground);
+}
+/* Snake: a garden green frame around the sunny board. */
+[data-game-skin="snake"] {
+  --background: #2f5a2b;
+  --surface: #3b6d35;
+  --surface-raised: #467c3f;
+  --foreground: #f4fbe9;
+  --muted-foreground: #c8dcba;
+  --amethyst: #ffd54a;
+  --amethyst-foreground: #2b1b10;
+  --rose: #ff7a59;
+  --rose-foreground: #2b0d05;
+  --destructive: #ff9a8a;
+  --ink-rgb: 255 255 255;
+  --paper-rgb: 20 40 18;
+  --accent-rgb: 255 213 74;
+  --rose-rgb: 255 122 89;
+  --shadow-rgb: 10 25 8;
+  --shadow-alpha: 0.8;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
+/* 2048: the classic warm beige. */
+[data-game-skin="2048"] {
+  --background: #faf8ef;
+  --surface: #eee4da;
+  --surface-raised: #f9f6f2;
+  --foreground: #5f564e;
+  --muted-foreground: #776e65;
+  --amethyst: #8f5a33;
+  --amethyst-foreground: #f9f6f2;
+  --rose: #f65e3b;
+  --rose-foreground: #ffffff;
+  --destructive: #c53b1f;
+  --ink-rgb: 119 110 101;
+  --paper-rgb: 250 248 239;
+  --accent-rgb: 143 90 51;
+  --rose-rgb: 246 94 59;
+  --shadow-rgb: 119 110 101;
+  --shadow-alpha: 0.35;
+  --theme-dark: 0;
+  color-scheme: light;
+}
+/* Flutter: a bright daytime sky. */
+[data-game-skin="flutter"] {
+  --background: #e4f6f8;
+  --surface: #cdeef2;
+  --surface-raised: #f4fcfd;
+  --foreground: #1d3442;
+  --muted-foreground: #46606d;
+  --amethyst: #b84a12;
+  --amethyst-foreground: #ffffff;
+  --rose: #e2483d;
+  --rose-foreground: #ffffff;
+  --destructive: #c62f2f;
+  --ink-rgb: 29 52 66;
+  --paper-rgb: 228 246 248;
+  --accent-rgb: 184 74 18;
+  --rose-rgb: 226 72 61;
+  --shadow-rgb: 29 52 66;
+  --shadow-alpha: 0.35;
+  --theme-dark: 0;
+  color-scheme: light;
+}
+/* Fruit Slice: dark wood with juicy accents. */
+[data-game-skin="fruit-slice"] {
+  --background: #2a1a0f;
+  --surface: #3b2616;
+  --surface-raised: #4a311d;
+  --foreground: #fff1dc;
+  --muted-foreground: #d6b994;
+  --amethyst: #ffb52e;
+  --amethyst-foreground: #2a1a0f;
+  --rose: #ff5a4e;
+  --rose-foreground: #2a0a06;
+  --destructive: #ff6b5e;
+  --ink-rgb: 255 241 220;
+  --paper-rgb: 20 12 6;
+  --accent-rgb: 255 181 46;
+  --rose-rgb: 255 90 78;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
+/* Tower Stacker: a dusk sky with warm light. */
+[data-game-skin="stacker"] {
+  --background: #151d36;
+  --surface: #1e2a4a;
+  --surface-raised: #26355c;
+  --foreground: #f2f4ff;
+  --muted-foreground: #a9b4d6;
+  --amethyst: #ffb347;
+  --amethyst-foreground: #1a1206;
+  --rose: #ff6f91;
+  --rose-foreground: #2a0712;
+  --destructive: #ff6b6b;
+  --ink-rgb: 242 244 255;
+  --paper-rgb: 10 14 30;
+  --accent-rgb: 255 179 71;
+  --rose-rgb: 255 111 145;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
+/* Sudoku: ink on paper with a pencil-blue accent. */
+[data-game-skin="sudoku"] {
+  --background: #f6f3ea;
+  --surface: #fffdf7;
+  --surface-raised: #ffffff;
+  --foreground: #1d2433;
+  --muted-foreground: #545c6e;
+  --amethyst: #2f62c9;
+  --amethyst-foreground: #ffffff;
+  --rose: #c93d72;
+  --rose-foreground: #ffffff;
+  --destructive: #c9302c;
+  --ink-rgb: 29 36 51;
+  --paper-rgb: 246 243 234;
+  --accent-rgb: 47 98 201;
+  --rose-rgb: 201 61 114;
+  --shadow-rgb: 29 36 51;
+  --shadow-alpha: 0.3;
+  --theme-dark: 0;
+  color-scheme: light;
+}
+
 /* 2048 board: positions use container units so tiles slide smoothly at any size. */
 .g2048 {
   --gap: 2.4cqi;
@@ -2408,9 +2565,7 @@
   position: absolute;
   inset: 0;
   border-radius: 2.4cqi;
-  /* A neutral board, so even the faintest (accent-tinted) tile stands apart from it. */
-  background: color-mix(in oklab, var(--surface) 88%, var(--foreground));
-  box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / 0.12);
+  background: #bbada0;
   touch-action: none;
   user-select: none;
 }
@@ -2425,17 +2580,15 @@
   translate: calc(var(--gap) + var(--c) * (var(--cell) + var(--gap))) calc(var(--gap) + var(--r) * (var(--cell) + var(--gap)));
 }
 .g2048-cell {
-  background: color-mix(in oklab, var(--background) 55%, transparent);
+  background: #cdc1b4;
 }
 /*
- * Tiles step through the theme's tokens (data-step = log2 of the value): two light accent
- * tints with body text, then solid accent / accent-to-secondary fills with their paired
- * -foreground text. Every step differs from its neighbours in fill, and the number, edge
- * and glow add cues that don't rely on color alone.
+ * The familiar 2048 progression (data-step = log2 of the value): pale beige 2 and 4 with dark
+ * numbers, warm oranges to red, then golds with a growing glow; anything past 2048 is charcoal.
+ * The numbers themselves keep every tile distinguishable without relying on color alone.
  */
 .g2048-tile {
-  --tile: color-mix(in oklab, var(--amethyst) 16%, var(--surface-raised));
-  --tile-edge: color-mix(in oklab, var(--amethyst) 55%, transparent);
+  --tile: #3c3a32;
   --tile-glow: transparent;
   z-index: 1;
   display: grid;
@@ -2444,59 +2597,56 @@
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--foreground);
+  color: #f9f6f2;
+  /* A soft outline keeps light numbers legible on the bright orange and gold tiles. */
+  text-shadow: 0 0.15cqi 0.5cqi rgb(110 60 20 / 0.45);
   background: var(--tile);
   box-shadow:
-    inset 0 0 0 0.35cqi var(--tile-edge),
     0 0 2.4cqi 0.2cqi var(--tile-glow),
-    0 0.6cqi 1.6cqi -0.8cqi rgb(var(--shadow-rgb) / calc(0.8 * var(--shadow-alpha)));
+    0 0.5cqi 1.2cqi -0.8cqi rgb(119 110 101 / 0.45);
   transition: translate 110ms ease-out;
 }
-.g2048-tile[data-step="2"] {
-  --tile: color-mix(in oklab, var(--amethyst) 34%, var(--surface-raised));
-  --tile-edge: color-mix(in oklab, var(--amethyst) 75%, transparent);
+.g2048-tile[data-step="1"] {
+  --tile: #eee4da;
+  color: #776e65;
+  text-shadow: none;
 }
-.g2048-tile:not([data-step="1"], [data-step="2"]) {
-  --tile-edge: rgb(var(--ink-rgb) / 0.22);
-  color: var(--amethyst-foreground);
+.g2048-tile[data-step="2"] {
+  --tile: #ede0c8;
+  color: #776e65;
+  text-shadow: none;
 }
 .g2048-tile[data-step="3"] {
-  --tile: var(--amethyst);
+  --tile: #f2b179;
 }
 .g2048-tile[data-step="4"] {
-  --tile: color-mix(in oklab, var(--amethyst) 72%, var(--rose));
+  --tile: #f59563;
 }
 .g2048-tile[data-step="5"] {
-  --tile: color-mix(in oklab, var(--amethyst) 48%, var(--rose));
+  --tile: #f67c5f;
 }
 .g2048-tile[data-step="6"] {
-  --tile: color-mix(in oklab, var(--amethyst) 24%, var(--rose));
+  --tile: #f65e3b;
 }
 .g2048-tile[data-step="7"] {
-  --tile: var(--rose);
-  color: var(--rose-foreground);
+  --tile: #edcf72;
+  --tile-glow: rgb(243 215 116 / 0.24);
 }
 .g2048-tile[data-step="8"] {
-  --tile: linear-gradient(160deg, color-mix(in oklab, var(--rose) 80%, var(--strong)), var(--rose));
-  color: var(--rose-foreground);
+  --tile: #edcc61;
+  --tile-glow: rgb(243 215 116 / 0.32);
 }
 .g2048-tile[data-step="9"] {
-  --tile: linear-gradient(135deg, var(--rose), var(--amethyst));
-  --tile-edge: rgb(var(--ink-rgb) / 0.4);
+  --tile: #edc850;
+  --tile-glow: rgb(243 215 116 / 0.4);
 }
 .g2048-tile[data-step="10"] {
-  --tile: linear-gradient(135deg, var(--amethyst), var(--rose));
-  --tile-edge: rgb(var(--ink-rgb) / 0.5);
-  --tile-glow: rgb(var(--accent-rgb) / 0.45);
+  --tile: #edc53f;
+  --tile-glow: rgb(243 215 116 / 0.48);
 }
-.g2048-tile[data-step="11"],
-.g2048-tile[data-step="12"] {
-  --tile: linear-gradient(135deg, var(--primary-hi), var(--amethyst) 45%, var(--rose));
-  --tile-edge: rgb(var(--ink-rgb) / 0.65);
-  --tile-glow: rgb(var(--rose-rgb) / 0.6);
-}
-.g2048-tile[data-step="12"] {
-  --tile-glow: rgb(var(--accent-rgb) / 0.75);
+.g2048-tile[data-step="11"] {
+  --tile: #edc22e;
+  --tile-glow: rgb(243 215 116 / 0.56);
 }
 .g2048-tile.is-consumed {
   z-index: 0;

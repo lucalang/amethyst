@@ -91,8 +91,12 @@ const subscribeFullscreen = (onChange: () => void) => {
 };
 const noSubscribe = () => () => {};
 
-/** Frame shared by every game: navigation, compact stats, sound and fullscreen, with the playfield as the focus. */
+/**
+ * Frame shared by every game: navigation, compact stats, sound and fullscreen, with the playfield as the focus.
+ * Navigation keeps the app theme; everything below it wears the game's own colors (`data-game-skin`).
+ */
 export function GameShell({
+  game,
   title,
   active = false,
   stats,
@@ -100,6 +104,7 @@ export function GameShell({
   help,
   children,
 }: {
+  game: ArcadeGameId;
   title: string;
   active?: boolean;
   stats?: ReactNode;
@@ -170,9 +175,11 @@ export function GameShell({
             ) : null}
           </div>
         </div>
-        {stats ? <div className="flex flex-wrap items-stretch gap-2">{stats}</div> : null}
-        <div className="relative min-h-0">{children}</div>
-        {help ? <div className="text-xs leading-5 text-muted-foreground">{help}</div> : null}
+        <div data-game-skin={game} className="flex flex-col gap-3 rounded-lg p-3 md:p-4">
+          {stats ? <div className="flex flex-wrap items-stretch gap-2">{stats}</div> : null}
+          <div className="relative min-h-0">{children}</div>
+          {help ? <div className="text-xs leading-5 text-muted-foreground">{help}</div> : null}
+        </div>
       </div>
   );
 }
@@ -191,7 +198,7 @@ export function useGameAchievementTracking(game: ArcadeGameId, phase: string) {
 
 export function Stat({ label, value, highlight = false, className }: { label: string; value: ReactNode; highlight?: boolean; className?: string }) {
   return (
-    <div className={cn("flex min-w-[5.25rem] flex-col rounded-lg border border-white/[0.08] bg-surface/60 px-3 py-1.5", className)}>
+    <div className={cn("flex min-w-[5.25rem] flex-col rounded-lg border border-border bg-surface/60 px-3 py-1.5", className)}>
       <span className="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">{label}</span>
       <span className={cn("text-lg leading-tight font-semibold tabular-nums transition-colors", highlight && "text-amethyst")}>{value}</span>
     </div>
@@ -208,7 +215,7 @@ export function GameOverlay({ title, children, actions, tone = "default" }: { ti
       <div
         role="status"
         className={cn(
-          "max-w-xs rounded-xl border border-white/[0.1] px-5 py-4 text-center shadow-[0_18px_48px_-20px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))] backdrop-blur-md",
+          "max-w-xs rounded-xl border border-border px-5 py-4 text-center shadow-[0_18px_48px_-20px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))] backdrop-blur-md",
           tone === "quiet" ? "bg-background/55" : "bg-background/80",
         )}
       >

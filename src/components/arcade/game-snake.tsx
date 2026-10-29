@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Ghost, Layers, Pause, Play, RotateCcw, Settings2, Shuffle } from "lucide-react";
 import { toast } from "sonner";
@@ -95,17 +95,21 @@ export default function GameSnake({ records: initialRecords }: { records: Record
 
   useAway(() => gameRef.current?.pause());
 
-  function changeSetup(next: SnakeSetup) {
-    setSetup(next);
-    if (pendingSave.current) window.clearTimeout(pendingSave.current.timer);
-    const timer = window.setTimeout(() => {
-      pendingSave.current = null;
-      apiFetch("/api/preferences", { method: "PATCH", json: { settings: { arcadeSnake: next } } })
-        .then(() => router.refresh())
-        .catch(() => toast.error("Could not save your Snake setup. It applies until you leave this page."));
-    }, 600);
-    pendingSave.current = { timer, setup: next };
-  }
+  // Stable, so the memoized setup panel doesn't re-render with every score or timer tick.
+  const changeSetup = useCallback(
+    (next: SnakeSetup) => {
+      setSetup(next);
+      if (pendingSave.current) window.clearTimeout(pendingSave.current.timer);
+      const timer = window.setTimeout(() => {
+        pendingSave.current = null;
+        apiFetch("/api/preferences", { method: "PATCH", json: { settings: { arcadeSnake: next } } })
+          .then(() => router.refresh())
+          .catch(() => toast.error("Could not save your Snake setup. It applies until you leave this page."));
+      }, 600);
+      pendingSave.current = { timer, setup: next };
+    },
+    [router],
+  );
 
   function restart() {
     const game = gameRef.current;
@@ -207,6 +211,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
 
   return (
     <GameShell
+      game="snake"
       title="Snake"
       active={inRound}
       stats={

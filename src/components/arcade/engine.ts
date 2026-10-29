@@ -98,9 +98,13 @@ export function toRgb(color: string): [number, number, number] {
   if (cached) return cached;
   let rgb: [number, number, number] = [128, 128, 128];
   const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
+  // Colors built by `mix` are parsed directly: probing a canvas for each one is slow during fades.
+  const plain = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i.exec(color);
   if (hex) {
     const value = hex[1].length === 3 ? [...hex[1]].map((c) => c + c).join("") : hex[1];
     rgb = [parseInt(value.slice(0, 2), 16), parseInt(value.slice(2, 4), 16), parseInt(value.slice(4, 6), 16)];
+  } else if (plain) {
+    rgb = [Number(plain[1]), Number(plain[2]), Number(plain[3])];
   } else {
     const ctx = document.createElement("canvas").getContext("2d");
     if (ctx) {
@@ -110,6 +114,7 @@ export function toRgb(color: string): [number, number, number] {
       rgb = [r, g, b];
     }
   }
+  if (probe.size > 512) probe.clear();
   probe.set(color, rgb);
   return rgb;
 }

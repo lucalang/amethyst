@@ -1,8 +1,8 @@
 "use client";
 
 import type { MotionLevel } from "@/lib/preferences";
-import { SALAD_FRUITS, SNAKE_SIZES, TIMED_SECONDS, activeModes, type BlendMode, type SnakeFruit, type SnakeSetup } from "@/lib/snake";
-import { livePalette, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { SALAD_FRUITS, SNAKE_SIZES, SNAKE_SPEEDS, SPEED_RAMP, TIMED_SECONDS, activeModes, type BlendMode, type SnakeFruit, type SnakeSetup } from "@/lib/snake";
+import { mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
 import {
   FRUIT_COLORS,
   INK,
@@ -23,17 +23,29 @@ import {
 import type { SoundName } from "./sound";
 
 export const START_LENGTH = 3;
-const START_INTERVAL = 140;
-const MIN_INTERVAL = 70;
 const MAX_QUEUED_TURNS = 3;
 const GHOST_MS = 5000;
 const SCRAMBLE_MS = 7000;
 const STATUE_MS = 8000;
 const WING_MS = 300;
-/** Moves the head may spend inside a danger zone before it goes off. */
-const FUSE_MOVES = 8;
+/** How long the head may stay inside a danger zone before it goes off, at any speed. */
+const FUSE_MS = 1200;
 const MAX_PORTAL_PAIRS = 3;
+/** One simulation step of the shared loop. */
+const STEP_MS = 1000 / 60;
 export const LAYER_HUES = ["#22b5a5", "#c64fdc"] as const;
+
+/** Snake's own colors: a sunny sand board, a green snake and a blue partner, whatever the app theme. */
+const LOOK = {
+  board: "#f3e3b5",
+  check: "#e9d49b",
+  tuft: "#c9ae6a",
+  rim: "#7a5a2e",
+  wrapRim: "#3f8fd8",
+  text: INK,
+  snakes: ["#46b03c", "#3d82d6"],
+  dead: "#9b9488",
+} as const;
 
 export type Direction = "up" | "down" | "left" | "right";
 export type Phase = "ready" | "playing" | "paused" | "over";
@@ -95,7 +107,12 @@ function takeRandom<T>(list: T[]): T {
 }
 
 export const sameSetup = (a: SnakeSetup, b: SnakeSetup) =>
-  a.mode === b.mode && a.fruit === b.fruit && a.fruitCount === b.fruitCount && a.size === b.size && a.blend.join() === b.blend.join();
+  a.mode === b.mode &&
+  a.fruit === b.fruit &&
+  a.fruitCount === b.fruitCount &&
+  a.size === b.size &&
+  a.speed === b.speed &&
+  a.blend.join() === b.blend.join();
 
 /** A scrambled control map: every arrow steers somewhere new, and the map stays fixed for the effect. */
 function scrambledMap(): Record<Direction, Direction> {
@@ -218,8 +235,11 @@ type Hooks = {
  */
 export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hooks: Hooks) {
   const ctx = canvas.getContext("2d");
-  const palette = livePalette(canvas);
   let lightCanvas: HTMLCanvasElement | null = null;
+  // The board and everything that never moves are painted once into this layer and reused.
+  let boardCanvas: HTMLCanvasElement | null = null;
+  let boardKey = "";
+  let statics = 0;
   let size: CanvasSize = { width: 1, height: 1, dpr: 1 };
   let phase: Phase = "ready";
   let setup = initial;
@@ -244,7 +264,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   let bursts: Burst[] = [];
   let floaters: Floater[] = [];
   let ticks = 0;
-  let interval = START_INTERVAL;
+  let interval = SNAKE_SPEEDS[initial.speed].start;
   let elapsed = 0;
   let clock = 0;
   let score = 0;
@@ -717,10 +737,11 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     bursts = [];
     floaters = [];
     ticks = 0;
-    interval = START_INTERVAL;
+    score = 0;
+    interval = pace();
+    statics += 1;
     elapsed = 0;
     clock = 0;
-    score = 0;
     scramble = null;
     scrambleLeft = 0;
     statueIn = STATUE_MS;
@@ -949,30 +970,39 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       if (modes.has("portal")) addPortals(now);
       if (modes.has("minesweeper")) addMine(now);
       if (modes.has("wall")) fixCrates();
-      interval = Math.max(MIN_INTERVAL, START_INTERVAL - score * 2);
+      interval = pace();
       hooks.onScore(score);
-    }
-
-    if (mines.length) {
-      for (const s of snakes) {
-        const h = s.cells[0];
-        const zone = mines.filter((m) => Math.abs(m.x - h.x) <= 1 && Math.abs(m.y - h.y) <= 1);
-        s.fuse = zone.length ? s.fuse + 1 : 0;
-        if (s.fuse < FUSE_MOVES) continue;
-        mines = mines.filter((m) => !zone.includes(m));
-        for (const m of zone) bursts.push({ ...m, color: "#ff6a2e", born: now, big: true });
-        s.fuse = 0;
-        if (!peace) {
-          s.dead = true;
-          return end("boom");
-        }
-        floater(h, "Boom!", "#ff6a2e");
-        hooks.live().play("bomb");
-      }
     }
 
     spawnFood(now);
     if (!fruits.length && !crates.length) end("cleared");
+  }
+
+  /** Milliseconds per move for the round's speed, quickening evenly with each fruit. */
+  function pace() {
+    const { start, min } = SNAKE_SPEEDS[setup.speed];
+    return Math.max(min, start - (score * (start - min)) / SPEED_RAMP);
+  }
+
+  /** Danger zones burn in real time, so the fuse lasts as long at every speed. */
+  function burnFuses(ms: number) {
+    if (!mines.length) return;
+    const now = performance.now();
+    for (const s of snakes) {
+      const h = s.cells[0];
+      const zone = mines.filter((m) => Math.abs(m.x - h.x) <= 1 && Math.abs(m.y - h.y) <= 1);
+      s.fuse = zone.length ? s.fuse + ms : 0;
+      if (s.fuse < FUSE_MS) continue;
+      mines = mines.filter((m) => !zone.includes(m));
+      for (const m of zone) bursts.push({ ...m, color: "#ff6a2e", born: now, big: true });
+      s.fuse = 0;
+      if (!peace) {
+        s.dead = true;
+        return end("boom");
+      }
+      floater(h, "Boom!", "#ff6a2e");
+      hooks.live().play("bomb");
+    }
   }
 
   function step(ms: number) {
@@ -1005,6 +1035,8 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       }
     }
     if (modes.has("winged")) moveFruits();
+    burnFuses(ms);
+    if (phase !== "playing") return;
     emitStatus();
     elapsed += ms;
     while (elapsed >= interval && phase === "playing") {
@@ -1074,9 +1106,8 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     return { segs, cellDist, total: dist };
   }
 
-  function draw() {
+  function draw(alpha = 0) {
     if (!ctx) return;
-    const colors = palette();
     const { width, height, dpr } = size;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, width, height);
@@ -1094,36 +1125,27 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     const corner = Math.min(16, cell * 0.7);
     const pop = (born: number) => (moving ? easeOutBack((now - born) / 260) : 1);
     const bob = (seed: number) => (full && phase !== "over" ? Math.sin(now / 320 + seed) * 0.035 : 0);
+    // Simulation runs in fixed steps; motion is drawn between them so it stays smooth at any refresh rate.
+    const ahead = phase === "playing" ? alpha * STEP_MS : 0;
+    const vclock = clock + ahead;
+    const t = phase === "ready" ? 1 : Math.min(1, (elapsed + ahead) / interval);
+    const settled = (born: number) => !moving || now - born >= 300;
 
     const sinceDeath = now - diedAt;
     const shake = lost && full && sinceDeath < 320 ? Math.sin(now / 16) * cell * 0.08 * (1 - sinceDeath / 320) : 0;
     ctx.save();
     ctx.translate(shake, 0);
 
-    // Board: two-tone grass-like checks with a few hand-drawn tufts, tinted by the active layer.
-    let base = mix(colors.background, colors.surface, 0.85);
-    if (layer !== null) base = mix(base, LAYER_HUES[layer], colors.dark ? 0.1 : 0.08);
-    ctx.beginPath();
-    ctx.roundRect(ox, oy, board, board, corner);
-    ctx.fillStyle = base;
-    ctx.fill();
-    ctx.save();
-    ctx.clip();
-    ctx.fillStyle = withAlpha(colors.foreground, colors.dark ? 0.04 : 0.055);
-    for (let y = 0; y < grid; y += 1) for (let x = y % 2; x < grid; x += 2) ctx.fillRect(ox + x * cell, oy + y * cell, cell, cell);
-    ctx.strokeStyle = withAlpha(colors.foreground, colors.dark ? 0.08 : 0.1);
-    ctx.lineWidth = Math.max(1, cell * 0.05);
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    for (let c = 0; c < grid * grid; c += 1) {
-      if (hash(c + grid * 31) > 0.12) continue;
-      const tx = ox + ((c % grid) + 0.25 + hash(c) * 0.5) * cell;
-      const ty = oy + (Math.floor(c / grid) + 0.4 + hash(c * 7) * 0.3) * cell;
-      ctx.moveTo(tx - cell * 0.1, ty - cell * 0.08);
-      ctx.lineTo(tx, ty + cell * 0.06);
-      ctx.lineTo(tx + cell * 0.1, ty - cell * 0.1);
+    // Board and settled scenery come from a cached layer that is repainted only when they change.
+    let matured = 0;
+    for (const born of bricks.values()) if (settled(born)) matured += 1;
+    for (const born of statues.values()) if (settled(born)) matured += 1;
+    const key = [width, height, dpr, grid, layer, statics, stones.size, crystals[0].size, crystals[1].size, matured].join();
+    if (key !== boardKey || !boardCanvas) {
+      paintBoard(cell, ox, oy, board, corner, settled);
+      boardKey = key;
     }
-    ctx.stroke();
+    if (boardCanvas) ctx.drawImage(boardCanvas, 0, 0, width, height);
 
     // Everything on the board fades in together when a round is set up.
     ctx.globalAlpha = moving ? easeOut((now - resetAt) / 320) : 1;
@@ -1175,24 +1197,15 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       }
     }
 
-    for (const c of stones) drawStone(ctx, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.98, c);
-    for (const [c, born] of bricks) drawBrick(ctx, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.96 * pop(born));
-    for (const [c, born] of statues) drawStatue(ctx, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.96 * pop(born));
-    if (layer !== null) {
-      const active = layer;
-      for (const l of [active === 0 ? 1 : 0, active] as const) {
-        ctx.globalAlpha = fadeIn * (l === active ? 1 : 0.55);
-        for (const c of crystals[l]) drawCrystal(ctx, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.9, LAYER_HUES[l], l === active);
-      }
-      ctx.globalAlpha = fadeIn;
-    }
+    for (const [c, born] of bricks) if (!settled(born)) drawBrick(ctx, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.96 * pop(born));
+    for (const [c, born] of statues) if (!settled(born)) drawStatue(ctx, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.96 * pop(born));
 
     for (const p of poisons) drawPoison(ctx, cx(p.x), cy(p.y), cell * 0.86 * pop(p.born) * (1 + bob(p.x + p.y)));
     for (const k of keys) drawKey(ctx, cx(k.x), cy(k.y), cell * 0.92 * pop(k.born) * (1 + bob(k.x * 2 + k.y)), hueOf(k.lock));
 
     const winged = modes.has("winged");
     for (const f of fruits) {
-      const k = winged ? easeOut((clock - f.movedAt) / WING_MS) : 1;
+      const k = winged ? easeOut((vclock - f.movedAt) / WING_MS) : 1;
       const x = cx(f.from.x + (f.x - f.from.x) * k);
       const y = cy(f.from.y + (f.y - f.from.y) * k);
       const sz = cell * 0.9 * pop(f.born) * (1 + bob(f.x * 1.3 + f.y * 0.7));
@@ -1211,7 +1224,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
         drawLockBox(ctx, x, y, cell * 0.96, f.kind, hueOf(f.lock));
         continue;
       }
-      ctx.fillStyle = withAlpha("#000000", colors.dark ? 0.35 : 0.16);
+      ctx.fillStyle = "rgb(60 40 10 / 0.18)";
       ctx.beginPath();
       ctx.ellipse(x, y + cell * 0.38, Math.max(0, sz * 0.3), Math.max(0, sz * 0.08), 0, 0, Math.PI * 2);
       ctx.fill();
@@ -1236,11 +1249,11 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     ctx.globalAlpha = fadeIn;
 
     for (const k of crates) {
-      const m = easeOut((clock - k.movedAt) / Math.max(60, interval * 0.8));
+      const m = easeOut((vclock - k.movedAt) / Math.max(60, interval * 0.8));
       drawCrate(ctx, cx(k.from.x + (k.x - k.from.x) * m), cy(k.from.y + (k.y - k.from.y) * m), cell * 0.94 * pop(k.born), k.kind, hueOf(k.hue));
     }
 
-    const heads = snakes.map((s, i) => drawSnake(s, i, cell, ox, oy, now, effects));
+    const heads = snakes.map((s, i) => drawSnake(s, i, cell, ox, oy, now, effects, t));
 
     ctx.globalAlpha = 1;
     bursts = bursts.filter((b) => now - b.born < 560);
@@ -1322,18 +1335,19 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       }
     }
 
-    // Landmine fuse: a shrinking ring and the moves left, above the darkness.
+    // Landmine fuse: a shrinking ring and the seconds left, above the darkness.
     snakes.forEach((s, i) => {
       if (!s.fuse || phase === "over") return;
       const h = heads[i];
-      const left = FUSE_MOVES - s.fuse;
+      const left = Math.max(0, FUSE_MS - s.fuse);
+      const urgent = left < 500;
       ctx.beginPath();
-      ctx.arc(h.x, h.y, cell * 0.75, -Math.PI / 2, -Math.PI / 2 + (left / FUSE_MOVES) * Math.PI * 2);
-      ctx.strokeStyle = left <= 3 ? "#ff3b3b" : "#ffb020";
+      ctx.arc(h.x, h.y, cell * 0.75, -Math.PI / 2, -Math.PI / 2 + (left / FUSE_MS) * Math.PI * 2);
+      ctx.strokeStyle = urgent ? "#ff3b3b" : "#ffb020";
       ctx.lineWidth = Math.max(2, cell * 0.14);
       ctx.lineCap = "round";
       ctx.stroke();
-      label(String(left), h.x, h.y - cell * 1.05, Math.max(12, cell * 0.62), left <= 3 ? "#ff3b3b" : "#ffb020");
+      label((left / 1000).toFixed(1), h.x, h.y - cell * 1.05, Math.max(12, cell * 0.62), urgent ? "#ff3b3b" : "#ffb020");
     });
 
     floaters = floaters.filter((f) => now - f.born < 900);
@@ -1351,15 +1365,69 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     const frame = layer !== null ? LAYER_HUES[layer] : null;
     if (wrap) {
       ctx.setLineDash([Math.max(4, cell * 0.4), Math.max(4, cell * 0.3)]);
-      ctx.strokeStyle = frame ?? withAlpha(colors.accent, 0.8);
+      ctx.strokeStyle = frame ?? LOOK.wrapRim;
       ctx.lineWidth = 2.5;
     } else {
-      ctx.strokeStyle = frame ?? mix(colors.foreground, colors.background, colors.dark ? 0.55 : 0.35);
+      ctx.strokeStyle = frame ?? LOOK.rim;
       ctx.lineWidth = 3;
     }
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
+  }
+
+  /** Paints the board, its checks and tufts, and all scenery that has finished appearing into the cached layer. */
+  function paintBoard(cell: number, ox: number, oy: number, board: number, corner: number, settled: (born: number) => boolean) {
+    const { width, height, dpr } = size;
+    boardCanvas ??= document.createElement("canvas");
+    const w = Math.round(width * dpr);
+    const h = Math.round(height * dpr);
+    if (boardCanvas.width !== w || boardCanvas.height !== h) {
+      boardCanvas.width = w;
+      boardCanvas.height = h;
+    }
+    const b = boardCanvas.getContext("2d");
+    if (!b) return;
+    b.setTransform(dpr, 0, 0, dpr, 0, 0);
+    b.clearRect(0, 0, width, height);
+    const tint = (color: string) => (layer === null ? color : mix(color, LAYER_HUES[layer], 0.12));
+    const cx = (x: number) => ox + (x + 0.5) * cell;
+    const cy = (y: number) => oy + (y + 0.5) * cell;
+
+    b.beginPath();
+    b.roundRect(ox, oy, board, board, corner);
+    b.fillStyle = tint(LOOK.board);
+    b.fill();
+    b.save();
+    b.clip();
+    b.fillStyle = tint(LOOK.check);
+    for (let y = 0; y < grid; y += 1) for (let x = y % 2; x < grid; x += 2) b.fillRect(ox + x * cell, oy + y * cell, cell, cell);
+    b.strokeStyle = tint(LOOK.tuft);
+    b.lineWidth = Math.max(1, cell * 0.05);
+    b.lineCap = "round";
+    b.beginPath();
+    for (let c = 0; c < grid * grid; c += 1) {
+      if (hash(c + grid * 31) > 0.12) continue;
+      const tx = ox + ((c % grid) + 0.25 + hash(c) * 0.5) * cell;
+      const ty = oy + (Math.floor(c / grid) + 0.4 + hash(c * 7) * 0.3) * cell;
+      b.moveTo(tx - cell * 0.1, ty - cell * 0.08);
+      b.lineTo(tx, ty + cell * 0.06);
+      b.lineTo(tx + cell * 0.1, ty - cell * 0.1);
+    }
+    b.stroke();
+    b.restore();
+
+    for (const c of stones) drawStone(b, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.98, c);
+    for (const [c, born] of bricks) if (settled(born)) drawBrick(b, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.96);
+    for (const [c, born] of statues) if (settled(born)) drawStatue(b, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.96);
+    if (layer !== null) {
+      const active = layer;
+      for (const l of [active === 0 ? 1 : 0, active] as const) {
+        b.globalAlpha = l === active ? 1 : 0.55;
+        for (const c of crystals[l]) drawCrystal(b, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.9, LAYER_HUES[l], l === active);
+      }
+      b.globalAlpha = 1;
+    }
   }
 
   function label(text: string, x: number, y: number, px: number, color: string) {
@@ -1376,18 +1444,16 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   }
 
   /** Draws one snake and returns its head position in pixels. */
-  function drawSnake(s: Snake, which: number, cell: number, ox: number, oy: number, now: number, effects: MotionLevel): Point {
+  function drawSnake(s: Snake, which: number, cell: number, ox: number, oy: number, now: number, effects: MotionLevel, t: number): Point {
     const px = (p: Point) => ({ x: ox + (p.x + 0.5) * cell, y: oy + (p.y + 0.5) * cell });
     if (!ctx) return px(s.cells[0]);
-    const colors = palette();
     const moving = effects !== "off";
-    const t = phase === "ready" ? 1 : Math.min(1, elapsed / interval);
     const path = snakePath(s, t);
     const { total, cellDist } = path;
     const fade = s.dead ? (moving ? Math.min(1, (now - diedAt) / 450) : 1) * 0.6 : 0;
-    const hue = which === 0 ? colors.accent : colors.accent2;
-    const board = mix(colors.background, colors.surface, 0.85);
-    const body = mix(hue, colors.muted, fade);
+    const hue = LOOK.snakes[which];
+    const board = LOOK.board;
+    const body = mix(hue, LOOK.dead, fade);
     const edgeColor = mix(hue, INK, 0.65);
     const ghostOn = s.ghostLeft > 0 && s.ghost.size > 0;
     // Ghost segments turn pale and dashed; they flicker during the last moments of the effect.
@@ -1462,7 +1528,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     ctx.save();
     ctx.translate(-cell * 0.05, -cell * 0.08);
     ctx.lineCap = "round";
-    ctx.strokeStyle = withAlpha("#ffffff", colors.dark ? 0.16 : 0.28);
+    ctx.strokeStyle = withAlpha("#ffffff", 0.3);
     ctx.lineWidth = width * 0.22;
     for (const sec of sections) {
       if (sec.ghost) continue;

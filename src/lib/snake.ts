@@ -144,6 +144,17 @@ export const SALAD_FRUITS = SNAKE_FRUIT_IDS.filter((id): id is SnakeFruit => id 
 
 export const FRUIT_COUNT = { min: 1, max: 12, presets: [1, 3, 5, 10] } as const;
 
+/** Milliseconds per move at the start and the fastest it gets; each fruit speeds up by an even share. */
+export const SNAKE_SPEED_IDS = ["slow", "normal", "fast"] as const;
+export type SnakeSpeed = (typeof SNAKE_SPEED_IDS)[number];
+export const SNAKE_SPEEDS: Record<SnakeSpeed, { label: string; tip: string; start: number; min: number }> = {
+  slow: { label: "Slow", tip: "Relaxed pace", start: 200, min: 115 },
+  normal: { label: "Normal", tip: "The classic pace", start: 140, min: 70 },
+  fast: { label: "Fast", tip: "Quick reflexes needed", start: 95, min: 50 },
+};
+/** Fruit eaten before the top speed is reached. */
+export const SPEED_RAMP = 35;
+
 const blendSchema = z
   .array(z.enum(BLEND_MODE_IDS))
   .max(BLEND_MODE_IDS.length)
@@ -155,13 +166,14 @@ export const snakeSetupSchema = z
     fruit: z.enum(SNAKE_FRUIT_IDS),
     fruitCount: z.number().int().min(FRUIT_COUNT.min).max(FRUIT_COUNT.max),
     size: z.enum(SNAKE_SIZE_IDS),
+    speed: z.enum(SNAKE_SPEED_IDS).default("normal"),
     /** Blender's mix; kept while another mode is picked so switching back restores it. */
     blend: blendSchema.default([]),
   })
   .strict();
 export type SnakeSetup = z.infer<typeof snakeSetupSchema>;
 
-export const DEFAULT_SNAKE_SETUP: SnakeSetup = { mode: "classic", fruit: "apple", fruitCount: 1, size: "medium", blend: [] };
+export const DEFAULT_SNAKE_SETUP: SnakeSetup = { mode: "classic", fruit: "apple", fruitCount: 1, size: "medium", speed: "normal", blend: [] };
 
 /** The rule set a setup plays with, in registry order (empty = Classic). */
 export function activeModes(setup: Pick<SnakeSetup, "mode" | "blend">): BlendMode[] {
@@ -181,20 +193,23 @@ export function snakeVariant(setup: SnakeSetup): string {
   if (modes.length === 0) key = "classic";
   else if (modes.length === 1) key = modes[0];
   else key = `x${modes.reduce((mask, mode) => mask | (1 << BLEND_MODE_IDS.indexOf(mode)), 0).toString(36)}`;
-  if (key === "classic" && setup.size === "medium" && setup.fruitCount === 1) return "";
-  return `${key}-${setup.size}-${setup.fruitCount}`;
+  // Normal speed keeps the keys records had before speeds existed.
+  const speed = setup.speed === "normal" ? "" : `-${setup.speed}`;
+  if (key === "classic" && setup.size === "medium" && setup.fruitCount === 1 && !speed) return "";
+  return `${key}-${setup.size}-${setup.fruitCount}${speed}`;
 }
 
 export function isSnakeVariant(value: string): boolean {
   if (value === "") return true;
   const parts = value.split("-");
-  if (parts.length !== 3 || !/^\d{1,2}$/.test(parts[2])) return false;
-  const [key, size, count] = parts;
+  if ((parts.length !== 3 && parts.length !== 4) || !/^\d{1,2}$/.test(parts[2])) return false;
+  const [key, size, count, speed = "normal"] = parts;
   const mixed = /^x[0-9a-z]{1,6}$/.test(key);
   const mask = mixed ? parseInt(key.slice(1), 36) : 0;
   const setup = snakeSetupSchema.safeParse({
     mode: mixed ? "blender" : key,
     size,
+    speed,
     fruit: "apple",
     fruitCount: Number(count),
     blend: BLEND_MODE_IDS.filter((_, index) => mask & (1 << index)),

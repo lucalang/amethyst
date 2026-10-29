@@ -5,7 +5,8 @@ import Matter from "matter-js";
 import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
-import { livePalette, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { GAME_PALETTES } from "./palettes";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import type { SoundName } from "./sound";
@@ -35,7 +36,7 @@ const topOf = (level: number) => -(level + 1) * BLOCK;
 
 function createStacker(canvas: HTMLCanvasElement, hooks: Hooks) {
   const ctx = canvas.getContext("2d");
-  const palette = livePalette(canvas);
+  const colors = GAME_PALETTES.stacker;
   const engine = Matter.Engine.create();
   const ground = Matter.Bodies.rectangle(WIDTH / 2, BLOCK * 2, WIDTH * 6, BLOCK * 4, { isStatic: true });
 
@@ -180,7 +181,6 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks) {
 
   function draw(alpha: number) {
     if (!ctx) return;
-    const colors = palette();
     const effects = hooks.live().effects;
     const now = performance.now();
     const { width: cw, height: ch, dpr } = size;
@@ -409,6 +409,7 @@ export default function GameStacker({ best: initialBest }: { best: number | null
 
   return (
     <GameShell
+      game="stacker"
       title="Tower Stacker"
       active={phase === "playing" || phase === "paused"}
       stats={
