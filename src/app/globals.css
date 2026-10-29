@@ -2558,10 +2558,10 @@
   color-scheme: light;
 }
 
-/* 2048 board: positions use container units so tiles slide smoothly at any size. */
+/* 2048 board: positions use container units so tiles slide smoothly at any size; --n is the board size (3-5). */
 .g2048 {
-  --gap: 2.4cqi;
-  --cell: calc((100cqi - 5 * var(--gap)) / 4);
+  --gap: calc(12cqi / (var(--n, 4) + 1));
+  --cell: calc((100cqi - (var(--n, 4) + 1) * var(--gap)) / var(--n, 4));
   position: absolute;
   inset: 0;
   border-radius: 2.4cqi;
@@ -2591,8 +2591,6 @@
   --tile: #3c3a32;
   --tile-glow: transparent;
   z-index: 1;
-  display: grid;
-  place-items: center;
   font-size: calc(var(--cell) * var(--fs, 0.46));
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -2600,11 +2598,19 @@
   color: #f9f6f2;
   /* A soft outline keeps light numbers legible on the bright orange and gold tiles. */
   text-shadow: 0 0.15cqi 0.5cqi rgb(110 60 20 / 0.45);
+  transition: translate 100ms ease-in-out;
+}
+/* The tile slides; its face carries the look and every bounce, so the two never fight. */
+.g2048-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
   background: var(--tile);
   box-shadow:
     0 0 2.4cqi 0.2cqi var(--tile-glow),
     0 0.5cqi 1.2cqi -0.8cqi rgb(119 110 101 / 0.45);
-  transition: translate 110ms ease-out;
 }
 .g2048-tile[data-step="1"] {
   --tile: #eee4da;
@@ -2653,15 +2659,94 @@
 }
 .g2048-tile.is-merged {
   z-index: 2;
-  animation: g2048-pop 180ms ease-out 100ms backwards;
 }
-.g2048-tile.is-fresh {
-  animation: g2048-appear 160ms ease-out 110ms backwards;
+/* As in the original: the merged tile pops out of the two that slid together, overshooting a little. */
+.g2048-tile.is-merged .g2048-face {
+  animation: g2048-pop 260ms ease 90ms backwards;
 }
-.g2048[data-effects="subtle"] .g2048-tile.is-merged {
+/* A ring flashes out from each merge so it is clear where the combined tile landed. */
+.g2048-tile.is-merged .g2048-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0.9cqi rgb(255 255 255 / 0.75);
+  opacity: 0;
+  pointer-events: none;
+  animation: g2048-ring 420ms ease-out 110ms;
+}
+/* Gold merges (128 and up) also bloom with a warm glow behind the tile. */
+.g2048-tile.is-big::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 230 150 / 0.85), rgb(255 210 90 / 0.35) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: g2048-bloom 560ms ease-out 100ms;
+}
+.g2048-tile.is-fresh .g2048-face {
+  animation: g2048-appear 200ms ease 100ms backwards;
+}
+/*
+ * Jiggle: a moving tile stretches along its path, squashes against whatever stops it, then wobbles
+ * back. It squashes toward its leading edge. `data-beat` alternates per move to restart it.
+ */
+.g2048[data-dir="left"] .g2048-tile.is-moved .g2048-face {
+  transform-origin: 0% 50%;
+}
+.g2048[data-dir="right"] .g2048-tile.is-moved .g2048-face {
+  transform-origin: 100% 50%;
+}
+.g2048[data-dir="up"] .g2048-tile.is-moved .g2048-face {
+  transform-origin: 50% 0%;
+}
+.g2048[data-dir="down"] .g2048-tile.is-moved .g2048-face {
+  transform-origin: 50% 100%;
+}
+.g2048:is([data-dir="left"], [data-dir="right"])[data-beat="0"] .g2048-tile.is-moved .g2048-face {
+  animation: g2048-jiggle-x0 320ms linear;
+}
+.g2048:is([data-dir="left"], [data-dir="right"])[data-beat="1"] .g2048-tile.is-moved .g2048-face {
+  animation: g2048-jiggle-x1 320ms linear;
+}
+.g2048:is([data-dir="up"], [data-dir="down"])[data-beat="0"] .g2048-tile.is-moved .g2048-face {
+  animation: g2048-jiggle-y0 320ms linear;
+}
+.g2048:is([data-dir="up"], [data-dir="down"])[data-beat="1"] .g2048-tile.is-moved .g2048-face {
+  animation: g2048-jiggle-y1 320ms linear;
+}
+/* The board thumps in the move's direction when tiles merge (harder for bigger tiles), and shakes when a move does nothing. */
+.g2048[data-pulse="thump0"] {
+  animation: g2048-thump0 240ms ease-out 70ms;
+}
+.g2048[data-pulse="thump1"] {
+  animation: g2048-thump1 240ms ease-out 70ms;
+}
+.g2048[data-pulse="shake0"] {
+  animation: g2048-shake0 300ms ease-in-out;
+}
+.g2048[data-pulse="shake1"] {
+  animation: g2048-shake1 300ms ease-in-out;
+}
+.g2048-score {
+  animation: g2048-score 260ms ease-out;
+}
+.g2048[data-effects="subtle"] .g2048-tile.is-merged .g2048-face {
   animation-name: g2048-appear;
 }
-.g2048[data-effects="off"] .g2048-tile {
+.g2048[data-effects="subtle"] .g2048-tile.is-merged .g2048-face::after {
+  animation-name: g2048-ring-fade;
+}
+.g2048[data-effects="subtle"] .g2048-tile.is-big::before {
+  animation-name: g2048-ring-fade;
+}
+.g2048[data-effects="off"] .g2048-tile,
+.g2048[data-effects="off"] .g2048-face,
+.g2048[data-effects="off"] .g2048-tile::before,
+.g2048[data-effects="off"] .g2048-face::after {
   transition: none;
   animation: none;
 }
@@ -2670,25 +2755,183 @@
 }
 @keyframes g2048-pop {
   0% {
-    scale: 0.5;
-    opacity: 0;
+    scale: 0;
   }
-  60% {
-    scale: 1.12;
-    opacity: 1;
+  50% {
+    scale: 1.22;
+  }
+  75% {
+    scale: 0.95;
   }
   100% {
     scale: 1;
   }
 }
 @keyframes g2048-appear {
-  from {
+  0% {
     scale: 0;
     opacity: 0;
   }
-  to {
-    scale: 1;
+  70% {
+    scale: 1.08;
     opacity: 1;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes g2048-ring {
+  0% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.22;
+  }
+}
+@keyframes g2048-ring-fade {
+  from {
+    opacity: 0.8;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes g2048-bloom {
+  0% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.25;
+  }
+}
+@keyframes g2048-jiggle-x0 {
+  0% {
+    scale: 1 1;
+  }
+  20% {
+    scale: 1.07 0.95;
+  }
+  40% {
+    scale: 0.88 1.09;
+  }
+  60% {
+    scale: 1.05 0.97;
+  }
+  80% {
+    scale: 0.985 1.01;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+@keyframes g2048-jiggle-x1 {
+  0% {
+    scale: 1 1;
+  }
+  20% {
+    scale: 1.07 0.95;
+  }
+  40% {
+    scale: 0.88 1.09;
+  }
+  60% {
+    scale: 1.05 0.97;
+  }
+  80% {
+    scale: 0.985 1.01;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+@keyframes g2048-jiggle-y0 {
+  0% {
+    scale: 1 1;
+  }
+  20% {
+    scale: 0.95 1.07;
+  }
+  40% {
+    scale: 1.09 0.88;
+  }
+  60% {
+    scale: 0.97 1.05;
+  }
+  80% {
+    scale: 1.01 0.985;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+@keyframes g2048-jiggle-y1 {
+  0% {
+    scale: 1 1;
+  }
+  20% {
+    scale: 0.95 1.07;
+  }
+  40% {
+    scale: 1.09 0.88;
+  }
+  60% {
+    scale: 0.97 1.05;
+  }
+  80% {
+    scale: 1.01 0.985;
+  }
+  100% {
+    scale: 1 1;
+  }
+}
+@keyframes g2048-thump0 {
+  35% {
+    translate: calc(var(--dx, 0) * var(--thump, 0.6cqi)) calc(var(--dy, 0) * var(--thump, 0.6cqi));
+  }
+}
+@keyframes g2048-thump1 {
+  35% {
+    translate: calc(var(--dx, 0) * var(--thump, 0.6cqi)) calc(var(--dy, 0) * var(--thump, 0.6cqi));
+  }
+}
+@keyframes g2048-shake0 {
+  20% {
+    translate: calc(var(--dx, 0) * 1.1cqi) calc(var(--dy, 0) * 1.1cqi);
+  }
+  45% {
+    translate: calc(var(--dx, 0) * -0.7cqi) calc(var(--dy, 0) * -0.7cqi);
+  }
+  70% {
+    translate: calc(var(--dx, 0) * 0.3cqi) calc(var(--dy, 0) * 0.3cqi);
+  }
+}
+@keyframes g2048-shake1 {
+  20% {
+    translate: calc(var(--dx, 0) * 1.1cqi) calc(var(--dy, 0) * 1.1cqi);
+  }
+  45% {
+    translate: calc(var(--dx, 0) * -0.7cqi) calc(var(--dy, 0) * -0.7cqi);
+  }
+  70% {
+    translate: calc(var(--dx, 0) * 0.3cqi) calc(var(--dy, 0) * 0.3cqi);
+  }
+}
+@keyframes g2048-score {
+  0% {
+    scale: 1;
+  }
+  35% {
+    scale: 1.18;
+  }
+  100% {
+    scale: 1;
   }
 }
 .g2048-gain {

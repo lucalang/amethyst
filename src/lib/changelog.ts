@@ -42,6 +42,72 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-03-2048-flutter-daily",
+    date: "2026-11-03",
+    title: "Daily challenges, board sizes and a fairer Flutter",
+    intro: "2048 and Flutter each get a daily challenge. 2048 also animates more smoothly, saves unfinished rounds and offers three board sizes. Flutter's flight is fairer and pausing is safer.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Daily challenges", text: "Every player gets the same seeded 2048 board and Flutter course each day. They reset at midnight UTC, you can retry as often as you like, and each day keeps its own best." },
+      { kind: "new", feature: "2048 board sizes and saves", text: "Play on 3×3, 4×4 or 5×5. Each size keeps its own best, and unfinished rounds pick up where you left off." },
+      { kind: "improved", feature: "Smoother, bouncier 2048", text: "Tiles glide, squash and wobble as they land, merges pop with a thump, and quick swipes are never lost. After reaching 2048 you can keep going." },
+      { kind: "improved", feature: "Fairer Flutter", text: "Flight feels the same at any frame rate, hitboxes match what you see, and the gaps ramp up gradually." },
+      { kind: "improved", feature: "Safe pausing", text: "Flutter pauses when you switch away and only resumes after you press Resume and a short countdown." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Daily 2048 challenge",
+          body: "Choose Daily above the board for a 4×4 round in which every tile appears in the same place for everyone. The board shows when the next challenge arrives.",
+          points: [
+            "Retry as often as you like. Your best for the day is kept separately from your regular records.",
+            "An unfinished daily round is saved and can be finished even after the reset.",
+          ],
+          where: "Arcade → 2048 → Daily",
+          link: { href: "/arcade/2048", label: "Play 2048" },
+        },
+        {
+          title: "Daily Flutter course",
+          body: "Choose Daily for the same course as everyone else, whatever your device or display. A run that starts before midnight UTC counts for the day it started.",
+          where: "Arcade → Flutter → Daily",
+          link: { href: "/arcade/flutter", label: "Play Flutter" },
+        },
+        {
+          title: "2048 board sizes",
+          body: "Switch between 3×3, 4×4 and 5×5. Your existing 4×4 best stays where it is, and the other sizes record their own.",
+          where: "Arcade → 2048",
+          link: { href: "/arcade/2048", label: "Play 2048" },
+        },
+        {
+          title: "Saved 2048 rounds",
+          body: "Your board, score and progress are saved as you play and restored when you come back, even after a refresh. Each board size and the daily challenge keep their own round, so the daily never replaces your regular game.",
+          link: { href: "/arcade/2048", label: "Play 2048" },
+        },
+      ],
+      improved: [
+        {
+          title: "Smoother, bouncier 2048",
+          body: "Every tile now slides smoothly, even during quick moves. Moving tiles stretch, squash against whatever stops them and wobble back. Merged tiles pop out where they land, the board thumps in the direction of the move (harder for bigger tiles), and merges of 128 and up glow. A move that changes nothing gives the board a little shake. On phones that support it, merges give a light buzz. Quick moves are queued and played in order, none twice. Reduced motion keeps only gentle fades, and with animations off tiles move instantly.",
+          points: [
+            "Reaching 2048 is celebrated once per round. Continue keeps your board and score, or start a new game.",
+            "The game ends only when no moves are left. The final board stays visible with your score, best and a button to play again.",
+          ],
+          link: { href: "/arcade/2048", label: "Play 2048" },
+        },
+        {
+          title: "Fairer Flutter",
+          body: "Flaps take effect immediately and only once, and the bird flies the same at any frame rate. Collisions follow the shapes you see, with a little forgiveness at the edges. The distance between gaps grows gradually, and every gap stays reachable.",
+          link: { href: "/arcade/flutter", label: "Play Flutter" },
+        },
+        {
+          title: "Safe pausing in Flutter",
+          body: "The game freezes when you switch tabs, leave the window or open a menu, and time spent away doesn't count. Press Resume (or P) for a three-second countdown before play continues.",
+          link: { href: "/arcade/flutter", label: "Play Flutter" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-02-snake-speed-game-colors",
     date: "2026-11-02",
     title: "Snake speeds, smoother play and game colors",

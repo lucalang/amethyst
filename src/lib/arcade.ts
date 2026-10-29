@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRecentDailyVariant } from "@/lib/arcade-daily";
 import { isSnakeVariant } from "@/lib/snake";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
@@ -28,20 +29,33 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "stacker", title: "Tower Stacker", href: "/arcade/stacker", blurb: "Drop each sliding block right on top. Only the overlap stays.", recordLabel: "Highest tower" },
 ];
 
-/** Records keyed by game id, by `sudoku:<difficulty>` for Sudoku times (seconds) and `snake:<variant>` for Snake setups. */
-export type ArcadeRecords = Partial<Record<ScoreGame | `sudoku:${SudokuDifficulty}` | `snake:${string}`, number>>;
+/**
+ * Records keyed by game id (the main record), by `sudoku:<difficulty>` for Sudoku times (seconds) and
+ * by `<game>:<variant>` for other variants (Snake setups, 2048 board sizes, daily challenges).
+ */
+export type ArcadeRecords = Partial<Record<ScoreGame | `sudoku:${SudokuDifficulty}` | `${ScoreGame}:${string}`, number>>;
+
+/** 2048 board sizes with their own records; the classic 4×4 keeps the main record (""). */
+export const G2048_SIZE_VARIANTS = ["3x3", "5x5"] as const;
+
+function isKnownVariant(game: ScoreGame, variant: string) {
+  if (game === "snake") return isSnakeVariant(variant);
+  if (game === "2048") return (G2048_SIZE_VARIANTS as readonly string[]).includes(variant) || isRecentDailyVariant(variant);
+  if (game === "flutter") return isRecentDailyVariant(variant);
+  return false;
+}
 
 export const MAX_ARCADE_SCORE = 100_000_000;
 
 export const recordScoreSchema = z
   .object({
     game: z.enum(SCORE_GAMES),
-    /** Only Snake keeps separate records per setup; "" is a game's main record. */
+    /** "" is a game's main record; Snake setups, 2048 sizes and daily challenges keep their own. */
     variant: z.string().max(40).default(""),
     score: z.number().int().min(0).max(MAX_ARCADE_SCORE),
   })
   .strict()
-  .refine((value) => value.variant === "" || (value.game === "snake" && isSnakeVariant(value.variant)), {
+  .refine((value) => value.variant === "" || isKnownVariant(value.game, value.variant), {
     message: "Unknown game variant.",
     path: ["variant"],
   });
