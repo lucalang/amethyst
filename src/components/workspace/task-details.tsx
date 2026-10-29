@@ -351,7 +351,7 @@ function Notes({ item, actions }: { item: ChecklistItem; actions: TaskActions })
           if (notesRef.current !== savedRef.current) void save();
         }}
         placeholder="Add a note"
-        className="block max-h-[60vh] min-h-20 w-full resize-none bg-transparent px-3.5 pt-1.5 pb-3 text-sm leading-6 outline-none [field-sizing:content] placeholder:text-muted-foreground/60"
+        className="block max-h-[60vh] min-h-20 w-full resize-none bg-transparent px-3.5 pt-1.5 pb-3 text-sm leading-6 outline-none [field-sizing:content] placeholder:text-muted-foreground/75"
       />
     </div>
   );

@@ -22,6 +22,7 @@ import {
   Sparkles,
   SlidersHorizontal,
   Sun,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useSaveSettings } from "@/app/(vault)/settings/setting-controls";
@@ -30,6 +31,7 @@ import { FanEditor, type FanCollection } from "@/components/home/fan-editor";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiFetch } from "@/lib/api-client";
@@ -47,8 +49,6 @@ import {
   type SettingsPatch,
 } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
-
-const INNER = "mx-auto w-full max-w-[88rem] px-4 md:px-6";
 
 const SECTION_META: Record<HomeSectionId, { title: string; icon: LucideIcon }> = {
   featured: { title: "Featured", icon: Sparkles },
@@ -78,16 +78,13 @@ export function CustomizeHomeButton({ className }: { className?: string }) {
       id="customize-home-button"
       type="button"
       variant="ghost"
+      aria-haspopup="dialog"
       aria-expanded={customizing}
-      aria-controls="customize-home"
-      onClick={() => {
-        setCustomizing(!customizing);
-        if (!customizing) requestAnimationFrame(() => document.getElementById("customize-home-heading")?.focus());
-      }}
+      onClick={() => setCustomizing(true)}
       className={cn("h-10 gap-2 px-3 text-muted-foreground hover:bg-amethyst/[0.08] hover:text-foreground [&_svg]:text-amethyst", className)}
     >
       <SlidersHorizontal aria-hidden className="size-4" />
-      {customizing ? "Customizing…" : "Customize Home"}
+      Customize Home
     </Button>
   );
 }
@@ -111,9 +108,23 @@ function useLocalSetting<K extends keyof Settings>(key: K, value: Settings[K]) {
   return [local, setLocal, commit] as const;
 }
 
+/** One titled group inside the Customize Home dialog. */
+function Group({ title, description, children }: { title: string; description: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="rounded-xl border border-white/[0.1] bg-black/20 p-4 md:p-5">
+      <h3 id={id} className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+        {title}
+      </h3>
+      <p className="mt-1 mb-4 text-xs text-muted-foreground">{description}</p>
+      <div className="space-y-6">{children}</div>
+    </section>
+  );
+}
+
 /**
- * Home sections in the saved order. "Customize Home" adds a panel for the greeting, the featured
- * item and the section order/visibility; changes save to the account as they are made.
+ * Home sections in the saved order. "Customize Home" opens a dialog for the greeting, the featured
+ * item, the cover fan and the section order/visibility; changes save to the account as they are made.
  */
 export function HomeSections({
   layout,
@@ -143,47 +154,65 @@ export function HomeSections({
 
   return (
     <>
-      {customizing ? (
-        <section id="customize-home" aria-labelledby="customize-home-heading" className={cn(INNER, "pt-6 md:pt-8")}>
-          <div className="rounded-xl border border-amethyst/30 bg-[linear-gradient(160deg,rgb(var(--accent-rgb)/0.07),transparent_60%)] p-4 shadow-[0_24px_60px_-36px_rgb(var(--accent-rgb)/0.8)] md:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 id="customize-home-heading" tabIndex={-1} className="flex items-center gap-2.5 text-lg font-semibold tracking-tight outline-none">
-                  <SlidersHorizontal aria-hidden className="size-4 text-amethyst" />
-                  Customize Home
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">Changes save to your account as you make them.</p>
-              </div>
-              <Button
-                type="button"
-                className="h-9 gap-2 px-4"
-                onClick={() => {
-                  setCustomizing(false);
-                  requestAnimationFrame(() => document.getElementById("customize-home-button")?.focus());
-                }}
-              >
-                <Check aria-hidden className="size-4" /> Done
-              </Button>
+      <Dialog open={customizing} onOpenChange={setCustomizing}>
+        <DialogContent
+          showCloseButton={false}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            document.getElementById("customize-home-button")?.focus();
+          }}
+          className="flex h-[min(52rem,calc(100dvh-1.5rem))] max-w-[calc(100%-1.5rem)] flex-col gap-0 overflow-hidden border border-white/[0.1] bg-surface p-0 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-5xl"
+        >
+          <DialogHeader className="flex-row items-start gap-3 border-b border-white/[0.08] px-5 py-4 md:px-7 md:py-5">
+            <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-lg border border-amethyst/30 bg-amethyst/10 text-amethyst">
+              <SlidersHorizontal className="size-4.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-lg leading-7 font-semibold tracking-tight">Customize Home</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">Arrange your sections and personalize what greets you. Changes save as you make them.</DialogDescription>
             </div>
-            <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <div className="space-y-6">
-                <GreetingEditor greeting={greeting} defaultGreeting={defaultGreeting} />
-                <FeaturedEditor featured={featured} featuredTitle={featuredTitle} missing={featuredMissing} />
-                <FanEditor fan={fan} collections={collections} />
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" size="icon" className="-mt-1 -mr-2 shrink-0 text-muted-foreground hover:text-foreground" aria-label="Close Customize Home">
+                <X aria-hidden className="size-5" />
+              </Button>
+            </DialogClose>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 md:px-7 md:py-6">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-6">
+              <Group title="Layout" description="Choose which sections appear on Home and in what order.">
+                <SectionArranger
+                  sections={sections}
+                  available={(id) => Boolean(nodes[id])}
+                  onPreview={setSections}
+                  onCommit={commitSections}
+                  featuredMissing={featuredMissing}
+                  changed={!isDefault}
+                  onReset={() => commitSections(DEFAULT_LAYOUT)}
+                />
+              </Group>
+              <div className="space-y-5 lg:space-y-6">
+                <Group title="Welcome" description="The greeting and the spotlight at the top of Home.">
+                  <GreetingEditor greeting={greeting} defaultGreeting={defaultGreeting} />
+                  <FeaturedEditor featured={featured} featuredTitle={featuredTitle} missing={featuredMissing} />
+                </Group>
+                <Group title="Artwork" description="The covers that fan out beside your greeting.">
+                  <FanEditor fan={fan} collections={collections} />
+                </Group>
               </div>
-              <SectionArranger
-                sections={sections}
-                available={(id) => Boolean(nodes[id])}
-                onPreview={setSections}
-                onCommit={commitSections}
-                featuredMissing={featuredMissing}
-                changed={!isDefault}
-                onReset={() => commitSections(DEFAULT_LAYOUT)}
-              />
             </div>
           </div>
-        </section>
-      ) : null}
+          <DialogFooter className="mx-0 mb-0 flex-row items-center justify-between gap-3 rounded-none border-white/[0.08] bg-black/20 px-5 py-3 sm:justify-between md:px-7">
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Check aria-hidden className="size-3.5 text-amethyst" /> Saved automatically
+            </p>
+            <DialogClose asChild>
+              <Button type="button" className="h-9 gap-2 px-5">
+                Done
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {sections.map((section) => (section.hidden || !nodes[section.id] ? null : <Fragment key={section.id}>{nodes[section.id]}</Fragment>))}
     </>
   );
@@ -297,7 +326,7 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
                 <span className="block truncate text-xs text-muted-foreground">{current.caption || "No caption"}</span>
               </>
             ) : missing && !chosenTitle ? (
-              <span className="flex items-start gap-1.5 text-amber-200">
+              <span className="flex items-start gap-1.5 text-warning">
                 <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0" />
                 The featured entry was deleted, so the section is hidden. Choose another or reset it.
               </span>
@@ -517,11 +546,11 @@ function SectionArranger({
   }
 
   return (
-    <div className="lg:order-first">
+    <div>
       <div className="flex min-h-6 items-center gap-2">
-        <h3 id="home-sections-label" className="text-sm font-medium">
+        <h4 id="home-sections-label" className="text-sm font-medium">
           Sections
-        </h3>
+        </h4>
         {changed ? (
           <>
             <ChangedBadge />
@@ -576,7 +605,7 @@ function SectionArranger({
               <span aria-hidden className="w-4 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
                 {index + 1}
               </span>
-              <meta.icon aria-hidden className={cn("ml-1 size-3.5 shrink-0", section.hidden ? "text-muted-foreground/50" : "text-amethyst/80")} />
+              <meta.icon aria-hidden className={cn("ml-1 size-3.5 shrink-0", section.hidden ? "text-muted-foreground" : "text-amethyst")} />
               <span className={cn("min-w-0 flex-1 truncate text-sm font-medium", section.hidden && "text-muted-foreground")}>
                 {meta.title}
                 {status ? <span className="ml-2 text-xs font-normal text-muted-foreground">· {status}</span> : null}

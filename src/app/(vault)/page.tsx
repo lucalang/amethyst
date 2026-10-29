@@ -109,7 +109,7 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
         <div className="enter min-w-0" style={enterIndex(0)}>
           <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Gem aria-hidden className="size-3.5 text-amethyst" />
-            Amethyst <span className="-ml-1 text-amethyst">Archives</span>
+            Amethyst
           </p>
           <div className="mt-2 flex items-center gap-3 md:gap-4">
             {home.displayName || home.avatarUrl ? (

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, ArrowRight, FolderPlus, Loader2, MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
+import { AlertCircle, ArrowRight, FolderPlus, ImageIcon, Loader2, MoreHorizontal, Pencil, Trash2, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progres
 import { NO_TEMPLATE, type TemplateSummary } from "@/lib/templates";
 import { cn } from "@/lib/utils";
 import { AccentPicker, ClientCollectionIcon, IconPicker } from "./collection-identity-fields";
+import { CollectionCoverDialog } from "./collection-cover-dialog";
 
 function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; onOpenChange: (open: boolean) => void; collection?: LibraryCategory }) {
   const router = useRouter();
@@ -48,7 +49,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
     staleTime: 30_000,
   });
   const key = collection?.id ?? "new";
-  const fieldClass = "h-11 border-white/[0.12] bg-black/50 px-3.5 text-sm placeholder:text-muted-foreground/50";
+  const fieldClass = "h-11 border-white/[0.16] bg-black/50 px-3.5 text-sm placeholder:text-muted-foreground/75";
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!pending) { setError(null); onOpenChange(next); } }}>
       <DialogContent className="max-h-[92dvh] gap-6 overflow-y-auto rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[34rem]">
@@ -115,9 +116,9 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
           <div className="space-y-2">
             <div className="flex items-baseline justify-between gap-3">
               <Label htmlFor={`collection-description-${key}`} className="text-xs font-medium text-muted-foreground">
-                Description <span className="font-normal text-muted-foreground/60">(optional)</span>
+                Description <span className="font-normal text-muted-foreground/85">(optional)</span>
               </Label>
-              <span aria-hidden className={cn("text-[11px] tabular-nums text-muted-foreground/60", descriptionLength > MAX_COLLECTION_DESCRIPTION_LENGTH * 0.9 && "text-rose")}>
+              <span aria-hidden className={cn("text-[11px] tabular-nums text-muted-foreground", descriptionLength > MAX_COLLECTION_DESCRIPTION_LENGTH * 0.9 && "text-rose")}>
                 {descriptionLength}/{MAX_COLLECTION_DESCRIPTION_LENGTH}
               </span>
             </div>
@@ -129,7 +130,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
               rows={3}
               maxLength={MAX_COLLECTION_DESCRIPTION_LENGTH}
               onChange={(event) => setDescriptionLength(event.target.value.length)}
-              className="max-h-64 min-h-20 resize-y border-white/[0.12] bg-black/50 px-3.5 py-2.5 text-sm leading-6 placeholder:text-muted-foreground/50"
+              className="max-h-64 min-h-20 resize-y border-white/[0.16] bg-black/50 px-3.5 py-2.5 text-sm leading-6 placeholder:text-muted-foreground/75"
               disabled={pending}
             />
           </div>
@@ -173,7 +174,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
             </div>
             <div className="space-y-2">
               <Label htmlFor={`collection-progress-${key}`} className="text-xs font-medium text-muted-foreground">
-                Progress name <span className="font-normal text-muted-foreground/60">(optional)</span>
+                Progress name <span className="font-normal text-muted-foreground/85">(optional)</span>
               </Label>
               <Input
                 id={`collection-progress-${key}`}
@@ -217,6 +218,7 @@ export function CollectionActions({ collection, entryCount, className }: { colle
   const router = useRouter();
   const pathname = usePathname();
   const [renaming, setRenaming] = useState(false);
+  const [choosingCovers, setChoosingCovers] = useState(false);
   // "confirm": first question; "final": typed confirmation for collections that still have entries.
   const [step, setStep] = useState<"confirm" | "final" | null>(null);
   const [typed, setTyped] = useState("");
@@ -274,10 +276,12 @@ export function CollectionActions({ collection, entryCount, className }: { colle
         <DropdownMenuLabel className="flex min-w-0 items-center gap-2 px-2 py-2 text-xs font-medium text-muted-foreground"><span aria-hidden style={accentStyle(collection.accent_color)} className={cn("size-3.5 shrink-0", collection.accent_color ? "text-[var(--ca)]" : "text-amethyst")}><ClientCollectionIcon icon={collection.icon} className="size-full" /></span><span className="truncate">{collection.name}</span></DropdownMenuLabel>
         <DropdownMenuSeparator className="mx-0 my-1 bg-white/[0.07]" />
         <DropdownMenuItem className="min-h-9 gap-2.5" onSelect={() => setRenaming(true)}><Pencil aria-hidden />Edit collection</DropdownMenuItem>
+        <DropdownMenuItem className="min-h-9 gap-2.5" onSelect={() => setChoosingCovers(true)}><ImageIcon aria-hidden />Choose cover art</DropdownMenuItem>
         <DropdownMenuItem className="min-h-9 gap-2.5" variant="destructive" onSelect={() => { setError(null); setTyped(""); setStep("confirm"); }}><Trash2 aria-hidden />Delete collection</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
     <CollectionDialog open={renaming} onOpenChange={setRenaming} collection={collection} />
+    <CollectionCoverDialog open={choosingCovers} onOpenChange={setChoosingCovers} collection={collection} />
     <AlertDialog open={step !== null} onOpenChange={(open) => { if (!open) closeDelete(); }}>
       <AlertDialogContent className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 sm:max-w-[28rem]">
         {step === "final" ? <>

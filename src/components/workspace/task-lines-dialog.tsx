@@ -137,7 +137,7 @@ export function TaskLinesDialog({
                 }
               }}
               placeholder={"Buy groceries\n- [ ] Call the library\n- [x] Return the books"}
-              className="max-h-[35dvh] min-h-36 resize-none overflow-y-auto border-input bg-background/50 px-3.5 py-3 font-mono text-[13px] leading-6 placeholder:text-muted-foreground/60 md:text-[13px]"
+              className="max-h-[35dvh] min-h-36 resize-none overflow-y-auto border-input bg-background/50 px-3.5 py-3 font-mono text-[13px] leading-6 placeholder:text-muted-foreground/75 md:text-[13px]"
               autoFocus
               spellCheck={false}
               aria-invalid={Boolean(problem || error)}

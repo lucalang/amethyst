@@ -20,10 +20,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <AuthShell
       title="Welcome back"
-      description="Your private place to organize anything. Return to Archive, To Do and Arcade."
+      description="Sign in to Amethyst, your private place for Archive, To Do and Arcade."
       footer={
         <>
-          New to Amethyst Archives?{" "}
+          New to Amethyst?{" "}
           <Link href="/register" className="font-medium text-amethyst underline-offset-4 hover:underline">
             Create an account
           </Link>

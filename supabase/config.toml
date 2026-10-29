@@ -244,19 +244,19 @@ otp_expiry = 3600
 
 # Token-hash links are verified server-side by /auth/confirm (SSR PKCE-safe).
 [auth.email.template.confirmation]
-subject = "Confirm your Amethyst Archives account"
+subject = "Confirm your Amethyst account"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.invite]
-subject = "You have been invited to Amethyst Archives"
+subject = "You have been invited to Amethyst"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.magic_link]
-subject = "Your Amethyst Archives sign-in link"
+subject = "Your Amethyst sign-in link"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.email.template.recovery]
-subject = "Reset your Amethyst Archives password"
+subject = "Reset your Amethyst password"
 content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize notification email template

@@ -37,9 +37,7 @@ export function BrandMark({ className }: { className?: string }) {
       <span aria-hidden className="brand-gem grid size-7 place-items-center rounded-md bg-amethyst/15 text-amethyst ring-1 ring-amethyst/40">
         <Gem className="size-4" />
       </span>
-      <span>
-        Amethyst <span className="text-amethyst">Archives</span>
-      </span>
+      <span>Amethyst</span>
     </span>
   );
 }
@@ -56,7 +54,7 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
     <header className="sticky top-0 z-40 border-b border-border bg-black/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[88rem] items-center gap-3 px-4 md:gap-6 md:px-6">
         <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-3">
-          <Link href="/" className="shrink-0 rounded-md" aria-label="Amethyst Archives home">
+          <Link href="/" className="shrink-0 rounded-md" aria-label="Amethyst home">
             <BrandMark className={cn("[&>span:last-child]:hidden", !area && "sm:[&>span:last-child]:inline", "lg:[&>span:last-child]:inline")} />
           </Link>
           {area ? (

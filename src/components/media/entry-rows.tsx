@@ -142,7 +142,7 @@ export function EntryTable({ name, entries, labelNames }: { name: string; entrie
                       {labels.join(" · ")}
                     </span>
                   ) : (
-                    <span className="text-xs text-muted-foreground/60">—</span>
+                    <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </td>
                 <td className={cn(cell, "w-40 min-w-32 lg:w-52")}>

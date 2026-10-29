@@ -9,7 +9,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       title="Create your account"
-      description="Your library starts empty and private: only you can see your entries, files and tasks."
+      description="Amethyst brings Archive, To Do and Arcade together. Everything starts empty and private: only you can see your collections, tasks and scores."
       footer={
         <>
           Already have an account?{" "}

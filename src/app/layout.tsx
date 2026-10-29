@@ -20,9 +20,9 @@ const pressStart = Press_Start_2P({ variable: "--font-press-start", weight: "400
 const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart].map((font) => font.variable).join(" ");
 
 export const metadata: Metadata = {
-  title: { default: "Amethyst Archives", template: "%s · Amethyst Archives" },
-  description: "A private place to organize anything: collections in Archive, tasks in To Do and games in Arcade.",
-  applicationName: "Amethyst Archives",
+  title: { default: "Amethyst", template: "%s · Amethyst" },
+  description: "Amethyst is your private place to organize anything: collections in Archive, tasks in To Do and games in Arcade.",
+  applicationName: "Amethyst",
   robots: { index: false, follow: false },
 };
 

@@ -40,7 +40,7 @@ export default async function LabelsSettingsPage({ searchParams }: { searchParam
                     active ? "border-white/[0.1] bg-surface-raised text-foreground shadow-sm" : "border-transparent text-muted-foreground hover:bg-white/[0.03] hover:text-foreground",
                   )}
                 >
-                  <LibraryBig aria-hidden className={cn("size-3.5 shrink-0", active ? "text-amethyst" : "text-muted-foreground/60")} />
+                  <LibraryBig aria-hidden className={cn("size-3.5 shrink-0", active ? "text-amethyst" : "text-muted-foreground")} />
                   <span className="truncate">{item.name}</span>
                 </Link>
               );

@@ -30,7 +30,7 @@ export function UpcomingTasks({ tasks }: { tasks: HomeTask[] }) {
                 </span>
               </span>
               {task.starred ? <Star aria-label="Important" className="size-3.5 shrink-0 fill-current text-amethyst" /> : null}
-              <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground/50 transition-[color,translate] group-hover/task:translate-x-0.5 group-hover/task:text-amethyst" />
+              <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground transition-[color,translate] group-hover/task:translate-x-0.5 group-hover/task:text-amethyst" />
             </Link>
           </li>
         );

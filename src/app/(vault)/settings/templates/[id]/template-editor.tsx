@@ -526,7 +526,7 @@ function StarterTasks({ node, autoFocus, onChange }: { node: TemplateNode; autoF
             placeholder="e.g. Finish the tutorial"
             aria-invalid={Boolean(error)}
             aria-describedby={error ? `${addId}-error` : `${addId}-hint`}
-            className="min-h-11 min-w-0 flex-1 resize-y rounded-md border border-white/[0.12] bg-black/50 px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/50 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+            className="min-h-11 min-w-0 flex-1 resize-y rounded-md border border-white/[0.12] bg-black/50 px-3 py-2.5 text-sm outline-none placeholder:text-muted-foreground/75 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
           />
           <Button type="submit" className="h-11 gap-2" disabled={!draft.trim()}><Plus aria-hidden /> Add</Button>
         </div>

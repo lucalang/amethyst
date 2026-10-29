@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ArcadeGameId } from "@/lib/arcade";
+import { cn } from "@/lib/utils";
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
 export function ArcadePreview({ game }: { game: ArcadeGameId }) {
@@ -41,11 +42,25 @@ const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
         <rect key={cell} x={4 + (cell % 4) * 16} y={4 + Math.floor(cell / 4) * 20} width="12" height="16" rx="2" className="fill-foreground/[0.05]" />
       ))}
       {TILE_2048.map(([col, row, value]) => {
-        const strength = Math.min(1, (Math.log2(value) - 1) / 10);
+        const faint = value <= 4;
         return (
           <g key={`${col}-${row}`} transform={`translate(${4 + col * 16} ${4 + row * 20})`}>
-            <rect width="12" height="16" rx="2" className={value >= 2048 ? "fill-rose" : "fill-amethyst"} fillOpacity={value >= 2048 ? 1 : 0.15 + strength * 0.85} />
-            <text x="6" y="10.5" textAnchor="middle" fontSize={value >= 1000 ? 3.6 : value >= 100 ? 4.4 : 5.5} fontWeight="700" className="fill-foreground">
+            <rect
+              width="12"
+              height="16"
+              rx="2"
+              className={cn(value >= 128 ? "fill-rose" : "fill-amethyst", faint && "stroke-amethyst")}
+              fillOpacity={faint ? (value === 2 ? 0.2 : 0.38) : 1}
+              strokeWidth={faint ? 0.6 : 0}
+            />
+            <text
+              x="6"
+              y="10.5"
+              textAnchor="middle"
+              fontSize={value >= 1000 ? 3.6 : value >= 100 ? 4.4 : 5.5}
+              fontWeight="700"
+              className={faint ? "fill-foreground" : value >= 128 ? "fill-rose-foreground" : "fill-amethyst-foreground"}
+            >
               {value}
             </text>
           </g>

@@ -248,7 +248,7 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
               onPointerCancel={() => endDrag(list.id)}
               onLostPointerCapture={() => endDrag(list.id)}
               onKeyDown={(event) => handleKeys(event, (delta) => moveList(list.id, delta))}
-              className="grid size-6 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground/60 opacity-0 outline-none group-hover/nav:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 active:cursor-grabbing pointer-coarse:opacity-100"
+              className="grid size-6 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground opacity-0 outline-none group-hover/nav:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 active:cursor-grabbing pointer-coarse:opacity-100"
             >
               <GripVertical aria-hidden className="size-3.5" />
             </button>
@@ -308,7 +308,7 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     href={path}
                     active={isActive(path)}
                     onNavigate={navigate}
-                    icon={<Icon aria-hidden className={cn("size-4", view.id === "my-day" ? "text-amber-300" : view.id === "important" ? "text-rose" : "text-amethyst")} />}
+                    icon={<Icon aria-hidden className={cn("size-4", view.id === "my-day" ? "text-warning" : view.id === "important" ? "text-rose" : "text-amethyst")} />}
                     label={view.label}
                     count={counts.smart[view.id]}
                   />
@@ -347,7 +347,7 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
                           onPointerCancel={() => endDrag(group.id)}
                           onLostPointerCapture={() => endDrag(group.id)}
                           onKeyDown={(event) => handleKeys(event, (delta) => moveGroup(group.id, delta))}
-                          className="grid size-6 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground/60 opacity-0 outline-none group-hover/nav:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 active:cursor-grabbing pointer-coarse:opacity-100"
+                          className="grid size-6 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground opacity-0 outline-none group-hover/nav:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/60 active:cursor-grabbing pointer-coarse:opacity-100"
                         >
                           <GripVertical aria-hidden className="size-3.5" />
                         </button>

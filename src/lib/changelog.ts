@@ -42,6 +42,70 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-amethyst",
+    date: "2026-10-30",
+    title: "Meet Amethyst: chosen covers and a calmer Home",
+    intro: "Amethyst Archives is now simply Amethyst. Choose the artwork each collection shows, customize Home in a roomy dialog, and enjoy clearer contrast in every theme.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Collection covers", text: "Pick and order up to 3 covers or images per collection, or reset to automatic artwork. Your entries keep their own covers." },
+      { kind: "improved", feature: "Customize Home", text: "Opens in a spacious dialog with clear groups, scrolling on small screens and full keyboard support." },
+      { kind: "improved", feature: "Home hub", text: "Archive, To Do and Arcade cards have matching weight, clearer status lines and a comfortable layout on phones." },
+      { kind: "fixed", feature: "Contrast", text: "2048 tiles never blend into the board, and muted labels, icons, borders and warnings are easier to read in every theme." },
+      { kind: "improved", feature: "Amethyst", text: "The new name covers Archive, To Do and Arcade. Links, data and preferences are unchanged." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Choose a collection's cover art",
+          body: "Choose which artwork a collection shows on Home, on the Archive page and in the hub. Pick entry covers from that collection or add your own images, then arrange them so your favorite sits on top. A live preview shows the result before you save.",
+          points: [
+            "Up to 3 covers per collection, in the order you choose.",
+            "“Use automatic” returns the collection to its most recently updated covers.",
+            "Removing a cover here never changes or deletes the entry or its artwork.",
+            "If a chosen entry is deleted, the remaining choices are kept; with none left, automatic artwork returns.",
+          ],
+          where: "A collection's ⋯ menu → Choose cover art",
+          link: { href: "/collections", label: "Open Archive" },
+        },
+      ],
+      improved: [
+        {
+          title: "Customize Home in a proper dialog",
+          body: "Customize Home now opens a wide, scrollable dialog instead of a panel squeezed above your sections. Layout, Welcome and Artwork settings are grouped with clearer spacing and descriptions.",
+          points: [
+            "Close with the × button, Done, or Escape; focus returns to the Customize Home button.",
+            "All settings and saved choices are unchanged, and changes still save as you make them.",
+          ],
+          where: "Home → Customize Home",
+          link: { href: "/", label: "Go to Home" },
+        },
+        {
+          title: "A more balanced Home hub",
+          body: "The Archive, To Do and Arcade cards share the same structure: artwork, a title with its icon, a short description and a status line. On phones and narrow windows they stack as compact rows, and they switch to three columns once there's room.",
+          link: { href: "/", label: "Go to Home" },
+        },
+        {
+          title: "Amethyst",
+          body: "Amethyst Archives is now called Amethyst, reflecting Archive, To Do and Arcade together. The Archive section keeps its name, and your links, bookmarks and settings work exactly as before.",
+        },
+      ],
+      fixed: [
+        {
+          title: "Clearer contrast in every theme",
+          body: "Colors now come from shared theme tokens, so text and controls stay readable whichever theme you pick.",
+          points: [
+            "2048 uses a neutral board and a distinct fill for every tile value, so 8 no longer blends into the background, and numbers stay readable.",
+            "Sudoku conflicts show a wavy underline as well as a color.",
+            "Warnings use a theme-aware amber that stays readable on light themes.",
+            "Borders, input outlines, muted labels, icons and placeholders are a step stronger.",
+          ],
+          link: { href: "/arcade/2048", label: "Play 2048" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-29-task-quality",
     date: "2026-10-29",
     title: "Larger task additions and clearer forms",

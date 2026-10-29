@@ -182,7 +182,7 @@ export function OpeningIntro({
           <Gem className="size-7" strokeWidth={1.75} />
         </span>
         <span className="opening-intro-word">
-          <span className="opening-intro-text">Amethyst Archives</span>
+          <span className="opening-intro-text">Amethyst</span>
         </span>
         <span className="opening-intro-line" />
       </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, FileText, ListChecks, PlayCircle } from "lucide-react";
 import { CollectionIcon } from "@/components/categories/collection-icon";
+import { CoverStack } from "@/components/home/cover-stack";
 import { MediaImage } from "@/components/media/media-image";
 import { ProgressMeter } from "@/components/media/progress-meter";
 import { accentStyle } from "@/lib/collection-identity";
@@ -31,7 +32,7 @@ export function ContinueCard({ item }: { item: HomeContinue }) {
           {file ? <>
             <FileIcon aria-hidden className="size-3.5 shrink-0 text-amethyst/80" />
             <span className="truncate">{file.name}</span>
-            <span aria-hidden className="text-muted-foreground/60">·</span>
+            <span aria-hidden className="text-muted-foreground">·</span>
           </> : null}
           <span className="truncate text-muted-foreground">{item.collectionName}</span>
         </span>
@@ -67,23 +68,7 @@ export function CollectionCard({ collection }: { collection: HomeCollection }) {
         </span>
       ) : null}
       {collection.previews.length ? (
-        <span aria-hidden className="flex h-24 shrink-0 items-end">
-          {collection.previews.map((preview, index) => (
-            <span
-              key={preview.id}
-              className={cn(
-                "relative overflow-hidden rounded-md border border-black bg-surface ring-1 ring-white/[0.1] transition-[rotate,translate] duration-300",
-                preview.coverShape === "square" ? "size-[4.5rem]" : "h-24 w-16",
-                index > 0 && "-ml-6",
-                index === 1 && "group-hover/collection:translate-x-1",
-                index === 2 && "group-hover/collection:translate-x-2",
-              )}
-              style={{ zIndex: collection.previews.length - index }}
-            >
-              <MediaImage src={preview.coverUrl} alt="" fallbackLabel={preview.title} className="text-xs" />
-            </span>
-          ))}
-        </span>
+        <CoverStack previews={collection.previews} hoverGroup />
       ) : (
         <span aria-hidden className={cn("grid h-24 w-16 shrink-0 place-items-center rounded-md border border-dashed", accent ? "border-[var(--ca-line)] text-[var(--ca)]" : "border-white/[0.12] text-amethyst/70")}>
           <CollectionIcon icon={collection.icon} className="size-5" />
@@ -97,7 +82,7 @@ export function CollectionCard({ collection }: { collection: HomeCollection }) {
             ) : null}
             <span className="truncate">{collection.name}</span>
           </span>
-          <ArrowUpRight aria-hidden className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground/40 transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5", accent ? "group-hover/collection:text-[var(--ca)]" : "group-hover/collection:text-amethyst")} />
+          <ArrowUpRight aria-hidden className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5", accent ? "group-hover/collection:text-[var(--ca)]" : "group-hover/collection:text-amethyst")} />
         </span>
         <span className="mt-0.5 block text-xs text-muted-foreground tabular-nums">
           {collection.entryCount.toLocaleString("en")} {collection.entryCount === 1 ? "entry" : "entries"}

@@ -88,8 +88,11 @@ const CARDS: Record<DestinationId, { art: (data: HubData) => ReactNode; status: 
 /** Home's app hub: a large card for each destination in the registry. */
 export function DestinationHub({ data, startIndex = 1 }: { data: HubData; startIndex?: number }) {
   return (
-    <nav aria-label="Destinations">
-      <ul className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+    <nav aria-labelledby="hub-heading" className="border-t border-white/[0.08] pt-5 md:pt-6">
+      <h2 id="hub-heading" className="mb-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase md:mb-4">
+        Your spaces
+      </h2>
+      <ul className="grid gap-3 md:grid-cols-3 md:gap-4">
         {DESTINATIONS.map((destination, index) => {
           const card = CARDS[destination.id];
           const Icon = destination.icon;
@@ -101,11 +104,13 @@ export function DestinationHub({ data, startIndex = 1 }: { data: HubData; startI
                 </span>
                 <span className="hub-card-body">
                   <span className="hub-card-title">
-                    <Icon aria-hidden />
+                    <span aria-hidden className="hub-card-icon">
+                      <Icon />
+                    </span>
                     {destination.label}
                   </span>
-                  <span className="text-sm text-pretty text-muted-foreground">{destination.tagline}</span>
-                  <span className="mt-auto pt-2 text-sm text-foreground/80">{card.status(data)}</span>
+                  <span className="hub-card-tagline">{destination.tagline}</span>
+                  <span className="hub-card-status">{card.status(data)}</span>
                 </span>
                 <ArrowRight aria-hidden className="hub-card-arrow" />
               </Link>

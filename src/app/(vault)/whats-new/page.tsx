@@ -23,7 +23,7 @@ export default async function WhatsNewPage() {
         <MarkUpdatesSeen />
         <PageHeader
           title="What’s new"
-          description="The latest changes to Amethyst Archives at a glance. Open any update for its full notes."
+          description="The latest changes to Amethyst at a glance. Open any update for its full notes."
           actions={<KindLegend />}
         />
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_13rem]">

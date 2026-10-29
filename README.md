@@ -1,4 +1,4 @@
-# Amethyst Archives — private categorized workspaces
+# Amethyst — Archive, To Do and Arcade in one private app
 
 Organize entries in your own top-level categories. Each entry is its own workspace:
 a VS Code-style explorer of nested folders on the left, and an editor for

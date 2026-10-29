@@ -171,6 +171,16 @@ export type Database = {
                 { foreignKeyName: "home_fan_items_user_id_entry_id_fkey"; columns: ["user_id", "entry_id"]; isOneToOne: false; referencedRelation: "entries"; referencedColumns: ["user_id", "id"] },
               ]
             },
+            "collection_cover_items": {
+              Row: { id: string; user_id: string; collection_id: string; position: number; entry_id: string | null; image_url: string | null; image_shape: "square" | "portrait"; created_at: string }
+              Insert: { id?: string; user_id?: string; collection_id: string; position: number; entry_id?: string | null; image_url?: string | null; image_shape?: "square" | "portrait"; created_at?: string }
+              Update: { id?: string; user_id?: string; collection_id?: string; position?: number; entry_id?: string | null; image_url?: string | null; image_shape?: "square" | "portrait"; created_at?: string }
+              Relationships: [
+                { foreignKeyName: "collection_cover_items_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+                { foreignKeyName: "collection_cover_items_user_id_collection_id_fkey"; columns: ["user_id", "collection_id"]; isOneToOne: false; referencedRelation: "collections"; referencedColumns: ["user_id", "id"] },
+                { foreignKeyName: "collection_cover_items_user_id_entry_id_fkey"; columns: ["user_id", "entry_id"]; isOneToOne: false; referencedRelation: "entries"; referencedColumns: ["user_id", "id"] },
+              ]
+            },
             "entry_pins": {
               Row: { user_id: string; entry_id: string; pinned_at: string }
               Insert: { user_id?: string; entry_id: string; pinned_at?: string }
@@ -524,6 +534,9 @@ isOneToOne: false
                            },
 "set_home_fan":
 { Args: { "p_items": Json }; Returns: undefined
+                           },
+"set_collection_covers":
+{ Args: { "p_collection": string,"p_items": Json }; Returns: undefined
                            },
 "reserve_attachment":
 { Args: { "p_name": string,"p_content_type": string,"p_size": number,"p_origin": "supabase" | "r2" }; Returns: boolean

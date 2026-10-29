@@ -480,13 +480,14 @@ export default function GameSudoku({ initial, records: initialRecords }: { initi
                     aria-label={`Row ${row + 1}, column ${col + 1}: ${hidden ? "hidden" : digit ? `${digit}${clue ? ", given" : ""}${conflict ? ", conflicts" : ""}` : markList.length ? `notes ${markList.join(" ")}` : "empty"}`}
                     onClick={() => select(cell)}
                     className={cn(
-                      "relative grid place-items-center border-foreground/15 text-[5cqi] leading-none tabular-nums outline-none transition-colors",
-                      col < 8 && (col % 3 === 2 ? "border-r-2 border-r-foreground/45" : "border-r"),
-                      row < 8 && (row % 3 === 2 ? "border-b-2 border-b-foreground/45" : "border-b"),
+                      "relative grid place-items-center border-foreground/20 text-[5cqi] leading-none tabular-nums outline-none transition-colors",
+                      col < 8 && (col % 3 === 2 ? "border-r-2 border-r-foreground/50" : "border-r"),
+                      row < 8 && (row % 3 === 2 ? "border-b-2 border-b-foreground/50" : "border-b"),
                       clue ? "font-bold text-foreground" : "font-medium text-amethyst",
-                      peer && "bg-amethyst/[0.07]",
+                      peer && "bg-amethyst/10",
                       same && "bg-amethyst/20",
-                      conflict && "bg-destructive/15 text-destructive",
+                      // Wavy underline: conflicts don't rely on color alone.
+                      conflict && "bg-destructive/15 text-destructive underline decoration-wavy decoration-[0.35cqi] underline-offset-[0.7cqi]",
                       isSelected && "bg-amethyst/30 ring-2 ring-amethyst ring-inset",
                     )}
                   >

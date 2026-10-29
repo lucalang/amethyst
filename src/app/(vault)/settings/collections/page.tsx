@@ -55,7 +55,7 @@ export default async function CollectionsSettingsPage() {
                     ) : null}
                   </span>
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{count} {count === 1 ? "entry" : "entries"}</span>
-                  <ArrowUpRight aria-hidden className="size-4 shrink-0 text-muted-foreground/40 transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5 group-hover/collection:text-amethyst" />
+                  <ArrowUpRight aria-hidden className="size-4 shrink-0 text-muted-foreground transition-[color,translate] group-hover/collection:translate-x-0.5 group-hover/collection:-translate-y-0.5 group-hover/collection:text-amethyst" />
                 </Link>
                 <CollectionActions collection={item} entryCount={count} />
               </li>

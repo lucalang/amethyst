@@ -136,7 +136,7 @@ export function CoinReward({ state, className }: { state: CoinState; className?:
         <span
           className={cn(
             "coin-reward mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs leading-4 font-medium",
-            info.tone === "paid" && "border-amber-300/40 bg-amber-300/10",
+            info.tone === "paid" && "border-warning/40 bg-warning/10",
             info.tone === "muted" && "border-white/10 bg-white/[0.04] text-muted-foreground",
             info.tone === "warn" && "border-rose/30 bg-rose/10 text-rose",
           )}

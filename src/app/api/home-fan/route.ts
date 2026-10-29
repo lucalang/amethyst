@@ -1,21 +1,12 @@
 import { z } from "zod";
-import { COVER_SHAPES } from "@/lib/cover-shape";
-import { fanKey, MAX_FAN_ITEMS } from "@/lib/home-fan";
+import { MAX_FAN_ITEMS } from "@/lib/home-fan";
 import { dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
-import { artworkUrl } from "@/lib/validation/entries";
-
-const itemSchema = z.union([
-  z.object({ entryId: z.uuid() }).strict(),
-  z.object({ imageUrl: artworkUrl.pipe(z.string({ error: "Add an image link or upload an image." })), shape: z.enum(COVER_SHAPES) }).strict(),
-]);
+import { artworkItemSchema, artworkRpcItems, uniqueArtwork } from "@/lib/validation/artwork-items";
 
 const fanSchema = z
-  .object({ items: z.array(itemSchema).max(MAX_FAN_ITEMS, `The cover fan holds at most ${MAX_FAN_ITEMS} pieces of artwork.`) })
+  .object({ items: z.array(artworkItemSchema).max(MAX_FAN_ITEMS, `The cover fan holds at most ${MAX_FAN_ITEMS} pieces of artwork.`) })
   .strict()
-  .refine((value) => {
-    const keys = value.items.map(fanKey);
-    return new Set(keys).size === keys.length;
-  }, "Each entry or image can appear in the fan only once.");
+  .refine((value) => uniqueArtwork(value.items), "Each entry or image can appear in the fan only once.");
 
 /** Replace the account's cover fan with the given artwork, in order. Entries and uploads are never touched. */
 export async function PUT(request: Request) {
@@ -25,8 +16,7 @@ export async function PUT(request: Request) {
   if (ctx instanceof Response) return ctx;
   const parsed = await parseJson(request, fanSchema);
   if ("response" in parsed) return parsed.response;
-  const items = parsed.data.items.map((item) => ("entryId" in item ? { entry_id: item.entryId } : { image_url: item.imageUrl, image_shape: item.shape }));
-  const { error } = await ctx.supabase.rpc("set_home_fan", { p_items: items });
+  const { error } = await ctx.supabase.rpc("set_home_fan", { p_items: artworkRpcItems(parsed.data.items) });
   if (error) return dbError(error);
   return jsonResponse({ ok: true });
 }

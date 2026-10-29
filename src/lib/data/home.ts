@@ -4,6 +4,7 @@ import type { CoverShape } from "@/lib/cover-shape";
 import { fanKey, type FanItem } from "@/lib/home-fan";
 import { EMPTY_SUMMARY, type LibraryEntry } from "@/lib/progress/library";
 import type { AuthContext } from "@/lib/supabase/auth";
+import { automaticPreviews, chosenPreviews } from "./collection-covers";
 import { loadCollections } from "./collections";
 import { fetchAll } from "./fetch-all";
 
@@ -11,7 +12,6 @@ import { fetchAll } from "./fetch-all";
 const VISIT_LIMIT = 7;
 const PIN_LIMIT = 48;
 const TASK_LIMIT = 8;
-const PREVIEW_LIMIT = 3;
 
 export type HomePreview = { id: string; title: string; coverUrl: string | null; coverShape: CoverShape; href: string };
 export type HomeCollection = {
@@ -26,6 +26,8 @@ export type HomeCollection = {
   /** Entries with cover artwork, i.e. what the fan picker can offer from this collection. */
   coverCount: number;
   previews: HomePreview[];
+  /** True when the previews are artwork the user chose rather than automatic picks. */
+  customCovers: boolean;
 };
 export type HomeTask = { id: string; label: string; dueDate: string; starred: boolean; href: string; entryTitle: string; fileName: string };
 export type HomeContinue = {
@@ -62,7 +64,7 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
  */
 export async function loadHome(ctx: AuthContext, featuredEntryId: string | null = null): Promise<HomeData> {
   const { supabase } = ctx;
-  const [collections, entries, visits, pins, files, tasks, profile, fanRows] = await Promise.all([
+  const [collections, entries, visits, pins, files, tasks, profile, fanRows, coverRows] = await Promise.all([
     loadCollections(ctx),
     fetchAll(
       (from, to) =>
@@ -89,6 +91,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
       .then(check),
     supabase.from("users").select("display_name, avatar_url, motto").eq("id", ctx.userId).maybeSingle().then(check),
     supabase.from("home_fan_items").select("id, entry_id, image_url, image_shape").order("position").then(check),
+    supabase.from("collection_cover_items").select("id, collection_id, entry_id, image_url, image_shape").order("position").then(check),
   ]);
   if (files.error) throw new Error(`Query failed (${files.error.code ?? "unknown"})`);
 
@@ -152,13 +155,12 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
     else byCollection.set(entry.collection_id, [entry]);
   }
 
-  const preview = (entry: (typeof entries)[number]): HomePreview => ({
-    id: entry.id,
-    title: entry.title,
-    coverUrl: entry.cover_url,
-    coverShape: entry.cover_shape,
-    href: entryPath(entry),
-  });
+  const coversByCollection = new Map<string, NonNullable<typeof coverRows>>();
+  for (const row of coverRows ?? []) {
+    const list = coversByCollection.get(row.collection_id);
+    if (list) list.push(row);
+    else coversByCollection.set(row.collection_id, [row]);
+  }
 
   // Exactly what the user picked; an entry that is gone is skipped, never replaced.
   const fan: FanItem[] = (fanRows ?? []).flatMap((row): FanItem[] => {
@@ -185,7 +187,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
     fan,
     collections: collections.map((collection) => {
       const list = byCollection.get(collection.id) ?? [];
-      const previews = [...list.filter((entry) => entry.cover_url), ...list.filter((entry) => !entry.cover_url)].slice(0, PREVIEW_LIMIT);
+      const chosen = chosenPreviews(coversByCollection.get(collection.id) ?? [], entryById, collection);
       return {
         id: collection.id,
         slug: collection.slug,
@@ -196,7 +198,8 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
         bannerUrl: collection.banner_url ?? null,
         entryCount: list.length,
         coverCount: list.filter((entry) => entry.cover_url).length,
-        previews: previews.map(preview),
+        previews: chosen ?? automaticPreviews(list),
+        customCovers: chosen !== null,
       };
     }),
     counts: { collections: collections.length, entries: entries.length, files: files.count ?? 0 },

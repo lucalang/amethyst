@@ -25,7 +25,7 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit & { j
       body: json !== undefined ? JSON.stringify(json) : rest.body,
     });
   } catch {
-    throw new ApiError("Could not reach Amethyst Archives. Check your connection and try again.", 0, "network_error");
+    throw new ApiError("Could not reach Amethyst. Check your connection and try again.", 0, "network_error");
   }
   let body: unknown;
   try {
@@ -40,7 +40,7 @@ export async function apiFetch<T = unknown>(url: string, init: RequestInit & { j
     const fallback = response.status === 401
       ? "Your session has expired. Sign in again to continue."
       : response.status >= 500
-        ? "Amethyst Archives could not save your changes. Try again in a moment."
+        ? "Amethyst could not save your changes. Try again in a moment."
         : "This request could not be completed. Reload and try again.";
     throw new ApiError(error?.message ?? fallback, response.status, error?.code, typeof path === "string" ? path : undefined);
   }

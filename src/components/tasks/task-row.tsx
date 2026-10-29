@@ -159,7 +159,7 @@ export function TaskRow({
             onPointerUp={drag.onPointerEnd}
             onPointerCancel={drag.onPointerEnd}
             onLostPointerCapture={drag.onPointerEnd}
-            className="grid h-8 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground/50 opacity-0 group-hover/task:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100"
+            className="grid h-8 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground opacity-0 group-hover/task:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100"
           >
             <GripVertical className="size-3.5" />
           </button>
@@ -200,7 +200,7 @@ export function TaskRow({
           onClick={() => void actions.updateTask(task.id, { important: !task.important }, { failure: "Importance not saved" })}
           className={cn(
             "group/star grid size-9 shrink-0 place-items-center rounded-full transition-[background-color,color,scale] duration-200 outline-none hover:bg-rose/10 focus-visible:ring-2 focus-visible:ring-rose/60 active:scale-90 motion-reduce:transition-none",
-            task.important ? "text-rose" : "text-muted-foreground/60 hover:text-rose",
+            task.important ? "text-rose" : "text-muted-foreground hover:text-rose",
           )}
         >
           <Star

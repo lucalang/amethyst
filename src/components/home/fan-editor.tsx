@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent,
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDown, ArrowUp, Check, GripVertical, ImageIcon, Layers, Loader2, Plus, Search, Sparkles, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, GripVertical, ImageIcon, Layers, Loader2, Plus, Search, Sparkles, X } from "lucide-react";
 import { ChangedBadge, ResetIconButton } from "@/app/(vault)/settings/reset-button";
 import { CoverFan } from "@/components/home/cover-fan";
 import { ImageUrlField } from "@/components/media/image-url-field";
@@ -228,7 +228,7 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
                         {item.kind === "entry" ? item.collectionName : item.shape === "square" ? "Square image" : "Portrait image"}
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 text-xs text-amber-200">
+                      <span className="flex items-center gap-1 text-xs text-warning">
                         <AlertTriangle aria-hidden className="size-3 shrink-0" />
                         <span className="truncate">No cover art, so it’s skipped</span>
                       </span>
@@ -284,9 +284,17 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="flex max-h-[min(46rem,calc(100dvh-2rem))] flex-col gap-4 sm:max-w-2xl">
-          <FanPicker
+          <ArtworkPicker
             items={items}
             collections={collections}
+            max={MAX_FAN_ITEMS}
+            title="Customize cover fan"
+            description={`Choose up to ${MAX_FAN_ITEMS} covers or images. They appear in the order you select them; rearrange them afterwards.`}
+            emptyText="Nothing selected. With an empty fan, Home simply leaves it out."
+            fullText="the fan is full"
+            imageHint="Paste a link or upload an image. It only decorates the fan; no entry is created."
+            addImageLabel="Add to fan"
+            saveLabel="Save fan"
             onCancel={() => setPickerOpen(false)}
             onApply={(next) => {
               setPickerOpen(false);
@@ -299,15 +307,43 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
   );
 }
 
-/** The picker's body; it mounts with the dialog, so every opening starts from the saved fan. */
-function FanPicker({
+/** Pick and order artwork (entry covers or own images); it mounts with its dialog, so every opening starts from the saved choice. */
+export function ArtworkPicker({
   items,
   collections,
+  scope = null,
+  max,
+  title,
+  description,
+  emptyText,
+  fullText,
+  imageHint,
+  addImageLabel,
+  saveLabel,
+  reorderable = false,
+  preview,
+  footerAction,
   onCancel,
   onApply,
 }: {
   items: FanItem[];
   collections: FanCollection[];
+  /** Limit entry covers to one collection (hides the collection filter). */
+  scope?: string | null;
+  max: number;
+  title: string;
+  description: string;
+  emptyText: string;
+  fullText: string;
+  imageHint: string;
+  addImageLabel: string;
+  saveLabel: string;
+  /** Show move buttons on the selected artwork. */
+  reorderable?: boolean;
+  /** Live preview of the current selection. */
+  preview?: (draft: FanItem[]) => ReactNode;
+  /** Extra footer control, e.g. a reset; receives a setter for the draft. */
+  footerAction?: (setDraft: (items: FanItem[]) => void, draft: FanItem[]) => ReactNode;
   onCancel: () => void;
   onApply: (items: FanItem[]) => void;
 }) {
@@ -315,7 +351,7 @@ function FanPicker({
   const [tab, setTab] = useState<"entries" | "image">("entries");
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [collection, setCollection] = useState<string | null>(null);
+  const [collection, setCollection] = useState<string | null>(scope);
   const [shape, setShape] = useState<CoverShape>("portrait");
   const [imageError, setImageError] = useState<string | null>(null);
   const [fieldKey, setFieldKey] = useState(0);
@@ -335,9 +371,17 @@ function FanPicker({
     staleTime: 30_000,
   });
 
-  const full = draft.length >= MAX_FAN_ITEMS;
+  const full = draft.length >= max;
   const positions = new Map(draft.map((item, index) => [item.key, index + 1]));
-  const sources = collections.filter((item) => item.coverCount > 0);
+  const sources = scope ? [] : collections.filter((item) => item.coverCount > 0);
+
+  function moveDraft(key: string, delta: number) {
+    const index = draft.findIndex((item) => item.key === key);
+    const next = relocate(draft, key, index + delta);
+    if (next === draft) return;
+    setDraft(next);
+    setAnnouncement(`${itemTitle(draft[index])}, position ${index + delta + 1} of ${next.length}.`);
+  }
 
   function toggleEntry(entry: EntryResult) {
     const key = fanKey({ entryId: entry.id });
@@ -363,7 +407,7 @@ function FanPicker({
     }
     const key = fanKey({ imageUrl: parsed.data });
     if (positions.has(key)) {
-      setImageError("That image is already in the fan.");
+      setImageError("That image is already chosen.");
       return;
     }
     if (full) return;
@@ -378,10 +422,12 @@ function FanPicker({
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
           <Layers aria-hidden className="size-4 text-amethyst" />
-          Customize cover fan
+          {title}
         </DialogTitle>
-        <DialogDescription>Choose up to {MAX_FAN_ITEMS} covers or images. They appear in the order you select them; rearrange them afterwards.</DialogDescription>
+        <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
+
+      {preview?.(draft)}
 
       {draft.length ? (
         <ol aria-label="Selected artwork" className="flex gap-2 overflow-x-auto pb-1">
@@ -404,11 +450,35 @@ function FanPicker({
               >
                 <X aria-hidden className="size-3" />
               </button>
+              {reorderable && draft.length > 1 ? (
+                <span className="mt-1.5 flex justify-center gap-0.5">
+                  <button
+                    type="button"
+                    aria-label={`Move ${itemTitle(item)} earlier`}
+                    title="Move earlier"
+                    disabled={index === 0}
+                    onClick={() => moveDraft(item.key, -1)}
+                    className="grid size-6 place-items-center rounded text-muted-foreground outline-none hover:bg-amethyst/10 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-35"
+                  >
+                    <ArrowLeft aria-hidden className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Move ${itemTitle(item)} later`}
+                    title="Move later"
+                    disabled={index === draft.length - 1}
+                    onClick={() => moveDraft(item.key, 1)}
+                    className="grid size-6 place-items-center rounded text-muted-foreground outline-none hover:bg-amethyst/10 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-35"
+                  >
+                    <ArrowRight aria-hidden className="size-3.5" />
+                  </button>
+                </span>
+              ) : null}
             </li>
           ))}
         </ol>
       ) : (
-        <p className="rounded-md border border-dashed border-white/[0.1] px-3 py-2 text-xs text-muted-foreground">Nothing selected. With an empty fan, Home simply leaves it out.</p>
+        <p className="rounded-md border border-dashed border-white/[0.14] px-3 py-2 text-xs text-muted-foreground">{emptyText}</p>
       )}
 
       <div role="radiogroup" aria-label="Add from" className="inline-flex self-start rounded-md border border-white/[0.1] p-0.5">
@@ -532,12 +602,12 @@ function FanPicker({
             id="fan-image"
             name="fanImageUrl"
             label="Image"
-            hint="Paste a link or upload an image. It only decorates the fan; no entry is created."
+            hint={imageHint}
             error={imageError ?? undefined}
             shape={shape === "square" ? "square" : "poster"}
           />
           <Button type="submit" variant="outline" className="h-9 gap-2 px-4" disabled={full}>
-            <Plus aria-hidden className="size-4" /> Add to fan
+            <Plus aria-hidden className="size-4" /> {addImageLabel}
           </Button>
         </form>
       )}
@@ -548,14 +618,15 @@ function FanPicker({
 
       <DialogFooter className="items-center sm:justify-between">
         <p className="text-xs text-muted-foreground tabular-nums">
-          {draft.length} of {MAX_FAN_ITEMS} selected{full ? " · the fan is full" : ""}
+          {draft.length} of {max} selected{full ? ` · ${fullText}` : ""}
         </p>
         <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          {footerAction?.(setDraft, draft)}
           <Button type="button" variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
           <Button type="button" className="gap-2" onClick={() => onApply(draft)}>
-            <Check aria-hidden className="size-4" /> Save fan
+            <Check aria-hidden className="size-4" /> {saveLabel}
           </Button>
         </div>
       </DialogFooter>

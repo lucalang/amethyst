@@ -13,8 +13,8 @@ type Phase = "playing" | "won" | "over";
 
 const CELLS = Array.from({ length: SIZE * SIZE }, (_, cell) => cell);
 
-/** Color strength from 2 (faint) to 2048 (full accent). */
-const strength = (value: number) => Math.min(1, (Math.log2(value) - 1) / 10);
+/** Palette step: 1 for a 2 up to 11 for 2048; 12 for anything beyond (styled in globals.css). */
+const tileStep = (value: number) => Math.min(12, Math.log2(value));
 const fontScale = (value: number) => {
   const digits = String(value).length;
   return digits <= 2 ? 0.46 : digits === 3 ? 0.38 : digits === 4 ? 0.3 : 0.24;
@@ -170,26 +170,17 @@ export default function Game2048({ best: initialBest }: { best: number | null })
           {CELLS.map((cell) => (
             <div key={cell} aria-hidden className="g2048-cell" style={{ "--r": Math.floor(cell / SIZE), "--c": cell % SIZE } as CSSProperties} />
           ))}
-          {board.tiles.map((tile) => {
-            const t = strength(tile.value);
-            return (
-              <div
-                key={tile.id}
-                className={cn(
-                  "g2048-tile",
-                  t >= 0.55 && "is-strong",
-                  tile.value > GOAL && "is-super",
-                  tile.merged && "is-merged",
-                  tile.fresh && "is-fresh",
-                  tile.consumed && "is-consumed",
-                )}
-                aria-hidden={tile.consumed || undefined}
-                style={{ "--r": tile.row, "--c": tile.col, "--t": t, "--fs": fontScale(tile.value) } as CSSProperties}
-              >
-                {tile.value}
-              </div>
-            );
-          })}
+          {board.tiles.map((tile) => (
+            <div
+              key={tile.id}
+              data-step={tileStep(tile.value)}
+              className={cn("g2048-tile", tile.merged && "is-merged", tile.fresh && "is-fresh", tile.consumed && "is-consumed")}
+              aria-hidden={tile.consumed || undefined}
+              style={{ "--r": tile.row, "--c": tile.col, "--fs": fontScale(tile.value) } as CSSProperties}
+            >
+              {tile.value}
+            </div>
+          ))}
         </div>
         {phase === "won" ? (
           <GameOverlay

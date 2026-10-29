@@ -152,7 +152,7 @@ export function ImageUrlField({
           ) : uploading || check.isFetching ? (
             <Loader2 aria-hidden className="size-4 animate-spin text-muted-foreground" />
           ) : (
-            <ImageIcon aria-hidden className="size-4 text-muted-foreground/60" />
+            <ImageIcon aria-hidden className="size-4 text-muted-foreground" />
           )}
         </div>
         <div className="min-w-0 flex-1 space-y-1.5">
