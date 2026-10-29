@@ -1,4 +1,5 @@
 import "server-only";
+import { Agent } from "node:https";
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client, S3ServiceException } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { serverEnv } from "@/lib/env";
@@ -26,14 +27,15 @@ function r2(): R2 | null {
     // Default SDK checksums would be signed into presigned URLs and break browser uploads.
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED",
+    requestHandler: { httpsAgent: new Agent({ family: 4, keepAlive: true }), connectionTimeout: 10_000, requestTimeout: 30_000 },
   });
   return (cached = { client, bucket: env.R2_BUCKET });
 }
 
 export const r2Configured = () => r2() !== null;
 
-/** Where new uploads go: R2 only after the explicit ATTACHMENT_STORAGE=r2 cutover. */
-export const uploadTarget = (): "r2" | "supabase" => (serverEnv().ATTACHMENT_STORAGE === "r2" && r2Configured() ? "r2" : "supabase");
+/** An explicit Supabase setting affects new uploads only, never verified R2 reads. */
+export const uploadTarget = (): "r2" | "supabase" => serverEnv().ATTACHMENT_STORAGE;
 
 /** The only key format: callers pass the verified session user and a validated attachment name. */
 export const objectKey = (userId: string, name: string) => `${userId}/${name}`;

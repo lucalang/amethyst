@@ -96,6 +96,32 @@ export const CHANGELOG: readonly Release[] = [
     },
   },
   {
+    id: "2026-10-29-private-attachment-delivery",
+    date: "2026-10-29",
+    title: "Private attachment delivery fixed",
+    intro: "Migrated note images and uploaded artwork now load from private R2 storage consistently, while existing documents and image links stay intact.",
+    icon: "image",
+    highlights: [
+      { kind: "fixed", feature: "Attachment delivery", text: "Verified migrated images no longer return to the old storage service because of the upload setting." },
+      { kind: "improved", feature: "Private uploads", text: "New image uploads use R2 by default, with the same account-only access." },
+      { kind: "improved", feature: "Safe migration", text: "Interrupted migrations can resume from verified existing copies without downloading the originals again." },
+    ],
+    details: {
+      fixed: [
+        {
+          title: "Existing images keep their links",
+          body: "Note embeds, covers, banners and other uploaded images use their verified R2 copies without changing your documents. Images not yet migrated retain their legacy fallback, and originals are preserved.",
+        },
+      ],
+      improved: [
+        {
+          title: "Private storage, verified copies",
+          body: "Attachments still require your signed-in account and use expiring private links. Migration checks file contents before switching delivery, skips verified files and safely recovers interrupted copies.",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-03-2048-flutter-daily",
     date: "2026-11-03",
     title: "Daily challenges, board sizes and a fairer Flutter",

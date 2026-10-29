@@ -90,11 +90,11 @@ Forms show a live preview. When a link will not work, they explain why: private 
 
 Uploaded note images, covers, banners, avatars and Home artwork are always linked as `/api/attachments/<name>`. The name is unique per account, and the storage key is `<user id>/<name>` in both stores. That route checks the session, looks up the account's row in `public.attachment_objects` (the manifest) and redirects:
 
-- **Verified R2 copy** (`r2_state = 'verified'`): to a presigned R2 URL. URLs are signed per 2-hour window and stay valid for 4 hours, so an unchanged image keeps one URL and stays in the browser cache. The redirect is cached `private` and always expires 5 minutes before the signature does.
-- **No row, or a Supabase upload:** to a 1-hour signed URL from the legacy `note-attachments` bucket. This is the controlled fallback for images that have not been migrated. Errors from R2 never trigger it.
+- **Verified R2 copy** (`r2_state = 'verified'`): to a presigned R2 URL, regardless of `ATTACHMENT_STORAGE`. URLs are signed per 2-hour window and stay valid for 4 hours, so an unchanged image keeps one URL and stays in the browser cache. The redirect is cached `private` and always expires 5 minutes before the signature does. Missing R2 configuration returns an error, never a silent Supabase download.
+- **No row, or a Supabase upload without a verified R2 copy:** to a 1-hour signed URL from the legacy `note-attachments` bucket. This is the controlled fallback for images that have not been migrated. Errors from R2 never trigger it.
 - **Unconfirmed R2 upload:** 404.
 
-Uploads go through `POST /api/attachments`. It reserves a free name in the manifest (taken names get a number, like "… 1.png"; the legacy bucket is checked too) and returns a 10-minute presigned PUT. The signature fixes the content type and size and includes `If-None-Match: *`, so nothing can be overwritten. `POST /api/attachments/<name>` then checks the stored object (size, type, MD5 ETag) before marking it verified. Bucket keys come only from the verified session user and a validated name.
+Uploads default to R2 and go through `POST /api/attachments`. It reserves a free name in the manifest (taken names get a number, like "… 1.png"; the legacy bucket is checked too) and returns a 10-minute presigned PUT. The signature fixes the content type and size and includes `If-None-Match: *`, so nothing can be overwritten. `POST /api/attachments/<name>` then checks the stored object (size, type, MD5 ETag) before marking it verified. Bucket keys come only from the verified session user and a validated name.
 
 Signing out sends `Clear-Site-Data: "cache"`, and image redirects use `Vary: Cookie`. The bucket is never public. The 3D Showcase loads textures through `?cors`, which is signed as a separate URL, so a cached non-CORS response is never reused for WebGL.
 
@@ -108,20 +108,24 @@ Signing out sends `Clear-Site-Data: "cache"`, and image redirects use `Vary: Coo
 3. **R2 Object Storage → Manage API tokens → Create API token**. Choose **Object Read & Write**, apply it to **this bucket only**, and create it. Copy the Access Key ID and Secret Access Key straight into your environment; they are shown once. The Account ID is shown on the R2 overview page.
 4. Set `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET` in `.env.local` (for the migration script) and in the hosting environment, then redeploy. The CSP is built at build time.
 
-### Migration, cutover and rollback
+### Migration and deployment
 
 1. Apply migration `20261101000100_r2_attachments` (`npx supabase db push`). It only adds the manifest table and functions.
-2. Deploy with the R2 variables set and `ATTACHMENT_STORAGE` unset or `supabase`. Nothing changes for users yet.
+2. Set the R2 variables in the hosting environment before building. Verified images always use R2; images not yet migrated keep using Supabase. `ATTACHMENT_STORAGE` controls new uploads only and defaults to `r2`.
 3. `npm run images:migrate` (dry run) lists the legacy objects and the bytes still to copy. That figure is the one-time Supabase download. It also lists saved references that exist in neither store, direct Supabase Storage links saved in data, keys that cannot be copied, and whether R2 is reachable. Nothing is downloaded.
 4. Run `npm run images:migrate -- --apply`. Optional flags: `--limit N` and `--concurrency 1–8` (default 4).
-   - Each object is downloaded once and its size and Supabase ETag are checked.
+  - Already verified objects with matching source size and checksum are skipped without downloading them.
+  - Before downloading a missing copy from Supabase, R2 must be reachable. An existing R2 object from an interrupted run is read and checked against the source size, type and MD5, plus its SHA-256 metadata when present, then recorded without downloading Supabase again. Unverifiable or different objects are reported, never overwritten.
+  - A genuinely missing object is downloaded from Supabase and its size and Supabase ETag are checked.
    - It is then written to R2 with `Content-MD5` (checked by R2) and `If-None-Match: *`, read back and compared by SHA-256. Only then is it recorded as verified.
    - Transient errors are retried up to 3 times. Different content already in R2 is reported as a collision and never overwritten.
    - Quota or plan refusals from Supabase stop the run (exit code 2).
    - Every result goes to `.r2-migration/*.jsonl`. Re-running skips verified objects.
 5. Run `npm run images:migrate -- --verify` to re-download every verified R2 object and compare it against the manifest.
-6. **Cutover:** set `ATTACHMENT_STORAGE=r2` and redeploy. New uploads go to R2, and migrated images load from R2.
-7. **Rollback:** set `ATTACHMENT_STORAGE=supabase` and redeploy. Migrated images load from their untouched Supabase originals, and new uploads go to Supabase. Images uploaded to R2 after cutover keep loading from R2 as long as the R2 variables stay set. To cut over again, run `--apply` first, which copies images uploaded during the rollback.
+6. **Hosted cutover:** explicitly set `ATTACHMENT_STORAGE=r2` in Production (and Preview if used), removing any old `supabase` override, and redeploy this code with all four R2 variables present at build and runtime. New uploads go to R2. Keep the bucket private, with CORS allowing the exact deployed app origin; the build-time CSP must include the R2 endpoint. Restart an already running local server after changing `.env.local`.
+7. **Emergency upload fallback:** explicitly set `ATTACHMENT_STORAGE=supabase` and redeploy to send only new uploads to Supabase. This no longer rolls migrated reads back to Supabase. Keep R2 configured for verified attachments; restore missing R2 files from a verified backup or the untouched originals rather than silently increasing Supabase egress. Run `--apply` again before returning uploads to R2.
+
+**2026-10-29 audit:** all 179 legacy objects (124.30 MiB) already had verified R2 manifest rows. A fresh R2-only checksum verification passed for all 179, including `ag_update22_cover.png`, `noFilter (54).webp` and `universal_tower_defense_update3.0_part2.png`. The scanned saved references had no missing files or direct Supabase Storage URLs. The local upload setting was still `supabase`, which previously also forced migrated downloads back to Supabase. No note content, stored image URLs, Supabase originals or schema were changed. The SDK now uses IPv4 HTTPS connections with bounded timeouts, following a failed default connection and successful IPv4 verification. Hosted environment values and the running deployment still need to be checked by the deployment operator.
 
 **Future cleanup (separate, manual, not automated):** only after a long stable period with `--verify` passing and a fresh R2 backup, delete Supabase originals whose manifest rows have `origin = 'supabase'` and `r2_state = 'verified'`. Keep the bucket and its policies until no rows depend on the legacy fallback.
 
@@ -183,7 +187,7 @@ Local auth emails (confirmation, password reset, magic links) arrive in Mailpit 
 | `SUPABASE_SECRET_KEY` | scripts/tests only, server-side | `npm run user:invite`, `npm run images:migrate` and integration/E2E tests; never `NEXT_PUBLIC_` |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | app + migration script, server-side only | Private R2 bucket for uploaded images (all four or none); never `NEXT_PUBLIC_` |
 | `R2_ENDPOINT` | optional | Only for jurisdiction buckets (`https://<account>.eu.r2.cloudflarestorage.com`) |
-| `ATTACHMENT_STORAGE` | app | `supabase` (default and rollback) or `r2` (cutover) |
+| `ATTACHMENT_STORAGE` | app | `r2` (default); explicit `supabase` is an emergency fallback for new uploads only. Verified reads always use R2. |
 
 `EXTRA_IMAGE_HOSTS` was removed; artwork hosts no longer need an allowlist.
 

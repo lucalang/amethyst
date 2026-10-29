@@ -14,6 +14,7 @@
  */
 import { createHash } from "node:crypto";
 import { mkdirSync, appendFileSync } from "node:fs";
+import { Agent } from "node:https";
 import { GetObjectCommand, HeadBucketCommand, HeadObjectCommand, PutObjectCommand, S3Client, S3ServiceException } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
 import { ATTACHMENT_BUCKET, ATTACHMENT_TYPES, MAX_ATTACHMENT_BYTES, findImageEmbeds, isUploadedImagePath, isValidAttachmentName, resolveImageSrc, uploadedImageName } from "../src/lib/attachments";
@@ -60,6 +61,7 @@ function r2(): { client: S3Client; bucket: string } | null {
     credentials: { accessKeyId: env("R2_ACCESS_KEY_ID"), secretAccessKey: env("R2_SECRET_ACCESS_KEY") },
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED",
+    requestHandler: { httpsAgent: new Agent({ family: 4, keepAlive: true }), connectionTimeout: 10_000, requestTimeout: 30_000 },
     maxAttempts: 1,
   });
   return { client, bucket: env("R2_BUCKET") };
@@ -168,18 +170,66 @@ async function readR2(store: NonNullable<ReturnType<typeof r2>>, key: string) {
   return { body, contentType: object.ContentType ?? "", etag: (object.ETag ?? "").replaceAll('"', ""), sha256: object.Metadata?.sha256 };
 }
 
+function alreadyMigrated(row: InventoryRow) {
+  const etag = (row.etag ?? "").replaceAll('"', "");
+  return row.origin === "supabase" && row.r2_state === "verified" && row.manifest_size === row.size_bytes &&
+    /^[0-9a-f]{32}$/.test(etag) && row.manifest_md5 === etag;
+}
+
 async function copyOne(store: NonNullable<ReturnType<typeof r2>>, row: InventoryRow): Promise<Result> {
   const key = row.object_name;
   const parsed = parseKey(row);
   if (typeof parsed === "string") return { key, status: parsed.startsWith("collision") ? "collision" : "invalid", reason: parsed };
-  if (row.r2_state === "verified" && row.manifest_size === row.size_bytes) return { key, status: "already" };
+  if (alreadyMigrated(row)) return { key, status: "already" };
 
   try {
+    const record = async (data: Buffer, status: "copied" | "verified"): Promise<Result> => {
+      const md5 = hash("md5", data);
+      const sha256 = hash("sha256", data);
+      const { error } = await supabase.from("attachment_objects").upsert(
+        {
+          user_id: parsed.userId,
+          name: parsed.name,
+          origin: "supabase",
+          r2_state: "verified",
+          content_type: row.content_type!,
+          size_bytes: data.length,
+          md5,
+          sha256,
+          verified_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,name" },
+      );
+      if (error) return { key, status: "failed", reason: `R2 verified, but the manifest update failed: ${error.message}` };
+      return { key, status, bytes: data.length, sha256 };
+    };
+    const legacyEtag = (row.etag ?? "").replaceAll('"', "");
+    const existing = await withRetry(`inspect ${key}`, async () => {
+      try {
+        return await store.client.send(new HeadObjectCommand({ Bucket: store.bucket, Key: key }));
+      } catch (error) {
+        if (statusOf(error) === 404) return null;
+        throw error;
+      }
+    });
+    if (existing) {
+      if (!/^[0-9a-f]{32}$/.test(legacyEtag) || existing.ContentLength !== row.size_bytes ||
+        (existing.ETag ?? "").replaceAll('"', "") !== legacyEtag || existing.ContentType !== row.content_type) {
+        return { key, status: "collision", reason: "existing R2 object cannot be matched to the Supabase metadata; neither store was changed" };
+      }
+      const stored = await withRetry(`recover ${key}`, () => readR2(store, key));
+      const sha256 = hash("sha256", stored.body);
+      if (stored.body.length !== row.size_bytes || stored.contentType !== row.content_type ||
+        hash("md5", stored.body) !== legacyEtag || (stored.sha256 && stored.sha256 !== sha256)) {
+        return { key, status: "failed", reason: "existing R2 object failed checksum verification" };
+      }
+      return record(stored.body, "verified");
+    }
+
     const data = await downloadLegacy(key);
     if (data.length !== row.size_bytes) return { key, status: "failed", reason: `downloaded ${data.length} bytes, metadata says ${row.size_bytes}` };
     const md5 = hash("md5", data);
     const sha256 = hash("sha256", data);
-    const legacyEtag = (row.etag ?? "").replaceAll('"', "");
     if (/^[0-9a-f]{32}$/.test(legacyEtag) && legacyEtag !== md5) return { key, status: "failed", reason: "download does not match the Supabase checksum" };
 
     await withRetry(`upload ${key}`, async () => {
@@ -211,22 +261,7 @@ async function copyOne(store: NonNullable<ReturnType<typeof r2>>, row: Inventory
       return { key, status: "failed", reason: "R2 copy does not match (size, SHA-256 or content type)" };
     }
 
-    const { error } = await supabase.from("attachment_objects").upsert(
-      {
-        user_id: parsed.userId,
-        name: parsed.name,
-        origin: "supabase",
-        r2_state: "verified",
-        content_type: row.content_type!,
-        size_bytes: data.length,
-        md5,
-        sha256,
-        verified_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id,name" },
-    );
-    if (error) return { key, status: "failed", reason: `copied and verified, but the manifest update failed: ${error.message}` };
-    return { key, status: "copied", bytes: data.length, sha256 };
+    return record(stored.body, "copied");
   } catch (error) {
     if (error instanceof QuotaError) throw error;
     const message = error instanceof Error ? error.message : String(error);
@@ -265,7 +300,7 @@ async function main() {
   const store = r2();
   const rows = await inventory();
   const totalBytes = rows.reduce((sum, row) => sum + (row.size_bytes ?? 0), 0);
-  const verified = rows.filter((row) => row.r2_state === "verified" && row.manifest_size === row.size_bytes);
+  const verified = rows.filter(alreadyMigrated);
   const pending = rows.filter((row) => !verified.includes(row));
   const pendingBytes = pending.reduce((sum, row) => sum + (row.size_bytes ?? 0), 0);
   const { count: r2Uploads } = await supabase.from("attachment_objects").select("*", { count: "exact", head: true }).eq("origin", "r2").eq("r2_state", "verified");
@@ -293,7 +328,8 @@ async function main() {
         await store.client.send(new HeadBucketCommand({ Bucket: store.bucket }));
         console.log("\nR2 bucket reachable with the configured credentials.");
       } catch (error) {
-        console.log(`\nR2 bucket check failed (${statusOf(error) ?? "network"}). Check the bucket name and token scope.`);
+        console.log(`\nR2 bucket check failed (${statusOf(error) ?? "network"}: ${error instanceof Error ? error.message : String(error)}). Check connectivity, the bucket name and token scope.`);
+        process.exitCode = 1;
       }
     }
     console.log("Dry run only: nothing was downloaded, copied or changed.");
@@ -333,6 +369,7 @@ async function main() {
     console.log(`Verified manifest rows: ${work.length} of ${manifest.length}; legacy objects: ${rows.length}, verified copies of them: ${verified.length}.`);
   } else {
     const work = pending.slice(0, LIMIT);
+    if (work.length) await withRetry("R2 preflight", () => store.client.send(new HeadBucketCommand({ Bucket: store.bucket })));
     console.log(`Copying ${work.length} object(s) with concurrency ${CONCURRENCY}…`);
     try {
       await pool(work, (row) => copyOne(store, row), (result, done) => record(result, done, work.length));

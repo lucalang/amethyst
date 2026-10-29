@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ATTACHMENT_BUCKET, isValidAttachmentName } from "@/lib/attachments";
 import { apiError, dbError, jsonResponse, rejectCrossOrigin, requireApiUser } from "@/lib/http";
-import { headObject, objectKey, presignDownload, r2Configured, uploadTarget } from "@/lib/r2";
+import { headObject, objectKey, presignDownload, r2Configured } from "@/lib/r2";
 
 type Params = { params: Promise<{ name: string }> };
 
@@ -31,9 +31,8 @@ export async function GET(request: Request, { params }: Params) {
 
   const { data: row, error } = await ctx.supabase.from("attachment_objects").select("origin, r2_state").eq("user_id", ctx.userId).eq("name", name).maybeSingle();
   if (error) return dbError(error, "Could not load the image.");
-  // Rolling back (ATTACHMENT_STORAGE=supabase) serves migrated files from their untouched originals.
-  const rolledBack = row?.origin === "supabase" && uploadTarget() === "supabase";
-  if (row?.r2_state === "verified" && r2Configured() && !rolledBack) {
+  if (row?.r2_state === "verified") {
+    if (!r2Configured()) return apiError(503, "storage_unavailable", "Image storage is not configured. Please try again later.");
     const cors = new URL(request.url).searchParams.has("cors");
     const { url, maxAge } = await presignDownload(objectKey(ctx.userId, name), cors);
     return NextResponse.redirect(url, { status: 302, headers: { "Cache-Control": `private, max-age=${maxAge}`, Vary: "Cookie" } });

@@ -19,8 +19,7 @@ const schema = z
     R2_BUCKET: optional,
     // Only for jurisdiction-specific buckets, e.g. https://<account>.eu.r2.cloudflarestorage.com
     R2_ENDPOINT: blankAsUnset(z.url().optional()),
-    // Where new uploads go. "r2" is the cutover switch; "supabase" is the rollback.
-    ATTACHMENT_STORAGE: blankAsUnset(z.enum(["supabase", "r2"]).default("supabase")),
+    ATTACHMENT_STORAGE: blankAsUnset(z.enum(["supabase", "r2"]).default("r2")),
   })
   .superRefine((env, ctx) => {
     const set = R2_KEYS.filter((key) => env[key]);
