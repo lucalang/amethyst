@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDuration } from "@/lib/arcade";
@@ -8,7 +8,26 @@ import { dailyDate, dailyVariant, seedFrom, seededRandom } from "@/lib/arcade-da
 import type { MotionLevel } from "@/lib/preferences";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
-import { fitWorld, mix, observeCanvas, random, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { fitWorld, observeCanvas, random, startLoop, withAlpha, type CanvasSize } from "./engine";
+import {
+  PIXEL_UNIT,
+  drawBackdrop,
+  drawBackdropMotion,
+  drawBlade,
+  drawBomb,
+  drawFruit,
+  drawHalf,
+  drawJuice,
+  drawSplats,
+  fruitTheme,
+  juiceBurst,
+  makeSplat,
+  plainParticle,
+  type FruitKind,
+  type FruitTheme,
+  type JuiceParticle,
+  type JuiceSplat,
+} from "./fruit-look";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import { GAME_PALETTES } from "./palettes";
 import type { SoundName } from "./sound";
@@ -44,7 +63,7 @@ const RULES: Record<Mode, { label: string; duration: number | null; bombs: "end"
 const variantOf = (mode: Mode, runDate: string | null) =>
   mode === "daily" && runDate ? dailyVariant(runDate) : mode === "arcade" || mode === "zen" ? mode : "";
 
-type Kind = { skin: string; flesh: string; radius: number; leaf: boolean };
+type Kind = FruitKind;
 
 /** Original fruit designs: skin, cut-face color and size. */
 const KINDS: Kind[] = [
@@ -63,8 +82,8 @@ const KINDS: Kind[] = [
 type Flyer = { kind: Kind | null; u: number; vu: number; y: number; vy: number; angle: number; spin: number; pu: number; py: number; pangle: number };
 type Launch = { at: number; kind: number; bomb: boolean; u: number; vu: number; vy: number; spin: number };
 type Half = { kind: Kind; side: 1 | -1; x: number; y: number; vx: number; vy: number; angle: number; spin: number; px: number; py: number; pangle: number };
-type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number };
-type Splat = { x: number; y: number; color: string; life: number; blobs: { dx: number; dy: number; r: number }[] };
+type Particle = JuiceParticle;
+type Splat = JuiceSplat;
 type Popup = { x: number; y: number; text: string; life: number; color: string; size: number };
 type Point = { x: number; y: number; t: number };
 
@@ -74,11 +93,13 @@ type Hooks = {
   onTime: (secondsLeft: number | null) => void;
   onStart: (runDate: string | null) => void;
   onOver: (score: number, reason: Reason, fruitsSliced: number, maxCombo: number, variant: string) => void;
-  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
+  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel; theme: FruitTheme };
 };
 
 function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
-  const ctx = canvas.getContext("2d");
+  const screen = canvas.getContext("2d");
+  // Pixel art renders the playfield into a small buffer and scales it up without smoothing.
+  const pixelCanvas = document.createElement("canvas");
   const colors = GAME_PALETTES["fruit-slice"];
 
   let size: CanvasSize = { width: 1, height: 1, dpr: 1 };
@@ -214,11 +235,7 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
 
   function burst(x: number, y: number, color: string, count: number, speed: number) {
     const room = MAX_PARTICLES - particles.length;
-    for (let i = 0; i < Math.min(count, room); i += 1) {
-      const angle = Math.random() * Math.PI * 2;
-      const v = random(speed * 0.4, speed);
-      particles.push({ x, y, vx: Math.cos(angle) * v, vy: Math.sin(angle) * v - 90, life: 1, color, size: random(2, 4.2) });
-    }
+    for (let i = 0; i < Math.min(count, room); i += 1) particles.push(plainParticle(x, y, color, speed));
   }
 
   function flash(color: string, strength: number) {
@@ -297,14 +314,10 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
       });
     }
     if (effects !== "off") {
-      burst(x, y, kind.flesh, effects === "full" ? 10 : 4, 260);
-      splats.push({
-        x,
-        y,
-        color: kind.flesh,
-        life: 1,
-        blobs: Array.from({ length: 5 }, () => ({ dx: random(-1, 1) * kind.radius * 0.9, dy: random(-1, 1) * kind.radius * 0.6, r: random(0.25, 0.55) * kind.radius })),
-      });
+      const theme = hooks.live().theme;
+      const count = Math.min(effects === "full" ? 10 : 4, MAX_PARTICLES - particles.length);
+      if (count > 0) particles.push(...juiceBurst(theme, x, y, kind, count, 260));
+      splats.push(makeSplat(theme, x, y, kind));
       if (splats.length > MAX_SPLATS) splats.shift();
     }
     score += 1;
@@ -338,10 +351,11 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
     }
     halves = halves.filter((h) => h.y < HEIGHT + 120);
     for (const p of particles) {
-      p.vy += GRAVITY * 0.7 * dt;
+      p.vy += GRAVITY * p.g * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.life -= dt / 0.6;
+      p.rot += p.spin * dt;
+      p.life -= dt / p.span;
     }
     particles = particles.filter((p) => p.life > 0);
     for (const s of splats) s.life -= dt / 1.4;
@@ -390,197 +404,56 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
     }
   }
 
-  function drawFruit(c: CanvasRenderingContext2D, kind: Kind) {
-    const r = kind.radius;
-    c.fillStyle = kind.skin;
-    c.beginPath();
-    c.arc(0, 0, r, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = withAlpha("#000000", 0.16);
-    c.beginPath();
-    c.arc(r * 0.18, r * 0.22, r * 0.82, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = kind.skin;
-    c.beginPath();
-    c.arc(-r * 0.06, -r * 0.06, r * 0.8, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = withAlpha("#ffffff", 0.4);
-    c.beginPath();
-    c.ellipse(-r * 0.35, -r * 0.4, r * 0.28, r * 0.16, -0.6, 0, Math.PI * 2);
-    c.fill();
-    if (kind.leaf) {
-      c.fillStyle = "#4caf50";
-      c.beginPath();
-      c.ellipse(r * 0.25, -r * 1.02, r * 0.32, r * 0.13, -0.5, 0, Math.PI * 2);
-      c.fill();
-      c.strokeStyle = "#5a3b22";
-      c.lineWidth = 3;
-      c.beginPath();
-      c.moveTo(0, -r * 0.82);
-      c.lineTo(r * 0.06, -r * 1.12);
-      c.stroke();
-    }
-  }
-
-  function drawHalf(c: CanvasRenderingContext2D, half: Half) {
-    const r = half.kind.radius;
-    const from = half.side === 1 ? 0 : Math.PI;
-    c.fillStyle = half.kind.skin;
-    c.beginPath();
-    c.arc(0, 0, r, from, from + Math.PI);
-    c.closePath();
-    c.fill();
-    c.fillStyle = half.kind.flesh;
-    c.beginPath();
-    c.arc(0, 0, r * 0.84, from, from + Math.PI);
-    c.closePath();
-    c.fill();
-    // A lighter rim along the fresh cut.
-    c.strokeStyle = withAlpha("#ffffff", 0.45);
-    c.lineWidth = 2;
-    c.beginPath();
-    c.moveTo(-r * 0.84, 0);
-    c.lineTo(r * 0.84, 0);
-    c.stroke();
-  }
-
-  function drawBomb(c: CanvasRenderingContext2D, now: number, effects: MotionLevel) {
-    const r = BOMB_RADIUS;
-    if (effects !== "off") {
-      c.fillStyle = withAlpha("#ff3b3b", 0.22 + Math.sin(now / 120) * 0.08);
-      c.beginPath();
-      c.arc(0, 0, r + 9, 0, Math.PI * 2);
-      c.fill();
-    }
-    c.fillStyle = "#231c2b";
-    c.beginPath();
-    c.arc(0, 0, r, 0, Math.PI * 2);
-    c.fill();
-    c.strokeStyle = "#ff4d4d";
-    c.lineWidth = 3;
-    c.stroke();
-    // A clear warning cross on the casing.
-    c.strokeStyle = "#ff6b6b";
-    c.lineWidth = 5;
-    c.lineCap = "round";
-    c.beginPath();
-    c.moveTo(-9, -9);
-    c.lineTo(9, 9);
-    c.moveTo(9, -9);
-    c.lineTo(-9, 9);
-    c.stroke();
-    c.fillStyle = "#5b4e66";
-    c.fillRect(-6, -r - 6, 12, 8);
-    c.strokeStyle = "#c9b48a";
-    c.lineWidth = 2.5;
-    c.beginPath();
-    c.moveTo(0, -r - 6);
-    c.quadraticCurveTo(8, -r - 18, 14, -r - 14);
-    c.stroke();
-    c.fillStyle = Math.floor(now / 90) % 2 ? "#ffd166" : colors.accent2;
-    c.beginPath();
-    c.arc(14, -r - 14, 4.5, 0, Math.PI * 2);
-    c.fill();
-  }
-
-  /** The blade: a smooth ribbon that tapers toward its tail and fades within a fraction of a second. */
-  function drawTrail(c: CanvasRenderingContext2D, now: number) {
-    trail = trail.filter((point) => now - point.t < TRAIL_MS);
-    const n = trail.length;
-    if (n < 2) return;
-    const left: [number, number][] = [];
-    const right: [number, number][] = [];
-    for (let i = 0; i < n; i += 1) {
-      const a = trail[Math.max(0, i - 1)];
-      const b = trail[Math.min(n - 1, i + 1)];
-      let nx = -(b.y - a.y);
-      let ny = b.x - a.x;
-      const length = Math.hypot(nx, ny) || 1;
-      nx /= length;
-      ny /= length;
-      const fade = 1 - (now - trail[i].t) / TRAIL_MS;
-      const w = 0.6 + 5.5 * fade * (i / (n - 1));
-      left.push([trail[i].x + nx * w, trail[i].y + ny * w]);
-      right.push([trail[i].x - nx * w, trail[i].y - ny * w]);
-    }
-    c.fillStyle = withAlpha(colors.accent2, 0.5);
-    c.beginPath();
-    c.moveTo(left[0][0], left[0][1]);
-    for (let i = 1; i < n; i += 1) c.lineTo(left[i][0], left[i][1]);
-    for (let i = n - 1; i >= 0; i -= 1) c.lineTo(right[i][0], right[i][1]);
-    c.closePath();
-    c.fill();
-    // A bright core, smoothed through the midpoints of the samples.
-    c.strokeStyle = withAlpha("#ffffff", 0.9);
-    c.lineWidth = 1.6;
-    c.lineCap = "round";
-    c.lineJoin = "round";
-    c.beginPath();
-    c.moveTo(trail[0].x, trail[0].y);
-    for (let i = 1; i < n - 1; i += 1) {
-      c.quadraticCurveTo(trail[i].x, trail[i].y, (trail[i].x + trail[i + 1].x) / 2, (trail[i].y + trail[i + 1].y) / 2);
-    }
-    c.lineTo(trail[n - 1].x, trail[n - 1].y);
-    c.stroke();
-  }
-
   function draw(alpha: number) {
-    if (!ctx) return;
+    if (!screen) return;
     drawAlpha = phase === "playing" || phase === "over" ? alpha : 1;
     const a = drawAlpha;
-    const effects = hooks.live().effects;
+    const { effects, theme } = hooks.live();
+    const animate = effects !== "off";
     const now = performance.now();
     const { width: cw, height: ch, dpr } = size;
     const view = fitWorld(size, width, HEIGHT);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, cw, ch);
-    ctx.save();
-    ctx.translate(view.x, view.y);
-    ctx.scale(view.scale, view.scale);
-    ctx.beginPath();
-    ctx.rect(0, 0, width, HEIGHT);
-    ctx.clip();
+    screen.setTransform(dpr, 0, 0, dpr, 0, 0);
+    screen.fillStyle = colors.background;
+    screen.fillRect(0, 0, cw, ch);
+    screen.save();
+    screen.translate(view.x, view.y);
+    screen.scale(view.scale, view.scale);
+    screen.beginPath();
+    screen.rect(0, 0, width, HEIGHT);
+    screen.clip();
 
-    const bg = ctx.createRadialGradient(width / 2, HEIGHT * 0.45, 40, width / 2, HEIGHT * 0.5, Math.max(width, HEIGHT) * 0.75);
-    bg.addColorStop(0, mix(colors.surface, colors.accent, colors.dark ? 0.14 : 0.08));
-    bg.addColorStop(1, mix(colors.background, colors.surface, 0.5));
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, width, HEIGHT);
-    // Faint wooden-board grain.
-    ctx.strokeStyle = withAlpha(colors.foreground, 0.035);
-    ctx.lineWidth = 2;
-    for (let y = 40; y < HEIGHT; y += 70) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.bezierCurveTo(width * 0.3, y + 10, width * 0.6, y - 10, width, y + 4);
-      ctx.stroke();
+    // The playfield goes to the screen, or (pixel art) to a small buffer drawn back up crisply.
+    const pixel = theme.style === "pixel";
+    const bw = Math.ceil(width / PIXEL_UNIT);
+    const bh = Math.ceil(HEIGHT / PIXEL_UNIT);
+    if (pixel && (pixelCanvas.width !== bw || pixelCanvas.height !== bh)) {
+      pixelCanvas.width = bw;
+      pixelCanvas.height = bh;
     }
+    const buffer = pixel ? pixelCanvas.getContext("2d") : null;
+    const ctx = buffer ?? screen;
+    const scale = buffer ? 1 / PIXEL_UNIT : view.scale * dpr;
+    if (buffer) {
+      buffer.setTransform(1 / PIXEL_UNIT, 0, 0, 1 / PIXEL_UNIT, 0, 0);
+      buffer.imageSmoothingEnabled = false;
+    }
+
+    drawBackdrop(ctx, theme, width, HEIGHT, scale);
+    if (animate) drawBackdropMotion(ctx, theme, width, HEIGHT, now);
 
     // Juice on the board, faint and short-lived so it never hides what's flying.
-    for (const s of splats) {
-      ctx.fillStyle = withAlpha(s.color, 0.16 * s.life);
-      for (const blob of s.blobs) {
-        ctx.beginPath();
-        ctx.arc(s.x + blob.dx, s.y + blob.dy, blob.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+    drawSplats(ctx, splats, theme);
 
     for (const half of halves) {
       ctx.save();
       ctx.translate(half.px + (half.x - half.px) * a, half.py + (half.y - half.py) * a);
       ctx.rotate(half.pangle + (half.angle - half.pangle) * a);
-      drawHalf(ctx, half);
+      drawHalf(ctx, half.kind, half.side, theme, scale);
       ctx.restore();
     }
 
-    for (const p of particles) {
-      ctx.fillStyle = withAlpha(p.color, Math.max(0, p.life) * 0.8);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size * Math.max(0.2, p.life), 0, Math.PI * 2);
-      ctx.fill();
-    }
+    drawJuice(ctx, particles, theme);
 
     // Whole fruit and bombs above every effect, so hazards stay readable.
     for (const flyer of flyers) {
@@ -589,51 +462,59 @@ function createFruit(canvas: HTMLCanvasElement, hooks: Hooks) {
       ctx.translate(x, y);
       if (flyer.kind) {
         ctx.rotate(flyer.pangle + (flyer.angle - flyer.pangle) * a);
-        drawFruit(ctx, flyer.kind);
+        drawFruit(ctx, flyer.kind, theme, scale);
       } else {
-        drawBomb(ctx, now, effects);
+        drawBomb(ctx, theme, now, animate);
       }
       ctx.restore();
     }
 
-    drawTrail(ctx, now);
+    // The blade: a trail that tapers toward its tail and fades within a fraction of a second.
+    trail = trail.filter((point) => now - point.t < TRAIL_MS);
+    drawBlade(ctx, trail, now, TRAIL_MS, theme);
 
-    ctx.textAlign = "center";
+    if (buffer) {
+      screen.imageSmoothingEnabled = false;
+      screen.drawImage(pixelCanvas, 0, 0, bw * PIXEL_UNIT, bh * PIXEL_UNIT);
+      screen.imageSmoothingEnabled = true;
+    }
+
+    screen.textAlign = "center";
     for (const popup of popups) {
-      ctx.font = `700 ${popup.size}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.fillStyle = withAlpha(popup.color, Math.min(1, popup.life * 1.6));
-      ctx.fillText(popup.text, popup.x, popup.y - (effects === "off" ? 0 : (1 - popup.life) * 26));
+      screen.font = `700 ${popup.size}px ui-sans-serif, system-ui, sans-serif`;
+      screen.fillStyle = withAlpha(popup.color, Math.min(1, popup.life * 1.6));
+      screen.fillText(popup.text, popup.x, popup.y - (effects === "off" ? 0 : (1 - popup.life) * 26));
     }
 
     const r = rules();
     if (r.misses) {
       for (let i = 0; i < MAX_MISSES; i += 1) {
         const x = width - 28 - (MAX_MISSES - 1 - i) * 30;
-        ctx.strokeStyle = i < misses ? "#ff5a5a" : withAlpha(colors.foreground, 0.22);
-        ctx.lineWidth = 5;
-        ctx.lineCap = "round";
-        ctx.beginPath();
-        ctx.moveTo(x - 9, 20);
-        ctx.lineTo(x + 9, 38);
-        ctx.moveTo(x + 9, 20);
-        ctx.lineTo(x - 9, 38);
-        ctx.stroke();
+        screen.strokeStyle = i < misses ? "#ff5a5a" : withAlpha(colors.foreground, 0.22);
+        screen.lineWidth = 5;
+        screen.lineCap = "round";
+        screen.beginPath();
+        screen.moveTo(x - 9, 20);
+        screen.lineTo(x + 9, 38);
+        screen.moveTo(x + 9, 20);
+        screen.lineTo(x - 9, 38);
+        screen.stroke();
       }
     } else if (r.duration !== null) {
       // Time left as a slim bar along the top edge; it warms up in the last ten seconds.
       const left = Math.max(0, 1 - time / r.duration);
-      ctx.fillStyle = withAlpha(colors.foreground, 0.12);
-      ctx.fillRect(16, 12, width - 32, 5);
-      ctx.fillStyle = r.duration - time < 10_000 ? colors.accent2 : colors.accent;
-      ctx.fillRect(16, 12, (width - 32) * left, 5);
+      screen.fillStyle = withAlpha(colors.foreground, 0.12);
+      screen.fillRect(16, 12, width - 32, 5);
+      screen.fillStyle = r.duration - time < 10_000 ? colors.accent2 : colors.accent;
+      screen.fillRect(16, 12, (width - 32) * left, 5);
     }
 
     const fade = Math.max(0, 1 - (now - flashAt) / 380);
     if (fade > 0 && effects !== "off") {
-      ctx.fillStyle = withAlpha(flashColor, fade * flashStrength);
-      ctx.fillRect(0, 0, width, HEIGHT);
+      screen.fillStyle = withAlpha(flashColor, fade * flashStrength);
+      screen.fillRect(0, 0, width, HEIGHT);
     }
-    ctx.restore();
+    screen.restore();
   }
 
   const stopResize = observeCanvas(canvas, (next) => {
@@ -755,12 +636,13 @@ type FruitGame = ReturnType<typeof createFruit>;
 const isActive = (phase: Phase) => phase === "playing" || phase === "paused";
 
 export default function GameFruit({ records: initialRecords }: { records: Record<string, number> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
+  const theme = useMemo(() => fruitTheme(look), [look]);
   const { records, submit } = useRecords("fruit-slice", initialRecords);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<FruitGame | null>(null);
   const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
-  const live = useRef({ play, effects });
+  const live = useRef({ play, effects, theme });
   const [phase, setPhase] = useState<Phase>("ready");
   const [mode, setMode] = useState<Mode>("classic");
   const [runDate, setRunDate] = useState<string | null>(null);
@@ -778,7 +660,7 @@ export default function GameFruit({ records: initialRecords }: { records: Record
   }, [phase, beginRun]);
 
   useEffect(() => {
-    live.current = { play, effects };
+    live.current = { play, effects, theme };
   });
 
   const finish = useEffectEvent((final: number, why: Reason, sliced: number, combo: number, variant: string) => {

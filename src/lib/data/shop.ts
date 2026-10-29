@@ -1,6 +1,7 @@
 import "server-only";
 import { SUDOKU_DIFFICULTIES, type SudokuDifficulty } from "@/lib/arcade";
-import { COSMETICS, isAvatarDecorationId, isCosmeticId, type AvatarDecorationId, type ShopItem } from "@/lib/cosmetics";
+import { COSMETICS, isAvatarDecorationId, isCosmeticId, type AvatarDecorationId, type CosmeticKind, type ShopItem } from "@/lib/cosmetics";
+import { GAME_SHOPS, gameCosmetic, lookFromItems, type GameLook, type ShopGame } from "@/lib/game-cosmetics";
 import type { AuthContext } from "@/lib/supabase/auth";
 
 /** The account's coin balance (0 before the first reward). */
@@ -32,7 +33,11 @@ const GAME_NAMES: Record<string, string> = {
 
 function transactionLabel(kind: "reward" | "purchase", details: unknown) {
   const info = (details ?? {}) as Record<string, unknown>;
-  if (kind === "purchase") return isCosmeticId(info.item) ? `Bought ${COSMETICS[info.item].name}` : "Purchase";
+  if (kind === "purchase") {
+    if (isCosmeticId(info.item)) return `Bought ${COSMETICS[info.item].name}`;
+    const game = gameCosmetic(info.item);
+    return game ? `Bought ${game.name} (${GAME_SHOPS[game.game].title})` : "Purchase";
+  }
   const game = typeof info.game === "string" ? (GAME_NAMES[info.game] ?? "Arcade") : "Arcade";
   if (info.game === "sudoku" && SUDOKU_DIFFICULTIES.includes(info.difficulty as SudokuDifficulty)) return `${game} · ${info.difficulty as string} puzzle`;
   return typeof info.score === "number" ? `${game} · score ${info.score.toLocaleString("en")}` : game;
@@ -73,17 +78,18 @@ export async function loadShop(ctx: AuthContext, equipped: { frame: string; deco
     balance: wallet?.balance ?? 0,
     earned: wallet?.earned ?? 0,
     items: (items ?? [])
-      .filter((item) => isCosmeticId(item.id))
+      .filter((item) => item.kind !== "game" && isCosmeticId(item.id))
       .map((item) => {
         const id = item.id as ShopItem["id"];
+        const kind = item.kind as CosmeticKind;
         const isOwned = ownedIds.has(id);
         return {
           id,
-          kind: item.kind,
+          kind,
           price: item.price,
           available: item.available,
           owned: isOwned,
-          equipped: isOwned && (item.kind === "frame" ? equipped.frame === id : equipped.decoration === id),
+          equipped: isOwned && (kind === "frame" ? equipped.frame === id : equipped.decoration === id),
         };
       })
       .filter((item) => item.available || item.owned)
@@ -105,5 +111,38 @@ export async function loadShop(ctx: AuthContext, equipped: { frame: string; deco
       flatCoins: rule.flat_coins,
       maxCoins: rule.max_coins,
     })),
+  };
+}
+
+/** The cosmetics this account has equipped in one game (missing categories use the free default). */
+export async function loadGameLoadout(ctx: AuthContext, game: ShopGame): Promise<GameLook> {
+  const { data, error } = await ctx.supabase.from("game_loadouts").select("category, item_id").eq("user_id", ctx.userId).eq("game", game);
+  if (error) throw new Error(`Could not load game cosmetics: ${error.code}`);
+  return lookFromItems(game, data ?? []);
+}
+
+export type GameShopItemState = { id: string; price: number; available: boolean; owned: boolean };
+export type GameShopData = { game: ShopGame; balance: number; items: GameShopItemState[]; look: GameLook };
+
+/** One game's shop: server prices, what this account owns and what is equipped. */
+export async function loadGameShop(ctx: AuthContext, game: ShopGame): Promise<GameShopData> {
+  const check = <T,>({ data, error }: { data: T | null; error: { code?: string } | null }) => {
+    if (error) throw new Error(`Could not load the shop: ${error.code}`);
+    return data;
+  };
+  const [balance, items, owned, look] = await Promise.all([
+    loadCoinBalance(ctx),
+    ctx.supabase.from("cosmetic_items").select("id, price, available").eq("kind", "game").eq("game", game).then(check),
+    ctx.supabase.from("user_cosmetics").select("item_id").eq("user_id", ctx.userId).like("item_id", `${GAME_SHOPS[game].prefix}-%`).then(check),
+    loadGameLoadout(ctx, game),
+  ]);
+  const ownedIds = new Set((owned ?? []).map((row) => row.item_id));
+  return {
+    game,
+    balance,
+    items: (items ?? [])
+      .filter((row) => gameCosmetic(row.id)?.game === game)
+      .map((row) => ({ id: row.id, price: row.price, available: row.available, owned: ownedIds.has(row.id) })),
+    look,
   };
 }

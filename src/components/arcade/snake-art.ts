@@ -1,6 +1,7 @@
 "use client";
 
 import type { SnakeFruit, SnakeFruitChoice } from "@/lib/snake";
+import { mix, withAlpha } from "./engine";
 
 /**
  * Hand-drawn cartoon artwork for Snake. Every piece shares one recipe so they read as a set:
@@ -34,8 +35,105 @@ export const FRUIT_COLORS: Record<SnakeFruit, string> = {
 /** Lock, key, crate and portal pair colors. */
 export const PAIR_HUES = ["#f5b700", "#2f9bff", "#ff5fa2", "#4fcf6a", "#a77bff", "#ff8a3d"];
 
+/**
+ * Purchasable art styles re-render every piece through `cel` and `ink`: pixel (blocky, flat,
+ * hard highlights; the engine also renders at low resolution), hand-drawn (paper fills, hatched
+ * shading, doubled graphite lines), clay (soft gradient volume, no ink) and neon (dark fills with
+ * glowing outlines). Sprites are cached per style.
+ */
+export type SnakeArtStyle = "cartoon" | "pixel" | "hand-drawn" | "clay" | "neon";
+let artStyle: SnakeArtStyle = "cartoon";
+export const PAPER = "#fbf6e9";
+export const GRAPHITE = "#3b3442";
+export const NEON_DARK = "#0d0a1c";
+
+export function setSnakeArtStyle(style: SnakeArtStyle) {
+  artStyle = style;
+}
+
+const deviceScale = (ctx: Ctx) => {
+  const m = ctx.getTransform();
+  return Math.hypot(m.a, m.b) || 1;
+};
+
 /** Fill a shape cel-shaded: shade color, the base shifted up-left on top, then a highlight and the ink line. */
 function cel(ctx: Ctx, shape: () => void, base: string, shade: string, { line = 5, shift = 6, gloss = true } = {}) {
+  if (artStyle === "neon") {
+    shape();
+    ctx.fillStyle = mix(base, NEON_DARK, 0.74);
+    ctx.fill();
+    shape();
+    ink(ctx, Math.max(3, line * 0.8), base);
+    return;
+  }
+  if (artStyle === "clay") {
+    shape();
+    const g = ctx.createRadialGradient(-shift * 2.6, -shift * 2.8, 2, 0, 0, 54);
+    g.addColorStop(0, mix(base, "#ffffff", 0.42));
+    g.addColorStop(0.45, base);
+    g.addColorStop(1, mix(shade, base, 0.2));
+    ctx.fillStyle = g;
+    ctx.fill();
+    if (line > 0) {
+      shape();
+      ctx.lineWidth = line * 0.45;
+      ctx.strokeStyle = mix(shade, "#2a1a14", 0.3, 0.5);
+      ctx.stroke();
+    }
+    return;
+  }
+  if (artStyle === "hand-drawn") {
+    const light = mix(base, PAPER, 0.32);
+    shape();
+    ctx.fillStyle = light;
+    ctx.fill();
+    ctx.save();
+    shape();
+    ctx.clip();
+    ctx.beginPath();
+    for (let k = -110; k <= 110; k += 7) {
+      ctx.moveTo(k - 50, 60);
+      ctx.lineTo(k + 50, -60);
+    }
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = mix(shade, GRAPHITE, 0.25, 0.8);
+    ctx.stroke();
+    ctx.translate(-shift * 1.5, -shift * 1.5);
+    shape();
+    ctx.fillStyle = light;
+    ctx.fill();
+    ctx.restore();
+    if (line <= 0) return;
+    shape();
+    ink(ctx, line);
+    return;
+  }
+  if (artStyle === "pixel") {
+    shape();
+    ctx.fillStyle = shade;
+    ctx.fill();
+    ctx.save();
+    shape();
+    ctx.clip();
+    ctx.translate(-shift * 1.6, -shift * 1.6);
+    shape();
+    ctx.fillStyle = base;
+    ctx.fill();
+    ctx.restore();
+    if (gloss) {
+      ctx.save();
+      shape();
+      ctx.clip();
+      ctx.fillStyle = "rgb(255 255 255 / 0.6)";
+      ctx.fillRect(-24, -24, 10, 10);
+      ctx.fillRect(-14, -30, 8, 6);
+      ctx.restore();
+    }
+    if (line <= 0) return;
+    shape();
+    ink(ctx, line);
+    return;
+  }
   shape();
   ctx.fillStyle = shade;
   ctx.fill();
@@ -63,9 +161,40 @@ function cel(ctx: Ctx, shape: () => void, base: string, shade: string, { line = 
 }
 
 function ink(ctx: Ctx, width = 5, color = INK) {
+  const pixel = artStyle === "pixel";
+  ctx.lineJoin = pixel ? "miter" : "round";
+  ctx.lineCap = pixel ? "square" : "round";
+  if (artStyle === "neon") {
+    const bright = color === INK ? "#f1ecff" : color;
+    ctx.save();
+    ctx.shadowColor = withAlpha(bright, 0.9);
+    ctx.shadowBlur = 10 * deviceScale(ctx);
+    ctx.lineWidth = width * 0.7;
+    ctx.strokeStyle = bright;
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  if (artStyle === "clay") {
+    ctx.lineWidth = width * 0.6;
+    ctx.strokeStyle = color === INK ? "rgb(70 45 40 / 0.45)" : color;
+    ctx.stroke();
+    return;
+  }
+  if (artStyle === "hand-drawn") {
+    // A doubled pencil line: the shadow repeats the stroke slightly offset.
+    const s = deviceScale(ctx);
+    ctx.save();
+    ctx.lineWidth = color === INK ? width * 0.62 : width * 0.8;
+    ctx.strokeStyle = color === INK ? GRAPHITE : color;
+    ctx.shadowColor = color === INK ? "rgb(59 52 66 / 0.55)" : "rgb(59 52 66 / 0.25)";
+    ctx.shadowOffsetX = 3 * s;
+    ctx.shadowOffsetY = 2 * s;
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
   ctx.lineWidth = width;
-  ctx.lineJoin = "round";
-  ctx.lineCap = "round";
   ctx.strokeStyle = color;
   ctx.stroke();
 }
@@ -466,7 +595,7 @@ function stamp(ctx: Ctx, key: string, x: number, y: number, size: number, body: 
   if (size < 1) return;
   const m = ctx.getTransform();
   const px = Math.max(4, Math.ceil((size * (Math.hypot(m.a, m.b) || 1)) / 2) * 2);
-  const id = `${key}@${px}`;
+  const id = `${artStyle}:${key}@${px}`;
   let sprite = sprites.get(id);
   if (!sprite) {
     sprite = document.createElement("canvas");

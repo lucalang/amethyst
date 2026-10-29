@@ -93,7 +93,7 @@ const fontScale = (value: number) => {
 };
 
 export default function Game2048({ records: initialRecords, userId }: { records: Record<string, number>; userId: string }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
   const { records, submit } = useRecords("2048", initialRecords);
   const [round, setRound] = useState<Round>(() => loadRound(userId, lastMode(userId)));
   const roundRef = useRef(round);
@@ -384,6 +384,11 @@ export default function Game2048({ records: initialRecords, userId }: { records:
           aria-label={`2048 board, ${size} by ${size}, score ${score}. Use the arrow keys or swipe to move the tiles.`}
           className="g2048 outline-none"
           data-effects={effects}
+          data-tiles={look.tiles}
+          data-board={look.board}
+          data-font={look.font}
+          data-merge={look.merge}
+          data-style={look.style}
           data-dir={lively ? moveFx?.dir : undefined}
           data-beat={lively && moveFx ? moveFx.beat % 2 : undefined}
           data-pulse={lively && pulse ? `${pulse.kind}${pulse.beat % 2}` : undefined}

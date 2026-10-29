@@ -2580,24 +2580,27 @@
   translate: calc(var(--gap) + var(--c) * (var(--cell) + var(--gap))) calc(var(--gap) + var(--r) * (var(--cell) + var(--gap)));
 }
 .g2048-cell {
-  background: #cdc1b4;
+  background: var(--cell-bg, #cdc1b4);
+  box-shadow: var(--cell-shadow, none);
 }
 /*
  * The familiar 2048 progression (data-step = log2 of the value): pale beige 2 and 4 with dark
  * numbers, warm oranges to red, then golds with a growing glow; anything past 2048 is charcoal.
  * The numbers themselves keep every tile distinguishable without relying on color alone.
+ * Tile cosmetics swap the ramp through --t1..--t12 (fill) and --i1..--i12 / --ink (number ink);
+ * art styles add texture through --style-layer and materials through --mat-layer.
  */
 .g2048-tile {
-  --tile: #3c3a32;
+  --tile: var(--t12, #3c3a32);
   --tile-glow: transparent;
   z-index: 1;
-  font-size: calc(var(--cell) * var(--fs, 0.46));
-  font-weight: 800;
+  font-size: calc(var(--cell) * var(--fs, 0.46) * var(--font-k, 1));
+  font-weight: var(--tile-weight, 800);
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: #f9f6f2;
+  color: var(--i12, var(--ink, #f9f6f2));
   /* A soft outline keeps light numbers legible on the bright orange and gold tiles. */
-  text-shadow: 0 0.15cqi 0.5cqi rgb(110 60 20 / 0.45);
+  text-shadow: var(--ink-shadow, 0 0.15cqi 0.5cqi rgb(110 60 20 / 0.45));
   transition: translate 100ms ease-in-out;
 }
 /* The tile slides; its face carries the look and every bounce, so the two never fight. */
@@ -2607,52 +2610,62 @@
   display: grid;
   place-items: center;
   border-radius: inherit;
-  background: var(--tile);
+  background: var(--style-layer, none), var(--mat-layer, none), var(--tile-fill, var(--tile));
   box-shadow:
+    var(--face-shade, 0 0 0 transparent),
     0 0 2.4cqi 0.2cqi var(--tile-glow),
     0 0.5cqi 1.2cqi -0.8cqi rgb(119 110 101 / 0.45);
 }
 .g2048-tile[data-step="1"] {
-  --tile: #eee4da;
-  color: #776e65;
-  text-shadow: none;
+  --tile: var(--t1, #eee4da);
+  color: var(--i1, var(--ink-lo, #776e65));
+  text-shadow: var(--ink-lo-shadow, none);
 }
 .g2048-tile[data-step="2"] {
-  --tile: #ede0c8;
-  color: #776e65;
-  text-shadow: none;
+  --tile: var(--t2, #ede0c8);
+  color: var(--i2, var(--ink-lo, #776e65));
+  text-shadow: var(--ink-lo-shadow, none);
 }
 .g2048-tile[data-step="3"] {
-  --tile: #f2b179;
+  --tile: var(--t3, #f2b179);
+  color: var(--i3, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="4"] {
-  --tile: #f59563;
+  --tile: var(--t4, #f59563);
+  color: var(--i4, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="5"] {
-  --tile: #f67c5f;
+  --tile: var(--t5, #f67c5f);
+  color: var(--i5, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="6"] {
-  --tile: #f65e3b;
+  --tile: var(--t6, #f65e3b);
+  color: var(--i6, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="7"] {
-  --tile: #edcf72;
-  --tile-glow: rgb(243 215 116 / 0.24);
+  --tile: var(--t7, #edcf72);
+  --tile-glow: rgb(var(--glow, 243 215 116) / 0.24);
+  color: var(--i7, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="8"] {
-  --tile: #edcc61;
-  --tile-glow: rgb(243 215 116 / 0.32);
+  --tile: var(--t8, #edcc61);
+  --tile-glow: rgb(var(--glow, 243 215 116) / 0.32);
+  color: var(--i8, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="9"] {
-  --tile: #edc850;
-  --tile-glow: rgb(243 215 116 / 0.4);
+  --tile: var(--t9, #edc850);
+  --tile-glow: rgb(var(--glow, 243 215 116) / 0.4);
+  color: var(--i9, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="10"] {
-  --tile: #edc53f;
-  --tile-glow: rgb(243 215 116 / 0.48);
+  --tile: var(--t10, #edc53f);
+  --tile-glow: rgb(var(--glow, 243 215 116) / 0.48);
+  color: var(--i10, var(--ink, #f9f6f2));
 }
 .g2048-tile[data-step="11"] {
-  --tile: #edc22e;
-  --tile-glow: rgb(243 215 116 / 0.56);
+  --tile: var(--t11, #edc22e);
+  --tile-glow: rgb(var(--glow, 243 215 116) / 0.56);
+  color: var(--i11, var(--ink, #f9f6f2));
 }
 .g2048-tile.is-consumed {
   z-index: 0;
@@ -2752,6 +2765,377 @@
 }
 .g2048[data-effects="off"] .g2048-tile.is-consumed {
   visibility: hidden;
+}
+/* 2048 cosmetics. Layering: tile colors set the ramp, the board sets the tray, the font sets type, art styles add shape and texture over the colors. */
+.g2048[data-tiles="ocean"] {
+  --t1: #e3f6f5; --t2: #c8ecef; --t3: #8fd3e0; --t4: #5fb8d6; --t5: #3d97c7; --t6: #2a76b0;
+  --t7: #1f5a96; --t8: #1a457d; --t9: #163664; --t10: #0f6e78; --t11: #14b8a6; --t12: #0a2540;
+  --ink-lo: #1d4a5c; --i3: #1d4a5c; --glow: 45 212 191;
+  --ink-shadow: 0 0.15cqi 0.5cqi rgb(5 30 50 / 0.45);
+}
+.g2048[data-tiles="forest"] {
+  --t1: #eef3e2; --t2: #dbe8c4; --t3: #b5d48f; --t4: #8fbf6a; --t5: #6aa84f; --t6: #4f8f3a;
+  --t7: #3b7a34; --t8: #2f6430; --t9: #8a6d2a; --t10: #c58b2a; --t11: #e0a526; --t12: #1f3a24;
+  --ink-lo: #3d4a2a; --i3: #34421f; --glow: 224 165 38;
+  --ink-shadow: 0 0.15cqi 0.5cqi rgb(20 40 10 / 0.45);
+}
+.g2048[data-tiles="sunset"] {
+  --t1: #fde8dc; --t2: #fcd3bf; --t3: #f9b394; --t4: #f78f73; --t5: #f2686b; --t6: #e44a73;
+  --t7: #c93a7f; --t8: #a83489; --t9: #86338f; --t10: #66308c; --t11: #4b2a80; --t12: #2a1846;
+  --ink-lo: #7a3b3b; --i3: #7a3b3b; --glow: 255 120 170;
+  --ink-shadow: 0 0.15cqi 0.5cqi rgb(80 20 50 / 0.45);
+}
+.g2048[data-tiles="mono"] {
+  --t1: #ffffff; --t2: #ececec; --t3: #d4d4d4; --t4: #b8b8b8; --t5: #8f8f8f; --t6: #707070;
+  --t7: #575757; --t8: #424242; --t9: #303030; --t10: #212121; --t11: #121212; --t12: #000000;
+  --ink-lo: #1a1a1a; --i3: #1a1a1a; --i4: #1a1a1a; --glow: 255 255 255;
+  --ink-shadow: 0 0.1cqi 0.3cqi rgb(0 0 0 / 0.5);
+}
+.g2048[data-tiles="pastel"] {
+  --t1: #eef5e2; --t2: #dcedc8; --t3: #c8e6b0; --t4: #e6dcf6; --t5: #d3c2f0; --t6: #f9d9e2;
+  --t7: #f3bccd; --t8: #fff2b8; --t9: #ffe48a; --t10: #c6ecf1; --t11: #ffcaa8; --t12: #b9a5d6;
+  --ink: #5a4a6a; --ink-lo: #5a4a6a; --glow: 255 200 220;
+  --ink-shadow: 0 0.12cqi 0 rgb(255 255 255 / 0.6);
+}
+.g2048[data-tiles="metallic"] {
+  --t1: #ead9c6; --t2: #dcbf9f; --t3: #c99a66; --t4: #b47c42; --t5: #9b6430; --t6: #7f5228;
+  --t7: #d5dae0; --t8: #b4bcc6; --t9: #8e98a4; --t10: #ecd27a; --t11: #d4af37; --t12: #3a3f45;
+  --ink-lo: #5a3d22; --i7: #3a3f45; --i8: #2e333a; --i10: #5a4410; --i11: #4a3608; --glow: 240 215 130;
+  --ink-shadow: 0 0.15cqi 0.3cqi rgb(0 0 0 / 0.3);
+}
+.g2048[data-tiles="metallic"] .g2048-face {
+  --mat-layer: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.08) 0 0.2cqi, rgb(0 0 0 / 0.05) 0.2cqi 0.45cqi),
+    linear-gradient(160deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 45%, rgb(0 0 0 / 0.2));
+}
+.g2048[data-tiles="gemstone"] {
+  --t1: #efe4fb; --t2: #dcc8f5; --t3: #b48be8; --t4: #8e5bd6; --t5: #6a3fbf; --t6: #4f7be0;
+  --t7: #2f55b8; --t8: #23a57a; --t9: #137a57; --t10: #e0405c; --t11: #b0173d; --t12: #2b1140;
+  --ink-lo: #4a2a6e; --glow: 200 140 255;
+  --ink-shadow: 0 0.15cqi 0.5cqi rgb(30 10 50 / 0.5);
+}
+.g2048[data-tiles="gemstone"] .g2048-face {
+  --mat-layer: linear-gradient(135deg, rgb(255 255 255 / 0.4), transparent 32%),
+    conic-gradient(from 45deg, rgb(255 255 255 / 0.26) 0 25%, rgb(0 0 0 / 0.1) 25% 50%, rgb(255 255 255 / 0.1) 50% 75%, rgb(0 0 0 / 0.22) 75%);
+}
+
+.g2048[data-board="slate"] {
+  background: radial-gradient(120% 90% at 30% 20%, #6b7482, #3f4652);
+  --cell-bg: #58606d;
+  --cell-shadow: inset 0 0 0 0.3cqi rgb(255 255 255 / 0.14), inset 0 0.4cqi 0.8cqi rgb(0 0 0 / 0.25);
+}
+.g2048[data-board="bamboo"] {
+  background:
+    repeating-linear-gradient(0deg, rgb(70 45 10 / 0.18) 0 0.25cqi, transparent 0.25cqi 6cqi),
+    repeating-linear-gradient(90deg, #d4b26a 0 2.6cqi, #c29e55 2.6cqi 3cqi, #b48f48 3cqi 3.2cqi);
+  --cell-bg: rgb(240 220 170 / 0.55);
+  --cell-shadow: inset 0 0.3cqi 0.6cqi rgb(90 60 20 / 0.3);
+}
+.g2048[data-board="felt"] {
+  background: radial-gradient(circle at 50% 40%, #2f8552, #1a5232 75%);
+  box-shadow: inset 0 0 0 1.1cqi #c9a23a, inset 0 0 0 1.5cqi #7a5c18;
+  --cell-bg: rgb(0 0 0 / 0.14);
+  --cell-shadow: inset 0 0 0 0.25cqi rgb(255 255 255 / 0.1);
+}
+.g2048[data-board="marble"] {
+  background:
+    linear-gradient(118deg, transparent 38%, rgb(140 140 150 / 0.35) 39.5%, transparent 41.5%),
+    linear-gradient(62deg, transparent 62%, rgb(140 140 150 / 0.28) 63%, transparent 64.5%),
+    linear-gradient(150deg, transparent 20%, rgb(160 160 170 / 0.2) 21%, transparent 22.5%),
+    linear-gradient(160deg, #f6f3ee, #e3ded6);
+  --cell-bg: rgb(205 200 192 / 0.6);
+  --cell-shadow: inset 0 0.3cqi 0.6cqi rgb(0 0 0 / 0.08);
+}
+.g2048[data-board="terrazzo"] {
+  background:
+    radial-gradient(circle at 20% 30%, #e07a5f 0 0.7cqi, transparent 0.8cqi) 0 0 / 17cqi 17cqi,
+    radial-gradient(circle at 70% 15%, #3d405b 0 0.5cqi, transparent 0.6cqi) 0 0 / 13cqi 13cqi,
+    radial-gradient(circle at 45% 65%, #81b29a 0 0.8cqi, transparent 0.9cqi) 0 0 / 19cqi 19cqi,
+    radial-gradient(circle at 85% 75%, #f2cc8f 0 0.6cqi, transparent 0.7cqi) 0 0 / 11cqi 11cqi,
+    radial-gradient(circle at 10% 85%, #3d405b 0 0.4cqi, transparent 0.5cqi) 0 0 / 23cqi 23cqi,
+    #f1e9da;
+  --cell-bg: rgb(120 100 70 / 0.12);
+}
+.g2048[data-board="night"] {
+  background:
+    radial-gradient(circle at 20% 30%, #fff 0 0.2cqi, transparent 0.3cqi) 0 0 / 14cqi 14cqi,
+    radial-gradient(circle at 70% 60%, rgb(255 255 255 / 0.8) 0 0.15cqi, transparent 0.25cqi) 0 0 / 11cqi 11cqi,
+    radial-gradient(circle at 45% 85%, rgb(200 210 255 / 0.9) 0 0.25cqi, transparent 0.35cqi) 0 0 / 19cqi 19cqi,
+    linear-gradient(180deg, #0c1230, #1f2a5c);
+  --cell-bg: rgb(255 255 255 / 0.07);
+  --cell-shadow: inset 0 0 0 0.25cqi rgb(170 190 255 / 0.18);
+}
+.g2048[data-board="circuit"] {
+  background:
+    radial-gradient(circle, #d08a4a 0 0.45cqi, transparent 0.55cqi) 4cqi 2.8cqi / 8.3cqi 5.9cqi,
+    repeating-linear-gradient(0deg, transparent 0 5.6cqi, rgb(205 127 50 / 0.45) 5.6cqi 5.9cqi),
+    repeating-linear-gradient(90deg, transparent 0 8cqi, rgb(205 127 50 / 0.35) 8cqi 8.3cqi),
+    #0e4a2c;
+  --cell-bg: rgb(0 0 0 / 0.28);
+  --cell-shadow: inset 0 0 0 0.3cqi rgb(205 127 50 / 0.55);
+}
+
+.g2048[data-font="rounded"] .g2048-tile {
+  font-family: var(--font-fredoka), ui-rounded, sans-serif;
+  --tile-weight: 700;
+}
+.g2048[data-font="serif"] .g2048-tile {
+  font-family: var(--font-playfair), Georgia, serif;
+  --tile-weight: 900;
+}
+.g2048[data-font="typewriter"] .g2048-tile {
+  font-family: var(--font-special-elite), "Courier New", monospace;
+  --tile-weight: 400;
+}
+.g2048[data-font="script"] .g2048-tile {
+  font-family: var(--font-caveat), cursive;
+  --tile-weight: 700;
+  --font-k: 1.2;
+}
+.g2048[data-font="marker"] .g2048-tile {
+  font-family: var(--font-permanent-marker), cursive;
+  --tile-weight: 400;
+  --font-k: 0.95;
+}
+.g2048[data-font="pixel-font"] .g2048-tile {
+  font-family: var(--font-press-start), monospace;
+  --tile-weight: 400;
+  --font-k: 0.6;
+}
+.g2048[data-font="display"] .g2048-tile {
+  font-family: var(--font-bungee), sans-serif;
+  --tile-weight: 400;
+  --font-k: 0.85;
+}
+
+.g2048[data-style="retro"],
+.g2048[data-style="retro"] :is(.g2048-cell, .g2048-tile) {
+  border-radius: 0;
+}
+.g2048[data-style="retro"] .g2048-cell {
+  box-shadow: var(--cell-shadow, 0 0 0 transparent), inset 0.5cqi 0.5cqi 0 rgb(0 0 0 / 0.18);
+}
+.g2048[data-style="retro"] .g2048-tile {
+  --ink-shadow: 0.35cqi 0.35cqi 0 rgb(0 0 0 / 0.35);
+  --ink-lo-shadow: 0.3cqi 0.3cqi 0 rgb(255 255 255 / 0.5);
+}
+.g2048[data-style="retro"] .g2048-face {
+  --style-layer: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.14) 0 0.25cqi, transparent 0.25cqi 0.75cqi);
+  --face-shade: inset 0.5cqi 0.5cqi 0 rgb(255 255 255 / 0.4), inset 1cqi 1cqi 0 rgb(255 255 255 / 0.15),
+    inset -0.5cqi -0.5cqi 0 rgb(0 0 0 / 0.32), inset -1cqi -1cqi 0 rgb(0 0 0 / 0.12);
+}
+.g2048[data-style="retro"]:not([data-font]) .g2048-tile {
+  font-family: var(--font-press-start), monospace;
+  --tile-weight: 400;
+  --font-k: 0.6;
+}
+.g2048[data-style="candy"] :is(.g2048-cell, .g2048-tile) {
+  border-radius: 28%;
+}
+.g2048[data-style="candy"] .g2048-face {
+  --style-layer: radial-gradient(70% 38% at 50% 14%, rgb(255 255 255 / 0.65), rgb(255 255 255 / 0) 70%),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.22) 0 1.1cqi, transparent 1.1cqi 2.2cqi);
+  --face-shade: inset 0 -0.9cqi 0 rgb(0 0 0 / 0.16), inset 0 0.5cqi 0 rgb(255 255 255 / 0.4);
+}
+.g2048[data-style="candy"]:not([data-font]) .g2048-tile {
+  font-family: var(--font-fredoka), ui-rounded, sans-serif;
+  --tile-weight: 700;
+}
+.g2048[data-style="glass"] :is(.g2048-cell, .g2048-tile) {
+  border-radius: 2.2cqi;
+}
+.g2048[data-style="glass"] .g2048-face {
+  --tile-fill: color-mix(in srgb, var(--tile) 58%, transparent);
+  --style-layer: linear-gradient(135deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.12) 38%, transparent 40%, transparent 72%, rgb(255 255 255 / 0.2));
+  --face-shade: inset 0 0 0 0.35cqi rgb(255 255 255 / 0.6), inset 0 0 1.6cqi rgb(255 255 255 / 0.25);
+  backdrop-filter: blur(1.2cqi) saturate(1.4);
+}
+.g2048[data-style="wooden"] :is(.g2048-cell, .g2048-tile) {
+  border-radius: 0.9cqi;
+}
+.g2048[data-style="wooden"] .g2048-tile {
+  --ink-shadow: 0 -0.18cqi 0 rgb(40 20 5 / 0.55), 0 0.18cqi 0 rgb(255 235 200 / 0.35);
+  --ink-lo-shadow: 0 -0.18cqi 0 rgb(40 20 5 / 0.45), 0 0.18cqi 0 rgb(255 235 200 / 0.4);
+}
+.g2048[data-style="wooden"] .g2048-face {
+  --tile-fill: color-mix(in srgb, var(--tile) 62%, #a46b3a);
+  --style-layer: repeating-radial-gradient(ellipse 160% 40% at 30% 120%, rgb(70 40 15 / 0) 0 0.9cqi, rgb(70 40 15 / 0.16) 0.9cqi 1.2cqi),
+    linear-gradient(180deg, rgb(255 240 210 / 0.22), rgb(0 0 0 / 0.18));
+  --face-shade: inset 0 0.4cqi 0 rgb(255 235 200 / 0.35), inset 0 -0.6cqi 0 rgb(60 30 10 / 0.35);
+}
+.g2048[data-style="wooden"]:not([data-font]) .g2048-tile {
+  font-family: var(--font-playfair), Georgia, serif;
+  --tile-weight: 800;
+}
+
+/* Merge effects replace the default ring (::after); jelly and spin replace the pop itself. */
+.g2048[data-merge]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face::after {
+  border-radius: inherit;
+  box-shadow: none;
+}
+.g2048[data-merge="sparkle"]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face::after {
+  inset: -28%;
+  background:
+    radial-gradient(1.6cqi 0.35cqi at 12% 18%, #fff 30%, transparent 70%),
+    radial-gradient(0.35cqi 1.6cqi at 12% 18%, #fff 30%, transparent 70%),
+    radial-gradient(2cqi 0.4cqi at 88% 14%, #fff 30%, transparent 70%),
+    radial-gradient(0.4cqi 2cqi at 88% 14%, #fff 30%, transparent 70%),
+    radial-gradient(1.4cqi 0.3cqi at 84% 86%, #fff 30%, transparent 70%),
+    radial-gradient(0.3cqi 1.4cqi at 84% 86%, #fff 30%, transparent 70%),
+    radial-gradient(1.8cqi 0.38cqi at 14% 82%, #fff 30%, transparent 70%),
+    radial-gradient(0.38cqi 1.8cqi at 14% 82%, #fff 30%, transparent 70%);
+  filter: drop-shadow(0 0 0.6cqi rgb(255 240 180 / 0.95));
+  animation: g2048-sparkle 560ms ease-out 100ms;
+}
+.g2048[data-merge="jelly"]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face {
+  animation: g2048-jelly 560ms ease 90ms backwards;
+}
+.g2048[data-merge="jelly"] .g2048-tile.is-merged .g2048-face::after,
+.g2048[data-merge="spin"] .g2048-tile.is-merged .g2048-face::after {
+  display: none;
+}
+.g2048[data-merge="shockwave"]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face::after {
+  border-radius: 0.6cqi;
+  box-shadow: 0 0 0 0.5cqi rgb(255 255 255 / 0.95), 0 0 1.4cqi 0.6cqi rgb(255 255 255 / 0.5);
+  animation: g2048-shock 460ms cubic-bezier(0.2, 0.7, 0.3, 1) 100ms;
+}
+.g2048[data-merge="flash"]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face::after {
+  background: linear-gradient(115deg, transparent 20%, rgb(255 80 80 / 0.6) 32%, rgb(255 220 80 / 0.6) 40%, rgb(80 255 140 / 0.6) 48%, rgb(80 170 255 / 0.6) 56%, rgb(190 90 255 / 0.6) 64%, transparent 76%) 0 0 / 300% 100%;
+  animation: g2048-prism 620ms ease-out 100ms;
+}
+.g2048[data-merge="confetti"]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face::after {
+  inset: -45%;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 10% 30%, #ff5e7e 0 0.55cqi, transparent 0.65cqi),
+    radial-gradient(circle at 25% 8%, #ffd23f 0 0.5cqi, transparent 0.6cqi),
+    radial-gradient(circle at 50% 4%, #3bceac 0 0.6cqi, transparent 0.7cqi),
+    radial-gradient(circle at 76% 10%, #5e60ce 0 0.5cqi, transparent 0.6cqi),
+    radial-gradient(circle at 92% 32%, #ff9f1c 0 0.55cqi, transparent 0.65cqi),
+    radial-gradient(circle at 96% 62%, #ff5e7e 0 0.5cqi, transparent 0.6cqi),
+    radial-gradient(circle at 84% 90%, #3bceac 0 0.6cqi, transparent 0.7cqi),
+    radial-gradient(circle at 55% 96%, #ffd23f 0 0.5cqi, transparent 0.6cqi),
+    radial-gradient(circle at 24% 92%, #5e60ce 0 0.55cqi, transparent 0.65cqi),
+    radial-gradient(circle at 4% 64%, #ff9f1c 0 0.5cqi, transparent 0.6cqi);
+  animation: g2048-confetti 640ms cubic-bezier(0.2, 0.8, 0.4, 1) 100ms;
+}
+.g2048[data-merge="spin"]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face {
+  animation: g2048-spin 480ms ease-in-out 90ms backwards;
+}
+.g2048[data-merge="embers"]:not([data-effects="off"]) .g2048-tile.is-merged .g2048-face::after {
+  inset: -70% -15% 10%;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 18% 88%, #ffd166 0 0.4cqi, transparent 0.6cqi),
+    radial-gradient(circle at 34% 70%, #ff8c42 0 0.5cqi, transparent 0.7cqi),
+    radial-gradient(circle at 52% 92%, #ffb347 0 0.35cqi, transparent 0.55cqi),
+    radial-gradient(circle at 66% 62%, #ff6b35 0 0.45cqi, transparent 0.65cqi),
+    radial-gradient(circle at 80% 84%, #ffd166 0 0.4cqi, transparent 0.6cqi),
+    radial-gradient(circle at 44% 40%, #ff8c42 0 0.3cqi, transparent 0.5cqi),
+    radial-gradient(circle at 72% 30%, #ffd166 0 0.25cqi, transparent 0.45cqi);
+  filter: drop-shadow(0 0 0.5cqi rgb(255 140 50 / 0.9));
+  animation: g2048-embers 820ms ease-out 100ms;
+}
+.g2048[data-merge][data-effects="subtle"] .g2048-tile.is-merged .g2048-face {
+  animation: g2048-appear 200ms ease 90ms backwards;
+}
+.g2048[data-merge][data-effects="subtle"] .g2048-tile.is-merged .g2048-face::after {
+  animation: g2048-ring-fade 520ms ease-out 100ms;
+}
+@keyframes g2048-sparkle {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+    rotate: 0deg;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.15;
+    rotate: 25deg;
+  }
+}
+@keyframes g2048-jelly {
+  0% {
+    scale: 0.4;
+  }
+  25% {
+    scale: 1.25 0.78;
+  }
+  45% {
+    scale: 0.84 1.16;
+  }
+  65% {
+    scale: 1.08 0.94;
+  }
+  82% {
+    scale: 0.97 1.03;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes g2048-shock {
+  0% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.9;
+  }
+}
+@keyframes g2048-prism {
+  0% {
+    opacity: 1;
+    background-position: 100% 0;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    background-position: 0% 0;
+  }
+}
+@keyframes g2048-confetti {
+  0% {
+    opacity: 1;
+    scale: 0.25;
+    rotate: 0deg;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.1;
+    rotate: 40deg;
+  }
+}
+@keyframes g2048-spin {
+  0% {
+    transform: perspective(60cqi) rotateY(-180deg);
+    scale: 0.8;
+  }
+  100% {
+    transform: perspective(60cqi) rotateY(0deg);
+    scale: 1;
+  }
+}
+@keyframes g2048-embers {
+  0% {
+    opacity: 0;
+    translate: 0 25%;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -12%;
+  }
 }
 @keyframes g2048-pop {
   0% {
@@ -4274,5 +4658,357 @@ a.arcade-counter:hover {
   }
   .hub-arcade-sweep {
     display: none;
+  }
+}
+
+/* Sudoku board. Themes set paper and ink, grid styles set lines, highlight sets set selection colors. */
+.sdk {
+  --sdk-paper: color-mix(in oklab, var(--surface) 70%, transparent);
+  --sdk-frame: color-mix(in oklab, var(--foreground) 45%, transparent);
+  --sdk-line: color-mix(in oklab, var(--foreground) 20%, transparent);
+  --sdk-box: color-mix(in oklab, var(--foreground) 50%, transparent);
+  --sdk-given: var(--foreground);
+  --sdk-user: var(--amethyst);
+  --sdk-pencil: var(--muted-foreground);
+  --sdk-bad: var(--destructive);
+  --sdk-hl: var(--amethyst);
+  --sdk-peer: color-mix(in oklab, var(--sdk-hl) 10%, transparent);
+  --sdk-same: color-mix(in oklab, var(--sdk-hl) 20%, transparent);
+  --sdk-sel: color-mix(in oklab, var(--sdk-hl) 30%, transparent);
+  --sdk-ring: var(--sdk-hl);
+  --sdk-ring-w: 2px;
+  --sdk-mark: var(--sdk-ring);
+  --sdk-tint: color-mix(in oklab, var(--sdk-given) 7%, transparent);
+  border: 2px solid var(--sdk-frame);
+  border-radius: 0.75rem;
+  background-color: var(--sdk-paper);
+}
+.sdk-cell {
+  font-size: calc(5cqi * var(--sdk-k, 1));
+  font-weight: 500;
+  color: var(--sdk-user);
+  text-shadow: var(--sdk-glow, none);
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+.sdk-cell[data-r="cell"] {
+  border-right: 1px solid var(--sdk-line);
+}
+.sdk-cell[data-r="box"] {
+  border-right: 2px solid var(--sdk-box);
+}
+.sdk-cell[data-b="cell"] {
+  border-bottom: 1px solid var(--sdk-line);
+}
+.sdk-cell[data-b="box"] {
+  border-bottom: 2px solid var(--sdk-box);
+}
+.sdk-cell[data-given] {
+  font-weight: 700;
+  color: var(--sdk-given);
+}
+.sdk-cell[data-peer] {
+  background-color: var(--sdk-peer);
+}
+.sdk-cell[data-same] {
+  background-color: var(--sdk-same);
+}
+/* Wavy underline: conflicts don't rely on color alone. */
+.sdk-cell[data-bad] {
+  background-color: color-mix(in oklab, var(--sdk-bad) 15%, transparent);
+  color: var(--sdk-bad);
+  text-decoration: underline wavy 0.35cqi;
+  text-underline-offset: 0.7cqi;
+}
+.sdk-cell[data-sel] {
+  background-color: var(--sdk-sel);
+  box-shadow: inset 0 0 0 var(--sdk-ring-w) var(--sdk-ring);
+}
+.sdk-notes {
+  font-size: calc(1.65cqi * var(--sdk-k, 1));
+  font-weight: 500;
+  color: var(--sdk-pencil);
+}
+.sdk-notes [data-hit] {
+  font-weight: 700;
+  color: var(--sdk-mark);
+}
+
+.sdk[data-theme="newspaper"] {
+  --sdk-paper: #e9e6df;
+  --sdk-frame: #222;
+  --sdk-line: rgb(0 0 0 / 0.25);
+  --sdk-box: #222;
+  --sdk-given: #1a1a1a;
+  --sdk-user: #2b4c7e;
+  --sdk-pencil: #5f5f5f;
+  --sdk-bad: #b3261e;
+  background-image: radial-gradient(rgb(0 0 0 / 0.08) 0.6px, transparent 0.9px);
+  background-size: 4px 4px;
+}
+.sdk[data-theme="notebook"] {
+  --sdk-paper: #fdfdf8;
+  --sdk-frame: #33415c;
+  --sdk-line: rgb(30 60 120 / 0.25);
+  --sdk-box: #33415c;
+  --sdk-given: #222b38;
+  --sdk-user: #1d4ed8;
+  --sdk-pencil: #6b7280;
+  --sdk-bad: #c62828;
+  background-image:
+    linear-gradient(90deg, transparent 5.6cqi, rgb(230 80 80 / 0.5) 5.6cqi 5.9cqi, transparent 5.9cqi),
+    repeating-linear-gradient(180deg, transparent 0 calc(100% / 18 - 1px), rgb(100 150 220 / 0.28) calc(100% / 18 - 1px) calc(100% / 18));
+}
+.sdk[data-theme="parchment"] {
+  --sdk-paper: #f1e2c0;
+  --sdk-frame: #5a3d1e;
+  --sdk-line: rgb(90 60 20 / 0.3);
+  --sdk-box: #5a3d1e;
+  --sdk-given: #4a3218;
+  --sdk-user: #8b3a1a;
+  --sdk-pencil: #7a6040;
+  --sdk-bad: #b0281a;
+  background-image:
+    radial-gradient(ellipse at center, transparent 55%, rgb(120 80 30 / 0.28)),
+    radial-gradient(circle at 30% 70%, rgb(150 110 50 / 0.12), transparent 30%);
+}
+.sdk[data-theme="blueprint"] {
+  --sdk-paper: #1d4f91;
+  --sdk-frame: #ffffff;
+  --sdk-line: rgb(255 255 255 / 0.35);
+  --sdk-box: #ffffff;
+  --sdk-given: #ffffff;
+  --sdk-user: #ffe08a;
+  --sdk-pencil: rgb(220 235 255 / 0.85);
+  --sdk-bad: #ff9e9e;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.08) 1px, transparent 1px);
+  background-size: calc(100% / 36) calc(100% / 36);
+}
+.sdk[data-theme="midnight"] {
+  --sdk-paper: #141b3a;
+  --sdk-frame: rgb(243 217 139 / 0.7);
+  --sdk-line: rgb(243 217 139 / 0.18);
+  --sdk-box: rgb(243 217 139 / 0.6);
+  --sdk-given: #f3d98b;
+  --sdk-user: #9fc3ff;
+  --sdk-pencil: #a3abcf;
+  --sdk-bad: #ff8a80;
+}
+.sdk[data-theme="sakura"] {
+  --sdk-paper: #fbe9ef;
+  --sdk-frame: #a35d78;
+  --sdk-line: rgb(160 80 110 / 0.22);
+  --sdk-box: #a35d78;
+  --sdk-given: #5b2a3c;
+  --sdk-user: #c2185b;
+  --sdk-pencil: #8f5d70;
+  --sdk-bad: #b71c1c;
+  background-image:
+    radial-gradient(0.9cqi 0.55cqi at 20% 30%, rgb(244 143 177 / 0.55), transparent),
+    radial-gradient(0.7cqi 0.45cqi at 70% 10%, rgb(248 187 208 / 0.7), transparent),
+    radial-gradient(0.8cqi 0.5cqi at 45% 75%, rgb(244 143 177 / 0.45), transparent);
+  background-size: 31cqi 29cqi, 23cqi 27cqi, 37cqi 41cqi;
+}
+.sdk[data-theme="sakura"]:not([data-effects="off"]) {
+  animation: sdk-petals 40s linear infinite;
+}
+.sdk[data-theme="chalkboard"] {
+  --sdk-paper: #2f4a3a;
+  --sdk-frame: #7a5230;
+  --sdk-line: rgb(255 255 255 / 0.22);
+  --sdk-box: rgb(255 255 255 / 0.7);
+  --sdk-given: #f4f4ef;
+  --sdk-user: #ffe39a;
+  --sdk-pencil: rgb(240 240 230 / 0.75);
+  --sdk-bad: #ff9e9e;
+  --sdk-glow: 0 0 0.3cqi rgb(255 255 255 / 0.35);
+  border-width: 4px;
+  background-image:
+    radial-gradient(ellipse at 30% 20%, rgb(255 255 255 / 0.09), transparent 60%),
+    radial-gradient(ellipse at 75% 80%, rgb(255 255 255 / 0.06), transparent 55%);
+}
+.sdk[data-theme="newspaper"]:not([data-font]) {
+  font-family: var(--font-literata), Georgia, serif;
+}
+.sdk[data-theme="chalkboard"]:not([data-font]) {
+  font-family: var(--font-patrick-hand), cursive;
+  --sdk-k: 1.15;
+}
+@keyframes sdk-petals {
+  to {
+    background-position: 31cqi 87cqi, -23cqi 108cqi, 37cqi 82cqi;
+  }
+}
+
+.sdk[data-font="book-serif"] {
+  font-family: var(--font-literata), Georgia, serif;
+}
+.sdk[data-font="rounded"] {
+  font-family: var(--font-fredoka), ui-rounded, sans-serif;
+}
+.sdk[data-font="code-mono"] {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+}
+.sdk[data-font="typewriter"] {
+  font-family: var(--font-special-elite), "Courier New", monospace;
+}
+.sdk[data-font="pencil-print"] {
+  font-family: var(--font-patrick-hand), cursive;
+  --sdk-k: 1.15;
+}
+.sdk[data-font="elegant"] {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+.sdk[data-font="terminal"] {
+  font-family: var(--font-vt323), ui-monospace, monospace;
+  --sdk-k: 1.35;
+}
+
+.sdk[data-grid="dotted"] .sdk-cell[data-r="cell"] {
+  border-right: 2px dotted var(--sdk-line);
+}
+.sdk[data-grid="dotted"] .sdk-cell[data-b="cell"] {
+  border-bottom: 2px dotted var(--sdk-line);
+}
+.sdk[data-grid="bold-boxes"] {
+  border-width: 4px;
+  --sdk-line: color-mix(in oklab, var(--sdk-given) 10%, transparent);
+}
+.sdk[data-grid="bold-boxes"] .sdk-cell[data-r="box"] {
+  border-right-width: 4px;
+}
+.sdk[data-grid="bold-boxes"] .sdk-cell[data-b="box"] {
+  border-bottom-width: 4px;
+}
+.sdk[data-grid="checker"] .sdk-cell[data-alt] {
+  background-image: linear-gradient(var(--sdk-tint), var(--sdk-tint));
+}
+.sdk[data-grid="double"] {
+  border: 5px double var(--sdk-frame);
+}
+.sdk[data-grid="double"] .sdk-cell[data-r="box"] {
+  border-right: 5px double var(--sdk-box);
+}
+.sdk[data-grid="double"] .sdk-cell[data-b="box"] {
+  border-bottom: 5px double var(--sdk-box);
+}
+.sdk:is([data-grid="tiles"], [data-grid="wells"], [data-grid="rounded-boxes"]) {
+  padding: 0.5cqi;
+}
+.sdk:is([data-grid="tiles"], [data-grid="wells"]) .sdk-cell {
+  margin: 0.25cqi;
+  border: 0;
+  border-radius: 0.9cqi;
+}
+.sdk:is([data-grid="tiles"], [data-grid="wells"], [data-grid="rounded-boxes"]) .sdk-cell[data-r="box"] {
+  margin-right: 0.6cqi;
+}
+.sdk:is([data-grid="tiles"], [data-grid="wells"], [data-grid="rounded-boxes"]) .sdk-cell[data-l="box"] {
+  margin-left: 0.6cqi;
+}
+.sdk:is([data-grid="tiles"], [data-grid="wells"], [data-grid="rounded-boxes"]) .sdk-cell[data-b="box"] {
+  margin-bottom: 0.6cqi;
+}
+.sdk:is([data-grid="tiles"], [data-grid="wells"], [data-grid="rounded-boxes"]) .sdk-cell[data-t="box"] {
+  margin-top: 0.6cqi;
+}
+.sdk[data-grid="tiles"] .sdk-cell {
+  background-image: linear-gradient(var(--sdk-tint), var(--sdk-tint));
+  box-shadow: 0 0.15cqi 0 color-mix(in oklab, var(--sdk-given) 18%, transparent);
+}
+.sdk[data-grid="wells"] .sdk-cell {
+  box-shadow:
+    inset 0 0.35cqi 0.6cqi rgb(0 0 0 / 0.24),
+    inset 0 -0.2cqi 0.3cqi rgb(255 255 255 / 0.22);
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell {
+  border-color: transparent;
+  background-image: linear-gradient(var(--sdk-tint), var(--sdk-tint));
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-bc="0"] {
+  border-right: 1px solid var(--sdk-line);
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-bc="1"] {
+  border-right: 1px solid var(--sdk-line);
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-br="0"],
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-br="1"] {
+  border-bottom: 1px solid var(--sdk-line);
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-br="0"][data-bc="0"] {
+  border-top-left-radius: 1.6cqi;
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-br="0"][data-bc="2"] {
+  border-top-right-radius: 1.6cqi;
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-br="2"][data-bc="0"] {
+  border-bottom-left-radius: 1.6cqi;
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-br="2"][data-bc="2"] {
+  border-bottom-right-radius: 1.6cqi;
+}
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-r="box"],
+.sdk[data-grid="rounded-boxes"] .sdk-cell[data-b="box"] {
+  border-color: transparent;
+}
+.sdk[data-grid="wells"] .sdk-cell[data-sel],
+.sdk[data-grid="tiles"] .sdk-cell[data-sel] {
+  box-shadow: inset 0 0 0 var(--sdk-ring-w) var(--sdk-ring);
+}
+
+.sdk[data-highlight="amber"] {
+  --sdk-hl: #f0a020;
+  --sdk-ring: #c77d00;
+}
+.sdk[data-highlight="mint"] {
+  --sdk-hl: #2fbf8f;
+  --sdk-ring: #13906a;
+}
+.sdk[data-highlight="rose"] {
+  --sdk-hl: #f06292;
+  --sdk-ring: #c2185b;
+}
+.sdk[data-highlight="lavender"] {
+  --sdk-hl: #b39ddb;
+  --sdk-ring: #7e57c2;
+  --sdk-peer: color-mix(in oklab, #b39ddb 16%, transparent);
+  --sdk-same: color-mix(in oklab, #b39ddb 30%, transparent);
+  --sdk-sel: color-mix(in oklab, #b39ddb 40%, transparent);
+}
+.sdk[data-highlight="ocean"] {
+  --sdk-hl: #1e88e5;
+  --sdk-peer: color-mix(in oklab, #26a69a 14%, transparent);
+  --sdk-same: color-mix(in oklab, #26c6da 28%, transparent);
+  --sdk-sel: color-mix(in oklab, #1e88e5 32%, transparent);
+  --sdk-ring: #1565c0;
+}
+.sdk[data-highlight="citrus"] {
+  --sdk-hl: #ff9800;
+  --sdk-peer: color-mix(in oklab, #b5d334 18%, transparent);
+  --sdk-same: color-mix(in oklab, #cddc39 32%, transparent);
+  --sdk-sel: color-mix(in oklab, #ff9800 34%, transparent);
+  --sdk-ring: #ef6c00;
+}
+.sdk[data-highlight="contrast"] {
+  --sdk-peer: color-mix(in oklab, #ffeb3b 22%, transparent);
+  --sdk-same: color-mix(in oklab, #ffeb3b 50%, transparent);
+  --sdk-sel: #ffeb3b;
+  --sdk-ring: #000;
+  --sdk-ring-w: 3px;
+  --sdk-mark: #d84315;
+}
+.sdk[data-highlight="contrast"] .sdk-cell:is([data-sel], [data-same]):not([data-bad]) {
+  color: #000;
+  text-shadow: none;
+}
+.sdk[data-highlight="contrast"] .sdk-cell[data-sel] .sdk-notes {
+  color: #000;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sdk {
+    animation: none !important;
   }
 }

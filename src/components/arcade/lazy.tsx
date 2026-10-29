@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { SudokuDailyResult, SudokuDifficulty, SudokuSave } from "@/lib/arcade";
+import type { GameLook } from "@/lib/game-cosmetics";
 import { ArcadeProvider } from "./game-shell";
 
 function Loading() {
@@ -18,10 +19,10 @@ function Loading() {
 
 /** Each game (and its engine) is its own chunk, downloaded only when that game's page opens. */
 function wrap<P extends object>(Game: ComponentType<P>) {
-  return function ArcadeGame(props: P) {
+  return function ArcadeGame({ look, ...props }: P & { look?: GameLook }) {
     return (
-      <ArcadeProvider>
-        <Game {...props} />
+      <ArcadeProvider look={look}>
+        <Game {...(props as P)} />
       </ArcadeProvider>
     );
   };

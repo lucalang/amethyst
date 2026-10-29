@@ -136,10 +136,19 @@ export type Database = {
               Relationships: [{ foreignKeyName: "coin_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "cosmetic_items": {
-              Row: { id: string; kind: "frame" | "avatar_decoration"; price: number; available: boolean; created_at: string }
-              Insert: { id: string; kind: "frame" | "avatar_decoration"; price: number; available?: boolean; created_at?: string }
-              Update: { id?: string; kind?: "frame" | "avatar_decoration"; price?: number; available?: boolean; created_at?: string }
+              Row: { id: string; kind: "frame" | "avatar_decoration" | "game"; price: number; available: boolean; created_at: string; game: string | null; category: string | null }
+              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game"; price: number; available?: boolean; created_at?: string; game?: string | null; category?: string | null }
+              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game"; price?: number; available?: boolean; created_at?: string; game?: string | null; category?: string | null }
               Relationships: []
+            },
+            "game_loadouts": {
+              Row: { user_id: string; game: string; category: string; item_id: string; updated_at: string }
+              Insert: { user_id: string; game: string; category: string; item_id: string; updated_at?: string }
+              Update: { user_id?: string; game?: string; category?: string; item_id?: string; updated_at?: string }
+              Relationships: [
+                { foreignKeyName: "game_loadouts_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+                { foreignKeyName: "game_loadouts_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "cosmetic_items"; referencedColumns: ["id"] },
+              ]
             },
             "user_cosmetics": {
               Row: { user_id: string; item_id: string; acquired_at: string; transaction_id: number | null }
@@ -507,6 +516,9 @@ isOneToOne: false
                            },
 "purchase_cosmetic":
 { Args: { "p_item": string,"p_expected_price": number }; Returns: Json
+                           },
+"set_game_cosmetic":
+{ Args: { "p_game": string,"p_category": string,"p_item": string | null }; Returns: Json
                            },
 "claim_achievement_notifications":
 { Args: Record<PropertyKey, never>; Returns: Json

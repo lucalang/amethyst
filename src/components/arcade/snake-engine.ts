@@ -19,7 +19,9 @@ import {
   drawStatue,
   drawStone,
   drawTarget,
+  setSnakeArtStyle,
 } from "./snake-art";
+import { eatLife, drawEatEffect, paintGround, paintRim, paintSnakeBody, paintSnakeHead, snakeColors, type Point, type Seg, type SnakePath, type SnakeTheme } from "./snake-look";
 import type { SoundName } from "./sound";
 
 export const START_LENGTH = 3;
@@ -35,18 +37,6 @@ const MAX_PORTAL_PAIRS = 3;
 const STEP_MS = 1000 / 60;
 export const LAYER_HUES = ["#22b5a5", "#c64fdc"] as const;
 
-/** Snake's own colors: a sunny sand board, a green snake and a blue partner, whatever the app theme. */
-const LOOK = {
-  board: "#f3e3b5",
-  check: "#e9d49b",
-  tuft: "#c9ae6a",
-  rim: "#7a5a2e",
-  wrapRim: "#3f8fd8",
-  text: INK,
-  snakes: ["#46b03c", "#3d82d6"],
-  dead: "#9b9488",
-} as const;
-
 export type Direction = "up" | "down" | "left" | "right";
 export type Phase = "ready" | "playing" | "paused" | "over";
 export type OverReason = "crash" | "time" | "cleared" | "boom";
@@ -57,7 +47,6 @@ export type SnakeStatus = {
   ghost: number | null;
 };
 
-type Point = { x: number; y: number };
 /** A body cell, the direction the snake moved to enter it, and a per-snake serial number. */
 type Cell = Point & { d: Direction; id: number };
 type Snake = {
@@ -83,10 +72,8 @@ type Key = Point & { lock: number; born: number };
 type Crate = Point & { kind: SnakeFruit; hue: number; target: Point; from: Point; movedAt: number; born: number };
 type Portal = { a: Point; b: Point; hue: number; born: number };
 type Spot = Point & { born: number };
-type Burst = Point & { color: string; born: number; big?: boolean };
+type Burst = Point & { color: string; born: number; big?: boolean; eat?: boolean };
 type Floater = Point & { text: string; color: string; born: number };
-type Seg = { pts: Point[]; d: number[] };
-type SnakePath = { segs: Seg[]; cellDist: number[]; total: number };
 
 const DIRS: Direction[] = ["up", "right", "down", "left"];
 const VECTORS: Record<Direction, Point> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
@@ -99,7 +86,6 @@ const easeOutBack = (t: number) => {
   return 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 };
 const rand = (n: number) => Math.floor(Math.random() * n);
-const hash = (n: number) => (Math.imul(n ^ 0x9e3779b9, 0x85ebca6b) >>> 0) / 4294967296;
 function takeRandom<T>(list: T[]): T {
   const i = rand(list.length);
   const [item] = list.splice(i, 1);
@@ -166,52 +152,6 @@ function scatter(grid: number, lanes: number[], density: number, maxLength: numb
   return new Set();
 }
 
-/** A polyline with rounded corners, so turns bend instead of kinking. */
-function trace(ctx: CanvasRenderingContext2D, points: Point[], radius: number) {
-  ctx.beginPath();
-  ctx.moveTo(points[0].x, points[0].y);
-  for (let i = 1; i < points.length - 1; i += 1) {
-    const [a, b, c] = [points[i - 1], points[i], points[i + 1]];
-    const before = Math.hypot(b.x - a.x, b.y - a.y) * (i === 1 ? 1 : 0.5);
-    const after = Math.hypot(c.x - b.x, c.y - b.y) * (i === points.length - 2 ? 1 : 0.5);
-    ctx.arcTo(b.x, b.y, c.x, c.y, Math.min(radius, before, after));
-  }
-  ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-}
-
-function pointIn(seg: Seg, d: number): Point {
-  const last = seg.d.length - 1;
-  for (let i = 1; i <= last; i += 1) {
-    if (seg.d[i] >= d) {
-      const k = Math.min(1, Math.max(0, (d - seg.d[i - 1]) / (seg.d[i] - seg.d[i - 1] || 1)));
-      return { x: seg.pts[i - 1].x + (seg.pts[i].x - seg.pts[i - 1].x) * k, y: seg.pts[i - 1].y + (seg.pts[i].y - seg.pts[i - 1].y) * k };
-    }
-  }
-  return seg.pts[last];
-}
-
-function pointAt(path: SnakePath, d: number): Point {
-  const seg = path.segs.find((s) => d <= s.d[s.d.length - 1] + 1e-9) ?? path.segs[path.segs.length - 1];
-  return pointIn(seg, d);
-}
-
-/** The parts of the body path between two distances from the head. */
-function slice(path: SnakePath, a: number, b: number): Point[][] {
-  const out: Point[][] = [];
-  if (b <= a) return out;
-  for (const seg of path.segs) {
-    const last = seg.d.length - 1;
-    if (seg.d[last] < a || seg.d[0] > b) continue;
-    const from = Math.max(a, seg.d[0]);
-    const to = Math.min(b, seg.d[last]);
-    const pts = [pointIn(seg, from)];
-    for (let i = 0; i <= last; i += 1) if (seg.d[i] > from && seg.d[i] < to) pts.push(seg.pts[i]);
-    pts.push(pointIn(seg, to));
-    out.push(pts);
-  }
-  return out;
-}
-
 type Hooks = {
   onPhase: (phase: Phase) => void;
   onScore: (score: number) => void;
@@ -219,7 +159,8 @@ type Hooks = {
   onRound: (setup: SnakeSetup) => void;
   onOver: (score: number, reason: OverReason) => void;
   onStatus: (status: SnakeStatus) => void;
-  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
+  /** Sound, motion level and the equipped cosmetics; read every frame so changes apply mid-round. */
+  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel; theme: SnakeTheme };
 };
 
 /**
@@ -234,7 +175,10 @@ type Hooks = {
  *   a head can reach, and objectives that become impossible are moved or replaced.
  */
 export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hooks: Hooks) {
-  const ctx = canvas.getContext("2d");
+  const screen = canvas.getContext("2d");
+  // Drawing goes to the screen, or to a low-resolution buffer for the pixel art style.
+  let ctx = screen as CanvasRenderingContext2D;
+  let pixelCanvas: HTMLCanvasElement | null = null;
   let lightCanvas: HTMLCanvasElement | null = null;
   // The board and everything that never moves are painted once into this layer and reused.
   let boardCanvas: HTMLCanvasElement | null = null;
@@ -955,7 +899,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       score += 1;
       s.ateAt = now;
       s.swallows.push(ticks);
-      if (hooks.live().effects !== "off") bursts.push({ x, y, color: FRUIT_COLORS[food.kind], born: now });
+      if (hooks.live().effects !== "off") bursts.push({ x, y, color: FRUIT_COLORS[food.kind], born: now, eat: true });
       hooks.live().play("eat", 1 + Math.min(score, 40) / 80);
       if (modes.has("ghost")) {
         s.ghost = new Set(s.cells.slice(1).map((cell) => cell.id));
@@ -1107,9 +1051,37 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   }
 
   function draw(alpha = 0) {
+    if (!screen) return;
+    const theme = hooks.live().theme;
+    setSnakeArtStyle(theme.style);
+    if (theme.style !== "pixel") return render(alpha, size.dpr, theme);
+    // Pixel art: draw at a coarse resolution, then scale up without smoothing.
+    const { width, height, dpr } = size;
+    const unit = Math.max(1.5, Math.min(width, height) / grid / 10);
+    pixelCanvas ??= document.createElement("canvas");
+    const pw = Math.ceil(width / unit);
+    const ph = Math.ceil(height / unit);
+    if (pixelCanvas.width !== pw || pixelCanvas.height !== ph) {
+      pixelCanvas.width = pw;
+      pixelCanvas.height = ph;
+    }
+    const low = pixelCanvas.getContext("2d");
+    if (!low) return;
+    low.imageSmoothingEnabled = false;
+    ctx = low;
+    render(alpha, 1 / unit, theme);
+    ctx = screen;
+    screen.setTransform(1, 0, 0, 1, 0, 0);
+    screen.clearRect(0, 0, canvas.width, canvas.height);
+    screen.imageSmoothingEnabled = false;
+    screen.drawImage(pixelCanvas, 0, 0, pw * unit * dpr, ph * unit * dpr);
+    screen.imageSmoothingEnabled = true;
+  }
+
+  function render(alpha: number, scale: number, theme: SnakeTheme) {
     if (!ctx) return;
     const { width, height, dpr } = size;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
     ctx.clearRect(0, 0, width, height);
     const cell = Math.min(width, height) / grid;
     const board = cell * grid;
@@ -1140,9 +1112,9 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     let matured = 0;
     for (const born of bricks.values()) if (settled(born)) matured += 1;
     for (const born of statues.values()) if (settled(born)) matured += 1;
-    const key = [width, height, dpr, grid, layer, statics, stones.size, crystals[0].size, crystals[1].size, matured].join();
+    const key = [width, height, dpr, grid, layer, statics, stones.size, crystals[0].size, crystals[1].size, matured, theme.key].join();
     if (key !== boardKey || !boardCanvas) {
-      paintBoard(cell, ox, oy, board, corner, settled);
+      paintBoard(cell, ox, oy, corner, settled, theme);
       boardKey = key;
     }
     if (boardCanvas) ctx.drawImage(boardCanvas, 0, 0, width, height);
@@ -1253,27 +1225,14 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       drawCrate(ctx, cx(k.from.x + (k.x - k.from.x) * m), cy(k.from.y + (k.y - k.from.y) * m), cell * 0.94 * pop(k.born), k.kind, hueOf(k.hue));
     }
 
-    const heads = snakes.map((s, i) => drawSnake(s, i, cell, ox, oy, now, effects, t));
+    const heads = snakes.map((s, i) => drawSnake(s, i, cell, ox, oy, now, effects, t, theme));
 
     ctx.globalAlpha = 1;
-    bursts = bursts.filter((b) => now - b.born < 560);
+    const eatMs = eatLife(theme.effect);
+    bursts = bursts.filter((b) => now - b.born < (b.eat ? eatMs : 560));
     for (const b of bursts) {
-      const k = (now - b.born) / 560;
-      const reach = b.big ? 1.6 : 0.85;
-      ctx.strokeStyle = withAlpha(b.color, (1 - k) * 0.7);
-      ctx.lineWidth = Math.max(1, cell * 0.09);
-      ctx.beginPath();
-      ctx.arc(cx(b.x), cy(b.y), cell * (0.3 + easeOut(k) * reach), 0, Math.PI * 2);
-      ctx.stroke();
-      if (!full) continue;
-      ctx.fillStyle = withAlpha(b.color, 1 - k);
-      for (let i = 0; i < 7; i += 1) {
-        const a = (i / 7) * Math.PI * 2 + b.x + b.y;
-        const d = cell * (0.3 + easeOut(k) * (reach + 0.2));
-        ctx.beginPath();
-        ctx.arc(cx(b.x) + Math.cos(a) * d, cy(b.y) + Math.sin(a) * d, cell * 0.1 * (1 - k), 0, Math.PI * 2);
-        ctx.fill();
-      }
+      const k = (now - b.born) / (b.eat ? eatMs : 560);
+      drawEatEffect(ctx, b.eat ? theme.effect : "", cx(b.x), cy(b.y), cell, k, b.color, full, b.x + b.y, b.big ? 1.6 : 0.85);
     }
 
     // Light: darkness everywhere except a glow around each head; fruit still glints faintly.
@@ -1360,24 +1319,12 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     ctx.restore();
 
     // Frame: an inked wall, a dashed line when edges wrap, colored by layer in Dimension.
-    ctx.beginPath();
-    ctx.roundRect(ox + 1.5, oy + 1.5, board - 3, board - 3, corner);
-    const frame = layer !== null ? LAYER_HUES[layer] : null;
-    if (wrap) {
-      ctx.setLineDash([Math.max(4, cell * 0.4), Math.max(4, cell * 0.3)]);
-      ctx.strokeStyle = frame ?? LOOK.wrapRim;
-      ctx.lineWidth = 2.5;
-    } else {
-      ctx.strokeStyle = frame ?? LOOK.rim;
-      ctx.lineWidth = 3;
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
+    paintRim(ctx, theme, ox, oy, board, board, corner, cell, wrap, layer !== null ? LAYER_HUES[layer] : null);
     ctx.restore();
   }
 
   /** Paints the board, its checks and tufts, and all scenery that has finished appearing into the cached layer. */
-  function paintBoard(cell: number, ox: number, oy: number, board: number, corner: number, settled: (born: number) => boolean) {
+  function paintBoard(cell: number, ox: number, oy: number, corner: number, settled: (born: number) => boolean, theme: SnakeTheme) {
     const { width, height, dpr } = size;
     boardCanvas ??= document.createElement("canvas");
     const w = Math.round(width * dpr);
@@ -1394,28 +1341,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     const cx = (x: number) => ox + (x + 0.5) * cell;
     const cy = (y: number) => oy + (y + 0.5) * cell;
 
-    b.beginPath();
-    b.roundRect(ox, oy, board, board, corner);
-    b.fillStyle = tint(LOOK.board);
-    b.fill();
-    b.save();
-    b.clip();
-    b.fillStyle = tint(LOOK.check);
-    for (let y = 0; y < grid; y += 1) for (let x = y % 2; x < grid; x += 2) b.fillRect(ox + x * cell, oy + y * cell, cell, cell);
-    b.strokeStyle = tint(LOOK.tuft);
-    b.lineWidth = Math.max(1, cell * 0.05);
-    b.lineCap = "round";
-    b.beginPath();
-    for (let c = 0; c < grid * grid; c += 1) {
-      if (hash(c + grid * 31) > 0.12) continue;
-      const tx = ox + ((c % grid) + 0.25 + hash(c) * 0.5) * cell;
-      const ty = oy + (Math.floor(c / grid) + 0.4 + hash(c * 7) * 0.3) * cell;
-      b.moveTo(tx - cell * 0.1, ty - cell * 0.08);
-      b.lineTo(tx, ty + cell * 0.06);
-      b.lineTo(tx + cell * 0.1, ty - cell * 0.1);
-    }
-    b.stroke();
-    b.restore();
+    paintGround(b, theme, ox, oy, cell, grid, grid, corner, tint);
 
     for (const c of stones) drawStone(b, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.98, c);
     for (const [c, born] of bricks) if (settled(born)) drawBrick(b, cx(c % grid), cy(Math.floor(c / grid)), cell * 0.96);
@@ -1444,24 +1370,20 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   }
 
   /** Draws one snake and returns its head position in pixels. */
-  function drawSnake(s: Snake, which: number, cell: number, ox: number, oy: number, now: number, effects: MotionLevel, t: number): Point {
+  function drawSnake(s: Snake, which: number, cell: number, ox: number, oy: number, now: number, effects: MotionLevel, t: number, theme: SnakeTheme): Point {
     const px = (p: Point) => ({ x: ox + (p.x + 0.5) * cell, y: oy + (p.y + 0.5) * cell });
     if (!ctx) return px(s.cells[0]);
     const moving = effects !== "off";
     const path = snakePath(s, t);
     const { total, cellDist } = path;
     const fade = s.dead ? (moving ? Math.min(1, (now - diedAt) / 450) : 1) * 0.6 : 0;
-    const hue = LOOK.snakes[which];
-    const board = LOOK.board;
-    const body = mix(hue, LOOK.dead, fade);
-    const edgeColor = mix(hue, INK, 0.65);
+    const colors = snakeColors(theme, which, fade);
+    const board = theme.ground.board;
     const ghostOn = s.ghostLeft > 0 && s.ghost.size > 0;
     // Ghost segments turn pale and dashed; they flicker during the last moments of the effect.
     const flicker = ghostOn && s.ghostLeft < 1500 && (moving ? Math.floor(now / 140) % 2 === 0 : false);
-    const ghostBody = mix(body, board, 0.62);
-    const ghostEdge = mix(edgeColor, board, 0.45);
+    const ghostColors = { body: mix(colors.body, board, 0.62), edge: mix(colors.edge, board, 0.45), mark: mix(colors.mark, board, 0.62) };
     const width = cell * 0.72;
-    const edge = Math.max(1.4, cell * 0.08);
 
     type Section = { from: number; to: number; ghost: boolean };
     const sections: Section[] = [];
@@ -1478,77 +1400,27 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       if (last && last.ghost === ghost && Math.abs(last.to - from) < 1e-6) last.to = to;
       else sections.push({ from, to, ghost });
     });
-    const sectionAt = (d: number) => sections.find((sec) => d >= sec.from - 1e-6 && d <= sec.to + 1e-6);
 
     // Taper toward the tail, plus a bulge for each swallowed fruit travelling down the body.
     const taper = Math.min(2.2, total * 0.45);
     const neck = total - taper;
     const blobs: { d: number; r: number }[] = [];
+    const swallows: number[] = [];
     for (let d = neck; d <= total + 1e-6; d += 0.12) blobs.push({ d, r: (width / 2) * (1 - 0.5 * ((d - neck) / (taper || 1))) });
     s.swallows = s.swallows.filter((tick) => ticks - tick + t < total - 0.4);
     for (const tick of s.swallows) {
       const d = ticks - tick + t;
-      if (d > 0.6) blobs.push({ d, r: width * 0.6 });
-    }
-
-    ctx.lineJoin = "round";
-    ctx.lineCap = "butt";
-    for (const pass of [0, 1]) {
-      for (const sec of sections) {
-        ctx.strokeStyle = pass === 0 ? (sec.ghost ? ghostEdge : edgeColor) : sec.ghost ? ghostBody : body;
-        ctx.lineWidth = pass === 0 ? width + edge * 2 : width;
-        if (pass === 0 && sec.ghost) ctx.setLineDash([cell * 0.22, cell * 0.14]);
-        for (const line of slice(path, sec.from, Math.min(sec.to, neck))) {
-          trace(ctx, line.map(px), cell * 0.5);
-          ctx.stroke();
-        }
-        ctx.setLineDash([]);
-      }
-      for (const blob of blobs) {
-        const sec = sectionAt(blob.d);
-        if (!sec) continue;
-        const p = px(pointAt(path, blob.d));
-        ctx.fillStyle = pass === 0 ? (sec.ghost ? ghostEdge : edgeColor) : sec.ghost ? ghostBody : body;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, blob.r + (pass === 0 ? edge : 0), 0, Math.PI * 2);
-        ctx.fill();
+      if (d > 0.6) {
+        blobs.push({ d, r: width * 0.6 });
+        swallows.push(d);
       }
     }
-    // Back markings: alternating spots, and a soft highlight along solid parts.
+    const marks: { d: number; id: number; angle: number }[] = [];
     for (let i = 1; i < s.cells.length; i += 1) {
       if (cellDist[i] >= neck || isGap(s.cells[i], i)) continue;
-      const sec = sectionAt(cellDist[i]);
-      const p = px(pointAt(path, cellDist[i]));
-      ctx.fillStyle = mix(sec?.ghost ? ghostBody : body, edgeColor, 0.3);
-      ctx.beginPath();
-      if (s.cells[i].id % 2) ctx.arc(p.x, p.y, width * 0.17, 0, Math.PI * 2);
-      else ctx.ellipse(p.x, p.y, width * 0.11, width * 0.2, ANGLES[s.cells[i].d], 0, Math.PI * 2);
-      ctx.fill();
+      marks.push({ d: cellDist[i], id: s.cells[i].id, angle: ANGLES[s.cells[i].d] });
     }
-    ctx.save();
-    ctx.translate(-cell * 0.05, -cell * 0.08);
-    ctx.lineCap = "round";
-    ctx.strokeStyle = withAlpha("#ffffff", 0.3);
-    ctx.lineWidth = width * 0.22;
-    for (const sec of sections) {
-      if (sec.ghost) continue;
-      for (const line of slice(path, sec.from + 0.3, Math.min(sec.to, neck) - 0.1)) {
-        trace(ctx, line.map(px), cell * 0.5);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-    // Cheese holes: a dashed ring marks each safe gap.
-    for (const d of gaps) {
-      const p = px(pointAt(path, d));
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, width * 0.34, 0, Math.PI * 2);
-      ctx.setLineDash([cell * 0.1, cell * 0.08]);
-      ctx.strokeStyle = withAlpha(edgeColor, 0.75);
-      ctx.lineWidth = Math.max(1, cell * 0.06);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
+    paintSnakeBody(ctx, { path, px, cell, sections, neck, blobs, swallows, gaps, marks, colors, ghost: ghostColors, theme, now, moving });
 
     // Head.
     const headAt = px(path.segs[0].pts[0]);
@@ -1568,108 +1440,24 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     const next = ahead[0];
     const worried = !s.dead && !peace && (!inBounds(next.x, next.y) || solidAt(idx(next.x, next.y)) || lockedAt(idx(next.x, next.y)));
 
-    ctx.save();
-    ctx.translate(headAt.x + Math.cos(angle) * bump * cell, headAt.y + Math.sin(angle) * bump * cell);
-    ctx.rotate(angle);
-    const r = cell * (0.42 + eat * 0.08);
-    ctx.beginPath();
-    ctx.ellipse(cell * 0.05, 0, r * 1.12 + edge, r + edge, 0, 0, Math.PI * 2);
-    ctx.fillStyle = edgeColor;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(cell * 0.05, 0, r * 1.12, r, 0, 0, Math.PI * 2);
-    ctx.fillStyle = body;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(-r * 0.15, -r * 0.42, r * 0.42, r * 0.2, 0, 0, Math.PI * 2);
-    ctx.fillStyle = withAlpha("#ffffff", 0.25);
-    ctx.fill();
-    // Mouth: open toward fruit just ahead, tongue out after a crash, an occasional tongue flick.
-    if (hungry || s.dead) {
-      ctx.beginPath();
-      ctx.ellipse(r * 0.98, 0, r * 0.26, r * 0.4, 0, 0, Math.PI * 2);
-      ctx.fillStyle = "#3a1020";
-      ctx.fill();
-    }
-    if (s.dead || (!hungry && effects === "full" && now % 2600 < 200)) {
-      ctx.strokeStyle = "#ff5d7a";
-      ctx.lineWidth = Math.max(1.2, cell * 0.07);
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(r * 1.05, 0);
-      ctx.lineTo(r * 1.05 + cell * 0.22, 0);
-      ctx.moveTo(r * 1.05 + cell * 0.22, 0);
-      ctx.lineTo(r * 1.05 + cell * 0.32, -cell * 0.08);
-      ctx.moveTo(r * 1.05 + cell * 0.22, 0);
-      ctx.lineTo(r * 1.05 + cell * 0.32, cell * 0.08);
-      ctx.stroke();
-    }
-    const blinking = effects === "full" && !s.dead && (now + which * 900) % 3400 < 120;
-    for (const side of [-1, 1]) {
-      const ex = cell * 0.16;
-      const ey = side * cell * 0.21;
-      ctx.beginPath();
-      ctx.arc(ex - cell * 0.12, ey * 1.25, cell * 0.06, 0, Math.PI * 2);
-      ctx.fillStyle = withAlpha("#ff7d9c", 0.45);
-      ctx.fill();
-      ctx.strokeStyle = INK;
-      ctx.lineCap = "round";
-      ctx.lineWidth = Math.max(1, cell * 0.055);
-      if (s.dead) {
-        const k = cell * 0.075;
-        ctx.beginPath();
-        ctx.moveTo(ex - k, ey - k);
-        ctx.lineTo(ex + k, ey + k);
-        ctx.moveTo(ex + k, ey - k);
-        ctx.lineTo(ex - k, ey + k);
-        ctx.stroke();
-        continue;
-      }
-      if (happy || blinking) {
-        ctx.beginPath();
-        if (happy) ctx.arc(ex, ey, cell * 0.08, Math.PI * 0.5 + 0.4, Math.PI * 1.5 - 0.4);
-        else {
-          ctx.moveTo(ex, ey - cell * 0.09);
-          ctx.lineTo(ex, ey + cell * 0.09);
-        }
-        ctx.stroke();
-        continue;
-      }
-      ctx.beginPath();
-      ctx.arc(ex, ey, cell * 0.135, 0, Math.PI * 2);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-      ctx.lineWidth = Math.max(0.8, cell * 0.035);
-      ctx.stroke();
-      if (scramble) {
-        // Dizzy spiral eyes while controls are scrambled.
-        ctx.beginPath();
-        for (let k = 0; k <= 14; k += 1) {
-          const a = k * 0.75 + (moving ? now / 160 : 0);
-          const rr = cell * 0.008 * k;
-          ctx.lineTo(ex + Math.cos(a) * rr, ey + Math.sin(a) * rr);
-        }
-        ctx.lineWidth = Math.max(0.8, cell * 0.03);
-        ctx.stroke();
-      } else {
-        ctx.beginPath();
-        ctx.arc(ex + cell * 0.045, ey, cell * 0.072, 0, Math.PI * 2);
-        ctx.fillStyle = INK;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(ex + cell * 0.065, ey - cell * 0.03, cell * 0.024, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-      }
-      if (worried) {
-        ctx.beginPath();
-        ctx.moveTo(ex - cell * 0.1, ey - side * cell * 0.2);
-        ctx.lineTo(ex + cell * 0.08, ey - side * cell * 0.13);
-        ctx.lineWidth = Math.max(1, cell * 0.05);
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
+    paintSnakeHead(ctx, {
+      x: headAt.x + Math.cos(angle) * bump * cell,
+      y: headAt.y + Math.sin(angle) * bump * cell,
+      angle,
+      cell,
+      eat,
+      colors,
+      theme,
+      dead: s.dead,
+      hungry,
+      happy,
+      blinking: effects === "full" && !s.dead && (now + which * 900) % 3400 < 120,
+      tongue: !hungry && effects === "full" && now % 2600 < 200,
+      dizzy: scramble !== null,
+      worried,
+      now,
+      moving,
+    });
     return headAt;
   }
 

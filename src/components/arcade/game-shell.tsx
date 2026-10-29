@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   createContext,
@@ -15,7 +16,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { ArrowLeft, House, Maximize, Minimize, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, House, Maximize, Minimize, Store, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
@@ -23,9 +24,16 @@ import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
 import type { AchievementEvent } from "@/lib/achievements";
 import type { ArcadeGameId, ScoreGame } from "@/lib/arcade";
+import type { GameLook } from "@/lib/game-cosmetics";
 import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { closeAudio, playSound, type SoundName } from "./sound";
+
+/** Shop opened from inside a game: loaded only when first opened. */
+const GameShopDialog = dynamic(() => import("./shop/game-shop-dialog"), { ssr: false });
+
+/** Fired when something (like the in-game shop) takes over: games pause exactly as if the tab were hidden. */
+export const ARCADE_AWAY_EVENT = "archive:arcade-away";
 
 type ArcadeContextValue = {
   rootRef: RefObject<HTMLDivElement | null>;
@@ -34,6 +42,9 @@ type ArcadeContextValue = {
   effects: MotionLevel;
   sound: boolean;
   toggleSound: () => void;
+  /** Equipped minigame cosmetics (category → item slug). Purely visual; never touches game rules. */
+  look: GameLook;
+  setLook: (look: GameLook) => void;
 };
 
 export function sendAchievementEvent(event: AchievementEvent) {
@@ -49,13 +60,14 @@ export function useArcade() {
 }
 
 /** Sound, effects level and keyboard focus for one game; audio is released when the game unmounts. */
-export function ArcadeProvider({ children }: { children: ReactNode }) {
+export function ArcadeProvider({ children, look: initialLook }: { children: ReactNode; look?: GameLook }) {
   const settings = useSettings();
   const router = useRouter();
   const effects = useMotionLevel();
   const rootRef = useRef<HTMLDivElement>(null);
   const [sound, setSound] = useState(settings.arcadeSound);
   const soundRef = useRef(settings.arcadeSound);
+  const [look, setLook] = useState<GameLook>(initialLook ?? {});
 
   useEffect(() => {
     return () => {
@@ -81,7 +93,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
     }
   }, [router]);
 
-  const value = useMemo(() => ({ rootRef, play, effects, sound, toggleSound }), [play, effects, sound, toggleSound]);
+  const value = useMemo(() => ({ rootRef, play, effects, sound, toggleSound, look, setLook }), [play, effects, sound, toggleSound, look]);
   return <ArcadeContext value={value}>{children}</ArcadeContext>;
 }
 
@@ -112,9 +124,10 @@ export function GameShell({
   help?: ReactNode;
   children: ReactNode;
 }) {
-  const { rootRef, sound, toggleSound } = useArcade();
+  const { rootRef, sound, toggleSound, look, setLook } = useArcade();
   const fullscreen = useSyncExternalStore(subscribeFullscreen, () => Boolean(document.fullscreenElement), () => false);
   const canFullscreen = useSyncExternalStore(noSubscribe, () => Boolean(document.fullscreenEnabled), () => false);
+  const [shop, setShop] = useState<"closed" | "open" | "idle">("closed");
 
   useEffect(() => {
     rootRef.current?.focus({ preventScroll: true });
@@ -123,6 +136,13 @@ export function GameShell({
   function toggleFullscreen() {
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     else void rootRef.current?.requestFullscreen().catch(() => toast.error("Fullscreen is not available here."));
+  }
+
+  function openShop() {
+    // Pause first (the round stays exactly as it is), and leave fullscreen so the dialog is visible.
+    window.dispatchEvent(new Event(ARCADE_AWAY_EVENT));
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    setShop("open");
   }
 
   return (
@@ -150,6 +170,10 @@ export function GameShell({
           <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
           <div className="ml-auto flex items-center gap-1">
             {actions}
+            <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
+              <Store aria-hidden />
+              Shop
+            </Button>
             <Button
               variant="ghost"
               size="icon-sm"
@@ -180,6 +204,18 @@ export function GameShell({
           <div className="relative min-h-0">{children}</div>
           {help ? <div className="text-xs leading-5 text-muted-foreground">{help}</div> : null}
         </div>
+        {shop !== "closed" ? (
+          <GameShopDialog
+            game={game}
+            open={shop === "open"}
+            look={look}
+            onLook={setLook}
+            onOpenChange={(open) => {
+              setShop(open ? "open" : "idle");
+              if (!open) requestAnimationFrame(() => rootRef.current?.focus({ preventScroll: true }));
+            }}
+          />
+        ) : null}
       </div>
   );
 }
@@ -265,10 +301,12 @@ export function useAway(onAway: () => void) {
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onLeave);
     window.addEventListener("pagehide", onLeave);
+    window.addEventListener(ARCADE_AWAY_EVENT, onLeave);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onLeave);
       window.removeEventListener("pagehide", onLeave);
+      window.removeEventListener(ARCADE_AWAY_EVENT, onLeave);
     };
   }, []);
 }

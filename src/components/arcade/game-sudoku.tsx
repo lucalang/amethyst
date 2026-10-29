@@ -139,7 +139,7 @@ export default function GameSudoku({
   dailyResult: SudokuDailyResult | null;
   records: Records;
 }) {
-  const { play } = useArcade();
+  const { play, effects, look } = useArcade();
   const today = useDailyDate();
   // Opens on an unfinished puzzle when there is one (regular first), otherwise on the puzzle list.
   const [start] = useState(() => {
@@ -757,7 +757,12 @@ export default function GameSudoku({
               <div
                 role="group"
                 aria-label={isDaily ? "Daily Sudoku" : `${SUDOKU_LABELS[game.difficulty]} Sudoku`}
-                className="absolute inset-0 grid touch-manipulation grid-cols-9 grid-rows-9 overflow-hidden rounded-xl border-2 border-foreground/45 bg-surface/70 select-none"
+                className="sdk absolute inset-0 grid touch-manipulation grid-cols-9 grid-rows-9 overflow-hidden select-none"
+                data-effects={effects}
+                data-theme={look.theme}
+                data-font={look.font}
+                data-grid={look.grid}
+                data-highlight={look.highlight}
               >
                 {Array.from({ length: SUDOKU_CELLS }, (_, cell) => {
                   const clue = game.puzzle[cell] !== "0";
@@ -781,24 +786,26 @@ export default function GameSudoku({
                       aria-current={isSelected || undefined}
                       aria-label={`Row ${row + 1}, column ${col + 1}: ${hidden ? "hidden" : digit ? `${digit}${clue ? ", given" : ""}${conflict ? ", conflicts" : ""}` : markList.length ? `notes ${markList.join(" ")}` : "empty"}`}
                       onClick={() => select(cell)}
-                      className={cn(
-                        "relative grid place-items-center border-foreground/20 text-[5cqi] leading-none tabular-nums outline-none transition-colors",
-                        col < 8 && (col % 3 === 2 ? "border-r-2 border-r-foreground/50" : "border-r"),
-                        row < 8 && (row % 3 === 2 ? "border-b-2 border-b-foreground/50" : "border-b"),
-                        clue ? "font-bold text-foreground" : "font-medium text-amethyst",
-                        peer && "bg-amethyst/10",
-                        same && "bg-amethyst/20",
-                        // Wavy underline: conflicts don't rely on color alone.
-                        conflict && "bg-destructive/15 text-destructive underline decoration-wavy decoration-[0.35cqi] underline-offset-[0.7cqi]",
-                        isSelected && "bg-amethyst/30 ring-2 ring-amethyst ring-inset",
-                      )}
+                      className="sdk-cell relative grid place-items-center leading-none tabular-nums outline-none"
+                      data-r={col < 8 ? (col % 3 === 2 ? "box" : "cell") : undefined}
+                      data-b={row < 8 ? (row % 3 === 2 ? "box" : "cell") : undefined}
+                      data-l={col > 0 && col % 3 === 0 ? "box" : undefined}
+                      data-t={row > 0 && row % 3 === 0 ? "box" : undefined}
+                      data-bc={col % 3}
+                      data-br={row % 3}
+                      data-alt={(Math.floor(row / 3) + Math.floor(col / 3)) % 2 || undefined}
+                      data-given={clue || undefined}
+                      data-peer={peer || undefined}
+                      data-same={same || undefined}
+                      data-bad={conflict || undefined}
+                      data-sel={isSelected || undefined}
                     >
                       {hidden ? null : digit ? (
                         digit
                       ) : markList.length ? (
-                        <span aria-hidden className="grid size-full grid-cols-3 grid-rows-3 p-[0.4cqi] text-[1.65cqi] font-medium text-muted-foreground">
+                        <span aria-hidden className="sdk-notes grid size-full grid-cols-3 grid-rows-3 p-[0.4cqi]">
                           {DIGITS.map((d) => (
-                            <span key={d} className={cn("grid place-items-center", d === selectedDigit && "font-bold text-amethyst")}>
+                            <span key={d} className="grid place-items-center" data-hit={d === selectedDigit || undefined}>
                               {marks & (1 << (d - 1)) ? d : ""}
                             </span>
                           ))}

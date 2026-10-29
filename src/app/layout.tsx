@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Literata, Manrope, Playfair_Display, Press_Start_2P, VT323 } from "next/font/google";
+import { Bungee, Caveat, Fredoka, JetBrains_Mono, Literata, Manrope, Patrick_Hand, Permanent_Marker, Playfair_Display, Press_Start_2P, Special_Elite, VT323 } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
 import "./globals.css";
 
@@ -16,8 +16,17 @@ const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["lati
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], display: "swap", preload: false });
 const vt323 = VT323({ variable: "--font-vt323", weight: "400", subsets: ["latin"], display: "swap", preload: false });
 const pressStart = Press_Start_2P({ variable: "--font-press-start", weight: "400", subsets: ["latin"], display: "swap", preload: false });
+// Arcade cosmetic fonts (2048 and Sudoku shops), only downloaded when an equipped item or preview uses them.
+const fredoka = Fredoka({ variable: "--font-fredoka", subsets: ["latin"], display: "swap", preload: false });
+const specialElite = Special_Elite({ variable: "--font-special-elite", weight: "400", subsets: ["latin"], display: "swap", preload: false });
+const permanentMarker = Permanent_Marker({ variable: "--font-permanent-marker", weight: "400", subsets: ["latin"], display: "swap", preload: false });
+const bungee = Bungee({ variable: "--font-bungee", weight: "400", subsets: ["latin"], display: "swap", preload: false });
+const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], display: "swap", preload: false });
+const patrickHand = Patrick_Hand({ variable: "--font-patrick-hand", weight: "400", subsets: ["latin"], display: "swap", preload: false });
 
-const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart].map((font) => font.variable).join(" ");
+const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart, fredoka, specialElite, permanentMarker, bungee, caveat, patrickHand]
+  .map((font) => font.variable)
+  .join(" ");
 
 export const metadata: Metadata = {
   title: { default: "Amethyst", template: "%s · Amethyst" },

@@ -1,38 +1,34 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { dailyDate, dailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
 import type { MotionLevel } from "@/lib/preferences";
-import { fitWorld, mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { fitWorld, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
+import { GAP, GROUND, HEIGHT, PIPE_W, TIP, WIDTH, drawCharacter, drawGround, drawObstacle, drawSky, drawTrail, flutterTheme, sceneryOf, type FlutterTheme } from "./flutter-look";
 import { GAME_PALETTES } from "./palettes";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import type { SoundName } from "./sound";
 
-const WIDTH = 480;
-const HEIGHT = 640;
-const GROUND = HEIGHT - 70;
 const BIRD_X = 130;
 const RADIUS = 15;
-/** The bird's hitbox: a circle a little inside the drawn body, so grazes are forgiven. */
+/** The bird's hitbox: a circle a little inside the drawn body, so grazes are forgiven. Every character shares it. */
 const HIT_RADIUS = 12.5;
 /** Fall speed gained per 60 Hz step; everything below advances in fixed steps, whatever the display rate. */
 const GRAVITY = 0.42;
 const FLAP = -7.6;
 const MAX_FALL = 11;
-const PIPE_W = 70;
-/** Height of the faceted point at each pillar's end. */
-const TIP = 18;
-const GAP = 165;
 const SPACING = 210;
 const SPEED = 2.6;
 const GAP_MIN = GAP / 2 + 60;
 const GAP_MAX = GROUND - GAP / 2 - 50;
 /** Steps per countdown number after resuming (3, 2, 1). */
 const COUNT_STEPS = 36;
+/** Bird positions remembered for the cosmetic flight trail. */
+const TRAIL_LENGTH = 26;
 
 type Mode = "classic" | "daily";
 type Phase = "ready" | "playing" | "paused" | "countdown" | "over";
@@ -44,7 +40,7 @@ type Hooks = {
   /** A run started; `date` is the daily course it counts for (kept even if midnight passes). */
   onStart: (date: string | null) => void;
   onOver: (score: number, date: string | null) => void;
-  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
+  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel; theme: FlutterTheme };
 };
 
 /**
@@ -128,6 +124,8 @@ function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
   let prevScroll = 0;
   let flapAt = -1000;
   let diedAt = 0;
+  // Cosmetic only: recent bird heights and the scroll at which each was recorded.
+  let trail: { y: number; s: number }[] = [];
 
   const setPhase = (next: Phase) => {
     phase = next;
@@ -150,6 +148,7 @@ function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
     prevY = birdY;
     flapQueued = false;
     runDate = null;
+    trail = [];
     hooks.onScore(0);
     setPhase("ready");
   }
@@ -183,6 +182,10 @@ function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
     prevScroll = scroll;
     prevY = birdY;
     for (const pipe of pipes) pipe.prevX = pipe.x;
+    if (phase === "ready" || phase === "playing") {
+      trail.unshift({ y: birdY, s: scroll });
+      if (trail.length > TRAIL_LENGTH) trail.pop();
+    }
     if (phase === "ready") {
       frame += 1;
       scroll += SPEED;
@@ -244,28 +247,6 @@ function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
     }
   }
 
-  function drawCrystal(c: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, up: boolean, fill: string | CanvasGradient) {
-    // A tall prism with a faceted point toward the gap (the same outline as its hitbox).
-    const tip = TIP;
-    c.fillStyle = fill;
-    c.beginPath();
-    if (up) {
-      c.moveTo(x, y + h);
-      c.lineTo(x, y + tip);
-      c.lineTo(x + w / 2, y);
-      c.lineTo(x + w, y + tip);
-      c.lineTo(x + w, y + h);
-    } else {
-      c.moveTo(x, y);
-      c.lineTo(x, y + h - tip);
-      c.lineTo(x + w / 2, y + h);
-      c.lineTo(x + w, y + h - tip);
-      c.lineTo(x + w, y);
-    }
-    c.closePath();
-    c.fill();
-  }
-
   function draw(alpha: number) {
     if (!ctx) return;
     const effects = hooks.live().effects;
@@ -281,127 +262,46 @@ function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
     ctx.rect(0, 0, WIDTH, HEIGHT);
     ctx.clip();
 
-    const sky = ctx.createLinearGradient(0, 0, 0, GROUND);
-    sky.addColorStop(0, mix(colors.background, colors.accent, colors.dark ? 0.16 : 0.1));
-    sky.addColorStop(1, mix(colors.background, colors.surface, 0.6));
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
+    const theme = hooks.live().theme;
+    const animate = effects !== "off";
+    const now = performance.now();
     const offset = prevScroll + (scroll - prevScroll) * alpha;
-    if (effects !== "off") {
-      // Distant crystal ridge, slow parallax.
-      const ridge = withAlpha(colors.accent, colors.dark ? 0.1 : 0.12);
-      const span = 120;
-      const shift = (offset * 0.25) % span;
-      const first = Math.floor((offset * 0.25) / span);
-      for (let i = -1; i < WIDTH / span + 2; i += 1) {
-        const x = i * span - shift;
-        const h = 60 + ((((i + first) * 37) % 5) + 5) % 5 * 18;
-        drawCrystal(ctx, x, GROUND - h, 46, h, true, ridge);
-        drawCrystal(ctx, x + 54, GROUND - h * 0.6, 30, h * 0.6, true, ridge);
-      }
-    }
+    drawSky(ctx, theme, offset, now, animate);
 
-    const pillar = ctx.createLinearGradient(0, 0, PIPE_W, 0);
-    pillar.addColorStop(0, mix(colors.accent, colors.background, 0.15));
-    pillar.addColorStop(0.45, mix(colors.accent, "#ffffff", colors.dark ? 0.25 : 0.12));
-    pillar.addColorStop(1, mix(colors.accent, colors.background, 0.45));
     for (const pipe of pipes) {
       const x = pipe.prevX + (pipe.x - pipe.prevX) * alpha - PIPE_W / 2;
       ctx.save();
       ctx.translate(x, 0);
-      drawCrystal(ctx, 0, -10, PIPE_W, pipe.gapY - GAP / 2 + 10, false, pillar);
-      drawCrystal(ctx, 0, pipe.gapY + GAP / 2, PIPE_W, GROUND - (pipe.gapY + GAP / 2), true, pillar);
-      ctx.strokeStyle = withAlpha("#ffffff", colors.dark ? 0.22 : 0.35);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(PIPE_W * 0.32, 0);
-      ctx.lineTo(PIPE_W * 0.32, pipe.gapY - GAP / 2 - 14);
-      ctx.moveTo(PIPE_W * 0.32, pipe.gapY + GAP / 2 + 14);
-      ctx.lineTo(PIPE_W * 0.32, GROUND);
-      ctx.stroke();
+      drawObstacle(ctx, theme, pipe.gapY, Math.round(pipe.gapY), now, animate);
       ctx.restore();
     }
 
-    // Ground.
-    ctx.fillStyle = mix(colors.surface, colors.accent, 0.18);
-    ctx.fillRect(0, GROUND, WIDTH, HEIGHT - GROUND);
-    ctx.fillStyle = mix(colors.surface, colors.accent, 0.35);
-    ctx.fillRect(0, GROUND, WIDTH, 6);
-    ctx.fillStyle = withAlpha(colors.foreground, 0.06);
-    const stripe = 28;
-    const groundShift = offset % stripe;
-    for (let x = -stripe; x < WIDTH + stripe; x += stripe) {
-      ctx.beginPath();
-      ctx.moveTo(x - groundShift, GROUND + 6);
-      ctx.lineTo(x - groundShift + 14, GROUND + 6);
-      ctx.lineTo(x - groundShift + 4, HEIGHT);
-      ctx.lineTo(x - groundShift - 10, HEIGHT);
-      ctx.fill();
+    drawGround(ctx, theme, offset);
+
+    // Flight trail: purely decorative, recorded from past bird positions.
+    if (animate && phase !== "over") {
+      const points = trail.map((p) => ({ x: BIRD_X - 6 - (offset - p.s), y: p.y }));
+      drawTrail(ctx, theme, points, now, effects === "subtle");
     }
 
-    // The gem-bird.
+    // The character: drawn around the same point and inside the same circle as the hitbox.
     const y = prevY + (birdY - prevY) * alpha;
-    const now = performance.now();
     const angle = phase === "ready" ? 0 : Math.max(-0.5, Math.min(1.2, velocity * 0.08));
     const wing = effects === "off" ? 0 : phase === "over" ? 0 : Math.sin(Math.min(1, (now - flapAt) / 220) * Math.PI) * 0.9 + (phase === "ready" ? Math.sin(now / 90) * 0.4 : 0);
     ctx.save();
     ctx.translate(BIRD_X, y);
     ctx.rotate(angle);
-    ctx.fillStyle = colors.accent2;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, RADIUS + 3, RADIUS, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Facets.
-    ctx.fillStyle = withAlpha("#ffffff", 0.35);
-    ctx.beginPath();
-    ctx.moveTo(-4, -RADIUS + 2);
-    ctx.lineTo(6, -6);
-    ctx.lineTo(-2, 2);
-    ctx.lineTo(-12, -5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = withAlpha("#000000", 0.14);
-    ctx.beginPath();
-    ctx.moveTo(-12, 4);
-    ctx.lineTo(4, 12);
-    ctx.lineTo(-6, RADIUS - 1);
-    ctx.closePath();
-    ctx.fill();
-    // Wing.
-    ctx.save();
-    ctx.translate(-5, 2);
-    ctx.rotate(-0.3 - wing);
-    ctx.fillStyle = mix(colors.accent2, "#ffffff", 0.35);
-    ctx.beginPath();
-    ctx.ellipse(-6, 0, 11, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    // Beak and eye.
-    ctx.fillStyle = "#ffc857";
-    ctx.beginPath();
-    ctx.moveTo(RADIUS + 1, -3);
-    ctx.lineTo(RADIUS + 11, 1);
-    ctx.lineTo(RADIUS + 1, 5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.arc(7, -5, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#1a1325";
-    ctx.beginPath();
-    ctx.arc(phase === "over" ? 7 : 8.5, -5, 2.4, 0, Math.PI * 2);
-    ctx.fill();
+    drawCharacter(ctx, theme, wing, phase === "over", now, animate);
     ctx.restore();
 
     if (phase !== "ready") {
+      const scenery = sceneryOf(theme);
       ctx.font = "700 54px ui-sans-serif, system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.lineWidth = 6;
-      ctx.strokeStyle = withAlpha(colors.background, 0.55);
+      ctx.strokeStyle = scenery.outline;
       ctx.strokeText(String(score), WIDTH / 2, 78);
-      ctx.fillStyle = withAlpha(colors.foreground, 0.9);
+      ctx.fillStyle = withAlpha(scenery.text, 0.9);
       ctx.fillText(String(score), WIDTH / 2, 78);
     }
 
@@ -490,11 +390,12 @@ type FlutterGame = ReturnType<typeof createFlutter>;
 const isActive = (phase: Phase) => phase === "playing" || phase === "paused" || phase === "countdown";
 
 export default function GameFlutter({ records: initialRecords }: { records: Record<string, number> }) {
-  const { play, effects, rootRef } = useArcade();
+  const { play, effects, rootRef, look } = useArcade();
+  const theme = useMemo(() => flutterTheme(look), [look]);
   const { records, submit } = useRecords("flutter", initialRecords);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<FlutterGame | null>(null);
-  const live = useRef({ play, effects });
+  const live = useRef({ play, effects, theme });
   const [phase, setPhase] = useState<Phase>("ready");
   const [score, setScore] = useState(0);
   const [mode, setMode] = useState<Mode>("classic");
@@ -509,7 +410,7 @@ export default function GameFlutter({ records: initialRecords }: { records: Reco
   }, [phase, beginRun]);
 
   useEffect(() => {
-    live.current = { play, effects };
+    live.current = { play, effects, theme };
   });
 
   const finish = useEffectEvent((final: number, date: string | null) => {

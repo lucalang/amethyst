@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { dailyDate, dailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
 import { STACKER_CLASSIC } from "@/lib/arcade";
 import type { MotionLevel } from "@/lib/preferences";
 import { mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
-import { GAME_PALETTES } from "./palettes";
+import { drawBlock, drawPerfect, drawScenery, pedestalColor, perfectDuration, sceneryInk, stackerTheme, type StackerTheme } from "./stacker-look";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import { CoinReward, useArcadeRun } from "./coin-reward";
@@ -55,7 +55,7 @@ type Hooks = {
   onScore: (score: number, streak: number, bestStreak: number) => void;
   onStart: (runDate: string | null) => void;
   onOver: (score: number, perfectStreak: number, variant: string) => void;
-  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
+  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel; theme: StackerTheme };
 };
 
 /** Distance travelled → offset that bounces between -RANGE and +RANGE. */
@@ -66,7 +66,6 @@ function pingPong(distance: number) {
 
 function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mode) {
   const ctx = canvas.getContext("2d");
-  const colors = GAME_PALETTES.stacker;
 
   let size: CanvasSize = { width: 1, height: 1, dpr: 1 };
   let mode = initialMode;
@@ -234,8 +233,6 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mod
 
   // ---- Drawing -----------------------------------------------------------------------------
 
-  const colorFor = (level: number) => mix(colors.accent, colors.accent2, (Math.sin(level * 0.28) + 1) / 2);
-
   function face(points: [number, number, number][], fill: string) {
     if (!ctx) return;
     ctx.beginPath();
@@ -250,16 +247,14 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mod
     ctx.fill();
   }
 
-  function box(cx: number, cz: number, w: number, d: number, y0: number, y1: number, color: string, flash = 0, alpha = 1) {
+  function box(cx: number, cz: number, w: number, d: number, y0: number, y1: number, color: string) {
     const x0 = cx - w / 2;
     const x1 = cx + w / 2;
     const z0 = cz - d / 2;
     const z1 = cz + d / 2;
-    const tint = (c: string) => (flash > 0 ? mix(c, "#ffffff", flash) : c);
-    const fade = (c: string) => (alpha < 1 ? withAlpha(c, alpha) : c);
-    face([[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]], fade(tint(mix(color, "#000000", 0.12))));
-    face([[x1, y1, z0], [x1, y1, z1], [x1, y0, z1], [x1, y0, z0]], fade(tint(mix(color, "#000000", 0.32))));
-    face([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], fade(tint(mix(color, "#ffffff", 0.2))));
+    face([[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]], mix(color, "#000000", 0.12));
+    face([[x1, y1, z0], [x1, y1, z1], [x1, y0, z1], [x1, y0, z0]], mix(color, "#000000", 0.32));
+    face([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], mix(color, "#ffffff", 0.2));
   }
 
   function outline(cx: number, cz: number, w: number, d: number, y: number) {
@@ -281,14 +276,15 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mod
     ctx.stroke();
   }
 
-  function drawDebris(piece: Debris) {
+  function drawDebris(piece: Debris, theme: StackerTheme, scale: number) {
+    if (!ctx) return;
     const fade = Math.max(0, 1 - Math.max(0, piece.age - 1400) / 1000);
-    box(piece.cx, piece.cz, piece.w, piece.d, piece.y, piece.y + SLAB, mix(colorFor(piece.level), colors.background, 0.15), 0, fade);
+    drawBlock(ctx, theme, { cx: piece.cx, cz: piece.cz, w: piece.w, d: piece.d, y0: piece.y, y1: piece.y + SLAB, level: piece.level, flash: 0, alpha: fade * 0.9, top: false }, scale);
   }
 
   function draw(alpha: number) {
     if (!ctx) return;
-    const effects = hooks.live().effects;
+    const { effects, theme } = hooks.live();
     const now = performance.now();
     const { width: cw, height: ch, dpr } = size;
     const camera = prevCam + (cam - prevCam) * alpha;
@@ -296,13 +292,7 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mod
     const anchor = ch * 0.44;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const lift = Math.min(1, camera / 2400);
-    const sky = ctx.createLinearGradient(0, 0, 0, ch);
-    sky.addColorStop(0, mix(colors.background, colors.accent2, 0.08 + lift * 0.14));
-    sky.addColorStop(0.6, colors.background);
-    sky.addColorStop(1, mix(colors.background, colors.surface, 0.8));
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, cw, ch);
+    drawScenery(ctx, theme, cw, ch, camera, now, effects !== "off");
 
     ctx.save();
     ctx.translate(cw / 2, anchor);
@@ -318,7 +308,7 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mod
     };
 
     // Pieces falling away behind the tower go first, those in front last.
-    for (const piece of debris) if (piece.cx + piece.cz < depth) drawDebris(piece);
+    for (const piece of debris) if (piece.cx + piece.cz < depth) drawDebris(piece, theme, scale);
 
     // A soft floor shadow, then the pedestal and the tower bottom-up.
     if (visible(0)) {
@@ -327,13 +317,13 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mod
       ctx.ellipse(0, 70, 150, 60, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    box(0, 0, BOX, BOX, -PEDESTAL, 0, mix(colors.surface, colors.accent, 0.18));
+    box(0, 0, BOX, BOX, -PEDESTAL, 0, pedestalColor(theme));
     for (let i = 1; i < tower.length; i++) {
       const block = tower[i];
       const y1 = block.level * SLAB;
       if (!visible(y1)) continue;
       const flash = block.perfect && effects !== "off" ? Math.max(0, 1 - (now - block.at) / 260) * 0.75 : 0;
-      box(block.cx, block.cz, block.w, block.d, y1 - SLAB, y1, colorFor(block.level), flash);
+      drawBlock(ctx, theme, { cx: block.cx, cz: block.cz, w: block.w, d: block.d, y0: y1 - SLAB, y1, level: block.level, flash, alpha: 1, top: i === tower.length - 1 }, scale);
     }
 
     // The top edge of the tower reads better with a thin highlight.
@@ -341,30 +331,28 @@ function createStacker(canvas: HTMLCanvasElement, hooks: Hooks, initialMode: Mod
     ctx.strokeStyle = withAlpha("#ffffff", 0.22);
     outline(below.cx, below.cz, below.w, below.d, below.level * SLAB);
 
+    const duration = perfectDuration(theme);
     for (const ring of rings) {
       if (effects === "off") break;
-      const t = (now - ring.at - ring.delay) / 520;
+      const t = (now - ring.at - ring.delay) / duration;
       if (t < 0 || t >= 1) continue;
-      const grow = effects === "full" ? ring.reach * (1 - (1 - t) ** 3) : 4;
-      ctx.lineWidth = (effects === "full" ? 2.2 : 1.6) / scale;
-      ctx.strokeStyle = withAlpha("#ffffff", (1 - t) * 0.85);
-      outline(ring.cx, ring.cz, ring.w + grow * 2, ring.d + grow * 2, ring.y);
+      drawPerfect(ctx, theme, ring, t, effects === "full", scale);
     }
 
     if (phase !== "over") {
       const { cx, cz } = moverAt(gameNow());
       const level = tower.length;
-      box(cx, cz, below.w, below.d, (level - 1) * SLAB, level * SLAB, colorFor(level));
+      drawBlock(ctx, theme, { cx, cz, w: below.w, d: below.d, y0: (level - 1) * SLAB, y1: level * SLAB, level, flash: 0, alpha: 1, top: true }, scale);
     }
 
-    for (const piece of debris) if (piece.cx + piece.cz >= depth) drawDebris(piece);
+    for (const piece of debris) if (piece.cx + piece.cz >= depth) drawDebris(piece, theme, scale);
 
     if (popup && now - popup.at < 900) {
       const t = (now - popup.at) / 900;
       const rise = effects === "off" ? 0 : t * 22;
       ctx.font = `700 ${Math.round(17 / Math.max(0.6, zoom))}px ui-sans-serif, system-ui, sans-serif`;
       ctx.textAlign = "center";
-      ctx.fillStyle = withAlpha(colors.foreground, 1 - t);
+      ctx.fillStyle = withAlpha(sceneryInk(theme), 1 - t);
       ctx.fillText(popup.text, (below.cx - below.cz) * ISO, (below.cx + below.cz) * 0.5 - popup.level * SLAB - 64 - rise);
     }
     ctx.restore();
@@ -445,11 +433,12 @@ type StackerGame = ReturnType<typeof createStacker>;
 const isActive = (phase: Phase) => phase === "playing" || phase === "paused";
 
 export default function GameStacker({ records: initialRecords }: { records: Record<string, number> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
+  const theme = useMemo(() => stackerTheme(look), [look]);
   const { records, submit } = useRecords("stacker", initialRecords);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<StackerGame | null>(null);
-  const live = useRef({ play, effects });
+  const live = useRef({ play, effects, theme });
   const [phase, setPhase] = useState<Phase>("ready");
   const [mode, setMode] = useState<Mode>("classic");
   const [runDate, setRunDate] = useState<string | null>(null);
@@ -465,7 +454,7 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
   }, [phase, beginRun]);
 
   useEffect(() => {
-    live.current = { play, effects };
+    live.current = { play, effects, theme };
   });
 
   const finish = useEffectEvent((final: number, perfectStreak: number, variant: string) => {

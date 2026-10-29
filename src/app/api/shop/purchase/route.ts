@@ -1,10 +1,14 @@
 import { z } from "zod";
-import { COSMETIC_IDS, type CosmeticId } from "@/lib/cosmetics";
+import { COSMETIC_IDS } from "@/lib/cosmetics";
+import { GAME_COSMETIC_IDS } from "@/lib/game-cosmetics";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
+
+const ITEM_IDS = [...COSMETIC_IDS, ...GAME_COSMETIC_IDS] as [string, ...string[]];
 
 const purchaseSchema = z
   .object({
-    item: z.enum(COSMETIC_IDS as [CosmeticId, ...CosmeticId[]]),
+    /** An Arcade Shop cosmetic or a minigame cosmetic; the database still checks it exists and is on sale. */
+    item: z.enum(ITEM_IDS),
     /** The price the buyer confirmed; the purchase fails instead of charging a different amount. */
     price: z.number().int().positive(),
   })

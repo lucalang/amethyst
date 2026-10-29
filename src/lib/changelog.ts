@@ -42,6 +42,46 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-11-game-shops",
+    date: "2026-11-11",
+    title: "A shop for every Arcade game",
+    intro: "Each of the six Arcade games now has its own shop of cosmetics, bought with the coins you earn by playing. They change how a game looks, never how it plays.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Game shops", text: "Skins, themes, effects, fonts and art styles for Snake, 2048, Flutter, Sudoku, Fruit Slice and Tower Stacker." },
+      { kind: "new", feature: "Live previews", text: "Try anything on in an animated preview, and combine items across categories, before spending a coin." },
+      { kind: "new", feature: "Shop button in every game", text: "Open the game’s shop mid-round: the game pauses and picks up exactly where you left it, with your new look applied." },
+      { kind: "improved", feature: "Arcade Shop", text: "Six new buttons take you straight to each game’s shop." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Game shops",
+          body: "Every game has its own shop with several categories, each holding seven items plus a free default you can always switch back to.",
+          points: [
+            "Snake: colors & patterns, map themes, eating & growth effects, and pixel, hand-drawn, clay and neon art styles.",
+            "2048: tile colors & materials, board themes, number fonts, merge effects, and retro, candy, glass and wooden art styles.",
+            "Flutter: playable characters, flight trails, obstacle skins and background scenery.",
+            "Sudoku: board themes (including newspaper, notebook and chalkboard), number fonts, cell & grid styles and highlight colors.",
+            "Fruit Slice: blades & trails, fruit skins, backgrounds, juice & particle effects, and cartoon, pixel and watercolor art styles.",
+            "Tower Stacker: block colors & materials, tower themes (including skyscraper, toys and cake), scenery and perfect-placement effects.",
+          ],
+          where: "Arcade → any game → Shop, or Arcade Shop → Game shops",
+          link: { href: "/arcade/shop", label: "Open the Arcade Shop" },
+        },
+        {
+          title: "Buying, equipping and previews",
+          body: "Picking an item only previews it. Buying needs a separate confirmation, and every purchase is a permanent unlock: equip it, switch to another or restore the default any time for free. Your items and choices are saved to your account, so they follow you to every device.",
+          points: [
+            "Each item shows whether it’s available, owned or equipped, and how many more coins you need if you can’t afford it yet.",
+            "Art styles and other items layer together, so each thing you buy stays visible.",
+            "Cosmetics never change hitboxes, speed, scoring, rewards or daily challenges, and they follow your motion settings.",
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-10-sudoku-fruit-stacker",
     date: "2026-11-10",
     title: "Daily Sudoku, Fruit Slice modes and a new Tower Stacker",

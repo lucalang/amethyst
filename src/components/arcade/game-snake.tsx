@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Ghost, Layers, Pause, Play, RotateCcw, Settings2, Shuffle } from "lucide-react";
 import { toast } from "sonner";
@@ -14,13 +14,15 @@ import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useAr
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { LAYER_HUES, START_LENGTH, createSnake, sameSetup, type Direction, type OverReason, type Phase, type SnakeGame, type SnakeStatus } from "./snake-engine";
 import { ModeIcon, SnakeSetupPanel, describeSetup, setupTitle } from "./snake-setup";
+import { snakeTheme } from "./snake-look";
 
 const OVER_TITLES: Record<OverReason, string> = { crash: "Game over", time: "Time's up!", cleared: "Board cleared!", boom: "Kaboom!" };
 const ARROWS: Record<Direction, typeof ArrowUp> = { up: ArrowUp, right: ArrowRight, down: ArrowDown, left: ArrowLeft };
 const NO_STATUS: SnakeStatus = { layer: null, scrambled: null, ghost: null };
 
 export default function GameSnake({ records: initialRecords }: { records: Record<string, number> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
+  const theme = useMemo(() => snakeTheme(look), [look]);
   const settings = useSettings();
   const router = useRouter();
   const { records, submit } = useRecords("snake", initialRecords);
@@ -28,7 +30,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
   const panelRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<SnakeGame | null>(null);
   const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
-  const live = useRef({ play, effects });
+  const live = useRef({ play, effects, theme });
   const [setup, setSetup] = useState<SnakeSetup>(settings.arcadeSnake);
   const initialSetup = useRef(setup);
   const pendingSave = useRef<{ timer: number; setup: SnakeSetup } | null>(null);
@@ -47,7 +49,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
   }, [phase, beginRun]);
 
   useEffect(() => {
-    live.current = { play, effects };
+    live.current = { play, effects, theme };
   });
 
   const finish = useEffectEvent((final: number, why: OverReason) => {
