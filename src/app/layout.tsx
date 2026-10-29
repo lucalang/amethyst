@@ -21,7 +21,7 @@ const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStar
 
 export const metadata: Metadata = {
   title: { default: "Amethyst Archives", template: "%s · Amethyst Archives" },
-  description: "Your private archive of anime and game workspaces: notes, checklists and progress.",
+  description: "A private place to organize anything: collections in Archive, tasks in To Do and games in Arcade.",
   applicationName: "Amethyst Archives",
   robots: { index: false, follow: false },
 };

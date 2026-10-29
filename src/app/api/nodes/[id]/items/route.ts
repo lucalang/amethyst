@@ -24,7 +24,14 @@ export async function POST(request: Request, { params }: Params) {
   if ("response" in parsed) return parsed.response;
 
   const body = parsed.data;
-  const { data, error } = "tasks" in body
+  const { data, error } = "tasks" in body && body.batchId
+    ? await prepared.ctx.supabase.rpc("add_task_batch", {
+        p_batch_id: body.batchId,
+        p_target_id: prepared.id,
+        p_kind: "checklist",
+        p_tasks: body.tasks,
+      })
+    : "tasks" in body
     ? await prepared.ctx.supabase
         .rpc("add_checklist_tasks", {
           p_file_id: prepared.id,
@@ -33,9 +40,10 @@ export async function POST(request: Request, { params }: Params) {
         })
         .select(ITEM_COLUMNS)
     : await prepared.ctx.supabase.rpc("add_checklist_items", { p_file_id: prepared.id, p_labels: body.labels }).select(ITEM_COLUMNS);
-  if (error) return dbError(error);
+  if (error) return dbError(error, "Could not add tasks. Try again in a moment.");
   const achievementUnlocks = await refreshArchiveAchievements(prepared.ctx);
-  return jsonResponse({ items: (data ?? []).map((row) => toChecklistItem(row)).sort((a, b) => a.position - b.position), achievementUnlocks }, { status: 201 });
+  const rows = (data ?? []) as unknown as Parameters<typeof toChecklistItem>[0][];
+  return jsonResponse({ items: rows.map((row) => toChecklistItem(row)).sort((a, b) => a.position - b.position), achievementUnlocks }, { status: 201 });
 }
 
 /** Persist a complete item order. */

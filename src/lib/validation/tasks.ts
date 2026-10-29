@@ -54,10 +54,11 @@ export type TaskLayoutItem = z.infer<typeof layoutItemSchema>;
 export const addTasksSchema = z
   .object({
     listId: z.uuid(),
+    batchId: z.uuid().optional(),
     tasks: z
       .array(z.object({ title: taskTitleSchema, completed: z.boolean() }).strict())
       .min(1, "Enter at least one task.")
-      .max(MAX_ITEMS_PER_REQUEST, `Add at most ${MAX_ITEMS_PER_REQUEST} tasks at once.`),
+      .max(MAX_ITEMS_PER_REQUEST, `Each batch can contain at most ${MAX_ITEMS_PER_REQUEST} tasks.`),
     important: z.boolean().optional(),
     dueDate: dueDateSchema.nullable().optional(),
     myDay: dueDateSchema.nullable().optional(),

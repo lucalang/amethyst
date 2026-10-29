@@ -51,7 +51,7 @@ export function IconPicker({ id, value, onChange, accent, disabled }: { id: stri
             disabled={disabled}
             style={style}
             className={cn(
-              "flex h-11 min-w-0 flex-1 items-center gap-3 rounded-md border border-white/[0.12] bg-black/50 px-3 text-left text-sm transition-colors outline-none hover:border-amethyst/40 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+              "flex h-10 min-w-0 flex-1 items-center gap-3 rounded-md border border-input bg-surface px-3 text-left text-sm transition-colors outline-none hover:border-amethyst/40 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50",
             )}
           >
             <span aria-hidden className={cn("grid size-7 shrink-0 place-items-center rounded-md border", style ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-[var(--ca)]" : "border-amethyst/25 bg-amethyst/10 text-amethyst")}>
@@ -103,7 +103,7 @@ export function IconPicker({ id, value, onChange, accent, disabled }: { id: stri
           </div>
         </PopoverContent>
       </Popover>
-      <Button type="button" variant="ghost" size="icon" className="size-11 shrink-0 text-muted-foreground" aria-label="Reset icon to default" title="Default icon" disabled={disabled || !value} onClick={() => onChange(null)}>
+      <Button type="button" variant="ghost" size="icon" className="size-10 shrink-0 text-muted-foreground" aria-label="Reset icon to default" title="Default icon" disabled={disabled || !value} onClick={() => onChange(null)}>
         <RotateCcw aria-hidden />
       </Button>
     </div>
@@ -156,7 +156,7 @@ export function AccentPicker({ id, value, onChange, disabled }: { id: string; va
         })}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <label className="relative grid size-11 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-md border border-white/[0.12] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring" title="Pick any color">
+        <label className="relative grid size-10 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-md border border-input has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring" title="Pick any color">
           <span className="sr-only">Pick any color</span>
           <span aria-hidden className="absolute inset-1.5 rounded-sm" style={{ background: value ?? "conic-gradient(#f87171,#fbbf24,#a3e635,#2dd4bf,#38bdf8,#a57cff,#f472a8,#f87171)" }} />
           <input type="color" value={value ?? "#a57cff"} disabled={disabled} onChange={(event) => onChange(event.target.value.toLowerCase())} className="absolute inset-0 cursor-pointer opacity-0" />
@@ -179,9 +179,9 @@ export function AccentPicker({ id, value, onChange, disabled }: { id: string; va
           aria-invalid={invalid}
           aria-describedby={`${id}-hint`}
           disabled={disabled}
-          className="h-11 w-28 border-white/[0.12] bg-black/50 font-mono text-sm"
+          className="w-28 font-mono text-sm"
         />
-        <Button type="button" variant="ghost" className="h-11 gap-2 px-3 text-muted-foreground" disabled={disabled || !value} onClick={() => onChange(null)}>
+        <Button type="button" variant="ghost" className="gap-2 px-3 text-muted-foreground" disabled={disabled || !value} onClick={() => onChange(null)}>
           <RotateCcw aria-hidden className="size-4" /> Default
         </Button>
         {readable ? (
@@ -198,7 +198,7 @@ export function AccentPicker({ id, value, onChange, disabled }: { id: string; va
           ? "Use a hex color like #a57cff."
           : readable && readable !== value
             ? "Lightened slightly on dark surfaces so text and focus rings stay readable."
-            : "Used for this collection’s icon, highlights and focus rings only."}
+            : "Used for icons, highlights and focus rings."}
       </p>
     </div>
   );

@@ -6,6 +6,7 @@ const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 export const NODE_KINDS = ["folder", "note", "checklist"] as const;
 export const MAX_NOTE_LENGTH = 200_000;
 export const MAX_ITEMS_PER_REQUEST = 500;
+export const MAX_TASKS_PER_ADD = 10_000;
 
 export const nodeNameSchema = z
   .string()
@@ -92,10 +93,11 @@ export const taskInputSchema = z.object({ label: itemLabelSchema, checked: z.boo
 
 export const addTasksSchema = z
   .object({
+    batchId: z.uuid().optional(),
     tasks: z
       .array(taskInputSchema)
       .min(1, "Enter at least one task.")
-      .max(MAX_ITEMS_PER_REQUEST, `Add at most ${MAX_ITEMS_PER_REQUEST} tasks at once.`),
+      .max(MAX_ITEMS_PER_REQUEST, `Each batch can contain at most ${MAX_ITEMS_PER_REQUEST} tasks.`),
   })
   .strict();
 

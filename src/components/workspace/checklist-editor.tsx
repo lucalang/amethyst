@@ -257,14 +257,13 @@ export function ChecklistEditor({
   }
 
   /** Append several tasks, keeping their completion state; returns an error message on failure. */
-  async function addBulk(tasks: TaskInput[]): Promise<string | null> {
+  async function addBulk(tasks: TaskInput[], batchId: string): Promise<string | null> {
     const result = await run("Tasks not added", () =>
-      apiFetch<{ items: ChecklistItem[] }>(`/api/nodes/${fileId}/items`, { method: "POST", json: { tasks } }),
+      apiFetch<{ items: ChecklistItem[] }>(`/api/nodes/${fileId}/items`, { method: "POST", json: { tasks, batchId } }),
     );
     if (!result.ok) return result.message;
-    setItems((current) => byPosition([...current, ...result.value.items]));
+    setItems((current) => byPosition([...current.filter((item) => !result.value.items.some((added) => added.id === item.id)), ...result.value.items]));
     addFresh(result.value.items.map((item) => item.id));
-    toast.success(`Added ${result.value.items.length} ${result.value.items.length === 1 ? "task" : "tasks"} to “${name}”`);
     return null;
   }
 

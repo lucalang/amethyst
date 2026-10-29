@@ -10,8 +10,16 @@ export async function POST(request: Request) {
   if (ctx instanceof Response) return ctx;
   const parsed = await parseJson(request, addTasksSchema);
   if ("response" in parsed) return parsed.response;
-  const { listId, tasks, important, dueDate, myDay } = parsed.data;
-  const { data, error } = await ctx.supabase.rpc("add_tasks", {
+  const { listId, tasks, important, dueDate, myDay, batchId } = parsed.data;
+  const { data, error } = batchId ? await ctx.supabase.rpc("add_task_batch", {
+    p_batch_id: batchId,
+    p_target_id: listId,
+    p_kind: "todo",
+    p_tasks: tasks.map((task) => ({ label: task.title, checked: task.completed })),
+    p_important: important ?? false,
+    p_due_date: dueDate ?? null,
+    p_my_day: myDay ?? null,
+  }) : await ctx.supabase.rpc("add_tasks", {
     p_list_id: listId,
     p_titles: tasks.map((task) => task.title),
     p_completed: tasks.map((task) => task.completed),
@@ -20,5 +28,6 @@ export async function POST(request: Request) {
     p_my_day: myDay ?? null,
   });
   if (error) return dbError(error, "Could not add tasks.");
-  return jsonResponse({ tasks: data.map(mapTask) }, { status: 201 });
+  const rows = data as unknown as Parameters<typeof mapTask>[0][];
+  return jsonResponse({ tasks: rows.map(mapTask) }, { status: 201 });
 }

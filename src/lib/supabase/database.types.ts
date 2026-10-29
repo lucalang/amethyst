@@ -507,6 +507,9 @@ isOneToOne: false
 "set_task_layout":
 { Args: { "p_layout": Json }; Returns: undefined
                            },
+"add_task_batch":
+{ Args: { "p_batch_id": string; "p_target_id": string; "p_kind": "todo" | "checklist"; "p_tasks": Json; "p_important"?: boolean; "p_due_date"?: string | null; "p_my_day"?: string | null }; Returns: Json
+                           },
 "delete_task_group":
 { Args: { "p_group_id": string }; Returns: undefined
                            },

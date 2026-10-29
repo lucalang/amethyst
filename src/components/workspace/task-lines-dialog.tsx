@@ -7,14 +7,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { itemLabelSchema, MAX_ITEMS_PER_REQUEST, parseTaskLines, type TaskInput } from "@/lib/validation/workspace";
+import { itemLabelSchema, MAX_ITEMS_PER_REQUEST, MAX_TASKS_PER_ADD, parseTaskLines, type TaskInput } from "@/lib/validation/workspace";
+import { errorMessage } from "./client-utils";
 
 const PREVIEW_LIMIT = 6;
 
 function problemFor(tasks: TaskInput[]): string | null {
-  if (tasks.length > MAX_ITEMS_PER_REQUEST) return `Add at most ${MAX_ITEMS_PER_REQUEST} tasks at once.`;
+  if (tasks.length > MAX_TASKS_PER_ADD) return `Add up to ${MAX_TASKS_PER_ADD.toLocaleString("en")} tasks at a time. Split this addition into smaller parts.`;
   const index = tasks.findIndex((task) => !itemLabelSchema.safeParse(task.label).success);
-  if (index >= 0) return `Task ${index + 1} is too long. Titles can be at most 500 characters.`;
+  if (index >= 0) return `Task ${index + 1}: ${itemLabelSchema.safeParse(tasks[index].label).error?.issues[0]?.message ?? "Check this title."}`;
   return null;
 }
 
@@ -30,19 +31,25 @@ export function TaskLinesDialog({
   confirmLabel,
   onConfirm,
   onCloseAutoFocus,
+  prepend = false,
+  initialText = "",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
   confirmLabel: string;
-  onConfirm: (tasks: TaskInput[]) => Promise<string | null>;
+  onConfirm: (tasks: TaskInput[], batchId: string) => Promise<string | null>;
   onCloseAutoFocus?: (event: Event) => void;
+  prepend?: boolean;
+  initialText?: string;
 }) {
   const id = useId();
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ saved: number; total: number } | null>(null);
+  const retry = useRef<{ signature: string; id: string } | null>(null);
   const submitting = useRef(false);
   const tasks = useMemo(() => parseTaskLines(text), [text]);
   const problem = problemFor(tasks);
@@ -53,6 +60,8 @@ export function TaskLinesDialog({
     if (!next) {
       setText("");
       setError(null);
+      setProgress(null);
+      retry.current = null;
     }
     onOpenChange(next);
   }
@@ -62,14 +71,30 @@ export function TaskLinesDialog({
     submitting.current = true;
     setPending(true);
     setError(null);
+    let remaining = tasks;
+    let saved = progress?.saved ?? 0;
+    const total = saved + remaining.length;
+    setProgress({ saved, total });
     try {
-      const failure = await onConfirm(tasks);
-      if (failure) {
-        setError(failure);
-        return;
+      while (remaining.length) {
+        const batch = prepend ? remaining.slice(-MAX_ITEMS_PER_REQUEST) : remaining.slice(0, MAX_ITEMS_PER_REQUEST);
+        const signature = JSON.stringify(batch);
+        if (retry.current?.signature !== signature) retry.current = { signature, id: crypto.randomUUID() };
+        const failure = await onConfirm(batch, retry.current.id);
+        if (failure) {
+          setError(`${saved.toLocaleString("en")} of ${total.toLocaleString("en")} tasks confirmed saved. ${failure} Retry to safely finish the remaining tasks.`);
+          return;
+        }
+        retry.current = null;
+        saved += batch.length;
+        remaining = prepend ? remaining.slice(0, -batch.length) : remaining.slice(batch.length);
+        setText(remaining.map((task) => `- [${task.checked ? "x" : " "}] ${task.label}`).join("\n"));
+        setProgress({ saved, total });
       }
       submitting.current = false;
       close(false);
+    } catch (caught) {
+      setError(`${saved.toLocaleString("en")} of ${total.toLocaleString("en")} tasks confirmed saved. ${errorMessage(caught)} Retry to safely finish the remaining tasks.`);
     } finally {
       submitting.current = false;
       setPending(false);
@@ -79,7 +104,8 @@ export function TaskLinesDialog({
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
-        className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[32rem]"
+        className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto rounded-lg border border-border bg-popover p-6 sm:max-w-[32rem]"
+        showCloseButton={!pending}
         onCloseAutoFocus={onCloseAutoFocus}
       >
         <DialogHeader className="flex-row items-center gap-3.5">
@@ -103,7 +129,7 @@ export function TaskLinesDialog({
             <Textarea
               id={`${id}-lines`}
               value={text}
-              onChange={(event) => { setText(event.target.value); setError(null); }}
+              onChange={(event) => { setText(event.target.value); setError(null); setProgress(null); }}
               onKeyDown={(event) => {
                 if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
                   event.preventDefault();
@@ -111,7 +137,7 @@ export function TaskLinesDialog({
                 }
               }}
               placeholder={"Buy groceries\n- [ ] Call the library\n- [x] Return the books"}
-              className="max-h-[45vh] min-h-36 resize-none overflow-y-auto border-white/[0.12] bg-black/50 px-3.5 py-3 font-mono text-[13px] leading-6 placeholder:text-muted-foreground/45 md:text-[13px]"
+              className="max-h-[35dvh] min-h-36 resize-none overflow-y-auto border-input bg-background/50 px-3.5 py-3 font-mono text-[13px] leading-6 placeholder:text-muted-foreground/60 md:text-[13px]"
               autoFocus
               spellCheck={false}
               aria-invalid={Boolean(problem || error)}
@@ -120,16 +146,18 @@ export function TaskLinesDialog({
             />
           </div>
           <div id={`${id}-summary`} aria-live="polite" className="min-w-0 space-y-2">
+            <p className="text-xs text-muted-foreground">Up to {MAX_TASKS_PER_ADD.toLocaleString("en")} tasks per addition, saved in batches of {MAX_ITEMS_PER_REQUEST}.</p>
+            {progress ? <p role="status" className="text-sm tabular-nums">{progress.saved.toLocaleString("en")} of {progress.total.toLocaleString("en")} tasks saved{pending ? "..." : "."}</p> : null}
             <p className={cn("text-xs", tasks.length ? "text-foreground/85" : "text-muted-foreground")}>
               {tasks.length === 0
                 ? "Nothing to add yet. Blank lines are skipped."
                 : `${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} will be added${completed ? ` (${completed} already completed)` : ""}.`}
             </p>
             {tasks.length > 0 && !problem ? (
-              <ul className="space-y-1 rounded-md border border-white/[0.06] bg-black/30 px-3 py-2">
+              <ul className="space-y-1 rounded-md border border-border bg-muted/30 px-3 py-2">
                 {tasks.slice(0, PREVIEW_LIMIT).map((task, index) => (
                   <li key={index} className="flex min-w-0 items-center gap-2 text-xs leading-5">
-                    <span aria-hidden className={cn("grid size-3.5 shrink-0 place-items-center rounded-[4px] border", task.checked ? "border-amethyst/60 bg-amethyst/80 text-black" : "border-white/25")}>
+                    <span aria-hidden className={cn("grid size-3.5 shrink-0 place-items-center rounded-[4px] border", task.checked ? "border-primary bg-primary text-primary-foreground" : "border-input")}>
                       {task.checked ? <Check className="size-2.5" strokeWidth={3} /> : null}
                     </span>
                     <span className={cn("truncate", task.checked && "text-muted-foreground line-through")}>{task.label}</span>
@@ -146,11 +174,11 @@ export function TaskLinesDialog({
               {problem ?? error}
             </p>
           ) : null}
-          <DialogFooter className="-mx-6 -mb-6 gap-2 rounded-b-lg border-white/[0.07] bg-white/[0.015] px-6 py-4">
+          <DialogFooter className="-mx-6 -mb-6 gap-2 rounded-b-lg border-border bg-muted/30 px-6 py-4">
             <Button type="button" variant="ghost" className="h-10 px-4 text-muted-foreground" disabled={pending} onClick={() => close(false)}>Cancel</Button>
             <Button type="submit" className="h-10 gap-2 px-4" disabled={pending || tasks.length === 0 || Boolean(problem)}>
               {pending ? <Loader2 aria-hidden className="animate-spin" /> : <ListPlus aria-hidden />}
-              {confirmLabel}
+              {error ? "Retry remaining" : confirmLabel}
               {tasks.length ? <span className="tabular-nums opacity-80">({tasks.length})</span> : null}
             </Button>
           </DialogFooter>

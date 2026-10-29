@@ -45,7 +45,7 @@ export async function parseJson<T extends z.ZodType>(
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     const first = parsed.error.issues[0];
-    const message = first ? `${first.path.length ? `${first.path.join(".")}: ` : ""}${first.message}` : "Request validation failed.";
+    const message = first?.message ?? "Check the highlighted fields and try again.";
     return { response: apiError(422, "invalid_input", message, parsed.error.issues) };
   }
   return { data: parsed.data };
@@ -70,7 +70,16 @@ const HINTED: Record<string, number> = {
 /** Map a PostgREST/Postgres error to a safe client response without leaking internals. */
 export function dbError(error: { code?: string; message: string; hint?: string | null }, fallback = "Database request failed.") {
   if (error.hint && error.hint in HINTED) return apiError(HINTED[error.hint], error.hint, error.message);
-  if (error.code === "22023" || error.code === "23514") return apiError(422, "rejected", collectionWording(error.message));
+  if (error.code === "22023") return apiError(422, "rejected", collectionWording(error.message));
+  if (error.code === "23514") {
+    if (/task_(lists|groups)_name_valid/.test(error.message)) {
+      return apiError(422, "invalid_name", "Use a name between 1 and 120 characters, without line breaks. Spaces between words are allowed.");
+    }
+    if (/(tasks|task_steps)_title_valid/.test(error.message)) {
+      return apiError(422, "invalid_title", "Use a task title between 1 and 500 characters, without line breaks.");
+    }
+    return apiError(422, "rejected", "These changes could not be saved. Check your entries and try again.");
+  }
   if (error.code === "23505") return apiError(409, "conflict", "That already exists.");
   if (error.code === "23503") return apiError(404, "not_found", "A referenced item no longer exists. Reload and try again.");
   if (error.code === "42501") return apiError(403, "forbidden", "Not allowed.");

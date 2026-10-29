@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { TaskList } from "@/lib/tasks/model";
 import { taskNameSchema } from "@/lib/validation/tasks";
+import { ApiError } from "@/lib/api-client";
 import { errorMessage } from "@/components/workspace/client-utils";
 import { useTasks } from "./store";
 import { useTasksNav } from "./nav";
@@ -43,13 +44,16 @@ function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onC
   const [icon, setIcon] = useState<string | null>(editing?.icon ?? null);
   const [accent, setAccent] = useState<string | null>(editing?.accent ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (busy) return;
+    setNameError(null);
     const parsed = taskNameSchema.safeParse(name);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Enter a name.");
+      setNameError(parsed.error.issues[0]?.message ?? "Enter a name.");
       return;
     }
     setBusy(true);
@@ -66,13 +70,14 @@ function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onC
       }
       onClose();
     } catch (caught) {
-      setError(errorMessage(caught));
+      if (caught instanceof ApiError && (caught.field === "name" || caught.code === "invalid_name")) setNameError(caught.message);
+      else setError(errorMessage(caught));
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-4">
+    <form onSubmit={submit} className="grid gap-4" aria-busy={busy}>
       <DialogHeader>
         <DialogTitle>{editing ? "Edit list" : "New list"}</DialogTitle>
         <DialogDescription>Name the list and optionally give it an icon and color.</DialogDescription>
@@ -84,18 +89,20 @@ function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onC
           value={name}
           autoFocus
           maxLength={120}
-          onChange={(event) => setName(event.target.value)}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? "task-list-error" : undefined}
-          placeholder="e.g. Groceries"
+          disabled={busy}
+          onChange={(event) => { setName(event.target.value); setNameError(null); setError(null); }}
+          aria-invalid={nameError ? true : undefined}
+          aria-describedby={nameError ? "task-list-name-error" : undefined}
+          placeholder="e.g. Weekend plans"
         />
+        {nameError ? <p id="task-list-name-error" role="alert" className="text-sm text-destructive">{nameError}</p> : null}
       </div>
       <div className="grid gap-1.5">
         <Label htmlFor="task-list-icon">Icon</Label>
         <IconPicker id="task-list-icon" value={icon} onChange={setIcon} accent={accent} disabled={busy} />
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor="task-list-accent">Color</Label>
+        <Label id="task-list-accent-label" htmlFor="task-list-accent">Color</Label>
         <AccentPicker id="task-list-accent" value={accent} onChange={setAccent} disabled={busy} />
       </div>
       {error ? (
@@ -104,7 +111,7 @@ function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onC
         </p>
       ) : null}
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
           Cancel
         </Button>
         <Button type="submit" disabled={busy}>
@@ -130,13 +137,16 @@ function GroupForm({ state, onClose }: { state: NonNullable<GroupDialogState>; o
   const { actions, sidebar } = useTasks();
   const [name, setName] = useState(state.mode === "rename" ? state.name : "");
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    if (busy) return;
+    setNameError(null);
     const parsed = taskNameSchema.safeParse(name);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Enter a name.");
+      setNameError(parsed.error.issues[0]?.message ?? "Enter a name.");
       return;
     }
     setBusy(true);
@@ -162,13 +172,14 @@ function GroupForm({ state, onClose }: { state: NonNullable<GroupDialogState>; o
       }
       onClose();
     } catch (caught) {
-      setError(errorMessage(caught));
+      if (caught instanceof ApiError && (caught.field === "name" || caught.code === "invalid_name")) setNameError(caught.message);
+      else setError(errorMessage(caught));
       setBusy(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-4">
+    <form onSubmit={submit} className="grid gap-4" aria-busy={busy}>
       <DialogHeader>
         <DialogTitle>{state.mode === "rename" ? "Rename group" : "New group"}</DialogTitle>
         <DialogDescription>Groups keep related lists together in the sidebar.</DialogDescription>
@@ -180,10 +191,13 @@ function GroupForm({ state, onClose }: { state: NonNullable<GroupDialogState>; o
           value={name}
           autoFocus
           maxLength={120}
-          onChange={(event) => setName(event.target.value)}
-          aria-invalid={error ? true : undefined}
-          placeholder="e.g. Home"
+          disabled={busy}
+          onChange={(event) => { setName(event.target.value); setNameError(null); setError(null); }}
+          aria-invalid={nameError ? true : undefined}
+          aria-describedby={nameError ? "task-group-name-error" : undefined}
+          placeholder="e.g. Personal projects"
         />
+        {nameError ? <p id="task-group-name-error" role="alert" className="text-sm text-destructive">{nameError}</p> : null}
       </div>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
@@ -191,7 +205,7 @@ function GroupForm({ state, onClose }: { state: NonNullable<GroupDialogState>; o
         </p>
       ) : null}
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
           Cancel
         </Button>
         <Button type="submit" disabled={busy}>

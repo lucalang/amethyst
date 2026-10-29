@@ -42,6 +42,48 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-29-task-quality",
+    date: "2026-10-29",
+    title: "Larger task additions and clearer forms",
+    intro: "Add longer task lists with visible progress, use natural list names, and get clearer feedback when something needs attention.",
+    icon: "tasks",
+    highlights: [
+      { kind: "improved", feature: "Multi Add", text: "Add up to 10,000 tasks at a time in To Do or entry checklists, saved in batches of 500 with visible progress." },
+      { kind: "improved", feature: "List names", text: "Multi-word names stay separate from list links. Surrounding whitespace is trimmed and empty names are rejected." },
+      { kind: "fixed", feature: "Helpful errors", text: "Name errors appear beside the field. Connection and server failures keep your input and no longer show database details." },
+      { kind: "improved", feature: "Consistent controls", text: "Aligned form controls, theme-aware borders and clearer dialogs, plus sign-in wording that reflects Archive, To Do and Arcade." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Multi Add, without the 500-task ceiling",
+          body: "Paste up to 10,000 tasks per addition. Tasks are saved in batches of 500, with a running saved count. Task order and completed markers are preserved in both To Do and entry checklists.",
+          points: [
+            "If a batch fails, the dialog keeps the unfinished tasks and shows how many are confirmed saved.",
+            "Retry remaining safely reuses the failed batch rather than adding it twice, even if its earlier response was lost.",
+            "Split additions larger than 10,000 tasks into separate parts. Each title can contain up to 500 characters.",
+          ],
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+        {
+          title: "Names are names, not addresses",
+          body: "Use names such as Weekend plans or Books to read. Surrounding whitespace is trimmed on save, spaces between words are kept, and names must contain 1–120 characters without line breaks. Existing lists and their direct links are unchanged.",
+          link: { href: "/tasks", label: "Open your lists" },
+        },
+        {
+          title: "A more consistent interface",
+          body: "Default buttons, inputs and selectors have matching heights, with consistent focus and validation styling. Multi Add and list dialogs work more comfortably on small screens and across themes. Sign-in and page descriptions now reflect organizing anything across Archive, To Do and Arcade.",
+        },
+      ],
+      fixed: [
+        {
+          title: "Feedback you can act on",
+          body: "List and group name validation appears next to the name field, without losing what you typed. Connection failures and server problems have separate messages. Database constraint details stay out of user-facing errors.",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-03-hub",
     date: "2026-11-03",
     title: "A Home hub, and a calmer To Do",

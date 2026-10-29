@@ -316,17 +316,17 @@ function useStoreValue(userId: string, initial: TaskChanges) {
     return {
       pull: () => schedulePull(0),
 
-      async addTasks(listId: string, items: { title: string; completed: boolean }[], extras: { important?: boolean; dueDate?: string | null; myDay?: string | null } = {}) {
+      async addTasks(listId: string, items: { title: string; completed: boolean }[], extras: { important?: boolean; dueDate?: string | null; myDay?: string | null } = {}, batchId?: string) {
         rememberLastList(userId, listId);
-        const batch = items.map((item, offset) => ({ key: `${Date.now()}-${offset}-${Math.random()}`, listId, title: item.title }));
+        const batch = items.slice(0, 6).map((item, offset) => ({ key: `${Date.now()}-${offset}-${Math.random()}`, listId, title: item.title }));
         setGhosts((current) => [...batch, ...current]);
         try {
-          const result = await enqueue(() => apiFetch<{ tasks: Task[] }>("/api/tasks", { method: "POST", json: { listId, tasks: items, ...extras } }));
+          const result = await enqueue(() => apiFetch<{ tasks: Task[] }>("/api/tasks", { method: "POST", json: { listId, tasks: items, batchId, ...extras } }));
           commit((current) => applyPatch(current, { tasks: index(result.tasks) }));
           return null;
         } catch (error) {
           const message = errorMessage(error);
-          toast.error(items.length > 1 ? "Tasks not added" : "Task not added", { description: message });
+          if (!batchId) toast.error(items.length > 1 ? "Tasks not added" : "Task not added", { description: message });
           return message;
         } finally {
           const keys = new Set(batch.map((ghost) => ghost.key));

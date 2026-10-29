@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <AuthShell
       title="Welcome back"
-      description="Sign in to your private anime and game workspaces."
+      description="Your private place to organize anything. Return to Archive, To Do and Arcade."
       footer={
         <>
           New to Amethyst Archives?{" "}

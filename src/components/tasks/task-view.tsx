@@ -47,7 +47,7 @@ import {
 } from "@/lib/tasks/model";
 import { cn } from "@/lib/utils";
 import { taskNameSchema } from "@/lib/validation/tasks";
-import { parseTaskLines } from "@/lib/validation/workspace";
+import { MAX_ITEMS_PER_REQUEST, parseTaskLines } from "@/lib/validation/workspace";
 import { DeleteListDialog, ListDialog, type ListDialogState } from "./list-dialogs";
 import { useTasksNav } from "./nav";
 import { ListGlyph, SMART_ICONS } from "./sidebar";
@@ -479,6 +479,10 @@ function QuickAdd({ target }: { target: AddTarget }) {
   async function submit() {
     const items = parseTaskLines(draft).map((line) => ({ title: line.label, completed: line.checked }));
     if (items.length === 0) return;
+    if (items.length > MAX_ITEMS_PER_REQUEST) {
+      setBulkOpen(true);
+      return;
+    }
     const text = draft;
     setDraft("");
     const error = await actions.addTasks(listId, items, target.extras);
@@ -564,18 +568,20 @@ function QuickAdd({ target }: { target: AddTarget }) {
         </div>
       ) : null}
       <ListDialog state={listDialog} onClose={() => setListDialog(null)} />
-      <TaskLinesDialog
+      {bulkOpen ? <TaskLinesDialog
         open={bulkOpen}
-        onOpenChange={setBulkOpen}
+        initialText={draft}
+        onOpenChange={(open) => { setBulkOpen(open); if (!open) setDraft(""); }}
+        prepend
         title="Add multiple tasks"
         description={`One task per line, added to ${destination.name}. Lines starting with “- [x]” are added as completed; list markers are removed.`}
         confirmLabel="Add tasks"
-        onConfirm={(tasks) => actions.addTasks(listId, tasks.map((task) => ({ title: task.label, completed: task.checked })), target.extras)}
+        onConfirm={(tasks, batchId) => actions.addTasks(listId, tasks.map((task) => ({ title: task.label, completed: task.checked })), target.extras, batchId)}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           inputRef.current?.focus();
         }}
-      />
+      /> : null}
     </div>
   );
 }
