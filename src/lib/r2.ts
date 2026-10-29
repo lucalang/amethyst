@@ -17,6 +17,10 @@ let cached: R2 | null | undefined;
 function r2(): R2 | null {
   if (cached !== undefined) return cached;
   const env = serverEnv();
+  const keys = [env.R2_ACCOUNT_ID, env.R2_ACCESS_KEY_ID, env.R2_SECRET_ACCESS_KEY, env.R2_BUCKET];
+  if (keys.some(Boolean) && !keys.every(Boolean)) {
+    console.error("R2 misconfigured: set all of R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET or none");
+  }
   if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET) return (cached = null);
   const client = new S3Client({
     region: "auto",
@@ -35,7 +39,7 @@ function r2(): R2 | null {
 export const r2Configured = () => r2() !== null;
 
 /** An explicit Supabase setting affects new uploads only, never verified R2 reads. */
-export const uploadTarget = (): "r2" | "supabase" => serverEnv().ATTACHMENT_STORAGE;
+export const uploadTarget = (): "r2" | "supabase" => serverEnv().ATTACHMENT_STORAGE ?? (r2Configured() ? "r2" : "supabase");
 
 /** The only key format: callers pass the verified session user and a validated attachment name. */
 export const objectKey = (userId: string, name: string) => `${userId}/${name}`;

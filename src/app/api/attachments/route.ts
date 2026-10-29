@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ATTACHMENT_TYPES, MAX_ATTACHMENT_BYTES, isValidAttachmentName, withSuffix } from "@/lib/attachments";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
-import { objectKey, presignUpload, uploadTarget } from "@/lib/r2";
+import { objectKey, presignUpload, r2Configured, uploadTarget } from "@/lib/r2";
 
 const MAX_NAME_ATTEMPTS = 50;
 
@@ -25,6 +25,7 @@ export async function POST(request: Request) {
   }
 
   const target = uploadTarget();
+  if (target === "r2" && !r2Configured()) return apiError(503, "storage_unavailable", "Image storage is not configured. Please try again later.");
   for (let attempt = 0; attempt < MAX_NAME_ATTEMPTS; attempt++) {
     const name = attempt ? withSuffix(base, attempt) : base;
     if (!isValidAttachmentName(name)) break;

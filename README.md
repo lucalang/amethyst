@@ -111,7 +111,7 @@ Signing out sends `Clear-Site-Data: "cache"`, and image redirects use `Vary: Coo
 ### Migration and deployment
 
 1. Apply migration `20261101000100_r2_attachments` (`npx supabase db push`). It only adds the manifest table and functions.
-2. Set the R2 variables in the hosting environment before building. Verified images always use R2; images not yet migrated keep using Supabase. `ATTACHMENT_STORAGE` controls new uploads only and defaults to `r2`.
+2. Set the R2 variables in the hosting environment before building. Verified images always use R2; images not yet migrated keep using Supabase. `ATTACHMENT_STORAGE` controls new uploads only and defaults to `r2` when all four R2 variables are set, otherwise `supabase`. R2 settings never block unrelated routes.
 3. `npm run images:migrate` (dry run) lists the legacy objects and the bytes still to copy. That figure is the one-time Supabase download. It also lists saved references that exist in neither store, direct Supabase Storage links saved in data, keys that cannot be copied, and whether R2 is reachable. Nothing is downloaded.
 4. Run `npm run images:migrate -- --apply`. Optional flags: `--limit N` and `--concurrency 1–8` (default 4).
   - Already verified objects with matching source size and checksum are skipped without downloading them.
@@ -187,7 +187,7 @@ Local auth emails (confirmation, password reset, magic links) arrive in Mailpit 
 | `SUPABASE_SECRET_KEY` | scripts/tests only, server-side | `npm run user:invite`, `npm run images:migrate` and integration/E2E tests; never `NEXT_PUBLIC_` |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | app + migration script, server-side only | Private R2 bucket for uploaded images (all four or none); never `NEXT_PUBLIC_` |
 | `R2_ENDPOINT` | optional | Only for jurisdiction buckets (`https://<account>.eu.r2.cloudflarestorage.com`) |
-| `ATTACHMENT_STORAGE` | app | `r2` (default); explicit `supabase` is an emergency fallback for new uploads only. Verified reads always use R2. |
+| `ATTACHMENT_STORAGE` | app | Unset: `r2` when configured, else `supabase`; explicit `supabase` is an emergency fallback for new uploads only. Verified reads always use R2. |
 
 `EXTRA_IMAGE_HOSTS` was removed; artwork hosts no longer need an allowlist.
 
