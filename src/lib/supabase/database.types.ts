@@ -523,6 +523,9 @@ isOneToOne: false
 "claim_achievement_notifications":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
+"reconcile_achievements":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined
                            },

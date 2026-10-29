@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { createContext, use, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, memo, use, useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { LibraryBig, Plus, SearchX } from "lucide-react";
 import { EmptyState } from "@/components/media/empty-state";
 import { useCollectionLayout } from "@/components/media/collection-layout";
@@ -22,22 +22,33 @@ const DENSITY_GRID: Record<LibraryDensity, string> = {
 const URL_DELAY_MS = 350;
 export const MAX_QUERY_LENGTH = 100;
 
-type LibraryState = {
+type LibrarySearchState = {
   /** What is in the search box right now. */
   query: string;
   setQuery: (value: string) => void;
   /** Writes any pending query to the URL right away (Enter, or before other filter changes). */
   flushQuery: () => void;
+};
+
+type LibraryState = {
   /** Trimmed query the results currently reflect. */
   appliedQuery: string;
   total: number;
+  baseVisible: LibraryEntry[];
   visible: LibraryEntry[];
   categoryCounts: Record<string, number>;
   /** True once the person has searched on this page, so new results don't replay entrances. */
   searched: boolean;
 };
 
+const LibrarySearchContext = createContext<LibrarySearchState | null>(null);
 const LibraryContext = createContext<LibraryState | null>(null);
+
+export function useLibrarySearch(): LibrarySearchState {
+  const value = use(LibrarySearchContext);
+  if (!value) throw new Error("useLibrarySearch must be used inside LibrarySearchProvider");
+  return value;
+}
 
 export function useLibrary(): LibraryState {
   const value = use(LibraryContext);
@@ -100,6 +111,7 @@ export function LibrarySearchProvider({ library, search, children }: { library: 
   );
 
   const deferredQuery = useDeferredValue(clean(query));
+  const baseVisible = useMemo(() => filterLibrary(library, { ...search, q: "" }), [library, search]);
   const visible = useMemo(() => filterLibrary(library, { ...search, q: deferredQuery }), [library, search, deferredQuery]);
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -123,17 +135,19 @@ export function LibrarySearchProvider({ library, search, children }: { library: 
     timer.current = window.setTimeout(() => commit(clean(value)), URL_DELAY_MS);
   }
 
-  const value: LibraryState = {
-    query,
-    setQuery,
-    flushQuery: () => commit(clean(query)),
+  const value = useMemo<LibraryState>(() => ({
     appliedQuery: deferredQuery,
     total: library.length,
+    baseVisible,
     visible,
     categoryCounts,
     searched,
-  };
-  return <LibraryContext value={value}>{children}</LibraryContext>;
+  }), [deferredQuery, library.length, baseVisible, visible, categoryCounts, searched]);
+  return (
+    <LibrarySearchContext value={{ query, setQuery, flushQuery: () => commit(clean(query)) }}>
+      <LibraryContext value={value}>{children}</LibraryContext>
+    </LibrarySearchContext>
+  );
 }
 
 export function LibraryCount() {
@@ -149,6 +163,25 @@ export function LibraryTitle({ name }: { name: string }) {
   const { appliedQuery } = useLibrary();
   return <>{appliedQuery ? `“${appliedQuery}” in ${name}` : name}</>;
 }
+
+const LibraryPoster = memo(function LibraryPoster({ entry, index, density, pinStyle, display, labelNames }: {
+  entry: LibraryEntry;
+  index: number;
+  density: LibraryDensity;
+  pinStyle: PinStyle;
+  display: CardDisplay;
+  labelNames: Record<string, string>;
+}) {
+  return (
+    <PosterCard
+      entry={entry}
+      priority={index < (density === "compact" ? 8 : 6)}
+      pinStyle={pinStyle}
+      display={display}
+      labels={display.labels ? entry.categoryIds.flatMap((id) => labelNames[id] ?? []) : undefined}
+    />
+  );
+});
 
 export function LibraryResults({
   name,
@@ -167,8 +200,54 @@ export function LibraryResults({
   display: CardDisplay;
   labelNames: Record<string, string>;
 }) {
-  const { visible, total, searched } = useLibrary();
+  const { visible, baseVisible, total, searched } = useLibrary();
   const layout = useCollectionLayout();
+  const gridRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid || baseVisible.length < 80) return;
+    let active = true;
+    let width = -1;
+    let raf = 0;
+    const measure = () => {
+      if (!grid.clientWidth) return;
+      width = grid.clientWidth;
+      const layers = [...grid.querySelectorAll<HTMLElement>(".poster-card > .scroll-fade")];
+      for (const layer of layers) {
+        layer.style.contentVisibility = "visible";
+        layer.style.containIntrinsicBlockSize = "none";
+      }
+      const heights = layers.map((layer) => {
+        const style = getComputedStyle(layer);
+        const padding = style.boxSizing === "border-box" ? parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) : 0;
+        return Math.max(0, parseFloat(style.height) - padding);
+      });
+      layers.forEach((layer, index) => {
+        layer.style.containIntrinsicBlockSize = `auto ${heights[index]}px`;
+        layer.style.contentVisibility = "auto";
+      });
+    };
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(measure);
+    };
+    const observer = new ResizeObserver(() => {
+      if (grid.clientWidth && grid.clientWidth !== width) schedule();
+    });
+    observer.observe(grid);
+    schedule();
+    void document.fonts.ready.then(() => { if (active) schedule(); });
+    return () => {
+      active = false;
+      observer.disconnect();
+      cancelAnimationFrame(raf);
+      for (const layer of grid.querySelectorAll<HTMLElement>(".poster-card > .scroll-fade")) {
+        layer.style.removeProperty("content-visibility");
+        layer.style.removeProperty("contain-intrinsic-block-size");
+      }
+    };
+  }, [baseVisible, density, layout, display, labelNames]);
 
   if (total === 0) {
     return (
@@ -187,8 +266,7 @@ export function LibraryResults({
     );
   }
 
-  if (visible.length === 0) {
-    return (
+  const noMatches = (
       <EmptyState
         icon={SearchX}
         title="Nothing matches"
@@ -201,8 +279,8 @@ export function LibraryResults({
           </Button>
         }
       />
-    );
-  }
+  );
+  if (visible.length === 0 && (layout === "list" || layout === "table")) return noMatches;
 
   if (layout === "table") {
     return (
@@ -226,21 +304,19 @@ export function LibraryResults({
     );
   }
 
+  const visibleIndices = new Map(visible.map((entry, index) => [entry.id, index]));
   return (
-    <div data-entrance={searched ? "skip" : undefined} className="contents">
-      <ul aria-label={name} className={DENSITY_GRID[density]}>
-        {visible.map((entry, index) => (
-          <li key={entry.id} className="enter enter-card" style={{ "--enter-index": Math.min(index, 8) + 1 } as React.CSSProperties}>
-            <PosterCard
-              entry={entry}
-              priority={index < (density === "compact" ? 8 : 6)}
-              pinStyle={pinStyle}
-              display={display}
-              labels={display.labels ? entry.categoryIds.flatMap((id) => labelNames[id] ?? []) : undefined}
-            />
+    <>
+    {visible.length === 0 ? noMatches : null}
+    <div data-entrance={searched ? "skip" : undefined} className={visible.length ? "contents" : "hidden"}>
+      <ul ref={gridRef} aria-label={name} className={DENSITY_GRID[density]}>
+        {baseVisible.map((entry, index) => (
+          <li key={entry.id} hidden={!visibleIndices.has(entry.id)} className="enter enter-card" style={{ "--enter-index": Math.min(visibleIndices.get(entry.id) ?? index, 8) + 1 } as React.CSSProperties}>
+            <LibraryPoster entry={entry} index={visibleIndices.get(entry.id) ?? index} density={density} pinStyle={pinStyle} display={display} labelNames={labelNames} />
           </li>
         ))}
       </ul>
     </div>
+    </>
   );
 }

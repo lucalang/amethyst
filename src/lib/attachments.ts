@@ -71,6 +71,12 @@ export function artworkSrc(value: string | null | undefined): string | null {
   return checkImageUrl(value).ok ? imageProxyUrl(value) : null;
 }
 
+export const ARTWORK_WIDTHS = [64, 128, 256, 384, 512, 768, 1024, 1536, 2048, 3072, 3840] as const;
+
+export function artworkVariantSrc(value: string, width: number): string {
+  return `/api/artwork?${new URLSearchParams({ src: value, width: String(width) })}`;
+}
+
 /** Where an embed's target is loaded from: own attachments, or public images through the proxy. */
 export function resolveImageSrc(target: string): string | null {
   const value = target.trim();

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export function replayAchievementCelebration(id: string) {
 }
 
 export function AchievementNotifications({ enabled }: { enabled: boolean }) {
+  const router = useRouter();
   const [queue, setQueue] = useState<Celebration[]>([]);
   const [safeToShow, setSafeToShow] = useState(false);
   const [shownKey, setShownKey] = useState<string | null>(null);
@@ -57,8 +59,26 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
   }, [enabled]);
 
   useEffect(() => {
-    void apiFetch<{ achievementUnlocks: AchievementNotice[] }>("/api/achievements/notifications").catch(() => {});
-  }, []);
+    let active = true;
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const controller = new AbortController();
+    const reconcile = async () => {
+      attempts++;
+      try {
+        const result = await apiFetch<{ achievementUnlocks: AchievementNotice[]; achievementReconciled: boolean }>("/api/achievements/notifications", { signal: controller.signal });
+        if (active && result.achievementReconciled) router.refresh();
+      } catch {
+        if (active && attempts < 3) timer = setTimeout(reconcile, attempts * 2000);
+      }
+    };
+    void reconcile();
+    return () => {
+      active = false;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [router]);
 
   useEffect(() => {
     const check = () => {

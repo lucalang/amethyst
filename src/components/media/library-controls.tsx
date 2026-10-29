@@ -6,7 +6,7 @@ import { useEffect, useOptimistic, useTransition } from "react";
 import { ArrowDownWideNarrow, ListFilter, Loader2, Search, X } from "lucide-react";
 import { CategoryChip, CategoryFilter } from "@/components/categories/category-picker";
 import { LayoutSwitcher } from "@/components/media/collection-layout";
-import { MAX_QUERY_LENGTH, useLibrary } from "@/components/media/library-view";
+import { MAX_QUERY_LENGTH, useLibrary, useLibrarySearch } from "@/components/media/library-view";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORY_PARAM, type Category } from "@/lib/categories";
@@ -28,7 +28,8 @@ export function LibraryControls({
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
   const [selectedCategories, setSelectedCategories] = useOptimistic(search.categories);
-  const { query, setQuery, flushQuery, categoryCounts } = useLibrary();
+  const { query, setQuery, flushQuery } = useLibrarySearch();
+  const { categoryCounts } = useLibrary();
 
   useEffect(() => {
     try {

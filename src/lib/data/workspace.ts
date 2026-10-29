@@ -78,9 +78,12 @@ export async function loadWorkspaceNodes(supabase: Supabase, entryId: string): P
 }
 
 export async function loadWorkspace(ctx: AuthContext, entryId: string): Promise<WorkspaceData | null> {
-  const { data: entry } = await ctx.supabase.from("entries").select("*").eq("id", entryId).maybeSingle();
+  const [{ data: entry }, nodes] = await Promise.all([
+    ctx.supabase.from("entries").select("*").eq("id", entryId).maybeSingle(),
+    loadWorkspaceNodes(ctx.supabase, entryId),
+  ]);
   if (!entry) return null;
-  return { entry, nodes: await loadWorkspaceNodes(ctx.supabase, entryId) };
+  return { entry, nodes };
 }
 
 export async function loadNodeDetail(supabase: Supabase, nodeId: string, entryId?: string): Promise<NodeDetail | null> {

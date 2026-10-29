@@ -11,6 +11,7 @@ const originOf = (value: string | undefined) => {
   }
 };
 const supabaseOrigin = originOf(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const supabaseRealtimeOrigin = /^https?:\/\//.test(supabaseOrigin) ? supabaseOrigin.replace(/^http/, "ws") : "";
 const r2Origin = originOf(process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : ""));
 const storageOrigins = [supabaseOrigin, r2Origin].filter(Boolean).join(" ");
 
@@ -21,7 +22,7 @@ const contentSecurityPolicy = [
   // Remote artwork is served same-origin by the authenticated /api/image proxy.
   `img-src 'self' data: blob: ${storageOrigins}`.trim(),
   "font-src 'self'",
-  `connect-src 'self' ${storageOrigins}`.trim(),
+  `connect-src 'self' ${storageOrigins} ${supabaseRealtimeOrigin}`.trim(),
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -61,7 +62,7 @@ const nextConfig: NextConfig = {
       },
       {
         // The image proxy and note-image redirects set their own private caching headers.
-        source: "/api/:path((?!image$|attachments/).*)",
+        source: "/api/:path((?!image$|artwork$|attachments/).*)",
         headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
     ];

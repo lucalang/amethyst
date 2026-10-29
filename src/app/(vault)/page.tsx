@@ -24,6 +24,7 @@ import { loadMyDayPreview } from "@/lib/data/tasks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { loadPreferences } from "@/lib/data/preferences";
 import { loadCoinBalance } from "@/lib/data/shop";
+import { measureServer } from "@/lib/data/timing";
 import type { HomeSectionId } from "@/lib/preferences";
 import { entryProgress } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
@@ -101,7 +102,7 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
   return (
     <section aria-labelledby="home-heading" className="relative isolate overflow-hidden border-b border-white/[0.06]">
       <div aria-hidden className="absolute inset-0 -z-10">
-        {backdrop ? <MediaImage src={backdrop} alt="" priority className="scale-110 opacity-30 blur-2xl saturate-150" /> : null}
+        {backdrop ? <MediaImage src={backdrop} alt="" sizes="100vw" priority className="scale-110 opacity-30 blur-2xl saturate-150" /> : null}
         <div className="absolute inset-0 bg-[radial-gradient(55%_85%_at_12%_0%,rgb(var(--accent-rgb)/0.26),transparent_70%),radial-gradient(40%_70%_at_88%_15%,rgb(var(--rose-rgb)/0.13),transparent_70%)]" />
         <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/55 to-black" />
       </div>
@@ -210,7 +211,7 @@ function FeaturedEntry({ featured }: { featured: HomeFeaturedEntry }) {
     >
       <span aria-hidden className="absolute inset-0 -z-10">
         {backdrop ? (
-          <MediaImage src={backdrop} alt="" className={featured.bannerUrl ? "opacity-55 transition-[scale] duration-700 group-hover/featured:scale-[1.02]" : "scale-110 opacity-35 blur-2xl"} />
+          <MediaImage src={backdrop} alt="" sizes="auto, 100vw" className={featured.bannerUrl ? "opacity-55 transition-[scale] duration-700 group-hover/featured:scale-[1.02]" : "scale-110 opacity-35 blur-2xl"} />
         ) : (
           <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%)]" />
         )}
@@ -244,7 +245,7 @@ function FeaturedImage({ url, caption }: { url: string; caption: string }) {
   return (
     <figure className="overflow-hidden rounded-xl border border-white/[0.08] bg-surface/40">
       <div className="relative aspect-[16/9] md:aspect-[21/8]">
-        <MediaImage src={url} alt={caption || "Featured image"} />
+        <MediaImage src={url} alt={caption || "Featured image"} sizes="auto, 100vw" />
       </div>
       {caption ? <figcaption className="border-t border-white/[0.06] px-4 py-3 text-sm break-words text-foreground/80">{caption}</figcaption> : null}
     </figure>
@@ -252,16 +253,18 @@ function FeaturedImage({ url, caption }: { url: string; caption: string }) {
 }
 
 export default async function HomePage() {
-  const ctx = await requireUser();
-  const preferences = await loadPreferences(ctx);
-  const chosen = preferences.homeFeatured;
-  const home = await loadHome(ctx, chosen?.kind === "entry" ? chosen.entryId : null);
-  const showAchievements = preferences.homeSections.some((section) => section.id === "achievements" && !section.hidden);
-  const [achievementCards, coinBalance, myDay] = await Promise.all([
-    loadAchievementCards(ctx),
-    loadCoinBalance(ctx).catch(() => null),
-    loadMyDayPreview(ctx),
+  const ctx = await measureServer("home.auth", requireUser);
+  const preferenceRead = measureServer("home.preferences", () => loadPreferences(ctx));
+  const [preferences, home, achievementCards, coinBalance, myDay] = await Promise.all([
+    preferenceRead,
+    preferenceRead.then((value) => measureServer("home.archive", () => loadHome(ctx, value.homeFeatured?.kind === "entry" ? value.homeFeatured.entryId : null))),
+    preferenceRead.then((value) => value.homeSections.some((section) => section.id === "achievements" && !section.hidden)
+      ? measureServer("home.achievements", () => loadAchievementCards(ctx)) : []),
+    measureServer("home.wallet", () => loadCoinBalance(ctx).catch(() => null)),
+    measureServer("home.my-day", () => loadMyDayPreview(ctx)),
   ]);
+  const chosen = preferences.homeFeatured;
+  const showAchievements = preferences.homeSections.some((section) => section.id === "achievements" && !section.hidden);
   const { pinStyle } = preferences;
   const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const hasEntries = home.counts.entries > 0;

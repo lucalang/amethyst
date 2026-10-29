@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Gem } from "lucide-react";
-import { artworkSrc } from "@/lib/attachments";
+import { ARTWORK_WIDTHS, artworkSrc, artworkVariantSrc } from "@/lib/attachments";
 import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { AvatarDecoration } from "./avatar-decoration";
 import { useCosmetics } from "./cosmetics-context";
@@ -39,6 +39,7 @@ export function ProfileAvatar({
   decoration?: AvatarDecorationId | null;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
+  const [failedVariant, setFailedVariant] = useState<string | null>(null);
   const equipped = useCosmetics().avatarDecoration;
   const shownDecoration = decoration === undefined ? equipped : decoration;
   const resolved = src && src !== failed ? artworkSrc(src) : null;
@@ -55,7 +56,16 @@ export function ProfileAvatar({
     >
       {resolved ? (
         // eslint-disable-next-line @next/next/no-img-element -- own upload or the authenticated image proxy
-        <img src={resolved} alt="" decoding="async" className="absolute inset-0 size-full object-cover" onError={() => setFailed(src ?? null)} />
+        <img
+          src={src && failedVariant !== src ? artworkVariantSrc(src, 128) : resolved}
+          srcSet={src && failedVariant !== src ? ARTWORK_WIDTHS.filter((width) => width <= 512).map((width) => `${artworkVariantSrc(src, width)} ${width}w`).join(", ") : undefined}
+          sizes="auto, 128px"
+          loading="lazy"
+          alt=""
+          decoding="async"
+          className="absolute inset-0 size-full object-cover"
+          onError={() => failedVariant !== src ? setFailedVariant(src ?? null) : setFailed(src ?? null)}
+        />
       ) : letters ? (
         <span className="leading-none">{letters}</span>
       ) : (

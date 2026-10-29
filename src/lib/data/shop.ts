@@ -3,6 +3,7 @@ import { SUDOKU_DIFFICULTIES, type SudokuDifficulty } from "@/lib/arcade";
 import { COSMETICS, isAvatarDecorationId, isCosmeticId, type AvatarDecorationId, type CosmeticKind, type ShopItem } from "@/lib/cosmetics";
 import { GAME_SHOPS, gameCosmetic, lookFromItems, type GameLook, type ShopGame } from "@/lib/game-cosmetics";
 import type { AuthContext } from "@/lib/supabase/auth";
+import { measureServer } from "./timing";
 
 /** The account's coin balance (0 before the first reward). */
 export async function loadCoinBalance(ctx: AuthContext): Promise<number> {
@@ -54,15 +55,17 @@ export type ShopData = {
 };
 
 /** Everything the shop shows: server prices, ownership, what is equipped, recent coin history and the earning rules. */
-export async function loadShop(ctx: AuthContext, equipped: { frame: string; decoration: string | null }): Promise<ShopData> {
+type EquippedCosmetics = { frame: string; decoration: string | null };
+
+export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | Promise<EquippedCosmetics>): Promise<ShopData> {
   const check = <T,>({ data, error }: { data: T | null; error: { code?: string } | null }) => {
     if (error) throw new Error(`Could not load the shop: ${error.code}`);
     return data;
   };
-  const [wallet, items, owned, history, rules] = await Promise.all([
-    ctx.supabase.from("coin_wallets").select("balance, earned").eq("user_id", ctx.userId).maybeSingle().then(check),
-    ctx.supabase.from("cosmetic_items").select("id, kind, price, available").then(check),
-    ctx.supabase.from("user_cosmetics").select("item_id").eq("user_id", ctx.userId).then(check),
+  const [wallet, items, owned, history, rules, look] = await Promise.all([
+    measureServer("shop.wallet", () => ctx.supabase.from("coin_wallets").select("balance, earned").eq("user_id", ctx.userId).maybeSingle().then(check)),
+    measureServer("shop.catalog", () => ctx.supabase.from("cosmetic_items").select("id, kind, price, available").neq("kind", "game").then(check)),
+    measureServer("shop.ownership", () => ctx.supabase.from("user_cosmetics").select("item_id").eq("user_id", ctx.userId).then(check)),
     ctx.supabase
       .from("coin_transactions")
       .select("id, amount, balance_after, kind, details, created_at")
@@ -71,6 +74,7 @@ export async function loadShop(ctx: AuthContext, equipped: { frame: string; deco
       .limit(12)
       .then(check),
     ctx.supabase.from("arcade_reward_rules").select("game, variant, min_score, min_seconds, points_per_coin, flat_coins, max_coins").then(check),
+    equipped,
   ]);
   const ownedIds = new Set((owned ?? []).map((row) => row.item_id));
   const order = Object.keys(COSMETICS);
@@ -89,7 +93,7 @@ export async function loadShop(ctx: AuthContext, equipped: { frame: string; deco
           price: item.price,
           available: item.available,
           owned: isOwned,
-          equipped: isOwned && (kind === "frame" ? equipped.frame === id : equipped.decoration === id),
+          equipped: isOwned && (kind === "frame" ? look.frame === id : look.decoration === id),
         };
       })
       .filter((item) => item.available || item.owned)

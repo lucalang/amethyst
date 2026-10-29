@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { artworkSrc } from "@/lib/attachments";
+import { ARTWORK_WIDTHS, artworkSrc, artworkVariantSrc } from "@/lib/attachments";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -9,13 +9,15 @@ type Props = {
   alt: string;
   className?: string;
   priority?: boolean;
+  sizes?: string;
   /** Text used for the fallback tile when no artwork is available. */
   fallbackLabel?: string;
 };
 
 /** Remote artwork served same-origin through the image proxy, with a stable fallback tile. */
-export function MediaImage({ src, alt, className, priority, fallbackLabel }: Props) {
+export function MediaImage({ src, alt, className, priority, sizes = "auto, (min-width: 1280px) 240px, (min-width: 768px) 33vw, 50vw", fallbackLabel }: Props) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [failedVariant, setFailedVariant] = useState<string | null>(null);
   const resolved = src && src !== failedSrc ? artworkSrc(src) : null;
   if (!resolved) {
     const initials = (fallbackLabel ?? alt)
@@ -40,12 +42,15 @@ export function MediaImage({ src, alt, className, priority, fallbackLabel }: Pro
   return (
     // eslint-disable-next-line @next/next/no-img-element -- served by the authenticated /api/image proxy, not next/image
     <img
-      src={resolved}
+      src={src && failedVariant !== src ? artworkVariantSrc(src, 512) : resolved}
+      srcSet={src && failedVariant !== src ? ARTWORK_WIDTHS.map((width) => `${artworkVariantSrc(src, width)} ${width}w`).join(", ") : undefined}
+      sizes={priority ? sizes.replace(/^auto,\s*/, "") : sizes}
       alt={alt}
       loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
       decoding="async"
       className={cn("absolute inset-0 h-full w-full object-cover", className)}
-      onError={() => setFailedSrc(src ?? null)}
+      onError={() => failedVariant !== src ? setFailedVariant(src ?? null) : setFailedSrc(src ?? null)}
     />
   );
 }

@@ -42,6 +42,45 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-12-performance",
+    date: "2026-11-12",
+    title: "A quicker archive, with the same detail",
+    intro: "Artwork loads at a size suited to its place, collection searches keep their cards ready, and long notes do less repeated work. Your originals, effects and customization stay intact.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "fixed", feature: "Private uploads", text: "Restored the production R2 configuration for previously migrated images, without moving or replacing your originals." },
+      { kind: "improved", feature: "Artwork", text: "Private, cached sizes for covers, banners and avatars, with the original still available in the artwork viewer." },
+      { kind: "improved", feature: "Collections and notes", text: "Less card rebuilding during search and incremental task counting while typing in long notes." },
+      { kind: "fixed", feature: "To Do sync", text: "The security policy now allows the account's authenticated realtime connection, with reconnect and polling fallback preserved." },
+      { kind: "improved", feature: "Opening pages and previews", text: "Independent reads run together, achievements reconcile once per version in the background, and hidden game-shop previews pause." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Artwork that fits",
+          body: "Covers, banners and avatars request a size suited to their displayed size and screen density. Generated sizes stay in private storage and are reused rather than rebuilt for every visit. Animated images stay animated, transparency is preserved, and full-resolution viewing still uses the original.",
+          link: { href: "/collections", label: "Open your archive" },
+        },
+        {
+          title: "Search and long notes",
+          body: "Searching a collection no longer rebuilds every unchanged card when you clear a query. Long notes reuse Markdown parsing work for their task counts; local draft backups, serialized saving and version-conflict protection are unchanged.",
+        },
+        {
+          title: "Less waiting, less background work",
+          body: "Home, entry workspaces and the shop overlap independent reads. Achievement backfill no longer runs during page rendering: a versioned account check reconciles it in the background without duplicate awards. Cosmetic previews stop drawing offscreen or in hidden tabs and resume without jumping ahead, at the same visible quality and motion settings.",
+          link: { href: "/arcade/shop", label: "Open the Arcade Shop" },
+        },
+      ],
+      fixed: [
+        {
+          title: "Private image delivery and task updates",
+          body: "Production now has the required private R2 configuration for verified uploaded images. The security policy permits only the configured Supabase project's realtime origin, restoring live To Do updates without loosening account isolation or removing offline and polling fallbacks.",
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-11-game-shops",
     date: "2026-11-11",
     title: "A shop for every Arcade game",

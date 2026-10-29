@@ -96,3 +96,32 @@ export async function headObject(key: string) {
     throw error;
   }
 }
+
+export async function readObject(key: string, maxBytes: number): Promise<Buffer> {
+  const { client, bucket } = required();
+  const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  if (!object.Body || object.ContentLength == null || object.ContentLength > maxBytes) {
+    await object.Body?.transformToWebStream().cancel();
+    throw new Error("Image exceeds the delivery limit.");
+  }
+  const body = Buffer.from(await object.Body.transformToByteArray());
+  if (body.length > maxBytes) throw new Error("Image exceeds the delivery limit.");
+  return body;
+}
+
+export async function writeDerivedObject(key: string, body: Buffer, contentType: string) {
+  const { client, bucket } = required();
+  try {
+    await client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: body,
+      ContentLength: body.length,
+      ContentType: contentType,
+      CacheControl: "private, max-age=14400, immutable",
+      IfNoneMatch: "*",
+    }));
+  } catch (error) {
+    if (!(error instanceof S3ServiceException) || error.$metadata.httpStatusCode !== 412) throw error;
+  }
+}

@@ -92,7 +92,7 @@ export function EntryHeader({
     <header data-testid="entry-header" className="header-scroll-exit">
       <div aria-hidden className="relative h-44 overflow-hidden sm:h-56 md:h-72 lg:h-80">
         {banner ? (
-          <MediaImage src={banner} alt="" priority className={entry.banner_url ? "opacity-80" : "scale-110 opacity-45 blur-2xl"} />
+          <MediaImage src={banner} alt="" sizes="100vw" priority className={entry.banner_url ? "opacity-80" : "scale-110 opacity-45 blur-2xl"} />
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%),radial-gradient(ellipse_at_90%_10%,rgb(var(--rose-rgb)/0.08),transparent_55%)]" />
         )}

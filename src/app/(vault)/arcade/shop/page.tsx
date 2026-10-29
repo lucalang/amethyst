@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { artworkSrc } from "@/lib/attachments";
 import { loadPreferences } from "@/lib/data/preferences";
 import { loadShop, toAvatarDecoration } from "@/lib/data/shop";
+import { measureServer } from "@/lib/data/timing";
 import { GAME_SHOPS, SHOP_GAMES, shopHref } from "@/lib/game-cosmetics";
 import { requireUser } from "@/lib/supabase/auth";
 import type { FrameSample } from "../../settings/frame-settings";
@@ -15,15 +16,18 @@ import { ShopView } from "./shop-view";
 export const metadata: Metadata = { title: "Arcade shop" };
 
 export default async function ArcadeShopPage() {
-  const ctx = await requireUser();
-  const [preferences, { data: profile }, { data: covers }] = await Promise.all([
-    loadPreferences(ctx),
-    ctx.supabase.from("users").select("display_name, avatar_url, avatar_decoration").eq("id", ctx.userId).maybeSingle(),
+  const ctx = await measureServer("shop.auth", requireUser);
+  const preferenceRead = measureServer("shop.preferences", () => loadPreferences(ctx));
+  const profileRead = measureServer("shop.profile", () => ctx.supabase.from("users").select("display_name, avatar_url, avatar_decoration").eq("id", ctx.userId).maybeSingle());
+  const equipped = Promise.all([preferenceRead, profileRead]).then(([preferences, { data: profile }]) => ({ frame: preferences.artworkFrame, decoration: toAvatarDecoration(profile?.avatar_decoration) }));
+  const [preferences, { data: profile }, { data: covers }, shop] = await Promise.all([
+    preferenceRead,
+    profileRead,
     // The account's own covers to try frames on (row-level security keeps this to the account).
     ctx.supabase.from("entries").select("title, cover_url, cover_shape").not("cover_url", "is", null).order("updated_at", { ascending: false }).limit(40),
+    measureServer("shop.data", () => loadShop(ctx, equipped)),
   ]);
   const decoration = toAvatarDecoration(profile?.avatar_decoration);
-  const shop = await loadShop(ctx, { frame: preferences.artworkFrame, decoration });
   const sample = (shape: "portrait" | "square"): FrameSample | null => {
     const row = (covers ?? []).find((cover) => cover.cover_shape === shape && artworkSrc(cover.cover_url));
     return row?.cover_url ? { title: row.title, coverUrl: row.cover_url } : null;

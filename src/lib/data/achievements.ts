@@ -50,7 +50,6 @@ export async function recordVerifiedSudokuCompletion(ctx: AuthContext, difficult
 }
 
 export async function loadAchievementCards(ctx: AuthContext): Promise<AchievementCardData[]> {
-  await ctx.supabase.rpc("record_achievement_event", { p_event: "backfill", p_payload: {} });
   const [progressResult, awardResult] = await Promise.all([
     ctx.supabase.from("user_achievement_progress").select("achievement_id, progress").eq("user_id", ctx.userId),
     ctx.supabase.from("user_achievements").select("achievement_id, earned_at").eq("user_id", ctx.userId),

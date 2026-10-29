@@ -51,19 +51,42 @@ function CanvasPreview({ create, still, label }: { create: () => Painter; still:
     const paint = factory.current();
     let size: CanvasSize = { width: 1, height: 1, dpr: 1 };
     let raf = 0;
-    const frame = () => {
+    let visible = false;
+    let sceneTime = performance.now();
+    let lastFrame = sceneTime;
+    const frame = (now: number) => {
+      raf = 0;
+      if (!visible || document.hidden) return;
+      sceneTime += Math.max(0, now - lastFrame);
+      lastFrame = now;
       ctx.setTransform(size.dpr, 0, 0, size.dpr, 0, 0);
       ctx.clearRect(0, 0, size.width, size.height);
-      paint(ctx, size, performance.now());
+      paint(ctx, size, sceneTime);
       if (!still) raf = requestAnimationFrame(frame);
+    };
+    const sync = () => {
+      if (!visible || document.hidden) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      } else if (!raf) {
+        lastFrame = performance.now();
+        raf = requestAnimationFrame(frame);
+      }
     };
     const stop = observeCanvas(canvas, (next) => {
       size = next;
-      if (still) frame();
+      if (still) sync();
     });
-    if (!still) raf = requestAnimationFrame(frame);
+    const observer = new IntersectionObserver((entries) => {
+      visible = entries.some((entry) => entry.isIntersecting);
+      sync();
+    });
+    observer.observe(canvas);
+    document.addEventListener("visibilitychange", sync);
     return () => {
       cancelAnimationFrame(raf);
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
       stop();
     };
   }, [still]);

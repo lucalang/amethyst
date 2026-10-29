@@ -8,7 +8,7 @@ import { LiveMarkdownEditor, type EditorStatus, type LiveMarkdownEditorHandle } 
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { MAX_NOTE_LENGTH } from "@/lib/validation/workspace";
-import { markdownTaskCounts } from "@/lib/progress/markdown";
+import { createMarkdownTaskCounter } from "@/lib/progress/markdown";
 import type { NodeDetail, WorkspaceNode } from "@/lib/workspace/tree";
 import { errorMessage, nodeQueryKey, readLocal, useHydrated, writeLocal } from "./client-utils";
 import { SaveStatus, type SaveState } from "./save-status";
@@ -74,6 +74,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { de
     return { draft: detail.node.content, restored: false, conflict: false };
   });
   const [draft, setDraft] = useState(initial.draft);
+  const [countTasks] = useState(createMarkdownTaskCounter);
   const [state, setState] = useState<SaveState>(initial.conflict ? { kind: "conflict" } : initial.restored ? { kind: "dirty" } : { kind: "saved" });
   const [editorStatus, setEditorStatus] = useState<EditorStatus>({ canUndo: false, canRedo: false, heading: 0 });
 
@@ -190,7 +191,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { de
     return () => window.clearTimeout(timer);
   }, [draft]);
 
-  const reportTasks = useEffectEvent(() => onTaskCountsChange(markdownTaskCounts(draft)));
+  const reportTasks = useEffectEvent(() => onTaskCountsChange(countTasks(draft)));
   useEffect(() => reportTasks(), [draft]);
 
   const flushOnUnmount = useEffectEvent(() => {

@@ -21,6 +21,7 @@ import { loadCategories } from "@/lib/data/categories";
 import { loadLibrary } from "@/lib/data/library";
 import { loadPreferences } from "@/lib/data/preferences";
 import { loadViewerPresets } from "@/lib/data/viewer-presets";
+import { measureServer } from "@/lib/data/timing";
 import { librarySearchSchema } from "@/lib/progress/library";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -36,8 +37,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LibraryPage({ params, searchParams }: Props) {
   const [{ collection: slug }, query] = await Promise.all([params, searchParams]);
-  const ctx = await requireUser();
-  const collection = await loadCollection(ctx, slug);
+  const ctx = await measureServer("collection.auth", requireUser);
+  const collection = await measureServer("collection.resolve", () => loadCollection(ctx, slug));
   if (!collection) notFound();
   const path = collectionPath(collection);
   if (slug !== collection.slug) {
@@ -55,10 +56,10 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     categories: query[CATEGORY_PARAM],
   });
   const [library, categories, preferences, viewerPresets] = await Promise.all([
-    loadLibrary(ctx, collection.id),
-    loadCategories(ctx, collection.id),
-    loadPreferences(ctx),
-    loadViewerPresets(ctx),
+    measureServer("collection.library", () => loadLibrary(ctx, collection.id)),
+    measureServer("collection.categories", () => loadCategories(ctx, collection.id)),
+    measureServer("collection.preferences", () => loadPreferences(ctx)),
+    measureServer("collection.viewer-presets", () => loadViewerPresets(ctx)),
   ]);
   // Ignore ids of labels deleted since the link was made.
   search.categories = search.categories.filter((id) => categories.some((category) => category.id === id));
@@ -120,7 +121,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
               <header className="scroll-fade enter enter-soft mb-6" style={accent}>
                 <div className="relative overflow-hidden rounded-xl border border-white/[0.08] bg-surface shadow-[0_24px_60px_-40px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]">
                   <div className="relative h-40 sm:h-52 md:h-60 lg:h-64">
-                    <MediaImage src={banner} alt="" priority className="object-[50%_35%]" />
+                    <MediaImage src={banner} alt="" sizes="100vw" priority className="object-[50%_35%]" />
                     {/* Only the lower band is shaded, so the artwork stays visible. */}
                     <div aria-hidden className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
                     {accent ? <div aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--ca)] opacity-70" /> : null}

@@ -19,7 +19,7 @@ function Thumb({ entry, size }: { entry: LibraryEntry; size: "sm" | "md" }) {
         size === "md" ? (square ? "w-12" : "w-10") : square ? "w-9" : "w-8",
       )}
     >
-      <MediaImage src={entry.coverUrl} alt="" fallbackLabel={entry.title} className="text-[10px]" />
+      <MediaImage src={entry.coverUrl} alt="" sizes="auto, 48px" fallbackLabel={entry.title} className="text-[10px]" />
     </span>
   );
 }

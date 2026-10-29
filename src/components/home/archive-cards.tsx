@@ -63,7 +63,7 @@ export function CollectionCard({ collection }: { collection: HomeCollection }) {
     >
       {collection.bannerUrl ? (
         <span aria-hidden className="absolute inset-0 -z-10">
-          <MediaImage src={collection.bannerUrl} alt="" className="opacity-35 transition-opacity duration-300 group-hover/collection:opacity-45" />
+          <MediaImage src={collection.bannerUrl} alt="" sizes="auto, (min-width: 1024px) 33vw, 100vw" className="opacity-35 transition-opacity duration-300 group-hover/collection:opacity-45" />
           <span className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
         </span>
       ) : null}

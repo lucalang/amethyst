@@ -6,6 +6,7 @@ import { entryPath } from "@/lib/collections";
 import { loadCollection, loadCollections, resolveEntry } from "@/lib/data/collections";
 import { loadNodeDetail, loadWorkspace } from "@/lib/data/workspace";
 import { loadCategories, loadEntryCategoryIds } from "@/lib/data/categories";
+import { measureServer } from "@/lib/data/timing";
 import { getAuthContext, requireUser } from "@/lib/supabase/auth";
 import { buildTree, firstFile } from "@/lib/workspace/tree";
 
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EntryPage({ params, searchParams }: Props) {
   const [{ entry: param }, { file }] = await Promise.all([params, searchParams]);
-  const ctx = await requireUser();
+  const ctx = await measureServer("entry.auth", requireUser);
   const entry = await resolveEntry(ctx, param);
   if (!entry) notFound();
   // Ids and slugs from before a rename land on the current readable address.
@@ -34,16 +35,16 @@ export default async function EntryPage({ params, searchParams }: Props) {
     redirect(`${entryPath(entry)}${typeof file === "string" ? `?file=${encodeURIComponent(file)}` : ""}`);
   }
   const id = entry.id;
-  const data = await loadWorkspace(ctx, id);
+  const data = await measureServer("entry.workspace", () => loadWorkspace(ctx, id));
   if (!data) notFound();
 
   const requested = typeof file === "string" ? data.nodes.find((node) => node.id === file && node.kind !== "folder") : undefined;
   const initialId = requested?.id ?? firstFile(buildTree(data.nodes))?.id ?? null;
-  const initialFile = initialId ? await loadNodeDetail(ctx.supabase, initialId, id) : null;
-  const [currentCollection, collections, categories, categoryIds, pin] = await Promise.all([
+  const [initialFile, currentCollection, collections, categories, categoryIds, pin] = await measureServer("entry.detail-and-controls", () => Promise.all([
+    initialId ? loadNodeDetail(ctx.supabase, initialId, id) : null,
     loadCollection(ctx, data.entry.collection_id), loadCollections(ctx), loadCategories(ctx, data.entry.collection_id), loadEntryCategoryIds(ctx, id),
     ctx.supabase.from("entry_pins").select("entry_id").eq("entry_id", id).maybeSingle(),
-  ]);
+  ]));
   if (!currentCollection) notFound();
 
   return (
