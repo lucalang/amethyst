@@ -1,12 +1,12 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Check, Loader2, UserPlus, X } from "lucide-react";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { CatalogSearch } from "@/components/catalog/catalog-search";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { kindLabel, RewardArt, rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
-import { ACHIEVEMENTS, type AchievementGroup } from "@/lib/achievements";
+import { achievementDefinition, ACHIEVEMENTS, type AchievementGroup } from "@/lib/achievements";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { GAME_SHOPS, SHOP_GAMES, type ShopGame } from "@/lib/game-cosmetics";
 import { LIMITS, type AdminAccount, type CatalogAchievement, type CatalogItem } from "@/lib/vault-admin";
@@ -22,6 +22,39 @@ function Chips<T extends string>({ label, options, value, onChange }: { label: s
         </button>
       ))}
     </div>
+  );
+}
+
+/** What's picked so far, each with its own remove button. */
+function SelectedTray({ label, count, onClear, children }: { label: string; count: number; onClear: () => void; children: ReactNode }) {
+  return (
+    <div className="ax-tray" role="group" aria-label={label}>
+      <div className="ax-tray-head">
+        <span>
+          {label} <span className="ax-chip-count">{count}</span>
+        </span>
+        {count ? (
+          <button type="button" className="ax-link" onClick={onClear}>
+            Clear all
+          </button>
+        ) : null}
+      </div>
+      {count ? <ul className="ax-tray-list">{children}</ul> : <p className="ax-hint">Nothing selected yet. Pick from the list below.</p>}
+    </div>
+  );
+}
+
+function TrayItem({ name, art, onRemove }: { name: string; art: ReactNode; onRemove: () => void }) {
+  return (
+    <li className="ax-tray-item">
+      <span aria-hidden className="ax-tray-art">
+        {art}
+      </span>
+      <span className="ax-tray-name">{name}</span>
+      <button type="button" className="ax-tray-remove" aria-label={`Remove ${name}`} onClick={onRemove}>
+        <X aria-hidden className="size-3.5" />
+      </button>
+    </li>
   );
 }
 
@@ -79,6 +112,11 @@ export function CosmeticPicker({ items, selected, onChange, looks }: { items: Ca
 
   return (
     <div className="ax-picker">
+      <SelectedTray label="Selected cosmetics" count={selected.length} onClear={() => onChange([])}>
+        {selected.map((id) => (
+          <TrayItem key={id} name={rewardInfo(id).name} art={<RewardArt id={id} size="slot" looks={looks} />} onRemove={() => onChange(selected.filter((entry) => entry !== id))} />
+        ))}
+      </SelectedTray>
       <div className="ax-picker-tools">
         <CatalogSearch value={query} onChange={filter(setQuery)} label="Search cosmetics" placeholder="Name, type or id" className="ax-search" />
         <Chips label="Type" options={KINDS} value={kind} onChange={filter(setKind)} />
@@ -98,11 +136,6 @@ export function CosmeticPicker({ items, selected, onChange, looks }: { items: Ca
           <button type="button" className="ax-chip" aria-pressed={onlySelected} onClick={() => filter(setOnlySelected)(!onlySelected)}>
             Selected <span className="ax-chip-count">{selected.length}</span>
           </button>
-          {selected.length ? (
-            <button type="button" className="ax-link" onClick={() => onChange([])}>
-              Clear selection
-            </button>
-          ) : null}
         </div>
       </div>
       <p className="ax-hint" aria-live="polite">
@@ -179,6 +212,19 @@ export function AchievementPicker({ catalog, selected, onChange }: { catalog: Ca
 
   return (
     <div className="ax-picker">
+      <SelectedTray label="Selected achievements" count={selected.length} onClear={() => onChange([])}>
+        {selected.map((id) => {
+          const definition = achievementDefinition(id);
+          return (
+            <TrayItem
+              key={id}
+              name={definition?.name ?? id}
+              art={definition ? <AchievementBadge achievement={definition} earned size={36} /> : null}
+              onRemove={() => onChange(selected.filter((entry) => entry !== id))}
+            />
+          );
+        })}
+      </SelectedTray>
       <div className="ax-picker-tools">
         <CatalogSearch value={query} onChange={setQuery} label="Search achievements" placeholder="Name or description" className="ax-search" />
         <Chips label="Group" options={GROUPS} value={group} onChange={setGroup} />

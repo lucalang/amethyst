@@ -58,6 +58,7 @@ export const CHANGELOG: readonly Release[] = [
       { kind: "new", feature: "Achievement codes", text: "A code can unlock achievements, complete with their own rewards and notifications, shown in the Vault’s reveal and access log." },
       { kind: "new", feature: "Scheduled codes", text: "Some codes open on a set date; until then the seal stays dormant." },
       { kind: "improved", feature: "Safer redemptions", text: "If your connection drops mid-redemption, trying again picks up the original result instead of redeeming twice." },
+      { kind: "improved", feature: "Code management redesign", text: "Administrators now manage Vault codes in a new interface of layered translucent windows, with clearer step-by-step creation, a selected-rewards tray and a calmer publish confirmation." },
     ],
     details: {
       new: [
@@ -82,6 +83,16 @@ export const CHANGELOG: readonly Release[] = [
         {
           title: "Retries never redeem twice",
           body: "Each redemption attempt carries its own identifier. If the answer gets lost and you try the same code again, the Vault shows the original result instead of granting it a second time.",
+        },
+        {
+          title: "A redesigned code-management interface",
+          body: "For administrators, creating and reviewing Vault codes now happens in a new interface built from layered, translucent panels with thin luminous rails.",
+          points: [
+            "The four creation steps are numbered, and the current step opens as its own panel.",
+            "Chosen cosmetics and achievements gather in a selected-rewards tray where each one can be removed individually.",
+            "The review separates what each redemption grants from eligibility, timing and usage limits, and highlights codes that can be redeemed more than once.",
+            "Publishing traces an emblem and decodes the new code; reduced-motion and the in-app motion setting keep everything static.",
+          ],
         },
       ],
     },

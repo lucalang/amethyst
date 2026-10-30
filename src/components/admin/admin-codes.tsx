@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type MouseEvent } from "react";
-import { FilePenLine, Loader2, Plus, Trash2 } from "lucide-react";
+import { ChevronRight, FilePenLine, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CatalogSearch } from "@/components/catalog/catalog-search";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, configFrom, STATUS_LABEL, type AdminCode, type AdminDraft, type CodeStatus } from "@/lib/vault-admin";
-import { AdminHeader, AdminStage, audienceSummary, codeRewards, StatusPill, useNow, When } from "./admin-ui";
+import { adminDialogClass, AdminHeader, AdminStage, audienceSummary, codeRewards, StatusPill, SystemWindow, useNow, When } from "./admin-ui";
 
 const FILTERS: readonly ("all" | CodeStatus)[] = ["all", "active", "scheduled", "expired", "used-up", "disabled"];
 
@@ -44,8 +44,8 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
   return (
     <AdminStage>
       <AdminHeader
-        eyebrow="Admin · Vault codes"
-        title="Code registry"
+        eyebrow="Admin panel"
+        title="Vault codes"
         lede="Build, publish and retire Vault codes. Codes are stored as hashes only, so a published code can’t be shown again."
         actions={
           <Link href="/admin/new" className="ax-btn" data-variant="primary">
@@ -75,30 +75,27 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
 
       {drafts.length ? <Drafts drafts={drafts} /> : null}
 
-      <section className="ax-panel" aria-labelledby="ax-codes-title">
+      <SystemWindow id="ax-codes-title" title="Published codes" count={`${shown.length}/${rows.length}`} order={drafts.length ? 2 : 1}>
         <div className="ax-toolbar">
-          <h2 id="ax-codes-title" className="ax-section-title">
-            Published codes
-          </h2>
+          <div className="ax-chips" role="group" aria-label="Filter by status">
+            {FILTERS.map((id) => (
+              <button key={id} type="button" className="ax-chip" aria-pressed={filter === id} onClick={() => setFilter(id)}>
+                {id === "all" ? "All" : STATUS_LABEL[id]} <span className="ax-chip-count">{counts[id] ?? 0}</span>
+              </button>
+            ))}
+          </div>
           <CatalogSearch value={query} onChange={setQuery} label="Search codes" placeholder="Label, reward, creator…" className="ax-search" />
-        </div>
-        <div className="ax-chips" role="group" aria-label="Filter by status">
-          {FILTERS.map((id) => (
-            <button key={id} type="button" className="ax-chip" aria-pressed={filter === id} onClick={() => setFilter(id)}>
-              {id === "all" ? "All" : STATUS_LABEL[id]} <span className="ax-chip-count">{counts[id] ?? 0}</span>
-            </button>
-          ))}
         </div>
         {shown.length ? (
           <ul className="ax-rows">
             {shown.map(({ code, status, rewards }) => (
               <li key={code.id}>
                 <Link href={`/admin/codes/${code.id}`} className="ax-row">
+                  <span className="ax-row-status">
+                    <StatusPill status={status} />
+                  </span>
                   <span className="ax-row-main">
-                    <span className="ax-row-title">
-                      {code.label}
-                      <StatusPill status={status} />
-                    </span>
+                    <span className="ax-row-title">{code.label}</span>
                     <span className="ax-row-rewards">{rewards}</span>
                     <span className="ax-row-meta">
                       {audienceSummary(code)}
@@ -129,9 +126,10 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
                       </span>
                     ) : null}
                     <span className="ax-row-date">
-                      <When iso={code.createdAt} />
+                      Published <When iso={code.createdAt} />
                     </span>
                   </span>
+                  <ChevronRight aria-hidden className="ax-row-go" />
                 </Link>
               </li>
             ))}
@@ -153,7 +151,7 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
             ) : null}
           </div>
         )}
-      </section>
+      </SystemWindow>
     </AdminStage>
   );
 }
@@ -179,16 +177,13 @@ function Drafts({ drafts }: { drafts: AdminDraft[] }) {
   }
 
   return (
-    <section className="ax-panel" data-tone="draft" aria-labelledby="ax-drafts-title">
-      <h2 id="ax-drafts-title" className="ax-section-title">
-        Drafts <span className="ax-muted">· not redeemable</span>
-      </h2>
+    <SystemWindow id="ax-drafts-title" title="Drafts" count="Not redeemable" tone="draft" order={1}>
       <ul className="ax-drafts">
         {drafts.map((draft) => {
           const config = configFrom(draft.config);
           return (
             <li key={draft.id} className="ax-draft">
-              <FilePenLine aria-hidden className="size-4 shrink-0 text-[var(--vx-ash)]" />
+              <FilePenLine aria-hidden className="ax-draft-icon" />
               <span className="min-w-0 flex-1">
                 <span className="ax-row-title">{draft.label || "Untitled draft"}</span>
                 <span className="ax-row-meta">
@@ -207,7 +202,7 @@ function Drafts({ drafts }: { drafts: AdminDraft[] }) {
         })}
       </ul>
       <AlertDialog open={removing !== null} onOpenChange={(open) => !open && !busy && setRemoving(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className={adminDialogClass}>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this draft?</AlertDialogTitle>
             <AlertDialogDescription>“{removing?.label || "Untitled draft"}” was never published, so no code exists for it. This can’t be undone.</AlertDialogDescription>
@@ -221,6 +216,6 @@ function Drafts({ drafts }: { drafts: AdminDraft[] }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+    </SystemWindow>
   );
 }

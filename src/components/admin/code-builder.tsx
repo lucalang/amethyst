@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Coins, FilePenLine, Loader2, Shapes, Trophy, Volume2, VolumeX } from "lucide-react";
 import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
+import { AchievementBadge } from "@/components/achievements/achievement-badge";
+import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { closeVaultAudio, playAdminSound, type AdminSound } from "@/components/vault/vault-audio";
 import { rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { achievementDefinition } from "@/lib/achievements";
@@ -22,7 +24,7 @@ import {
   type CatalogItem,
   type CodeConfig,
 } from "@/lib/vault-admin";
-import { AdminHeader, AdminStage, formatWhen, RewardTiles, useTimeZone } from "./admin-ui";
+import { AdminHeader, AdminStage, formatWhen, RewardTiles, SystemWindow, useTimeZone } from "./admin-ui";
 import { AccountPicker, accountLabel, AchievementPicker, CosmeticPicker } from "./reward-pickers";
 
 const PublishSeal = dynamic(() => import("./publish-seal"), { ssr: false, loading: () => <div className="ax-forge" aria-hidden /> });
@@ -213,7 +215,7 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
         startsAt: effective.startsAt,
         scheduled: isFuture(effective.startsAt),
       });
-      sfx("forge");
+      sfx("publish");
     } catch (error) {
       sfx("error");
       if (error instanceof ApiError && (error.code === "duplicate_code" || error.code === "invalid_code")) {
@@ -270,11 +272,8 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
     const { scheduled } = done;
     return (
       <AdminStage>
-        <div className="ax-done" data-motion={effects}>
-          <h1 ref={headingRef} tabIndex={-1} className="ax-title">
-            {scheduled ? "Published · scheduled" : "Published · active now"}
-          </h1>
-          <PublishSeal code={done.code} animate={effects !== "off"} />
+        <SystemWindow level={1} id="ax-done-title" headingRef={headingRef} title="Code published" className="ax-done" motion={effects}>
+          <PublishSeal code={done.code} status={scheduled ? "scheduled" : "active"} animate={effects !== "off"} />
           <p className="ax-lede">
             {scheduled && done.startsAt ? `Redeemable from ${formatWhen(done.startsAt)}. ` : "Anyone it’s meant for can redeem it in the Vault right away. "}
             Rewards and rules are now fixed; you can disable or clone it from its page.
@@ -290,7 +289,7 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
               All codes
             </Link>
           </div>
-        </div>
+        </SystemWindow>
       </AdminStage>
     );
   }
@@ -298,11 +297,8 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
   if (done?.kind === "draft") {
     return (
       <AdminStage>
-        <div className="ax-done ax-panel" data-tone="draft" data-motion={effects}>
+        <SystemWindow level={1} id="ax-done-title" headingRef={headingRef} title="Draft saved" tone="draft" className="ax-done" motion={effects}>
           <FilePenLine aria-hidden className="ax-done-icon" />
-          <h1 ref={headingRef} tabIndex={-1} className="ax-title">
-            Draft saved
-          </h1>
           <p className="ax-lede">
             Not redeemable. No code exists until you publish it{config.codeMode === "phrase" ? ", and the phrase isn’t stored with drafts" : ""}. It waits under Drafts in the admin panel.
           </p>
@@ -322,7 +318,7 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
               All codes
             </Link>
           </div>
-        </div>
+        </SystemWindow>
       </AdminStage>
     );
   }
@@ -350,32 +346,45 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
 
       <nav aria-label="Builder steps">
         <ol className="ax-steps">
-          {STEPS.map((label, index) => (
-            <li key={label}>
-              <button
-                type="button"
-                className="ax-step"
-                aria-current={index === step ? "step" : undefined}
-                data-done={index < step || (index <= reached && index !== step) ? "" : undefined}
-                disabled={index > reached || busy !== null}
-                onClick={() => goTo(index)}
-              >
-                <span className="ax-step-index">{index + 1}</span>
-                <span className="ax-step-label">{label}</span>
-              </button>
-            </li>
-          ))}
+          {STEPS.map((label, index) => {
+            const complete = index < step || (index <= reached && index !== step);
+            return (
+              <li key={label}>
+                <button
+                  type="button"
+                  className="ax-step"
+                  aria-current={index === step ? "step" : undefined}
+                  data-done={complete ? "" : undefined}
+                  disabled={index > reached || busy !== null}
+                  onClick={() => goTo(index)}
+                >
+                  <span className="ax-step-index">{complete ? <Check aria-hidden className="size-3.5" /> : pad(index + 1)}</span>
+                  <span className="ax-step-label">{label}</span>
+                </button>
+              </li>
+            );
+          })}
         </ol>
       </nav>
 
       <div className="ax-builder" data-motion={effects}>
-        <section key={step} className="ax-panel ax-step-panel" aria-labelledby="ax-step-title">
-          <h2 id="ax-step-title" ref={headingRef} tabIndex={-1} className="ax-section-title">
-            <span className="ax-muted">
-              Step {step + 1} of {STEPS.length} ·{" "}
-            </span>
-            {STEPS[step]}
-          </h2>
+        <SystemWindow
+          key={step}
+          id="ax-step-title"
+          headingRef={headingRef}
+          className="ax-step-window"
+          title={
+            <>
+              <span aria-hidden className="ax-window-index">
+                {pad(step + 1)}/{pad(STEPS.length)}
+              </span>
+              <span className="sr-only">
+                Step {step + 1} of {STEPS.length}:{" "}
+              </span>
+              {STEPS[step]}
+            </>
+          }
+        >
           {errorCount > 1 ? (
             <p role="alert" className="ax-error">
               {errorCount} things need attention below.
@@ -404,7 +413,9 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
                         clear("types");
                       }}
                     />
-                    <Icon aria-hidden className="ax-choice-icon" />
+                    <span aria-hidden className="ax-choice-mark">
+                      <Icon />
+                    </span>
                     <span className="ax-choice-title">{title}</span>
                     <span className="ax-choice-body">{body}</span>
                     <span className="ax-item-check" aria-hidden>
@@ -442,13 +453,13 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
                 </Block>
               ) : null}
               {types.cosmetics ? (
-                <Block title={`Cosmetics · ${config.items.length} selected`}>
+                <Block title="Cosmetics">
                   <CosmeticPicker items={catalog.items} selected={config.items} onChange={(items) => update({ items }, "items")} looks={looks} />
                   {fieldError("items")}
                 </Block>
               ) : null}
               {types.achievements ? (
-                <Block title={`Achievements · ${config.achievements.length} selected`}>
+                <Block title="Achievements">
                   <p className="ax-hint">
                     Redeeming unlocks each one through the achievement system, with its own reward once per account. Accounts that already have it keep their original unlock and get nothing twice.
                   </p>
@@ -628,70 +639,97 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
           ) : null}
 
           {step === LAST ? (
-            <div className="ax-stack">
-              <Block title="Each redemption grants">
-                <RewardTiles coins={effective.coins} items={effective.items} achievements={effective.achievements} looks={looks} />
-                {effective.items.length ? <p className="ax-hint">Cosmetics are owned permanently. Accounts that already own one keep it, and the redemption still succeeds.</p> : null}
-              </Block>
-
-              {chosenAchievements.length ? (
-                <Block title="Achievement rewards">
-                  <p className="ax-hint">
-                    Each achievement also grants its own reward, once per account, the first time it unlocks. Accounts that already have it keep their original unlock date and get nothing extra. Code
-                    unlocks are recorded as coming from a code, not from play.
-                  </p>
-                  <ul className="ax-review-list">
-                    {chosenAchievements.map(({ id, definition, data }) => {
-                      const own = data ? rewardSummary(data.coins, data.items) : "";
-                      const overlap = (data?.items ?? []).filter((item) => effective.items.includes(item));
-                      return (
-                        <li key={id}>
-                          <strong>{definition?.name ?? id}</strong>
-                          {data?.hidden ? <span className="ax-flag" data-tone="hidden">Hidden</span> : null}
-                          <span className="ax-muted"> · also grants {own || "no extra reward"}</span>
-                          {overlap.length ? (
-                            <span className="ax-hint block">
-                              {overlap.map((item) => rewardInfo(item).name).join(", ")} is also picked directly; it’s granted once.
-                            </span>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
+            <div className="ax-review">
+              <div className="ax-stack">
+                <Block title="Each redemption grants">
+                  <RewardTiles coins={effective.coins} items={effective.items} achievements={effective.achievements} looks={looks} />
+                  {effective.items.length ? <p className="ax-hint">Cosmetics are owned permanently. Accounts that already own one keep it, and the redemption still succeeds.</p> : null}
                 </Block>
-              ) : null}
 
-              <Block title="Rules">
-                <dl className="ax-facts">
-                  <Fact term="Label">{effective.label}</Fact>
-                  <Fact term="Code">{effective.codeMode === "phrase" ? (normalized ? <span className="ax-mono">{normalized}</span> : "Missing phrase") : "Random, generated on publish"}</Fact>
-                  <Fact term="Who">
-                    {effective.audience === "everyone" ? "Every signed-in account" : `${plural(effective.allowlist.length, "listed account")}: ${effective.allowlist.map((id) => accountLabel(accounts[id])).join(", ")}`}
-                  </Fact>
-                  <Fact term="Starts">{effective.startsAt ? `${formatWhen(effective.startsAt)}${timeZone ? ` (${timeZone})` : ""}` : "When published"}</Fact>
-                  <Fact term="Expires">{effective.expiresAt ? `${formatWhen(effective.expiresAt)}${timeZone ? ` (${timeZone})` : ""}` : "Never"}</Fact>
-                  <Fact term="Total limit">{effective.maxRedemptions === null ? "None" : plural(effective.maxRedemptions, "redemption")}</Fact>
-                  <Fact term="Per account">{effective.perAccountLimit === 1 ? "Once" : `Up to ${effective.perAccountLimit} times`}</Fact>
-                </dl>
-              </Block>
+                {chosenAchievements.length ? (
+                  <Block title="Achievement rewards">
+                    <p className="ax-hint">
+                      Each achievement also grants its own reward, once per account, the first time it unlocks. Accounts that already have it keep their original unlock date and get nothing extra.
+                      Code unlocks are recorded as coming from a code, not from play.
+                    </p>
+                    <ul className="ax-review-list">
+                      {chosenAchievements.map(({ id, definition, data }) => {
+                        const own = data ? rewardSummary(data.coins, data.items) : "";
+                        const overlap = (data?.items ?? []).filter((item) => effective.items.includes(item));
+                        return (
+                          <li key={id}>
+                            {definition ? <AchievementBadge achievement={definition} earned size={32} /> : null}
+                            <span className="min-w-0">
+                              <strong>{definition?.name ?? id}</strong>
+                              {data?.hidden ? (
+                                <span className="ax-flag" data-tone="hidden">
+                                  Hidden
+                                </span>
+                              ) : null}
+                              <span className="ax-muted block">Also grants {own || "no extra reward"}</span>
+                              {overlap.length ? (
+                                <span className="ax-hint block">
+                                  {overlap.map((item) => rewardInfo(item).name).join(", ")} is also picked directly; it’s granted once.
+                                </span>
+                              ) : null}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Block>
+                ) : null}
+              </div>
 
-              {effective.coins > 0 || achievementCoins > 0 ? (
-                <Block title="Maximum coins">
+              <div className="ax-stack">
+                <Block title="Eligibility and timing">
                   <dl className="ax-facts">
+                    <Fact term="Label">{effective.label}</Fact>
+                    <Fact term="Code">{effective.codeMode === "phrase" ? (normalized ? <span className="ax-mono">{normalized}</span> : "Missing phrase") : "Random, generated on publish"}</Fact>
+                    <Fact term="Eligible">{effective.audience === "everyone" ? "Every signed-in account" : plural(effective.allowlist.length, "listed account")}</Fact>
+                    <Fact term="Starts">{effective.startsAt ? `${formatWhen(effective.startsAt)}${timeZone ? ` (${timeZone})` : ""}` : "When published"}</Fact>
+                    <Fact term="Expires">{effective.expiresAt ? `${formatWhen(effective.expiresAt)}${timeZone ? ` (${timeZone})` : ""}` : "Never"}</Fact>
+                  </dl>
+                  {effective.audience === "allowlist" && effective.allowlist.length ? (
+                    <ul className="ax-accounts" data-variant="compact" aria-label="Eligible accounts">
+                      {effective.allowlist.map((id) => {
+                        const account = accounts[id];
+                        return (
+                          <li key={id}>
+                            <ProfileAvatar name={account?.name} src={account?.avatarUrl} decoration={null} className="size-7" />
+                            <span className="ax-account-name">{accountLabel(account)}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </Block>
+
+                <Block title="Usage limits" tone={repeatable ? "alert" : undefined}>
+                  <dl className="ax-facts">
+                    <Fact term="Total limit">{effective.maxRedemptions === null ? "None" : plural(effective.maxRedemptions, "redemption")}</Fact>
+                    <Fact term="Per account">{effective.perAccountLimit === 1 ? "Once" : `Up to ${effective.perAccountLimit} times`}</Fact>
                     {effective.coins > 0 ? (
                       <>
                         <Fact term="Code coins per account">{payout.perAccount.toLocaleString("en")}</Fact>
                         <Fact term="Code coins in total">{payout.total === null ? "No upper limit" : payout.total.toLocaleString("en")}</Fact>
                       </>
                     ) : null}
-                    {achievementCoins > 0 ? <Fact term="Achievement coins per account">Up to {achievementCoins.toLocaleString("en")}, once, only for achievements not yet unlocked</Fact> : null}
+                    {achievementCoins > 0 ? <Fact term="Achievement coins">Up to {achievementCoins.toLocaleString("en")} per account, once, only for achievements not yet unlocked</Fact> : null}
                   </dl>
-                  <p className="ax-hint">None of this counts toward the {DAILY_EARNING_LIMIT}-coin daily earning limit.</p>
+                  <p className="ax-hint">
+                    {effective.perAccountLimit === 1
+                      ? "Repeat redemptions: none. A second attempt from the same account is refused and nothing is granted twice."
+                      : effective.coins > 0
+                        ? `Repeat redemptions: each repeat adds ${effective.coins.toLocaleString("en")} code coins. Cosmetics and achievements are granted on the first redemption only.`
+                        : "Repeat redemptions grant nothing new: cosmetics and achievements are only granted once."}
+                    {effective.coins > 0 || achievementCoins > 0 ? ` None of this counts toward the ${DAILY_EARNING_LIMIT}-coin daily earning limit.` : ""}
+                  </p>
                 </Block>
-              ) : null}
+              </div>
 
               {repeatable ? (
-                <div className="ax-confirm" data-invalid={errors.confirmRepeat ? "" : undefined}>
+                <div className="ax-confirm ax-wide" data-invalid={errors.confirmRepeat ? "" : undefined}>
                   <label>
                     <input
                       type="checkbox"
@@ -711,7 +749,7 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
                 </div>
               ) : null}
 
-              <p className="ax-hint">Once published, rewards and rules can’t be changed. You can disable the code or clone it into a new one.</p>
+              <p className="ax-hint ax-wide">Once published, rewards and rules can’t be changed. You can disable the code or clone it into a new one.</p>
             </div>
           ) : null}
 
@@ -720,7 +758,7 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
               {failure}
             </p>
           ) : null}
-        </section>
+        </SystemWindow>
 
         <div className="ax-actions">
           {step > 0 ? (
@@ -737,7 +775,7 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
             </button>
             {step < LAST ? (
               <button type="button" className="ax-btn" data-variant="primary" disabled={busy !== null} onClick={() => goTo(step + 1)}>
-                Next: {STEPS[step + 1]} <ArrowRight aria-hidden className="size-4" />
+                Next<span className="ax-next-target">: {STEPS[step + 1]}</span> <ArrowRight aria-hidden className="size-4" />
               </button>
             ) : (
               <button type="button" className="ax-btn" data-variant="primary" disabled={busy !== null} onClick={publish}>
@@ -752,9 +790,9 @@ function Builder({ catalog, looks, initial, accounts: initialAccounts, draftId: 
   );
 }
 
-function Block({ title, children }: { title: string; children: ReactNode }) {
+function Block({ title, tone, children }: { title: string; tone?: "alert"; children: ReactNode }) {
   return (
-    <section className="ax-block">
+    <section className="ax-block" data-tone={tone}>
       <h3 className="ax-block-title">{title}</h3>
       {children}
     </section>

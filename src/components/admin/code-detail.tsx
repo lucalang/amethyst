@@ -18,7 +18,7 @@ import {
 import { ACHIEVEMENT_PREFIX, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, maxPayout, type AdminAccount, type AdminCodeDetail } from "@/lib/vault-admin";
-import { AdminHeader, AdminStage, RewardTiles, StatusPill, useNow, When } from "./admin-ui";
+import { adminDialogClass, AdminHeader, AdminStage, RewardTiles, StatusPill, SystemWindow, useNow, When } from "./admin-ui";
 
 const accountName = (account: AdminAccount | null) => (account ? account.name || account.email || "Unnamed account" : "Deleted account");
 
@@ -69,20 +69,14 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
       />
 
       <div className="ax-split">
-        <section className="ax-panel" aria-labelledby="ax-rewards-title">
-          <h2 id="ax-rewards-title" className="ax-section-title">
-            Rewards
-          </h2>
+        <SystemWindow id="ax-rewards-title" title="Rewards" count={code.coins > 0 ? code.items.length + code.achievements.length + 1 : code.items.length + code.achievements.length}>
           <RewardTiles coins={code.coins} items={code.items} achievements={code.achievements} looks={looks} />
           {code.achievements.length ? (
             <p className="ax-hint">Unlocked achievements also grant their own reward once per account. Accounts that already have one keep its original unlock date.</p>
           ) : null}
-        </section>
+        </SystemWindow>
 
-        <section className="ax-panel" aria-labelledby="ax-rules-title">
-          <h2 id="ax-rules-title" className="ax-section-title">
-            Status and rules
-          </h2>
+        <SystemWindow id="ax-rules-title" title="Status and rules" order={1}>
           <dl className="ax-facts">
             <div>
               <dt>Status</dt>
@@ -142,22 +136,21 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
             ) : null}
           </dl>
           {code.audience === "allowlist" ? (
-            <ul className="ax-accounts" aria-label="Allowlisted accounts">
+            <ul className="ax-accounts" data-variant="compact" aria-label="Allowlisted accounts">
               {code.allowlist.map((account) => (
                 <li key={account.id}>
-                  <span className="ax-account-name">{accountName(account)}</span>
-                  {account.email ? <span className="ax-muted">{account.email}</span> : null}
+                  <span className="min-w-0 flex-1">
+                    <span className="ax-account-name">{accountName(account)}</span>
+                    {account.email ? <span className="ax-muted block truncate text-xs">{account.email}</span> : null}
+                  </span>
                 </li>
               ))}
             </ul>
           ) : null}
-        </section>
+        </SystemWindow>
       </div>
 
-      <section className="ax-panel" aria-labelledby="ax-history-title">
-        <h2 id="ax-history-title" className="ax-section-title">
-          Redemption history <span className="ax-muted">· {code.redemptions.length === 500 ? "latest 500" : code.redemptions.length}</span>
-        </h2>
+      <SystemWindow id="ax-history-title" title="Redemption history" count={code.redemptions.length === 500 ? "Latest 500" : code.redemptions.length} order={2}>
         {code.redemptions.length ? (
           <div className="ax-table-wrap">
             <table className="ax-table">
@@ -194,12 +187,9 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
         ) : (
           <p className="ax-empty">Nobody has redeemed this code yet.</p>
         )}
-      </section>
+      </SystemWindow>
 
-      <section className="ax-panel" aria-labelledby="ax-audit-title">
-        <h2 id="ax-audit-title" className="ax-section-title">
-          Audit trail
-        </h2>
+      <SystemWindow id="ax-audit-title" title="Audit trail" order={3}>
         {code.audit.length ? (
           <ol className="ax-audit">
             {code.audit.map((entry, index) => (
@@ -218,10 +208,10 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
         ) : (
           <p className="ax-empty">This code predates the audit trail.</p>
         )}
-      </section>
+      </SystemWindow>
 
       <AlertDialog open={confirming} onOpenChange={(open) => !busy && setConfirming(open)}>
-        <AlertDialogContent>
+        <AlertDialogContent className={adminDialogClass}>
           <AlertDialogHeader>
             <AlertDialogTitle>Disable “{code.label}”?</AlertDialogTitle>
             <AlertDialogDescription>

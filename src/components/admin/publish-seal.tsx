@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Check, Copy, ShieldAlert } from "lucide-react";
 import { DecodeText } from "@/components/vault/vault-reveal";
+import { StatusPill } from "./admin-ui";
 
-const TICKS = Array.from({ length: 48 }, (_, index) => index);
-
-/** The admin's publish confirmation: an inscription ring seals the new code, shown this one time. */
-export default function PublishSeal({ code, animate }: { code: string; animate: boolean }) {
+/**
+ * The admin's publish confirmation: the emblem ring traces, the check settles, then the code
+ * plate is scanned and decoded. Shown this one time only.
+ */
+export default function PublishSeal({ code, status, animate }: { code: string; status: "active" | "scheduled"; animate: boolean }) {
   const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
 
   function copy() {
@@ -19,24 +21,16 @@ export default function PublishSeal({ code, animate }: { code: string; animate: 
 
   return (
     <div className="ax-forge" data-animate={animate ? "" : undefined}>
-      <div className="ax-sigil-wrap" aria-hidden>
-        <svg className="ax-sigil" viewBox="0 0 200 200">
-          <g className="ax-sigil-ticks">
-            {TICKS.map((index) => (
-              <line key={index} x1="100" y1="5" x2="100" y2={index % 4 === 0 ? 15 : 10} transform={`rotate(${index * 7.5} 100 100)`} />
-            ))}
-          </g>
-          <circle className="ax-sigil-line" cx="100" cy="100" r="88" pathLength={1} />
-          <circle className="ax-sigil-line" data-delay="1" cx="100" cy="100" r="70" pathLength={1} />
-          <path className="ax-sigil-line" data-delay="2" d="M100 46 L140 100 L100 154 L60 100 Z" pathLength={1} />
-          <path className="ax-sigil-core" d="M100 78 L116 100 L100 122 L84 100 Z" />
-        </svg>
-        <span className="ax-sigil-flash" />
-      </div>
-      <p className="ax-eyebrow">Code sealed</p>
+      <svg className="ax-emblem" viewBox="0 0 100 100" aria-hidden>
+        <path className="ax-emblem-ticks" d="M50 1v8M99 50h-8M50 99v-8M1 50h8" />
+        <circle className="ax-emblem-line" cx="50" cy="50" r="40" pathLength={1} />
+        <circle className="ax-emblem-line" data-delay="1" cx="50" cy="50" r="33" pathLength={1} />
+        <path className="ax-emblem-check" d="M36 51l10 10 19-21" pathLength={1} />
+      </svg>
+      <StatusPill status={status} />
       <div className="ax-codeplate">
         <code aria-label={code}>
-          <DecodeText text={code} animate={animate} delay={animate ? 650 : 0} />
+          <DecodeText text={code} animate={animate} delay={animate ? 700 : 0} />
         </code>
         <button type="button" className="ax-btn" data-size="sm" onClick={copy}>
           {copied === "yes" ? <Check aria-hidden className="size-3.5" /> : <Copy aria-hidden className="size-3.5" />}
