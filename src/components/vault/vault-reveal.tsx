@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from "react";
+import { lazy, Suspense, useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { ArrowLeft, ArrowRight, Coins, Gamepad2, Sparkles } from "lucide-react";
 import { SampleArt, type FrameSample } from "@/app/(vault)/settings/frame-settings";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
@@ -20,6 +20,11 @@ export type VaultProfile = { name: string | null; avatarUrl: string | null };
 export type VaultSamples = { portrait: FrameSample | null; square: FrameSample | null };
 /** The account's own avatar and covers, so rewards are shown on the user's real things. */
 export type VaultLooks = { profile: VaultProfile; samples: VaultSamples };
+/**
+ * Where the cards come from, in CSS 3D space: x/y in viewport px and z toward the viewer, seen
+ * through `perspective` px from the point (axisX, axisY).
+ */
+export type RevealOrigin = { x: number; y: number; z: number; perspective: number; axisX: number; axisY: number };
 
 type RewardKind = "frame" | "avatar_decoration" | "badge" | "title" | "game" | "other";
 const KIND_LABEL: Record<RewardKind, string> = {
@@ -266,8 +271,8 @@ export function RewardReveal({
   newItems?: string[];
   looks: VaultLooks;
   motion: MotionLevel;
-  /** The vault on screen: cards fly out of its centre. */
-  origin: RefObject<HTMLElement | null>;
+  /** The vault's core: cards fly out of it. */
+  origin: () => RevealOrigin;
   /** When the heading resolves, and when the cards fly. */
   titleDelay: number;
   delay: number;
@@ -283,16 +288,27 @@ export function RewardReveal({
   const rewards = [...(coins > 0 ? [COINS] : []), ...items];
   const total = rewards.length;
 
-  // Each card starts at the vault's core, so the rewards visibly come out of it.
+  // Each card starts deep inside the vault's core and travels forward through the same perspective
+  // as the 3D scene. Layout offsets ignore the running animation, so the measure is exact.
+  const readOrigin = useEffectEvent(origin);
   useLayoutEffect(() => {
-    const from = origin.current?.getBoundingClientRect();
-    if (!list.current || !from) return;
-    for (const card of list.current.querySelectorAll<HTMLElement>("[data-card]")) {
-      const box = card.getBoundingClientRect();
-      card.style.setProperty("--fx", `${Math.round(from.left + from.width / 2 - (box.left + box.width / 2))}px`);
-      card.style.setProperty("--fy", `${Math.round(from.top + from.height / 2 - (box.top + box.height / 2))}px`);
+    const ul = list.current;
+    if (!ul) return;
+    const from = readOrigin();
+    const box = ul.getBoundingClientRect();
+    const cards = [...ul.querySelectorAll<HTMLElement>("[data-card]")].map((card) => {
+      const base = card.offsetParent === ul ? 0 : ul.offsetLeft;
+      const top = card.offsetParent === ul ? 0 : ul.offsetTop;
+      return { card, x: box.left + card.offsetLeft - base + card.offsetWidth / 2, y: box.top + card.offsetTop - top + card.offsetHeight / 2 };
+    });
+    ul.style.perspective = `${Math.round(from.perspective)}px`;
+    ul.style.perspectiveOrigin = `${Math.round(from.axisX - box.left)}px ${Math.round(from.axisY - box.top)}px`;
+    for (const { card, x, y } of cards) {
+      card.style.setProperty("--fx", `${Math.round(from.x - x)}px`);
+      card.style.setProperty("--fy", `${Math.round(from.y - y)}px`);
+      card.style.setProperty("--fz", `${Math.round(from.z)}px`);
     }
-  }, [origin]);
+  }, []);
 
   useEffect(() => {
     if (inspecting) detail.current?.focus({ preventScroll: true });

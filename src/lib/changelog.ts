@@ -49,6 +49,51 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-vault-forged",
+    date: "2026-10-30",
+    title: "The Vault, forged in 3D",
+    intro: "The Vault is now a real 3D artifact: a black-metal seal with crimson light in its seams, an iris door that physically opens and an access console you type into directly.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "Summoning", text: "The vault rises out of the dark while its access console flies together piece by piece and powers on. Any key or tap skips straight in." },
+      { kind: "improved", feature: "Access console", text: "The code panel is part of a physical console that leans toward your pointer, holds still while you type and is linked to the vault." },
+      { kind: "improved", feature: "Unlocking", text: "A correct code lines up the rings, pulls back the locks and swings the iris open before your rewards fly out of its core." },
+      { kind: "improved", feature: "Answers", text: "Wrong codes jam the dial, dormant codes leave the vault grey, lockdowns slam the locks shut and lost connections fill the screen with static." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Summoning the Vault",
+          body: "Arriving at the Vault now builds it in front of you: smoke and embers gather, the seal rises and turns into place, and the access console assembles its frame around the code panel before its screen lights up.",
+          points: [
+            "The full entrance plays once per visit, later visits get a short one, and nothing replays after an answer.",
+            "Optional sound follows the entrance step by step and respects your Arcade sound setting and the switch on the page.",
+          ],
+          where: "Account menu → The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "The access console",
+          body: "The code field and buttons sit on the console's screen and move with it, so they stay exactly where the console is. They are still the page's own controls, so the keyboard, screen readers and password managers work as before.",
+          points: [
+            "On desktop the console leans toward your pointer and edges closer when you reach for it. On phones it keeps a steady view with a gentle drift, with no hover or motion permission needed.",
+            "While you check a code, the dial ratchets, the scanner sweeps the screen and energy runs down the link into the vault.",
+          ],
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Opening the vault",
+          body: "Once the server accepts a code, the console steps aside, the rings disengage and the iris door swings open. Your rewards then come forward out of the light as cards you can inspect, and Continue brings the console back with the result.",
+          points: [
+            "Rewards are only shown after the server confirms them, and a skipped or interrupted animation never hides or repeats one.",
+            "Reduced motion and Motion: Off show every state at rest. Browsers without 3D graphics get the drawn seal instead.",
+          ],
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-vault-rework",
     date: "2026-10-30",
     title: "The Vault, resealed",

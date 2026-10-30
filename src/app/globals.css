@@ -5163,59 +5163,14 @@ a.arcade-counter:hover {
     opacity: 0;
   }
 }
-.vx-frame {
-  position: absolute;
-  inset: 0.6rem 0.6rem calc(4.6rem + env(safe-area-inset-bottom));
-  pointer-events: none;
-}
-@media (min-width: 48rem) {
-  .vx-frame {
-    inset: 1rem;
-  }
-}
-.vx-frame > span {
-  position: absolute;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: 0 solid rgb(255 31 61 / 0.6);
-}
-.vx-frame > span:nth-child(1) {
-  --from: -0.6rem -0.6rem;
-  top: 0;
-  left: 0;
-  border-width: 1px 0 0 1px;
-}
-.vx-frame > span:nth-child(2) {
-  --from: 0.6rem -0.6rem;
-  top: 0;
-  right: 0;
-  border-width: 1px 1px 0 0;
-}
-.vx-frame > span:nth-child(3) {
-  --from: -0.6rem 0.6rem;
-  bottom: 0;
-  left: 0;
-  border-width: 0 0 1px 1px;
-}
-.vx-frame > span:nth-child(4) {
-  --from: 0.6rem 0.6rem;
-  right: 0;
-  bottom: 0;
-  border-width: 0 1px 1px 0;
-}
-@keyframes vx-corner {
-  from {
-    opacity: 0;
-    translate: var(--from);
-  }
-}
-/* The 3D vault: one canvas over the first screen; its camera frames the vault on .vx-artifact. */
+/* The 3D vault: one canvas over the hero (script sets its height); the camera frames the vault on
+   .vx-artifact and builds the console around .vx-window. */
 .vx-scene {
   position: absolute;
   inset: 0 0 auto;
   height: min(100%, 100lvh);
   pointer-events: none;
-  mask-image: linear-gradient(to bottom, #000 80%, transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 6rem), transparent);
 }
 .vx-scene > canvas {
   position: absolute;
@@ -5229,11 +5184,11 @@ a.arcade-counter:hover {
 }
 
 /*
- * The summon. dark: the chamber waits a moment for its vault (the hold lets the page show itself
- * anyway if scripts never arrive). summon: the interface arrives with the vault, timed by the
- * --vx-*-at variables. done: everything at rest, with no entrance left to replay.
+ * The summon. dark: before the first frame (the hold lets the page show itself anyway if scripts never
+ * arrive). summon: the interface arrives with the vault, timed by the --vx-*-at variables. done:
+ * everything at rest, with no entrance left to replay.
  */
-.vx-stage[data-intro="dark"] :is(.vx-inner, .vx-frame) {
+.vx-stage[data-intro="dark"] .vx-inner {
   animation: vx-hold 2.5s step-end;
 }
 @keyframes vx-hold {
@@ -5247,8 +5202,8 @@ a.arcade-counter:hover {
 .vx-stage[data-summon="short"] {
   --vx-step: 30ms;
 }
-.vx-stage[data-intro="summon"] .vx-frame > span {
-  animation: vx-corner 700ms var(--ease-out-soft) var(--vx-hud-at) backwards;
+.vx-stage[data-intro="summon"] .vx-fog {
+  animation: vx-fade 1600ms ease backwards;
 }
 .vx-stage[data-intro="summon"] .vx-hud {
   animation: vx-hud-in 800ms var(--ease-out-soft) var(--vx-hud-at) backwards;
@@ -5278,33 +5233,22 @@ a.arcade-counter:hover {
     filter: brightness(2.5) blur(6px);
   }
 }
-/* The panel is projected out of the vault: from its side on wide screens, from above on phones. */
-.vx-window {
-  --vx-from: 0 -3rem;
-}
-@media (min-width: 64rem) {
-  .vx-window {
-    --vx-from: -5rem 0;
-  }
-}
+/* The screen powers on as the console locks: a bright line that opens from the centre. Only opacity,
+   clip and filter animate, because the 3D console owns the panel's transform. */
 .vx-stage[data-intro="summon"] .vx-window {
-  animation: vx-project 800ms cubic-bezier(0.7, 0, 0.2, 1) var(--vx-panel-at) backwards;
+  animation: vx-activate 700ms cubic-bezier(0.7, 0, 0.2, 1) var(--vx-panel-at) backwards;
 }
-@keyframes vx-project {
+@keyframes vx-activate {
   0% {
     opacity: 0;
-    translate: var(--vx-from);
-    scale: 0.92;
     clip-path: inset(50% 0 50% 0);
     filter: brightness(3);
   }
-  45% {
+  40% {
     opacity: 1;
-    clip-path: inset(48% 0 48% 0);
+    clip-path: inset(49% 0 49% 0);
   }
   100% {
-    translate: 0 0;
-    scale: 1;
     clip-path: inset(0);
     filter: none;
   }
@@ -5794,6 +5738,21 @@ a.arcade-counter:hover {
     0 0 0 1px #000,
     inset 0 0 32px rgb(255 255 255 / 0.02);
 }
+/* On the 3D console the panel is its screen: glass, frame and glow are geometry, so the page keeps
+   only a dark veil for legible text. */
+.vx-stage[data-scene="ready"][data-phase] .vx-window {
+  border-color: transparent;
+  background:
+    linear-gradient(180deg, rgb(255 31 61 / 0.05), transparent 8rem),
+    rgb(5 2 3 / 0.5);
+  box-shadow: none;
+}
+.vx-stage[data-scene="ready"] .vx-corners {
+  display: none;
+}
+.vx-stage[data-scene="ready"] .vx-input {
+  background: rgb(3 1 2 / 0.6);
+}
 .vx-corners {
   position: absolute;
   inset: -5px;
@@ -5982,6 +5941,18 @@ a.arcade-counter:hover {
   to {
     translate: 250% 0;
   }
+}
+/* The opening: every step passed, the bar full. */
+.vx-trace[data-done] {
+  color: #fff;
+}
+.vx-trace[data-done] > li:last-child::after {
+  content: none;
+}
+.vx-progress[data-done]::after {
+  width: 100%;
+  background: linear-gradient(90deg, var(--vx-red), #fff);
+  animation: none;
 }
 
 /* Code entry. */
@@ -6243,12 +6214,19 @@ a.arcade-counter:hover {
   max-width: 34rem;
 }
 .vx-reveal-head {
+  /* Stays legible over the open vault's light. */
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.9),
+    0 0 18px rgb(0 0 0 / 0.9);
   animation: vx-fade 500ms ease backwards;
 }
 .vx-reveal-sub {
   margin-top: 0.4rem;
   font-size: 0.875rem;
-  color: rgb(243 233 235 / 0.7);
+  color: rgb(243 233 235 / 0.85);
+}
+.vx-reveal-head .vx-eyebrow {
+  color: #ff9aa8;
 }
 .vx-cards {
   display: grid;
@@ -6265,16 +6243,16 @@ a.arcade-counter:hover {
   }
 }
 .vx-cards > li {
-  perspective: 700px;
   animation: vx-card-out 950ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0ms) + var(--i, 0) * var(--stagger, 110ms)) backwards;
 }
-/* --fx/--fy: from the vault's core to the card's place, measured when the reveal opens. */
+/* --fx/--fy/--fz: from the vault's core to the card's place, through the scene's own perspective
+   (set on the list when the reveal opens). */
 @keyframes vx-card-out {
   0% {
     opacity: 0;
-    translate: var(--fx, 0) var(--fy, 0);
-    scale: 0.15;
-    rotate: x 70deg;
+    translate: var(--fx, 0) var(--fy, 0) var(--fz, 0);
+    scale: 0.2;
+    rotate: x 55deg;
     filter: brightness(3) blur(4px);
   }
   30% {
@@ -6742,7 +6720,7 @@ a.arcade-counter:hover {
 .vx-stage[data-motion="subtle"] .vx-scan {
   display: none;
 }
-.vx-stage[data-motion="subtle"][data-intro="summon"] :is(.vx-hud, .vx-artifact > .vx-seal, .vx-window, .vx-log, .vx-frame > span) {
+.vx-stage[data-motion="subtle"][data-intro="summon"] :is(.vx-hud, .vx-artifact > .vx-seal, .vx-window, .vx-log) {
   animation: vx-fade 400ms ease var(--vx-panel-at) backwards;
 }
 .vx-stage[data-motion="subtle"][data-intro="summon"] :is(.vx-lede, .vx-label, .vx-input, .vx-signal, .vx-help, .vx-form > .vx-actions, .vx-window-flare) {

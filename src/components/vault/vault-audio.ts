@@ -128,7 +128,16 @@ export function playVaultSound(name: VaultSound) {
   startAmbience();
 }
 
-/** The summon: a rising drone and air, then the lock-in at the moment the vault settles. Silent before any gesture. */
+/** One frame piece seating itself: a small thump and a tick. */
+function seat(start: number, into: AudioNode) {
+  tone(150, start, 0.09, "sine", 0.14, 95, into);
+  tone(2300, start, 0.025, "square", 0.018, undefined, into);
+}
+
+/**
+ * The summon, in step with the scene: a drone and air while the vault rises, a whoosh as the console
+ * arrives, one seat per frame piece, then the lock-in. Silent before any gesture.
+ */
 export function playVaultSummon(kind: SummonKind) {
   if (!allowed()) return;
   hushVault();
@@ -136,17 +145,20 @@ export function playVaultSummon(kind: SummonKind) {
   const bus = ctx.createGain();
   bus.connect(master);
   sequence = bus;
-  const timeline = SUMMON[kind];
-  const settle = timeline.settle / 1000;
+  const s = (ms: number) => ms / 1000;
+  const t = SUMMON[kind];
   if (kind === "full") {
-    tone(36, 0, settle + 0.2, "sine", 0.45, 52, bus);
-    noise(0.2, settle - 0.1, 120, 420, 0.22, "lowpass", bus, 0.7);
-    noise(timeline.rise / 1000, settle - timeline.rise / 1000, 300, 2600, 0.12, "bandpass", bus, 0.85);
-    tone(1318.5, settle - 0.45, 0.6, "sine", 0.03, 1760, bus);
+    tone(36, 0, s(t.lock) + 0.3, "sine", 0.45, 52, bus);
+    noise(0.2, s(t.lock) - 0.2, 120, 420, 0.22, "lowpass", bus, 0.7);
+    noise(s(t.rise), s(t.lock - t.rise), 300, 2600, 0.12, "bandpass", bus, 0.85);
+    noise(s(t.console), 0.7, 500, 1800, 0.09, "bandpass", bus, 0.6);
+    for (let i = 0; i < 5; i++) seat(s(t.assemble + 300 + i * 95), bus);
+    tone(1318.5, s(t.panel) - 0.05, 0.6, "sine", 0.03, 1760, bus);
   } else {
-    noise(0, settle, 400, 2200, 0.1, "bandpass", bus, 0.8);
+    noise(0, s(t.lock), 400, 2200, 0.1, "bandpass", bus, 0.8);
+    for (let i = 0; i < 3; i++) seat(s(t.assemble + 120 + i * 80), bus);
   }
-  clank(settle, kind === "full" ? 1 : 0.6, bus);
+  clank(s(t.lock), kind === "full" ? 1 : 0.6, bus);
 }
 
 /** One soft chime per reward as it leaves the vault, starting `at` seconds from now. */

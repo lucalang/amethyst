@@ -21,9 +21,9 @@ import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
 import { webglAvailable } from "@/components/showcase/motion";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { MotionLevel } from "@/lib/preferences";
-import { SUMMON, type SummonKind } from "./timing";
+import { SUMMON, UNLOCK, type SummonKind } from "./timing";
 import { closeVaultAudio, hushVault, playVaultReveal, playVaultSound, playVaultSummon, setVaultAmbience, type VaultSound } from "./vault-audio";
-import { DecodeText, RewardReveal, RewardSlots, rewardSummary, type VaultLooks, type VaultProfile, type VaultSamples } from "./vault-reveal";
+import { DecodeText, RewardReveal, RewardSlots, rewardSummary, type RevealOrigin, type VaultLooks, type VaultProfile, type VaultSamples } from "./vault-reveal";
 import type { VaultSceneHandle } from "./vault-scene";
 import { noise, VaultSeal, type SealMode } from "./vault-seal";
 
@@ -87,8 +87,11 @@ const MIN_VERIFY: Record<MotionLevel, number> = { full: 900, subtle: 350, off: 0
 /** When the headline decodes and the reward slots land, timed to the seal opening. */
 const DECODE_AT: Record<MotionLevel, number> = { full: 350, subtle: 0, off: 0 };
 const REVEAL_AT: Record<MotionLevel, number> = { full: 1350, subtle: 250, off: 0 };
+/** How long the panel holds "Seal broken" while the vault opens, before the cards take over. */
+const HANDOFF: Record<MotionLevel, number> = { full: UNLOCK.handoff, subtle: 0, off: 0 };
 const PIPS = Array.from({ length: 12 }, (_, index) => index);
 const TRACE = ["Signal received", "Reading the seal", "Awaiting the chamber"];
+const OPENING = ["Seal accepted", "Releasing the locks"];
 const EMBERS = Array.from({ length: 14 }, (_, index) => ({
   "--x": `${(3 + noise(index, 11) * 94).toFixed(1)}%`,
   "--s": `${(1.5 + noise(index, 12) * 2.5).toFixed(1)}px`,
@@ -202,7 +205,7 @@ export function SecretVault({ finds, profile, samples }: { finds: VaultFind[]; p
 }
 
 type SceneStatus = "loading" | "ready" | "failed";
-/** dark: waiting for the vault (briefly); summon: the entrance; done: at rest. */
+/** dark: before the first frame; summon: the entrance; done: at rest. */
 type Intro = "dark" | "summon" | "done";
 
 function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: VaultLooks }) {
@@ -220,12 +223,17 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const [reveal, setReveal] = useState<"fresh" | "again" | null>(null);
   const [sceneStatus, setSceneStatus] = useState<SceneStatus>("loading");
   const [intro, setIntro] = useState<Intro>("dark");
+  const [introAt, setIntroAt] = useState(0);
   const [summon, setSummon] = useState<SummonKind>("full");
+  /** The vault is opening: the panel holds its headline until the cards take over. */
+  const [opening, setOpening] = useState(false);
   const [present, setPresent] = useState(true);
   const stageRef = useRef<HTMLElement>(null);
   const artifactRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<VaultSceneHandle>(null);
   const introTimer = useRef(0);
+  const openTimer = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const inFlight = useRef(false);
@@ -260,6 +268,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
       observer.disconnect();
       document.removeEventListener("visibilitychange", update);
       clearTimeout(introTimer.current);
+      clearTimeout(openTimer.current);
       closeVaultAudio();
     };
   }, []);
@@ -270,28 +279,29 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     setVaultAmbience(sound && present && introShown === "done");
   }, [sound, present, introShown]);
 
+  // The entrance starts on the first frame; the 3D vault joins it wherever it is once loaded.
   const beginSummon = useEffectEvent(() => {
+    if (motion === "off") {
+      setIntro("done");
+      return;
+    }
     const kind = summonKind(motion);
     setSummon(kind);
+    setIntroAt(performance.now());
     setIntro("summon");
-    sceneRef.current?.summon(kind);
     if (sound) playVaultSummon(kind);
     introTimer.current = window.setTimeout(() => setIntro("done"), SUMMON[kind].total);
   });
-
-  // The summon waits for the 3D vault, but never keeps the chamber dark for long.
-  const sceneSettled = scene !== "loading";
   useEffect(() => {
-    if (introShown !== "dark") return;
-    const timer = window.setTimeout(() => beginSummon(), sceneSettled ? 0 : 1200);
-    return () => clearTimeout(timer);
-  }, [introShown, sceneSettled]);
+    if (intro !== "dark") return;
+    const frame = requestAnimationFrame(() => beginSummon());
+    return () => cancelAnimationFrame(frame);
+  }, [intro]);
 
   function skipIntro(focusInput: boolean) {
     clearTimeout(introTimer.current);
     hushVault();
-    if (intro === "summon") sceneRef.current?.skip();
-    else sceneRef.current?.summon("none");
+    sceneRef.current?.skip();
     // Synchronously, so a key that skipped can land in the field it reveals.
     flushSync(() => setIntro("done"));
     if (focusInput) inputRef.current?.focus({ preventScroll: true });
@@ -318,11 +328,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     };
   }, [introShown]);
 
-  const sceneReady = () => {
-    setSceneStatus("ready");
-    // Arrived after the entrance began: appear at rest rather than mid-summon.
-    if (introShown !== "dark") sceneRef.current?.summon("none");
-  };
+  const sceneReady = () => setSceneStatus("ready");
   const sceneFailed = () => setSceneStatus("failed");
 
   useEffect(() => {
@@ -343,6 +349,11 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     setRound((value) => value + 1);
     setAnnouncement(announce(next));
     setReveal(next.phase === "granted" ? "fresh" : null);
+    // A grant opens the vault first; the cards take over once its doors are moving.
+    clearTimeout(openTimer.current);
+    const handoff = next.phase === "granted" ? HANDOFF[motion] : 0;
+    setOpening(handoff > 0);
+    if (handoff) openTimer.current = window.setTimeout(() => setOpening(false), handoff);
     if (audible) play(SOUND[next.phase]);
     if (audible && soundRef.current && next.phase === "granted") playVaultReveal((next.coins > 0 ? 1 : 0) + next.items.length, REVEAL_AT[motion] / 1000);
   }
@@ -365,6 +376,8 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     void (async () => {
       const latest = await readLog();
       if (cancelled) return;
+      // The answer matters more than the entrance.
+      skipIntro(false);
       const found = latest && newestSince(latest, pending.since);
       if (found) {
         clearPending();
@@ -471,7 +484,19 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
 
   const sealMode: SealMode = busy ? "verifying" : phase === "granted" || phase === "already" ? "align" : phase === "unavailable" || phase === "locked" ? "still" : "idle";
   const opened = phase === "granted" || phase === "already";
-  const revealing = outcome?.phase === "granted" && reveal !== null;
+  const revealing = outcome?.phase === "granted" && reveal !== null && !opening;
+  // The drawn seal stands in if WebGL fails, or if the 3D vault is still loading once the entrance is over.
+  const drawnSeal = scene === "failed" || (scene === "loading" && introShown === "done");
+
+  /** The cards fly out of the 3D core when it's there, else out of the drawn seal. */
+  const revealOrigin = (): RevealOrigin => {
+    const core = scene === "ready" ? sceneRef.current?.origin() : null;
+    if (core) return core;
+    const box = artifactRef.current?.getBoundingClientRect();
+    const x = box ? box.left + box.width / 2 : window.innerWidth / 2;
+    const y = box ? box.top + box.height / 2 : window.innerHeight / 3;
+    return { x, y, z: -1400, perspective: 1000, axisX: x, axisY: y };
+  };
 
   return (
     <section
@@ -509,24 +534,23 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
           <Suspense fallback={null}>
             <VaultScene
               ref={sceneRef}
-              anchor={artifactRef}
+              artifact={artifactRef}
+              panel={panelRef}
               phase={phase}
               round={round}
               charge={signal / PIPS.length}
               pulse={pulse}
               motion={motion}
+              revealing={revealing}
+              introKind={summon}
+              introAt={introAt}
+              introDone={introShown === "done"}
               onReady={sceneReady}
               onFail={sceneFailed}
             />
           </Suspense>
         </SceneBoundary>
       ) : null}
-      <div aria-hidden className="vx-frame">
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
 
       <div className="vx-inner">
         <header className="vx-hud">
@@ -546,8 +570,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
 
         <div className="vx-main">
           <div ref={artifactRef} className="vx-artifact">
-            {/* The drawn seal stands in while the 3D vault loads, and for good if WebGL isn't available. */}
-            {scene === "ready" ? null : <VaultSeal mode={sealMode} level={signal} phase={phase} motion={motion} />}
+            {drawnSeal ? <VaultSeal mode={sealMode} level={signal} phase={phase} motion={motion} /> : null}
           </div>
 
           {revealing ? (
@@ -557,9 +580,9 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
               newItems={outcome.newItems}
               looks={looks}
               motion={motion}
-              origin={artifactRef}
-              titleDelay={reveal === "fresh" ? DECODE_AT[motion] : 0}
-              delay={reveal === "fresh" ? REVEAL_AT[motion] : 0}
+              origin={revealOrigin}
+              titleDelay={reveal === "fresh" ? Math.max(0, DECODE_AT[motion] - HANDOFF[motion]) : 0}
+              delay={reveal === "fresh" ? REVEAL_AT[motion] - HANDOFF[motion] : 0}
               onContinue={() => {
                 setReveal(null);
                 requestAnimationFrame(() => headingRef.current?.focus());
@@ -567,7 +590,8 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
             />
           ) : null}
 
-          <div className="vx-window" hidden={revealing}>
+          {/* The console's screen: the 3D scene builds its body around this panel and keeps the two registered. */}
+          <div ref={panelRef} className="vx-window" hidden={revealing}>
             <span aria-hidden className="vx-corners" />
             <span aria-hidden className="vx-window-flare" />
             <div className="vx-window-bar">
@@ -578,7 +602,19 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
             </div>
             <div aria-hidden className="vx-rule" />
             <div className="vx-window-body">
-              {outcome ? (
+              {outcome && opening ? (
+                <div className="vx-result">
+                  <h2 ref={headingRef} tabIndex={-1} className="vx-headline">
+                    {HEADLINE.granted}
+                  </h2>
+                  <ol aria-hidden className="vx-trace" data-done="">
+                    {OPENING.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ol>
+                  <div aria-hidden className="vx-progress" data-done="" />
+                </div>
+              ) : outcome ? (
                 <div key={round} className="vx-result">
                   <h2 ref={headingRef} tabIndex={-1} className="vx-headline">
                     {outcome.phase === "already" ? <DecodeText text={HEADLINE.already} animate={motion !== "off"} /> : HEADLINE[outcome.phase]}
@@ -601,11 +637,9 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
                   </ol>
                   <div aria-hidden className="vx-progress" />
                 </div>
-              ) : (
-                <p className="vx-lede">A sealed chamber that answers only to the right words. Speak a code to break its seal.</p>
-              )}
+              ) : null}
 
-              {opened ? (
+              {opening ? null : opened ? (
                 <div className="vx-actions">
                   {outcome?.phase === "granted" ? (
                     <button type="button" onClick={() => setReveal("again")} className="vx-button vx-button-quiet">
@@ -657,7 +691,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
                     <span className="vx-signal-count">{String(signal).padStart(2, "0")}</span>
                   </div>
                   <p id="vx-code-help" className="vx-help">
-                    Words, or letters and numbers. Letter case and extra spaces don’t matter, and each code opens once per account.
+                    Words, letters or numbers. Case and spacing don’t matter.
                   </p>
                   <div className="vx-actions">
                     <button type="submit" disabled={busy} className="vx-button">
