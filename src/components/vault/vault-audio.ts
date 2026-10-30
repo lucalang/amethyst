@@ -1,3 +1,4 @@
+import { BOOT, PIECE_LANDINGS } from "@/components/admin/admin-timing";
 import { CARD_STAGGER, SUMMON, UNLOCK, type SummonKind } from "./timing";
 
 /**
@@ -193,6 +194,28 @@ export function playAdminSound(name: AdminSound) {
       tone(130, 0, 0.18, "square", 0.05, 110);
       break;
   }
+}
+
+/**
+ * The admin console's activation, in step with the scene: a quiet rising scan while the contours
+ * trace, a low swell as the console arrives, a seat per corner bracket and a soft chime as the
+ * surface goes live. Silent before any gesture; skipping fades it out.
+ */
+export function playAdminBoot(kind: "full" | "short") {
+  if (!allowed()) return;
+  hushVault();
+  const { ctx, master } = out();
+  const bus = ctx.createGain();
+  bus.gain.value = 0.8;
+  bus.connect(master);
+  sequence = bus;
+  const t = BOOT[kind];
+  const s = (ms: number) => ms / 1000;
+  noise(0, s(t.trace[1]), 400, 2400, kind === "full" ? 0.07 : 0.05, "bandpass", bus, 0.8);
+  if (kind === "full") tone(48, 0, s(t.arrive[1]), "sine", 0.22, 62, bus);
+  for (const landing of PIECE_LANDINGS) seat(s(t.pieces[0] + landing * (t.pieces[1] - t.pieces[0])), bus);
+  tone(1318.5, s(t.live), 0.5, "sine", 0.035, undefined, bus);
+  tone(1975.5, s(t.live) + 0.09, 0.6, "sine", 0.025, undefined, bus);
 }
 
 /** Fades out the summon (on skip). */

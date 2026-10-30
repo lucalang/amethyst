@@ -58,7 +58,7 @@ export const CHANGELOG: readonly Release[] = [
       { kind: "new", feature: "Achievement codes", text: "A code can unlock achievements, complete with their own rewards and notifications, shown in the Vault’s reveal and access log." },
       { kind: "new", feature: "Scheduled codes", text: "Some codes open on a set date; until then the seal stays dormant." },
       { kind: "improved", feature: "Safer redemptions", text: "If your connection drops mid-redemption, trying again picks up the original result instead of redeeming twice." },
-      { kind: "improved", feature: "Code management redesign", text: "Administrators now manage Vault codes in a new interface of layered translucent windows, with clearer step-by-step creation, a selected-rewards tray and a calmer publish confirmation." },
+      { kind: "improved", feature: "Code management console", text: "Administrators now manage Vault codes in a floating 3D system console that assembles once, tilts gently with the pointer and holds still while you work, with clearer step-by-step creation and a selected-rewards tray." },
     ],
     details: {
       new: [
@@ -85,14 +85,16 @@ export const CHANGELOG: readonly Release[] = [
           body: "Each redemption attempt carries its own identifier. If the answer gets lost and you try the same code again, the Vault shows the original result instead of granting it a second time.",
         },
         {
-          title: "A redesigned code-management interface",
-          body: "For administrators, creating and reviewing Vault codes now happens in a new interface built from layered, translucent panels with thin luminous rails.",
+          title: "Code management as a floating system console",
+          body: "For administrators, creating and reviewing Vault codes now happens inside one floating system console: a frosted glass panel in a metal frame with traced light contours, hanging among translucent system panes in a dark sky. Every form and list on it is still a regular, accessible page element.",
           points: [
-            "The four creation steps are numbered, and the current step opens as its own panel.",
-            "Chosen cosmetics and achievements gather in a selected-rewards tray where each one can be removed individually.",
-            "The review separates what each redemption grants from eligibility, timing and usage limits, and highlights codes that can be redeemed more than once.",
-            "Publishing traces an emblem and decodes the new code; reduced-motion and the in-app motion setting keep everything static.",
+            "On first visit in a session the console assembles: contours trace, the frame pieces seat, the panel moves into place and its surface switches on. Any key or click skips it, later visits use a shorter version, and the optional sound follows the panel's mute switch.",
+            "The console leans slightly toward the pointer and settles flat while you type, scroll, press or rest the pointer, so controls never move away; phones get a calm, fixed composition.",
+            "The steps (rewards, values and selection, eligibility and limits, review, publish) run down the side; each step change slides the stack of planes behind the console, and long catalogs scroll inside it.",
+            "Chosen cosmetics and achievements gather in a selected-rewards tray; the review separates what each redemption grants from eligibility, timing and limits. The console only celebrates once the server has confirmed a publish.",
+            "Reduced motion and the in-app motion setting keep everything still, and devices without 3D graphics get a drawn console instead.",
           ],
+          where: "Admin panel (administrators only)",
         },
       ],
     },

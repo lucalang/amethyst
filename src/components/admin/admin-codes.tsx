@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, configFrom, STATUS_LABEL, type AdminCode, type AdminDraft, type CodeStatus } from "@/lib/vault-admin";
-import { adminDialogClass, AdminHeader, AdminStage, audienceSummary, codeRewards, StatusPill, SystemWindow, useNow, When } from "./admin-ui";
+import { useConsoleLayers } from "./admin-console";
+import { adminDialogClass, audienceSummary, codeRewards, ConsoleView, StatusPill, SystemWindow, useNow, When } from "./admin-ui";
 
 const FILTERS: readonly ("all" | CodeStatus)[] = ["all", "active", "scheduled", "expired", "used-up", "disabled"];
 
@@ -40,39 +41,42 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
       (!needle || [code.label, rewards, code.id, code.createdByName ?? ""].some((text) => text.toLowerCase().includes(needle))),
   );
   const redemptions = codes.reduce((sum, code) => sum + code.redemptionCount, 0);
+  useConsoleLayers(2);
 
   return (
-    <AdminStage>
-      <AdminHeader
-        eyebrow="Admin panel"
-        title="Vault codes"
-        lede="Build, publish and retire Vault codes. Codes are stored as hashes only, so a published code can’t be shown again."
-        actions={
-          <Link href="/admin/new" className="ax-btn" data-variant="primary">
-            <Plus aria-hidden className="size-4" /> Build a code
-          </Link>
-        }
-      />
-
-      <dl className="ax-stats">
-        <div>
-          <dt>Active</dt>
-          <dd>{counts.active ?? 0}</dd>
-        </div>
-        <div>
-          <dt>Scheduled</dt>
-          <dd>{counts.scheduled ?? 0}</dd>
-        </div>
-        <div>
-          <dt>Drafts</dt>
-          <dd>{drafts.length}</dd>
-        </div>
-        <div>
-          <dt>Redemptions</dt>
-          <dd>{redemptions.toLocaleString("en")}</dd>
-        </div>
-      </dl>
-
+    <ConsoleView
+      eyebrow="Admin panel"
+      title="Vault codes"
+      lede="Build, publish and retire Vault codes. Codes are stored as hashes only, so a published code can’t be shown again."
+      actions={
+        <Link href="/admin/new" className="ax-btn" data-variant="primary">
+          <Plus aria-hidden className="size-4" /> Build a code
+        </Link>
+      }
+      asideLabel="Overview"
+      aside={
+        <SystemWindow id="ax-status-title" title="Status">
+          <dl className="ax-stats">
+            <div>
+              <dt>Active</dt>
+              <dd>{counts.active ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Scheduled</dt>
+              <dd>{counts.scheduled ?? 0}</dd>
+            </div>
+            <div>
+              <dt>Drafts</dt>
+              <dd>{drafts.length}</dd>
+            </div>
+            <div>
+              <dt>Redemptions</dt>
+              <dd>{redemptions.toLocaleString("en")}</dd>
+            </div>
+          </dl>
+        </SystemWindow>
+      }
+    >
       {drafts.length ? <Drafts drafts={drafts} /> : null}
 
       <SystemWindow id="ax-codes-title" title="Published codes" count={`${shown.length}/${rows.length}`} order={drafts.length ? 2 : 1}>
@@ -152,7 +156,7 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
           </div>
         )}
       </SystemWindow>
-    </AdminStage>
+    </ConsoleView>
   );
 }
 

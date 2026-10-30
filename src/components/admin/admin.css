@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------------
- * Admin panel: a holographic system interface. Translucent blue-black windows
- * with luminous edge rails, framed title tabs and a restrained cyan accent.
- * Only the backdrop's depth layers follow the pointer; content never moves.
- * Motion off and reduced motion keep every state, without the sequences.
+ * Admin panel: one floating system console in a Three.js scene. The page's
+ * console element is mapped onto the 3D glass (admin-scene.tsx); everything
+ * here is real DOM on that glass. Without WebGL the console draws its own
+ * frame. Motion off and reduced motion keep every state, without sequences.
  * ------------------------------------------------------------------------- */
 .ax-stage,
 .ax-dialog {
@@ -18,6 +18,7 @@
   --ax-danger: #ff5c70;
   --ax-danger-rgb: 255 92 112;
   --ax-font: var(--font-system), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --ax-display: var(--font-system-display), var(--ax-font);
   /* RewardArt and the decode text read the Vault's variables. */
   --vx-black: var(--ax-bg);
   --vx-red: var(--ax-cyan);
@@ -25,13 +26,17 @@
   --vx-ash: var(--ax-dim);
   --vx-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+/* Fills the viewport under the nav; the console scrolls inside, never the page. */
 .ax-stage {
   position: relative;
   isolation: isolate;
   overflow: clip;
-  min-height: calc(100dvh - 3.5rem - 1px);
+  display: grid;
+  place-items: center;
+  height: calc(100dvh - 3.5rem - 1px);
+  min-height: 30rem;
   margin-bottom: -6rem;
-  padding: 1.25rem 1rem calc(7rem + env(safe-area-inset-bottom));
+  padding: 1.25rem 1.1rem calc(4rem + 1px + 1rem + env(safe-area-inset-bottom));
   font-family: var(--ax-font);
   color: var(--ax-ink);
   background: var(--ax-bg);
@@ -41,7 +46,7 @@
 @media (min-width: 48rem) {
   .ax-stage {
     margin-bottom: -2.5rem;
-    padding: 2rem 2rem 3.5rem;
+    padding: 2rem 2.5rem 2.25rem;
   }
 }
 .ax-stage ::selection {
@@ -49,64 +54,196 @@
   background: rgb(89 208 255 / 0.4);
 }
 
-/* Backdrop: three depth layers, nearer ones shift further with the pointer. */
-.ax-backdrop {
+/* The sky without WebGL (the scene paints over it). */
+.ax-sky {
   position: absolute;
   inset: 0;
   z-index: -1;
-  overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(60% 40% at 50% -5%, rgb(40 130 220 / 0.26), transparent 70%),
-    radial-gradient(35% 35% at 100% 100%, rgb(30 100 200 / 0.14), transparent 70%),
-    radial-gradient(30% 30% at 0% 60%, rgb(30 100 200 / 0.09), transparent 70%);
+    radial-gradient(55% 45% at 50% 50%, rgb(20 80 150 / 0.22), transparent 70%),
+    radial-gradient(60% 40% at 50% -5%, rgb(40 130 220 / 0.16), transparent 70%),
+    linear-gradient(180deg, #050d1c, var(--ax-bg) 70%);
 }
-.ax-depth {
+.ax-scene {
   position: absolute;
-  inset: -24px;
-  transition: translate 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  inset: 0;
+  pointer-events: none;
 }
-.ax-depth[data-depth="far"] {
-  translate: calc(var(--ax-px, 0) * -5px) calc(var(--ax-py, 0) * -5px);
-  background:
-    linear-gradient(rgb(120 190 255 / 0.05) 1px, transparent 1px) 0 0 / 56px 56px,
-    linear-gradient(90deg, rgb(120 190 255 / 0.05) 1px, transparent 1px) 0 0 / 56px 56px;
-  mask-image: radial-gradient(80% 70% at 50% 25%, #000 30%, transparent 80%);
+.ax-scene > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
-.ax-depth[data-depth="mid"] {
-  translate: calc(var(--ax-px, 0) * -12px) calc(var(--ax-py, 0) * -12px);
+
+/* The console: bar on top, the screen below. Transparent once the 3D glass is behind it. */
+.ax-console {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(64rem, 100%);
+  height: min(100%, 60rem);
+  min-height: 0;
+  border-radius: 6px;
+  backface-visibility: hidden;
 }
-.ax-depth[data-depth="mid"]::before,
-.ax-depth[data-depth="mid"]::after {
+.ax-console::before {
   content: "";
   position: absolute;
-  border: 1px solid rgb(120 200 255 / 0.07);
-  background: linear-gradient(180deg, rgb(60 150 230 / 0.045), transparent 60%);
+  inset: 0;
+  z-index: -1;
+  border: 1px solid var(--ax-edge);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgb(20 60 110 / 0.4), rgb(3 10 22 / 0.94) 6rem, rgb(3 9 20 / 0.96));
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 0 44px -10px var(--ax-glow),
+    inset 0 0 40px -16px var(--ax-glow);
+  pointer-events: none;
+  transition: opacity 600ms ease-out;
 }
-.ax-depth[data-depth="mid"]::before {
-  top: 10%;
-  left: -6%;
-  width: 36%;
-  height: 46%;
+.ax-stage[data-scene="ready"] .ax-console::before {
+  opacity: 0;
 }
-.ax-depth[data-depth="mid"]::after {
-  top: 52%;
-  right: -4%;
-  width: 30%;
-  height: 38%;
+.ax-console-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.5rem 0.25rem 1rem;
+  border-bottom: 1px solid rgb(200 235 255 / 0.32);
+  font-family: var(--ax-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
 }
-.ax-depth[data-depth="near"] {
-  translate: calc(var(--ax-px, 0) * -22px) calc(var(--ax-py, 0) * -22px);
-  background: repeating-linear-gradient(115deg, transparent 0 160px, rgb(140 210 255 / 0.04) 160px 161px, transparent 161px 290px);
-  mask-image: linear-gradient(180deg, #000, transparent 85%);
+.ax-console-mark {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border: 1px solid var(--ax-ice);
+  rotate: 45deg;
+  box-shadow: 0 0 8px var(--ax-glow);
 }
-.ax-inner {
-  position: relative;
+.ax-console-id {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #fff;
+  text-shadow: 0 0 10px rgb(120 210 255 / 0.6);
+}
+.ax-console-sub {
+  margin-left: 0.6em;
+  font-weight: 500;
+  color: var(--ax-soft);
+  text-shadow: none;
+}
+.ax-console-screen {
   display: grid;
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 72rem;
-  margin: 0 auto;
+  min-width: 0;
+  min-height: 0;
+}
+.ax-skip {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: calc(4rem + 1px + 1.25rem + env(safe-area-inset-bottom));
+  translate: -50% 0;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid rgb(170 225 255 / 0.35);
+  background: rgb(2 8 18 / 0.8);
+  font-family: var(--ax-display);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ax-soft);
+  cursor: pointer;
+}
+.ax-skip:hover,
+.ax-skip:focus-visible {
+  border-color: var(--ax-ice);
+  color: #fff;
+}
+@media (min-width: 48rem) {
+  .ax-skip {
+    bottom: 0.15rem;
+  }
+}
+
+/* One console screen: heading row, side and main columns that scroll inside, an action bar. */
+.ax-view {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+}
+.ax-view-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1rem 0.85rem;
+  border-bottom: 1px solid var(--ax-line);
+}
+.ax-view-body,
+.ax-view-aside,
+.ax-view-main {
+  min-width: 0;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(150 205 255 / 0.3) transparent;
+}
+.ax-view-body {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ax-view-aside,
+.ax-view-main {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+.ax-view-foot {
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid var(--ax-line);
+  background: rgb(2 8 18 / 0.4);
+}
+@media (min-width: 48rem) {
+  .ax-view-head {
+    padding: 1.1rem 1.5rem 1rem;
+  }
+  .ax-view-body {
+    padding: 1.25rem 1.5rem;
+  }
+  .ax-view-foot {
+    padding: 0.75rem 1.5rem;
+  }
+}
+@media (min-width: 64rem) {
+  .ax-view[data-aside] .ax-view-body {
+    grid-template-columns: 18.5rem minmax(0, 1fr);
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  .ax-view[data-aside] :is(.ax-view-aside, .ax-view-main) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1.25rem 1.5rem;
+  }
+  .ax-view[data-aside] .ax-view-aside {
+    border-right: 1px solid var(--ax-line);
+  }
 }
 
 /* Header. */
@@ -115,6 +252,7 @@
   align-items: center;
   gap: 0.35rem;
   justify-self: start;
+  margin-bottom: 0.4rem;
   font-size: 0.6875rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -122,26 +260,6 @@
 }
 .ax-back:hover {
   color: var(--ax-ice);
-}
-.ax-head {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--ax-line);
-}
-.ax-head::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -1px;
-  width: 7rem;
-  height: 2px;
-  background: var(--ax-cyan);
-  box-shadow: 0 0 10px var(--ax-glow);
 }
 .ax-head-actions,
 .ax-done-actions,
@@ -151,6 +269,7 @@
   gap: 0.5rem;
 }
 .ax-eyebrow {
+  font-family: var(--ax-display);
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.32em;
@@ -158,131 +277,81 @@
   color: var(--ax-cyan);
 }
 .ax-stage .ax-title {
-  margin-top: 0.35rem;
-  font-size: clamp(1.6rem, 1.25rem + 1.4vw, 2.5rem);
-  font-weight: 500;
+  margin-top: 0.2rem;
+  font-family: var(--ax-display);
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 2rem);
+  font-weight: 600;
   line-height: 1.1;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #fff;
   overflow-wrap: anywhere;
   text-shadow: 0 0 22px rgb(89 208 255 / 0.4);
 }
 .ax-lede {
-  max-width: 44rem;
-  margin-top: 0.5rem;
-  font-size: 0.9375rem;
-  line-height: 1.55;
+  max-width: 46rem;
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
   color: var(--ax-soft);
 }
+.ax-view-head .ax-lede {
+  font-size: 0.8125rem;
+}
 
-/* System windows. */
+/* System panes inside the console: a heading over a bright rule, then the content. */
 .ax-window {
   position: relative;
   min-width: 0;
-  padding: 1.6rem 1rem 1.25rem;
-  border: 1px solid var(--ax-edge);
-  background:
-    repeating-linear-gradient(115deg, rgb(140 210 255 / 0.022) 0 1px, transparent 1px 7px),
-    linear-gradient(180deg, rgb(22 64 110 / 0.42), rgb(4 14 30 / 0.9) 32%, rgb(3 9 20 / 0.94));
+  padding: 0.85rem 0.9rem 1rem;
+  border: 1px solid rgb(170 225 255 / 0.26);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgb(30 80 140 / 0.16), rgb(4 14 30 / 0.32));
   box-shadow:
-    0 0 0 1px rgb(0 0 0 / 0.6),
-    0 0 28px -8px var(--ax-glow),
-    inset 0 0 40px -14px rgb(80 190 255 / 0.35);
+    inset 0 1px 0 rgb(220 245 255 / 0.08),
+    0 0 26px -14px var(--ax-glow);
 }
 @media (min-width: 48rem) {
   .ax-window {
-    padding: 1.9rem 1.75rem 1.5rem;
+    padding: 1rem 1.25rem 1.25rem;
   }
 }
-.ax-window::before {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: 1px solid rgb(150 215 255 / 0.1);
-  pointer-events: none;
-}
-.ax-rail {
-  position: absolute;
-  left: -7px;
-  right: -7px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--ax-ice) 5%, #fff 50%, var(--ax-ice) 95%, transparent);
-  filter: drop-shadow(0 0 5px var(--ax-cyan));
-  pointer-events: none;
-}
-.ax-rail[data-edge="top"] {
-  top: -1.5px;
-}
-.ax-rail[data-edge="bottom"] {
-  bottom: -1.5px;
-}
-.ax-rail::before,
-.ax-rail::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 22px;
-  height: 6px;
-  translate: 0 -50%;
-  background: var(--ax-ice);
-  clip-path: polygon(0 50%, 25% 0, 100% 0, 85% 100%, 25% 100%);
-}
-.ax-rail::before {
-  left: 4px;
-}
-.ax-rail::after {
-  right: 4px;
-  scale: -1 1;
-}
-.ax-rail[data-edge="bottom"]::before,
-.ax-rail[data-edge="bottom"]::after {
-  width: 14px;
-  height: 4px;
-}
 .ax-window-head {
-  display: grid;
-  grid-template-columns: minmax(1rem, 1fr) auto minmax(1rem, 1fr);
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid rgb(200 235 255 / 0.5);
 }
-.ax-window-head::before,
 .ax-window-head::after {
   content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 3rem;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--ax-edge));
-  transform-origin: right;
-}
-.ax-window-head::after {
-  background: linear-gradient(270deg, transparent, var(--ax-edge));
+  background: #fff;
+  box-shadow: 0 0 8px var(--ax-cyan);
   transform-origin: left;
 }
 .ax-window-title {
   display: inline-flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem 0.7rem;
-  padding: 0.4rem 1rem;
-  border: 1px solid var(--ax-edge);
-  background: rgb(10 35 65 / 0.6);
-  box-shadow:
-    0 0 14px -4px var(--ax-glow),
-    inset 0 0 12px -6px var(--ax-glow);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  font-family: var(--ax-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
   line-height: 1.3;
-  letter-spacing: 0.24em;
-  text-align: center;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ax-ink);
-  text-shadow: 0 0 10px rgb(120 210 255 / 0.7);
+  color: #fff;
+  text-shadow: 0 0 12px rgb(120 210 255 / 0.55);
   outline: none;
-}
-h1.ax-window-title {
-  padding: 0.5rem 1.25rem;
-  font-size: 1rem;
 }
 .ax-window-index,
 .ax-window-count {
@@ -291,10 +360,6 @@ h1.ax-window-title {
   font-weight: 400;
   letter-spacing: 0.08em;
   color: var(--ax-cyan);
-}
-.ax-window-count {
-  padding-left: 0.7rem;
-  border-left: 1px solid var(--ax-line);
   text-shadow: none;
 }
 .ax-window-body {
@@ -304,13 +369,13 @@ h1.ax-window-title {
 }
 .ax-window[data-tone="draft"] {
   border-style: dashed;
-  border-color: rgb(150 205 255 / 0.35);
-  background: rgb(4 12 24 / 0.78);
+  border-color: rgb(150 205 255 / 0.32);
+  background: rgb(4 12 24 / 0.3);
   box-shadow: none;
 }
-.ax-window[data-tone="draft"] .ax-rail {
-  opacity: 0.35;
-  filter: none;
+.ax-window[data-tone="draft"] .ax-window-head::after {
+  opacity: 0.4;
+  box-shadow: none;
 }
 
 /* Sub-panels and text. */
@@ -684,57 +749,42 @@ h1.ax-window-title {
   gap: 0.75rem;
 }
 .ax-stats {
-  position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  border: 1px solid var(--ax-line);
-  background: rgb(4 14 30 / 0.65);
-}
-.ax-stats::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  left: -1px;
-  right: -1px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--ax-cyan) 20%, var(--ax-ice) 50%, var(--ax-cyan) 80%, transparent);
-  box-shadow: 0 0 10px var(--ax-glow);
+  column-gap: 1.25rem;
 }
 .ax-stats > div {
   display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  padding: 0.9rem 1rem;
-  box-shadow:
-    inset -1px 0 var(--ax-line),
-    inset 0 -1px var(--ax-line);
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--ax-line);
 }
-@media (min-width: 48rem) {
+@media (min-width: 64rem) {
   .ax-stats {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .ax-stats > div {
-    box-shadow: inset -1px 0 var(--ax-line);
+    grid-template-columns: minmax(0, 1fr);
   }
   .ax-stats > div:last-child {
-    box-shadow: none;
+    border-bottom: 0;
   }
 }
 .ax-stats dt {
-  font-size: 0.625rem;
+  font-family: var(--ax-display);
+  font-size: 0.75rem;
   font-weight: 500;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--ax-soft);
 }
 .ax-stats dd {
-  font-size: 2.25rem;
-  font-weight: 300;
+  font-family: var(--ax-display);
+  font-size: 1.5rem;
+  font-weight: 500;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: var(--ax-ink);
-  text-shadow: 0 0 16px var(--ax-glow);
+  color: #fff;
+  text-shadow: 0 0 14px var(--ax-glow);
 }
 .ax-rows {
   display: grid;
@@ -1075,18 +1125,8 @@ h1.ax-window-title {
 .ax-audit-action[data-action="disable"] {
   color: #ff8a98;
 }
-.ax-split {
-  display: grid;
-  align-items: start;
-  gap: 1.5rem;
-}
-@media (min-width: 64rem) {
-  .ax-split {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
-/* Builder: segmented step rail. */
+/* Builder: step rail, across on small screens and down the side column on large ones. */
 .ax-steps {
   display: flex;
   gap: 0.4rem;
@@ -1104,6 +1144,7 @@ h1.ax-window-title {
   padding: 0.75rem 0 0.25rem;
   border: 0;
   background: none;
+  font-family: var(--ax-display);
   text-align: left;
   color: var(--ax-dim);
   cursor: pointer;
@@ -1141,6 +1182,13 @@ h1.ax-window-title {
 .ax-step:disabled {
   cursor: not-allowed;
 }
+.ax-step[data-final] {
+  cursor: default;
+  opacity: 0.6;
+}
+.ax-step[data-final]::before {
+  background: repeating-linear-gradient(90deg, rgb(150 205 255 / 0.3) 0 4px, transparent 4px 8px);
+}
 .ax-step-index {
   display: inline-grid;
   flex-shrink: 0;
@@ -1155,7 +1203,8 @@ h1.ax-window-title {
 }
 .ax-step-label {
   overflow: hidden;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   letter-spacing: 0.16em;
   text-overflow: ellipsis;
   text-transform: uppercase;
@@ -1171,6 +1220,36 @@ h1.ax-window-title {
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
+  }
+}
+@media (min-width: 64rem) {
+  .ax-steps {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .ax-steps > li {
+    flex: none;
+  }
+  .ax-step {
+    gap: 0.6rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+  }
+  .ax-step::before {
+    top: 0.35rem;
+    bottom: 0.35rem;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+  .ax-step[aria-current="step"] {
+    background: linear-gradient(90deg, rgb(89 208 255 / 0.12), transparent);
+  }
+  .ax-step[data-final]::before {
+    background: repeating-linear-gradient(180deg, rgb(150 205 255 / 0.3) 0 4px, transparent 4px 8px);
+  }
+  .ax-step-label {
+    white-space: normal;
   }
 }
 .ax-builder {
@@ -1509,36 +1588,13 @@ h1.ax-window-title {
   accent-color: var(--ax-cyan);
 }
 .ax-actions {
-  position: sticky;
-  bottom: calc(4.5rem + env(safe-area-inset-bottom));
-  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.75rem;
-  border: 1px solid var(--ax-edge);
-  background: rgb(3 10 22 / 0.94);
-  box-shadow:
-    0 -10px 30px -12px rgb(0 0 0 / 0.8),
-    0 0 18px -8px var(--ax-glow);
-}
-.ax-actions::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  left: -1px;
-  right: -1px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--ax-ice), transparent);
 }
 .ax-actions-end {
   justify-content: flex-end;
-}
-@media (min-width: 48rem) {
-  .ax-actions {
-    bottom: 1rem;
-  }
 }
 @media (max-width: 40rem) {
   .ax-next-target {
@@ -1709,7 +1765,7 @@ h1.ax-window-title {
   background: rgb(var(--ax-danger-rgb) / 0.3);
 }
 
-/* Motion: windows assemble, content follows in sequence. */
+/* Motion: the console activates once; panes open in sequence, content follows. */
 .ax-window-body > :nth-child(2) {
   --ax-i: 1;
 }
@@ -1725,20 +1781,33 @@ h1.ax-window-title {
 .ax-window-body > :nth-child(n + 6) {
   --ax-i: 5;
 }
+/* Until the scene is up the content waits (briefly: the console shows it after 2.2 s regardless). */
+.ax-stage[data-intro="pending"] .ax-console {
+  opacity: 0;
+  animation: ax-hold 1ms linear 3s forwards;
+}
 @media (prefers-reduced-motion: no-preference) {
-  :root:not([data-motion="off"]) .ax-inner > :is(.ax-head, .ax-back, nav) {
+  :root:not([data-motion="off"]) .ax-stage:is([data-intro="full"], [data-intro="short"]) .ax-console {
+    animation: ax-live 650ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--ax-live) backwards;
+  }
+  :root:not([data-motion="off"]) .ax-stage:is([data-intro="full"], [data-intro="short"]) :is(.ax-view-head, .ax-window) {
+    animation-delay: calc(var(--ax-live) + 120ms + var(--ax-order, 0) * 90ms);
+  }
+  :root:not([data-motion="off"]) .ax-stage[data-intro="none"] .ax-console {
+    animation: ax-fade 420ms ease-out backwards;
+  }
+  :root:not([data-motion="off"]) .ax-skip {
+    animation: ax-fade 300ms ease-out 400ms backwards;
+  }
+  :root:not([data-motion="off"]) .ax-view-head {
     animation: ax-fade 420ms ease-out backwards;
   }
   :root:not([data-motion="off"]) .ax-stats {
     animation: ax-fade-up 460ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms backwards;
   }
   :root:not([data-motion="off"]) .ax-window {
-    animation: ax-open 560ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--ax-order, 0) * 90ms) backwards;
+    animation: ax-open 520ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--ax-order, 0) * 90ms) backwards;
   }
-  :root:not([data-motion="off"]) .ax-rail {
-    animation: ax-rail 520ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--ax-order, 0) * 90ms) backwards;
-  }
-  :root:not([data-motion="off"]) .ax-window-head::before,
   :root:not([data-motion="off"]) .ax-window-head::after {
     animation: ax-trace 480ms ease-out calc(var(--ax-order, 0) * 90ms + 200ms) backwards;
   }
@@ -1783,21 +1852,31 @@ h1.ax-window-title {
 }
 @keyframes ax-open {
   0% {
-    clip-path: inset(0 50% 0 50%);
-    filter: brightness(2.2);
+    opacity: 0;
+    clip-path: inset(0 50% 0 50% round 8px);
   }
-  60% {
-    filter: brightness(1.2);
+  30% {
+    opacity: 1;
   }
   100% {
-    clip-path: inset(-60px);
-    filter: brightness(1);
+    clip-path: inset(-40px round 8px);
   }
 }
-@keyframes ax-rail {
-  from {
+@keyframes ax-live {
+  0% {
     opacity: 0;
-    scale: 0 1;
+    clip-path: inset(0 0 100% 0);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes ax-hold {
+  to {
+    opacity: 1;
   }
 }
 @keyframes ax-trace {
@@ -1849,7 +1928,7 @@ h1.ax-window-title {
   }
 }
 
-/* Motion off and reduced motion: states only, no parallax. */
+/* Motion off and reduced motion: states only. */
 :root[data-motion="off"] :is(.ax-stage, .ax-dialog) *,
 .ax-stage [data-motion="off"],
 .ax-stage [data-motion="off"] *,
@@ -1858,17 +1937,11 @@ h1.ax-window-title {
   animation: none !important;
   transition: none !important;
 }
-:root[data-motion="off"] .ax-depth {
-  translate: none;
-}
 @media (prefers-reduced-motion: reduce) {
   :is(.ax-stage, .ax-dialog) *,
   :is(.ax-stage, .ax-dialog) *::before,
   :is(.ax-stage, .ax-dialog) *::after {
     animation: none !important;
     transition: none !important;
-  }
-  .ax-depth {
-    translate: none;
   }
 }
