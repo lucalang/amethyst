@@ -15,12 +15,15 @@ const DEFAULT_DISPLAY: CardDisplay = { title: true, labels: false, progress: tru
 export function PosterCard({
   entry,
   priority,
+  sizes,
   pinStyle = "current",
   display = DEFAULT_DISPLAY,
   labels = [],
 }: {
   entry: LibraryEntry;
   priority?: boolean;
+  /** Rendered width hint for the cover; defaults to the collection grid's. */
+  sizes?: string;
   pinStyle?: PinStyle;
   display?: CardDisplay;
   /** Label names for this entry (shown when `display.labels` is on). */
@@ -57,6 +60,7 @@ export function PosterCard({
                 src={entry.coverUrl}
                 alt=""
                 priority={priority}
+                sizes={sizes}
                 fallbackLabel={entry.title}
                 className="poster-artwork"
               />

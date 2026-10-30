@@ -89,22 +89,23 @@ export async function loadWorkspace(ctx: AuthContext, entryId: string): Promise<
 export async function loadNodeDetail(supabase: Supabase, nodeId: string, entryId?: string): Promise<NodeDetail | null> {
   let query = supabase.from("workspace_nodes").select(`${NODE_COLUMNS}, entry_id, content`).eq("id", nodeId);
   if (entryId) query = query.eq("entry_id", entryId);
-  const { data: node, error } = await query.maybeSingle();
+  // Items are read alongside the node (empty for notes) to avoid a second round trip.
+  const [{ data: node, error }, itemRows] = await Promise.all([
+    query.maybeSingle(),
+    fetchAll((from, to) =>
+      supabase
+        .from("workspace_checklist_items")
+        .select(`${ITEM_COLUMNS}, steps:workspace_checklist_steps(${STEP_COLUMNS})`)
+        .eq("file_id", nodeId)
+        .order("position")
+        .order("id")
+        .range(from, to),
+    ),
+  ]);
   if (error) throw new Error(`Query failed (${error.code ?? "unknown"})`);
   if (!node) return null;
 
-  const rows =
-    node.kind === "checklist"
-      ? await fetchAll((from, to) =>
-          supabase
-            .from("workspace_checklist_items")
-            .select(`${ITEM_COLUMNS}, steps:workspace_checklist_steps(${STEP_COLUMNS})`)
-            .eq("file_id", nodeId)
-            .order("position")
-            .order("id")
-            .range(from, to),
-        )
-      : [];
+  const rows = node.kind === "checklist" ? itemRows : [];
   const items = rows.map((row) => toChecklistItem(row, row.steps));
 
   return {

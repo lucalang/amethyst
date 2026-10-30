@@ -8,6 +8,13 @@ import { objectKey, presignDownload, r2Configured, readObject } from "@/lib/r2";
 
 export const runtime = "nodejs";
 
+// Remote artwork is refreshed every 30 days, staggered per image so caches never expire all at once.
+const REMOTE_PERIOD = 30 * 86_400_000;
+function remoteRevision(src: string) {
+  const offset = parseInt(createHash("sha256").update(src).digest("hex").slice(0, 8), 16) % REMOTE_PERIOD;
+  return `r${Math.floor((Date.now() + offset) / REMOTE_PERIOD)}`;
+}
+
 export async function GET(request: Request) {
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;
@@ -30,11 +37,11 @@ export async function GET(request: Request) {
   }
   if (row?.content_type === "image/gif") return redirectOriginal();
 
-  const revision = name ? row?.sha256 ?? "immutable" : Math.floor(Date.now() / 86_400_000);
+  const revision = name ? row?.sha256 ?? "immutable" : remoteRevision(src);
   const hash = createHash("sha256").update(JSON.stringify([src, revision])).digest("hex");
   const key = objectKey(ctx.userId, `_artwork/v1/${hash}/${width}`);
   try {
-    const cached = await cachedArtwork(key, width, async () => {
+    const cached = await cachedArtwork(key, width, `${ctx.userId}:${hash}`, async () => {
       if (name && row?.r2_state === "verified") return { body: await readObject(objectKey(ctx.userId, name), MAX_ATTACHMENT_BYTES), contentType: row.content_type };
       if (name) {
         const { data, error: downloadError } = await ctx.supabase.storage.from(ATTACHMENT_BUCKET).download(objectKey(ctx.userId, name));

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, Fragment, useContext, useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -27,7 +28,13 @@ import {
 } from "lucide-react";
 import { useSaveSettings } from "@/app/(vault)/settings/setting-controls";
 import { ChangedBadge, ResetIconButton } from "@/app/(vault)/settings/reset-button";
-import { FanEditor, type FanCollection } from "@/components/home/fan-editor";
+import type { FanCollection } from "@/components/home/fan-editor";
+
+// Only shown inside the Customize dialog, so it loads on demand instead of with Home.
+const FanEditor = dynamic(() => import("@/components/home/fan-editor").then((module) => module.FanEditor), {
+  ssr: false,
+  loading: () => <div aria-hidden className="h-40 animate-pulse rounded-lg bg-foreground/[0.04] motion-reduce:animate-none" />,
+});
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";

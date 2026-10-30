@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink as Link } from "@/components/layout/intent-link";
 import { ArrowRight, ArrowUpRight, FileText, ListChecks, PlayCircle } from "lucide-react";
 import { CollectionIcon } from "@/components/categories/collection-icon";
 import { CoverStack } from "@/components/home/cover-stack";
@@ -20,7 +20,7 @@ export function ContinueCard({ item }: { item: HomeContinue }) {
       className="group/continue relative flex w-full max-w-2xl min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-white/[0.1] bg-black/45 p-3 pr-4 backdrop-blur-md transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-amethyst/[0.07] hover:shadow-[0_22px_48px_-24px_rgb(var(--accent-rgb)/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:gap-5 sm:pr-5"
     >
       <span className={cn("relative shrink-0 overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_12px_28px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]", entry.coverShape === "square" ? "size-20" : "h-24 w-16")}>
-        <MediaImage src={entry.coverUrl} alt="" fallbackLabel={entry.title} priority className="transition-[scale] duration-700 group-hover/continue:scale-105" />
+        <MediaImage src={entry.coverUrl} alt="" sizes="80px" fallbackLabel={entry.title} priority className="transition-[scale] duration-700 group-hover/continue:scale-105" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 text-xs font-medium text-amethyst">

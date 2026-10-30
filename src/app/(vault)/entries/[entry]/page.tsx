@@ -35,17 +35,21 @@ export default async function EntryPage({ params, searchParams }: Props) {
     redirect(`${entryPath(entry)}${typeof file === "string" ? `?file=${encodeURIComponent(file)}` : ""}`);
   }
   const id = entry.id;
-  const data = await measureServer("entry.workspace", () => loadWorkspace(ctx, id));
-  if (!data) notFound();
-
-  const requested = typeof file === "string" ? data.nodes.find((node) => node.id === file && node.kind !== "folder") : undefined;
-  const initialId = requested?.id ?? firstFile(buildTree(data.nodes))?.id ?? null;
-  const [initialFile, currentCollection, collections, categories, categoryIds, pin] = await measureServer("entry.detail-and-controls", () => Promise.all([
-    initialId ? loadNodeDetail(ctx.supabase, initialId, id) : null,
-    loadCollection(ctx, data.entry.collection_id), loadCollections(ctx), loadCategories(ctx, data.entry.collection_id), loadEntryCategoryIds(ctx, id),
-    ctx.supabase.from("entry_pins").select("entry_id").eq("entry_id", id).maybeSingle(),
+  // Controls only need the resolved entry, and a linked file can be read speculatively, so both overlap the tree read.
+  const linked = typeof file === "string" && /^[0-9a-f-]{36}$/i.test(file) ? file : null;
+  const [data, [currentCollection, collections, categories, categoryIds, pin], linkedFile] = await measureServer("entry.workspace-and-controls", () => Promise.all([
+    loadWorkspace(ctx, id),
+    Promise.all([
+      loadCollection(ctx, entry.collection_id), loadCollections(ctx), loadCategories(ctx, entry.collection_id), loadEntryCategoryIds(ctx, id),
+      ctx.supabase.from("entry_pins").select("entry_id").eq("entry_id", id).maybeSingle(),
+    ]),
+    linked ? loadNodeDetail(ctx.supabase, linked, id).catch(() => null) : null,
   ]));
-  if (!currentCollection) notFound();
+  if (!data || !currentCollection) notFound();
+
+  const requested = linked ? data.nodes.find((node) => node.id === linked && node.kind !== "folder") : undefined;
+  const initialId = requested?.id ?? firstFile(buildTree(data.nodes))?.id ?? null;
+  const initialFile = requested && linkedFile ? linkedFile : initialId ? await measureServer("entry.detail", () => loadNodeDetail(ctx.supabase, initialId, id)) : null;
 
   return (
     <>

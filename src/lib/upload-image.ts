@@ -2,7 +2,6 @@
 
 import { apiFetch } from "@/lib/api-client";
 import { ATTACHMENT_BUCKET, ATTACHMENT_TYPES, MAX_ATTACHMENT_BYTES, attachmentUrl, pastedImageName, sanitizeAttachmentName } from "@/lib/attachments";
-import { createClient } from "@/lib/supabase/client";
 
 export type ImageSource = "paste" | "file";
 
@@ -33,6 +32,7 @@ export async function uploadImage(file: File, source: ImageSource): Promise<stri
       return ticket.name;
     }
 
+    const { createClient } = await import("@/lib/supabase/client");
     const supabase = createClient();
     const { data } = await supabase.auth.getSession();
     const userId = data.session?.user.id;

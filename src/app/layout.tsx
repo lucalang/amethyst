@@ -42,7 +42,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`dark ${FONT_VARIABLES} h-full`}>
+    <html lang="en" className={`dark ${FONT_VARIABLES} h-full`} suppressHydrationWarning>
       <body className="min-h-dvh">
         <Providers>{children}</Providers>
       </body>

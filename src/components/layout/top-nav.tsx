@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
+import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
 import { Gem, LibraryBig, LogOut, Megaphone, Palette, Settings } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";

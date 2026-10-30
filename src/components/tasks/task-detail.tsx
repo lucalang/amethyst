@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowDown,
@@ -19,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { LiveMarkdownEditor } from "@/components/editor/live-markdown-editor";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -37,6 +37,12 @@ import { dueDateSchema, itemLabelSchema } from "@/lib/validation/workspace";
 import { ListGlyph } from "./sidebar";
 import { useTasks } from "./store";
 import { DeleteTaskDialog } from "./task-row";
+
+// The editor (CodeMirror) is only needed once a task's notes are open, so it stays out of the To Do bundle.
+const LiveMarkdownEditor = dynamic(() => import("@/components/editor/live-markdown-editor").then((module) => module.LiveMarkdownEditor), {
+  ssr: false,
+  loading: () => <div aria-hidden className="h-28 animate-pulse rounded-md bg-foreground/[0.04] motion-reduce:animate-none" />,
+});
 
 const SECTION_LABEL = "text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase";
 const CARD =

@@ -55,7 +55,7 @@ export function FramePicker({
           <ArtworkFrame frame={shown} className={coverShape === "square" ? "w-24" : "w-20"}>
             <span className={cn("relative block overflow-hidden rounded-lg bg-surface", coverShape === "square" ? "aspect-square" : "aspect-[2/3]")}>
               {coverUrl ? (
-                <MediaImage src={coverUrl} alt="" fallbackLabel={title} />
+                <MediaImage src={coverUrl} alt="" sizes="auto, 96px" fallbackLabel={title} />
               ) : (
                 <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgb(var(--accent-rgb)/0.75),transparent_60%),radial-gradient(circle_at_75%_80%,rgb(var(--rose-rgb)/0.6),transparent_55%),linear-gradient(160deg,rgb(var(--accent-soft-rgb)/0.5),rgb(var(--paper-rgb)))]" />
               )}

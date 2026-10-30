@@ -7,6 +7,7 @@ import type { AuthContext } from "@/lib/supabase/auth";
 import { automaticPreviews, chosenPreviews } from "./collection-covers";
 import { loadCollections } from "./collections";
 import { fetchAll } from "./fetch-all";
+import { loadProfile } from "./preferences";
 
 /** One "continue" entry plus up to six recently opened ones. */
 const VISIT_LIMIT = 7;
@@ -62,9 +63,9 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
 /**
  * Everything the Home dashboard shows, scoped to the signed-in user by RLS.
  */
-export async function loadHome(ctx: AuthContext, featuredEntryId: string | null = null): Promise<HomeData> {
+export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string | null> | string | null = null): Promise<HomeData> {
   const { supabase } = ctx;
-  const [collections, entries, visits, pins, files, tasks, profile, fanRows, coverRows] = await Promise.all([
+  const [collections, entries, visits, pins, files, tasks, profile, fanRows, coverRows, featuredRequest] = await Promise.all([
     loadCollections(ctx),
     fetchAll(
       (from, to) =>
@@ -89,9 +90,10 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
       .order("id")
       .limit(TASK_LIMIT)
       .then(check),
-    supabase.from("users").select("display_name, avatar_url, motto").eq("id", ctx.userId).maybeSingle().then(check),
+    loadProfile(ctx),
     supabase.from("home_fan_items").select("id, entry_id, image_url, image_shape").order("position").then(check),
     supabase.from("collection_cover_items").select("id, collection_id, entry_id, image_url, image_shape").order("position").then(check),
+    featuredEntryId,
   ]);
   if (files.error) throw new Error(`Query failed (${files.error.code ?? "unknown"})`);
 
@@ -101,7 +103,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: string | null 
   const pinnedIds = new Set(pinRows.map((pin) => pin.entry_id));
   const last = visitRows[0];
   const fileIds = [...new Set([...(tasks ?? []).map((task) => task.file_id), ...(last?.last_file_id ? [last.last_file_id] : [])])];
-  const featuredId = featuredEntryId && entryById.has(featuredEntryId) ? featuredEntryId : null;
+  const featuredId = featuredRequest && entryById.has(featuredRequest) ? featuredRequest : null;
   const shownIds = [...new Set([...visitRows.map((visit) => visit.entry_id), ...pinRows.map((pin) => pin.entry_id), ...(featuredId ? [featuredId] : [])])];
 
   const [summaries, nodes] = await Promise.all([

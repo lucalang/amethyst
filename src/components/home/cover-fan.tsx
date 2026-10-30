@@ -76,7 +76,7 @@ export function CoverFan({ items, preview = false, className }: { items: FanItem
           >
             <ArtworkFrame frame={card.frame} className="home-fan-card">
               <span className="home-fan-art">
-                <MediaImage src={card.src} alt="" fallbackLabel={card.title} priority={!preview && index < 5} />
+                <MediaImage src={card.src} alt="" sizes="auto, (min-width: 1024px) 168px, (min-width: 768px) 144px, 124px" fallbackLabel={card.title} priority={!preview && index < 5} />
                 <span aria-hidden className="home-fan-shade" />
                 <span aria-hidden className="home-fan-gloss" />
               </span>

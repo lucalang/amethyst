@@ -12,6 +12,9 @@ import { ScrollExitFallback } from "./scroll-exit-fallback";
 import { SettingsProvider } from "./settings-context";
 import { MobileTabBar, TopNav, type AccountSummary } from "./top-nav";
 
+/** Copies the shell's theme and motion onto <html> before first paint (SettingsProvider keeps them in sync). */
+const ROOT_ATTRIBUTES_SCRIPT = `(function(){var s=document.currentScript.parentElement.parentElement.dataset,r=document.documentElement.dataset;r.appTheme=s.appTheme;r.motion=s.motion})()`;
+
 export function AppShell({
   children,
   account,
@@ -45,6 +48,7 @@ export function AppShell({
         data-shine={preferences.cardShine ? "on" : "off"}
       >
         <style>{settingsStyle(preferences)}</style>
+        <div hidden suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${ROOT_ATTRIBUTES_SCRIPT}</script>` }} />
         <OpeningIntro userId={userId} lastSeen={introSeenOn} motion={preferences.motion} frequency={preferences.introFrequency} />
         <KeyboardShortcuts collections={collections} />
         <a

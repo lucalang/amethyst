@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { IntentLink as Link } from "@/components/layout/intent-link";
 import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight, Coins, LibraryBig } from "lucide-react";
 import { MarqueeArt } from "@/components/home/arcade-marquee";
@@ -32,7 +32,7 @@ const CARDS: Record<DestinationId, { art: (data: HubData) => ReactNode; status: 
       }
       return covers.map((cover, index) => (
         <span key={cover.id} className="hub-cover" data-slot={COVER_SLOTS[covers.length][index]}>
-          <MediaImage src={cover.coverUrl} alt="" fallbackLabel={cover.title} className="text-[10px]" />
+          <MediaImage src={cover.coverUrl} alt="" sizes="auto, 64px" fallbackLabel={cover.title} className="text-[10px]" />
         </span>
       ));
     },

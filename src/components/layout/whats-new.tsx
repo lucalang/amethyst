@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import Link from "next/link";
+import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
 import { Megaphone, Play } from "lucide-react";
 import { PREVIEW_INTRO_EVENT } from "@/components/layout/opening-intro";

@@ -18,7 +18,7 @@ export function CoverStack({ previews, hoverGroup = false }: { previews: Pick<Ho
           )}
           style={{ zIndex: previews.length - index }}
         >
-          <MediaImage src={preview.coverUrl} alt="" fallbackLabel={preview.title} className="text-xs" />
+          <MediaImage src={preview.coverUrl} alt="" sizes="auto, 72px" fallbackLabel={preview.title} className="text-xs" />
         </span>
       ))}
     </span>

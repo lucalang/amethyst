@@ -38,6 +38,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function LibraryPage({ params, searchParams }: Props) {
   const [{ collection: slug }, query] = await Promise.all([params, searchParams]);
   const ctx = await measureServer("collection.auth", requireUser);
+  // These don't depend on the collection, so they overlap its lookup.
+  const preferenceRead = measureServer("collection.preferences", () => loadPreferences(ctx));
+  const presetRead = measureServer("collection.viewer-presets", () => loadViewerPresets(ctx));
+  presetRead.catch(() => {});
   const collection = await measureServer("collection.resolve", () => loadCollection(ctx, slug));
   if (!collection) notFound();
   const path = collectionPath(collection);
@@ -58,8 +62,8 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   const [library, categories, preferences, viewerPresets] = await Promise.all([
     measureServer("collection.library", () => loadLibrary(ctx, collection.id)),
     measureServer("collection.categories", () => loadCategories(ctx, collection.id)),
-    measureServer("collection.preferences", () => loadPreferences(ctx)),
-    measureServer("collection.viewer-presets", () => loadViewerPresets(ctx)),
+    preferenceRead,
+    presetRead,
   ]);
   // Ignore ids of labels deleted since the link was made.
   search.categories = search.categories.filter((id) => categories.some((category) => category.id === id));

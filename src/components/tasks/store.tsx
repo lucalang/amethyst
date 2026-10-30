@@ -528,7 +528,8 @@ function useStoreValue(userId: string, initial: TaskChanges) {
   );
 
   // ---- Derived -----------------------------------------------------------------------------
-  const derived = useMemo(() => {
+  // Split by source slice so a task edit doesn't rebuild list or step structures (keeps memoized rows stable).
+  const structure = useMemo(() => {
     const lists = Object.values(data.lists);
     const groups = Object.values(data.groups).sort(byPosition);
     const sidebar: SidebarItem[] = [
@@ -542,19 +543,23 @@ function useStoreValue(userId: string, initial: TaskChanges) {
     // Every list in sidebar order; also used to sort tasks from many lists.
     const orderedLists = sidebar.flatMap((item) => (item.kind === "group" ? item.lists : [item.list]));
     const listOrder = new Map(orderedLists.map((list, position) => [list.id, position]));
-    const stepsByTask = new Map<string, TaskStep[]>();
-    for (const step of Object.values(data.steps)) {
-      const bucket = stepsByTask.get(step.taskId);
-      if (bucket) bucket.push(step);
-      else stepsByTask.set(step.taskId, [step]);
-    }
-    for (const bucket of stepsByTask.values()) bucket.sort(byPosition);
     // Where new tasks land outside a list: the last list used, else the first list.
     const defaultList = (rememberedListId && data.lists[rememberedListId]) || orderedLists[0] || null;
-    return { sidebar, lists: orderedLists, listOrder, defaultList, stepsByTask, allTasks: Object.values(data.tasks) };
-  }, [data, rememberedListId]);
+    return { sidebar, lists: orderedLists, listOrder, defaultList };
+  }, [data.lists, data.groups, rememberedListId]);
+  const stepsByTask = useMemo(() => {
+    const byTask = new Map<string, TaskStep[]>();
+    for (const step of Object.values(data.steps)) {
+      const bucket = byTask.get(step.taskId);
+      if (bucket) bucket.push(step);
+      else byTask.set(step.taskId, [step]);
+    }
+    for (const bucket of byTask.values()) bucket.sort(byPosition);
+    return byTask;
+  }, [data.steps]);
+  const allTasks = useMemo(() => Object.values(data.tasks), [data.tasks]);
 
-  return { userId, today, live, data, ghosts, ...derived, actions };
+  return { userId, today, live, data, ghosts, ...structure, stepsByTask, allTasks, actions };
 }
 
 export function TasksProvider({ userId, initial, children }: { userId: string; initial: TaskChanges; children: React.ReactNode }) {

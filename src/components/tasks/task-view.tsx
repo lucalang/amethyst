@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from "react";
+import { useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownUp,
@@ -52,7 +52,7 @@ import { DeleteListDialog, ListDialog, type ListDialogState } from "./list-dialo
 import { useTasksNav } from "./nav";
 import { ListGlyph, SMART_ICONS } from "./sidebar";
 import { useTasks } from "./store";
-import { DeleteTaskDialog, GhostRow, TaskRow } from "./task-row";
+import { DeleteTaskDialog, GhostRow, TaskRow, type TaskRowHandlers } from "./task-row";
 
 const SETTLE_MS = 520;
 const CELEBRATE_MS = 700;
@@ -157,6 +157,74 @@ export function TaskView() {
   const open = canReorder && dragOrder ? dragOrder.map((id) => data.tasks[id]).filter(Boolean) : sorted;
   const openIds = sorted.map((task) => task.id);
 
+  // Row callbacks read the latest render's state through a ref, so their identity never changes.
+  const latest = useRef<TaskRowHandlers | null>(null);
+  useLayoutEffect(() => {
+    latest.current = {
+      select: (id) => nav.select(nav.selectedId === id ? null : id),
+      toggle(task, done) {
+        if (done && motion !== "off" && !prefersReducedMotion()) {
+          addSettling(task.id);
+          addCelebrating(task.id);
+        }
+        void actions.updateTask(task.id, { completed: done }, { failure: done ? "Task not completed" : "Task not reopened" });
+      },
+      remove: (task) => setDeleting(task),
+      move(id, delta) {
+        const ids = [...openIds];
+        const from = ids.indexOf(id);
+        const to = from + delta;
+        if (from < 0 || to < 0 || to >= ids.length) return;
+        ids.splice(to, 0, ...ids.splice(from, 1));
+        void actions.reorderTasks(ids);
+        requestAnimationFrame(() => document.getElementById(`task-row-${id}`)?.focus());
+      },
+      pointerDown(id, event) {
+        if (event.button !== 0) return;
+        event.currentTarget.setPointerCapture(event.pointerId);
+        dragRef.current = { id, startY: event.clientY, moved: false, order: openIds };
+      },
+      pointerMove(id, event) {
+        const drag = dragRef.current;
+        if (!drag || drag.id !== id || !openListRef.current) return;
+        if (!drag.moved && Math.abs(event.clientY - drag.startY) < 4) return;
+        if (!drag.moved) setDragId(id);
+        drag.moved = true;
+        const others = [...openListRef.current.querySelectorAll<HTMLElement>("[data-task-row]")].filter((row) => row.dataset.id !== id);
+        let index = others.findIndex((row) => {
+          const box = row.getBoundingClientRect();
+          return event.clientY < box.top + box.height / 2;
+        });
+        if (index < 0) index = others.length;
+        const next = others.map((row) => row.dataset.id!);
+        next.splice(index, 0, id);
+        if (next.join() !== drag.order.join()) {
+          drag.order = next;
+          setDragOrder(next);
+        } else if (!dragOrder) setDragOrder(next);
+      },
+      pointerEnd() {
+        const drag = dragRef.current;
+        dragRef.current = null;
+        if (drag?.moved && drag.order.join() !== openIds.join()) void actions.reorderTasks(drag.order);
+        setDragOrder(null);
+        setDragId(null);
+      },
+    };
+  });
+  const handlers = useMemo<TaskRowHandlers>(
+    () => ({
+      select: (id) => latest.current?.select(id),
+      toggle: (task, done) => latest.current?.toggle(task, done),
+      remove: (task) => latest.current?.remove(task),
+      move: (id, delta) => latest.current?.move(id, delta),
+      pointerDown: (id, event) => latest.current?.pointerDown(id, event),
+      pointerMove: (id, event) => latest.current?.pointerMove(id, event),
+      pointerEnd: () => latest.current?.pointerEnd(),
+    }),
+    [],
+  );
+
   if (!view) {
     return (
       <EmptyState icon={<SearchX aria-hidden className="size-7" />} title="List not found" body="It may have been deleted on another device.">
@@ -176,80 +244,33 @@ export function TaskView() {
     );
   }
 
-  function toggle(task: Task, done: boolean) {
-    if (done && motion !== "off" && !prefersReducedMotion()) {
-      addSettling(task.id);
-      addCelebrating(task.id);
-    }
-    void actions.updateTask(task.id, { completed: done }, { failure: done ? "Task not completed" : "Task not reopened" });
-  }
-
-  function move(id: string, delta: number) {
-    const ids = [...openIds];
-    const from = ids.indexOf(id);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= ids.length) return;
-    ids.splice(to, 0, ...ids.splice(from, 1));
-    void actions.reorderTasks(ids);
-    requestAnimationFrame(() => document.getElementById(`task-row-${id}`)?.focus());
-  }
-
-  const dragHandlers = (id: string) => ({
-    active: dragId === id,
-    onPointerDown(event: PointerEvent<HTMLButtonElement>) {
-      if (event.button !== 0) return;
-      event.currentTarget.setPointerCapture(event.pointerId);
-      dragRef.current = { id, startY: event.clientY, moved: false, order: openIds };
-    },
-    onPointerMove(event: PointerEvent<HTMLButtonElement>) {
-      const drag = dragRef.current;
-      if (!drag || !openListRef.current) return;
-      if (!drag.moved && Math.abs(event.clientY - drag.startY) < 4) return;
-      if (!drag.moved) setDragId(id);
-      drag.moved = true;
-      const others = [...openListRef.current.querySelectorAll<HTMLElement>("[data-task-row]")].filter((row) => row.dataset.id !== id);
-      let index = others.findIndex((row) => {
-        const box = row.getBoundingClientRect();
-        return event.clientY < box.top + box.height / 2;
-      });
-      if (index < 0) index = others.length;
-      const next = others.map((row) => row.dataset.id!);
-      next.splice(index, 0, id);
-      if (next.join() !== drag.order.join()) {
-        drag.order = next;
-        setDragOrder(next);
-      } else if (!dragOrder) setDragOrder(next);
-    },
-    onPointerEnd() {
-      const drag = dragRef.current;
-      dragRef.current = null;
-      if (drag?.moved && drag.order.join() !== openIds.join()) void actions.reorderTasks(drag.order);
-      setDragOrder(null);
-      setDragId(null);
-    },
-  });
-
-  const row = (task: Task, options: { snippet?: ReactNode; index?: number; showList?: boolean } = {}) => (
-    <TaskRow
-      key={task.id}
-      task={task}
-      selected={nav.selectedId === task.id}
-      showList={options.showList ?? view.kind !== "list"}
-      showMyDay={!(view.kind === "smart" && view.id === "my-day")}
-      celebrate={celebrating.has(task.id)}
-      checkedOverride={settling.has(task.id) ? true : undefined}
-      snippet={options.snippet}
-      onSelect={() => nav.select(nav.selectedId === task.id ? null : task.id)}
-      onToggle={(done) => toggle(task, done)}
-      onDelete={() => setDeleting(task)}
-      move={
-        canReorder && options.index !== undefined && !task.completedAt
-          ? { up: options.index > 0, down: options.index < openIds.length - 1, run: (delta) => move(task.id, delta) }
-          : undefined
-      }
-      drag={canReorder && options.index !== undefined && !task.completedAt && open.length > 1 ? dragHandlers(task.id) : undefined}
-    />
-  );
+  const row = (task: Task, options: { snippet?: ReactNode; index?: number; showList?: boolean } = {}) => {
+    const reorderable = canReorder && options.index !== undefined && !task.completedAt;
+    return (
+      <TaskRow
+        key={task.id}
+        task={task}
+        list={data.lists[task.listId]}
+        entryTitle={task.entryId ? (data.entries[task.entryId]?.title ?? null) : null}
+        steps={stepsByTask.get(task.id)}
+        today={today}
+        allLists={store.lists}
+        actions={actions}
+        selected={nav.selectedId === task.id}
+        showList={options.showList ?? view.kind !== "list"}
+        showMyDay={!(view.kind === "smart" && view.id === "my-day")}
+        celebrate={celebrating.has(task.id)}
+        checkedOverride={settling.has(task.id) ? true : undefined}
+        snippet={options.snippet}
+        handlers={handlers}
+        movable={reorderable}
+        canMoveUp={reorderable && options.index! > 0}
+        canMoveDown={reorderable && options.index! < openIds.length - 1}
+        draggable={reorderable && open.length > 1}
+        dragging={dragId === task.id}
+      />
+    );
+  };
 
   // ---- Header -------------------------------------------------------------------------------
   const smart = view.kind === "smart" ? smartView(view.id) : null;

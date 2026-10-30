@@ -35,7 +35,7 @@ export function ShowcaseButton({ className }: { className?: string }) {
 }
 /** Overlays are mounted into the app shell so they inherit its theme and motion attributes. */
 function overlayHost(): HTMLElement {
-  return document.querySelector<HTMLElement>("[data-app-theme]") ?? document.body;
+  return document.body.querySelector<HTMLElement>("[data-app-theme]") ?? document.body;
 }
 
 function restoreFocus(element: HTMLElement | null | undefined) {

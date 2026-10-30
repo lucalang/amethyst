@@ -42,6 +42,50 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-13-first-load",
+    date: "2026-11-13",
+    title: "A lighter first load",
+    intro: "Home gives its first screen priority, with smaller startup downloads and less unrelated background work.",
+    icon: "home",
+    highlights: [
+      { kind: "improved", feature: "Startup", text: "Home downloads fewer scripts before its first screen is ready." },
+      { kind: "improved", feature: "Navigation", text: "Home and navigation links preload their destination when you hover or focus them, rather than loading other areas during startup." },
+      { kind: "improved", feature: "Upload controls", text: "Legacy storage code loads only when a legacy upload needs it, rather than during ordinary page startup." },
+      { kind: "improved", feature: "Artwork", text: "Small covers, fan cards and blurred backdrops download a size that fits them, and linked artwork stays cached for weeks instead of a day." },
+      { kind: "improved", feature: "Home and entries", text: "Home, collections and entry workspaces start more of their reads at once, and links to a specific file open it without an extra wait." },
+      { kind: "improved", feature: "To Do", text: "Large lists update only the task that changed, long completed sections render lazily, and the notes editor loads when you open a task's notes." },
+      { kind: "improved", feature: "Responsiveness", text: "Opening menus, adding items and other page changes restyle far less of the page, so interactions respond sooner on every theme and motion setting." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Preloading follows your intent",
+          body: "The first screen no longer competes with automatic downloads for the To Do area, entry workspaces and the update log. Destination preloading starts on pointer or keyboard intent, with normal links and client-side navigation intact.",
+          link: { href: "/", label: "Open Home" },
+        },
+        {
+          title: "Upload code when it is needed",
+          body: "The storage SDK used by legacy uploads no longer downloads just because a page has image-upload controls. R2 uploads and legacy uploads keep their existing authentication, confirmation and owner-scoped storage behavior.",
+        },
+        {
+          title: "Right-sized, longer-lived artwork",
+          body: "Home's first screen asks for roughly a sixth of the image pixels it used to. Resized copies of linked artwork refresh every 30 days (staggered) rather than daily, and sibling sizes reuse one download. Originals and the artwork viewer are unchanged.",
+          link: { href: "/", label: "Open Home" },
+        },
+        {
+          title: "Smoother To Do",
+          body: "Checking, starring or editing a task no longer re-renders every other row, and the customize-fan editor on Home loads only when you open it.",
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+        {
+          title: "Less restyling per interaction",
+          body: "Themes and the motion setting now apply from the page root directly, and unused component styles that watched the whole page were removed. In testing, adding an element or opening a menu went from roughly 60–130 ms of style work to under 2 ms. Themes, motion settings and every component look the same.",
+          link: { href: "/settings", label: "Open Settings" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-12-performance",
     date: "2026-11-12",
     title: "A quicker archive, with the same detail",

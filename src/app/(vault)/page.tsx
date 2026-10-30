@@ -35,6 +35,11 @@ export const metadata: Metadata = { title: "Home" };
 const INNER = "mx-auto w-full max-w-[88rem] px-4 md:px-6";
 const POSTER_GRID = "grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6";
 const PINNED_GRID = "grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5";
+// Column widths of the two grids above (eager images cannot use `sizes=auto`).
+const POSTER_SIZES = "auto, (min-width: 1408px) 210px, (min-width: 1024px) 16vw, (min-width: 768px) 23vw, (min-width: 640px) 31vw, 46vw";
+const PINNED_SIZES = "auto, (min-width: 1408px) 260px, (min-width: 1280px) 19vw, (min-width: 768px) 23vw, (min-width: 640px) 31vw, 46vw";
+// Blurred, dimmed backdrops look identical from a small variant.
+const BLURRED_SIZES = "200px";
 
 const enterIndex = (index: number) => ({ "--enter-index": index }) as CSSProperties;
 
@@ -102,7 +107,7 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
   return (
     <section aria-labelledby="home-heading" className="relative isolate overflow-hidden border-b border-white/[0.06]">
       <div aria-hidden className="absolute inset-0 -z-10">
-        {backdrop ? <MediaImage src={backdrop} alt="" sizes="100vw" priority className="scale-110 opacity-30 blur-2xl saturate-150" /> : null}
+        {backdrop ? <MediaImage src={backdrop} alt="" sizes={BLURRED_SIZES} priority className="scale-110 opacity-30 blur-2xl saturate-150" /> : null}
         <div className="absolute inset-0 bg-[radial-gradient(55%_85%_at_12%_0%,rgb(var(--accent-rgb)/0.26),transparent_70%),radial-gradient(40%_70%_at_88%_15%,rgb(var(--rose-rgb)/0.13),transparent_70%)]" />
         <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/55 to-black" />
       </div>
@@ -211,7 +216,7 @@ function FeaturedEntry({ featured }: { featured: HomeFeaturedEntry }) {
     >
       <span aria-hidden className="absolute inset-0 -z-10">
         {backdrop ? (
-          <MediaImage src={backdrop} alt="" sizes="auto, 100vw" className={featured.bannerUrl ? "opacity-55 transition-[scale] duration-700 group-hover/featured:scale-[1.02]" : "scale-110 opacity-35 blur-2xl"} />
+          <MediaImage src={backdrop} alt="" sizes={featured.bannerUrl ? "auto, 100vw" : BLURRED_SIZES} className={featured.bannerUrl ? "opacity-55 transition-[scale] duration-700 group-hover/featured:scale-[1.02]" : "scale-110 opacity-35 blur-2xl"} />
         ) : (
           <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%)]" />
         )}
@@ -223,7 +228,7 @@ function FeaturedEntry({ featured }: { featured: HomeFeaturedEntry }) {
           entry.coverShape === "square" ? "size-28 md:size-40" : "h-36 w-24 md:h-52 md:w-36",
         )}
       >
-        <MediaImage src={entry.coverUrl} alt="" fallbackLabel={entry.title} />
+        <MediaImage src={entry.coverUrl} alt="" sizes="auto, (min-width: 768px) 160px, 112px" fallbackLabel={entry.title} />
       </span>
       <span className="min-w-0 flex-1 pb-1">
         <span className="block truncate text-[11px] font-semibold tracking-[0.16em] text-amethyst uppercase">{featured.collectionName}</span>
@@ -257,7 +262,7 @@ export default async function HomePage() {
   const preferenceRead = measureServer("home.preferences", () => loadPreferences(ctx));
   const [preferences, home, achievementCards, coinBalance, myDay] = await Promise.all([
     preferenceRead,
-    preferenceRead.then((value) => measureServer("home.archive", () => loadHome(ctx, value.homeFeatured?.kind === "entry" ? value.homeFeatured.entryId : null))),
+    measureServer("home.archive", () => loadHome(ctx, preferenceRead.then((value) => value.homeFeatured?.kind === "entry" ? value.homeFeatured.entryId : null))),
     preferenceRead.then((value) => value.homeSections.some((section) => section.id === "achievements" && !section.hidden)
       ? measureServer("home.achievements", () => loadAchievementCards(ctx)) : []),
     measureServer("home.wallet", () => loadCoinBalance(ctx).catch(() => null)),
@@ -297,7 +302,7 @@ export default async function HomePage() {
           {home.pinned.length ? (
             <ul aria-label="Pinned entries" className={PINNED_GRID}>
               {home.pinned.map((entry, slot) => (
-                <li key={entry.id}><PosterCard entry={entry} pinStyle={pinStyle} priority={slot < 5} /></li>
+                <li key={entry.id}><PosterCard entry={entry} pinStyle={pinStyle} priority={slot < 5} sizes={PINNED_SIZES} /></li>
               ))}
             </ul>
           ) : (
@@ -315,7 +320,7 @@ export default async function HomePage() {
         <Section id="recent" title="Recently opened" icon={History} index={position}>
           <ul aria-label="Recently opened" className={POSTER_GRID}>
             {home.recent.map((entry) => (
-              <li key={entry.id}><PosterCard entry={entry} pinStyle={pinStyle} /></li>
+              <li key={entry.id}><PosterCard entry={entry} pinStyle={pinStyle} sizes={POSTER_SIZES} /></li>
             ))}
           </ul>
         </Section>

@@ -92,7 +92,7 @@ export function EntryHeader({
     <header data-testid="entry-header" className="header-scroll-exit">
       <div aria-hidden className="relative h-44 overflow-hidden sm:h-56 md:h-72 lg:h-80">
         {banner ? (
-          <MediaImage src={banner} alt="" sizes="100vw" priority className={entry.banner_url ? "opacity-80" : "scale-110 opacity-45 blur-2xl"} />
+          <MediaImage src={banner} alt="" sizes={entry.banner_url ? "100vw" : "200px"} priority className={entry.banner_url ? "opacity-80" : "scale-110 opacity-45 blur-2xl"} />
         ) : (
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%),radial-gradient(ellipse_at_90%_10%,rgb(var(--rose-rgb)/0.08),transparent_55%)]" />
         )}
@@ -105,7 +105,7 @@ export function EntryHeader({
             className={`enter enter-card relative ${entry.cover_shape === "square" ? "aspect-square w-32 sm:w-36 md:w-48 lg:w-56" : "aspect-[2/3] w-28 sm:w-32 md:w-44 lg:w-48"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_28px_70px_-24px_rgb(var(--accent-rgb)/0.6),0_12px_40px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))] ring-1 ring-white/10`}
             style={{ "--enter-index": 0 } as React.CSSProperties}
           >
-            <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} priority fallbackLabel={entry.title} />
+            <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} sizes="(min-width: 1024px) 224px, (min-width: 768px) 192px, 144px" priority fallbackLabel={entry.title} />
           </div>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>
             <Link href={collectionPath(collection)} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.8*var(--shadow-alpha)))]">{collection.name}</Link>

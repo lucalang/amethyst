@@ -129,7 +129,7 @@
 }
 
 /* Rose Noir: velvet black-cherry, rose accent, champagne-gold secondary, serif display. */
-:root:has([data-app-theme="rose-noir"]),
+:root[data-app-theme="rose-noir"],
 [data-theme-preview="rose-noir"] {
   --ink-rgb: 255 232 238;
   --paper-rgb: 11 6 8;
@@ -175,7 +175,7 @@
 }
 
 /* Paper & Ink: warm light paper, ink-blue accent, vermilion stamp, bookish serif headings. */
-:root:has([data-app-theme="paper"]),
+:root[data-app-theme="paper"],
 [data-theme-preview="paper"] {
   --ink-rgb: 35 29 22;
   --paper-rgb: 244 239 228;
@@ -221,7 +221,7 @@
 }
 
 /* Retro Terminal: phosphor green on a dark CRT, amber highlights, monospace, square corners. */
-:root:has([data-app-theme="terminal"]),
+:root[data-app-theme="terminal"],
 [data-theme-preview="terminal"] {
   --ink-rgb: 170 255 200;
   --paper-rgb: 3 8 5;
@@ -267,7 +267,7 @@
 }
 
 /* Neon Arcade: midnight grid, hot magenta and cyan neon, pixel display font. */
-:root:has([data-app-theme="arcade"]),
+:root[data-app-theme="arcade"],
 [data-theme-preview="arcade"] {
   --ink-rgb: 228 220 255;
   --paper-rgb: 10 6 24;
@@ -313,7 +313,7 @@
 }
 
 /* Ocean Glass: deep-sea navy, frosted surfaces, aqua accent and a warm coral highlight. */
-:root:has([data-app-theme="ocean"]),
+:root[data-app-theme="ocean"],
 [data-theme-preview="ocean"] {
   --ink-rgb: 220 242 248;
   --paper-rgb: 3 14 22;
@@ -359,7 +359,7 @@
 }
 
 /* Crimson Night: near-black with a red glow, crimson accent, cool steel secondary. */
-:root:has([data-app-theme="crimson"]),
+:root[data-app-theme="crimson"],
 [data-theme-preview="crimson"] {
   --ink-rgb: 255 236 237;
   --paper-rgb: 10 4 5;
@@ -405,7 +405,7 @@
 }
 
 /* Soft Sakura: pale blossom page, cherry accent, leaf-green secondary, serif display. */
-:root:has([data-app-theme="sakura"]),
+:root[data-app-theme="sakura"],
 [data-theme-preview="sakura"] {
   --ink-rgb: 58 26 38;
   --paper-rgb: 255 245 247;
@@ -451,7 +451,7 @@
 }
 
 /* Monochrome OLED: true black, white accent, neutral greys only. */
-:root:has([data-app-theme="oled"]),
+:root[data-app-theme="oled"],
 [data-theme-preview="oled"] {
   --ink-rgb: 255 255 255;
   --paper-rgb: 0 0 0;
@@ -497,7 +497,7 @@
 }
 
 /* Mint Paper: cool mint page, deep green ink, plum secondary. */
-:root:has([data-app-theme="mint"]),
+:root[data-app-theme="mint"],
 [data-theme-preview="mint"] {
   --ink-rgb: 16 38 30;
   --paper-rgb: 236 246 240;
@@ -550,7 +550,7 @@
 }
 
 /* Theme flourishes, kept to decoration so layout and contrast stay the same. */
-:root:has([data-app-theme="terminal"]) body::after,
+:root[data-app-theme="terminal"] body::after,
 [data-theme-preview="terminal"]::after {
   content: "";
   position: fixed;
@@ -563,45 +563,45 @@
   position: absolute;
   z-index: 1;
 }
-:root:has([data-app-theme="terminal"]) :is(h1, h2, h3),
+:root[data-app-theme="terminal"] :is(h1, h2, h3),
 [data-theme-preview="terminal"] :is(h1, h2, h3, [data-preview-heading]) {
   text-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.35);
 }
-:root:has([data-app-theme="arcade"]) body,
+:root[data-app-theme="arcade"] body,
 [data-theme-preview="arcade"] {
   background-image:
     linear-gradient(rgb(var(--accent-rgb) / 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgb(var(--rose-rgb) / 0.04) 1px, transparent 1px);
   background-size: 34px 34px;
 }
-:root:has([data-app-theme="arcade"]) body {
+:root[data-app-theme="arcade"] body {
   background-attachment: fixed;
 }
-:root:has([data-app-theme="arcade"]) :is(h1, h2),
+:root[data-app-theme="arcade"] :is(h1, h2),
 [data-theme-preview="arcade"] :is(h1, h2, [data-preview-heading]) {
   text-shadow: 2px 2px 0 rgb(var(--rose-rgb) / 0.45);
   line-height: 1.35;
 }
-:root:has([data-app-theme="rose-noir"]) body {
+:root[data-app-theme="rose-noir"] body {
   background-image: radial-gradient(80rem 40rem at 85% -10%, rgb(var(--accent-rgb) / 0.07), transparent 70%);
   background-attachment: fixed;
 }
-:root:has([data-app-theme="ocean"]) body {
+:root[data-app-theme="ocean"] body {
   background-image:
     radial-gradient(70rem 36rem at 10% -10%, rgb(var(--accent-rgb) / 0.09), transparent 70%),
     radial-gradient(60rem 30rem at 100% 110%, rgb(var(--rose-rgb) / 0.05), transparent 70%);
   background-attachment: fixed;
 }
-:root:has([data-app-theme="ocean"]) .glass {
+:root[data-app-theme="ocean"] .glass {
   background: color-mix(in srgb, var(--surface) 62%, transparent);
   backdrop-filter: blur(20px) saturate(170%);
   -webkit-backdrop-filter: blur(20px) saturate(170%);
 }
-:root:has([data-app-theme="crimson"]) body {
+:root[data-app-theme="crimson"] body {
   background-image: radial-gradient(90rem 34rem at 50% -14%, rgb(var(--accent-rgb) / 0.1), transparent 70%);
   background-attachment: fixed;
 }
-:root:has([data-app-theme="sakura"]) body {
+:root[data-app-theme="sakura"] body {
   background-image: radial-gradient(70rem 34rem at 90% -10%, rgb(var(--accent-soft-rgb) / 0.1), transparent 70%);
   background-attachment: fixed;
 }
@@ -1445,36 +1445,36 @@
 }
 
 /* Off: the same as the system's reduced-motion preference, applied to the whole page (dialogs included). */
-:root:has([data-motion="off"]) *,
-:root:has([data-motion="off"]) *::before,
-:root:has([data-motion="off"]) *::after {
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
   scroll-behavior: auto !important;
 }
-:root:has([data-motion="off"]) :is(.enter, .scroll-fade, .header-scroll-exit, .task-in, .check-pop, .home-fan-slot),
-:root:has([data-motion="off"]) .check-pop::before {
+:root[data-motion="off"] :is(.enter, .scroll-fade, .header-scroll-exit, .task-in, .check-pop, .home-fan-slot),
+:root[data-motion="off"] .check-pop::before {
   animation: none !important;
 }
-:root:has([data-motion="off"]) .home-fan {
+:root[data-motion="off"] .home-fan {
   --fan-motion: 0;
 }
-:root:has([data-motion="off"]) .home-fan-gloss {
+:root[data-motion="off"] .home-fan-gloss {
   display: none;
 }
-:root:has([data-motion="off"]) :is(.scroll-fade, .header-scroll-exit)[data-exit-fallback] {
+:root[data-motion="off"] :is(.scroll-fade, .header-scroll-exit)[data-exit-fallback] {
   opacity: 1;
   transform: none;
 }
-:root:has([data-motion="off"])
+:root[data-motion="off"]
   :is(.poster-card, .poster-artwork, .brand-gem, .tree-icon, [data-slot="button"], [data-slot="button"] svg, .task-row, .task-star) {
   translate: none !important;
   scale: none !important;
   rotate: none !important;
 }
-:root:has([data-motion="off"]) .btn-sheen::after,
-:root:has([data-motion="off"]) .poster-frame::after {
+:root[data-motion="off"] .btn-sheen::after,
+:root[data-motion="off"] .poster-frame::after {
   display: none;
 }
 
@@ -2247,7 +2247,7 @@
 .art-frame[data-frame="constellation"] .art-frame-deco {
   filter: drop-shadow(0 0 calc(2px + 0.8cqi) rgb(129 140 248 / 0.4));
 }
-:root:has([data-motion="off"]) .art-frame-deco {
+:root[data-motion="off"] .art-frame-deco {
   animation: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2312,7 +2312,7 @@
 [data-motion="subtle"] .showcase-art:is(:hover, :focus-visible) .art-frame {
   translate: 0 -3px;
 }
-:root:has([data-motion="off"]) .showcase-art .art-frame {
+:root[data-motion="off"] .showcase-art .art-frame {
   translate: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3837,39 +3837,39 @@
 }
 
 /* Subtle motion: quick pops, a short lift, no tilt, rays or sparks. */
-:root:has([data-motion="subtle"]) .ach-badge-body {
+:root[data-motion="subtle"] .ach-badge-body {
   transform: none;
 }
-:root:has([data-motion="subtle"]) .ach-tile:is(:hover, :focus-visible) {
+:root[data-motion="subtle"] .ach-tile:is(:hover, :focus-visible) {
   translate: 0 -2px;
 }
-:root:has([data-motion="subtle"]) .ach-tile:is(:hover, :focus-visible) .ach-badge {
+:root[data-motion="subtle"] .ach-tile:is(:hover, :focus-visible) .ach-badge {
   --ach-scale: 1.03;
 }
-:root:has([data-motion="subtle"]) :is(.ach-rays, .ach-spark) {
+:root[data-motion="subtle"] :is(.ach-rays, .ach-spark) {
   display: none;
 }
-:root:has([data-motion="subtle"]) :is(.ach-badge--assemble, .ach-badge--reveal) .ach-badge-body {
+:root[data-motion="subtle"] :is(.ach-badge--assemble, .ach-badge--reveal) .ach-badge-body {
   animation: ach-soft-in 280ms ease-out backwards;
 }
-:root:has([data-motion="subtle"]) .ach-badge--assemble :is(.ach-badge-rim, .ach-badge-face, .ach-badge-icon) {
+:root[data-motion="subtle"] .ach-badge--assemble :is(.ach-badge-rim, .ach-badge-face, .ach-badge-icon) {
   animation: none;
 }
-:root:has([data-motion="subtle"]) :is(.ach-toast, .ach-toast-text > *) {
+:root[data-motion="subtle"] :is(.ach-toast, .ach-toast-text > *) {
   animation-duration: 220ms;
   animation-delay: 0ms;
 }
 
 /* Off, or the system asks for reduced motion: everything appears in place. */
-:root:has([data-motion="off"]) :is(.ach-rays, .ach-spark, .ach-badge-sweep, .ach-stage-rays) {
+:root[data-motion="off"] :is(.ach-rays, .ach-spark, .ach-badge-sweep, .ach-stage-rays) {
   display: none;
 }
-:root:has([data-motion="off"]) :is(.ach-tile, .ach-badge-body, .ach-badge-halo) {
+:root[data-motion="off"] :is(.ach-tile, .ach-badge-body, .ach-badge-halo) {
   transform: none !important;
   translate: none !important;
   scale: none !important;
 }
-:root:has([data-motion="off"]) :is(.ach-toast, .ach-toast-text > *, .ach-badge-body, .ach-badge-rim, .ach-badge-face, .ach-badge-icon, .ach-badge-halo) {
+:root[data-motion="off"] :is(.ach-toast, .ach-toast-text > *, .ach-badge-body, .ach-badge-rim, .ach-badge-face, .ach-badge-icon, .ach-badge-halo) {
   animation: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4306,14 +4306,14 @@ a.arcade-counter:hover {
 [data-motion="subtle"] .arcade-cab:is(:hover, :focus-within) {
   translate: 0 -1px;
 }
-:root:has([data-motion="off"]) .arcade-marquee-sweep,
-:root:has([data-motion="off"]) .arcade-cab-glass::after {
+:root[data-motion="off"] .arcade-marquee-sweep,
+:root[data-motion="off"] .arcade-cab-glass::after {
   display: none;
 }
-:root:has([data-motion="off"]) .arcade-marquee-title > span {
+:root[data-motion="off"] .arcade-marquee-title > span {
   animation: none !important;
 }
-:root:has([data-motion="off"]) :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow) {
+:root[data-motion="off"] :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow) {
   translate: none !important;
   scale: none !important;
 }
@@ -4646,10 +4646,10 @@ a.arcade-counter:hover {
 [data-motion="subtle"] .hub-card {
   --hub-lift: 0.5;
 }
-:root:has([data-motion="off"]) .hub-card {
+:root[data-motion="off"] .hub-card {
   --hub-lift: 0;
 }
-:root:has([data-motion="off"]) .hub-arcade-sweep {
+:root[data-motion="off"] .hub-arcade-sweep {
   display: none;
 }
 @media (prefers-reduced-motion: reduce) {

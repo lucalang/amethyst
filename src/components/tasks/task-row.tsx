@@ -1,6 +1,6 @@
 "use client";
 
-import { type PointerEvent, type ReactNode } from "react";
+import { memo, type PointerEvent, type ReactNode } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -41,26 +41,54 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { describeDue } from "@/components/workspace/due-date";
 import { RoundCheck } from "@/components/workspace/round-check";
-import { shiftDate, type Task } from "@/lib/tasks/model";
+import { shiftDate, type Task, type TaskList, type TaskStep } from "@/lib/tasks/model";
 import { cn } from "@/lib/utils";
 import { ListGlyph } from "./sidebar";
 import { useTasks } from "./store";
 
-export function TaskRow({
+type TaskActions = ReturnType<typeof useTasks>["actions"];
+
+/** Row callbacks keyed by task, kept referentially stable by the view so rows can skip re-rendering. */
+export type TaskRowHandlers = {
+  select: (id: string) => void;
+  toggle: (task: Task, completed: boolean) => void;
+  remove: (task: Task) => void;
+  move: (id: string, delta: number) => void;
+  pointerDown: (id: string, event: PointerEvent<HTMLButtonElement>) => void;
+  pointerMove: (id: string, event: PointerEvent<HTMLButtonElement>) => void;
+  pointerEnd: () => void;
+};
+
+const NO_STEPS: TaskStep[] = [];
+
+export const TaskRow = memo(function TaskRow({
   task,
+  list,
+  entryTitle,
+  steps = NO_STEPS,
+  today,
+  allLists,
+  actions,
   selected,
   showList,
   showMyDay,
   celebrate,
   checkedOverride,
   snippet,
-  onSelect,
-  onToggle,
-  onDelete,
-  move,
-  drag,
+  handlers,
+  movable,
+  canMoveUp,
+  canMoveDown,
+  draggable,
+  dragging,
 }: {
   task: Task;
+  list: TaskList | undefined;
+  entryTitle: string | null;
+  steps?: TaskStep[];
+  today: string | null;
+  allLists: TaskList[];
+  actions: TaskActions;
   selected: boolean;
   /** Show the source list (outside the task's own list). */
   showList: boolean;
@@ -70,27 +98,25 @@ export function TaskRow({
   /** Visually checked while the completion settles. */
   checkedOverride?: boolean;
   snippet?: ReactNode;
-  onSelect: () => void;
-  onToggle: (completed: boolean) => void;
-  onDelete: () => void;
-  move?: { up: boolean; down: boolean; run: (delta: number) => void };
-  drag?: {
-    active: boolean;
-    onPointerDown: (event: PointerEvent<HTMLButtonElement>) => void;
-    onPointerMove: (event: PointerEvent<HTMLButtonElement>) => void;
-    onPointerEnd: () => void;
-  };
+  handlers: TaskRowHandlers;
+  /** Keyboard/menu reordering is available. */
+  movable: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  /** Drag reordering is available. */
+  draggable: boolean;
+  dragging: boolean;
 }) {
-  const { data, today, stepsByTask, actions, lists: allLists } = useTasks();
-  const list = data.lists[task.listId];
-  const steps = stepsByTask.get(task.id) ?? [];
   const doneSteps = steps.filter((step) => step.completed).length;
   const completed = checkedOverride ?? Boolean(task.completedAt);
   const due = task.dueDate ? describeDue(task.dueDate, today) : null;
   const overdue = Boolean(due?.overdue && !completed);
   const dueToday = Boolean(task.dueDate && task.dueDate === today && !completed);
   const inMyDay = today !== null && task.myDayOn === today;
-  const entry = task.entryId ? data.entries[task.entryId] : null;
+  const onSelect = () => handlers.select(task.id);
+  const onToggle = (done: boolean) => handlers.toggle(task, done);
+  const onDelete = () => handlers.remove(task);
+  const runMove = (delta: number) => handlers.move(task.id, delta);
 
   // Only what helps at a glance; everything else lives in the details pane.
   const meta = [
@@ -124,11 +150,11 @@ export function TaskRow({
         <span className="sr-only">Has notes</span>
       </span>
     ) : null,
-    entry ? (
+    entryTitle ? (
       <span key="entry" className="inline-flex min-w-0 items-center gap-1">
         <Link2 aria-hidden className="size-3.5 shrink-0" />
         <span className="sr-only">Linked to </span>
-        <span className="max-w-32 truncate">{entry.title}</span>
+        <span className="max-w-32 truncate">{entryTitle}</span>
       </span>
     ) : null,
   ].filter(Boolean);
@@ -145,20 +171,22 @@ export function TaskRow({
             ? "hover:bg-foreground/[0.035]"
             : "bg-foreground/[0.03] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.05)] hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.28)]",
         "has-[[data-row-button]:focus-visible]:shadow-[inset_0_0_0_2px_var(--amethyst)]",
-        drag?.active && "z-10 bg-surface-raised shadow-[0_14px_36px_-16px_rgb(var(--shadow-rgb)/0.9),inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]",
+        draggable && dragging && "z-10 bg-surface-raised shadow-[0_14px_36px_-16px_rgb(var(--shadow-rgb)/0.9),inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]",
+        // Long completed sections skip layout/paint while off-screen.
+        task.completedAt && !draggable && "[contain-intrinsic-size:auto_3.25rem] [content-visibility:auto]",
       )}
     >
-      <div className={cn("flex min-h-[3.25rem] items-center gap-3 py-1.5 pr-1.5", drag ? "pl-1" : "pl-4")}>
-        {drag ? (
+      <div className={cn("flex min-h-[3.25rem] items-center gap-3 py-1.5 pr-1.5", draggable ? "pl-1" : "pl-4")}>
+        {draggable ? (
           <button
             type="button"
             tabIndex={-1}
             aria-hidden
-            onPointerDown={drag.onPointerDown}
-            onPointerMove={drag.onPointerMove}
-            onPointerUp={drag.onPointerEnd}
-            onPointerCancel={drag.onPointerEnd}
-            onLostPointerCapture={drag.onPointerEnd}
+            onPointerDown={(event) => handlers.pointerDown(task.id, event)}
+            onPointerMove={(event) => handlers.pointerMove(task.id, event)}
+            onPointerUp={handlers.pointerEnd}
+            onPointerCancel={handlers.pointerEnd}
+            onLostPointerCapture={handlers.pointerEnd}
             className="grid h-8 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground opacity-0 group-hover/task:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100"
           >
             <GripVertical className="size-3.5" />
@@ -173,9 +201,9 @@ export function TaskRow({
           aria-label={`${task.title}${completed ? ", completed" : ""}. Open details`}
           onClick={onSelect}
           onKeyDown={(event) => {
-            if (move && event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+            if (movable && event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
               event.preventDefault();
-              move.run(event.key === "ArrowUp" ? -1 : 1);
+              runMove(event.key === "ArrowUp" ? -1 : 1);
             }
           }}
           className="min-w-0 flex-1 self-stretch py-1.5 text-left outline-none"
@@ -262,12 +290,12 @@ export function TaskRow({
                 ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            {move ? (
+            {movable ? (
               <>
-                <DropdownMenuItem disabled={!move.up} onSelect={() => move.run(-1)}>
+                <DropdownMenuItem disabled={!canMoveUp} onSelect={() => runMove(-1)}>
                   <ArrowUp aria-hidden /> Move up
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled={!move.down} onSelect={() => move.run(1)}>
+                <DropdownMenuItem disabled={!canMoveDown} onSelect={() => runMove(1)}>
                   <ArrowDown aria-hidden /> Move down
                 </DropdownMenuItem>
               </>
@@ -281,7 +309,7 @@ export function TaskRow({
       </div>
     </li>
   );
-}
+});
 
 /** Confirms deleting a task (with its steps and notes). */
 export function DeleteTaskDialog({
