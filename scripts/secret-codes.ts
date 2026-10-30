@@ -1,18 +1,21 @@
 /**
  * Secret codes for the Vault (/vault). Codes are hashed on this machine: the database only ever
- * stores SHA-256 hashes, so a code can't be read back later. Copy it when it's printed.
+ * stores SHA-256 hashes, so a code can't be read back later.
  *
+ *   npm run codes -- create --code "OPEN THE VAULT" --label "Shadow reward" --coins 500
  *   npm run codes -- create --label "Winter letter" --coins 100 --items vault-sigil,badge-comet
- *                           [--expires 2026-12-31] [--max 50] [--custom]
+ *                           [--expires 2026-12-31] [--max 50] [--code "WORDS" | --custom]
  *   npm run codes -- list               # every code: rewards, expiry, uses and status (never the code)
  *   npm run codes -- disable <id>       # stops a code; rewards already granted stay
  *   npm run codes -- rewards            # item ids a code can grant
  *
- * --custom asks for your own code (hidden input) instead of generating a random one. Keep custom
- * codes long and unguessable. Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (.env.local).
+ * --code sets your own words; --custom asks for them with hidden input (kept out of shell history).
+ * Without either, a random code is generated and printed once. Chosen codes ignore letter case,
+ * surrounding spaces and repeated spaces ("open  the vault" = "OPEN THE VAULT"); random codes also
+ * ignore dashes. Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY (.env.local).
  */
 import { createClient } from "@supabase/supabase-js";
-import { generateCode, hashCode, normalizeCode } from "../src/lib/secret-codes";
+import { CODE_RULES, compactCode, generateCode, hashCode, normalizePhrase } from "../src/lib/secret-codes";
 
 function arg(name: string): string | true | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -70,6 +73,7 @@ function parseExpiry(value: string | true | undefined): string | null {
 
 type CodeRow = {
   id: string;
+  format: "compact" | "phrase";
   label: string;
   coins: number;
   expires_at: string | null;
@@ -103,31 +107,52 @@ async function main() {
     const max = intArg("max");
     const expires = parseExpiry(arg("expires"));
 
-    let code: string;
-    if (arg("custom")) {
-      const typed = normalizeCode(await promptHidden("Code (hidden): "));
-      if (!typed) throw new Error("Codes are 4 to 40 letters and numbers (spaces and dashes are ignored).");
-      if (normalizeCode(await promptHidden("Same code again: ")) !== typed) throw new Error("The two entries didn't match.");
-      if (typed.length < 10) console.warn("Short codes are easy to guess. Prefer 12 characters or more.");
-      code = typed;
+    const given = arg("code");
+    const hidden = Boolean(arg("custom"));
+    if (given === true) throw new Error('--code needs the words in quotes, for example --code "OPEN THE VAULT".');
+    if (given !== undefined && hidden) throw new Error("Use either --code or --custom, not both.");
+
+    let hashes: { code: string; loose: string; format: "compact" | "phrase" };
+    let shown: string | null = null;
+    if (given !== undefined || hidden) {
+      const phrase = normalizePhrase(hidden ? await promptHidden("Code (hidden): ") : given!);
+      if (!phrase) throw new Error(`${CODE_RULES} Example: --code "OPEN THE VAULT".`);
+      if (hidden && normalizePhrase(await promptHidden("Same code again: ")) !== phrase) throw new Error("The two entries didn't match.");
+      const letters = compactCode(phrase)!;
+      if (letters.length < 8) console.warn("Note: short or common words are easier to guess. Wrong tries are limited per account.");
+      hashes = { code: hashCode(phrase), loose: hashCode(letters), format: "phrase" };
+      if (!hidden) shown = phrase;
     } else {
-      code = generateCode();
+      const code = generateCode();
+      const hash = hashCode(compactCode(code)!);
+      hashes = { code: hash, loose: hash, format: "compact" };
+      shown = code;
     }
 
     const { data, error } = await admin.rpc("admin_create_secret_code", {
-      p_code_hash: hashCode(normalizeCode(code)!),
+      p_code_hash: hashes.code,
+      p_loose_hash: hashes.loose,
+      p_format: hashes.format,
       p_label: label,
       p_coins: coins,
       p_items: items,
       p_expires_at: expires,
       p_max_redemptions: max ?? null,
     });
-    if (error) throw new Error(error.code === "23505" ? "That code already exists." : error.message);
+    if (error) {
+      throw new Error(
+        error.code === "23505"
+          ? "That code already exists, or one that differs only in case, spacing or punctuation. Codes can't be reused, even after they expire or are disabled."
+          : error.message,
+      );
+    }
     console.log(`Created code ${data as string} (“${label}”): ${coins} coins${items.length ? `, ${items.join(", ")}` : ""}.`);
     console.log(`Expires: ${expires ?? "never"} · Limit: ${max ?? "none"} · One per account.`);
-    if (!arg("custom")) {
+    if (hashes.format === "compact" && shown) {
       console.log("\nThe code (shown once, the database only keeps its hash):\n");
-      console.log(`    ${code}\n`);
+      console.log(`    ${shown}\n`);
+    } else if (shown) {
+      console.log(`\nPlayers type: ${shown}  (letter case and extra spaces don't matter)\n`);
     }
     return;
   }
@@ -135,14 +160,14 @@ async function main() {
   if (command === "list") {
     const { data, error } = await admin
       .from("secret_codes")
-      .select("id, label, coins, expires_at, max_redemptions, redemption_count, disabled_at, created_at, secret_code_items(item_id)")
+      .select("id, format, label, coins, expires_at, max_redemptions, redemption_count, disabled_at, created_at, secret_code_items(item_id)")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const rows = (data ?? []) as CodeRow[];
     if (rows.length === 0) return console.log("No codes yet.");
     for (const row of rows) {
       const items = row.secret_code_items.map((item) => item.item_id).join(", ");
-      console.log(`${row.id}  [${status(row)}]  ${row.label}`);
+      console.log(`${row.id}  [${status(row)}]  ${row.label}  (${row.format === "phrase" ? "chosen words" : "compact"})`);
       console.log(
         `    ${row.coins} coins${items ? ` + ${items}` : ""} · used ${row.redemption_count}${row.max_redemptions === null ? "" : `/${row.max_redemptions}`} · expires ${row.expires_at ?? "never"}`,
       );

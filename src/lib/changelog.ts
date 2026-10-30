@@ -49,6 +49,49 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-vault-rework",
+    date: "2026-10-30",
+    title: "The Vault, resealed",
+    intro: "The Vault is now a pitch-black chamber with a living red seal. Speak a code and watch it verify, break open and reveal exactly what you’ve earned. Codes can now be real words.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "The Vault", text: "A full-screen sealed chamber that verifies your code, breaks open and reveals each reward." },
+      { kind: "new", feature: "Word codes", text: "Codes can be words or phrases such as SHADOW. Letter case and extra spaces don’t matter." },
+      { kind: "improved", feature: "Clear answers", text: "Wrong, expired and already-claimed codes each get their own answer, and interrupted attempts are recovered." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "A sealed chamber",
+          body: "The Vault fills the screen in black and red, with a turning seal that lights up as you type. When you speak a code, the seal verifies it, then breaks open and reveals the coins and items the vault actually granted, each in its own slot.",
+          points: [
+            "Rewards appear only after the server confirms them, with new items marked.",
+            "Sound effects follow your Arcade sound setting and can be switched off on the page.",
+            "Reduced motion and Motion: Off keep the same answers without the animation, and effects pause when the page is out of view.",
+          ],
+          where: "Account menu → The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Clearer answers",
+          body: "The vault now tells you whether a code is wrong, whether it exists but has expired or run out, or whether your account already claimed it, without revealing anything about other codes.",
+          points: [
+            "If your connection drops mid-attempt, the vault checks your access log instead of asking twice. Rewards are never granted twice.",
+            "Your access log lists every seal you’ve broken and what it held.",
+          ],
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+      ],
+      new: [
+        {
+          title: "Codes made of words",
+          body: "Secret codes can now be words or short phrases, such as SHADOW or OPEN THE VAULT. Letter case doesn’t matter and extra spaces are ignored, so “open  the vault” works too. Codes you already have keep working exactly as before.",
+          link: { href: "/vault", label: "Speak a code" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-vault-lab-slots",
     date: "2026-10-30",
     title: "The Vault, the Lab and Coin Slots",

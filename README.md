@@ -262,14 +262,18 @@ Codes for `/vault` are managed from a trusted machine with the service-role key 
 
 ```bash
 npm run codes -- rewards                     # item ids a code can grant (secret ones stay hidden from the shop)
-npm run codes -- create --label "Winter letter" --coins 100 --items vault-sigil,badge-comet --expires 2026-12-31 --max 50
-npm run codes -- create --label "Party" --coins 50 --custom   # type your own code (hidden input) instead of a random one
-npm run codes -- list                        # rewards, expiry, uses and status (never the code itself)
+npm run codes -- create --code "SHADOW" --label "Shadow reward" --coins 500   # your own word or phrase
+npm run codes -- create --label "Winter letter" --coins 100 --items vault-sigil,badge-comet --expires 2026-12-31 --max 50   # random code
+npm run codes -- create --label "Party" --coins 50 --custom   # your own words, typed as hidden input (stays out of shell history)
+npm run codes -- list                        # rewards, expiry, uses, status and format (never the code itself)
 npm run codes -- disable <id>                # stop a code; rewards already granted stay
 ```
 
-- A generated code is printed **once**. Share it privately; never commit, log or paste active codes into issues, docs or chat.
-- Each account can redeem a code once. `--max` caps total redemptions, `--expires` sets an end date. Repeated wrong guesses are throttled per account.
+- Chosen codes (`--code` or `--custom`) are words or phrases of letters, numbers and spaces, 4–64 characters, e.g. `SHADOW` or `OPEN THE VAULT`. Letter case doesn't matter, surrounding spaces are trimmed and repeated spaces count as one, so `open  the vault` opens `OPEN THE VAULT` (but `OPENTHEVAULT` doesn't).
+- Random codes (no `--code`) and every code created before chosen words keep working as before: only letters and numbers count, so dashes and spaces don't matter.
+- A code that differs from an existing one only in case, spacing or punctuation is rejected, even if the old one expired or was disabled. Short or common words are easier to guess; wrong tries are throttled per account.
+- A generated code is printed **once**. Share codes privately; never commit, log or paste active codes into issues, docs or chat.
+- Each account can redeem a code once. `--max` caps total redemptions, `--expires` sets an end date. Expired, used-up and disabled codes tell players the seal is dormant.
 - Disable instead of deleting: redeemed codes can't be deleted (redemptions reference them). In an emergency you can also set `secret_codes.disabled_at` in the Supabase Table Editor.
 
 ## Commands

@@ -538,8 +538,11 @@ isOneToOne: false
 "redeem_secret_code":
 { Args: { "p_code_hash": string }; Returns: Json
                            },
+"redeem_vault_code":
+{ Args: { "p_loose_hash": string,"p_phrase_hash"?: string | null }; Returns: Json
+                           },
 "admin_create_secret_code":
-{ Args: { "p_code_hash": string,"p_label": string,"p_coins"?: number,"p_items"?: string[],"p_expires_at"?: string | null,"p_max_redemptions"?: number | null }; Returns: string
+{ Args: { "p_code_hash": string,"p_label": string,"p_coins"?: number,"p_items"?: string[],"p_expires_at"?: string | null,"p_max_redemptions"?: number | null,"p_format"?: "compact" | "phrase","p_loose_hash"?: string | null }; Returns: string
                            },
 "admin_disable_secret_code":
 { Args: { "p_id": string }; Returns: boolean

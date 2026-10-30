@@ -5063,367 +5063,1391 @@ a.arcade-counter:hover {
 }
 
 /* ---------------------------------------------------------------------------
- * The Vault (/vault): a self-lit chamber (like the Arcade signs) that reads on
- * every theme. The dial turns from script and sleeps offscreen; motes and rays
- * are CSS, pause offscreen ([data-paused]) and disappear with reduced motion.
+ * The Vault (/vault): a black-and-red system chamber that looks the same on
+ * every theme. The seal's rings turn from script; everything else is CSS and
+ * pauses offscreen ([data-paused]). Entrances sit on wrappers and phase effects
+ * on inner elements, so a phase change never restarts an entrance. Motion off
+ * and reduced motion keep only plain state changes.
  * ------------------------------------------------------------------------- */
-.vault-room {
-  --vault-gold: #ffd36b;
-  --vault-glow: #b794ff;
+.vx-stage {
+  --vx-black: #030203;
+  --vx-red: #ff1f3d;
+  --vx-text: #f3e9eb;
+  --vx-ash: #8c7f82;
+  --vx-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: calc(1.25rem * var(--radius-unit, 1));
-  color: #efe7ff;
-  background:
-    radial-gradient(55% 40% at 50% 38%, rgb(124 77 214 / 0.3), transparent 70%),
-    radial-gradient(80% 45% at 50% 110%, rgb(255 79 216 / 0.1), transparent 70%),
-    linear-gradient(180deg, #140b24, #07040d 80%);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.07),
-    inset 0 1px 0 rgb(255 255 255 / 0.08),
-    0 24px 60px -32px rgb(0 0 0 / 0.85);
+  min-height: calc(100dvh - 3.5rem - 1px);
+  /* Reaches under the mobile tab bar; the padding keeps the content clear of it. */
+  margin-bottom: -6rem;
+  padding: 1.25rem 1rem calc(7rem + env(safe-area-inset-bottom));
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  color: var(--vx-text);
+  background: var(--vx-black);
+  color-scheme: dark;
 }
-.vault-motes {
+@media (min-width: 48rem) {
+  .vx-stage {
+    margin-bottom: -2.5rem;
+    padding: 2rem 2rem 3.5rem;
+  }
+}
+.vx-stage ::selection {
+  color: #fff;
+  background: rgb(255 31 61 / 0.45);
+}
+.vx-backdrop,
+.vx-backdrop > * {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  overflow: hidden;
   pointer-events: none;
 }
-.vault-motes > span {
+.vx-backdrop {
+  z-index: -1;
+  overflow: hidden;
+}
+.vx-fog {
+  background:
+    radial-gradient(42% 34% at 50% 30%, rgb(161 10 31 / 0.34), transparent 72%),
+    radial-gradient(30% 26% at 10% 6%, rgb(255 31 61 / 0.07), transparent 70%),
+    radial-gradient(36% 30% at 92% 92%, rgb(161 10 31 / 0.14), transparent 70%);
+  opacity: calc(0.7 + var(--vx-charge, 0) * 0.3);
+  transition: opacity 700ms ease;
+}
+@media (min-width: 64rem) {
+  .vx-fog {
+    background:
+      radial-gradient(30% 42% at 30% 50%, rgb(161 10 31 / 0.36), transparent 72%),
+      radial-gradient(30% 26% at 8% 6%, rgb(255 31 61 / 0.07), transparent 70%),
+      radial-gradient(36% 30% at 92% 92%, rgb(161 10 31 / 0.14), transparent 70%);
+  }
+}
+.vx-floor {
+  top: auto;
+  height: 50%;
+  opacity: 0.5;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 31 61 / 0.16) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgb(255 31 61 / 0.16) 0 1px, transparent 1px 72px);
+  transform: perspective(28rem) rotateX(64deg);
+  transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, #000 10%, transparent 80%);
+}
+.vx-vignette {
+  background:
+    radial-gradient(130% 95% at 50% 40%, transparent 50%, rgb(0 0 0 / 0.9)),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.02) 0 1px, transparent 1px 3px);
+}
+.vx-embers > span {
   position: absolute;
-  bottom: -1rem;
-  left: var(--x);
+  inset: auto auto -1rem var(--x);
   width: var(--s);
   height: var(--s);
   border-radius: 999px;
-  background: radial-gradient(circle, #fdf4ff, rgb(183 148 255 / 0.55) 50%, transparent 72%);
+  background: radial-gradient(circle, #ffd9de, rgb(255 31 61 / 0.75) 45%, transparent 72%);
   opacity: 0;
-  animation: vault-drift var(--d) linear var(--delay) infinite;
+  animation: vx-ember var(--d) linear var(--delay) infinite;
 }
-@keyframes vault-drift {
+@keyframes vx-ember {
   0% {
     translate: 0 0;
     opacity: 0;
   }
-  12%,
-  80% {
+  15%,
+  70% {
     opacity: var(--o);
   }
   100% {
-    translate: var(--sway) -44rem;
+    translate: var(--sway) -105vh;
     opacity: 0;
   }
 }
-.vault-door {
-  position: relative;
-  isolation: isolate;
-  width: min(17rem, 72vw);
-  aspect-ratio: 1;
-  margin: 1.25rem auto 1.5rem;
-}
-.vault-rays {
+.vx-frame {
   position: absolute;
-  inset: -90%;
-  z-index: -1;
+  inset: 0.6rem 0.6rem calc(4.6rem + env(safe-area-inset-bottom));
   pointer-events: none;
-  background: repeating-conic-gradient(rgb(255 227 163 / 0.14) 0deg 3.5deg, transparent 3.5deg 14deg);
-  mask-image: radial-gradient(circle, #000 0 14%, transparent 52%);
+}
+@media (min-width: 48rem) {
+  .vx-frame {
+    inset: 1rem;
+  }
+}
+.vx-frame > span {
+  position: absolute;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0 solid rgb(255 31 61 / 0.6);
+  animation: vx-corner 700ms var(--ease-out-soft) 100ms backwards;
+}
+.vx-frame > span:nth-child(1) {
+  --from: -0.6rem -0.6rem;
+  top: 0;
+  left: 0;
+  border-width: 1px 0 0 1px;
+}
+.vx-frame > span:nth-child(2) {
+  --from: 0.6rem -0.6rem;
+  top: 0;
+  right: 0;
+  border-width: 1px 1px 0 0;
+}
+.vx-frame > span:nth-child(3) {
+  --from: -0.6rem 0.6rem;
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 1px 1px;
+}
+.vx-frame > span:nth-child(4) {
+  --from: 0.6rem 0.6rem;
+  right: 0;
+  bottom: 0;
+  border-width: 0 1px 1px 0;
+}
+@keyframes vx-corner {
+  from {
+    opacity: 0;
+    translate: var(--from);
+  }
+}
+.vx-boot {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--vx-red) 30%, #fff 50%, var(--vx-red) 70%, transparent);
+  box-shadow: 0 0 16px 2px rgb(255 31 61 / 0.55);
   opacity: 0;
-  scale: 0.5;
-  transition:
-    opacity 1200ms ease,
-    scale 1800ms var(--ease-out-soft);
+  animation: vx-boot 1200ms cubic-bezier(0.55, 0, 0.35, 1) 60ms forwards;
 }
-.vault-dial {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+@keyframes vx-boot {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.7;
+  }
+  100% {
+    translate: 0 calc(100dvh - 4rem);
+    opacity: 0;
+  }
 }
-.vault-bolt {
-  fill: #5b4790;
-  stroke: #160d29;
-  stroke-width: 0.8;
+@keyframes vx-fade {
+  from {
+    opacity: 0;
+  }
 }
-.vault-ring-edge {
-  fill: none;
-  stroke: rgb(196 181 253 / 0.22);
-  stroke-width: 0.8;
+@keyframes vx-rise {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
 }
-.vault-runes {
-  fill: none;
-  stroke: rgb(233 213 255 / 0.6);
-  stroke-width: 1.1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 600ms ease;
-}
-.vault-notch {
-  fill: var(--vault-gold);
-  opacity: 0.7;
-  transition: opacity 400ms ease;
-}
-.vault-beam {
-  fill: var(--vault-gold);
-  opacity: 0;
-  transition: opacity 500ms ease;
-}
-.vault-keyhole {
-  fill: #05020a;
-  stroke: color-mix(in oklab, var(--vault-glow) calc(var(--charge, 0) * 100%), transparent);
-  stroke-width: 1;
-  transition: stroke 200ms ease;
-}
-.vault-core-rim {
-  fill: none;
-  stroke: #6b55a3;
-  stroke-width: 1.4;
-  transition: opacity 400ms ease;
-}
-.vault-half {
-  transition: translate 1000ms cubic-bezier(0.7, 0, 0.2, 1);
-}
-.vault-light {
-  opacity: calc(0.15 + var(--charge, 0) * 0.35);
-  scale: 0.55;
-  transition:
-    opacity 700ms ease,
-    scale 1200ms var(--ease-out-soft);
-}
-.vault-room[data-phase="turning"] .vault-light {
-  opacity: 0.65;
-  scale: 0.72;
-}
-.vault-room[data-phase="turning"] .vault-keyhole {
-  stroke: var(--vault-glow);
-}
-.vault-room:is([data-phase="unlocked"], [data-phase="already"]) .vault-notch {
-  opacity: 1;
-}
-.vault-room:is([data-phase="unlocked"], [data-phase="already"]) .vault-beam {
-  opacity: 0.9;
-  transition-delay: 700ms;
-}
-.vault-room[data-phase="unlocked"] .vault-runes {
-  stroke: #ffe3a3;
-  transition-delay: 800ms;
-}
-.vault-room[data-phase="unlocked"] .vault-half {
-  transition-delay: 900ms;
-}
-.vault-room[data-phase="unlocked"] .vault-half-l {
-  translate: -40px 0;
-}
-.vault-room[data-phase="unlocked"] .vault-half-r {
-  translate: 40px 0;
-}
-.vault-room[data-phase="unlocked"] .vault-core-rim {
-  opacity: 0;
-  transition-delay: 900ms;
-}
-.vault-room[data-phase="unlocked"] .vault-light {
-  opacity: 1;
-  scale: 1.9;
-  transition-delay: 1000ms;
-}
-.vault-room[data-phase="unlocked"] .vault-rays {
-  opacity: 1;
-  scale: 1;
-  transition-delay: 1000ms;
-  animation: vault-rays 60s linear infinite;
-}
-@keyframes vault-rays {
+@keyframes vx-spin {
   to {
     rotate: 360deg;
   }
 }
-.vault-sparks {
+.vx-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 76rem;
+  margin: 0 auto;
+}
+.vx-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgb(255 31 61 / 0.2);
+  animation: vx-fade 700ms ease 150ms backwards;
+}
+.vx-eyebrow {
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--vx-red);
+}
+.vx-stage h1.vx-title {
+  margin-top: 0.35rem;
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.9rem, 1.3rem + 2.4vw, 3rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 0 28px rgb(255 31 61 / 0.5);
+}
+.vx-hud-side {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.vx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid rgb(255 31 61 / 0.45);
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vx-red);
+  background: rgb(255 31 61 / 0.07);
+  transition:
+    color 300ms ease,
+    border-color 300ms ease,
+    background-color 300ms ease;
+}
+.vx-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  animation: vx-breathe 2.4s ease-in-out infinite;
+}
+@keyframes vx-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+.vx-stage:is([data-phase="granted"], [data-phase="already"]) .vx-chip {
+  border-color: rgb(255 255 255 / 0.5);
+  color: #fff;
+  background: rgb(255 255 255 / 0.07);
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="lost"]) .vx-chip {
+  border-color: rgb(140 127 130 / 0.45);
+  color: var(--vx-ash);
+  background: transparent;
+}
+.vx-icon-button {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  color: var(--vx-ash);
+  background: rgb(255 255 255 / 0.02);
+  transition:
+    color 150ms ease,
+    border-color 150ms ease;
+}
+@media (pointer: coarse) {
+  .vx-icon-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+.vx-icon-button:hover {
+  border-color: rgb(255 31 61 / 0.55);
+  color: var(--vx-text);
+}
+.vx-icon-button[aria-pressed="true"] {
+  color: var(--vx-red);
+}
+.vx-icon-button:focus-visible,
+.vx-button:focus-visible,
+.vx-link:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.vx-main {
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+}
+@media (min-width: 64rem) {
+  .vx-main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 34rem);
+    align-items: center;
+    gap: 3rem;
+    min-height: min(34rem, calc(100dvh - 14rem));
+  }
+}
+
+/* The seal. SVG transforms turn around the centre of the viewBox. */
+.vx-seal {
+  position: relative;
+  width: min(19rem, 78vw);
+  aspect-ratio: 1;
+  animation: vx-seal-in 1100ms var(--ease-out-soft) 200ms backwards;
+}
+@media (min-width: 64rem) {
+  .vx-seal {
+    width: min(30rem, 38vw, 60dvh);
+  }
+}
+@keyframes vx-seal-in {
+  from {
+    opacity: 0;
+    scale: 0.88;
+  }
+}
+.vx-seal-shake,
+.vx-seal-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.vx-seal-svg {
+  overflow: visible;
+  transition: filter 700ms ease;
+}
+.vx-seal-svg * {
+  transform-origin: 0 0;
+}
+.vx-bloom {
+  opacity: calc(0.55 + var(--vx-charge, 0) * 0.45);
+  transition:
+    opacity 700ms ease,
+    scale 1200ms var(--ease-out-soft);
+}
+.vx-rays {
+  fill: rgb(255 220 226 / 0.09);
+  opacity: 0;
+  scale: 0.6;
+  transition:
+    opacity 1000ms ease,
+    scale 1600ms var(--ease-out-soft);
+}
+.vx-brackets {
+  fill: none;
+  stroke: rgb(255 31 61 / 0.5);
+  stroke-width: 1.2;
+}
+.vx-marker,
+.vx-notch {
+  fill: var(--vx-red);
+  transition: fill 400ms ease;
+}
+.vx-line {
+  fill: none;
+  stroke: rgb(255 31 61 / 0.32);
+  stroke-width: 1;
+}
+.vx-dash {
+  stroke: rgb(255 31 61 / 0.45);
+  stroke-dasharray: 1.5 4.5;
+}
+.vx-ticks {
+  fill: none;
+  stroke: rgb(255 31 61 / 0.6);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  animation: vx-draw 1400ms var(--ease-out-soft) 350ms backwards;
+}
+@keyframes vx-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.vx-seg {
+  fill: rgb(255 31 61 / 0.06);
+  stroke: rgb(255 31 61 / 0.22);
+  stroke-width: 0.6;
+  transition:
+    fill 220ms ease,
+    stroke 220ms ease;
+}
+.vx-seg[data-on] {
+  fill: rgb(255 31 61 / 0.72);
+  stroke: #ff7186;
+}
+.vx-seg-glow {
+  fill: none;
+  stroke: var(--vx-red);
+  stroke-width: 14;
+  opacity: calc(var(--vx-charge, 0) * 0.16);
+  transition: opacity 300ms ease;
+}
+.vx-sweep {
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.vx-sweep-tail,
+.vx-sweep-head {
+  fill: none;
+  stroke-width: 9;
+}
+.vx-sweep-tail {
+  stroke: rgb(255 31 61 / 0.3);
+}
+.vx-sweep-head {
+  stroke: #ff8597;
+}
+.vx-runes {
+  fill: none;
+  stroke: rgb(255 31 61 / 0.6);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 500ms ease;
+}
+.vx-star {
+  fill: none;
+  stroke: rgb(255 31 61 / 0.28);
+  stroke-width: 0.8;
+}
+.vx-vertex {
+  fill: rgb(255 31 61 / 0.6);
+}
+.vx-tooth {
+  fill: #1c0a0f;
+  stroke: rgb(255 31 61 / 0.6);
+  stroke-width: 0.8;
+  transition: translate 500ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+.vx-core {
+  opacity: calc(0.18 + var(--vx-charge, 0) * 0.4);
+  scale: 0.6;
+  transition:
+    opacity 500ms ease,
+    scale 900ms var(--ease-out-soft);
+}
+.vx-gate {
+  transition:
+    translate 1000ms cubic-bezier(0.7, 0, 0.2, 1),
+    opacity 1000ms ease;
+}
+.vx-keyhole {
+  fill: none;
+  stroke: color-mix(in oklab, var(--vx-red) calc(25% + var(--vx-charge, 0) * 75%), transparent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: stroke 200ms ease;
+}
+.vx-rim {
+  fill: none;
+  stroke: rgb(255 31 61 / 0.6);
+  stroke-width: 1.2;
+  transition: opacity 400ms ease;
+}
+.vx-scan,
+.vx-shock {
+  opacity: 0;
+}
+.vx-scan-line {
+  fill: #ff8597;
+}
+.vx-shock {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+}
+.vx-shards {
   position: absolute;
   top: 50%;
   left: 50%;
-  z-index: 2;
   pointer-events: none;
 }
-.vault-sparks > span {
+.vx-shards > span {
   position: absolute;
-  top: -3px;
-  left: -3px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: radial-gradient(circle, #fff, var(--vault-gold) 55%, transparent 72%);
+  top: -1px;
+  left: -7px;
+  width: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff 40%, var(--vx-red));
   opacity: 0;
-  animation: vault-spark 1100ms cubic-bezier(0.15, 0.7, 0.3, 1) calc(1050ms + var(--delay)) 1 forwards;
+  animation: vx-shard 1100ms cubic-bezier(0.15, 0.7, 0.3, 1) calc(900ms + var(--delay)) forwards;
 }
-@keyframes vault-spark {
-  0% {
-    transform: rotate(var(--a)) translateY(0) scale(1.2);
+@keyframes vx-shard {
+  from {
+    transform: rotate(var(--a)) translateX(36px) rotate(0deg);
     opacity: 1;
   }
-  100% {
-    transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) scale(0.2);
+  to {
+    transform: rotate(var(--a)) translateX(var(--r)) rotate(var(--spin));
     opacity: 0;
   }
 }
-.vault-room[data-paused] :is(.vault-motes > span, .vault-rays) {
-  animation-play-state: paused;
+.vx-lockdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
 }
-.vault-input {
-  width: 100%;
-  height: 3rem;
-  border-radius: calc(0.7rem * var(--radius-unit, 1));
-  border: 1px solid rgb(255 211 107 / 0.25);
-  background: linear-gradient(180deg, #0a0613, #160d27);
-  padding: 0 1rem;
-  text-align: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 1.05rem;
-  letter-spacing: 0.22em;
+.vx-lockdown > span {
+  padding: 0.5rem 0.9rem;
+  border: 2px solid var(--vx-red);
+  font-family: var(--vx-mono);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: #fde9b0;
-  caret-color: var(--vault-gold);
-  text-shadow: 0 0 10px rgb(255 211 107 / 0.35);
+  color: var(--vx-red);
+  background: rgb(3 2 3 / 0.85);
+  box-shadow: 0 0 28px rgb(255 31 61 / 0.35);
+  rotate: -8deg;
+  animation: vx-stamp 450ms cubic-bezier(0.2, 1.3, 0.4, 1) backwards;
+}
+@keyframes vx-stamp {
+  from {
+    opacity: 0;
+    scale: 1.7;
+  }
+}
+
+/* The status window. --c is its accent: red, white once open, ash when dormant. */
+.vx-window {
+  --c: var(--vx-red);
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 34rem;
+  border: 1px solid rgb(255 31 61 / 0.38);
+  background:
+    linear-gradient(180deg, rgb(255 31 61 / 0.08), transparent 8rem),
+    rgb(7 3 5 / 0.92);
   box-shadow:
-    inset 0 2px 8px rgb(0 0 0 / 0.75),
-    inset 0 -1px 0 rgb(255 255 255 / 0.05);
-  outline: none;
+    0 0 0 1px #000,
+    0 0 44px -10px rgb(255 31 61 / 0.3),
+    inset 0 0 32px rgb(255 31 61 / 0.05);
   transition:
-    border-color 200ms ease,
-    box-shadow 200ms ease;
+    border-color 500ms ease,
+    box-shadow 700ms ease;
+  animation: vx-unfold 700ms cubic-bezier(0.7, 0, 0.2, 1) 450ms backwards;
 }
-.vault-input::placeholder {
-  color: rgb(239 231 255 / 0.25);
-  text-shadow: none;
+@keyframes vx-unfold {
+  from {
+    clip-path: inset(50% 0 50% 0);
+    opacity: 0.5;
+  }
+  to {
+    clip-path: inset(0);
+  }
 }
-.vault-input:focus-visible {
-  border-color: rgb(255 211 107 / 0.6);
+.vx-stage:is([data-phase="granted"], [data-phase="already"]) .vx-window {
+  --c: #fff;
+  border-color: rgb(255 255 255 / 0.45);
   box-shadow:
-    inset 0 2px 8px rgb(0 0 0 / 0.75),
-    0 0 0 3px rgb(183 148 255 / 0.4);
+    0 0 0 1px #000,
+    0 0 60px -10px rgb(255 31 61 / 0.5),
+    inset 0 0 32px rgb(255 255 255 / 0.04);
 }
-.vault-input:disabled {
+.vx-stage[data-phase="invalid"] .vx-window {
+  border-color: var(--vx-red);
+  box-shadow:
+    0 0 0 1px #000,
+    0 0 54px -6px rgb(255 31 61 / 0.55),
+    inset 0 0 40px rgb(255 31 61 / 0.1);
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="lost"]) .vx-window {
+  --c: var(--vx-ash);
+  border-color: rgb(140 127 130 / 0.4);
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 0 32px rgb(255 255 255 / 0.02);
+}
+.vx-corners {
+  position: absolute;
+  inset: -5px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--c), var(--c)) 0 0 / 16px 2px,
+    linear-gradient(var(--c), var(--c)) 0 0 / 2px 16px,
+    linear-gradient(var(--c), var(--c)) 100% 0 / 16px 2px,
+    linear-gradient(var(--c), var(--c)) 100% 0 / 2px 16px,
+    linear-gradient(var(--c), var(--c)) 0 100% / 16px 2px,
+    linear-gradient(var(--c), var(--c)) 0 100% / 2px 16px,
+    linear-gradient(var(--c), var(--c)) 100% 100% / 16px 2px,
+    linear-gradient(var(--c), var(--c)) 100% 100% / 2px 16px;
+  background-repeat: no-repeat;
+}
+.vx-window-flare {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(110% 70% at 50% 0%, rgb(255 255 255 / 0.28), rgb(255 31 61 / 0.2) 45%, transparent 75%);
+  opacity: 0;
+}
+.vx-window-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.1rem;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--c) 15%, transparent), transparent 75%);
+}
+.vx-window-bar::after {
+  content: "";
+  flex: none;
+  width: 2.25rem;
+  height: 5px;
+  background: repeating-linear-gradient(90deg, var(--c) 0 5px, transparent 5px 9px);
   opacity: 0.7;
 }
-.vault-key {
-  display: inline-flex;
-  height: 2.75rem;
+.vx-window-title {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  border-radius: 999px;
-  padding: 0 1.4rem;
+  gap: 0.65rem;
+  font-family: var(--vx-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #fff;
+  animation: vx-type 450ms steps(12, end) backwards;
+}
+@keyframes vx-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+.vx-glyph {
+  width: 0.55rem;
+  height: 0.55rem;
+  rotate: 45deg;
+  background: var(--c);
+  box-shadow: 0 0 10px var(--c);
+}
+.vx-rule {
+  height: 1px;
+  background: linear-gradient(90deg, var(--c), rgb(255 31 61 / 0.15) 60%, transparent);
+  transform-origin: 0 50%;
+  animation: vx-rule 800ms var(--ease-out-soft) 900ms backwards;
+}
+@keyframes vx-rule {
+  from {
+    scale: 0 1;
+  }
+}
+.vx-window-body {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem 1.1rem 1.35rem;
+}
+@media (min-width: 40rem) {
+  .vx-window-bar {
+    padding-inline: 1.5rem;
+  }
+  .vx-window-body {
+    padding: 1.5rem 1.5rem 1.6rem;
+  }
+}
+.vx-result {
+  display: grid;
+  gap: 0.65rem;
+}
+.vx-stage h2.vx-headline {
+  font-family: var(--vx-mono);
+  font-size: clamp(1.5rem, 1.15rem + 1.6vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vx-red);
+  text-shadow: 0 0 22px rgb(255 31 61 / 0.45);
+  outline: none;
+}
+.vx-stage h2.vx-headline:focus-visible {
+  border-radius: 0;
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+.vx-stage[data-phase="granted"] h2.vx-headline {
+  color: #fff;
+  text-shadow:
+    0 0 18px rgb(255 31 61 / 0.9),
+    0 0 42px rgb(255 31 61 / 0.5);
+}
+.vx-stage[data-phase="already"] h2.vx-headline {
+  color: var(--vx-text);
+  text-shadow: 0 0 18px rgb(255 255 255 / 0.2);
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="lost"]) h2.vx-headline {
+  color: #c9bdc0;
+  text-shadow: none;
+}
+.vx-copy,
+.vx-lede {
+  max-width: 34rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgb(243 233 235 / 0.78);
+}
+.vx-result > .vx-copy {
+  animation: vx-fade 400ms ease 120ms backwards;
+}
+.vx-trace {
+  display: grid;
+  gap: 0.4rem;
+  font-family: var(--vx-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(243 233 235 / 0.8);
+}
+.vx-trace > li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  animation: vx-line-in 240ms ease calc(var(--i) * 280ms) backwards;
+}
+.vx-trace > li::before {
+  content: ">";
+  color: var(--vx-red);
+}
+.vx-trace > li:last-child::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.9rem;
+  background: var(--vx-red);
+  animation: vx-caret 1s steps(1) infinite;
+}
+@keyframes vx-line-in {
+  from {
+    opacity: 0;
+    translate: -6px 0;
+  }
+}
+@keyframes vx-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.vx-progress {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background: rgb(255 31 61 / 0.15);
+}
+.vx-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--vx-red), transparent);
+  animation: vx-progress 1000ms ease-in-out infinite;
+}
+@keyframes vx-progress {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 250% 0;
+  }
+}
+
+/* Code entry. */
+.vx-form {
+  display: grid;
+  gap: 0.65rem;
+}
+.vx-label {
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #2b1a00;
-  background: linear-gradient(180deg, #fff1b8, #ffd36b 45%, #d79a1e);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--vx-ash);
+}
+.vx-input {
+  width: 100%;
+  height: 3.4rem;
+  border: 1px solid rgb(255 31 61 / 0.4);
+  border-radius: 0;
+  padding: 0 1rem;
+  font-family: var(--vx-mono);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+  caret-color: var(--vx-red);
+  background: linear-gradient(180deg, #050203, #0d0508);
+  text-shadow: 0 0 calc(4px + var(--vx-charge, 0) * 10px) rgb(255 31 61 / 0.6);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.6),
-    inset 0 -2px 0 rgb(120 70 0 / 0.35),
-    0 8px 24px -10px rgb(255 211 107 / 0.6);
+    inset 0 0 0 1px rgb(0 0 0 / 0.6),
+    inset 0 0 calc(var(--vx-charge, 0) * 26px) rgb(255 31 61 / 0.2);
   outline: none;
   transition:
-    filter 160ms ease,
-    scale 120ms ease;
+    border-color 150ms ease,
+    box-shadow 200ms ease;
 }
-.vault-key:hover:not(:disabled) {
-  filter: brightness(1.06);
+.vx-input::placeholder {
+  letter-spacing: 0.12em;
+  color: rgb(243 233 235 / 0.3);
+  text-shadow: none;
 }
-.vault-key:active:not(:disabled) {
-  scale: 0.97;
-}
-.vault-key:focus-visible {
+.vx-input:focus-visible {
+  border-color: var(--vx-red);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.6),
-    0 0 0 2px #140b24,
-    0 0 0 4px var(--vault-glow);
+    inset 0 0 calc(var(--vx-charge, 0) * 26px) rgb(255 31 61 / 0.2),
+    0 0 0 1px var(--vx-red),
+    0 0 22px -4px rgb(255 31 61 / 0.6);
 }
-.vault-key:disabled {
-  cursor: progress;
-  filter: saturate(0.7) brightness(0.9);
+.vx-input[readonly] {
+  color: rgb(255 255 255 / 0.65);
 }
-.vault-result {
-  margin: 0 auto;
-  max-width: 40rem;
-  border-radius: calc(1rem * var(--radius-unit, 1));
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(255 255 255 / 0.03);
-  padding: 1rem 1.25rem;
-  animation: vault-rise 400ms var(--ease-out-soft) both;
+.vx-stage[data-phase="unavailable"] .vx-input {
+  border-color: rgb(140 127 130 / 0.6);
 }
-.vault-result-open {
-  border-color: rgb(255 211 107 / 0.3);
-  background:
-    radial-gradient(120% 100% at 50% 0%, rgb(255 211 107 / 0.1), transparent 70%),
-    rgb(255 255 255 / 0.03);
-}
-.vault-reward {
+.vx-signal {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-radius: calc(0.75rem * var(--radius-unit, 1));
-  border: 1px solid rgb(255 255 255 / 0.08);
-  background: rgb(10 6 19 / 0.55);
-  padding: 0.6rem 0.75rem;
-  animation: vault-rise 520ms var(--ease-out-soft) calc(1100ms + var(--i) * 110ms) both;
 }
-.vault-room[data-phase="already"] .vault-reward {
-  animation-delay: calc(var(--i) * 60ms);
+.vx-pips {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  max-width: 15rem;
 }
-.vault-reward-coin {
+.vx-pips > span {
+  flex: 1;
+  height: 4px;
+  background: rgb(255 31 61 / 0.15);
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.vx-pips > span[data-on] {
+  background: var(--vx-red);
+  box-shadow: 0 0 6px rgb(255 31 61 / 0.7);
+}
+.vx-signal-count {
+  margin-left: auto;
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  color: var(--vx-ash);
+}
+.vx-help {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgb(243 233 235 / 0.58);
+}
+.vx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+.vx-button {
+  display: inline-flex;
+  flex: 1 1 12rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 3rem;
+  padding: 0 1.4rem;
+  border: 1px solid var(--vx-red);
+  font-family: var(--vx-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(180deg, #d4132f, #8a0819);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    0 0 24px -6px rgb(255 31 61 / 0.6);
+  transition:
+    filter 150ms ease,
+    box-shadow 150ms ease,
+    scale 100ms ease;
+}
+.vx-button:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    0 0 32px -4px rgb(255 31 61 / 0.75);
+}
+.vx-button:active:not(:disabled) {
+  scale: 0.98;
+}
+.vx-button:disabled {
+  cursor: progress;
+  filter: saturate(0.6) brightness(0.8);
+}
+.vx-button-quiet {
+  border-color: rgb(255 255 255 / 0.25);
+  color: var(--vx-text);
+  background: transparent;
+  box-shadow: none;
+}
+.vx-button-quiet:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 0.55);
+  filter: none;
+  box-shadow: none;
+}
+
+/* Rewards, exactly as the server granted them. */
+.vx-rewards {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.vx-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-left: 2px solid var(--vx-red);
+  background: linear-gradient(90deg, rgb(255 31 61 / 0.1), rgb(255 255 255 / 0.015) 60%);
+  animation: vx-slot-in 520ms var(--ease-out-soft) calc(var(--d, 0ms) + var(--i, 0) * 120ms) backwards;
+}
+@keyframes vx-slot-in {
+  from {
+    opacity: 0;
+    translate: 14px 0;
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.vx-slot-art {
   display: grid;
   flex: none;
   place-items: center;
   width: 2.75rem;
   height: 2.75rem;
-  border-radius: 999px;
-  color: #6b4300;
-  background: radial-gradient(circle at 35% 30%, #fff1b8, #ffd36b 45%, #d79a1e);
-  box-shadow:
-    inset 0 -2px 0 rgb(120 70 0 / 0.35),
-    0 4px 14px -4px rgb(215 154 30 / 0.7);
+  border: 1px solid rgb(255 31 61 / 0.35);
+  color: #fff;
+  background: radial-gradient(circle at 50% 35%, rgb(255 31 61 / 0.3), #030203 70%);
 }
-.vault-tag {
-  border-radius: 999px;
-  padding: 0.05rem 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #2b1a00;
-  background: var(--vault-gold);
+.vx-slot-kind {
+  display: block;
+  font-family: var(--vx-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--vx-red);
 }
-.vault-tag-muted {
-  color: #efe7ff;
+.vx-slot-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+.vx-slot-coins {
+  font-family: var(--vx-mono);
+  font-size: 1.15rem;
+}
+.vx-slot-desc {
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgb(243 233 235 / 0.62);
+}
+.vx-slot-plate {
+  padding: 0.1rem 0.3rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  font-family: var(--vx-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.vx-tag {
+  padding: 0.05rem 0.45rem;
+  font-family: var(--vx-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #030203;
+  background: var(--vx-red);
+}
+.vx-tag[data-muted] {
+  color: var(--vx-text);
   background: rgb(255 255 255 / 0.1);
 }
-.vault-link {
+.vx-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  animation: vx-fade 500ms ease var(--d, 0ms) backwards;
+}
+.vx-link {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.875rem;
+  font-family: var(--vx-mono);
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--vault-gold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vx-red);
   text-underline-offset: 4px;
 }
-.vault-link:hover {
+.vx-link:hover {
   text-decoration: underline;
 }
-@keyframes vault-rise {
+
+/* Access log. */
+.vx-log {
+  width: 100%;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgb(255 31 61 / 0.2);
+  animation: vx-rise 600ms var(--ease-out-soft) 1000ms backwards;
+}
+.vx-log-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.vx-stage h2.vx-log-title {
+  font-family: var(--vx-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: none;
+}
+.vx-log-count,
+.vx-log-time {
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vx-ash);
+}
+.vx-log-list {
+  display: grid;
+  gap: 1px;
+  margin-top: 0.75rem;
+  border: 1px solid rgb(255 31 61 / 0.14);
+  background: rgb(255 31 61 / 0.14);
+}
+.vx-log-list > li {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.875rem;
+  color: rgb(243 233 235 / 0.85);
+  background: #070304;
+}
+.vx-log-note {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: rgb(243 233 235 / 0.58);
+}
+.vx-log-note a {
+  color: var(--vx-text);
+  text-decoration: underline;
+  text-decoration-color: rgb(255 31 61 / 0.6);
+  text-underline-offset: 3px;
+}
+.vx-log-note a:hover {
+  color: #fff;
+  text-decoration-color: var(--vx-red);
+}
+.vx-log-note a:focus-visible {
+  border-radius: 0;
+  outline: 2px solid var(--vx-red);
+  outline-offset: 2px;
+}
+
+/* Verifying: the sweep turns, a scan passes, the segments chase and the core pulses. */
+.vx-stage[data-phase="verifying"] .vx-sweep {
+  opacity: 1;
+  animation: vx-spin 900ms linear infinite;
+}
+.vx-stage[data-phase="verifying"] .vx-scan {
+  opacity: 1;
+  animation: vx-scan 1300ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.vx-stage[data-phase="verifying"] .vx-seg {
+  animation: vx-chase 900ms linear calc(var(--i) * 37.5ms - 900ms) infinite;
+}
+.vx-stage[data-phase="verifying"] .vx-core {
+  opacity: 0.75;
+  animation: vx-pulse 900ms ease-in-out infinite alternate;
+}
+.vx-stage[data-phase="verifying"] .vx-keyhole {
+  stroke: #ff8597;
+}
+.vx-stage[data-phase="verifying"] .vx-pips > span {
+  animation: vx-pip 900ms ease-in-out calc(var(--i) * 75ms - 900ms) infinite;
+}
+@keyframes vx-scan {
   from {
-    opacity: 0;
-    translate: 0 10px;
+    translate: 0 -150px;
+  }
+  to {
+    translate: 0 180px;
   }
 }
-:root[data-motion="off"] :is(.vault-motes, .vault-rays, .vault-sparks) {
+@keyframes vx-chase {
+  0%,
+  100% {
+    fill: rgb(255 31 61 / 0.1);
+  }
+  8% {
+    fill: rgb(255 133 151 / 0.95);
+  }
+  35% {
+    fill: rgb(255 31 61 / 0.25);
+  }
+}
+@keyframes vx-pulse {
+  from {
+    scale: 0.62;
+  }
+  to {
+    scale: 0.85;
+  }
+}
+@keyframes vx-pip {
+  0%,
+  100% {
+    background-color: rgb(255 31 61 / 0.15);
+  }
+  15% {
+    background-color: #ff8597;
+  }
+}
+
+/* Granted: the segments whiten, the teeth retract, the gates part and the core floods out. */
+.vx-stage[data-phase="granted"] .vx-seg {
+  fill: rgb(255 238 241 / 0.85);
+  stroke: #fff;
+  transition-delay: calc(200ms + var(--i) * 18ms);
+}
+.vx-stage:is([data-phase="granted"], [data-phase="already"]) :is(.vx-notch, .vx-marker) {
+  fill: #fff;
+  transition-delay: 450ms;
+}
+.vx-stage[data-phase="granted"] .vx-runes {
+  stroke: #ffd5dc;
+  transition-delay: 650ms;
+}
+.vx-stage[data-phase="granted"] .vx-tooth {
+  translate: 0 -11px;
+  transition-delay: 620ms;
+}
+.vx-stage[data-phase="granted"] .vx-gate {
+  opacity: 0.55;
+  transition-delay: 850ms;
+}
+.vx-stage[data-phase="granted"] .vx-gate-l {
+  translate: -62px 0;
+}
+.vx-stage[data-phase="granted"] .vx-gate-r {
+  translate: 62px 0;
+}
+.vx-stage[data-phase="granted"] .vx-rim {
+  opacity: 0;
+  transition-delay: 850ms;
+}
+.vx-stage[data-phase="granted"] .vx-core {
+  opacity: 1;
+  scale: 2.2;
+  transition-delay: 900ms;
+}
+.vx-stage[data-phase="granted"] .vx-bloom {
+  opacity: 1;
+  scale: 1.12;
+  transition-delay: 900ms;
+}
+.vx-stage[data-phase="granted"] .vx-rays {
+  opacity: 1;
+  scale: 1;
+  transition-delay: 1000ms;
+  animation: vx-spin 50s linear infinite;
+}
+.vx-stage[data-phase="granted"] .vx-shock {
+  animation: vx-shock 1000ms cubic-bezier(0.2, 0.7, 0.3, 1) 900ms forwards;
+}
+.vx-stage[data-phase="granted"] .vx-window-flare {
+  opacity: 0.35;
+  animation: vx-flare 1600ms ease-out 850ms backwards;
+}
+.vx-stage[data-phase="granted"] .vx-fog {
+  opacity: 1;
+}
+@keyframes vx-shock {
+  from {
+    scale: 1;
+    opacity: 0.9;
+  }
+  to {
+    scale: 2.7;
+    opacity: 0;
+  }
+}
+@keyframes vx-flare {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+}
+
+/* Already claimed: the rings line up in pale light, but the gates stay shut. */
+.vx-stage[data-phase="already"] .vx-seg {
+  fill: rgb(243 233 235 / 0.22);
+  stroke: rgb(243 233 235 / 0.55);
+  transition-delay: calc(var(--i) * 10ms);
+}
+.vx-stage[data-phase="already"] .vx-runes {
+  stroke: rgb(243 233 235 / 0.7);
+}
+.vx-stage[data-phase="already"] .vx-core {
+  opacity: 0.55;
+}
+
+/* Denied: one shake and two slow red pulses (well under three flashes a second). */
+.vx-stage[data-phase="invalid"] .vx-seal-shake {
+  animation: vx-shake 500ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.vx-stage[data-phase="invalid"] .vx-seg {
+  animation: vx-deny 800ms ease-in-out 2;
+}
+.vx-stage[data-phase="invalid"] .vx-keyhole {
+  stroke: var(--vx-red);
+}
+.vx-stage[data-phase="invalid"] h2.vx-headline {
+  animation: vx-glitch 450ms steps(1, end) backwards;
+}
+.vx-stage[data-phase="invalid"] .vx-input {
+  border-color: var(--vx-red);
+}
+@keyframes vx-shake {
+  10%,
+  90% {
+    translate: -2px 0;
+  }
+  20%,
+  80% {
+    translate: 4px 0;
+  }
+  30%,
+  50%,
+  70% {
+    translate: -8px 0;
+  }
+  40%,
+  60% {
+    translate: 8px 0;
+  }
+}
+@keyframes vx-deny {
+  50% {
+    fill: rgb(255 31 61 / 0.85);
+    stroke: #ff8597;
+  }
+}
+@keyframes vx-glitch {
+  0% {
+    translate: -4px 0;
+    text-shadow:
+      3px 0 var(--vx-red),
+      -3px 0 rgb(255 255 255 / 0.6);
+  }
+  25% {
+    translate: 3px 0;
+  }
+  50% {
+    translate: -2px 0;
+    text-shadow:
+      -2px 0 var(--vx-red),
+      2px 0 rgb(255 255 255 / 0.5);
+  }
+  75% {
+    translate: 1px 0;
+  }
+}
+
+/* Dormant, lockdown and no signal: the seal goes still and dark. */
+.vx-stage[data-phase="unavailable"] .vx-seal-svg {
+  filter: grayscale(1) brightness(0.75);
+}
+.vx-stage[data-phase="locked"] .vx-seal-svg {
+  filter: brightness(0.4) saturate(0.6);
+}
+.vx-stage[data-phase="lost"] .vx-seal-svg {
+  filter: grayscale(0.7) brightness(0.55);
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="locked"], [data-phase="lost"]) .vx-fog {
+  opacity: 0.4;
+}
+
+/* Subtle motion: quick fades, no scan, no chase, no glitch and no delays. */
+.vx-stage[data-motion="subtle"] :is(.vx-boot, .vx-scan) {
   display: none;
 }
-:root[data-motion="off"] :is(.vault-result, .vault-reward) {
+.vx-stage[data-motion="subtle"] :is(.vx-hud, .vx-seal, .vx-window, .vx-log, .vx-frame > span) {
+  animation: vx-fade 300ms ease backwards;
+}
+.vx-stage[data-motion="subtle"] .vx-seal-svg * {
+  transition-delay: 0ms;
+}
+.vx-stage[data-motion="subtle"] :is(.vx-ticks, .vx-rule, .vx-window-title, .vx-seg, .vx-pips > span, .vx-rays, .vx-shock, h2.vx-headline) {
+  animation: none;
+}
+.vx-stage[data-motion="subtle"][data-phase="invalid"] .vx-seal-shake {
+  animation-name: vx-shake-soft;
+}
+.vx-stage[data-motion="subtle"] .vx-window-flare {
+  animation-duration: 600ms;
+  animation-delay: 0ms;
+}
+@keyframes vx-shake-soft {
+  25%,
+  75% {
+    translate: -3px 0;
+  }
+  50% {
+    translate: 3px 0;
+  }
+}
+
+/* Motion off and reduced motion: states change instantly; nothing moves on its own. */
+.vx-stage[data-motion="off"] *,
+.vx-stage[data-motion="off"] *::before,
+.vx-stage[data-motion="off"] *::after {
   animation: none !important;
+  transition: none !important;
+}
+.vx-stage[data-motion="off"] :is(.vx-boot, .vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
+  display: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  :is(.vault-motes, .vault-rays, .vault-sparks) {
+  .vx-stage *,
+  .vx-stage *::before,
+  .vx-stage *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .vx-stage :is(.vx-boot, .vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
     display: none;
   }
-  :is(.vault-result, .vault-reward) {
-    animation: none !important;
-  }
+}
+.vx-stage[data-paused] *,
+.vx-stage[data-paused] *::before,
+.vx-stage[data-paused] *::after {
+  animation-play-state: paused !important;
 }
 
 /* ---------------------------------------------------------------------------

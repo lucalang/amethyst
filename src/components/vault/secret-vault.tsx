@@ -3,522 +3,518 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import { ArrowRight, Coins, Frame, KeyRound, Loader2, RotateCcw, Sparkles } from "lucide-react";
-import { AvatarDecoration } from "@/components/layout/avatar-decoration";
-import { BadgeEmblem } from "@/components/layout/profile-flair";
-import { useMotionLevel } from "@/components/showcase/motion";
+import { KeyRound, Loader2, RotateCcw, ScrollText, Volume2, VolumeX } from "lucide-react";
+import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { isAvatarDecorationId, isProfileBadgeId, rewardItemInfo } from "@/lib/cosmetics";
-import { cn } from "@/lib/utils";
+import type { MotionLevel } from "@/lib/preferences";
+import { closeVaultAudio, playVaultSound, type VaultSound } from "./vault-audio";
+import { DecodeText, RewardSlots, rewardSummary } from "./vault-reveal";
+import { noise, VaultSeal, type SealMode } from "./vault-seal";
 
 export type VaultFind = { redeemedAt: string; coins: number; items: string[] };
 
 type Redemption =
   | { status: "unlocked"; coins: number; items: string[]; newItems: string[]; balance: number }
   | { status: "already"; coins: number; items: string[]; redeemedAt: string; balance: number }
-  | { status: "unknown"; triesLeft: number };
+  | { status: "unavailable" | "unknown"; triesLeft: number };
 
 type Outcome =
-  | { phase: "unlocked"; coins: number; items: string[]; newItems: string[]; balance: number }
+  | { phase: "granted"; coins: number; items: string[]; newItems?: string[]; recovered?: boolean }
   | { phase: "already"; coins: number; items: string[]; redeemedAt: string }
-  | { phase: "sealed"; triesLeft: number }
-  | { phase: "resting" | "error"; message: string };
+  | { phase: "invalid" | "unavailable"; triesLeft: number | null; message?: string }
+  | { phase: "locked"; message: string }
+  | { phase: "lost"; message: string; since: string | null };
 
-type Phase = "idle" | "turning" | Outcome["phase"];
+type Phase = "idle" | "verifying" | Outcome["phase"];
 
-/** Deterministic 0–1 noise, identical on server and client. */
-const noise = (index: number, salt: number) => (((index + 1) * 9301 + salt * 49297) % 233280) / 233280;
-
-/** Rune marks (original shapes) engraved on the dial rings. */
-const GLYPHS = [
-  "M0,-3 V3 M0,-1.1 L2.1,-2.8",
-  "M-2,3 L0,-3 L2,3",
-  "M0,-3 V3 M0,-0.5 L2,0.9 L0,2.4",
-  "M-1.9,-2.7 H1.9 M0,-2.7 V3 M-1.4,0.6 H1.4",
-  "M-1.9,-3 L1.9,3 M1.9,-3 L-1.9,3",
-  "M0,-3 V3 M-2.1,-1 L0,0.7 L2.1,-1",
-  "M-1.7,3 V-3 L1.7,-1 L-1.7,1",
-];
-const RINGS = [
-  { radius: 91, count: 30 },
-  { radius: 70, count: 22 },
-  { radius: 50, count: 14 },
-].map((ring, r) => ({
-  ...ring,
-  marks: Array.from({ length: ring.count - 1 }, (_, index) => ({
-    angle: (360 * (index + 1)) / ring.count,
-    d: GLYPHS[(index * 5 + r * 3 + ((index * index) % 4)) % GLYPHS.length],
-  })),
-}));
-const BOLTS = Array.from({ length: 16 }, (_, index) => (index * Math.PI) / 8);
-/** Degrees per second while idle; the rings turn against each other. */
-const DRIFT = [6, -9, 13];
-
-const MOTES = Array.from({ length: 18 }, (_, index) => ({
-  "--x": `${(noise(index, 1) * 100).toFixed(1)}%`,
-  "--s": `${(2 + noise(index, 2) * 3).toFixed(1)}px`,
-  "--d": `${(11 + noise(index, 3) * 9).toFixed(1)}s`,
-  "--delay": `${(-noise(index, 4) * 20).toFixed(1)}s`,
-  "--sway": `${Math.round((noise(index, 5) - 0.5) * 70)}px`,
-  "--o": (0.3 + noise(index, 6) * 0.5).toFixed(2),
+const STATUS: Record<Phase, string> = {
+  idle: "Sealed",
+  verifying: "Verifying",
+  granted: "Open",
+  already: "Claimed",
+  invalid: "Denied",
+  unavailable: "Dormant",
+  locked: "Lockdown",
+  lost: "No signal",
+};
+const TITLE: Record<Phase, string> = {
+  idle: "Access request",
+  verifying: "Verifying",
+  granted: "Access granted",
+  already: "Already claimed",
+  invalid: "Access denied",
+  unavailable: "Seal dormant",
+  locked: "Lockdown",
+  lost: "Signal lost",
+};
+const HEADLINE: Record<Outcome["phase"], string> = {
+  granted: "Seal broken",
+  already: "Already yours",
+  invalid: "No seal answers",
+  unavailable: "The seal is dormant",
+  locked: "Access suspended",
+  lost: "No answer",
+};
+const SOUND: Record<Outcome["phase"], VaultSound> = {
+  granted: "grant",
+  already: "already",
+  invalid: "invalid",
+  unavailable: "unavailable",
+  locked: "locked",
+  lost: "lost",
+};
+/** The shortest verifying sequence. The request goes out at once; only showing its answer waits. */
+const MIN_VERIFY: Record<MotionLevel, number> = { full: 900, subtle: 350, off: 0 };
+/** When the headline decodes and the reward slots land, timed to the seal opening. */
+const DECODE_AT: Record<MotionLevel, number> = { full: 350, subtle: 0, off: 0 };
+const REVEAL_AT: Record<MotionLevel, number> = { full: 1350, subtle: 250, off: 0 };
+const PIPS = Array.from({ length: 12 }, (_, index) => index);
+const TRACE = ["Signal received", "Reading the seal", "Awaiting the chamber"];
+const EMBERS = Array.from({ length: 14 }, (_, index) => ({
+  "--x": `${(3 + noise(index, 11) * 94).toFixed(1)}%`,
+  "--s": `${(1.5 + noise(index, 12) * 2.5).toFixed(1)}px`,
+  "--d": `${(11 + noise(index, 13) * 9).toFixed(1)}s`,
+  "--delay": `${(-noise(index, 14) * 19).toFixed(1)}s`,
+  "--sway": `${Math.round((noise(index, 15) - 0.5) * 80)}px`,
+  "--o": (0.3 + noise(index, 16) * 0.5).toFixed(2),
 })) as CSSProperties[];
-const SPARKS = Array.from({ length: 16 }, (_, index) => ({
-  "--a": `${Math.round((index * 360) / 16 + noise(index, 7) * 14)}deg`,
-  "--r": `${Math.round(110 + noise(index, 8) * 90)}px`,
-  "--delay": `${Math.round(noise(index, 9) * 160)}ms`,
-})) as CSSProperties[];
+const LOST = "The vault’s answer didn’t arrive. If the code was accepted, its rewards are safe and can’t be granted twice. Check the log or try again.";
 
-const SHUDDER: Keyframe[] = [
-  { translate: "0 0" },
-  { translate: "-7px 0" },
-  { translate: "6px 0" },
-  { translate: "-4px 0" },
-  { translate: "2px 0" },
-  { translate: "0 0" },
-];
+/** Marks an attempt in flight (never the code) so a reload can look up how it ended. */
+const PENDING_KEY = "archive:vault:pending";
+type Pending = { since: string | null; at: number };
 
-const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
-
-function CountUp({ value, animate }: { value: number; animate: boolean }) {
-  const [shown, setShown] = useState(0);
-  useEffect(() => {
-    if (!animate) return;
-    let frame = 0;
-    let start = 0;
-    const tick = (now: number) => {
-      start ||= now;
-      // Starts once the door is open.
-      const t = Math.min(1, Math.max(0, (now - start - 900) / 900));
-      setShown(Math.round(value * (1 - (1 - t) ** 3)));
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [value, animate]);
-  return (
-    <>
-      <span aria-hidden className="tabular-nums">
-        +{(animate ? shown : value).toLocaleString("en")}
-      </span>
-      <span className="sr-only">{value.toLocaleString("en")}</span>
-    </>
-  );
-}
-
-function RewardPreview({ id }: { id: string }) {
-  if (isAvatarDecorationId(id)) {
-    return (
-      <span className="relative grid size-11 place-items-center">
-        <span className="relative size-8 rounded-full bg-[radial-gradient(circle_at_35%_30%,#4c3a7a,#1d1236)] ring-1 ring-white/15">
-          <AvatarDecoration decoration={id} />
-        </span>
-      </span>
-    );
+function markPending(since: string | null) {
+  try {
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify({ since, at: Date.now() } satisfies Pending));
+  } catch {
+    // No storage (private mode): "Check the log" after a lost answer still works.
   }
-  if (isProfileBadgeId(id)) return <BadgeEmblem badge={id} className="size-11" />;
-  const kind = rewardItemInfo(id).kind;
+}
+
+function clearPending() {
+  try {
+    sessionStorage.removeItem(PENDING_KEY);
+  } catch {
+    // No storage: nothing was marked.
+  }
+}
+
+function readPending(): Pending | null {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(PENDING_KEY) ?? "null") as Pending | null;
+    return value && typeof value.at === "number" && Date.now() - value.at < 30 * 60_000 ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The newest find recorded after `since` (the newest find known before the attempt). */
+function newestSince(finds: VaultFind[], since: string | null) {
+  const after = since ? Date.parse(since) : Number.NEGATIVE_INFINITY;
+  return finds.find((find) => Date.parse(find.redeemedAt) > after) ?? null;
+}
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const nowIso = () => new Date().toISOString();
+const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
+const triesNote = (left: number | null) =>
+  left === null || left > 2 ? "" : left === 0 ? " The vault will rest for a while before the next try." : ` ${left} more ${left === 1 ? "try" : "tries"} before it rests for a while.`;
+
+function copyFor(outcome: Outcome) {
+  switch (outcome.phase) {
+    case "granted":
+      return outcome.recovered
+        ? "Your last attempt was cut off, but the vault had already answered. These rewards were granted once and are yours."
+        : "The chamber yields. Everything inside is now yours.";
+    case "already":
+      return `Your account broke this seal on ${formatDate(outcome.redeemedAt)}. Its rewards are already yours; nothing new was added.`;
+    case "invalid":
+      return (outcome.message ?? "That code doesn’t open anything here. Check the words and try again.") + triesNote(outcome.triesLeft);
+    case "unavailable":
+      return "That code is real, but its seal no longer opens: it has expired, run out or been withdrawn." + triesNote(outcome.triesLeft);
+    case "locked":
+    case "lost":
+      return outcome.message;
+  }
+}
+
+function announce(outcome: Outcome) {
+  const rewards = outcome.phase === "granted" || outcome.phase === "already" ? ` ${rewardSummary(outcome.coins, outcome.items, ", ")}.` : "";
+  return `${TITLE[outcome.phase]}.${rewards} ${copyFor(outcome)}`;
+}
+
+/** The Vault: a sealed chamber that opens for secret codes. Codes are checked and rewards granted on the server only. */
+export function SecretVault({ finds }: { finds: VaultFind[] }) {
   return (
-    <span className="grid size-11 place-items-center rounded-full bg-white/[0.06] text-[#ffd36b] ring-1 ring-white/10">
-      {kind === "frame" ? <Frame aria-hidden className="size-5" /> : kind === "title" ? <span className="text-[10px] font-bold tracking-widest">TITLE</span> : <Sparkles aria-hidden className="size-5" />}
-    </span>
+    <ArcadeProvider>
+      <Chamber initialFinds={finds} />
+    </ArcadeProvider>
   );
 }
 
-function Rewards({ coins, items, newItems, animate }: { coins: number; items: string[]; newItems?: string[]; animate: boolean }) {
-  const wearable = items.some((id) => ["avatar_decoration", "badge", "title"].includes(rewardItemInfo(id).kind));
-  return (
-    <>
-      <ul className="mt-4 grid gap-2.5 sm:grid-cols-2">
-        {coins > 0 ? (
-          <li className="vault-reward" style={{ "--i": 0 } as CSSProperties}>
-            <span aria-hidden className="vault-reward-coin">
-              <Coins className="size-5" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-lg font-semibold text-[#ffd36b]">
-                <CountUp value={coins} animate={animate} /> coins
-              </span>
-              <span className="block text-xs text-[#efe7ff]/65">Added to your Arcade wallet</span>
-            </span>
-          </li>
-        ) : null}
-        {items.map((id, index) => {
-          const info = rewardItemInfo(id);
-          const fresh = !newItems || newItems.includes(id);
-          return (
-            <li key={id} className="vault-reward" style={{ "--i": index + 1 } as CSSProperties}>
-              <RewardPreview id={id} />
-              <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-x-2 font-semibold">
-                  {info.name}
-                  {newItems ? <span className={cn("vault-tag", !fresh && "vault-tag-muted")}>{fresh ? "New" : "Already yours"}</span> : null}
-                </span>
-                <span className="block text-xs text-pretty text-[#efe7ff]/65">{info.description}</span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-      {wearable ? (
-        <Link href="/customization/profile" className="vault-link mt-4">
-          Wear it in your profile <ArrowRight aria-hidden className="size-3.5" />
-        </Link>
-      ) : null}
-    </>
-  );
-}
-
-/** The Vault: a hidden door that opens for secret codes. Validation and rewards happen on the server. */
-export function SecretVault({ finds: initialFinds }: { finds: VaultFind[] }) {
-  const motion = useMotionLevel();
+function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
   const router = useRouter();
+  const { sound, toggleSound, effects: motion } = useArcade();
   const [code, setCode] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [round, setRound] = useState(0);
   const [finds, setFinds] = useState(initialFinds);
-  const roomRef = useRef<HTMLDivElement>(null);
-  const doorRef = useRef<HTMLDivElement>(null);
+  const [checking, setChecking] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
+  const stageRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const resultRef = useRef<HTMLHeadingElement>(null);
-  const ringRefs = useRef<(SVGGElement | null)[]>([]);
-  const angles = useRef([0, 0, 0]);
-  const speeds = useRef([...DRIFT]);
-  const mode = useRef<"idle" | "turning" | "align">("idle");
-  const wake = useRef<() => void>(() => {});
-  const busy = phase === "turning";
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const inFlight = useRef(false);
+  /** After a lost answer: the newest find before it, so a later "already" for that code shows as its grant. */
+  const lostSince = useRef<string | null | undefined>(undefined);
+  const soundRef = useRef(sound);
+  const busy = phase === "verifying";
+  const signal = Math.min(PIPS.length, code.replace(/\s+/g, "").length);
 
-  // The dial: rings drift, spin up while a code is checked and whirl into line when it opens.
-  // Script-driven so speed changes stay smooth; it sleeps offscreen, in hidden tabs and once settled.
   useEffect(() => {
-    const room = roomRef.current;
-    if (!room) return;
-    const angle = angles.current;
-    const speed = speeds.current;
-    const draw = () => ringRefs.current.forEach((ring, index) => ring?.setAttribute("transform", `rotate(${(angle[index] % 360).toFixed(2)})`));
-    if (motion === "off") {
-      wake.current = () => {
-        if (mode.current === "align") angle.fill(0);
-        draw();
-      };
-      wake.current();
-      return;
-    }
-    const scale = motion === "subtle" ? 0.5 : 1;
-    const targets: (number | null)[] = [null, null, null];
-    let frame = 0;
-    let last = 0;
-    let onscreen = true;
-    const tick = (now: number) => {
-      const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
-      last = now;
-      let moving = false;
-      for (let index = 0; index < 3; index += 1) {
-        if (mode.current === "align") {
-          if (targets[index] === null) {
-            const ahead = speed[index] >= 0 ? 1 : -1;
-            targets[index] = ahead > 0 ? Math.ceil((angle[index] + 60) / 360) * 360 : Math.floor((angle[index] - 60) / 360) * 360;
-          }
-          const target = targets[index]!;
-          // Critically damped spring: no overshoot past the aligned position.
-          speed[index] += (-30 * (angle[index] - target) - 2 * Math.sqrt(30) * speed[index]) * dt;
-          angle[index] += speed[index] * dt;
-          if (Math.abs(angle[index] - target) < 0.05 && Math.abs(speed[index]) < 1) {
-            angle[index] = target;
-            speed[index] = 0;
-          } else moving = true;
-        } else {
-          targets[index] = null;
-          const goal = DRIFT[index] * scale * (mode.current === "turning" ? 16 : 1);
-          speed[index] += (goal - speed[index]) * (1 - Math.exp(-dt * (mode.current === "turning" ? 2.5 : 1.2)));
-          angle[index] = (angle[index] + speed[index] * dt) % 360;
-          moving = true;
-        }
-      }
-      draw();
-      frame = moving && onscreen && !document.hidden ? requestAnimationFrame(tick) : 0;
-    };
-    const start = () => {
-      if (frame || !onscreen || document.hidden) return;
-      last = 0;
-      frame = requestAnimationFrame(tick);
-    };
-    wake.current = start;
-    const observer = new IntersectionObserver(([entry]) => {
-      onscreen = entry.isIntersecting;
-      room.toggleAttribute("data-paused", !onscreen);
-      if (onscreen) start();
-    });
-    observer.observe(room);
-    const onVisibility = () => start();
-    document.addEventListener("visibilitychange", onVisibility);
-    start();
+    soundRef.current = sound;
+  }, [sound]);
+
+  // Effects pause offscreen; the synth is released on leave.
+  useEffect(() => {
+    const stage = stageRef.current!;
+    const observer = new IntersectionObserver(([entry]) => stage.toggleAttribute("data-paused", !entry.isIntersecting));
+    observer.observe(stage);
     return () => {
-      cancelAnimationFrame(frame);
       observer.disconnect();
-      document.removeEventListener("visibilitychange", onVisibility);
-      wake.current = () => {};
+      closeVaultAudio();
     };
-  }, [motion]);
+  }, []);
 
   useEffect(() => {
-    if (outcome) resultRef.current?.focus();
+    if (!outcome) return;
+    if (outcome.phase === "invalid" || outcome.phase === "unavailable") {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    } else headingRef.current?.focus();
   }, [outcome]);
 
-  function nudge() {
-    // Each keystroke knocks the tumblers a little.
-    speeds.current = speeds.current.map((value, index) => value + (index % 2 ? -14 : 14));
+  const play = (name: VaultSound) => {
+    if (soundRef.current) playVaultSound(name);
+  };
+
+  function show(next: Outcome, audible = true) {
+    setOutcome(next);
+    setPhase(next.phase);
+    setRound((value) => value + 1);
+    setAnnouncement(announce(next));
+    if (audible) play(SOUND[next.phase]);
   }
+
+  async function readLog() {
+    try {
+      const { finds: latest } = await apiFetch<{ finds: VaultFind[] }>("/api/vault/redeem");
+      setFinds(latest);
+      return latest;
+    } catch {
+      return null;
+    }
+  }
+
+  // An answer cut off by a reload is looked up in the log; a code is never sent again.
+  useEffect(() => {
+    const pending = readPending();
+    if (!pending) return;
+    let cancelled = false;
+    void (async () => {
+      const latest = await readLog();
+      if (cancelled) return;
+      const found = latest && newestSince(latest, pending.since);
+      if (found) {
+        clearPending();
+        show({ phase: "granted", coins: found.coins, items: found.items, recovered: true }, false);
+        router.refresh();
+      } else if (latest) {
+        clearPending();
+        show({ phase: "lost", since: pending.since, message: "Your last attempt was interrupted, and nothing new reached your log. Enter the code again if you like; rewards are never granted twice." }, false);
+      } else {
+        lostSince.current = pending.since;
+        show({ phase: "lost", since: pending.since, message: "Your last attempt was interrupted and the log couldn’t be read yet. Check it again in a moment." }, false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (inFlight.current) return;
     if (!code.trim()) {
       inputRef.current?.focus();
       return;
     }
+    inFlight.current = true;
+    const since = lostSince.current === undefined ? (finds[0]?.redeemedAt ?? null) : lostSince.current;
+    markPending(since);
     setOutcome(null);
-    setPhase("turning");
-    mode.current = "turning";
-    wake.current();
-    const started = performance.now();
-    const minimum = motion === "full" ? 1100 : motion === "subtle" ? 500 : 0;
+    setPhase("verifying");
+    setAnnouncement("Verifying the code.");
+    play("verify");
+    const shortest = wait(MIN_VERIFY[motion]);
 
     let next: Outcome;
+    let balance: number | null = null;
     try {
       const result = await apiFetch<Redemption>("/api/vault/redeem", { method: "POST", json: { code } });
-      next =
-        result.status === "unlocked"
-          ? { phase: "unlocked", coins: result.coins, items: result.items, newItems: result.newItems, balance: result.balance }
-          : result.status === "already"
-            ? { phase: "already", coins: result.coins, items: result.items, redeemedAt: result.redeemedAt }
-            : { phase: "sealed", triesLeft: result.triesLeft };
+      if (result.status === "unlocked") {
+        next = { phase: "granted", coins: result.coins, items: result.items, newItems: result.newItems };
+        balance = result.balance;
+      } else if (result.status === "already") {
+        // A grant whose answer was lost earlier is shown as that grant, not as an old claim.
+        const recovered = lostSince.current !== undefined && Date.parse(result.redeemedAt) > (lostSince.current ? Date.parse(lostSince.current) : Number.NEGATIVE_INFINITY);
+        next = recovered
+          ? { phase: "granted", coins: result.coins, items: result.items, recovered: true }
+          : { phase: "already", coins: result.coins, items: result.items, redeemedAt: result.redeemedAt };
+        balance = result.balance;
+      } else {
+        next = { phase: result.status === "unavailable" ? "unavailable" : "invalid", triesLeft: result.triesLeft };
+      }
     } catch (error) {
-      next =
-        error instanceof ApiError && error.code === "rate_limited"
-          ? { phase: "resting", message: error.message }
-          : error instanceof ApiError && error.status === 422
-            ? { phase: "error", message: error.message }
-            : { phase: "error", message: "The vault didn’t answer. Nothing was used up, so try again." };
+      if (error instanceof ApiError && error.code === "rate_limited") next = { phase: "locked", message: error.message };
+      else if (error instanceof ApiError && error.status === 422) next = { phase: "invalid", triesLeft: null, message: error.message };
+      else next = { phase: "lost", since, message: error instanceof ApiError && error.status >= 400 && error.status < 500 ? error.message : LOST };
     }
-    const wait = minimum - (performance.now() - started);
-    if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
 
-    mode.current = next.phase === "unlocked" || next.phase === "already" ? "align" : "idle";
-    wake.current();
-    if (next.phase === "unlocked") {
-      const { coins, items, balance } = next;
-      setCode("");
-      setFinds((list) => [{ redeemedAt: new Date().toISOString(), coins, items }, ...list]);
-      if (coins > 0) window.dispatchEvent(new CustomEvent("archive:coins", { detail: balance }));
-      // Refresh the shell so new badges, titles and decorations show up in the profile pickers.
-      if (items.length) router.refresh();
-    } else if (next.phase !== "already" && motion !== "off") {
-      doorRef.current?.animate(SHUDDER, { duration: 460, easing: "ease-out" });
+    await shortest;
+    inFlight.current = false;
+    if (next.phase === "lost") lostSince.current = since;
+    else {
+      lostSince.current = undefined;
+      clearPending();
     }
-    setOutcome(next);
-    setPhase(next.phase);
+    if (balance !== null) window.dispatchEvent(new CustomEvent("archive:coins", { detail: balance }));
+    if (next.phase === "granted") {
+      const { coins, items, recovered } = next;
+      setCode("");
+      if (!recovered) setFinds((list) => [{ redeemedAt: nowIso(), coins, items }, ...list]);
+      // Server timestamps replace the local guess, so later checks compare like with like.
+      void readLog();
+      if (items.length) router.refresh();
+    }
+    show(next);
+  }
+
+  async function checkLog() {
+    if (outcome?.phase !== "lost" || checking) return;
+    const { since } = outcome;
+    setChecking(true);
+    const latest = await readLog();
+    setChecking(false);
+    if (!latest) {
+      show({ phase: "lost", since, message: "The log couldn’t be read either. Check your connection, then try again." });
+      return;
+    }
+    clearPending();
+    lostSince.current = undefined;
+    const found = newestSince(latest, since);
+    if (found) {
+      show({ phase: "granted", coins: found.coins, items: found.items, recovered: true });
+      router.refresh();
+    } else show({ phase: "lost", since, message: "Nothing new reached your log, so that attempt granted nothing. Enter the code again whenever you’re ready." });
   }
 
   function again() {
     setOutcome(null);
     setPhase("idle");
-    mode.current = "idle";
-    wake.current();
-    inputRef.current?.focus();
+    setAnnouncement("");
+    requestAnimationFrame(() => inputRef.current?.focus());
   }
 
-  const charge = Math.min(1, code.replace(/[\s._-]/g, "").length / 12);
-  const open = phase === "unlocked";
+  const sealMode: SealMode = busy ? "verifying" : phase === "granted" || phase === "already" ? "align" : phase === "unavailable" || phase === "locked" ? "still" : "idle";
+  const opened = phase === "granted" || phase === "already";
 
   return (
-    <div className="space-y-6">
-      <div ref={roomRef} className="vault-room" data-phase={phase} style={{ "--charge": charge } as CSSProperties}>
-        <div aria-hidden className="vault-motes">
-          {MOTES.map((style, index) => (
-            <span key={index} style={style} />
-          ))}
-        </div>
-
-        <div className="relative px-4 pt-6 text-center md:pt-8">
-          <p className="text-[11px] font-semibold tracking-[0.3em] text-[#ffd36b]/80 uppercase">Behind the shelves</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight md:text-4xl">The Vault</h1>
-          <p className="mx-auto mt-2 max-w-md text-sm text-pretty text-[#efe7ff]/70">A door that only answers to secret words. If you’ve found a code, speak it here.</p>
-        </div>
-
-        <div ref={doorRef} aria-hidden className="vault-door">
-          <div className="vault-rays" />
-          <svg viewBox="-120 -120 240 240" className="vault-dial">
-            <defs>
-              <radialGradient id="vault-light" cx="0.5" cy="0.5" r="0.5">
-                <stop offset="0" stopColor="#fffaf0" />
-                <stop offset="0.35" stopColor="#ffe3a3" stopOpacity="0.9" />
-                <stop offset="1" stopColor="#b794ff" stopOpacity="0" />
-              </radialGradient>
-              <linearGradient id="vault-metal" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#2b1d48" />
-                <stop offset="0.5" stopColor="#180f2b" />
-                <stop offset="1" stopColor="#0c0717" />
-              </linearGradient>
-              <radialGradient id="vault-face" cx="0.38" cy="0.32" r="0.8">
-                <stop offset="0" stopColor="#3b2a63" />
-                <stop offset="1" stopColor="#120a22" />
-              </radialGradient>
-            </defs>
-            <circle r="117" fill="#05020a" />
-            <circle r="112" fill="url(#vault-metal)" stroke="#4a3874" strokeWidth="1.5" />
-            {BOLTS.map((theta, index) => (
-              <circle key={index} cx={(104 * Math.cos(theta)).toFixed(2)} cy={(104 * Math.sin(theta)).toFixed(2)} r="2.2" className="vault-bolt" />
+    <section
+      ref={stageRef}
+      aria-labelledby="vx-title"
+      className="vx-stage"
+      data-phase={phase}
+      data-motion={motion}
+      style={{ "--vx-charge": (signal / PIPS.length).toFixed(3) } as CSSProperties}
+    >
+      <div aria-hidden className="vx-backdrop">
+        <div className="vx-fog" />
+        <div className="vx-floor" />
+        {motion === "full" ? (
+          <div className="vx-embers">
+            {EMBERS.map((style, index) => (
+              <span key={index} style={style} />
             ))}
-            <circle r="46" fill="url(#vault-light)" className="vault-light" />
-            {RINGS.map((ring, index) => (
-              <g
-                key={ring.radius}
-                ref={(node) => {
-                  ringRefs.current[index] = node;
-                }}
-                className="vault-ring"
-              >
-                <circle r={ring.radius + 8} className="vault-ring-edge" />
-                <circle r={ring.radius - 8} className="vault-ring-edge" />
-                <g className="vault-runes">
-                  {ring.marks.map((mark, markIndex) => (
-                    <path key={markIndex} d={mark.d} transform={`rotate(${mark.angle.toFixed(2)}) translate(0 ${-ring.radius})`} />
-                  ))}
-                </g>
-                <path className="vault-notch" d={`M0,${-ring.radius + 4.5} L-4.2,${-ring.radius - 3.5} H4.2 Z`} />
-              </g>
-            ))}
-            <rect x="-1.4" y="-104" width="2.8" height="62" rx="1.4" className="vault-beam" />
-            <g className="vault-half vault-half-l">
-              <path d="M0,-36 A36,36 0 0 0 0,36 Z" fill="url(#vault-face)" />
-              <path d="M0,-15 A7.5,7.5 0 0 0 -4.6,-1.2 L-6.5,17 H0 Z" className="vault-keyhole" />
-            </g>
-            <g className="vault-half vault-half-r">
-              <path d="M0,-36 A36,36 0 0 1 0,36 Z" fill="url(#vault-face)" />
-              <path d="M0,-15 A7.5,7.5 0 0 1 4.6,-1.2 L6.5,17 H0 Z" className="vault-keyhole" />
-            </g>
-            <circle r="36" className="vault-core-rim" />
-          </svg>
-          <div className="vault-sparks">
-            {open && motion !== "off" ? SPARKS.map((style, index) => <span key={index} style={style} />) : null}
+          </div>
+        ) : null}
+        <div className="vx-vignette" />
+      </div>
+      <div aria-hidden className="vx-frame">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+      <span aria-hidden className="vx-boot" />
+
+      <div className="vx-inner">
+        <header className="vx-hud">
+          <div className="min-w-0">
+            <p className="vx-eyebrow">System · Sealed chamber</p>
+            <h1 id="vx-title" className="vx-title">
+              The Vault
+            </h1>
+          </div>
+          <div className="vx-hud-side">
+            <span className="vx-chip">{STATUS[phase]}</span>
+            <button type="button" onClick={toggleSound} aria-pressed={sound} aria-label="Sound effects" title={sound ? "Sound on" : "Sound off"} className="vx-icon-button">
+              {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}
+            </button>
+          </div>
+        </header>
+
+        <div className="vx-main">
+          <VaultSeal mode={sealMode} level={signal} phase={phase} motion={motion} />
+
+          <div className="vx-window">
+            <span aria-hidden className="vx-corners" />
+            <span aria-hidden className="vx-window-flare" />
+            <div className="vx-window-bar">
+              <p key={phase} className="vx-window-title">
+                <span aria-hidden className="vx-glyph" />
+                {TITLE[phase]}
+              </p>
+            </div>
+            <div aria-hidden className="vx-rule" />
+            <div className="vx-window-body">
+              {outcome ? (
+                <div key={round} className="vx-result">
+                  <h2 ref={headingRef} tabIndex={-1} className="vx-headline">
+                    {outcome.phase === "granted" || outcome.phase === "already" ? (
+                      <DecodeText text={HEADLINE[outcome.phase]} animate={motion !== "off"} delay={outcome.phase === "granted" ? DECODE_AT[motion] : 0} />
+                    ) : (
+                      HEADLINE[outcome.phase]
+                    )}
+                  </h2>
+                  <p className="vx-copy">{copyFor(outcome)}</p>
+                  {outcome.phase === "granted" ? (
+                    <RewardSlots coins={outcome.coins} items={outcome.items} newItems={outcome.newItems} delay={REVEAL_AT[motion]} countUp={motion !== "off"} />
+                  ) : outcome.phase === "already" ? (
+                    <RewardSlots coins={outcome.coins} items={outcome.items} delay={motion === "full" ? 250 : 0} countUp={false} />
+                  ) : null}
+                </div>
+              ) : busy ? (
+                <div className="vx-result">
+                  <ol aria-hidden className="vx-trace">
+                    {TRACE.map((line, index) => (
+                      <li key={line} style={{ "--i": index } as CSSProperties}>
+                        {line}
+                      </li>
+                    ))}
+                  </ol>
+                  <div aria-hidden className="vx-progress" />
+                </div>
+              ) : (
+                <p className="vx-lede">A sealed chamber that answers only to the right words. Speak a code to break its seal.</p>
+              )}
+
+              {opened ? (
+                <div className="vx-actions">
+                  <button type="button" onClick={again} className="vx-button">
+                    <RotateCcw aria-hidden className="size-4" />
+                    Enter another code
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={submit} className="vx-form">
+                  <label htmlFor="vx-code" className="vx-label">
+                    Code
+                  </label>
+                  <input
+                    ref={inputRef}
+                    id="vx-code"
+                    name="vx-code"
+                    value={code}
+                    onChange={(event) => {
+                      if (event.target.value.length > code.length) play("key");
+                      setCode(event.target.value);
+                    }}
+                    readOnly={busy}
+                    maxLength={80}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="go"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    placeholder="Speak the code"
+                    aria-describedby="vx-code-help"
+                    className="vx-input"
+                  />
+                  <div aria-hidden className="vx-signal">
+                    <span className="vx-pips">
+                      {PIPS.map((index) => (
+                        <span key={index} data-on={index < signal ? "" : undefined} style={{ "--i": index } as CSSProperties} />
+                      ))}
+                    </span>
+                    <span className="vx-signal-count">{String(signal).padStart(2, "0")}</span>
+                  </div>
+                  <p id="vx-code-help" className="vx-help">
+                    Words, or letters and numbers. Letter case and extra spaces don’t matter, and each code opens once per account.
+                  </p>
+                  <div className="vx-actions">
+                    <button type="submit" disabled={busy} className="vx-button">
+                      {busy ? <Loader2 aria-hidden className="size-4 animate-spin" /> : <KeyRound aria-hidden className="size-4" />}
+                      {busy ? "Verifying…" : outcome?.phase === "lost" ? "Try again" : "Break the seal"}
+                    </button>
+                    {outcome?.phase === "lost" ? (
+                      <button type="button" onClick={checkLog} disabled={checking} className="vx-button vx-button-quiet">
+                        {checking ? <Loader2 aria-hidden className="size-4 animate-spin" /> : <ScrollText aria-hidden className="size-4" />}
+                        Check the log
+                      </button>
+                    ) : null}
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
 
-        <form onSubmit={submit} className="relative mx-auto flex max-w-md flex-col items-center gap-3 px-4 pb-6">
-          <label htmlFor="vault-code" className="sr-only">
-            Secret code
-          </label>
-          <input
-            ref={inputRef}
-            id="vault-code"
-            name="vault-code"
-            value={code}
-            onChange={(event) => {
-              setCode(event.target.value);
-              if (motion !== "off") nudge();
-            }}
-            maxLength={60}
-            autoComplete="off"
-            autoCapitalize="characters"
-            autoCorrect="off"
-            spellCheck={false}
-            data-1p-ignore
-            data-lpignore="true"
-            placeholder="XXXX-XXXX-XXXX-XXXX"
-            aria-describedby="vault-code-help"
-            disabled={busy}
-            className="vault-input"
-          />
-          <p id="vault-code-help" className="text-xs text-[#efe7ff]/55">
-            Letters and numbers; spaces and dashes don’t matter. Each code opens once per account.
-          </p>
-          {open || phase === "already" ? (
-            <button type="button" onClick={again} className="vault-key">
-              <RotateCcw aria-hidden className="size-4" />
-              Try another code
-            </button>
+        <section aria-labelledby="vx-log-title" className="vx-log">
+          <div className="vx-log-head">
+            <h2 id="vx-log-title" className="vx-log-title">
+              Access log
+            </h2>
+            <span className="vx-log-count">{finds.length ? `${finds.length} ${finds.length === 1 ? "seal" : "seals"} broken` : "No entries"}</span>
+          </div>
+          {finds.length ? (
+            <ol className="vx-log-list">
+              {finds.map((find, index) => (
+                <li key={`${find.redeemedAt}-${index}`}>
+                  <span suppressHydrationWarning className="vx-log-time">
+                    {formatDate(find.redeemedAt)}
+                  </span>
+                  <span className="min-w-0">{rewardSummary(find.coins, find.items) || "Opened"}</span>
+                </li>
+              ))}
+            </ol>
           ) : (
-            <button type="submit" disabled={busy} aria-busy={busy} className="vault-key">
-              {busy ? <Loader2 aria-hidden className="size-4 animate-spin" /> : <KeyRound aria-hidden className="size-4" />}
-              {busy ? "Turning…" : "Turn the key"}
-            </button>
+            <p className="vx-log-note">No seals broken yet. Codes turn up in unexpected places.</p>
           )}
-        </form>
-
-        <div role="status" aria-live="polite" className="relative px-4 pb-6 md:px-8 md:pb-8">
-          {outcome ? (
-            <div className={cn("vault-result", outcome.phase === "unlocked" && "vault-result-open")}>
-              <h2 ref={resultRef} tabIndex={-1} className="text-xl font-semibold outline-none">
-                {outcome.phase === "unlocked"
-                  ? "The vault opens"
-                  : outcome.phase === "already"
-                    ? "You’ve opened this one before"
-                    : outcome.phase === "sealed"
-                      ? "The vault stays sealed"
-                      : outcome.phase === "resting"
-                        ? "The vault is resting"
-                        : "The key didn’t turn"}
-              </h2>
-              {outcome.phase === "unlocked" ? (
-                <>
-                  <p className="mt-1 text-sm text-[#efe7ff]/70">Everything inside is yours to keep.</p>
-                  <Rewards coins={outcome.coins} items={outcome.items} newItems={outcome.newItems} animate={motion !== "off"} />
-                </>
-              ) : outcome.phase === "already" ? (
-                <>
-                  <p className="mt-1 text-sm text-[#efe7ff]/70">You opened it on {formatDate(outcome.redeemedAt)}, and what it holds is already yours. Nothing new was added.</p>
-                  <Rewards coins={outcome.coins} items={outcome.items} animate={false} />
-                </>
-              ) : outcome.phase === "sealed" ? (
-                <p className="mt-1 text-sm text-[#efe7ff]/70">
-                  That code didn’t open anything. Check it and try again.
-                  {outcome.triesLeft === 0
-                    ? " The vault will rest for a while before the next try."
-                    : outcome.triesLeft <= 2
-                      ? ` ${outcome.triesLeft} more ${outcome.triesLeft === 1 ? "try" : "tries"} before it rests for a while.`
-                      : ""}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-[#efe7ff]/70">{outcome.message}</p>
-              )}
-            </div>
-          ) : null}
-        </div>
+          <p className="vx-log-note">
+            Badges, titles and decorations are worn from <Link href="/customization/profile">your profile</Link>; coins go to your{" "}
+            <Link href="/arcade/shop">Arcade wallet</Link>.
+          </p>
+        </section>
       </div>
-
-      <section aria-labelledby="vault-finds-heading" className="rounded-2xl border border-border bg-surface/40 p-4 md:p-5">
-        <h2 id="vault-finds-heading" className="flex items-center gap-2 text-base font-semibold">
-          <Sparkles aria-hidden className="size-4 text-amethyst" />
-          Your finds
-        </h2>
-        {finds.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">Nothing yet. Codes turn up in unexpected places.</p>
-        ) : (
-          <ol className="mt-3 divide-y divide-border">
-            {finds.map((find, index) => (
-              <li key={`${find.redeemedAt}-${index}`} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2 text-sm">
-                <span className="min-w-0 text-foreground">
-                  {[find.coins > 0 ? `${find.coins.toLocaleString("en")} coins` : null, ...find.items.map((id) => rewardItemInfo(id).name)].filter(Boolean).join(" · ")}
-                </span>
-                <span suppressHydrationWarning className="text-xs text-muted-foreground">
-                  {formatDate(find.redeemedAt)}
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-        <p className="mt-3 text-xs text-muted-foreground">
-          Badges, titles and decorations are worn from{" "}
-          <Link href="/customization/profile" className="text-amethyst underline-offset-4 hover:underline">
-            your profile
-          </Link>
-          ; coins land in your{" "}
-          <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
-            Arcade wallet
-          </Link>
-          .
-        </p>
-      </section>
-    </div>
+      <p role="status" aria-live="polite" className="sr-only">
+        {announcement}
+      </p>
+    </section>
   );
 }
