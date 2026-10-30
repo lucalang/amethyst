@@ -1,17 +1,19 @@
 "use client";
 
-import { memo, type PointerEvent, type ReactNode } from "react";
+import { memo, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import {
   ArrowDown,
   ArrowUp,
   CalendarDays,
   CalendarMinus,
   CalendarPlus,
+  Check,
   GripVertical,
   Link2,
   ListChecks,
   MoreHorizontal,
   Repeat2,
+  SquareCheck,
   Star,
   StickyNote,
   Sun,
@@ -50,13 +52,14 @@ type TaskActions = ReturnType<typeof useTasks>["actions"];
 
 /** Row callbacks keyed by task, kept referentially stable by the view so rows can skip re-rendering. */
 export type TaskRowHandlers = {
-  select: (id: string) => void;
+  /** Click on the row: opens details; Shift/Ctrl/Cmd extend or toggle the selection. */
+  open: (id: string, event: MouseEvent) => void;
+  toggleSelect: (id: string, range: boolean) => void;
   toggle: (task: Task, completed: boolean) => void;
   remove: (task: Task) => void;
-  move: (id: string, delta: number) => void;
-  pointerDown: (id: string, event: PointerEvent<HTMLButtonElement>) => void;
-  pointerMove: (id: string, event: PointerEvent<HTMLButtonElement>) => void;
-  pointerEnd: () => void;
+  move: (id: string, delta: -1 | 1) => void;
+  keyDown: (id: string, event: KeyboardEvent) => void;
+  dragStart: (id: string, event: PointerEvent<HTMLElement>) => void;
 };
 
 const NO_STEPS: TaskStep[] = [];
@@ -81,6 +84,9 @@ export const TaskRow = memo(function TaskRow({
   canMoveDown,
   draggable,
   dragging,
+  lifted,
+  checked,
+  selecting,
 }: {
   task: Task;
   list: TaskList | undefined;
@@ -105,7 +111,14 @@ export const TaskRow = memo(function TaskRow({
   canMoveDown: boolean;
   /** Drag reordering is available. */
   draggable: boolean;
+  /** Part of the tasks being dragged. */
   dragging: boolean;
+  /** The grabbed row: how many tasks move with the pointer (0 = not grabbed). */
+  lifted: number;
+  /** In the multi-selection. */
+  checked: boolean;
+  /** A multi-selection exists, so every row shows its selection box. */
+  selecting: boolean;
 }) {
   const doneSteps = steps.filter((step) => step.completed).length;
   const completed = checkedOverride ?? Boolean(task.completedAt);
@@ -113,10 +126,9 @@ export const TaskRow = memo(function TaskRow({
   const overdue = Boolean(due?.overdue && !completed);
   const dueToday = Boolean(task.dueDate && task.dueDate === today && !completed);
   const inMyDay = today !== null && task.myDayOn === today;
-  const onSelect = () => handlers.select(task.id);
   const onToggle = (done: boolean) => handlers.toggle(task, done);
   const onDelete = () => handlers.remove(task);
-  const runMove = (delta: number) => handlers.move(task.id, delta);
+  const runMove = (delta: -1 | 1) => handlers.move(task.id, delta);
 
   // Only what helps at a glance; everything else lives in the details pane.
   const meta = [
@@ -160,38 +172,58 @@ export const TaskRow = memo(function TaskRow({
   ].filter(Boolean);
 
   return (
-    <li
+    <div
       data-task-row
       data-id={task.id}
       className={cn(
-        "group/task relative rounded-xl transition-[background-color,box-shadow] duration-200 ease-out motion-reduce:transition-none",
-        selected
-          ? "bg-surface-raised shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45),0_8px_24px_-18px_rgb(var(--shadow-rgb)/0.8)]"
-          : completed
-            ? "hover:bg-foreground/[0.035]"
-            : "bg-foreground/[0.03] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.05)] hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.28)]",
-        "has-[[data-row-button]:focus-visible]:shadow-[inset_0_0_0_2px_var(--amethyst)]",
-        draggable && dragging && "z-10 bg-surface-raised shadow-[0_14px_36px_-16px_rgb(var(--shadow-rgb)/0.9),inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]",
-        // Long completed sections skip layout/paint while off-screen.
-        task.completedAt && !draggable && "[contain-intrinsic-size:auto_3.25rem] [content-visibility:auto]",
+        "group/task relative rounded-xl transition-[background-color,box-shadow,opacity] duration-200 ease-out motion-reduce:transition-none",
+        checked
+          ? "bg-amethyst/[0.09] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.5)]"
+          : selected
+            ? "bg-surface-raised shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45),0_8px_24px_-18px_rgb(var(--shadow-rgb)/0.8)]"
+            : completed
+              ? "hover:bg-foreground/[0.035]"
+              : "bg-foreground/[0.03] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.05)] hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.28)]",
+        dragging && !lifted && "opacity-35",
+        lifted > 0 &&
+          "bg-surface-raised opacity-95 shadow-[0_18px_40px_-14px_rgb(var(--shadow-rgb)/0.95),inset_0_0_0_1.5px_rgb(var(--accent-rgb)/0.6)] transition-none",
       )}
     >
-      <div className={cn("flex min-h-[3.25rem] items-center gap-3 py-1.5 pr-1.5", draggable ? "pl-1" : "pl-4")}>
+      <div className={cn("flex min-h-[3.25rem] items-center gap-2.5 py-1.5 pr-1.5", draggable ? "pl-0.5" : "pl-2")}>
         {draggable ? (
           <button
             type="button"
             tabIndex={-1}
             aria-hidden
-            onPointerDown={(event) => handlers.pointerDown(task.id, event)}
-            onPointerMove={(event) => handlers.pointerMove(task.id, event)}
-            onPointerUp={handlers.pointerEnd}
-            onPointerCancel={handlers.pointerEnd}
-            onLostPointerCapture={handlers.pointerEnd}
-            className="grid h-8 w-5 shrink-0 cursor-grab touch-none place-items-center rounded text-muted-foreground opacity-0 group-hover/task:opacity-100 active:cursor-grabbing pointer-coarse:opacity-100"
+            title="Drag to reorder"
+            data-drag-handle
+            onPointerDown={(event) => handlers.dragStart(task.id, event)}
+            className={cn(
+              "grid h-9 w-5 shrink-0 cursor-grab touch-none place-items-center rounded-md text-muted-foreground/45 transition-colors select-none group-hover/task:text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:cursor-grabbing pointer-coarse:w-7 pointer-coarse:text-muted-foreground",
+              lifted > 0 && "cursor-grabbing text-amethyst",
+            )}
           >
-            <GripVertical className="size-3.5" />
+            <GripVertical className="size-4" />
           </button>
         ) : null}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={checked}
+          aria-label={`Select ${task.title}`}
+          title="Select (Shift+click for a range)"
+          onClick={(event) => handlers.toggleSelect(task.id, event.shiftKey)}
+          onMouseDown={(event) => event.shiftKey && event.preventDefault()}
+          className={cn(
+            "grid size-5 shrink-0 place-items-center rounded-[5px] border-[1.5px] outline-none transition-[opacity,background-color,border-color] duration-150 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-amethyst/70 motion-reduce:transition-none",
+            checked
+              ? "border-amethyst bg-amethyst text-amethyst-foreground"
+              : "border-foreground/30 text-transparent hover:border-amethyst",
+            !checked && !selecting && "opacity-0 group-focus-within/task:opacity-100 group-hover/task:opacity-100 pointer-coarse:hidden",
+          )}
+        >
+          <Check aria-hidden strokeWidth={3} className="size-3" />
+        </button>
         <RoundCheck checked={completed} label={task.title} onCheckedChange={onToggle} celebrate={celebrate} />
         <button
           id={`task-row-${task.id}`}
@@ -199,14 +231,11 @@ export const TaskRow = memo(function TaskRow({
           type="button"
           aria-pressed={selected}
           aria-label={`${task.title}${completed ? ", completed" : ""}. Open details`}
-          onClick={onSelect}
-          onKeyDown={(event) => {
-            if (movable && event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
-              event.preventDefault();
-              runMove(event.key === "ArrowUp" ? -1 : 1);
-            }
-          }}
-          className="min-w-0 flex-1 self-stretch py-1.5 text-left outline-none"
+          aria-keyshortcuts={movable ? "Alt+ArrowUp Alt+ArrowDown" : undefined}
+          onClick={(event) => handlers.open(task.id, event)}
+          onMouseDown={(event) => event.shiftKey && event.preventDefault()}
+          onKeyDown={(event) => handlers.keyDown(task.id, event)}
+          className="min-w-0 flex-1 self-stretch py-1.5 text-left outline-none after:pointer-events-none after:absolute after:inset-0 after:rounded-xl focus-visible:after:shadow-[inset_0_0_0_2px_var(--amethyst)]"
         >
           <span className="block text-[14.5px] leading-5 break-words">
             <span
@@ -301,13 +330,21 @@ export const TaskRow = memo(function TaskRow({
               </>
             ) : null}
             <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => handlers.toggleSelect(task.id, false)}>
+              <SquareCheck aria-hidden /> {checked ? "Deselect" : "Select"}
+            </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={onDelete}>
               <Trash2 aria-hidden /> Delete task
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </li>
+      {lifted > 1 ? (
+        <span className="absolute -top-2 right-3 rounded-full bg-amethyst px-2 py-0.5 text-[11px] font-semibold text-amethyst-foreground shadow tabular-nums">
+          {lifted} tasks
+        </span>
+      ) : null}
+    </div>
   );
 });
 
@@ -354,10 +391,10 @@ export function DeleteTaskDialog({
 /** A task being created; shown until the server confirms it. */
 export function GhostRow({ title }: { title: string }) {
   return (
-    <li aria-busy className="flex min-h-[3.25rem] items-center gap-3 rounded-lg bg-white/[0.03] py-1.5 pr-3 pl-4 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.04)]">
+    <div aria-busy className="flex min-h-[3.25rem] items-center gap-3 rounded-lg bg-white/[0.03] py-1.5 pr-3 pl-4 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.04)]">
       <span aria-hidden className="size-5 shrink-0 animate-pulse rounded-full border-[1.5px] border-white/25 motion-reduce:animate-none" />
       <span className="min-w-0 flex-1 truncate text-[14.5px] text-foreground/60">{title}</span>
       <span className="text-xs text-muted-foreground">Saving…</span>
-    </li>
+    </div>
   );
 }

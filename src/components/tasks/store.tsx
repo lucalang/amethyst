@@ -153,11 +153,34 @@ export function useTasksToday(): string | null {
 
 type Store = ReturnType<typeof useStoreValue>;
 const TasksContext = createContext<Store | null>(null);
+// Actions never change identity; components that only write subscribe to them alone.
+const TaskActionsContext = createContext<Store["actions"] | null>(null);
 
 export function useTasks(): Store {
   const store = use(TasksContext);
   if (!store) throw new Error("useTasks must be used inside TasksProvider");
   return store;
+}
+
+export function useTaskActions(): Store["actions"] {
+  const actions = use(TaskActionsContext);
+  if (!actions) throw new Error("useTaskActions must be used inside TasksProvider");
+  return actions;
+}
+
+export type BulkResult = { saved: number; failed: number; missing: number };
+type BulkResponse = { tasks: Task[]; deleted: string[]; failed: string[]; missing: string[]; failure: string | null };
+
+function patchedTask(current: Task, patch: TaskPatch, now: string): Task {
+  return {
+    ...current,
+    ...(patch.title !== undefined && { title: patch.title }),
+    ...(patch.important !== undefined && { important: patch.important }),
+    ...(patch.dueDate !== undefined && { dueDate: patch.dueDate }),
+    ...(patch.myDay !== undefined && { myDayOn: patch.myDay }),
+    ...(patch.completed !== undefined && { completedAt: patch.completed ? now : null }),
+    ...(patch.entryId !== undefined && { entryId: patch.entryId }),
+  };
 }
 
 function useStoreValue(userId: string, initial: TaskChanges) {
@@ -337,15 +360,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
       updateTask(id: string, patch: TaskPatch, options: { failure?: string; quiet?: boolean } = {}) {
         const current = task(id);
         if (!current) return Promise.resolve("That task no longer exists.");
-        const next: Task = {
-          ...current,
-          ...(patch.title !== undefined && { title: patch.title }),
-          ...(patch.important !== undefined && { important: patch.important }),
-          ...(patch.dueDate !== undefined && { dueDate: patch.dueDate }),
-          ...(patch.myDay !== undefined && { myDayOn: patch.myDay }),
-          ...(patch.completed !== undefined && { completedAt: patch.completed ? nowIso() : null }),
-          ...(patch.entryId !== undefined && { entryId: patch.entryId }),
-        };
+        const next = patchedTask(current, patch, nowIso());
         if (patch.listId !== undefined && patch.listId !== current.listId) {
           const top = Object.values(dataRef.current.tasks).filter((other) => other.listId === patch.listId);
           next.listId = patch.listId;
@@ -371,7 +386,75 @@ function useStoreValue(userId: string, initial: TaskChanges) {
         );
       },
 
-      /** `orderedIds`: every task shown in the list's manual order (open tasks only is fine). */
+      /**
+       * Update (or delete) many tasks with one request. Rows that fail are restored individually;
+       * the toast says how many were affected.
+       */
+      async bulkTasks(ids: string[], change: { patch: TaskPatch } | { delete: true }, label: string): Promise<BulkResult> {
+        const rows = ids.map(task).filter(Boolean);
+        if (rows.length === 0) return { saved: 0, failed: 0, missing: 0 };
+        const now = nowIso();
+        const patch: Patch = { tasks: {} };
+        if ("delete" in change) {
+          const doomed = new Set(rows.map((row) => row.id));
+          for (const row of rows) patch.tasks![row.id] = null;
+          patch.steps = Object.fromEntries(Object.values(dataRef.current.steps).filter((step) => doomed.has(step.taskId)).map((step) => [step.id, null]));
+        } else {
+          const target = change.patch.listId;
+          const top = target ? Math.min(0, ...Object.values(dataRef.current.tasks).filter((other) => other.listId === target).map((other) => other.position)) : 0;
+          rows.forEach((row, i) => {
+            const next = patchedTask(row, change.patch, now);
+            if (target && target !== row.listId) Object.assign(next, { listId: target, position: top - rows.length + i });
+            patch.tasks![row.id] = next;
+          });
+        }
+        const keys = (Object.keys(patch) as Table[]).flatMap((table) => Object.keys(patch[table]!).map((id) => `${table}:${id}`));
+        const pending = pendingRef.current;
+        const inverse = inverseOf(dataRef.current, patch);
+        commit((current) => applyPatch(current, patch));
+        for (const key of keys) pending.set(key, (pending.get(key) ?? 0) + 1);
+        const release = () => {
+          for (const key of keys) {
+            const count = (pending.get(key) ?? 1) - 1;
+            if (count > 0) pending.set(key, count);
+            else pending.delete(key);
+          }
+        };
+        const taskIds = rows.map((row) => row.id);
+        try {
+          const result = await enqueue(() =>
+            apiFetch<BulkResponse>("/api/tasks/bulk", {
+              method: "POST",
+              json: "delete" in change ? { taskIds, action: "delete" } : { taskIds, action: "update", patch: change.patch },
+            }),
+          );
+          const fix: Patch = { tasks: {}, steps: {} };
+          for (const row of result.tasks) if ((pending.get(`tasks:${row.id}`) ?? 0) <= 1) fix.tasks![row.id] = row;
+          const failed = new Set(result.failed);
+          for (const id of failed) fix.tasks![id] = inverse.tasks![id] ?? null;
+          if (failed.size && inverse.steps) {
+            for (const [stepId, step] of Object.entries(inverse.steps)) if (step && failed.has(step.taskId)) fix.steps![stepId] = step;
+          }
+          if (!("delete" in change)) for (const id of result.missing) fix.tasks![id] = null;
+          release();
+          commit((current) => applyPatch(current, fix));
+          const missing = "delete" in change ? 0 : result.missing.length;
+          if (failed.size) {
+            toast.error(`${failed.size} of ${rows.length} tasks not ${label}`, { description: result.failure ?? "Try again in a moment." });
+          }
+          if (missing) toast.message(`${missing} ${missing === 1 ? "task was" : "tasks were"} already deleted elsewhere`);
+          if (failed.size || missing || ("patch" in change && change.patch.listId)) schedulePull(0);
+          return { saved: rows.length - failed.size - missing, failed: failed.size, missing };
+        } catch (error) {
+          release();
+          commit((current) => applyPatch(current, inverse));
+          toast.error(`Tasks not ${label}`, { description: errorMessage(error) });
+          if (error instanceof ApiError && error.status !== 500) schedulePull(0);
+          return { saved: 0, failed: rows.length, missing: 0 };
+        }
+      },
+
+      /** Permute `orderedIds` (tasks of one list) among the positions they already hold. */
       reorderTasks(orderedIds: string[]) {
         const rows = orderedIds.map(task).filter(Boolean);
         const slots = rows.map((row) => row.position).sort((a, b) => a - b);
@@ -564,5 +647,9 @@ function useStoreValue(userId: string, initial: TaskChanges) {
 
 export function TasksProvider({ userId, initial, children }: { userId: string; initial: TaskChanges; children: React.ReactNode }) {
   const store = useStoreValue(userId, initial);
-  return <TasksContext value={store}>{children}</TasksContext>;
+  return (
+    <TaskActionsContext value={store.actions}>
+      <TasksContext value={store}>{children}</TasksContext>
+    </TaskActionsContext>
+  );
 }

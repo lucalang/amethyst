@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Coins, Eye, History, Loader2, Lock, Trophy } from "lucide-react";
 import { toast } from "sonner";
+import { CatalogEmpty, CatalogSearch, FilterChip, OwnershipFilter } from "@/components/catalog/catalog-search";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import {
@@ -19,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { ARCADE_GAMES, DAILY_COIN_LIMIT, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type SudokuDifficulty } from "@/lib/arcade";
+import { catalogMatcher, ownershipMatches, type Ownership } from "@/lib/catalog-search";
 import { COSMETICS, COSMETIC_KIND_LABELS, type AvatarDecorationId, type CosmeticId, type CosmeticKind, type ShopItem } from "@/lib/cosmetics";
 import type { CoinRule, ShopData } from "@/lib/data/shop";
 import { ARTWORK_FRAMES, type ArtworkFrameId } from "@/lib/frames";
@@ -27,7 +29,7 @@ import { SampleArt, type FrameSample } from "../../settings/frame-settings";
 
 type Profile = { name: string | null; avatarUrl: string | null };
 type Samples = { portrait: FrameSample | null; square: FrameSample | null };
-type Filter = "all" | CosmeticKind | "owned";
+type Filter = "all" | CosmeticKind;
 type Busy = { action: "buy" | "equip"; id: CosmeticId | null } | null;
 type Purchase = { item: ShopItem; stage: "confirm" | "done"; already?: boolean; balanceAfter?: number; error?: string | null };
 
@@ -35,7 +37,6 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "frame", label: "Frames" },
   { id: "avatar_decoration", label: "Avatar decorations" },
-  { id: "owned", label: "Owned" },
 ];
 
 const coinsText = (value: number) => `${value.toLocaleString("en")} coin${value === 1 ? "" : "s"}`;
@@ -136,6 +137,8 @@ export function ShopView({
 }) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
+  const [ownership, setOwnership] = useState<Ownership>("all");
   const [selected, setSelected] = useState<CosmeticId | null>(shop.items[0]?.id ?? null);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -158,12 +161,15 @@ export function ShopView({
     const owned = item.owned || local.owned.includes(item.id);
     return { ...item, owned, equipped: owned && (item.kind === "frame" ? equippedFrame === item.id : equippedDecoration === item.id) };
   });
-  const shown = items.filter((item) => (filter === "all" ? true : filter === "owned" ? item.owned : item.kind === filter));
+  const match = catalogMatcher(query);
+  const searched = items.filter(
+    (item) => ownershipMatches(ownership, item.owned) && (!match || match(COSMETICS[item.id].name, COSMETICS[item.id].description, COSMETIC_KIND_LABELS[item.kind])),
+  );
+  const shown = searched.filter((item) => filter === "all" || item.kind === filter);
   const counts: Record<Filter, number> = {
-    all: items.length,
-    frame: items.filter((item) => item.kind === "frame").length,
-    avatar_decoration: items.filter((item) => item.kind === "avatar_decoration").length,
-    owned: items.filter((item) => item.owned).length,
+    all: searched.length,
+    frame: searched.filter((item) => item.kind === "frame").length,
+    avatar_decoration: searched.filter((item) => item.kind === "avatar_decoration").length,
   };
   const focus = items.find((item) => item.id === selected) ?? items[0] ?? null;
   const scoreRules = ARCADE_GAMES.flatMap((game) => shop.rules.filter((rule) => rule.game === game.id && game.id !== "sudoku"));
@@ -353,27 +359,35 @@ export function ShopView({
           <h2 id="catalogue-heading" className="sr-only">
             Items
           </h2>
-          <div role="group" aria-label="Show" className="enter mb-4 flex flex-wrap gap-2" style={{ "--enter-index": 2 } as CSSProperties}>
-            {FILTERS.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                aria-pressed={filter === option.id}
-                onClick={() => setFilter(option.id)}
-                className={cn(
-                  "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  filter === option.id ? "border-amethyst/60 bg-amethyst/[0.12] text-foreground" : "border-border text-muted-foreground hover:border-amethyst/40 hover:text-foreground",
-                )}
-              >
-                {option.label}
-                <span className="text-xs text-muted-foreground tabular-nums">{counts[option.id]}</span>
-              </button>
-            ))}
+          <div className="enter mb-4 grid gap-3" style={{ "--enter-index": 2 } as CSSProperties}>
+            <CatalogSearch value={query} onChange={setQuery} label="Search frames and decorations" placeholder="Search frames and decorations" className="sm:w-80" />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div role="group" aria-label="Kind" className="flex flex-wrap gap-2">
+                {FILTERS.map((option) => (
+                  <FilterChip key={option.id} pressed={filter === option.id} onClick={() => setFilter(option.id)} count={counts[option.id]}>
+                    {option.label}
+                  </FilterChip>
+                ))}
+              </div>
+              <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
+              <OwnershipFilter value={ownership} onChange={setOwnership} />
+            </div>
           </div>
           {shown.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-              {filter === "owned" ? "Nothing here yet. Items you buy stay yours for good and show up here." : "No items in this section right now."}
-            </p>
+            ownership === "owned" && !match && !items.some((item) => item.owned) ? (
+              <p className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
+                Nothing here yet. Items you buy stay yours for good and show up here.
+              </p>
+            ) : (
+              <CatalogEmpty
+                query={query}
+                onReset={() => {
+                  setQuery("");
+                  setOwnership("all");
+                  setFilter("all");
+                }}
+              />
+            )
           ) : (
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {shown.map((item, index) => {

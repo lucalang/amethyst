@@ -246,6 +246,37 @@ export function sortTasks(tasks: Task[], sort: TaskSort, listOrder?: Map<string,
 
 export const byCompletedDesc = (a: Task, b: Task) => (b.completedAt ?? "").localeCompare(a.completedAt ?? "") || a.id.localeCompare(b.id);
 
+/** `order` with `block` (kept in its own order) inserted before `beforeId`, or at the end for null. */
+export function moveBlockBefore(order: string[], block: string[], beforeId: string | null): string[] {
+  const moving = new Set(block);
+  const rest = order.filter((id) => !moving.has(id));
+  const at = beforeId === null ? rest.length : rest.indexOf(beforeId);
+  if (at < 0) return order;
+  return [...rest.slice(0, at), ...order.filter((id) => moving.has(id)), ...rest.slice(at)];
+}
+
+/** `order` with `block` gathered and shifted one step up (-1) or down (+1). */
+export function moveBlockBy(order: string[], block: string[], delta: -1 | 1): string[] {
+  const moving = new Set(block);
+  const rest = order.filter((id) => !moving.has(id));
+  const anchor = order.findIndex((id) => moving.has(id));
+  if (anchor < 0) return order;
+  // Non-moving tasks that stay above the block, then one step in `delta`'s direction.
+  const above = order.slice(0, delta < 0 ? anchor : order.findLastIndex((id) => moving.has(id))).filter((id) => !moving.has(id)).length;
+  const at = Math.max(0, Math.min(rest.length, above + delta));
+  return [...rest.slice(0, at), ...order.filter((id) => moving.has(id)), ...rest.slice(at)];
+}
+
+/** The smallest run of `next` that differs from `before` (same ids, new order), or null when unchanged. */
+export function changedSlice(before: string[], next: string[]): string[] | null {
+  let start = 0;
+  while (start < next.length && before[start] === next[start]) start++;
+  if (start === next.length) return null;
+  let end = next.length - 1;
+  while (end > start && before[end] === next[end]) end--;
+  return next.slice(start, end + 1);
+}
+
 /** Planned view sections relative to today. */
 export function plannedBucket(dueDate: string, today: string): "overdue" | "today" | "tomorrow" | "week" | "later" {
   if (dueDate < today) return "overdue";

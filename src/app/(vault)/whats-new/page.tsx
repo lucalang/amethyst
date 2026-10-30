@@ -11,10 +11,6 @@ import { HighlightList, KindLegend, ReleaseGlyph, ReleaseNotice, kindCounts } fr
 
 export const metadata: Metadata = { title: "What’s new" };
 
-function shortDate(date: string): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" });
-}
-
 export default async function WhatsNewPage() {
   await requireUser();
   return (
@@ -80,7 +76,7 @@ export default async function WhatsNewPage() {
                       href={`#${release.id}`}
                       className="-ml-px block border-l border-transparent py-1.5 pl-3 text-xs leading-snug text-muted-foreground outline-none hover:border-amethyst hover:text-foreground focus-visible:border-amethyst focus-visible:text-foreground"
                     >
-                      <span className="block tabular-nums text-muted-foreground/70">{shortDate(release.date)}</span>
+                      <span className="block tabular-nums text-muted-foreground/70">{formatChangeDate(release.date, "short")}</span>
                       <span className="line-clamp-2">{release.title}</span>
                     </a>
                   </li>

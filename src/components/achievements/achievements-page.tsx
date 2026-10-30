@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
+import { CatalogEmpty, CatalogSearch } from "@/components/catalog/catalog-search";
 import { PageContainer } from "@/components/layout/app-shell";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { AchievementBadge, BADGE_STYLES, badgeVars } from "@/components/achievem
 import { replayAchievementCelebration } from "@/components/achievements/achievement-notifications";
 import { ACHIEVEMENTS, ARCADE_GAME_FILTERS, type AchievementGroup } from "@/lib/achievements";
 import type { AchievementCardData } from "@/lib/data/achievements";
+import { catalogMatcher } from "@/lib/catalog-search";
 import { cn } from "@/lib/utils";
 
 type Filter = "all" | "earned" | "in-progress";
@@ -47,17 +49,23 @@ export type CabinetOwner = { name: string; avatarUrl: string | null };
 export function AchievementsPage({ items, owner }: { items: AchievementCardData[]; owner: CabinetOwner }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [groupFilter, setGroupFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const byId = new Map(items.map((item) => [item.id, item]));
   const earnedCount = items.filter((item) => item.earnedAt).length;
   const arcadeScope = groupFilter === "Arcade" || GAME_IDS.has(groupFilter);
+  const match = catalogMatcher(query);
   const visible = ACHIEVEMENTS.filter((definition) => {
     const item = byId.get(definition.id);
     if (!item) return false;
     if (filter === "earned" && !item.earnedAt) return false;
     if (filter === "in-progress" && (item.earnedAt || item.progress >= definition.target)) return false;
     if (groupFilter !== "all" && groupFilter !== definition.group && groupFilter !== gameOf(definition)) return false;
+    if (match) {
+      const game = ARCADE_GAME_FILTERS.find((entry) => entry.id === gameOf(definition));
+      return match(definition.name, definition.description, BADGE_STYLES[definition.group].label, definition.group, game?.title);
+    }
     return true;
   });
 
@@ -90,6 +98,7 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
     <PageContainer>
       <CabinetHeader byId={byId} earnedCount={earnedCount} owner={owner} />
 
+      <CatalogSearch value={query} onChange={setQuery} label="Search achievements" placeholder="Search achievements" className="enter mb-3 sm:w-80" />
       <div className="enter mb-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div role="group" aria-label="Filter by status" className="flex w-full rounded-md border border-white/[0.1] bg-white/[0.02] p-0.5 sm:w-auto">
           {([
@@ -157,7 +166,14 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
           );
         })
       ) : (
-        <p className="border-t border-white/[0.08] py-8 text-sm text-muted-foreground">No achievements match these filters.</p>
+        <CatalogEmpty
+          query={query}
+          onReset={() => {
+            setQuery("");
+            setFilter("all");
+            setGroupFilter("all");
+          }}
+        />
       )}
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

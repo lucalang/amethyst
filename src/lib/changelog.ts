@@ -2,7 +2,14 @@
  * The in-app update log ("What's new"): the single source of truth, newest first.
  * Each release has a short overview (intro + 3–5 highlights) shown on /whats-new and
  * detailed notes shown on /whats-new/<id>. Every user-visible change ships with a release
- * here in this same format. Dates are release dates (YYYY-MM-DD).
+ * here in this same format.
+ *
+ * Dates: `date` is the RELEASE date — the calendar day (Europe/Zurich) of the first successful
+ * production deployment that contained the change, not the day work started and never a date
+ * taken from a migration filename (those are sequence numbers and may lie in the future).
+ * Unreleased work uses the day it is expected to deploy and is corrected if that slips.
+ * Date-only strings are formatted as UTC calendar days so no time zone can shift them.
+ * Ids are stable keys and may contain an outdated date; never derive dates from them.
  */
 
 export type ChangeKind = "new" | "improved" | "fixed";
@@ -42,8 +49,66 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-big-lists-shops-search",
+    date: "2026-10-30",
+    title: "Big To Do lists, bulk actions and catalog search",
+    intro: "To Do stays fast with well over a thousand tasks and lets you act on many at once. Shops and other catalogs can now be searched.",
+    icon: "tasks",
+    highlights: [
+      { kind: "improved", feature: "To Do", text: "Only the tasks on screen are drawn, so very large lists open, scroll and respond much faster." },
+      { kind: "new", feature: "Selection", text: "Select tasks with their checkbox and Shift-click to select a range, then complete, star, plan, reschedule, move or delete them together." },
+      { kind: "improved", feature: "Reordering", text: "Drag tasks by their handle, see where they will land, and move a whole selection at once. The new order is saved when you drop." },
+      { kind: "new", feature: "Search", text: "Game shops, the Arcade shop, games, themes, frames and achievements each have a search box that works alongside their filters." },
+      { kind: "fixed", feature: "Update log", text: "Release dates now show the day each update actually went live." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Select many tasks",
+          body: "Each task has a selection box next to its completion circle. Shift-click selects everything between your last pick and this one, in the order the list shows. Ctrl/Cmd+A selects the whole list and Escape clears the selection.",
+          points: [
+            "The selection bar shows how many tasks are selected and offers Complete, Star, My Day, Due date, Move to list and Delete.",
+            "Delete always asks first. If some tasks can't be changed, the others still are, and you're told which failed.",
+            "The selection follows tasks, not positions: sorting or filtering keeps it, and tasks that disappear leave it.",
+          ],
+          where: "To Do",
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+        {
+          title: "Search catalogs",
+          body: "Search matches names, descriptions and categories, ignores case and accents, and always covers the whole catalog. It combines with category and Owned/Not owned filters. Escape or the clear button empties it. Short pickers only get a search box once they grow long.",
+          points: ["Game shops and the Arcade shop", "Arcade games", "Themes and artwork frames", "Achievements"],
+          link: { href: "/arcade/shop", label: "Open the Arcade shop" },
+        },
+      ],
+      improved: [
+        {
+          title: "Large lists",
+          body: "To Do now draws only the tasks you can see, while filters, search, selection and bulk actions still work on every task. In a 1,250-task test list, opening the list was about eight times faster and selecting a task went from seconds to a fraction of a second.",
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+        {
+          title: "Reordering",
+          body: "Each task has a drag handle. A line shows where it will land, and the list scrolls when you drag near its edge. Nothing is saved until you drop, and the order is restored if saving fails. With the keyboard, Alt+Arrow keys move the focused task or the whole selection. Manual order is turned off while a sort is active.",
+        },
+        {
+          title: "Shop entrances",
+          body: "The Arcade shop introduces each game shop with that game's artwork and colors. Game shops list prices more plainly and show which item is in the preview.",
+          link: { href: "/arcade/shop", label: "Open the Arcade shop" },
+        },
+      ],
+      fixed: [
+        {
+          title: "Update log dates",
+          body: "Several releases showed dates days or weeks in the future. Each release now shows the day it was first deployed, and dates no longer depend on your time zone.",
+          link: { href: "/whats-new", label: "Open the update log" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-13-first-load",
-    date: "2026-11-13",
+    date: "2026-10-30",
     title: "A lighter first load",
     intro: "Home gives its first screen priority, with smaller startup downloads and less unrelated background work.",
     icon: "home",
@@ -87,7 +152,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-11-12-performance",
-    date: "2026-11-12",
+    date: "2026-10-29",
     title: "A quicker archive, with the same detail",
     intro: "Artwork loads at a size suited to its place, collection searches keep their cards ready, and long notes do less repeated work. Your originals, effects and customization stay intact.",
     icon: "sparkles",
@@ -126,7 +191,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-11-11-game-shops",
-    date: "2026-11-11",
+    date: "2026-10-29",
     title: "A shop for every Arcade game",
     intro: "Each of the six Arcade games now has its own shop of cosmetics, bought with the coins you earn by playing. They change how a game looks, never how it plays.",
     icon: "gamepad",
@@ -166,7 +231,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-11-10-sudoku-fruit-stacker",
-    date: "2026-11-10",
+    date: "2026-10-29",
     title: "Daily Sudoku, Fruit Slice modes and a new Tower Stacker",
     intro: "Sudoku gets a daily puzzle and reliable saves, Fruit Slice gets sharper slicing, new modes and a daily run, and Tower Stacker is rebuilt in a three-quarter view with precise drops.",
     icon: "gamepad",
@@ -246,7 +311,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-11-03-2048-flutter-daily",
-    date: "2026-11-03",
+    date: "2026-10-29",
     title: "Daily challenges, board sizes and a fairer Flutter",
     intro: "2048 and Flutter each get a daily challenge. 2048 also animates more smoothly, saves unfinished rounds and offers three board sizes. Flutter's flight is fairer and pausing is safer.",
     icon: "gamepad",
@@ -312,7 +377,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-11-02-snake-speed-game-colors",
-    date: "2026-11-02",
+    date: "2026-10-29",
     title: "Snake speeds, smoother play and game colors",
     intro: "Snake runs more smoothly and lets you pick a speed, and every Arcade game now has its own colors instead of following your app theme.",
     icon: "gamepad",
@@ -352,7 +417,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-11-01-snake-v2",
-    date: "2026-11-01",
+    date: "2026-10-29",
     title: "Snake: cartoon look, 15 new modes and Blender",
     intro: "Snake has a new hand-drawn look, an icon-based setup, many new modes you can play alone or mix in Blender, and more fruit.",
     icon: "gamepad",
@@ -392,7 +457,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-10-31-snake-modes",
-    date: "2026-10-31",
+    date: "2026-10-29",
     title: "Snake: smoother play, modes, fruits and board sizes",
     intro: "Snake glides between cells, reacts when it eats or crashes, and now lets you pick a mode, a fruit, how many fruits appear and the board size before each round.",
     icon: "gamepad",
@@ -434,7 +499,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-10-30-amethyst",
-    date: "2026-10-30",
+    date: "2026-10-29",
     title: "Meet Amethyst: chosen covers and a calmer Home",
     intro: "Amethyst Archives is now simply Amethyst. Choose the artwork each collection shows, customize Home in a roomy dialog, and enjoy clearer contrast in every theme.",
     icon: "sparkles",
@@ -540,7 +605,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-11-03-hub",
-    date: "2026-11-03",
+    date: "2026-10-27",
     title: "A Home hub, and a calmer To Do",
     intro: "Home now opens onto Archive, To Do and Arcade, and each area shows only its own navigation. Tasks is now called To Do, with simpler lists and a cleaner layout.",
     icon: "home",
@@ -1188,7 +1253,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-10-23-showcase",
-    date: "2026-10-23",
+    date: "2026-10-24",
     title: "Showcase and artwork frames",
     intro: "Show a collection’s artwork full screen, inspect covers as 3D cards and choose a decorative frame.",
     icon: "image",
@@ -1506,7 +1571,7 @@ export const CHANGELOG: readonly Release[] = [
   },
   {
     id: "2026-09-30-workspaces",
-    date: "2026-09-30",
+    date: "2026-10-01",
     title: "Amethyst Archives",
     intro: "A personal archive where every entry has its own workspace.",
     icon: "box",
@@ -1543,6 +1608,8 @@ export function releasePath(id: string): string {
   return `/whats-new/${id}`;
 }
 
-export function formatChangeDate(date: string): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+/** Formats a YYYY-MM-DD release date as that calendar day, independent of the viewer's time zone. */
+export function formatChangeDate(date: string, style: "long" | "short" = "long"): string {
+  const options: Intl.DateTimeFormatOptions = style === "long" ? { year: "numeric", month: "long", day: "numeric" } : { month: "short", day: "numeric" };
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en", { ...options, timeZone: "UTC" });
 }

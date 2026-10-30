@@ -84,6 +84,25 @@ export const updateTaskSchema = z
 
 export const reorderTasksSchema = z.object({ taskIds: z.array(z.uuid()).min(1).max(5000) }).strict();
 
+export const MAX_BULK_TASKS = 2000;
+export const bulkTasksSchema = z
+  .object({
+    taskIds: z.array(z.uuid()).min(1).max(MAX_BULK_TASKS),
+    action: z.enum(["update", "delete"]),
+    patch: z
+      .object({
+        important: z.boolean().optional(),
+        dueDate: dueDateSchema.nullable().optional(),
+        myDay: dueDateSchema.nullable().optional(),
+        completed: z.boolean().optional(),
+        listId: z.uuid().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .refine((value) => value.action === "delete" || (value.patch && Object.values(value.patch).some((field) => field !== undefined)), "Nothing to update.");
+
 export const addStepSchema = z.object({ title: taskTitleSchema }).strict();
 export const reorderStepsSchema = z.object({ stepIds: z.array(z.uuid()).max(500) }).strict();
 export const updateStepSchema = z

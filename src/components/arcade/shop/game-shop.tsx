@@ -27,6 +27,7 @@ import {
   Wind,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CatalogEmpty, CatalogSearch, OwnershipFilter } from "@/components/catalog/catalog-search";
 import { useMotionLevel } from "@/components/showcase/motion";
 import {
   AlertDialog,
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
+import { catalogMatcher, ownershipMatches, type Ownership } from "@/lib/catalog-search";
 import type { GameShopData } from "@/lib/data/shop";
 import { GAME_SHOPS, type CategoryIcon, type GameCategory, type GameLook } from "@/lib/game-cosmetics";
 import { cn } from "@/lib/utils";
@@ -116,11 +118,7 @@ function StateBadge({ entry }: { entry: Entry }) {
       </span>
     );
   if (!entry.available) return <span className="rounded-full px-2 py-0.5 text-[11px] text-muted-foreground ring-1 ring-border">Unavailable</span>;
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground ring-1 ring-border">
-      Available · <Price value={entry.price} className="text-[11px]" />
-    </span>
-  );
+  return <Price value={entry.price} className="text-sm" />;
 }
 
 /**
@@ -138,6 +136,8 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
   const [look, setLook] = useState<GameLook>(data.look);
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [ownership, setOwnership] = useState<Ownership>("all");
   const inFlight = useRef(false);
   const previewRef = useRef<HTMLElement>(null);
 
@@ -166,6 +166,12 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
   }
 
   const entries = entriesOf(category);
+  const match = catalogMatcher(query);
+  const filtering = match !== null || ownership !== "all";
+  const visibleIn = (cat: GameCategory) =>
+    entriesOf(cat).filter((entry) => ownershipMatches(ownership, entry.owned) && (!match || match(entry.name, entry.description, cat.label, entry.slug ? null : "default free")));
+  const shown = filtering ? visibleIn(category) : entries;
+  const elsewhere = filtering && !shown.length ? shop.categories.flatMap((cat) => (cat.id === category.id ? [] : [{ cat, count: visibleIn(cat).length }])).filter((hit) => hit.count) : [];
   const focusSlug = categoryId in trying ? trying[categoryId] : (look[categoryId] ?? null);
   const focus = entries.find((entry) => entry.slug === focusSlug) ?? entries[0];
   const previewLook: GameLook = { ...look };
@@ -293,10 +299,16 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
         </span>
       </section>
 
-      <div role="group" aria-label={`${shop.title} cosmetic categories`} className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <CatalogSearch value={query} onChange={setQuery} label={`Search the ${shop.title} shop`} placeholder={`Search ${shop.title} items`} />
+        <OwnershipFilter value={ownership} onChange={setOwnership} />
+      </div>
+
+      <div role="group" aria-label={`${shop.title} cosmetic categories`} className="-mt-2 flex flex-wrap gap-2">
         {shop.categories.map((cat) => {
           const CatIcon = ICONS[cat.icon];
           const owned = entriesOf(cat).filter((entry) => entry.slug && entry.owned).length;
+          const hits = filtering ? visibleIn(cat).length : null;
           const selected = cat.id === category.id;
           return (
             <button
@@ -307,13 +319,20 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
               className={cn(
                 "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 selected ? "border-amethyst/60 bg-amethyst/[0.12] text-foreground" : "border-border text-muted-foreground hover:border-amethyst/40 hover:text-foreground",
+                hits === 0 && !selected && "opacity-60",
               )}
             >
               <CatIcon aria-hidden className="size-4" />
               {cat.label}
-              <span className="text-xs text-muted-foreground tabular-nums" aria-label={`${owned} of ${cat.items.length} owned`}>
-                {owned}/{cat.items.length}
-              </span>
+              {hits !== null ? (
+                <span className="text-xs text-muted-foreground tabular-nums" aria-label={`${hits} ${hits === 1 ? "match" : "matches"}`}>
+                  {hits}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground tabular-nums" aria-label={`${owned} of ${cat.items.length} owned`}>
+                  {owned}/{cat.items.length}
+                </span>
+              )}
             </button>
           );
         })}
@@ -356,8 +375,35 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
             {category.label}
           </h2>
           <p className="mt-1 text-sm text-pretty text-muted-foreground">{category.blurb}</p>
+          {shown.length === 0 ? (
+            <div className="mt-4">
+              <CatalogEmpty
+                query={query}
+                onReset={() => {
+                  setQuery("");
+                  setOwnership("all");
+                }}
+              >
+                {elsewhere.length ? (
+                  <p className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                    <span>Found in</span>
+                    {elsewhere.map(({ cat, count }) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setCategoryId(cat.id)}
+                        className="rounded-full border border-border px-2.5 py-0.5 text-foreground outline-none hover:border-amethyst/45 focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {cat.label} <span className="text-muted-foreground tabular-nums">{count}</span>
+                      </button>
+                    ))}
+                  </p>
+                ) : null}
+              </CatalogEmpty>
+            </div>
+          ) : null}
           <ul className={cn("mt-4 grid grid-cols-1 gap-3", compact ? "sm:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-3")}>
-            {entries.map((entry) => {
+            {shown.map((entry) => {
               const isFocus = entry.slug === focus.slug;
               return (
                 <li key={entry.slug ?? "default"} className="min-w-0">
@@ -382,9 +428,9 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                       <span className="text-xs leading-5 text-pretty text-muted-foreground">{entry.description}</span>
                     </button>
                     <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
-                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <span className={cn("inline-flex items-center gap-1 text-xs", isFocus ? "font-medium text-amethyst" : "text-muted-foreground")}>
                         <Eye aria-hidden className="size-3" />
-                        {isFocus ? "Previewing" : "Tap to preview"}
+                        {isFocus ? "In preview" : "Preview"}
                       </span>
                       {action(entry)}
                     </div>

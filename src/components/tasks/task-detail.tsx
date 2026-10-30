@@ -35,7 +35,7 @@ import { shiftDate, type Task, type TaskStep } from "@/lib/tasks/model";
 import { cn } from "@/lib/utils";
 import { dueDateSchema, itemLabelSchema } from "@/lib/validation/workspace";
 import { ListGlyph } from "./sidebar";
-import { useTasks } from "./store";
+import { useTaskActions, useTasks } from "./store";
 import { DeleteTaskDialog } from "./task-row";
 
 // The editor (CodeMirror) is only needed once a task's notes are open, so it stays out of the To Do bundle.
@@ -161,7 +161,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
 }
 
 function TitleField({ task }: { task: Task }) {
-  const { actions } = useTasks();
+  const actions = useTaskActions();
   const [draft, setDraft] = useState<string | null>(null);
   const [state, setState] = useState<SaveState | null>(null);
   const value = draft ?? task.title;
@@ -223,7 +223,7 @@ function TitleField({ task }: { task: Task }) {
 }
 
 function Steps({ task, steps, onAllDone }: { task: Task; steps: TaskStep[]; onAllDone: () => void }) {
-  const { actions } = useTasks();
+  const actions = useTaskActions();
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -301,7 +301,7 @@ function StepRow({
   onMove: (delta: number) => void;
   onToggle: (completed: boolean) => void;
 }) {
-  const { actions } = useTasks();
+  const actions = useTaskActions();
   const [editing, setEditing] = useState<string | null>(null);
   const renamingRef = useRef(false);
 
@@ -592,7 +592,7 @@ type NotesBase = { text: string; rev: number };
  * saved, and use the revision to detect edits made on another device.
  */
 function Notes({ task }: { task: Task }) {
-  const { actions } = useTasks();
+  const actions = useTaskActions();
   const backupKey = notesBackupKey(task.id);
   const [base, setBase] = useState<NotesBase | null>(null);
   const [draft, setDraft] = useState<string | null>(null);

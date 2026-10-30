@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { ArrowRight, Gamepad2, Store } from "lucide-react";
+import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { Button } from "@/components/ui/button";
@@ -59,21 +61,30 @@ export default async function ArcadeShopPage() {
               const shop = GAME_SHOPS[game];
               const count = shop.categories.reduce((sum, category) => sum + category.items.length, 0);
               return (
-                <li key={game}>
+                <li key={game} style={{ "--cab": ARCADE_CABINETS[game].hue } as CSSProperties}>
                   <Link
                     href={shopHref(game)}
-                    className="group flex h-full items-center gap-3 rounded-xl border border-border bg-surface/40 p-3 transition-colors outline-none hover:border-amethyst/45 focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/40 transition-colors outline-none hover:border-(--cab) focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-lg bg-amethyst/[0.12] text-amethyst">
-                      <Store className="size-5" />
+                    <span aria-hidden className="relative block aspect-[16/6] overflow-hidden border-b border-border">
+                      <span className="block size-full transition-transform duration-300 group-hover:scale-[1.04] motion-reduce:transition-none">
+                        <ArcadePreview game={game} />
+                      </span>
+                      <span className="absolute inset-0 bg-linear-to-t from-(--cab)/30 via-transparent to-transparent" />
+                      <span className="absolute inset-x-0 top-0 h-1 bg-(--cab)" />
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-foreground">{shop.title} shop</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {count} items · {shop.categories.map((category) => category.label).join(", ")}
+                    <span className="flex flex-1 items-center gap-3 p-3">
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-foreground">{shop.title} shop</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">
+                          {count} items · {shop.categories.map((category) => category.label).join(", ")}
+                        </span>
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+                        Browse
+                        <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </span>
-                    <ArrowRight aria-hidden className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </li>
               );

@@ -2,6 +2,16 @@ import type { ReactNode } from "react";
 import type { ArcadeGameId } from "@/lib/arcade";
 import { cn } from "@/lib/utils";
 
+/** Each cabinet's own light and genre; layout and controls stay the same for all. */
+export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string }> = {
+  "2048": { hue: "#ffb547", genre: "Puzzle" },
+  flutter: { hue: "#ff5fa8", genre: "Reflex" },
+  snake: { hue: "#3fe89a", genre: "Classic" },
+  sudoku: { hue: "#6aa8ff", genre: "Logic" },
+  "fruit-slice": { hue: "#ff7348", genre: "Action" },
+  stacker: { hue: "#b48cff", genre: "Timing" },
+};
+
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
 export function ArcadePreview({ game }: { game: ArcadeGameId }) {
   return (

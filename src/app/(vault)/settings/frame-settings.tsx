@@ -1,10 +1,13 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { useState } from "react";
+import { CatalogEmpty, CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { MediaImage } from "@/components/media/media-image";
 import { ARTWORK_FRAMES, availableFrames, isShopFrameId, type ArtworkFrameId } from "@/lib/frames";
+import { catalogMatcher } from "@/lib/catalog-search";
 import { cn } from "@/lib/utils";
 import { useSetting } from "./setting-controls";
 
@@ -36,55 +39,85 @@ export function FrameSettings({
 }) {
   const [frame, setFrame] = useSetting("artworkFrame", value);
   const { owned } = useCosmetics();
+  const [query, setQuery] = useState("");
+  const [source, setSource] = useState<"all" | "free" | "shop">("all");
   const frames = availableFrames(owned).concat(availableFrames(owned).includes(frame) ? [] : [frame]);
+  const match = catalogMatcher(query);
+  const shown = frames.filter((id) => {
+    const info = ARTWORK_FRAMES[id];
+    const shop = isShopFrameId(id);
+    if (source !== "all" && shop !== (source === "shop")) return false;
+    return !match || match(info.name, info.description, info.animated ? "animated" : "static", shop ? "arcade shop" : "free");
+  });
 
   return (
-    <fieldset aria-labelledby={labelId} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {frames.map((id) => {
-        const info = ARTWORK_FRAMES[id];
-        const checked = frame === id;
-        return (
-          <label
-            key={id}
-            className={cn(
-              "frame-option relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-white/[0.02] p-3 transition-[border-color,background-color,box-shadow] duration-200 hover:border-amethyst/40 hover:bg-amethyst/[0.04] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-              checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-white/[0.09]",
-            )}
-          >
-            <input type="radio" name="artwork-frame" value={id} checked={checked} onChange={() => setFrame(id)} className="sr-only" />
-            <span
-              aria-hidden
-              className="flex items-end justify-center gap-5 rounded-md border border-border bg-[radial-gradient(18rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.14),transparent_70%)] px-4 pt-8 pb-5"
+    <div className="grid gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <CatalogSearch value={query} onChange={setQuery} label="Search artwork frames" placeholder="Search frames" />
+        <div role="group" aria-label="Source" className="flex flex-wrap gap-2">
+          {(["all", "free", "shop"] as const).map((option) => (
+            <FilterChip key={option} pressed={source === option} onClick={() => setSource(option)}>
+              {option === "all" ? "All" : option === "free" ? "Free" : "From the shop"}
+            </FilterChip>
+          ))}
+        </div>
+      </div>
+      {shown.length === 0 ? (
+        <CatalogEmpty
+          query={query}
+          onReset={() => {
+            setQuery("");
+            setSource("all");
+          }}
+        />
+      ) : null}
+      <fieldset aria-labelledby={labelId} hidden={shown.length === 0} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {shown.map((id) => {
+          const info = ARTWORK_FRAMES[id];
+          const checked = frame === id;
+          return (
+            <label
+              key={id}
+              className={cn(
+                "frame-option relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-white/[0.02] p-3 transition-[border-color,background-color,box-shadow] duration-200 hover:border-amethyst/40 hover:bg-amethyst/[0.04] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-white/[0.09]",
+              )}
             >
-              <ArtworkFrame frame={id} className="w-[4.75rem]">
-                <SampleArt sample={portrait} shape="portrait" />
-              </ArtworkFrame>
-              <ArtworkFrame frame={id} className="w-[5.75rem]">
-                <SampleArt sample={square} shape="square" />
-              </ArtworkFrame>
-            </span>
-            <span className="flex items-start gap-2.5 px-0.5">
+              <input type="radio" name="artwork-frame" value={id} checked={checked} onChange={() => setFrame(id)} className="sr-only" />
               <span
                 aria-hidden
-                className={cn(
-                  "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-colors",
-                  checked ? "border-amethyst bg-amethyst text-amethyst-foreground" : "border-white/25",
-                )}
+                className="flex items-end justify-center gap-5 rounded-md border border-border bg-[radial-gradient(18rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.14),transparent_70%)] px-4 pt-8 pb-5"
               >
-                {checked ? <Check className="size-3" strokeWidth={3} /> : null}
+                <ArtworkFrame frame={id} className="w-[4.75rem]">
+                  <SampleArt sample={portrait} shape="portrait" />
+                </ArtworkFrame>
+                <ArtworkFrame frame={id} className="w-[5.75rem]">
+                  <SampleArt sample={square} shape="square" />
+                </ArtworkFrame>
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-foreground">{info.name}</span>
-                  {info.animated ? <span className="text-[11px] text-muted-foreground">Animated</span> : null}
-                  {isShopFrameId(id) ? <span className="coin-ink text-[11px]">Arcade shop</span> : null}
+              <span className="flex items-start gap-2.5 px-0.5">
+                <span
+                  aria-hidden
+                  className={cn(
+                    "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-colors",
+                    checked ? "border-amethyst bg-amethyst text-amethyst-foreground" : "border-white/25",
+                  )}
+                >
+                  {checked ? <Check className="size-3" strokeWidth={3} /> : null}
                 </span>
-                <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{info.description}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">{info.name}</span>
+                    {info.animated ? <span className="text-[11px] text-muted-foreground">Animated</span> : null}
+                    {isShopFrameId(id) ? <span className="coin-ink text-[11px]">Arcade shop</span> : null}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{info.description}</span>
+                </span>
               </span>
-            </span>
-          </label>
-        );
-      })}
-    </fieldset>
+            </label>
+          );
+        })}
+      </fieldset>
+    </div>
   );
 }

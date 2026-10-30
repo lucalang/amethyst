@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Loader2, X } from "lucide-react";
+import { CatalogSearch } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { ImageUrlField } from "@/components/media/image-url-field";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AVATAR_DECORATION_IDS, AVATAR_DECORATIONS, type AvatarDecorationId } from "@/lib/cosmetics";
+import { PICKER_SEARCH_MIN, catalogMatcher } from "@/lib/catalog-search";
 import { cn } from "@/lib/utils";
 import { updatePassword, updateProfile, type FormState } from "./actions";
 
@@ -29,6 +31,8 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
   const cosmetics = useCosmetics();
   const ownedDecorations = AVATAR_DECORATION_IDS.filter((id) => cosmetics.owned.includes(id));
   const [decoration, setDecoration] = useState<AvatarDecorationId | null>(cosmetics.avatarDecoration);
+  const [decorationQuery, setDecorationQuery] = useState("");
+  const decorationMatch = ownedDecorations.length + 1 >= PICKER_SEARCH_MIN ? catalogMatcher(decorationQuery) : null;
   const [name, setName] = useState(displayName);
   const [line, setLine] = useState(motto);
   const [avatar, setAvatar] = useState(avatarUrl);
@@ -88,8 +92,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
       </div>
       <fieldset id="settings-avatar-decoration" className="space-y-2">
         <legend className="text-sm font-medium">Avatar decoration</legend>
+        {ownedDecorations.length + 1 >= PICKER_SEARCH_MIN ? (
+          <CatalogSearch value={decorationQuery} onChange={setDecorationQuery} label="Search avatar decorations" placeholder="Search decorations" />
+        ) : null}
         <div className="flex flex-wrap gap-2">
-          {[null, ...ownedDecorations].map((id) => {
+          {[null, ...ownedDecorations].filter((id) => !decorationMatch || id === decoration || (id && decorationMatch(AVATAR_DECORATIONS[id].name, AVATAR_DECORATIONS[id].description))).map((id) => {
             const checked = decoration === id;
             return (
               <label

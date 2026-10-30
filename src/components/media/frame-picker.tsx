@@ -1,11 +1,13 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { CatalogSearch } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { MediaImage } from "@/components/media/media-image";
+import { PICKER_SEARCH_MIN, catalogMatcher } from "@/lib/catalog-search";
 import { ARTWORK_FRAMES, availableFrames, resolveFrame, type ArtworkFrameId } from "@/lib/frames";
 import type { CoverShape } from "@/lib/cover-shape";
 import { cn } from "@/lib/utils";
@@ -44,6 +46,13 @@ export function FramePicker({
     { value: "default", label: `Use my default (${ARTWORK_FRAMES[accountFrame].name})` },
     ...frames.map((frame) => ({ value: frame, label: ARTWORK_FRAMES[frame].name })),
   ];
+  const [query, setQuery] = useState("");
+  const searchable = options.length >= PICKER_SEARCH_MIN;
+  const match = searchable ? catalogMatcher(query) : null;
+  // The current choice stays listed so the group always shows what's selected.
+  const listed = match
+    ? options.filter((option) => option.value === value || match(option.label, option.value === "default" || option.value === "none" ? null : ARTWORK_FRAMES[option.value].description))
+    : options;
   return (
     <div className="space-y-2">
       <p id={`${id}-label`} className="text-sm font-medium">
@@ -62,8 +71,10 @@ export function FramePicker({
             </span>
           </ArtworkFrame>
         </div>
-        <div role="radiogroup" aria-labelledby={`${id}-label`} aria-describedby={`${id}-hint`} className="grid min-w-0 flex-1 gap-1">
-          {options.map((option) => {
+        <div className="grid min-w-0 flex-1 gap-2">
+        {searchable ? <CatalogSearch value={query} onChange={setQuery} label="Search frames" placeholder="Search frames" className="sm:w-full" /> : null}
+        <div role="radiogroup" aria-labelledby={`${id}-label`} aria-describedby={`${id}-hint`} className="grid gap-1">
+          {listed.map((option) => {
             const checked = value === option.value;
             return (
               <label
@@ -81,6 +92,8 @@ export function FramePicker({
               </label>
             );
           })}
+          {match && listed.length <= 1 ? <p className="px-3 py-1.5 text-xs text-muted-foreground">No other frames match “{query.trim()}”.</p> : null}
+        </div>
         </div>
       </div>
       <p id={`${id}-hint`} className="text-xs text-muted-foreground">

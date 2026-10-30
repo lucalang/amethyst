@@ -21,7 +21,7 @@ import type { TaskList } from "@/lib/tasks/model";
 import { taskNameSchema } from "@/lib/validation/tasks";
 import { ApiError } from "@/lib/api-client";
 import { errorMessage } from "@/components/workspace/client-utils";
-import { useTasks } from "./store";
+import { useTaskActions, useTasks } from "./store";
 import { useTasksNav } from "./nav";
 
 /** `onCreated` keeps the current view (e.g. choosing where quick add puts tasks) instead of opening the new list. */
@@ -37,7 +37,7 @@ export function ListDialog({ state, onClose }: { state: ListDialogState; onClose
 }
 
 function ListForm({ state, onClose }: { state: NonNullable<ListDialogState>; onClose: () => void }) {
-  const { actions } = useTasks();
+  const actions = useTaskActions();
   const nav = useTasksNav();
   const editing = state.mode === "edit" ? state.list : null;
   const [name, setName] = useState(editing?.name ?? "");
@@ -284,7 +284,7 @@ export function DeleteListDialog({ list, onClose }: { list: TaskList | null; onC
 }
 
 export function DeleteGroupDialog({ group, onClose }: { group: { id: string; name: string; lists: number } | null; onClose: () => void }) {
-  const { actions } = useTasks();
+  const actions = useTaskActions();
   return (
     <AlertDialog open={group !== null} onOpenChange={(next) => !next && onClose()}>
       <AlertDialogContent>
