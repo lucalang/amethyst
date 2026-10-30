@@ -93,7 +93,7 @@ function toBackfillSummary(notices: AchievementNotice[]): BackfillSummary {
 
 export function AchievementNotifications({ enabled }: { enabled: boolean }) {
   const router = useRouter();
-  const { settings, update } = useSettings();
+  const preferences = useSettings();
   const [queue, setQueue] = useState<Celebration[]>([]);
   const [safeToShow, setSafeToShow] = useState(false);
   const [shownKey, setShownKey] = useState<string | null>(null);
@@ -201,8 +201,8 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
   useEffect(() => {
     if (!visible || !activeKey || chimePlayedFor.current === activeKey) return;
     chimePlayedFor.current = activeKey;
-    if (settings.arcadeSound) playSound("win", 1.08);
-  }, [visible, activeKey, settings.arcadeSound]);
+    if (preferences.arcadeSound) playSound("win", 1.08);
+  }, [visible, activeKey, preferences.arcadeSound]);
 
   useEffect(() => {
     if (!visible || paused) return;
@@ -227,7 +227,6 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
     try {
       await apiFetch("/api/shop/equip", { method: "POST", json: { item: itemId } });
       const info = rewardItemInfo(itemId);
-      if (info.kind === "frame") update({ artworkFrame: itemId as typeof settings.artworkFrame });
       setEquippedIds((current) => [...current, itemId]);
       toast.success(`${info.name} equipped`);
       router.refresh();

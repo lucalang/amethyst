@@ -667,7 +667,7 @@ async function startDemo(spec: EnabledDemoSpec, keys: DemoKeyMaterial) {
     detached: true,
     stdio: "ignore",
     env: {
-1      NODE_ENV: "production",
+      NODE_ENV: "production",
       PATH: process.env.PATH,
       PGRST_SERVER_HOST: "127.0.0.1",
       PGRST_SERVER_PORT: String(spec.postgrestPort),

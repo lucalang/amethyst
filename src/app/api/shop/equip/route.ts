@@ -30,10 +30,10 @@ export async function POST(request: Request) {
     if (error) return dbError(error, "Could not equip that frame.");
     if (data === null) return apiError(404, "not_found", "Account not found.");
   } else {
-    const column = kind === "badge" ? "profile_badge" : kind === "title" ? "profile_title" : "avatar_decoration";
+    const patch = kind === "badge" ? { profile_badge: item } : kind === "title" ? { profile_title: item } : { avatar_decoration: item };
     const { data, error } = await ctx.supabase
       .from("users")
-      .update({ [column]: item })
+      .update(patch)
       .eq("id", ctx.userId)
       .select("id")
       .maybeSingle();

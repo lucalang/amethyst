@@ -458,7 +458,7 @@ function AchievementDetails({
 }) {
   const router = useRouter();
   const cosmetics = useCosmetics();
-  const { settings, update } = useSettings();
+  const preferences = useSettings();
   const [equipping, setEquipping] = useState<string | null>(null);
   const [equippedLocal, setEquippedLocal] = useState<Record<string, boolean>>({});
   const earned = Boolean(item?.earnedAt);
@@ -476,7 +476,7 @@ function AchievementDetails({
   function isItemEquipped(id: string) {
     if (id in equippedLocal) return equippedLocal[id];
     const { kind } = rewardItemInfo(id);
-    if (kind === "frame") return settings.artworkFrame === id;
+    if (kind === "frame") return preferences.artworkFrame === id;
     if (kind === "avatar_decoration") return cosmetics.avatarDecoration === id;
     if (kind === "badge") return cosmetics.badge === id;
     if (kind === "title") return cosmetics.title === id;
@@ -489,7 +489,6 @@ function AchievementDetails({
     try {
       await apiFetch("/api/shop/equip", { method: "POST", json: { item: id } });
       const info = rewardItemInfo(id);
-      if (info.kind === "frame") update({ artworkFrame: id as typeof settings.artworkFrame });
       setEquippedLocal((current) => ({ ...current, [id]: true }));
       toast.success(`${info.name} equipped`);
       router.refresh();

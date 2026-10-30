@@ -72,7 +72,10 @@ export const REWARD_FILTERS: readonly { id: RewardFilter; label: string }[] = [
 ];
 
 /** Hidden achievements stay masked until unlocked or progressed. */
-export function isAchievementRevealed(definition: Pick<AchievementDefinition, "hidden">, state?: { earnedAt?: string | null; progress?: number }): boolean {
+export function isAchievementRevealed(
+  definition: { readonly id: string; readonly hidden?: boolean },
+  state?: { earnedAt?: string | null; progress?: number },
+): boolean {
   if (!definition.hidden) return true;
   return Boolean(state?.earnedAt) || (state?.progress ?? 0) > 0;
 }
