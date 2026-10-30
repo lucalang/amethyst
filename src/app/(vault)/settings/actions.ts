@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/auth";
-import { AVATAR_DECORATION_IDS } from "@/lib/cosmetics";
+import { AVATAR_DECORATION_IDS, PROFILE_BADGE_IDS, PROFILE_TITLE_IDS } from "@/lib/cosmetics";
 import { artworkUrl } from "@/lib/validation/entries";
 
 export type FormState = { status: "idle" | "success" | "error"; message?: string };
@@ -24,6 +24,8 @@ const profileSchema = z.object({
     .transform((value) => value || null),
   avatarUrl: artworkUrl.transform((value) => value || null),
   avatarDecoration: z.union([z.literal(""), z.enum(AVATAR_DECORATION_IDS)]).transform((value) => value || null),
+  profileBadge: z.union([z.literal(""), z.enum(PROFILE_BADGE_IDS)]).transform((value) => value || null),
+  profileTitle: z.union([z.literal(""), z.enum(PROFILE_TITLE_IDS)]).transform((value) => value || null),
 });
 
 /** Private profile details (name, avatar, motto). Sign-in email and password are handled separately. */
@@ -34,6 +36,8 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
     motto: formData.get("motto") ?? "",
     avatarUrl: formData.get("avatarUrl") ?? "",
     avatarDecoration: formData.get("avatarDecoration") ?? "",
+    profileBadge: formData.get("profileBadge") ?? "",
+    profileTitle: formData.get("profileTitle") ?? "",
   });
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Check your profile details." };
 
@@ -44,9 +48,11 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
       motto: parsed.data.motto,
       avatar_url: parsed.data.avatarUrl,
       avatar_decoration: parsed.data.avatarDecoration,
+      profile_badge: parsed.data.profileBadge,
+      profile_title: parsed.data.profileTitle,
     })
     .eq("id", ctx.userId);
-  if (error?.hint === "cosmetic_not_owned") return { status: "error", message: "That decoration isn't in your collection yet. Find it in the Arcade shop." };
+  if (error?.hint === "cosmetic_not_owned") return { status: "error", message: "One of those isn't in your collection yet. Decorations come from the Arcade shop; badges and titles from the Vault." };
   if (error) return { status: "error", message: "Could not save your profile." };
   revalidatePath("/", "layout");
   return { status: "success", message: "Profile saved." };

@@ -15,6 +15,7 @@ import { UpcomingTasks } from "@/components/home/upcoming-tasks";
 import { HomeMyDay } from "@/components/tasks/home-my-day";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
+import { ProfileFlair } from "@/components/layout/profile-flair";
 import { MediaImage } from "@/components/media/media-image";
 import { PosterCard } from "@/components/media/poster-card";
 import { ProgressMeter } from "@/components/media/progress-meter";
@@ -131,6 +132,7 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
               </>}
             </h1>
           </div>
+          <ProfileFlair className="mt-2 [--flair-size:0.8125rem]" />
           {home.motto ? <p className="mt-2 max-w-xl text-sm italic text-pretty break-words text-foreground/60">“{home.motto}”</p> : null}
           <p className="mt-2 max-w-xl text-base text-pretty text-foreground/70">{subline}</p>
           <div className="mt-5 flex flex-wrap items-center gap-2.5">

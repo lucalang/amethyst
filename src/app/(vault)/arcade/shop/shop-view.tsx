@@ -448,8 +448,11 @@ export function ShopView({
             How to earn coins
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every finished run is counted once by the server, so replays and reloads never pay twice. Coins from play top out at {DAILY_COIN_LIMIT} in any 24 hours.
-            Achievements stay as recognition and don’t pay coins.
+            Every finished run is counted once by the server, so replays and reloads never pay twice. Coins from play and net Coin Slots winnings share a limit of {DAILY_COIN_LIMIT} in any 24 hours; coins from Vault codes don’t count toward it.
+            Achievements stay as recognition and don’t pay coins.{" "}
+            <Link href="/vault" className="text-amethyst underline-offset-4 hover:underline">
+              Have a code? Try the Vault.
+            </Link>
           </p>
           <dl className="mt-4 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[minmax(7rem,auto)_1fr] [&_dd]:mb-2 [&_dd]:text-muted-foreground sm:[&_dd]:mb-1">
             {scoreRules.map((rule) => (
@@ -466,6 +469,13 @@ export function ShopView({
             <History aria-hidden className="size-4 text-amethyst" />
             Recent coins
           </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Coin Slots spins are listed{" "}
+            <Link href="/arcade/slots" className="text-amethyst underline-offset-4 hover:underline">
+              on the machine
+            </Link>
+            .
+          </p>
           {shop.history.length === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">No coins yet. Finish a qualifying run in any Arcade game and it will show up here.</p>
           ) : (

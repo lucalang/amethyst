@@ -17,6 +17,7 @@
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "user:invite": "tsx --env-file=.env.local scripts/invite-user.ts",
+    "codes": "tsx --env-file=.env.local scripts/secret-codes.ts",
     "images:migrate": "tsx --env-file=.env.local scripts/migrate-images-to-r2.ts",
     "verify": "npm run typecheck && npm run lint && npm test && npm run build"
   },

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { settingsStyle } from "@/lib/appearance";
-import type { AvatarDecorationId } from "@/lib/cosmetics";
+import type { AvatarDecorationId, ProfileBadgeId, ProfileTitleId } from "@/lib/cosmetics";
 import type { LibraryCategory } from "@/lib/collections";
 import type { Preferences } from "@/lib/preferences";
 import { AchievementNotifications } from "@/components/achievements/achievement-notifications";
@@ -31,8 +31,8 @@ export function AppShell({
   userId: string;
   introSeenOn: string | null;
   preferences: Preferences;
-  /** Arcade shop items the account owns and its avatar decoration. */
-  cosmetics: { owned: string[]; avatarDecoration: AvatarDecorationId | null };
+  /** Arcade shop items the account owns, its avatar decoration and its profile badge and title. */
+  cosmetics: { owned: string[]; avatarDecoration: AvatarDecorationId | null; badge: ProfileBadgeId | null; title: ProfileTitleId | null };
   /** Server-rendered collection icons keyed by collection id. */
   collectionIcons?: Record<string, ReactNode>;
 }) {

@@ -256,6 +256,22 @@ Restart the app after applying the migration. Existing test fixtures still assum
 6. Apply migrations (`npx supabase db push`). Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `APP_URL` in the hosting environment. The secret key is not needed by the app.
 7. The image proxy makes outbound HTTP(S) requests from the server. The hosting platform must allow egress, and serverless timeouts must be above 10 s.
 
+## Secret codes (the Vault)
+
+Codes for `/vault` are managed from a trusted machine with the service-role key in `.env.local`. The database stores only SHA-256 hashes; codes, reward logic and validation never ship to the browser.
+
+```bash
+npm run codes -- rewards                     # item ids a code can grant (secret ones stay hidden from the shop)
+npm run codes -- create --label "Winter letter" --coins 100 --items vault-sigil,badge-comet --expires 2026-12-31 --max 50
+npm run codes -- create --label "Party" --coins 50 --custom   # type your own code (hidden input) instead of a random one
+npm run codes -- list                        # rewards, expiry, uses and status (never the code itself)
+npm run codes -- disable <id>                # stop a code; rewards already granted stay
+```
+
+- A generated code is printed **once**. Share it privately; never commit, log or paste active codes into issues, docs or chat.
+- Each account can redeem a code once. `--max` caps total redemptions, `--expires` sets an end date. Repeated wrong guesses are throttled per account.
+- Disable instead of deleting: redeemed codes can't be deleted (redemptions reference them). In an emergency you can also set `secret_codes.disabled_at` in the Supabase Table Editor.
+
 ## Commands
 
 ```bash

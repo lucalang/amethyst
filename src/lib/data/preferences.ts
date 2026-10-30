@@ -7,7 +7,7 @@ import type { AuthContext } from "@/lib/supabase/auth";
 export const loadProfile = cache(async (ctx: AuthContext) => {
   const { data, error } = await ctx.supabase
     .from("users")
-    .select("display_name, avatar_url, avatar_decoration, intro_seen_on, motto, pin_style, settings")
+    .select("display_name, avatar_url, avatar_decoration, profile_badge, profile_title, intro_seen_on, motto, pin_style, settings")
     .eq("id", ctx.userId)
     .maybeSingle();
   if (error) throw new Error(`Query failed (${error.code ?? "unknown"})`);

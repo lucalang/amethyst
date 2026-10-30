@@ -105,6 +105,40 @@ function Crown({ id }: { id: string }) {
   );
 }
 
+/** Small rune marks (original shapes) set around the Vault sigil, skipping the keyhole at the top. */
+const SIGIL_RUNES = ["M0,-2.6 V2.6 M0,-0.9 L1.8,-2.4", "M-1.7,2.6 L0,-2.6 L1.7,2.6", "M0,-2.6 V2.6 M0,-0.4 L1.7,0.9 L0,2.2", "M-1.6,-2.4 H1.6 M0,-2.4 V2.6 M-1.2,0.6 H1.2"];
+const SIGIL_MARKS = Array.from({ length: 14 }, (_, index) => ({ angle: 33 + index * 21.8, d: SIGIL_RUNES[(index * 3) % SIGIL_RUNES.length] }));
+
+function VaultSigil({ id }: { id: string }) {
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${id}-sigil`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f5d0fe" />
+          <stop offset="0.5" stopColor="#a78bfa" />
+          <stop offset="1" stopColor="#6d28d9" />
+        </linearGradient>
+        <radialGradient id={`${id}-glow`} cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor="#fff7d6" />
+          <stop offset="0.5" stopColor="#ffd36b" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#ffd36b" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="64" fill="none" stroke={`url(#${id}-sigil)`} strokeWidth="1.6" />
+      <circle cx="50" cy="50" r="55.5" fill="none" stroke="#c4b5fd" strokeOpacity="0.5" strokeWidth="0.9" strokeDasharray="1 3.2" strokeLinecap="round" />
+      <g fill="none" stroke="#e9d5ff" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
+        {SIGIL_MARKS.map((mark, index) => (
+          <path key={index} d={mark.d} transform={`rotate(${mark.angle.toFixed(1)} 50 50) translate(50 -9.8)`} />
+        ))}
+      </g>
+      <circle cx="50" cy="-14" r="13" fill={`url(#${id}-glow)`} />
+      <circle cx="50" cy="-14" r="7.6" fill="#1d1236" stroke="#f3dc95" strokeWidth="1.4" />
+      <path d="M50,-18.6 a2.3,2.3 0 0 0 -1.3,4.2 L48,-9.6 H52 L51.3,-14.4 a2.3,2.3 0 0 0 -1.3,-4.2 Z" fill="#ffd36b" />
+      <path d="M66,-22 l1.1,3 3,1.1 -3,1.1 -1.1,3 -1.1,-3 -3,-1.1 3,-1.1 Z" fill="#fff" opacity="0.85" />
+    </>
+  );
+}
+
 /**
  * A decoration drawn around (never over the middle of) a round avatar. The box extends 30% past
  * the avatar on every side; the avatar image itself is untouched.
@@ -118,7 +152,15 @@ export function AvatarDecoration({ decoration, className }: { decoration: Avatar
       className={cn("pointer-events-none absolute -inset-[30%] size-[160%] overflow-visible drop-shadow-[0_2px_3px_rgb(0_0_0/0.45)]", className)}
       data-decoration={decoration}
     >
-      {decoration === "laurel-wreath" ? <Laurel id={id} /> : decoration === "orbit-ring" ? <Orbit id={id} /> : <Crown id={id} />}
+      {decoration === "laurel-wreath" ? (
+        <Laurel id={id} />
+      ) : decoration === "orbit-ring" ? (
+        <Orbit id={id} />
+      ) : decoration === "vault-sigil" ? (
+        <VaultSigil id={id} />
+      ) : (
+        <Crown id={id} />
+      )}
     </svg>
   );
 }

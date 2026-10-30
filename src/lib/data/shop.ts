@@ -21,7 +21,7 @@ export async function loadOwnedCosmetics(ctx: AuthContext): Promise<string[]> {
 
 export const toAvatarDecoration = (value: string | null | undefined): AvatarDecorationId | null => (isAvatarDecorationId(value) ? value : null);
 
-export type CoinTransaction = { id: number; amount: number; balanceAfter: number; kind: "reward" | "purchase"; label: string; createdAt: string };
+export type CoinTransaction = { id: number; amount: number; balanceAfter: number; kind: "reward" | "purchase" | "code" | "slots"; label: string; createdAt: string };
 
 const GAME_NAMES: Record<string, string> = {
   "2048": "2048",
@@ -32,8 +32,10 @@ const GAME_NAMES: Record<string, string> = {
   stacker: "Tower Stacker",
 };
 
-function transactionLabel(kind: "reward" | "purchase", details: unknown) {
+function transactionLabel(kind: CoinTransaction["kind"], details: unknown) {
   const info = (details ?? {}) as Record<string, unknown>;
+  if (kind === "code") return "Secret code";
+  if (kind === "slots") return "Coin Slots";
   if (kind === "purchase") {
     if (isCosmeticId(info.item)) return `Bought ${COSMETICS[info.item].name}`;
     const game = gameCosmetic(info.item);
@@ -70,6 +72,7 @@ export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | P
       .from("coin_transactions")
       .select("id, amount, balance_after, kind, details, created_at")
       .eq("user_id", ctx.userId)
+      .neq("kind", "slots")
       .order("created_at", { ascending: false })
       .limit(12)
       .then(check),

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Gem, LibraryBig, LogOut, Megaphone, Palette, Settings } from "lucide-react";
+import { FlaskConical, Gem, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
 import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { ProfileAvatar } from "./profile-avatar";
+import { ProfileFlair } from "./profile-flair";
 
 /** Server-rendered collection icons keyed by collection id. */
 type CollectionIcons = Record<string, ReactNode>;
@@ -115,6 +116,7 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
                 <ProfileAvatar name={account.name} src={account.avatarUrl} decoration={account.decoration} className="size-8 text-xs" />
                 <span className="min-w-0">
                   <span className="block truncate">{account.name ?? "Your account"}</span>
+                  <ProfileFlair className="my-0.5 [--flair-size:11px]" />
                   {account.email ? <span className="block truncate text-xs font-normal text-muted-foreground">{account.email}</span> : null}
                 </span>
               </DropdownMenuLabel>
@@ -132,6 +134,17 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
               <DropdownMenuItem asChild>
                 <Link href="/whats-new">
                   <Megaphone aria-hidden /> What’s new
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/lab">
+                  <FlaskConical aria-hidden /> The Lab
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/vault">
+                  <KeyRound aria-hidden /> The Vault
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

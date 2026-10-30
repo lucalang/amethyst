@@ -63,6 +63,7 @@ const HINTED: Record<string, number> = {
   item_unavailable: 404,
   run_not_found: 404,
   rate_limited: 429,
+  slots_limit: 409,
   layout_changed: 409,
   list_changed: 409,
   replaced: 409,

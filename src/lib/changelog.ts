@@ -49,6 +49,62 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-vault-lab-slots",
+    date: "2026-10-30",
+    title: "The Vault, the Lab and Coin Slots",
+    intro: "Three hidden corners of Amethyst: a vault that opens for secret codes, a lab of ridiculous interface experiments and a slot machine for the coins you’ve earned.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "The Vault", text: "Found a secret code? Speak it to the Vault for coins, rare cosmetics, badges and titles." },
+      { kind: "new", feature: "The Lab", text: "Five harmless, silly interface experiments, each with reset, exit and an easy mode." },
+      { kind: "new", feature: "Coin Slots", text: "Spin the reels with earned coins, with the exact odds, payouts and your net result always shown." },
+      { kind: "new", feature: "Badges & titles", text: "Wear a profile badge and title next to your name." },
+    ],
+    details: {
+      new: [
+        {
+          title: "The Vault",
+          body: "A hidden door that answers to secret codes. Each code opens once per account and can hold coins, exclusive avatar decorations, profile badges, titles or a bundle. Secret items stay out of the shop until you unlock them, then appear with your other cosmetics.",
+          points: ["Spaces, dashes and letter case don’t matter.", "After several wrong codes the vault rests for a while.", "Your finds are listed below the door."],
+          where: "Account menu → The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "The Lab",
+          body: "A searchable gallery of pretend experiments: an uphill volume slider, a button that runs away, a subscription-cancellation maze, an awkward date picker and a password gauntlet. Nothing in the Lab touches your real settings, account or coins.",
+          points: ["Every experiment has Reset and Exit, and Easy mode swaps in a plain, keyboard-friendly version.", "The demo tone has its own quiet volume and starts muted."],
+          where: "Account menu → The Lab",
+          link: { href: "/lab", label: "Visit the Lab" },
+        },
+        {
+          title: "Coin Slots",
+          body: "A three-reel machine in the Arcade that plays with coins you’ve earned. The server draws every spin when you press Spin; the paytable shows the exact chance of every line and the average return.",
+          points: [
+            "Bets of 1 to 5 coins, one spin per press and no autoplay.",
+            "Each result shows the bet, the payout and your net profit or loss.",
+            "You can wager up to 300 coins in any 24 hours. Interrupted spins are recovered without charging twice.",
+            "Coins have no cash value and can’t be bought or cashed out.",
+          ],
+          where: "Arcade → Coin Slots",
+          link: { href: "/arcade/slots", label: "Play Coin Slots" },
+        },
+        {
+          title: "Profile badges and titles",
+          body: "Badges and titles from the Vault can be worn on your profile. They show next to your name on Home and in the account menu.",
+          where: "Customization → Profile",
+          link: { href: "/customization/profile", label: "Choose a badge" },
+        },
+      ],
+      improved: [
+        {
+          title: "One daily coin limit",
+          body: "Net Coin Slots winnings share the 600-coin daily limit with game rewards, so the machine can’t be used to earn past it. Coins from Vault codes don’t count toward the limit.",
+          link: { href: "/arcade/shop", label: "Open the shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-big-lists-shops-search",
     date: "2026-10-30",
     title: "Big To Do lists, bulk actions and catalog search",

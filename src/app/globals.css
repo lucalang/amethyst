@@ -5012,3 +5012,676 @@ a.arcade-counter:hover {
     animation: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Profile flair: the badge and title shown with a name (Home, account menu,
+ * profile preview). Size follows --flair-size so utilities can tune it.
+ * ------------------------------------------------------------------------- */
+.profile-flair {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45em;
+  font-size: var(--flair-size, 0.75rem);
+  line-height: 1.2;
+}
+.profile-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--amethyst) 65%, var(--foreground));
+}
+.flair-option {
+  display: inline-flex;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: calc(0.5rem * var(--radius-unit, 1));
+  border: 1px solid rgb(255 255 255 / 0.09);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.flair-option:hover {
+  border-color: color-mix(in oklab, var(--amethyst) 35%, transparent);
+  color: var(--foreground);
+}
+.flair-option:focus-within {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.flair-option-on {
+  border-color: color-mix(in oklab, var(--amethyst) 60%, transparent);
+  background-color: color-mix(in oklab, var(--amethyst) 8%, transparent);
+  color: var(--foreground);
+}
+
+/* ---------------------------------------------------------------------------
+ * The Vault (/vault): a self-lit chamber (like the Arcade signs) that reads on
+ * every theme. The dial turns from script and sleeps offscreen; motes and rays
+ * are CSS, pause offscreen ([data-paused]) and disappear with reduced motion.
+ * ------------------------------------------------------------------------- */
+.vault-room {
+  --vault-gold: #ffd36b;
+  --vault-glow: #b794ff;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: calc(1.25rem * var(--radius-unit, 1));
+  color: #efe7ff;
+  background:
+    radial-gradient(55% 40% at 50% 38%, rgb(124 77 214 / 0.3), transparent 70%),
+    radial-gradient(80% 45% at 50% 110%, rgb(255 79 216 / 0.1), transparent 70%),
+    linear-gradient(180deg, #140b24, #07040d 80%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.07),
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 24px 60px -32px rgb(0 0 0 / 0.85);
+}
+.vault-motes {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.vault-motes > span {
+  position: absolute;
+  bottom: -1rem;
+  left: var(--x);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 999px;
+  background: radial-gradient(circle, #fdf4ff, rgb(183 148 255 / 0.55) 50%, transparent 72%);
+  opacity: 0;
+  animation: vault-drift var(--d) linear var(--delay) infinite;
+}
+@keyframes vault-drift {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  12%,
+  80% {
+    opacity: var(--o);
+  }
+  100% {
+    translate: var(--sway) -44rem;
+    opacity: 0;
+  }
+}
+.vault-door {
+  position: relative;
+  isolation: isolate;
+  width: min(17rem, 72vw);
+  aspect-ratio: 1;
+  margin: 1.25rem auto 1.5rem;
+}
+.vault-rays {
+  position: absolute;
+  inset: -90%;
+  z-index: -1;
+  pointer-events: none;
+  background: repeating-conic-gradient(rgb(255 227 163 / 0.14) 0deg 3.5deg, transparent 3.5deg 14deg);
+  mask-image: radial-gradient(circle, #000 0 14%, transparent 52%);
+  opacity: 0;
+  scale: 0.5;
+  transition:
+    opacity 1200ms ease,
+    scale 1800ms var(--ease-out-soft);
+}
+.vault-dial {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.vault-bolt {
+  fill: #5b4790;
+  stroke: #160d29;
+  stroke-width: 0.8;
+}
+.vault-ring-edge {
+  fill: none;
+  stroke: rgb(196 181 253 / 0.22);
+  stroke-width: 0.8;
+}
+.vault-runes {
+  fill: none;
+  stroke: rgb(233 213 255 / 0.6);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 600ms ease;
+}
+.vault-notch {
+  fill: var(--vault-gold);
+  opacity: 0.7;
+  transition: opacity 400ms ease;
+}
+.vault-beam {
+  fill: var(--vault-gold);
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+.vault-keyhole {
+  fill: #05020a;
+  stroke: color-mix(in oklab, var(--vault-glow) calc(var(--charge, 0) * 100%), transparent);
+  stroke-width: 1;
+  transition: stroke 200ms ease;
+}
+.vault-core-rim {
+  fill: none;
+  stroke: #6b55a3;
+  stroke-width: 1.4;
+  transition: opacity 400ms ease;
+}
+.vault-half {
+  transition: translate 1000ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+.vault-light {
+  opacity: calc(0.15 + var(--charge, 0) * 0.35);
+  scale: 0.55;
+  transition:
+    opacity 700ms ease,
+    scale 1200ms var(--ease-out-soft);
+}
+.vault-room[data-phase="turning"] .vault-light {
+  opacity: 0.65;
+  scale: 0.72;
+}
+.vault-room[data-phase="turning"] .vault-keyhole {
+  stroke: var(--vault-glow);
+}
+.vault-room:is([data-phase="unlocked"], [data-phase="already"]) .vault-notch {
+  opacity: 1;
+}
+.vault-room:is([data-phase="unlocked"], [data-phase="already"]) .vault-beam {
+  opacity: 0.9;
+  transition-delay: 700ms;
+}
+.vault-room[data-phase="unlocked"] .vault-runes {
+  stroke: #ffe3a3;
+  transition-delay: 800ms;
+}
+.vault-room[data-phase="unlocked"] .vault-half {
+  transition-delay: 900ms;
+}
+.vault-room[data-phase="unlocked"] .vault-half-l {
+  translate: -40px 0;
+}
+.vault-room[data-phase="unlocked"] .vault-half-r {
+  translate: 40px 0;
+}
+.vault-room[data-phase="unlocked"] .vault-core-rim {
+  opacity: 0;
+  transition-delay: 900ms;
+}
+.vault-room[data-phase="unlocked"] .vault-light {
+  opacity: 1;
+  scale: 1.9;
+  transition-delay: 1000ms;
+}
+.vault-room[data-phase="unlocked"] .vault-rays {
+  opacity: 1;
+  scale: 1;
+  transition-delay: 1000ms;
+  animation: vault-rays 60s linear infinite;
+}
+@keyframes vault-rays {
+  to {
+    rotate: 360deg;
+  }
+}
+.vault-sparks {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  pointer-events: none;
+}
+.vault-sparks > span {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff, var(--vault-gold) 55%, transparent 72%);
+  opacity: 0;
+  animation: vault-spark 1100ms cubic-bezier(0.15, 0.7, 0.3, 1) calc(1050ms + var(--delay)) 1 forwards;
+}
+@keyframes vault-spark {
+  0% {
+    transform: rotate(var(--a)) translateY(0) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) scale(0.2);
+    opacity: 0;
+  }
+}
+.vault-room[data-paused] :is(.vault-motes > span, .vault-rays) {
+  animation-play-state: paused;
+}
+.vault-input {
+  width: 100%;
+  height: 3rem;
+  border-radius: calc(0.7rem * var(--radius-unit, 1));
+  border: 1px solid rgb(255 211 107 / 0.25);
+  background: linear-gradient(180deg, #0a0613, #160d27);
+  padding: 0 1rem;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #fde9b0;
+  caret-color: var(--vault-gold);
+  text-shadow: 0 0 10px rgb(255 211 107 / 0.35);
+  box-shadow:
+    inset 0 2px 8px rgb(0 0 0 / 0.75),
+    inset 0 -1px 0 rgb(255 255 255 / 0.05);
+  outline: none;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+.vault-input::placeholder {
+  color: rgb(239 231 255 / 0.25);
+  text-shadow: none;
+}
+.vault-input:focus-visible {
+  border-color: rgb(255 211 107 / 0.6);
+  box-shadow:
+    inset 0 2px 8px rgb(0 0 0 / 0.75),
+    0 0 0 3px rgb(183 148 255 / 0.4);
+}
+.vault-input:disabled {
+  opacity: 0.7;
+}
+.vault-key {
+  display: inline-flex;
+  height: 2.75rem;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0 1.4rem;
+  font-weight: 600;
+  color: #2b1a00;
+  background: linear-gradient(180deg, #fff1b8, #ffd36b 45%, #d79a1e);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 -2px 0 rgb(120 70 0 / 0.35),
+    0 8px 24px -10px rgb(255 211 107 / 0.6);
+  outline: none;
+  transition:
+    filter 160ms ease,
+    scale 120ms ease;
+}
+.vault-key:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.vault-key:active:not(:disabled) {
+  scale: 0.97;
+}
+.vault-key:focus-visible {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    0 0 0 2px #140b24,
+    0 0 0 4px var(--vault-glow);
+}
+.vault-key:disabled {
+  cursor: progress;
+  filter: saturate(0.7) brightness(0.9);
+}
+.vault-result {
+  margin: 0 auto;
+  max-width: 40rem;
+  border-radius: calc(1rem * var(--radius-unit, 1));
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.03);
+  padding: 1rem 1.25rem;
+  animation: vault-rise 400ms var(--ease-out-soft) both;
+}
+.vault-result-open {
+  border-color: rgb(255 211 107 / 0.3);
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgb(255 211 107 / 0.1), transparent 70%),
+    rgb(255 255 255 / 0.03);
+}
+.vault-reward {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: calc(0.75rem * var(--radius-unit, 1));
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(10 6 19 / 0.55);
+  padding: 0.6rem 0.75rem;
+  animation: vault-rise 520ms var(--ease-out-soft) calc(1100ms + var(--i) * 110ms) both;
+}
+.vault-room[data-phase="already"] .vault-reward {
+  animation-delay: calc(var(--i) * 60ms);
+}
+.vault-reward-coin {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  color: #6b4300;
+  background: radial-gradient(circle at 35% 30%, #fff1b8, #ffd36b 45%, #d79a1e);
+  box-shadow:
+    inset 0 -2px 0 rgb(120 70 0 / 0.35),
+    0 4px 14px -4px rgb(215 154 30 / 0.7);
+}
+.vault-tag {
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #2b1a00;
+  background: var(--vault-gold);
+}
+.vault-tag-muted {
+  color: #efe7ff;
+  background: rgb(255 255 255 / 0.1);
+}
+.vault-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--vault-gold);
+  text-underline-offset: 4px;
+}
+.vault-link:hover {
+  text-decoration: underline;
+}
+@keyframes vault-rise {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+:root[data-motion="off"] :is(.vault-motes, .vault-rays, .vault-sparks) {
+  display: none;
+}
+:root[data-motion="off"] :is(.vault-result, .vault-reward) {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.vault-motes, .vault-rays, .vault-sparks) {
+    display: none;
+  }
+  :is(.vault-result, .vault-reward) {
+    animation: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * The Lab (/lab): demo tag and the shared control buttons.
+ * ------------------------------------------------------------------------- */
+.lab-demo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in oklab, var(--amethyst) 60%, transparent);
+  padding: 0.05rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amethyst);
+}
+.lab-control {
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: calc(0.5rem * var(--radius-unit, 1));
+  border: 1px solid var(--border);
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.lab-control:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--amethyst) 45%, transparent);
+}
+.lab-control:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.lab-control:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.lab-control-on {
+  border-color: color-mix(in oklab, var(--amethyst) 60%, transparent);
+  background-color: color-mix(in oklab, var(--amethyst) 12%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * Coin Slots (/arcade/slots): a self-lit cabinet. Reels move from script only
+ * while spinning; the bulbs drift gently (no strobing) and pause offscreen.
+ * ------------------------------------------------------------------------- */
+.slots-cabinet {
+  --cell: clamp(4.25rem, 16vw, 6.5rem);
+  position: relative;
+  isolation: isolate;
+  align-self: start;
+  border-radius: calc(1.5rem * var(--radius-unit, 1));
+  padding: 1rem;
+  color: #f5efff;
+  background:
+    radial-gradient(70% 50% at 50% 0%, rgb(167 139 250 / 0.28), transparent 70%),
+    linear-gradient(180deg, #2a1650, #120a24 70%);
+  box-shadow:
+    inset 0 0 0 2px rgb(251 191 36 / 0.35),
+    inset 0 2px 0 rgb(255 255 255 / 0.12),
+    0 24px 50px -28px rgb(0 0 0 / 0.8);
+}
+.slots-marquee {
+  position: relative;
+  display: grid;
+  min-height: 3.5rem;
+  place-items: center;
+  border-radius: calc(0.9rem * var(--radius-unit, 1));
+  margin-bottom: 0.9rem;
+  background: linear-gradient(180deg, #1a0d33, #0d0619);
+  box-shadow: inset 0 0 0 1px rgb(251 191 36 / 0.3);
+}
+.slots-marquee-text {
+  position: relative;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fde68a;
+  text-shadow: 0 0 12px rgb(251 191 36 / 0.45);
+}
+.slots-cabinet:not([data-tier], [data-busy]) .slots-marquee-text {
+  color: #e9d5ff;
+  text-shadow: 0 0 10px rgb(167 139 250 / 0.4);
+}
+.slots-cabinet[data-tier="big"] .slots-marquee-text,
+.slots-cabinet[data-tier="jackpot"] .slots-marquee-text {
+  font-size: 1.45rem;
+  background: linear-gradient(90deg, #fde68a, #f0abfc, #fde68a);
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+.slots-bulbs {
+  position: absolute;
+  inset: 0.35rem 0.6rem auto;
+  display: flex;
+  justify-content: space-between;
+}
+.slots-bulbs > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #fbbf24;
+  box-shadow: 0 0 6px #fbbf24;
+  opacity: 0.5;
+  animation: slots-bulb 2.8s ease-in-out calc(var(--i) * -0.2s) infinite;
+}
+.slots-cabinet[data-tier] .slots-bulbs > span {
+  background: #f0abfc;
+  box-shadow: 0 0 8px #f0abfc;
+}
+@keyframes slots-bulb {
+  50% {
+    opacity: 1;
+  }
+}
+.slots-cabinet[data-paused] .slots-bulbs > span {
+  animation-play-state: paused;
+}
+.slots-window {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  border-radius: calc(1rem * var(--radius-unit, 1));
+  padding: 0.5rem;
+  background: #07030f;
+  box-shadow: inset 0 4px 14px rgb(0 0 0 / 0.8);
+}
+.slots-reel {
+  position: relative;
+  height: calc(var(--cell) * 3);
+  overflow: hidden;
+  border-radius: calc(0.7rem * var(--radius-unit, 1));
+  background: linear-gradient(180deg, #d9d2e9, #fbf9ff 35% 65%, #d9d2e9);
+  mask-image: linear-gradient(180deg, transparent, #000 22% 78%, transparent);
+}
+.slots-strip {
+  transform: translateY(calc(var(--f) * -1 * var(--cell)));
+  will-change: transform;
+}
+.slots-cell {
+  display: grid;
+  height: var(--cell);
+  place-items: center;
+}
+.slots-window[data-unknown] .slots-reel {
+  opacity: 0.45;
+}
+.slots-payline {
+  position: absolute;
+  inset: calc(0.5rem + var(--cell)) 0.25rem auto;
+  height: var(--cell);
+  border-block: 2px solid rgb(251 191 36 / 0.55);
+  pointer-events: none;
+  transition: box-shadow 400ms ease;
+}
+.slots-cabinet[data-tier] .slots-payline {
+  border-color: #fde68a;
+  box-shadow:
+    0 0 18px rgb(251 191 36 / 0.45),
+    inset 0 0 22px rgb(251 191 36 / 0.25);
+  animation: slots-glow 1.6s ease-in-out infinite;
+}
+@keyframes slots-glow {
+  50% {
+    box-shadow:
+      0 0 26px rgb(251 191 36 / 0.6),
+      inset 0 0 30px rgb(251 191 36 / 0.35);
+  }
+}
+.slots-particles {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.slots-plate {
+  margin-top: 0.75rem;
+  text-align: center;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: rgb(245 239 255 / 0.6);
+}
+.slots-bet {
+  display: grid;
+  height: 2.5rem;
+  cursor: pointer;
+  place-items: center;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.slots-bet:focus-within {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.slots-bet-on {
+  border-color: #f59e0b;
+  background-color: rgb(251 191 36 / 0.14);
+}
+.slots-bet-blocked {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+.slots-spin {
+  display: flex;
+  width: 100%;
+  height: 3.25rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #3b1d00;
+  background: linear-gradient(180deg, #fff1b8, #fbbf24 50%, #d97706);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    inset 0 -3px 0 rgb(120 53 15 / 0.35),
+    0 10px 24px -12px rgb(217 119 6 / 0.8);
+  outline: none;
+  transition:
+    filter 160ms ease,
+    scale 120ms ease;
+}
+.slots-spin:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.slots-spin:active:not(:disabled) {
+  scale: 0.98;
+}
+.slots-spin:focus-visible {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.slots-spin:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.6) brightness(0.85);
+}
+:root[data-motion="off"] :is(.slots-bulbs > span, .slots-payline) {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.slots-bulbs > span, .slots-payline) {
+    animation: none !important;
+  }
+}

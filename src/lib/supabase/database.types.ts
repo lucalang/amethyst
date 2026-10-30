@@ -130,15 +130,15 @@ export type Database = {
               Relationships: [{ foreignKeyName: "coin_wallets_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "coin_transactions": {
-              Row: { id: number; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase"; reference: string; details: NonNullable<Json>; created_at: string }
-              Insert: { id?: never; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase"; reference: string; details?: NonNullable<Json>; created_at?: string }
-              Update: { id?: never; user_id?: string; amount?: number; balance_after?: number; kind?: "reward" | "purchase"; reference?: string; details?: NonNullable<Json>; created_at?: string }
+              Row: { id: number; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots"; reference: string; details: NonNullable<Json>; created_at: string }
+              Insert: { id?: never; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots"; reference: string; details?: NonNullable<Json>; created_at?: string }
+              Update: { id?: never; user_id?: string; amount?: number; balance_after?: number; kind?: "reward" | "purchase" | "code" | "slots"; reference?: string; details?: NonNullable<Json>; created_at?: string }
               Relationships: [{ foreignKeyName: "coin_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "cosmetic_items": {
-              Row: { id: string; kind: "frame" | "avatar_decoration" | "game"; price: number; available: boolean; created_at: string; game: string | null; category: string | null }
-              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game"; price: number; available?: boolean; created_at?: string; game?: string | null; category?: string | null }
-              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game"; price?: number; available?: boolean; created_at?: string; game?: string | null; category?: string | null }
+              Row: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available: boolean; secret: boolean; created_at: string; game: string | null; category: string | null }
+              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available?: boolean; secret?: boolean; created_at?: string; game?: string | null; category?: string | null }
+              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price?: number; available?: boolean; secret?: boolean; created_at?: string; game?: string | null; category?: string | null }
               Relationships: []
             },
             "game_loadouts": {
@@ -158,6 +158,24 @@ export type Database = {
                 { foreignKeyName: "user_cosmetics_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
                 { foreignKeyName: "user_cosmetics_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "cosmetic_items"; referencedColumns: ["id"] },
               ]
+            },
+            "secret_code_redemptions": {
+              Row: { code_id: string; user_id: string; redeemed_at: string; coins: number; items: string[] }
+              Insert: { code_id: string; user_id: string; redeemed_at?: string; coins?: number; items?: string[] }
+              Update: { code_id?: string; user_id?: string; redeemed_at?: string; coins?: number; items?: string[] }
+              Relationships: [{ foreignKeyName: "secret_code_redemptions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
+            "slot_machines": {
+              Row: { id: string; reels: Json; paytable: Json; bets: number[]; daily_wager_limit: number; max_spins_per_minute: number; updated_at: string }
+              Insert: { id: string; reels: Json; paytable: Json; bets: number[]; daily_wager_limit: number; max_spins_per_minute?: number; updated_at?: string }
+              Update: { id?: string; reels?: Json; paytable?: Json; bets?: number[]; daily_wager_limit?: number; max_spins_per_minute?: number; updated_at?: string }
+              Relationships: []
+            },
+            "slot_spins": {
+              Row: { id: string; user_id: string; machine: string; bet: number; stops: number[]; symbols: string[]; multiplier: number; payout: number; balance_after: number; created_at: string }
+              Insert: { id: string; user_id: string; machine: string; bet: number; stops: number[]; symbols: string[]; multiplier: number; payout: number; balance_after: number; created_at?: string }
+              Update: { id?: string; user_id?: string; machine?: string; bet?: number; stops?: number[]; symbols?: string[]; multiplier?: number; payout?: number; balance_after?: number; created_at?: string }
+              Relationships: [{ foreignKeyName: "slot_spins_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "arcade_reward_rules": {
               Row: { game: string; variant: string; min_score: number; min_seconds: number; points_per_coin: number; flat_coins: number; max_coins: number; max_score_per_second: number; score_allowance: number; max_score: number }
@@ -281,13 +299,13 @@ isOneToOne: false
                   ]
                 },"users": {
                   Row: {
-                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"avatar_url": string | null,"motto": string | null,"avatar_decoration": string | null,"id": string,"updated_at": string
+                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"avatar_url": string | null,"motto": string | null,"avatar_decoration": string | null,"profile_badge": string | null,"profile_title": string | null,"id": string,"updated_at": string
                   }
                   Insert: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"id": string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"profile_badge"?: string | null,"profile_title"?: string | null,"id": string,"updated_at"?: string
                   }
                   Update: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"id"?: string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"profile_badge"?: string | null,"profile_title"?: string | null,"id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -516,6 +534,21 @@ isOneToOne: false
                            },
 "purchase_cosmetic":
 { Args: { "p_item": string,"p_expected_price": number }; Returns: Json
+                           },
+"redeem_secret_code":
+{ Args: { "p_code_hash": string }; Returns: Json
+                           },
+"admin_create_secret_code":
+{ Args: { "p_code_hash": string,"p_label": string,"p_coins"?: number,"p_items"?: string[],"p_expires_at"?: string | null,"p_max_redemptions"?: number | null }; Returns: string
+                           },
+"admin_disable_secret_code":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"spin_slots":
+{ Args: { "p_spin": string,"p_bet": number }; Returns: Json
+                           },
+"slot_status":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "set_game_cosmetic":
 { Args: { "p_game": string,"p_category": string,"p_item": string | null }; Returns: Json

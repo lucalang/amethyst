@@ -6,11 +6,22 @@ import { Loader2, X } from "lucide-react";
 import { CatalogSearch } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
+import { BadgeEmblem, ProfileFlair } from "@/components/layout/profile-flair";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AVATAR_DECORATION_IDS, AVATAR_DECORATIONS, type AvatarDecorationId } from "@/lib/cosmetics";
+import {
+  AVATAR_DECORATION_IDS,
+  AVATAR_DECORATIONS,
+  PROFILE_BADGE_IDS,
+  PROFILE_BADGES,
+  PROFILE_TITLE_IDS,
+  PROFILE_TITLES,
+  type AvatarDecorationId,
+  type ProfileBadgeId,
+  type ProfileTitleId,
+} from "@/lib/cosmetics";
 import { PICKER_SEARCH_MIN, catalogMatcher } from "@/lib/catalog-search";
 import { cn } from "@/lib/utils";
 import { updatePassword, updateProfile, type FormState } from "./actions";
@@ -31,6 +42,10 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
   const cosmetics = useCosmetics();
   const ownedDecorations = AVATAR_DECORATION_IDS.filter((id) => cosmetics.owned.includes(id));
   const [decoration, setDecoration] = useState<AvatarDecorationId | null>(cosmetics.avatarDecoration);
+  const ownedBadges = PROFILE_BADGE_IDS.filter((id) => cosmetics.owned.includes(id));
+  const ownedTitles = PROFILE_TITLE_IDS.filter((id) => cosmetics.owned.includes(id));
+  const [badge, setBadge] = useState<ProfileBadgeId | null>(cosmetics.badge);
+  const [title, setTitle] = useState<ProfileTitleId | null>(cosmetics.title);
   const [decorationQuery, setDecorationQuery] = useState("");
   const decorationMatch = ownedDecorations.length + 1 >= PICKER_SEARCH_MIN ? catalogMatcher(decorationQuery) : null;
   const [name, setName] = useState(displayName);
@@ -45,6 +60,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
         <ProfileAvatar name={name} src={avatar} decoration={decoration} className="size-16 text-xl" />
         <div className="min-w-0">
           <p className="truncate text-base font-semibold">{name.trim() || "Your account"}</p>
+          <ProfileFlair badge={badge} title={title} className="my-0.5" />
           <p className="line-clamp-2 text-sm break-words text-muted-foreground">{line.trim() || "No motto yet"}</p>
           <p className="mt-1 text-[11px] text-muted-foreground/75">Preview · only you can see your profile</p>
         </div>
@@ -125,6 +141,34 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
           .
         </p>
       </fieldset>
+      {ownedBadges.length || ownedTitles.length ? (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <fieldset id="settings-profile-badge" className="space-y-2">
+            <legend className="text-sm font-medium">Badge</legend>
+            <div className="flex flex-wrap gap-2">
+              {[null, ...ownedBadges].map((id) => (
+                <label key={id ?? "none"} className={cn("flair-option", badge === id && "flair-option-on")}>
+                  <input type="radio" name="profileBadge" value={id ?? ""} checked={badge === id} onChange={() => setBadge(id)} className="sr-only" />
+                  {id ? <BadgeEmblem badge={id} className="size-6" /> : null}
+                  {id ? PROFILE_BADGES[id].name : "None"}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset id="settings-profile-title" className="space-y-2">
+            <legend className="text-sm font-medium">Title</legend>
+            <div className="flex flex-wrap gap-2">
+              {[null, ...ownedTitles].map((id) => (
+                <label key={id ?? "none"} className={cn("flair-option", title === id && "flair-option-on")}>
+                  <input type="radio" name="profileTitle" value={id ?? ""} checked={title === id} onChange={() => setTitle(id)} className="sr-only" />
+                  {id ? PROFILE_TITLES[id].name : "None"}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <p className="text-xs text-muted-foreground sm:col-span-2">Shown with your name on Home and in the account menu. More turn up in the Vault.</p>
+        </div>
+      ) : null}
       <div className="space-y-1.5">
         <Label htmlFor="motto">Motto</Label>
         <Input
