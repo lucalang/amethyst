@@ -2,14 +2,33 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import { KeyRound, Loader2, RotateCcw, ScrollText, Volume2, VolumeX } from "lucide-react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+import { flushSync } from "react-dom";
+import { Eye, FastForward, KeyRound, Loader2, RotateCcw, ScrollText, Volume2, VolumeX } from "lucide-react";
 import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
+import { webglAvailable } from "@/components/showcase/motion";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { MotionLevel } from "@/lib/preferences";
-import { closeVaultAudio, playVaultSound, type VaultSound } from "./vault-audio";
-import { DecodeText, RewardSlots, rewardSummary } from "./vault-reveal";
+import { SUMMON, type SummonKind } from "./timing";
+import { closeVaultAudio, hushVault, playVaultReveal, playVaultSound, playVaultSummon, setVaultAmbience, type VaultSound } from "./vault-audio";
+import { DecodeText, RewardReveal, RewardSlots, rewardSummary, type VaultLooks, type VaultProfile, type VaultSamples } from "./vault-reveal";
+import type { VaultSceneHandle } from "./vault-scene";
 import { noise, VaultSeal, type SealMode } from "./vault-seal";
+
+// The 3D vault (and three.js with it) loads only here, after the page is already usable.
+const VaultScene = lazy(() => import("./vault-scene"));
 
 export type VaultFind = { redeemedAt: string; coins: number; items: string[] };
 
@@ -115,6 +134,35 @@ function newestSince(finds: VaultFind[], since: string | null) {
   return finds.find((find) => Date.parse(find.redeemedAt) > after) ?? null;
 }
 
+/** The full summon plays once per browsing session; later visits get the short one. */
+const SUMMONED_KEY = "archive:vault:summoned";
+function summonKind(motion: MotionLevel): SummonKind {
+  try {
+    const seen = sessionStorage.getItem(SUMMONED_KEY) !== null;
+    sessionStorage.setItem(SUMMONED_KEY, "1");
+    return seen || motion === "subtle" ? "short" : "full";
+  } catch {
+    // No storage: keep it brief rather than replaying the full sequence on every visit.
+    return "short";
+  }
+}
+
+const noSubscribe = () => () => {};
+
+/** A failed scene chunk (offline, blocked) leaves the drawn seal in place instead of breaking the page. */
+class SceneBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const nowIso = () => new Date().toISOString();
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
@@ -145,15 +193,19 @@ function announce(outcome: Outcome) {
 }
 
 /** The Vault: a sealed chamber that opens for secret codes. Codes are checked and rewards granted on the server only. */
-export function SecretVault({ finds }: { finds: VaultFind[] }) {
+export function SecretVault({ finds, profile, samples }: { finds: VaultFind[]; profile: VaultProfile; samples: VaultSamples }) {
   return (
     <ArcadeProvider>
-      <Chamber initialFinds={finds} />
+      <Chamber initialFinds={finds} looks={{ profile, samples }} />
     </ArcadeProvider>
   );
 }
 
-function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
+type SceneStatus = "loading" | "ready" | "failed";
+/** dark: waiting for the vault (briefly); summon: the entrance; done: at rest. */
+type Intro = "dark" | "summon" | "done";
+
+function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: VaultLooks }) {
   const router = useRouter();
   const { sound, toggleSound, effects: motion } = useArcade();
   const [code, setCode] = useState("");
@@ -163,7 +215,17 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
   const [finds, setFinds] = useState(initialFinds);
   const [checking, setChecking] = useState(false);
   const [announcement, setAnnouncement] = useState("");
+  const [pulse, setPulse] = useState(0);
+  /** The reward cards: "fresh" right after a grant, "again" when reopened from the panel. */
+  const [reveal, setReveal] = useState<"fresh" | "again" | null>(null);
+  const [sceneStatus, setSceneStatus] = useState<SceneStatus>("loading");
+  const [intro, setIntro] = useState<Intro>("dark");
+  const [summon, setSummon] = useState<SummonKind>("full");
+  const [present, setPresent] = useState(true);
   const stageRef = useRef<HTMLElement>(null);
+  const artifactRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<VaultSceneHandle>(null);
+  const introTimer = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const inFlight = useRef(false);
@@ -172,21 +234,96 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
   const soundRef = useRef(sound);
   const busy = phase === "verifying";
   const signal = Math.min(PIPS.length, code.replace(/\s+/g, "").length);
+  const canWebgl = useSyncExternalStore(noSubscribe, webglAvailable, () => false);
+  const scene: SceneStatus = canWebgl ? sceneStatus : "failed";
+  // Reduced motion goes straight to the vault at rest.
+  const introShown: Intro = motion === "off" ? "done" : intro;
+  const timeline = SUMMON[summon];
 
   useEffect(() => {
     soundRef.current = sound;
   }, [sound]);
 
-  // Effects pause offscreen; the synth is released on leave.
+  // Effects pause offscreen and in background tabs; the synth is released on leave.
   useEffect(() => {
     const stage = stageRef.current!;
-    const observer = new IntersectionObserver(([entry]) => stage.toggleAttribute("data-paused", !entry.isIntersecting));
+    let seen = true;
+    const update = () => setPresent(seen && !document.hidden);
+    const observer = new IntersectionObserver(([entry]) => {
+      seen = entry.isIntersecting;
+      stage.toggleAttribute("data-paused", !seen);
+      update();
+    });
     observer.observe(stage);
+    document.addEventListener("visibilitychange", update);
     return () => {
       observer.disconnect();
+      document.removeEventListener("visibilitychange", update);
+      clearTimeout(introTimer.current);
       closeVaultAudio();
     };
   }, []);
+
+  // A quiet bed of sound under the vault at rest, only while it's on screen and sound is on.
+  useEffect(() => {
+    if (!sound) hushVault();
+    setVaultAmbience(sound && present && introShown === "done");
+  }, [sound, present, introShown]);
+
+  const beginSummon = useEffectEvent(() => {
+    const kind = summonKind(motion);
+    setSummon(kind);
+    setIntro("summon");
+    sceneRef.current?.summon(kind);
+    if (sound) playVaultSummon(kind);
+    introTimer.current = window.setTimeout(() => setIntro("done"), SUMMON[kind].total);
+  });
+
+  // The summon waits for the 3D vault, but never keeps the chamber dark for long.
+  const sceneSettled = scene !== "loading";
+  useEffect(() => {
+    if (introShown !== "dark") return;
+    const timer = window.setTimeout(() => beginSummon(), sceneSettled ? 0 : 1200);
+    return () => clearTimeout(timer);
+  }, [introShown, sceneSettled]);
+
+  function skipIntro(focusInput: boolean) {
+    clearTimeout(introTimer.current);
+    hushVault();
+    if (intro === "summon") sceneRef.current?.skip();
+    else sceneRef.current?.summon("none");
+    // Synchronously, so a key that skipped can land in the field it reveals.
+    flushSync(() => setIntro("done"));
+    if (focusInput) inputRef.current?.focus({ preventScroll: true });
+  }
+
+  // Any key or press skips the entrance; typing goes straight into the code field.
+  const onIntroInput = useEffectEvent((event: KeyboardEvent | PointerEvent) => {
+    if (!(event instanceof KeyboardEvent)) return skipIntro(false);
+    if (event.ctrlKey || event.metaKey || event.altKey || ["Shift", "Control", "Alt", "Meta", "CapsLock"].includes(event.key)) return;
+    const target = event.target as HTMLElement | null;
+    const typingElsewhere = !!target && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+    if (!typingElsewhere && ["Escape", "Enter", " "].includes(event.key)) event.preventDefault();
+    skipIntro(!typingElsewhere && event.key !== "Tab");
+  });
+  useEffect(() => {
+    if (introShown === "done") return;
+    const onKey = (event: KeyboardEvent) => onIntroInput(event);
+    const onPointer = (event: PointerEvent) => onIntroInput(event);
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onPointer, true);
+    };
+  }, [introShown]);
+
+  const sceneReady = () => {
+    setSceneStatus("ready");
+    // Arrived after the entrance began: appear at rest rather than mid-summon.
+    if (introShown !== "dark") sceneRef.current?.summon("none");
+  };
+  const sceneFailed = () => setSceneStatus("failed");
 
   useEffect(() => {
     if (!outcome) return;
@@ -205,7 +342,9 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
     setPhase(next.phase);
     setRound((value) => value + 1);
     setAnnouncement(announce(next));
+    setReveal(next.phase === "granted" ? "fresh" : null);
     if (audible) play(SOUND[next.phase]);
+    if (audible && soundRef.current && next.phase === "granted") playVaultReveal((next.coins > 0 ? 1 : 0) + next.items.length, REVEAL_AT[motion] / 1000);
   }
 
   async function readLog() {
@@ -326,11 +465,13 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
     setOutcome(null);
     setPhase("idle");
     setAnnouncement("");
+    setReveal(null);
     requestAnimationFrame(() => inputRef.current?.focus());
   }
 
   const sealMode: SealMode = busy ? "verifying" : phase === "granted" || phase === "already" ? "align" : phase === "unavailable" || phase === "locked" ? "still" : "idle";
   const opened = phase === "granted" || phase === "already";
+  const revealing = outcome?.phase === "granted" && reveal !== null;
 
   return (
     <section
@@ -339,7 +480,17 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
       className="vx-stage"
       data-phase={phase}
       data-motion={motion}
-      style={{ "--vx-charge": (signal / PIPS.length).toFixed(3) } as CSSProperties}
+      data-intro={introShown}
+      data-summon={summon}
+      data-scene={scene}
+      style={
+        {
+          "--vx-charge": (signal / PIPS.length).toFixed(3),
+          "--vx-hud-at": `${timeline.hud}ms`,
+          "--vx-panel-at": `${timeline.panel}ms`,
+          "--vx-settle-at": `${timeline.settle}ms`,
+        } as CSSProperties
+      }
     >
       <div aria-hidden className="vx-backdrop">
         <div className="vx-fog" />
@@ -353,13 +504,29 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
         ) : null}
         <div className="vx-vignette" />
       </div>
+      {canWebgl && sceneStatus !== "failed" ? (
+        <SceneBoundary onError={sceneFailed}>
+          <Suspense fallback={null}>
+            <VaultScene
+              ref={sceneRef}
+              anchor={artifactRef}
+              phase={phase}
+              round={round}
+              charge={signal / PIPS.length}
+              pulse={pulse}
+              motion={motion}
+              onReady={sceneReady}
+              onFail={sceneFailed}
+            />
+          </Suspense>
+        </SceneBoundary>
+      ) : null}
       <div aria-hidden className="vx-frame">
         <span />
         <span />
         <span />
         <span />
       </div>
-      <span aria-hidden className="vx-boot" />
 
       <div className="vx-inner">
         <header className="vx-hud">
@@ -378,9 +545,29 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
         </header>
 
         <div className="vx-main">
-          <VaultSeal mode={sealMode} level={signal} phase={phase} motion={motion} />
+          <div ref={artifactRef} className="vx-artifact">
+            {/* The drawn seal stands in while the 3D vault loads, and for good if WebGL isn't available. */}
+            {scene === "ready" ? null : <VaultSeal mode={sealMode} level={signal} phase={phase} motion={motion} />}
+          </div>
 
-          <div className="vx-window">
+          {revealing ? (
+            <RewardReveal
+              coins={outcome.coins}
+              items={outcome.items}
+              newItems={outcome.newItems}
+              looks={looks}
+              motion={motion}
+              origin={artifactRef}
+              titleDelay={reveal === "fresh" ? DECODE_AT[motion] : 0}
+              delay={reveal === "fresh" ? REVEAL_AT[motion] : 0}
+              onContinue={() => {
+                setReveal(null);
+                requestAnimationFrame(() => headingRef.current?.focus());
+              }}
+            />
+          ) : null}
+
+          <div className="vx-window" hidden={revealing}>
             <span aria-hidden className="vx-corners" />
             <span aria-hidden className="vx-window-flare" />
             <div className="vx-window-bar">
@@ -394,17 +581,13 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
               {outcome ? (
                 <div key={round} className="vx-result">
                   <h2 ref={headingRef} tabIndex={-1} className="vx-headline">
-                    {outcome.phase === "granted" || outcome.phase === "already" ? (
-                      <DecodeText text={HEADLINE[outcome.phase]} animate={motion !== "off"} delay={outcome.phase === "granted" ? DECODE_AT[motion] : 0} />
-                    ) : (
-                      HEADLINE[outcome.phase]
-                    )}
+                    {outcome.phase === "already" ? <DecodeText text={HEADLINE.already} animate={motion !== "off"} /> : HEADLINE[outcome.phase]}
                   </h2>
                   <p className="vx-copy">{copyFor(outcome)}</p>
                   {outcome.phase === "granted" ? (
-                    <RewardSlots coins={outcome.coins} items={outcome.items} newItems={outcome.newItems} delay={REVEAL_AT[motion]} countUp={motion !== "off"} />
+                    <RewardSlots coins={outcome.coins} items={outcome.items} newItems={outcome.newItems} delay={0} countUp={false} looks={looks} />
                   ) : outcome.phase === "already" ? (
-                    <RewardSlots coins={outcome.coins} items={outcome.items} delay={motion === "full" ? 250 : 0} countUp={false} />
+                    <RewardSlots coins={outcome.coins} items={outcome.items} delay={motion === "full" ? 250 : 0} countUp={false} looks={looks} />
                   ) : null}
                 </div>
               ) : busy ? (
@@ -424,6 +607,12 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
 
               {opened ? (
                 <div className="vx-actions">
+                  {outcome?.phase === "granted" ? (
+                    <button type="button" onClick={() => setReveal("again")} className="vx-button vx-button-quiet">
+                      <Eye aria-hidden className="size-4" />
+                      View rewards
+                    </button>
+                  ) : null}
                   <button type="button" onClick={again} className="vx-button">
                     <RotateCcw aria-hidden className="size-4" />
                     Enter another code
@@ -440,7 +629,10 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
                     name="vx-code"
                     value={code}
                     onChange={(event) => {
-                      if (event.target.value.length > code.length) play("key");
+                      if (event.target.value.length > code.length) {
+                        play("key");
+                        setPulse((value) => value + 1);
+                      }
                       setCode(event.target.value);
                     }}
                     readOnly={busy}
@@ -512,6 +704,12 @@ function Chamber({ initialFinds }: { initialFinds: VaultFind[] }) {
           </p>
         </section>
       </div>
+      {introShown === "done" ? null : (
+        <button type="button" onClick={() => skipIntro(true)} className="vx-skip">
+          <FastForward aria-hidden className="size-3.5" />
+          Skip intro
+        </button>
+      )}
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}
       </p>

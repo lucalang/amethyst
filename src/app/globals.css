@@ -5178,7 +5178,6 @@ a.arcade-counter:hover {
   width: 1.5rem;
   height: 1.5rem;
   border: 0 solid rgb(255 31 61 / 0.6);
-  animation: vx-corner 700ms var(--ease-out-soft) 100ms backwards;
 }
 .vx-frame > span:nth-child(1) {
   --from: -0.6rem -0.6rem;
@@ -5210,31 +5209,172 @@ a.arcade-counter:hover {
     translate: var(--from);
   }
 }
-.vx-boot {
+/* The 3D vault: one canvas over the first screen; its camera frames the vault on .vx-artifact. */
+.vx-scene {
   position: absolute;
   inset: 0 0 auto;
-  height: 2px;
+  height: min(100%, 100lvh);
   pointer-events: none;
-  background: linear-gradient(90deg, transparent, var(--vx-red) 30%, #fff 50%, var(--vx-red) 70%, transparent);
-  box-shadow: 0 0 16px 2px rgb(255 31 61 / 0.55);
-  opacity: 0;
-  animation: vx-boot 1200ms cubic-bezier(0.55, 0, 0.35, 1) 60ms forwards;
+  mask-image: linear-gradient(to bottom, #000 80%, transparent);
 }
-@keyframes vx-boot {
-  0% {
-    translate: 0 0;
+.vx-scene > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: vx-fade 900ms ease backwards;
+}
+.vx-stage[data-scene="ready"] :is(.vx-floor, .vx-embers) {
+  display: none;
+}
+
+/*
+ * The summon. dark: the chamber waits a moment for its vault (the hold lets the page show itself
+ * anyway if scripts never arrive). summon: the interface arrives with the vault, timed by the
+ * --vx-*-at variables. done: everything at rest, with no entrance left to replay.
+ */
+.vx-stage[data-intro="dark"] :is(.vx-inner, .vx-frame) {
+  animation: vx-hold 2.5s step-end;
+}
+@keyframes vx-hold {
+  from {
     opacity: 0;
   }
-  12% {
-    opacity: 1;
+}
+.vx-stage {
+  --vx-step: 80ms;
+}
+.vx-stage[data-summon="short"] {
+  --vx-step: 30ms;
+}
+.vx-stage[data-intro="summon"] .vx-frame > span {
+  animation: vx-corner 700ms var(--ease-out-soft) var(--vx-hud-at) backwards;
+}
+.vx-stage[data-intro="summon"] .vx-hud {
+  animation: vx-hud-in 800ms var(--ease-out-soft) var(--vx-hud-at) backwards;
+}
+@keyframes vx-hud-in {
+  from {
+    opacity: 0;
+    translate: 0 -10px;
+    clip-path: inset(0 50% 0 50%);
   }
-  85% {
-    opacity: 0.7;
+  to {
+    clip-path: inset(0);
+  }
+}
+.vx-stage[data-intro="summon"] .vx-artifact > .vx-seal {
+  animation: vx-seal-summon 1300ms cubic-bezier(0.2, 0.8, 0.2, 1) 150ms backwards;
+}
+.vx-stage[data-summon="short"][data-intro="summon"] .vx-artifact > .vx-seal {
+  animation-duration: 800ms;
+  animation-delay: 0ms;
+}
+@keyframes vx-seal-summon {
+  from {
+    opacity: 0;
+    translate: 0 30%;
+    scale: 0.7;
+    filter: brightness(2.5) blur(6px);
+  }
+}
+/* The panel is projected out of the vault: from its side on wide screens, from above on phones. */
+.vx-window {
+  --vx-from: 0 -3rem;
+}
+@media (min-width: 64rem) {
+  .vx-window {
+    --vx-from: -5rem 0;
+  }
+}
+.vx-stage[data-intro="summon"] .vx-window {
+  animation: vx-project 800ms cubic-bezier(0.7, 0, 0.2, 1) var(--vx-panel-at) backwards;
+}
+@keyframes vx-project {
+  0% {
+    opacity: 0;
+    translate: var(--vx-from);
+    scale: 0.92;
+    clip-path: inset(50% 0 50% 0);
+    filter: brightness(3);
+  }
+  45% {
+    opacity: 1;
+    clip-path: inset(48% 0 48% 0);
   }
   100% {
-    translate: 0 calc(100dvh - 4rem);
-    opacity: 0;
+    translate: 0 0;
+    scale: 1;
+    clip-path: inset(0);
+    filter: none;
   }
+}
+.vx-lede,
+.vx-label {
+  --n: 0;
+}
+.vx-input {
+  --n: 1;
+}
+.vx-signal {
+  --n: 2;
+}
+.vx-help {
+  --n: 3;
+}
+.vx-form > .vx-actions {
+  --n: 4;
+}
+.vx-stage[data-intro="summon"] :is(.vx-lede, .vx-label, .vx-input, .vx-signal, .vx-help, .vx-form > .vx-actions) {
+  animation: vx-detail 450ms var(--ease-out-soft) calc(var(--vx-panel-at) + 250ms + var(--n) * var(--vx-step)) backwards;
+}
+@keyframes vx-detail {
+  from {
+    opacity: 0;
+    translate: -8px 0;
+    filter: brightness(2.2);
+  }
+}
+/* The lock-in: the panel flares as the vault settles. */
+.vx-stage[data-intro="summon"] .vx-window-flare {
+  animation: vx-flare 520ms ease-out var(--vx-settle-at) backwards;
+}
+.vx-stage[data-intro="summon"] .vx-log {
+  animation: vx-rise 600ms var(--ease-out-soft) calc(var(--vx-settle-at) - 250ms) backwards;
+}
+.vx-skip {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.5rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vx-ash);
+  background: rgb(3 2 3 / 0.72);
+  backdrop-filter: blur(6px);
+  animation: vx-fade 400ms ease 300ms backwards;
+}
+@media (min-width: 48rem) {
+  .vx-skip {
+    right: 2rem;
+    bottom: 1.75rem;
+  }
+}
+.vx-skip:hover {
+  border-color: rgb(255 31 61 / 0.55);
+  color: var(--vx-text);
+}
+.vx-skip:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 @keyframes vx-fade {
   from {
@@ -5269,7 +5409,6 @@ a.arcade-counter:hover {
   gap: 0.75rem 1rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid rgb(255 31 61 / 0.2);
-  animation: vx-fade 700ms ease 150ms backwards;
 }
 .vx-eyebrow {
   font-family: var(--vx-mono);
@@ -5381,22 +5520,32 @@ a.arcade-counter:hover {
   }
 }
 
+/* Where the vault stands. The 3D scene frames itself on this box; the drawn seal fills it otherwise. */
+.vx-artifact {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(20rem, 84vw, 44svh);
+  aspect-ratio: 1;
+}
+@media (min-width: 64rem) {
+  .vx-artifact {
+    width: min(34rem, 42vw, 62svh);
+  }
+}
+.vx-artifact > .vx-seal {
+  width: 100%;
+}
+
 /* The seal. SVG transforms turn around the centre of the viewBox. */
 .vx-seal {
   position: relative;
   width: min(19rem, 78vw);
   aspect-ratio: 1;
-  animation: vx-seal-in 1100ms var(--ease-out-soft) 200ms backwards;
 }
 @media (min-width: 64rem) {
   .vx-seal {
     width: min(30rem, 38vw, 60dvh);
-  }
-}
-@keyframes vx-seal-in {
-  from {
-    opacity: 0;
-    scale: 0.88;
   }
 }
 .vx-seal-shake,
@@ -5622,16 +5771,6 @@ a.arcade-counter:hover {
   transition:
     border-color 500ms ease,
     box-shadow 700ms ease;
-  animation: vx-unfold 700ms cubic-bezier(0.7, 0, 0.2, 1) 450ms backwards;
-}
-@keyframes vx-unfold {
-  from {
-    clip-path: inset(50% 0 50% 0);
-    opacity: 0.5;
-  }
-  to {
-    clip-path: inset(0);
-  }
 }
 .vx-stage:is([data-phase="granted"], [data-phase="already"]) .vx-window {
   --c: #fff;
@@ -5757,10 +5896,9 @@ a.arcade-counter:hover {
   text-shadow: 0 0 22px rgb(255 31 61 / 0.45);
   outline: none;
 }
-.vx-stage h2.vx-headline:focus-visible {
-  border-radius: 0;
-  outline: 2px solid currentColor;
-  outline-offset: 4px;
+/* Headings only receive programmatic focus (to move screen readers); no ring. */
+.vx-stage :is(h2.vx-headline, h3.vx-inspect-name):focus-visible {
+  outline: none;
 }
 .vx-stage[data-phase="granted"] h2.vx-headline {
   color: #fff;
@@ -6096,6 +6234,210 @@ a.arcade-counter:hover {
   text-decoration: underline;
 }
 
+/* The reveal: confirmed rewards fly out of the open vault as cards, and open up close. */
+.vx-reveal {
+  position: relative;
+  display: grid;
+  gap: 1.1rem;
+  width: 100%;
+  max-width: 34rem;
+}
+.vx-reveal-head {
+  animation: vx-fade 500ms ease backwards;
+}
+.vx-reveal-sub {
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  color: rgb(243 233 235 / 0.7);
+}
+.vx-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.vx-cards[data-count="1"] {
+  grid-template-columns: minmax(0, 15rem);
+  justify-content: center;
+}
+@media (min-width: 40rem) {
+  .vx-cards[data-count="3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.vx-cards > li {
+  perspective: 700px;
+  animation: vx-card-out 950ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0ms) + var(--i, 0) * var(--stagger, 110ms)) backwards;
+}
+/* --fx/--fy: from the vault's core to the card's place, measured when the reveal opens. */
+@keyframes vx-card-out {
+  0% {
+    opacity: 0;
+    translate: var(--fx, 0) var(--fy, 0);
+    scale: 0.15;
+    rotate: x 70deg;
+    filter: brightness(3) blur(4px);
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    filter: brightness(1.35);
+  }
+}
+.vx-reveal[data-settled] .vx-cards > li {
+  animation: none;
+}
+.vx-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.9rem 0.75rem 1rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  text-align: center;
+  background:
+    radial-gradient(120% 70% at 50% 0%, rgb(255 31 61 / 0.26), transparent 70%),
+    rgb(7 3 5 / 0.92);
+  box-shadow:
+    0 18px 40px -18px #000,
+    0 0 30px -12px rgb(255 31 61 / 0.5);
+  transition:
+    border-color 200ms ease,
+    translate 200ms ease,
+    box-shadow 200ms ease;
+}
+.vx-card:hover {
+  translate: 0 -3px;
+  border-color: rgb(255 31 61 / 0.7);
+  box-shadow:
+    0 22px 44px -18px #000,
+    0 0 36px -8px rgb(255 31 61 / 0.65);
+}
+.vx-card:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.vx-card-art {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 7.25rem;
+  margin-bottom: 0.35rem;
+}
+.vx-card-kind {
+  font-family: var(--vx-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vx-red);
+}
+.vx-card-name {
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fff;
+}
+.vx-card .vx-tag {
+  margin-top: auto;
+}
+.vx-inspect {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgb(255 31 61 / 0.24), transparent 70%),
+    rgb(7 3 5 / 0.94);
+  box-shadow: 0 0 50px -14px rgb(255 31 61 / 0.55);
+  animation: vx-inspect-in 450ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@media (min-width: 40rem) {
+  .vx-inspect {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+}
+@keyframes vx-inspect-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    filter: brightness(1.8);
+  }
+}
+.vx-inspect-art {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  min-height: 11rem;
+}
+.vx-inspect-copy {
+  display: grid;
+  justify-items: start;
+  gap: 0.55rem;
+}
+.vx-stage h3.vx-inspect-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+  outline: none;
+}
+.vx-coin {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  color: #4a2c00;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #f5b83d 45%, #a8650f);
+  box-shadow:
+    0 0 0 2px rgb(255 214 120 / 0.35),
+    0 0 26px rgb(255 190 80 / 0.45);
+}
+.vx-coin[data-size="slot"] {
+  width: 1.9rem;
+}
+.vx-coin[data-size="large"] {
+  width: 8rem;
+}
+.vx-coin > svg {
+  width: 55%;
+  height: 55%;
+}
+.vx-nameplate {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  text-align: left;
+  background: rgb(255 255 255 / 0.04);
+}
+.vx-nameplate[data-size="large"] {
+  padding: 0.85rem 1.1rem;
+  font-size: 1.1rem;
+}
+.vx-nameplate-name {
+  display: block;
+  overflow: hidden;
+  font-weight: 700;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vx-game-art {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+}
+.vx-game-art[data-size="card"] {
+  max-height: 7.25rem;
+}
+
 /* Access log. */
 .vx-log {
   width: 100%;
@@ -6103,7 +6445,6 @@ a.arcade-counter:hover {
   margin: 0 auto;
   padding-top: 1rem;
   border-top: 1px solid rgb(255 31 61 / 0.2);
-  animation: vx-rise 600ms var(--ease-out-soft) 1000ms backwards;
 }
 .vx-log-head {
   display: flex;
@@ -6358,6 +6699,10 @@ a.arcade-counter:hover {
     stroke: #ff8597;
   }
 }
+/* A granted panel only ever appears after the reveal: un-hiding it must not replay its entrance. */
+.vx-stage[data-phase="granted"][data-intro] .vx-window * {
+  animation: none;
+}
 @keyframes vx-glitch {
   0% {
     translate: -4px 0;
@@ -6394,11 +6739,17 @@ a.arcade-counter:hover {
 }
 
 /* Subtle motion: quick fades, no scan, no chase, no glitch and no delays. */
-.vx-stage[data-motion="subtle"] :is(.vx-boot, .vx-scan) {
+.vx-stage[data-motion="subtle"] .vx-scan {
   display: none;
 }
-.vx-stage[data-motion="subtle"] :is(.vx-hud, .vx-seal, .vx-window, .vx-log, .vx-frame > span) {
-  animation: vx-fade 300ms ease backwards;
+.vx-stage[data-motion="subtle"][data-intro="summon"] :is(.vx-hud, .vx-artifact > .vx-seal, .vx-window, .vx-log, .vx-frame > span) {
+  animation: vx-fade 400ms ease var(--vx-panel-at) backwards;
+}
+.vx-stage[data-motion="subtle"][data-intro="summon"] :is(.vx-lede, .vx-label, .vx-input, .vx-signal, .vx-help, .vx-form > .vx-actions, .vx-window-flare) {
+  animation: none;
+}
+.vx-stage[data-motion="subtle"] .vx-cards > li {
+  animation: vx-fade 350ms ease calc(var(--d, 0ms) + var(--i, 0) * 60ms) backwards;
 }
 .vx-stage[data-motion="subtle"] .vx-seal-svg * {
   transition-delay: 0ms;
@@ -6430,7 +6781,7 @@ a.arcade-counter:hover {
   animation: none !important;
   transition: none !important;
 }
-.vx-stage[data-motion="off"] :is(.vx-boot, .vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
+.vx-stage[data-motion="off"] :is(.vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
   display: none;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -6440,7 +6791,7 @@ a.arcade-counter:hover {
     animation: none !important;
     transition: none !important;
   }
-  .vx-stage :is(.vx-boot, .vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
+  .vx-stage :is(.vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
     display: none;
   }
 }

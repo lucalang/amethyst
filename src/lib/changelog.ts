@@ -52,24 +52,34 @@ export const CHANGELOG: readonly Release[] = [
     id: "2026-10-30-vault-rework",
     date: "2026-10-30",
     title: "The Vault, resealed",
-    intro: "The Vault is now a pitch-black chamber with a living red seal. Speak a code and watch it verify, break open and reveal exactly what you’ve earned. Codes can now be real words.",
+    intro: "The Vault is now a 3D chamber you summon: a heavy red-lit vault rises out of the dark, opens for the right code and hands you what you’ve earned. Codes can now be real words.",
     icon: "sparkles",
     highlights: [
-      { kind: "improved", feature: "The Vault", text: "A full-screen sealed chamber that verifies your code, breaks open and reveals each reward." },
+      { kind: "improved", feature: "The Vault", text: "A 3D vault rises out of the dark when you arrive, with its code panel projected beside it. Any key or tap skips straight in." },
+      { kind: "improved", feature: "Reward reveal", text: "Correct codes break the seals, open the doors and send each reward out as a card you can inspect, shown on your own avatar and covers." },
       { kind: "new", feature: "Word codes", text: "Codes can be words or phrases such as SHADOW. Letter case and extra spaces don’t matter." },
-      { kind: "improved", feature: "Clear answers", text: "Wrong, expired and already-claimed codes each get their own answer, and interrupted attempts are recovered." },
+      { kind: "improved", feature: "Clear answers", text: "Wrong, expired, already-claimed, rate-limited and interrupted attempts each get their own answer." },
     ],
     details: {
       improved: [
         {
-          title: "A sealed chamber",
-          body: "The Vault fills the screen in black and red, with a turning seal that lights up as you type. When you speak a code, the seal verifies it, then breaks open and reveals the coins and items the vault actually granted, each in its own slot.",
+          title: "Summon the Vault",
+          body: "Opening the Vault calls it up: the chamber stirs, a red aura gathers over a sigil on the floor and a thick, layered vault rises into place, its code panel locking in beside it. The full sequence plays once per visit; after that it settles in quickly, and any key, tap or Skip intro jumps straight to the code field.",
           points: [
-            "Rewards appear only after the server confirms them, with new items marked.",
-            "Sound effects follow your Arcade sound setting and can be switched off on the page.",
-            "Reduced motion and Motion: Off keep the same answers without the animation, and effects pause when the page is out of view.",
+            "The vault follows your pointer slightly on desktop and stays steady on touch screens.",
+            "Optional sound: a low hum while the vault is on screen, plus mechanical sounds for each answer. It follows your Arcade sound setting and the switch on the page.",
+            "Reduced motion and Motion: Off show the vault at rest with no entrance. Browsers without 3D graphics get the drawn seal instead.",
           ],
           where: "Account menu → The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Opening the vault",
+          body: "Your code is sent the moment you submit it. Once the server accepts it, the seals part, the doors swing open and light floods out as each reward leaves the vault as a card. Choose a card to see it up close: decorations on your own avatar, frames around your own covers, titles on your name. Continue keeps the result on the panel, and View rewards brings the cards back.",
+          points: [
+            "Nothing is shown as yours until the server confirms it, and interrupting the animation never hides or repeats a reward.",
+            "Wrong and expired codes, codes you’ve already claimed, too many tries and connection problems each have their own reaction, and none of them replays the unlock.",
+          ],
           link: { href: "/vault", label: "Open the Vault" },
         },
         {
