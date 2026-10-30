@@ -239,6 +239,9 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const inFlight = useRef(false);
   /** After a lost answer: the newest find before it, so a later "already" for that code shows as its grant. */
   const lostSince = useRef<string | null | undefined>(undefined);
+  // One id per attempt. Retrying the same code after a lost answer reuses it, so the vault answers
+  // with what that attempt granted instead of granting a repeatable code again.
+  const attempt = useRef<{ code: string; request: string } | null>(null);
   const soundRef = useRef(sound);
   const busy = phase === "verifying";
   const signal = Math.min(PIPS.length, code.replace(/\s+/g, "").length);
@@ -415,8 +418,10 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
 
     let next: Outcome;
     let balance: number | null = null;
+    const request = attempt.current?.code === code ? attempt.current.request : crypto.randomUUID();
+    attempt.current = { code, request };
     try {
-      const result = await apiFetch<Redemption>("/api/vault/redeem", { method: "POST", json: { code } });
+      const result = await apiFetch<Redemption>("/api/vault/redeem", { method: "POST", json: { code, request } });
       if (result.status === "unlocked") {
         next = { phase: "granted", coins: result.coins, items: result.items, newItems: result.newItems };
         balance = result.balance;
@@ -441,6 +446,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     if (next.phase === "lost") lostSince.current = since;
     else {
       lostSince.current = undefined;
+      attempt.current = null;
       clearPending();
     }
     if (balance !== null) window.dispatchEvent(new CustomEvent("archive:coins", { detail: balance }));
@@ -469,6 +475,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     lostSince.current = undefined;
     const found = newestSince(latest, since);
     if (found) {
+      attempt.current = null;
       show({ phase: "granted", coins: found.coins, items: found.items, recovered: true });
       router.refresh();
     } else show({ phase: "lost", since, message: "Nothing new reached your log, so that attempt granted nothing. Enter the code again whenever you’re ready." });

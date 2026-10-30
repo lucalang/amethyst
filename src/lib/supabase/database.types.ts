@@ -23,6 +23,12 @@ export type Database = {
           }
         },"public": {
           Tables: {
+            "app_admins": {
+              Row: { user_id: string; role: "owner" | "admin"; granted_at: string; granted_by: string | null }
+              Insert: { user_id: string; role?: "owner" | "admin"; granted_at?: string; granted_by?: string | null }
+              Update: { user_id?: string; role?: "owner" | "admin"; granted_at?: string; granted_by?: string | null }
+              Relationships: []
+            },
             "achievement_definitions": {
               Row: { id: string; metric: string; target: number; display_order: number; reward_coins: number; hidden: boolean }
               Insert: { id: string; metric: string; target: number; display_order: number; reward_coins?: number; hidden?: boolean }
@@ -57,9 +63,9 @@ export type Database = {
               ]
             },
             "user_achievements": {
-              Row: { user_id: string; achievement_id: string; earned_at: string; source: "event" | "backfill"; notification_claimed_at: string | null }
-              Insert: { user_id?: string; achievement_id: string; earned_at?: string; source: "event" | "backfill"; notification_claimed_at?: string | null }
-              Update: { user_id?: string; achievement_id?: string; earned_at?: string; source?: "event" | "backfill"; notification_claimed_at?: string | null }
+              Row: { user_id: string; achievement_id: string; earned_at: string; source: "event" | "backfill" | "code"; notification_claimed_at: string | null }
+              Insert: { user_id?: string; achievement_id: string; earned_at?: string; source: "event" | "backfill" | "code"; notification_claimed_at?: string | null }
+              Update: { user_id?: string; achievement_id?: string; earned_at?: string; source?: "event" | "backfill" | "code"; notification_claimed_at?: string | null }
               Relationships: [
                 { foreignKeyName: "user_achievements_achievement_id_fkey"; columns: ["achievement_id"]; isOneToOne: false; referencedRelation: "achievement_definitions"; referencedColumns: ["id"] },
                 { foreignKeyName: "user_achievements_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
@@ -178,9 +184,9 @@ export type Database = {
               ]
             },
             "secret_code_redemptions": {
-              Row: { code_id: string; user_id: string; redeemed_at: string; coins: number; items: string[] }
-              Insert: { code_id: string; user_id: string; redeemed_at?: string; coins?: number; items?: string[] }
-              Update: { code_id?: string; user_id?: string; redeemed_at?: string; coins?: number; items?: string[] }
+              Row: { id: number; code_id: string; user_id: string; redeemed_at: string; coins: number; items: string[]; achievements: string[]; achievements_new: string[]; request_id: string | null }
+              Insert: { code_id: string; user_id: string; redeemed_at?: string; coins?: number; items?: string[]; achievements?: string[]; achievements_new?: string[]; request_id?: string | null }
+              Update: { code_id?: string; user_id?: string; redeemed_at?: string; coins?: number; items?: string[]; achievements?: string[]; achievements_new?: string[]; request_id?: string | null }
               Relationships: [{ foreignKeyName: "secret_code_redemptions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "slot_machines": {
@@ -557,7 +563,31 @@ isOneToOne: false
 { Args: { "p_code_hash": string }; Returns: Json
                            },
 "redeem_vault_code":
-{ Args: { "p_loose_hash": string,"p_phrase_hash"?: string | null }; Returns: Json
+{ Args: { "p_loose_hash": string,"p_phrase_hash"?: string | null,"p_request"?: string | null }; Returns: Json
+                           },
+"admin_vault_catalog":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_vault_overview":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_vault_code":
+{ Args: { "p_id": string }; Returns: Json
+                           },
+"admin_vault_accounts":
+{ Args: { "p_query"?: string | null,"p_ids"?: string[] | null }; Returns: Json
+                           },
+"admin_vault_publish":
+{ Args: { "p_code_hash": string,"p_loose_hash": string,"p_format": "compact" | "phrase","p_label": string,"p_coins": number,"p_items": string[],"p_achievements": string[],"p_starts_at": string | null,"p_expires_at": string | null,"p_max_redemptions": number | null,"p_per_account_limit": number,"p_audience": "everyone" | "allowlist","p_allowlist": string[],"p_confirm_repeat": boolean,"p_draft"?: string | null }; Returns: string
+                           },
+"admin_vault_disable":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"admin_vault_save_draft":
+{ Args: { "p_id": string | null,"p_label": string,"p_config": Json }; Returns: string
+                           },
+"admin_vault_delete_draft":
+{ Args: { "p_id": string }; Returns: boolean
                            },
 "admin_create_secret_code":
 { Args: { "p_code_hash": string,"p_label": string,"p_coins"?: number,"p_items"?: string[],"p_expires_at"?: string | null,"p_max_redemptions"?: number | null,"p_format"?: "compact" | "phrase","p_loose_hash"?: string | null }; Returns: string

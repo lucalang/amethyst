@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings } from "lucide-react";
+import { FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -44,7 +44,14 @@ export function BrandMark({ className }: { className?: string }) {
 }
 
 /** The signed-in account as shown in the private account menu. */
-export type AccountSummary = { name: string | null; avatarUrl: string | null; decoration: AvatarDecorationId | null; email: string | null };
+export type AccountSummary = {
+  name: string | null;
+  avatarUrl: string | null;
+  decoration: AvatarDecorationId | null;
+  email: string | null;
+  /** Shows the Admin entry; the admin pages and functions check permission themselves. */
+  admin?: boolean;
+};
 
 export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const currentId = useCurrentCollectionId(collections);
@@ -152,6 +159,13 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
                   <KeyRound aria-hidden /> The Vault
                 </Link>
               </DropdownMenuItem>
+              {account.admin ? (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin">
+                    <ShieldCheck aria-hidden /> Admin
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator />
               <form action="/auth/signout" method="post">
                 <DropdownMenuItem asChild>

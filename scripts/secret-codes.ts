@@ -8,6 +8,9 @@
  *   npm run codes -- list               # every code: rewards, expiry, uses and status (never the code)
  *   npm run codes -- disable <id>       # stops a code; rewards already granted stay
  *   npm run codes -- rewards            # item ids a code can grant
+ *   npm run codes -- admins             # who can use the in-app admin panel (/admin)
+ *   npm run codes -- admin-grant <email> [--owner]   # the account must have signed in once
+ *   npm run codes -- admin-revoke <email>
  *
  * --code sets your own words; --custom asks for them with hidden input (kept out of shell history).
  * Without either, a random code is generated and printed once. Chosen codes ignore letter case,
@@ -76,26 +79,51 @@ type CodeRow = {
   format: "compact" | "phrase";
   label: string;
   coins: number;
+  starts_at: string | null;
   expires_at: string | null;
+  per_account_limit: number;
+  audience: "everyone" | "allowlist";
   max_redemptions: number | null;
   redemption_count: number;
   disabled_at: string | null;
   created_at: string;
   secret_code_items: { item_id: string }[];
+  secret_code_achievements: { achievement_id: string }[];
 };
 
 function status(row: CodeRow) {
   if (row.disabled_at) return "disabled";
   if (row.expires_at && new Date(row.expires_at).getTime() <= Date.now()) return "expired";
   if (row.max_redemptions !== null && row.redemption_count >= row.max_redemptions) return "used up";
+  if (row.starts_at && new Date(row.starts_at).getTime() > Date.now()) return "scheduled";
   return "active";
+}
+
+const connect = (url: string, secret: string) => createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+
+/** The account id for an email (the account must have signed in once so its profile exists). */
+async function accountId(admin: ReturnType<typeof connect>, email: string | undefined): Promise<string> {
+  const wanted = email?.trim().toLowerCase();
+  if (!wanted || !wanted.includes("@")) throw new Error("Give the account's email, for example: npm run codes -- admin-grant you@example.com");
+  for (let page = 1; page <= 100; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(error.message);
+    const user = data.users.find((candidate) => candidate.email?.toLowerCase() === wanted);
+    if (user) {
+      const { data: profile } = await admin.from("users").select("id").eq("id", user.id).maybeSingle();
+      if (!profile) throw new Error("That account hasn't opened the app yet. Sign in once, then run this again.");
+      return user.id;
+    }
+    if (data.users.length < 1000) break;
+  }
+  throw new Error("No account with that email. Sign in once, then run this again.");
 }
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const secret = process.env.SUPABASE_SECRET_KEY;
   if (!url || !secret) throw new Error("NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY are required.");
-  const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  const admin = connect(url, secret);
   const command = process.argv[2];
 
   if (command === "create") {
@@ -160,16 +188,19 @@ async function main() {
   if (command === "list") {
     const { data, error } = await admin
       .from("secret_codes")
-      .select("id, format, label, coins, expires_at, max_redemptions, redemption_count, disabled_at, created_at, secret_code_items(item_id)")
+      .select(
+        "id, format, label, coins, starts_at, expires_at, per_account_limit, audience, max_redemptions, redemption_count, disabled_at, created_at, secret_code_items(item_id), secret_code_achievements(achievement_id)",
+      )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const rows = (data ?? []) as CodeRow[];
     if (rows.length === 0) return console.log("No codes yet.");
     for (const row of rows) {
       const items = row.secret_code_items.map((item) => item.item_id).join(", ");
+      const achievements = row.secret_code_achievements.map((item) => `achievement:${item.achievement_id}`).join(", ");
       console.log(`${row.id}  [${status(row)}]  ${row.label}  (${row.format === "phrase" ? "chosen words" : "compact"})`);
       console.log(
-        `    ${row.coins} coins${items ? ` + ${items}` : ""} · used ${row.redemption_count}${row.max_redemptions === null ? "" : `/${row.max_redemptions}`} · expires ${row.expires_at ?? "never"}`,
+        `    ${row.coins} coins${items ? ` + ${items}` : ""}${achievements ? ` + ${achievements}` : ""} · used ${row.redemption_count}${row.max_redemptions === null ? "" : `/${row.max_redemptions}`} · ${row.per_account_limit} per account${row.audience === "allowlist" ? " · allowlist" : ""} · ${row.starts_at ? `starts ${row.starts_at} · ` : ""}expires ${row.expires_at ?? "never"}`,
       );
     }
     return;
@@ -194,7 +225,36 @@ async function main() {
     return;
   }
 
-  console.log("Usage: npm run codes -- create|list|disable|rewards (see scripts/secret-codes.ts).");
+  if (command === "admins") {
+    const { data, error } = await admin.from("app_admins").select("user_id, role, granted_at").order("granted_at");
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as { user_id: string; role: string; granted_at: string }[];
+    if (rows.length === 0) return console.log("No administrators yet. Run: npm run codes -- admin-grant <email> --owner");
+    for (const row of rows) {
+      const { data: found } = await admin.auth.admin.getUserById(row.user_id);
+      console.log(`${row.role.padEnd(6)} ${found.user?.email ?? row.user_id}  (since ${row.granted_at})`);
+    }
+    return;
+  }
+
+  if (command === "admin-grant") {
+    const id = await accountId(admin, process.argv[3]);
+    const role = arg("owner") ? "owner" : "admin";
+    const { error } = await admin.from("app_admins").upsert({ user_id: id, role }, { onConflict: "user_id" });
+    if (error) throw new Error(error.message);
+    console.log(`${process.argv[3]} is now ${role === "owner" ? "the owner" : "an administrator"}. Reload the app to see Admin in the account menu.`);
+    return;
+  }
+
+  if (command === "admin-revoke") {
+    const id = await accountId(admin, process.argv[3]);
+    const { data, error } = await admin.from("app_admins").delete().eq("user_id", id).select("user_id");
+    if (error) throw new Error(error.message);
+    console.log(data?.length ? "Removed. The admin panel is closed to that account from its next request." : "That account wasn't an administrator.");
+    return;
+  }
+
+  console.log("Usage: npm run codes -- create|list|disable|rewards|admins|admin-grant|admin-revoke (see scripts/secret-codes.ts).");
 }
 
 main().catch((error) => {

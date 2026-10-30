@@ -1,8 +1,12 @@
 import { createHash, randomInt } from "node:crypto";
+import { compactCode, normalizePhrase } from "./code-format";
+
+export { CODE_LENGTH, CODE_RULES, compactCode, normalizePhrase } from "./code-format";
 
 /**
- * Secret code helpers shared by the redeem API and the operator script (`npm run codes`). Codes are
- * never stored or logged: the database only sees SHA-256 hashes of their normalized forms.
+ * Secret code helpers shared by the redeem API, the admin panel and the operator script
+ * (`npm run codes`). Codes are never stored or logged: the database only sees SHA-256 hashes of their
+ * normalized forms.
  *
  * Each code has one of two formats, fixed when it's created:
  * - phrase (chosen words such as "OPEN THE VAULT"): letter case doesn't matter, surrounding spaces are
@@ -16,33 +20,21 @@ import { createHash, randomInt } from "node:crypto";
 /** Letters and digits that can't be mistaken for one another (no 0/O, 1/I/L). */
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
-export const CODE_LENGTH = { min: 4, max: 64 } as const;
-export const CODE_RULES = "Codes are 4 to 64 letters, numbers and spaces.";
-
-const fold = (input: string) => input.normalize("NFKC").toUpperCase();
-const fits = (value: string, pattern: RegExp) => {
-  const length = [...value].length;
-  return length >= CODE_LENGTH.min && length <= CODE_LENGTH.max && pattern.test(value);
-};
-
-/** "  open   the vault " → "OPEN THE VAULT"; null unless it's words of letters and numbers. */
-export function normalizePhrase(input: string): string | null {
-  const phrase = fold(input).trim().replace(/\s+/g, " ");
-  return fits(phrase, /^[\p{L}\p{M}\p{N}]+(?: [\p{L}\p{M}\p{N}]+)*$/u) ? phrase : null;
-}
-
-/** "k7qm-3xrp" → "K7QM3XRP": spaces, dashes, dots and underscores dropped (the original normalization). */
-export function compactCode(input: string): string | null {
-  const code = fold(input).replace(/[\s._-]+/g, "");
-  return fits(code, /^[\p{L}\p{M}\p{N}]+$/u) ? code : null;
-}
-
 /** The hashes the database compares for a typed code, or null when it can't be any code. */
 export function typedCodeHashes(input: string): { loose: string; phrase: string | null } | null {
   const compact = compactCode(input);
   if (!compact) return null;
   const phrase = normalizePhrase(input);
   return { loose: hashCode(compact), phrase: phrase ? hashCode(phrase) : null };
+}
+
+/** The hashes stored for a new code: a phrase (normalized) or a random compact code. */
+export function newCodeHashes(code: string, format: "phrase" | "compact"): { code: string; loose: string } | null {
+  const compact = compactCode(code);
+  if (!compact) return null;
+  if (format === "compact") return { code: hashCode(compact), loose: hashCode(compact) };
+  const phrase = normalizePhrase(code);
+  return phrase ? { code: hashCode(phrase), loose: hashCode(compact) } : null;
 }
 
 /** The SHA-256 of a normalized code as lowercase hex: the only form the database stores or compares. */

@@ -276,6 +276,32 @@ npm run codes -- disable <id>                # stop a code; rewards already gran
 - Each account can redeem a code once. `--max` caps total redemptions, `--expires` sets an end date. Expired, used-up and disabled codes tell players the seal is dormant.
 - Disable instead of deleting: redeemed codes can't be deleted (redemptions reference them). In an emergency you can also set `secret_codes.disabled_at` in the Supabase Table Editor.
 
+### Admin panel (`/admin`)
+
+Administrators build and manage codes in the app: pick rewards (coins, any registered cosmetic including hidden ones, achievements), set the rules, review the exact effects and publish. Drafts hold only the configuration (never a code); published codes can't be edited, only disabled or cloned. A new code is shown once on the publish screen; only its hashes are stored. The panel lists every code with status, usage, redemption history and an audit trail of who published or disabled it (from the panel or the CLI).
+
+Admins are listed in `public.app_admins`, which only the service role can change. Every admin page, API route and database function checks that list on the server; the nav entry is only a convenience. Nobody becomes admin automatically. To designate the initial owner:
+
+1. Sign in to the app once with the owner's account (so its profile exists).
+2. On a trusted machine with the service-role key in `.env.local`:
+
+```bash
+npm run codes -- admin-grant you@example.com --owner   # or without --owner for a regular admin
+npm run codes -- admins                                # who has access
+npm run codes -- admin-revoke someone@example.com
+```
+
+Alternatively, in the Supabase SQL editor: `insert into public.app_admins (user_id, role) select id, 'owner' from auth.users where email = 'you@example.com';`
+
+Rules the panel adds (also visible in `npm run codes -- list`):
+
+- **Start and expiry**: a code may open later (`starts_at`); before that, players are told it's dormant.
+- **Per-account limit** (default 1, up to 100) on top of the optional total limit. Repeated redemptions grant coins again; cosmetics and achievements are only granted once. Publishing a repeatable coin code requires an explicit confirmation of its maximum payout.
+- **Allowlist**: restrict a code to specific accounts (stored by account id). Anyone else is told the code doesn't exist.
+- **Achievements**: a code can unlock achievements through the achievement system, including their own once-per-account rewards. Already-unlocked achievements keep their original date; code unlocks are recorded with source `code`.
+- Code coins are a separate transaction kind (`code`) and don't count toward the 600-coin daily earning limit.
+- Redemption is a single database transaction with row locks, so limits hold under concurrent requests. Each attempt carries a request id: a retried request never grants twice.
+
 ## Version history and interactive milestone demos
 
 `/version-history` catalogs all retained commits reachable from the repository's branches and tags (`main` and `backup/pre-squash`), deduplicated by full 40-character SHA, and lets visitors explore enabled historical milestones as isolated, fresh-account demos.

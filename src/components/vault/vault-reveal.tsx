@@ -4,9 +4,11 @@ import Link from "next/link";
 import { lazy, Suspense, useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { ArrowLeft, ArrowRight, Coins, Gamepad2, Sparkles } from "lucide-react";
 import { SampleArt, type FrameSample } from "@/app/(vault)/settings/frame-settings";
+import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { BadgeEmblem, ProfileFlair } from "@/components/layout/profile-flair";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
+import { achievementDefinition, type AchievementDefinition } from "@/lib/achievements";
 import { isAvatarDecorationId, isProfileBadgeId, isProfileTitleId, rewardItemInfo } from "@/lib/cosmetics";
 import { isShopFrameId } from "@/lib/frames";
 import { GAME_SHOPS, gameCosmetic, shopHref, type GameCosmetic } from "@/lib/game-cosmetics";
@@ -26,25 +28,32 @@ export type VaultLooks = { profile: VaultProfile; samples: VaultSamples };
  */
 export type RevealOrigin = { x: number; y: number; z: number; perspective: number; axisX: number; axisY: number };
 
-type RewardKind = "frame" | "avatar_decoration" | "badge" | "title" | "game" | "other";
+type RewardKind = "frame" | "avatar_decoration" | "badge" | "title" | "game" | "achievement" | "other";
 const KIND_LABEL: Record<RewardKind, string> = {
   frame: "Artwork frame",
   avatar_decoration: "Avatar decoration",
   badge: "Profile badge",
   title: "Profile title",
   game: "Game look",
+  achievement: "Achievement",
   other: "Item",
 };
 const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&*+<>/";
 
-/** Profile cosmetics and game looks alike. */
-export function rewardInfo(id: string): { kind: RewardKind; name: string; description: string; game?: GameCosmetic } {
+/** Achievements a code unlocks travel with its rewards as "achievement:<id>". */
+export const ACHIEVEMENT_PREFIX = "achievement:";
+const rewardAchievement = (id: string) => (id.startsWith(ACHIEVEMENT_PREFIX) ? achievementDefinition(id.slice(ACHIEVEMENT_PREFIX.length)) : undefined);
+
+/** Profile cosmetics, game looks and achievements alike. */
+export function rewardInfo(id: string): { kind: RewardKind; name: string; description: string; game?: GameCosmetic; achievement?: AchievementDefinition } {
+  const achievement = rewardAchievement(id);
+  if (achievement) return { kind: "achievement", name: achievement.name, description: achievement.description, achievement };
   const game = gameCosmetic(id);
   if (game) return { kind: "game", name: game.name, description: game.description, game };
   return rewardItemInfo(id);
 }
 
-const kindLabel = (info: ReturnType<typeof rewardInfo>) => (info.game ? `${GAME_SHOPS[info.game.game].title} look` : KIND_LABEL[info.kind]);
+export const kindLabel = (info: ReturnType<typeof rewardInfo>) => (info.game ? `${GAME_SHOPS[info.game.game].title} look` : KIND_LABEL[info.kind]);
 
 /** "500 coins · Vault sigil" */
 export function rewardSummary(coins: number, items: string[], separator = " · ") {
@@ -116,10 +125,13 @@ type ArtSize = "slot" | "card" | "large";
 const AVATAR: Record<ArtSize, string> = { slot: "size-9 text-xs", card: "size-[4.5rem] text-lg", large: "size-32 text-3xl sm:size-36" };
 const FRAME: Record<ArtSize, string> = { slot: "w-[1.6rem]", card: "w-[4.1rem]", large: "w-[6.5rem] sm:w-[7.5rem]" };
 const BADGE: Record<ArtSize, string> = { slot: "size-8", card: "size-16", large: "size-28" };
+const MEDAL: Record<ArtSize, number> = { slot: 34, card: 68, large: 132 };
 
 /** The reward itself, worn by the account's own avatar and covers where that applies. */
-function RewardArt({ id, size, looks, motion = "off" }: { id: string; size: ArtSize; looks: VaultLooks; motion?: MotionLevel }) {
+export function RewardArt({ id, size, looks, motion = "off" }: { id: string; size: ArtSize; looks: VaultLooks; motion?: MotionLevel }) {
   const { profile, samples } = looks;
+  const achievement = rewardAchievement(id);
+  if (achievement) return <AchievementBadge achievement={achievement} earned size={MEDAL[size]} motion={size === "large" && motion !== "off" ? "reveal" : undefined} />;
   if (isAvatarDecorationId(id)) return <ProfileAvatar name={profile.name} src={profile.avatarUrl} decoration={id} className={AVATAR[size]} />;
   if (isShopFrameId(id)) {
     return (
@@ -170,10 +182,10 @@ function CoinArt({ size }: { size: ArtSize }) {
   );
 }
 
-function Tag({ fresh }: { fresh: boolean }) {
+function Tag({ fresh, achievement }: { fresh: boolean; achievement: boolean }) {
   return (
     <span className="vx-tag" data-muted={fresh ? undefined : ""}>
-      {fresh ? "New" : "Already owned"}
+      {fresh ? "New" : achievement ? "Already unlocked" : "Already owned"}
     </span>
   );
 }
@@ -214,7 +226,7 @@ export function RewardSlots({ coins, items, newItems, delay, countUp, looks }: {
                 <span className="vx-slot-kind">{kindLabel(info)}</span>
                 <span className="vx-slot-name">
                   {info.name}
-                  {newItems ? <Tag fresh={newItems.includes(id)} /> : null}
+                  {newItems ? <Tag fresh={newItems.includes(id)} achievement={info.kind === "achievement"} /> : null}
                 </span>
                 <span className="vx-slot-desc">{info.description}</span>
               </span>
@@ -247,6 +259,7 @@ function rewardLink(id: string): { href: string; label: string } {
   if (id === COINS) return { href: "/arcade/shop", label: "Spend them in the shop" };
   const info = rewardInfo(id);
   if (info.game) return { href: shopHref(info.game.game), label: `Use it in ${GAME_SHOPS[info.game.game].title}` };
+  if (info.kind === "achievement") return { href: "/achievements", label: "See your achievements" };
   if (info.kind === "frame") return { href: "/settings/frames", label: "Use this frame" };
   return { href: "/customization/profile", label: "Wear it in your profile" };
 }
@@ -367,7 +380,7 @@ export function RewardReveal({
                 </span>
                 <span className="vx-card-kind">{label(id)}</span>
                 <span className="vx-card-name">{id === COINS ? <CountUp value={coins} delay={delay + index * CARD_STAGGER} animate={motion !== "off"} /> : name(id)}</span>
-                {isNew === null ? null : <Tag fresh={isNew} />}
+                {isNew === null ? null : <Tag fresh={isNew} achievement={id.startsWith(ACHIEVEMENT_PREFIX)} />}
               </button>
             </li>
           );
@@ -384,7 +397,7 @@ export function RewardReveal({
             <h3 id="vx-inspect-title" ref={detail} tabIndex={-1} className="vx-inspect-name">
               {name(shown)}
             </h3>
-            {fresh(shown) === null ? null : <Tag fresh={fresh(shown) === true} />}
+            {fresh(shown) === null ? null : <Tag fresh={fresh(shown) === true} achievement={shown.startsWith(ACHIEVEMENT_PREFIX)} />}
             <p className="vx-slot-desc">{shown === COINS ? "Added to your Arcade wallet, ready for the shop." : rewardInfo(shown).description}</p>
             <Link href={link.href} className="vx-link">
               {link.label} <ArrowRight aria-hidden className="size-3.5" />

@@ -9,12 +9,16 @@ export const metadata: Metadata = { title: "The Vault" };
 export default async function VaultPage() {
   const ctx = await requireUser();
   const [{ data }, { data: profile }, { data: covers }] = await Promise.all([
-    ctx.supabase.from("secret_code_redemptions").select("redeemed_at, coins, items").eq("user_id", ctx.userId).order("redeemed_at", { ascending: false }).limit(50),
+    ctx.supabase.from("secret_code_redemptions").select("redeemed_at, coins, items, achievements").eq("user_id", ctx.userId).order("redeemed_at", { ascending: false }).limit(50),
     // The account's own avatar and covers, so rewards are shown on the user's real things.
     ctx.supabase.from("users").select("display_name, avatar_url").eq("id", ctx.userId).maybeSingle(),
     ctx.supabase.from("entries").select("title, cover_url, cover_shape").not("cover_url", "is", null).order("updated_at", { ascending: false }).limit(40),
   ]);
-  const finds = (data ?? []).map((row) => ({ redeemedAt: row.redeemed_at, coins: row.coins, items: row.items }));
+  const finds = (data ?? []).map((row) => ({
+    redeemedAt: row.redeemed_at,
+    coins: row.coins,
+    items: [...row.items, ...row.achievements.map((id) => `achievement:${id}`)],
+  }));
   const sample = (shape: "portrait" | "square"): FrameSample | null => {
     const row = (covers ?? []).find((cover) => cover.cover_shape === shape && artworkSrc(cover.cover_url));
     return row?.cover_url ? { title: row.title, coverUrl: row.cover_url } : null;

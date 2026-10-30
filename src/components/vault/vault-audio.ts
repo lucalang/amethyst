@@ -167,6 +167,34 @@ export function playVaultReveal(count: number, at = 0) {
   for (let i = 0; i < Math.min(count, 8); i++) tone(1568 + i * 196, at + (i * CARD_STAGGER) / 1000, 0.5, "sine", 0.05);
 }
 
+export type AdminSound = "step" | "forge" | "draft" | "error";
+
+/**
+ * Admin panel cues, kept apart from the Vault's answers so publishing a code never sounds like
+ * finding one: forge is a rising inscription scan, then a low stamp with an open fifth.
+ */
+export function playAdminSound(name: AdminSound) {
+  switch (name) {
+    case "step":
+      tone(1200, 0, 0.04, "triangle", 0.03);
+      break;
+    case "forge":
+      noise(0, 0.8, 200, 4200, 0.16, "bandpass", undefined, 0.9);
+      tone(110, 0, 0.8, "sawtooth", 0.04, 220);
+      tone(48, 0.82, 0.9, "sine", 0.7, 30);
+      noise(0.82, 0.2, 2400, 600, 0.22, "bandpass", undefined, 0.05);
+      [196, 293.66, 392].forEach((freq, i) => tone(freq, 0.86 + i * 0.03, 1.6, "triangle", 0.07));
+      break;
+    case "draft":
+      tone(523.25, 0, 0.18, "sine", 0.08);
+      tone(392, 0.12, 0.3, "sine", 0.07);
+      break;
+    case "error":
+      tone(130, 0, 0.18, "square", 0.05, 110);
+      break;
+  }
+}
+
 /** Fades out the summon (on skip). */
 export function hushVault() {
   if (!sequence || !ctx) return;

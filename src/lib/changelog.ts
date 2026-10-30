@@ -49,6 +49,44 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-vault-code-rules",
+    date: "2026-10-30",
+    title: "Vault codes that unlock achievements",
+    intro: "Secret codes in the Vault can now unlock achievements alongside coins and cosmetics, open on a set date, and be meant for specific members — and a retried redemption never counts twice.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Achievement codes", text: "A code can unlock achievements, complete with their own rewards and notifications, shown in the Vault’s reveal and access log." },
+      { kind: "new", feature: "Scheduled codes", text: "Some codes open on a set date; until then the seal stays dormant." },
+      { kind: "improved", feature: "Safer redemptions", text: "If your connection drops mid-redemption, trying again picks up the original result instead of redeeming twice." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Codes can unlock achievements",
+          body: "When a code includes an achievement, redeeming it unlocks that achievement for you, with its usual one-time reward and unlock notification. The reveal and your access log list it next to any coins and cosmetics.",
+          points: [
+            "Achievements you already have stay exactly as they were, with their original unlock date; nothing is granted twice.",
+            "Cosmetics you already own are kept and the code still opens.",
+            "Coins from codes never count toward the 600-coin daily earning limit.",
+          ],
+          where: "The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Scheduled and limited codes",
+          body: "A code may open on a specific date, close on another, or be meant for certain members only. A few codes can even be redeemed more than once per account.",
+          where: "The Vault",
+        },
+      ],
+      improved: [
+        {
+          title: "Retries never redeem twice",
+          body: "Each redemption attempt carries its own identifier. If the answer gets lost and you try the same code again, the Vault shows the original result instead of granting it a second time.",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-achievement-rewards",
     date: "2026-10-30",
     title: "Achievement rewards, exclusive cosmetics and milestone flair",
