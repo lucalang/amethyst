@@ -49,6 +49,53 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-version-history",
+    date: "2026-10-30",
+    title: "Version history and playable milestone demos",
+    intro: "Browse every retained commit in Amethyst’s history and step into five prepared historical milestones as isolated, fresh-account demos.",
+    icon: "box",
+    highlights: [
+      { kind: "new", feature: "Commit catalog", text: "All 60 retained commits across branches and tags, with search, pagination, milestone labels, full SHAs and commit dates distinguished from verified release dates." },
+      { kind: "new", feature: "Milestone demos", text: "Five prepared eras of Amethyst run their original interfaces and database schemas in isolated environments." },
+      { kind: "new", feature: "Fresh accounts & reset", text: "Each visitor gets a separate demo workspace per enabled commit that persists for 24 hours and can be reset with confirmation at any time." },
+      { kind: "improved", feature: "Clear demo states", text: "Every commit is marked Available Demo, Not Prepared or Unavailable with the reason why." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Complete commit catalog",
+          body: "Version history lists every retained commit reachable from the repository’s branches and tags, deduplicated by its full 40-character SHA. Search by SHA, title, milestone, release or schema migration, filter by demo state or milestones, and page through the history.",
+          points: [
+            "Commit dates are shown alongside verified production release dates and link to the corresponding release notes when available.",
+            "Each commit is explicitly marked Available Demo, Not Prepared or Unavailable with a short explanation. Listing a commit never implies it has a playable demo.",
+          ],
+          where: "Account menu → Version history, or What’s new → Version history",
+          link: { href: "/version-history", label: "Open Version history" },
+        },
+        {
+          title: "Five playable historical milestones",
+          body: "Five milestones are prepared as interactive demos running their original code and matching database migrations: the original Amethyst Archives launch (3c27ef5), User-Created Collections (7ec9aa4), the first Home Dashboard & Five Themes (03070fc), Readable URLs, 3D Showcase & the Arcade Hall (3882439), and the Tasks Workspace with the Archive | Tasks switcher (688565d).",
+          points: [
+            "Each enabled demo runs on its own origin with its own database schema, scoped cookies and isolated local storage.",
+            "External artwork and account emails are safely contained inside the demo environment, and demos never touch your real account, private files or coin balance.",
+            "A compact demo bar in the corner shows the commit SHA, retention period, Reset Demo and a direct link back to current Amethyst.",
+          ],
+          where: "Version history → Playable historical milestones",
+          link: { href: "/version-history", label: "Explore milestone demos" },
+        },
+        {
+          title: "Fresh-account workspaces and Reset Demo",
+          body: "Opening an enabled milestone gives you a fresh demo account starting with that version’s own defaults. Create collections, entries, folders, notes, checklists or tasks wherever that version supported them, and your changes stay across navigation and reloads for 24 hours.",
+          points: [
+            "Reset Demo asks for confirmation first and clears only your demo workspace for that specific commit.",
+            "Other visitors, other historical versions and your real Amethyst account are never affected.",
+          ],
+          link: { href: "/version-history", label: "Open Version history" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-vault-forged",
     date: "2026-10-30",
     title: "The Vault, forged in 3D",

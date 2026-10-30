@@ -77,6 +77,9 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
   {
     area: "Settings", section: "Labels", path: "/settings/labels", keywords: "tags categories rename merge delete create", settings: [],
   },
+  {
+    area: "Settings", section: "Version history", path: "/version-history", keywords: "commits catalog historical demos milestones releases sha reset", settings: [],
+  },
 ];
 
 export const SETTINGS_SEARCH_ITEMS = SETTINGS_SEARCH_SECTIONS.flatMap(({ area, section, path, keywords, settings }) =>

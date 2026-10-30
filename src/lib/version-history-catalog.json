@@ -1,0 +1,1332 @@
+[
+  {
+    "sha": "a4b36ec4f662d3d063d8fe53ef4a4635f76e5ad2",
+    "shortSha": "a4b36ec",
+    "title": "Forge the Vault in 3D with a registered access console and unlock sequence",
+    "summary": null,
+    "commitTimestamp": "2026-10-30T17:36:51+01:00",
+    "commitDate": "2026-10-30",
+    "releaseDate": "2026-10-30",
+    "releaseId": "2026-10-30-vault-forged",
+    "releaseTitle": "The Vault, forged in 3D",
+    "releaseDescription": "The Vault is now a real 3D artifact: a black-metal seal with crimson light in its seams, an iris door that physically opens and an access console you type into directly.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 45,
+    "schemaVersion": "20261114000100_vault_phrases.sql",
+    "milestone": "3D Forged Vault",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (45 migrations through 20261114000100_vault_phrases.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "c5de608d48c60b37f219c4f7f368022a5eac839c",
+    "shortSha": "c5de608",
+    "title": "Summon the Vault in 3D with a server-confirmed reward reveal",
+    "summary": "Complete Vault Upgrade V2. The previous commit already carried the shared Three.js helpers, timing, audio and reveal components, but its page and chamber were out of sync, so its Vercel build failed; this commit wires everything together. - 3D vault: a Three.js scene loaded only on /vault, with a thick layered vault, controlled reflections, escaping red light, moving runes and bounded",
+    "commitTimestamp": "2026-10-30T15:05:40+01:00",
+    "commitDate": "2026-10-30",
+    "releaseDate": "2026-10-30",
+    "releaseId": "2026-10-30-vault-rework",
+    "releaseTitle": "The Vault, resealed",
+    "releaseDescription": "The Vault is now a 3D chamber you summon: a heavy red-lit vault rises out of the dark, opens for the right code and hands you what you’ve earned. Codes can now be real words.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 45,
+    "schemaVersion": "20261114000100_vault_phrases.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (45 migrations through 20261114000100_vault_phrases.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "743b007654975b71f3a49ac3c09516bc0afecd7b",
+    "shortSha": "743b007",
+    "title": "Rework the Vault experience and support human-readable secret codes",
+    "summary": "Redesign the Vault with a dark system-style interface, animated rune seal, coordinated audio, decoding transitions and reward reveals. Add shared timing and reveal components alongside updated page styling and release notes. Support operator-selected phrase codes with normalized hash-only storage, duplicate detection and backwards-compatible redemption. Include the Vault phrase migration, API and database types, C...",
+    "commitTimestamp": "2026-10-30T14:24:24+01:00",
+    "commitDate": "2026-10-30",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 45,
+    "schemaVersion": "20261114000100_vault_phrases.sql",
+    "milestone": null,
+    "state": "unavailable",
+    "stateReason": "Unavailable: Mid-rework commit where /vault and its 3D chamber components were out of sync and failed compilation (wired together 41 minutes later in c5de608).",
+    "demo": null
+  },
+  {
+    "sha": "9e07dd9382f374111bbdc04325e681dc1fdc0641",
+    "shortSha": "9e07dd9",
+    "title": "The Vault, the Lab and Coin Slots",
+    "summary": "Secret Code Vault (/vault) - Codes are stored as SHA-256 hashes only. redeem_secret_code grants coins and cosmetics in one locked transaction (once per user, max uses, expiry, disable) with identical failure replies and per-user throttling. - Operator CLI: npm run codes -- rewards|create|list|disable (a generated code is printed once and never stored in plain text).",
+    "commitTimestamp": "2026-10-30T11:33:57+01:00",
+    "commitDate": "2026-10-30",
+    "releaseDate": "2026-10-30",
+    "releaseId": "2026-10-30-vault-lab-slots",
+    "releaseTitle": "The Vault, the Lab and Coin Slots",
+    "releaseDescription": "Three hidden corners of Amethyst: a vault that opens for secret codes, a lab of ridiculous interface experiments and a slot machine for the coins you’ve earned.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 44,
+    "schemaVersion": "20261113000200_coin_slots.sql",
+    "milestone": "The Vault, Lab & Coin Slots",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (44 migrations through 20261113000200_coin_slots.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "3c4dc11fe0f116906e2b1aba9dd0259ac4d8b7aa",
+    "shortSha": "3c4dc11",
+    "title": "Big To Do lists, bulk actions, catalog search and correct update-log dates",
+    "summary": "To Do: large lists - Virtualize the task list with @tanstack/react-virtual (VirtualTaskList in components/tasks/task-list.tsx): variable row heights are measured, and the focused and dragged rows stay mounted so keyboard focus, selection, dragging and scroll position survive scrolling. - Filters, search, selection and bulk actions still operate on the full",
+    "commitTimestamp": "2026-10-30T10:07:16+01:00",
+    "commitDate": "2026-10-30",
+    "releaseDate": "2026-10-30",
+    "releaseId": "2026-10-30-big-lists-shops-search",
+    "releaseTitle": "Big To Do lists, bulk actions and catalog search",
+    "releaseDescription": "To Do stays fast with well over a thousand tasks and lets you act on many at once. Shops and other catalogs can now be searched.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 42,
+    "schemaVersion": "20261112000100_achievement_reconciliation.sql",
+    "milestone": "Virtualized To Do & Catalog Search",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (42 migrations through 20261112000100_achievement_reconciliation.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "318a93df52e2bed8151947d7405f919fb2181b24",
+    "shortSha": "318a93d",
+    "title": "Lighter first load and far less main-thread style work",
+    "summary": "First load - Preload destinations on hover/focus intent (IntentLink) instead of at startup; load legacy storage upload code only when needed. - Right-size Home, fan, stack, hub, entry and frame-picker artwork with explicit sizes; blurred backdrops request 200px. - Linked artwork revisions refresh every 30 days (staggered) and sibling",
+    "commitTimestamp": "2026-10-30T09:05:22+01:00",
+    "commitDate": "2026-10-30",
+    "releaseDate": "2026-10-30",
+    "releaseId": "2026-11-13-first-load",
+    "releaseTitle": "A lighter first load",
+    "releaseDescription": "Home gives its first screen priority, with smaller startup downloads and less unrelated background work.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 42,
+    "schemaVersion": "20261112000100_achievement_reconciliation.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (42 migrations through 20261112000100_achievement_reconciliation.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "a996450c096224c850feaaab73121a725b9dd267",
+    "shortSha": "a996450",
+    "title": "Improve private artwork delivery and archive responsiveness",
+    "summary": "Private artwork - Add an authenticated artwork route with fixed responsive width buckets, private per-user R2 derivatives, stable signed redirects and owner checks. - Bound and deduplicate Sharp transforms, validate raster signatures, and preserve animated images, alpha and original-resolution viewer sources. - Use responsive artwork for posters, avatars and banners, with original",
+    "commitTimestamp": "2026-10-29T22:24:18+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-11-12-performance",
+    "releaseTitle": "A quicker archive, with the same detail",
+    "releaseDescription": "Artwork loads at a size suited to its place, collection searches keep their cards ready, and long notes do less repeated work. Your originals, effects and customization stay intact.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 42,
+    "schemaVersion": "20261112000100_achievement_reconciliation.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (42 migrations through 20261112000100_achievement_reconciliation.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "2c844bb227978f2d5e0587442fe0f9f97094efe2",
+    "shortSha": "2c844bb",
+    "title": "Fix production 500s: keep R2 settings from breaking every write route",
+    "summary": "Since d8b23c2 the server environment defaulted ATTACHMENT_STORAGE to \"r2\" and rejected the whole environment when the R2_* variables were missing. Production has no R2 variables, so serverEnv() threw on every call. It is used by the cross-origin check of all mutating API routes and by the auth actions, which made task creation (POST /api/tasks), task reordering (PUT /api/tasks/order), preference saves (PATCH /api/...",
+    "commitTimestamp": "2026-10-29T20:12:20+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 41,
+    "schemaVersion": "20261111000100_game_cosmetics.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (41 migrations through 20261111000100_game_cosmetics.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "851d01f69186bd40fcba21288dd445b48908eec3",
+    "shortSha": "851d01f",
+    "title": "Arcade: dedicated cosmetic shops for all six games",
+    "summary": "Game shops - Every Arcade game (Snake, 2048, Flutter, Sudoku, Fruit Slice, Tower Stacker) gets its own shop with 172 purchasable cosmetics in total: seven items per category plus a free default, and art styles for Snake (pixel, hand-drawn, clay, neon), 2048 (retro, candy, glass, wooden) and Fruit Slice (cartoon, pixel, watercolor).",
+    "commitTimestamp": "2026-10-29T19:45:32+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-11-11-game-shops",
+    "releaseTitle": "A shop for every Arcade game",
+    "releaseDescription": "Each of the six Arcade games now has its own shop of cosmetics, bought with the coins you earn by playing. They change how a game looks, never how it plays.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 41,
+    "schemaVersion": "20261111000100_game_cosmetics.sql",
+    "milestone": "Per-Game Cosmetic Shops",
+    "state": "unavailable",
+    "stateReason": "Unavailable: Inherited d8b23c2's global serverEnv() R2 credential check, which rejected write routes whenever production R2 variables were omitted (fixed 27 minutes later in 2c844bb).",
+    "demo": null
+  },
+  {
+    "sha": "d8b23c2f67b63356fbd0e51ed59fb0604e97e448",
+    "shortSha": "d8b23c2",
+    "title": "Fix private R2 attachment delivery and resumable migration",
+    "summary": "Serve verified attachments from private R2 independently of the upload setting, default new uploads to R2, and retain Supabase fallback for unmigrated files. Keep session authorization and existing document links intact. Recover interrupted R2 copies using metadata and checksum verification before downloading Supabase originals. Compare source checksums before skipping verified files, preflight R2 connectivity, an...",
+    "commitTimestamp": "2026-10-29T17:01:15+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-10-29-private-attachment-delivery",
+    "releaseTitle": "Private attachment delivery fixed",
+    "releaseDescription": "Migrated note images and uploaded artwork now load from private R2 storage consistently, while existing documents and image links stay intact.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 40,
+    "schemaVersion": "20261110000100_sudoku_fruit_stacker_daily.sql",
+    "milestone": null,
+    "state": "unavailable",
+    "stateReason": "Unavailable: serverEnv() unconditionally required live Cloudflare R2 credentials on all write routes and Arcade lazy.tsx had an incomplete type signature (fixed in 2c844bb).",
+    "demo": null
+  },
+  {
+    "sha": "5de9328152bbbb2d2c6b06e6aa686c6675c38fda",
+    "shortSha": "5de9328",
+    "title": "Arcade: daily Sudoku, Fruit Slice modes and an isometric Tower Stacker",
+    "summary": "Sudoku - Daily puzzle: one deterministic medium puzzle per UTC day (seeded generator, unique solution), shared by everyone, with a reset countdown. An unfinished daily from an earlier date is only replaced after confirmation. - Regular and daily games are saved in separate slots (sudoku_games PK is",
+    "commitTimestamp": "2026-10-29T17:00:40+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-11-10-sudoku-fruit-stacker",
+    "releaseTitle": "Daily Sudoku, Fruit Slice modes and a new Tower Stacker",
+    "releaseDescription": "Sudoku gets a daily puzzle and reliable saves, Fruit Slice gets sharper slicing, new modes and a daily run, and Tower Stacker is rebuilt in a three-quarter view with precise drops.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 40,
+    "schemaVersion": "20261110000100_sudoku_fruit_stacker_daily.sql",
+    "milestone": "Daily Sudoku & Isometric Stacker",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (40 migrations through 20261110000100_sudoku_fruit_stacker_daily.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "ea01ac2bd7fd1bb07c7d0665ac6e92e261bf5ad0",
+    "shortSha": "ea01ac2",
+    "title": "2048 & Flutter: daily challenges, board sizes and smoother, bouncier 2048",
+    "summary": "2048 - 3x3 / 4x4 / 5x5 boards with separate saved rounds and records. - Continue after reaching 2048; clearer game-over screen. - Fix choppy slides: render tiles in stable id order so React never moves DOM nodes (which cancelled their translate transitions). - Jiggle along the move axis, merge pop, glow on 128+ merges, board",
+    "commitTimestamp": "2026-10-29T15:57:26+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-11-03-2048-flutter-daily",
+    "releaseTitle": "Daily challenges, board sizes and a fairer Flutter",
+    "releaseDescription": "2048 and Flutter each get a daily challenge. 2048 also animates more smoothly, saves unfinished rounds and offers three board sizes. Flutter's flight is fairer and pausing is safer.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 39,
+    "schemaVersion": "20261109000100_arcade_daily.sql",
+    "milestone": "2048 & Flutter Daily Challenges",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (39 migrations through 20261109000100_arcade_daily.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "7e70babc70ae9ccf8e6553b7e4e95e927c317e34",
+    "shortSha": "7e70bab",
+    "title": "Snake V3: smoother play, three speeds and per-game Arcade colors",
+    "summary": "Snake performance - Draw the snake, winged fruit and pushed crates between simulation steps using the loop's interpolation alpha, so motion stays smooth on any refresh rate (no more 60 Hz stepping on 120/144 Hz displays). - Cache the board (checks, tufts, layer tint) and settled scenery (stones, bricks, statues, crystals) in an offscreen canvas, repainted only when it",
+    "commitTimestamp": "2026-10-29T14:51:55+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-11-02-snake-speed-game-colors",
+    "releaseTitle": "Snake speeds, smoother play and game colors",
+    "releaseDescription": "Snake runs more smoothly and lets you pick a speed, and every Arcade game now has its own colors instead of following your app theme.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 38,
+    "schemaVersion": "20261108000100_snake_speeds.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (38 migrations through 20261108000100_snake_speeds.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "252aa7e4ecb823ee4f95374fcbe01b6e11aeed8e",
+    "shortSha": "252aa7e",
+    "title": "Snake V2: cartoon look, icon setup, 15 new modes and Blender",
+    "summary": "What's new - Icon-led setup panel: compact tiles for mode, fruit, board size and fruit amount with tooltips and accessible labels; clear selected, hover and unavailable states; no more mode description paragraphs. - Original cartoon art: outlined, cel-shaded snake with an expressive face (happy, hungry, worried, dizzy, crashed), new fruit, rocks, bricks,",
+    "commitTimestamp": "2026-10-29T14:08:11+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-11-01-snake-v2",
+    "releaseTitle": "Snake: cartoon look, 15 new modes and Blender",
+    "releaseDescription": "Snake has a new hand-drawn look, an icon-based setup, many new modes you can play alone or mix in Blender, and more fruit.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 37,
+    "schemaVersion": "20261107000100_snake_v2.sql",
+    "milestone": "Snake V2 & Blender",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (37 migrations through 20261107000100_snake_v2.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "5d1f4b24afb7986bcb4adb868b8dea6fff4cfc34",
+    "shortSha": "5d1f4b2",
+    "title": "feat: Snake modes, fruits, fruit amount, board sizes and smoother play",
+    "summary": "Classic, Wrap, Obstacles and Timed modes; selectable fruits incl. Fruit Salad; 1-12 fruits; Small/Medium/Large boards; saved setup; per-setup bests (existing best kept as Classic/Medium/1); interpolated movement and feedback; migration for snake record variants and reward limits; changelog entry.",
+    "commitTimestamp": "2026-10-29T12:28:38+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-10-31-snake-modes",
+    "releaseTitle": "Snake: smoother play, modes, fruits and board sizes",
+    "releaseDescription": "Snake glides between cells, reacts when it eats or crashes, and now lets you pick a mode, a fruit, how many fruits appear and the board size before each round.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 36,
+    "schemaVersion": "20261106000100_snake_modes.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (36 migrations through 20261106000100_snake_modes.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "478654d9260e40bbac00972e7f20a860553218b2",
+    "shortSha": "478654d",
+    "title": "feat: Amethyst rebrand, chosen collection covers, Customize Home dialog and contrast fixes",
+    "summary": null,
+    "commitTimestamp": "2026-10-29T11:58:35+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-10-30-amethyst",
+    "releaseTitle": "Meet Amethyst: chosen covers and a calmer Home",
+    "releaseDescription": "Amethyst Archives is now simply Amethyst. Choose the artwork each collection shows, customize Home in a roomy dialog, and enjoy clearer contrast in every theme.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 35,
+    "schemaVersion": "20261105000100_collection_covers.sql",
+    "milestone": "Amethyst Rebrand & Collection Covers",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (35 migrations through 20261105000100_collection_covers.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "5918121829b69026dfeabf78ecd249a69b5cf514",
+    "shortSha": "5918121",
+    "title": "Improve task additions, list forms, and UI consistency",
+    "summary": "Raise Multi Add to 10,000 tasks in sequential batches of 500, preserving task order and completion markers. Add saved-count progress, retain unfinished tasks on failure, and use database batch receipts to prevent duplicate inserts when retrying lost responses. Normalize surrounding whitespace in list and group names without changing existing lists or UUID links. Place name validation beside the field, retain form...",
+    "commitTimestamp": "2026-10-29T10:47:28+01:00",
+    "commitDate": "2026-10-29",
+    "releaseDate": "2026-10-29",
+    "releaseId": "2026-10-29-task-quality",
+    "releaseTitle": "Larger task additions and clearer forms",
+    "releaseDescription": "Add longer task lists with visible progress, use natural list names, and get clearer feedback when something needs attention.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 34,
+    "schemaVersion": "20261104000100_task_batch_additions.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (34 migrations through 20261104000100_task_batch_additions.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "732f468cef99676ebb6dc3e8a124c8d0913b913d",
+    "shortSha": "732f468",
+    "title": "feat: Home hub for Archive, To Do and Arcade; simpler To Do without Inbox",
+    "summary": "Home becomes the app hub - Large Archive, To Do and Arcade cards near the top of Home with artwork, live summaries (collections/entries, My Day left, coin balance) and coordinated hover effects; personal Home sections stay below. - Archive | Tasks switch removed; the top bar shows a breadcrumb for the current destination and only that destination's navigation.",
+    "commitTimestamp": "2026-10-27T22:23:30+01:00",
+    "commitDate": "2026-10-27",
+    "releaseDate": "2026-10-27",
+    "releaseId": "2026-11-03-hub",
+    "releaseTitle": "A Home hub, and a calmer To Do",
+    "releaseDescription": "Home now opens onto Archive, To Do and Arcade, and each area shows only its own navigation. Tasks is now called To Do, with simpler lists and a cleaner layout.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 33,
+    "schemaVersion": "20261103000100_tasks_without_inbox.sql",
+    "milestone": "Home Destination Hub",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (33 migrations through 20261103000100_tasks_without_inbox.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "688565d1429381610f4ec0810348d66850031a3a",
+    "shortSha": "688565d",
+    "title": "feat: Tasks workspace with lists, smart views, sync and My Day on Home",
+    "summary": "Adds /tasks with groups, lists and Inbox; tasks with steps, notes, importance, due dates and entry links; My Day, Important, Planned, All and Completed views; search, quick and bulk add; realtime sync. Also an Archive | Tasks switch, optional Home My Day section, time zone setting and update-log entry. Migration 20261102000100_tasks.",
+    "commitTimestamp": "2026-10-27T21:57:33+01:00",
+    "commitDate": "2026-10-27",
+    "releaseDate": "2026-10-27",
+    "releaseId": "2026-10-27-tasks",
+    "releaseTitle": "Tasks: a to-do workspace next to your archive",
+    "releaseDescription": "Switch between Archive and Tasks next to the logo. Tasks has its own lists, groups and smart views, and stays in sync across your devices.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 32,
+    "schemaVersion": "20261102000100_tasks.sql",
+    "milestone": "Tasks Workspace & Archive | Tasks Switch",
+    "state": "available",
+    "stateReason": "Available Demo: Prepared in an isolated environment with its matching schema (32 migrations through 20261102000100_tasks.sql) and fresh-account provisioning.",
+    "demo": {
+      "port": 4105,
+      "eraSummary": "The historical Archive | Tasks switcher next to the logo (before the 3-card Home Hub replaced it), introducing Tasks with the permanent Inbox list, custom lists/groups, and the original 5 smart views (My Day, Important, Planned, All, Completed).",
+      "retentionHours": 24,
+      "defaultPath": "/",
+      "features": [
+        "Top-bar Archive | Tasks workspace switcher",
+        "Tasks with permanent Inbox, custom lists, collapsible groups, steps and Markdown notes",
+        "All five original smart views (My Day, Important, Planned, All, Completed) and split Settings / Customization"
+      ],
+      "containedIntegrations": [
+        "ATTACHMENT_STORAGE is locked to isolated local demo storage (Cloudflare R2 is disabled)",
+        "Realtime task sync falls back to local polling/optimistic updates within your isolated demo session"
+      ]
+    }
+  },
+  {
+    "sha": "623d96bfab752c1b6ef7d92d4fb5eec84d4a8949",
+    "shortSha": "623d96b",
+    "title": "feat: split Settings and Customization with shared search",
+    "summary": "Move Profile, Themes, Artwork Frames and Appearance into Customization while reusing existing forms and saved preferences. Add compact desktop and mobile section navigation, cross-destination links and a Customization account-menu action in place of Profile. Add a shared static search registry with live results, keyboard navigation, clear and empty states, destination labels and matching-control focus highlights....",
+    "commitTimestamp": "2026-10-27T21:11:48+01:00",
+    "commitDate": "2026-10-27",
+    "releaseDate": "2026-10-27",
+    "releaseId": "2026-10-27-settings-customization-search",
+    "releaseTitle": "Settings and Customization, easier to find",
+    "releaseDescription": "Account tools stay in Settings. Profile, themes, artwork frames and appearance now have their own Customization destination, with one search across both.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 31,
+    "schemaVersion": "20261101000100_r2_attachments.sql",
+    "milestone": "Settings & Customization Split",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (31 migrations through 20261101000100_r2_attachments.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "43222638cf9d29106132062edc22d3cee6c08ac6",
+    "shortSha": "4322263",
+    "title": "Private image storage: uploads move to Cloudflare R2",
+    "summary": "What's new - Uploaded images (note embeds, covers, banners, avatars, Home artwork) can now live in a private Cloudflare R2 bucket instead of Supabase Storage, cutting Supabase image egress. Links stay /api/attachments/<name>; nothing needs to be re-added. - Browsers upload straight to R2 via short-lived presigned PUTs (content type",
+    "commitTimestamp": "2026-10-27T20:51:24+01:00",
+    "commitDate": "2026-10-27",
+    "releaseDate": "2026-10-27",
+    "releaseId": "2026-10-27-private-image-storage",
+    "releaseTitle": "A new private home for your images",
+    "releaseDescription": "Images you upload are moving to new private storage built for frequent viewing. Nothing changes in how you add, embed or view them.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 31,
+    "schemaVersion": "20261101000100_r2_attachments.sql",
+    "milestone": "Private R2 Image Storage",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (31 migrations through 20261101000100_r2_attachments.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "6586ee9c1b3c6b15a8f21f576ac0a6c74179fc8c",
+    "shortSha": "6586ee9",
+    "title": "Hand-picked cover fan: manual artwork picker, reorderable layout and redesigned fan",
+    "summary": null,
+    "commitTimestamp": "2026-10-24T13:32:33+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-home-cover-fan",
+    "releaseTitle": "A cover fan you arrange yourself",
+    "releaseDescription": "The cover fan on Home is now your own display: pick the artwork, set the order, and enjoy a redesigned, livelier fan.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 30,
+    "schemaVersion": "20261031000100_home_fan.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (30 migrations through 20261031000100_home_fan.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "38824391ee82b53f9016a38ad5ad3385f44e094c",
+    "shortSha": "3882439",
+    "title": "Arcade coins and prize shop, cabinet-style Arcade hall and Home marquee",
+    "summary": "What's new - Arcade shop (/arcade/shop): six original cosmetics, three artwork frames (Pixel Quest, Neon Marquee, Constellation) and three avatar decorations (Laurel wreath, Orbit ring, Gem crown). Filters, a preview on your own artwork/avatar that never changes what's equipped, a confirmation showing price and balance after, then \"Equip now\" or \"Keep for later\". Ownership is",
+    "commitTimestamp": "2026-10-24T13:01:25+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-arcade-shop",
+    "releaseTitle": "Arcade coins and the prize shop",
+    "releaseDescription": "Good Arcade runs now earn coins, and a new shop trades them for artwork frames and avatar decorations.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 29,
+    "schemaVersion": "20261030000100_arcade_economy.sql",
+    "milestone": "Readable URLs, 3D Showcase & Arcade Hall",
+    "state": "available",
+    "stateReason": "Available Demo: Prepared in an isolated environment with its matching schema (29 migrations through 20261030000100_arcade_economy.sql) and fresh-account provisioning.",
+    "demo": {
+      "port": 4104,
+      "eraSummary": "Readable slug addresses (/collections/..., /entries/...), three collection layouts (gallery, list, table), full-screen 3D Collection Showcase & artwork frames, the Achievements medal cabinet, and the cabinet-style Arcade hall with all 6 games and prize shop.",
+      "retentionHours": 24,
+      "defaultPath": "/",
+      "features": [
+        "Readable URLs, collection layouts (gallery, list, table) and personal profiles",
+        "Full-screen Showcase, 3D card viewer, artwork frames and Achievements cabinet",
+        "Arcade hall with 2048, Flutter, Snake, Sudoku, Fruit Slice, Tower Stacker and demo-only coin shop"
+      ],
+      "containedIntegrations": [
+        "Arcade coins and cosmetic purchases exist solely inside your isolated demo database and never touch the real coin economy",
+        "Remote artwork and uploads use isolated demo storage and safe SVG replacements"
+      ]
+    }
+  },
+  {
+    "sha": "3cf9130141a86ed81b285b0940845b8baae25dea",
+    "shortSha": "3cf9130",
+    "title": "Redesign the update log: scannable overview plus full release notes",
+    "summary": "What's new - Overview at /whats-new: each release shows its date, title, a one-line intro and 3-5 highlights led by a feature name, marked New, Improved or Fixed (with a legend). Full explanations are never expanded here. - Every release has a \"Read full update\" page at /whats-new/<release-id> with an \"At a glance\" summary and New features / Improvements / Fixes",
+    "commitTimestamp": "2026-10-24T12:08:33+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-update-log",
+    "releaseTitle": "A clearer update log",
+    "releaseDescription": "Each update now starts with a short overview, and the full notes are one click away.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 28,
+    "schemaVersion": "20261029000100_personalization.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (28 migrations through 20261029000100_personalization.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "d18e183145eec3f4f6cfc174504a4d88ed34f3cb",
+    "shortSha": "d18e183",
+    "title": "Make it yours: collection layouts, profiles, Showcase looks and per-entry frames",
+    "summary": "- Collection layouts: Cover gallery, Compact list or Information table, chosen from a switcher beside the filters and remembered per collection. - Personal profile (/settings/profile): display name, picture and motto, shown in the account menu, home greeting and achievement cabinet. Email stays private. - 3D Showcase looks (/settings/showcase and the viewer's sliders button): Classic, Neutral studio, Dramatic and...",
+    "commitTimestamp": "2026-10-24T04:41:14+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-make-it-yours",
+    "releaseTitle": "Make it yours",
+    "releaseDescription": "Give each collection its own layout, set up a personal profile, save looks for the 3D Showcase and frame individual entries.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 28,
+    "schemaVersion": "20261029000100_personalization.sql",
+    "milestone": "Collection Layouts & Personal Profiles",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (28 migrations through 20261029000100_personalization.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "c9b10bb4a32729e32064b84248e8d4d93d961a8c",
+    "shortSha": "c9b10bb",
+    "title": "Upgrade the 3D Showcase: faster hover, richer lighting, livelier frames",
+    "summary": null,
+    "commitTimestamp": "2026-10-24T04:06:48+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-showcase-3d",
+    "releaseTitle": "A more dimensional 3D Showcase",
+    "releaseDescription": "The 3D artwork viewer responds faster and presents each cover as a thicker, richly lit card.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 27,
+    "schemaVersion": "20261028000300_achievement_run_progress.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (27 migrations through 20261028000300_achievement_run_progress.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "9dd07bb6ec32ee0b8c0d3d331faeeb31f1915d0d",
+    "shortSha": "9dd07bb",
+    "title": "Redesign achievements as a medal cabinet with unlock celebrations",
+    "summary": "Dimensional medal badges with per-group identities, cabinet header, details view with replay, queued motion-aware unlock celebration, Home entry beside Arcade, and the celebrations toggle moved to Settings > General.",
+    "commitTimestamp": "2026-10-24T03:43:02+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-achievement-cabinet",
+    "releaseTitle": "A medal cabinet for your achievements",
+    "releaseDescription": "Achievements move into a cabinet of dimensional medals, with a detail view and a short celebration for each unlock.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 27,
+    "schemaVersion": "20261028000300_achievement_run_progress.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (27 migrations through 20261028000300_achievement_run_progress.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "7b61f2c20b0a08001b6cfc808ad4bef82e35e3e9",
+    "shortSha": "7b61f2c",
+    "title": "Add achievements: 22 milestones, notifications, and Achievements page",
+    "summary": null,
+    "commitTimestamp": "2026-10-24T02:51:32+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-achievements",
+    "releaseTitle": "Achievements",
+    "releaseDescription": "Personal milestones for the Arcade, your archive and feature discoveries, with progress and earned dates on one page.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 27,
+    "schemaVersion": "20261028000300_achievement_run_progress.sql",
+    "milestone": "Achievements System",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (27 migrations through 20261028000300_achievement_run_progress.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "af84c1c2b5f556b999194d50abd568fc408bddb9",
+    "shortSha": "af84c1c",
+    "title": "Add the Arcade: six minigames with personal records",
+    "summary": "What's new - Arcade hub at /arcade, reached from a compact link at the bottom of Home (not a collection, no navbar button). Each tile shows a preview, your record and a Play button. - Six games, each on its own page with Back to Arcade / Home links, sound toggle and optional fullscreen:",
+    "commitTimestamp": "2026-10-24T01:39:42+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-arcade",
+    "releaseTitle": "The Arcade",
+    "releaseDescription": "Six quick games for a break, with your personal bests saved to your account.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 24,
+    "schemaVersion": "20261027000100_arcade.sql",
+    "milestone": "The Arcade (Six Games)",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (24 migrations through 20261027000100_arcade.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "5909060bd6451edab50de3b937476dad06e3f461",
+    "shortSha": "5909060",
+    "title": "Five new themes and readable page URLs",
+    "summary": "What's new - Themes: Ocean Glass, Crimson Night and Monochrome OLED (dark), Soft Sakura and Mint Paper (light). Each has its own backgrounds, surfaces, accents, borders, heading colors and previews in Settings -> Themes. Existing selections and editor/heading-color overrides are untouched. - Readable URLs: collections live at /collections/<slug> (and /new), entries at",
+    "commitTimestamp": "2026-10-24T00:30:05+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-24-themes-urls",
+    "releaseTitle": "Five new themes and readable addresses",
+    "releaseDescription": "Five more light and dark themes, and pages now have addresses you can read.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 23,
+    "schemaVersion": "20261026000100_readable_urls.sql",
+    "milestone": "Readable Slug URLs",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (23 migrations through 20261026000100_readable_urls.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "d9775bedb3f541f2d73dc591be6b3e62002cab01",
+    "shortSha": "d9775be",
+    "title": "Add Collection Showcase, artwork viewer with 3D cards, and artwork frames",
+    "summary": "Showcase - New Showcase action on every collection opens a full-viewport gallery of the collection's artwork, using the current search, filters and sort. - Navigation, editing controls and progress are hidden; a minimal toolbar offers the collection name, a titles toggle and Exit. - Square and portrait covers keep their shape in a justified, responsive grid.",
+    "commitTimestamp": "2026-10-24T00:08:11+02:00",
+    "commitDate": "2026-10-24",
+    "releaseDate": "2026-10-24",
+    "releaseId": "2026-10-23-showcase",
+    "releaseTitle": "Showcase and artwork frames",
+    "releaseDescription": "Show a collection’s artwork full screen, inspect covers as 3D cards and choose a decorative frame.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 22,
+    "schemaVersion": "20261025000100_settings_capacity.sql",
+    "milestone": "Collection Showcase & 3D Cards",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (22 migrations through 20261025000100_settings_capacity.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "03070fca5ce3cf9635a182d93932f81623db2176",
+    "shortSha": "03070fc",
+    "title": "Add themes, update log, live search, fan picker and per-setting resets",
+    "summary": "What's new - Themes: new Settings > Themes page with Amethyst, Rose Noir, Paper & Ink, Retro Terminal and Arcade. Live previews, instant apply, saved per account, no flash of the default theme; custom heading colors are kept. - Opening animation frequency: every visit, once a day (default), once a week or never, plus a \"Preview animation\" button that leaves the",
+    "commitTimestamp": "2026-10-23T23:23:16+02:00",
+    "commitDate": "2026-10-23",
+    "releaseDate": "2026-10-23",
+    "releaseId": "2026-10-23-themes",
+    "releaseTitle": "Themes, a calmer intro and a tighter Home",
+    "releaseDescription": "Five complete themes, control over the opening animation, a choosier cover fan, live search and an update log.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 22,
+    "schemaVersion": "20261025000100_settings_capacity.sql",
+    "milestone": "Home Dashboard & Five Themes",
+    "state": "available",
+    "stateReason": "Available Demo: Prepared in an isolated environment with its matching schema (22 migrations through 20261025000100_settings_capacity.sql) and fresh-account provisioning.",
+    "demo": {
+      "port": 4103,
+      "eraSummary": "The first Home dashboard (greeting, cover fan, Continue card, pinned favorites, recent entries and getting-started steps), the Settings sidebar, workspace templates, collection identities, 5 themes and the original single-page update log.",
+      "retentionHours": 24,
+      "defaultPath": "/",
+      "features": [
+        "Original Home dashboard with customizable sections, greeting and cover fan",
+        "Five themes (Amethyst, Rose Noir, Paper & Ink, Retro Terminal, Arcade)",
+        "Workspace templates, collection icons/accents/descriptions and per-setting resets"
+      ],
+      "containedIntegrations": [
+        "Uploads and remote artwork are served from isolated demo storage and safe SVG replacements",
+        "All account and email actions remain strictly local to the visitor's demo workspace"
+      ]
+    }
+  },
+  {
+    "sha": "67c1a922ba7a5c5757dc77f5ca8995351a5e712f",
+    "shortSha": "67c1a92",
+    "title": "Add personalization: home layout, collection identities, card info, templates and progress names",
+    "summary": "- Customizable Home: reorder/hide sections (drag or move buttons), custom greeting, and a featured entry or image, saved per account. - Collection identities: icon, accent color and banner, shown in the nav, Home preview, collection page and settings; each can be reset. - Card information: Standard, Detailed and Artwork-only presets plus title/labels/progress toggles, separate from the pinned-entry style.",
+    "commitTimestamp": "2026-10-23T21:38:37+02:00",
+    "commitDate": "2026-10-23",
+    "releaseDate": "2026-10-23",
+    "releaseId": "2026-10-23-personalization",
+    "releaseTitle": "A Home dashboard and much more to personalize",
+    "releaseDescription": "A new Home page, settings for nearly everything and collections with their own identity.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 21,
+    "schemaVersion": "20261024000100_personalization.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (21 migrations through 20261024000100_personalization.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "f74db325a770a0a13259f360759e5d9f13a05b70",
+    "shortSha": "f74db32",
+    "title": "Add customizable settings: appearance, editor, shortcuts and startup",
+    "summary": "Settings now has dedicated tabs (General, Appearance, Editor, Shortcuts, Collections, Labels), and every choice is saved to the account so it follows you across devices. What's new - Appearance - Animation intensity: Off, Subtle or Full (Off also skips the opening",
+    "commitTimestamp": "2026-10-23T20:21:49+02:00",
+    "commitDate": "2026-10-23",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 20,
+    "schemaVersion": "20261023000300_user_settings.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (20 migrations through 20261023000300_user_settings.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "c22c561d8f8fc3e0d1f0e59e3fcff17032c8e0c5",
+    "shortSha": "c22c561",
+    "title": "Warmer Home, collection descriptions, daily intro, pinning styles, settings sidebar",
+    "summary": "What's new: - Home: greeting with your name, your covers as a fanned stack, a bigger Continue card, and the stats moved to the bottom (\"At a glance\"). New accounts get getting-started steps instead of stats. - Collection descriptions: new optional text box when you create or edit a collection, shown on the collection page, Home and Settings.",
+    "commitTimestamp": "2026-10-23T19:47:56+02:00",
+    "commitDate": "2026-10-23",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 19,
+    "schemaVersion": "20261023000200_collection_descriptions_preferences.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (19 migrations through 20261023000200_collection_descriptions_preferences.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "25eba906bdb6cab046c130102ac41197cc7451b7",
+    "shortSha": "25eba90",
+    "title": "Add Home dashboard, category arranging, populated category deletion and bulk tasks",
+    "summary": null,
+    "commitTimestamp": "2026-10-23T18:53:36+02:00",
+    "commitDate": "2026-10-23",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 18,
+    "schemaVersion": "20261023000100_home_dashboard.sql",
+    "milestone": "First Home Dashboard",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (18 migrations through 20261023000100_home_dashboard.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "e3d163e68c26bd9157a79b63af5d2880cd110eda",
+    "shortSha": "e3d163e",
+    "title": "Add selectable entry cover shapes and remembered preference",
+    "summary": null,
+    "commitTimestamp": "2026-10-22T12:01:24+02:00",
+    "commitDate": "2026-10-22",
+    "releaseDate": "2026-10-22",
+    "releaseId": "2026-10-22-cover-shapes",
+    "releaseTitle": "Cover shapes",
+    "releaseDescription": "Covers can be portrait or square.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 17,
+    "schemaVersion": "20261022000100_cover_shapes.sql",
+    "milestone": "Selectable Cover Shapes",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (17 migrations through 20261022000100_cover_shapes.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "7ec9aa4310412268843a6bd5db9da4f277405dd3",
+    "shortSha": "7ec9aa4",
+    "title": "fix: scope production typechecking to application",
+    "summary": null,
+    "commitTimestamp": "2026-10-19T20:03:51+02:00",
+    "commitDate": "2026-10-19",
+    "releaseDate": "2026-10-19",
+    "releaseId": "2026-10-19-collections",
+    "releaseTitle": "Your own collections",
+    "releaseDescription": "Collections are now entirely yours to create, rename and delete.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 16,
+    "schemaVersion": "20261019000100_user_collections.sql",
+    "milestone": "User-Created Collections",
+    "state": "available",
+    "stateReason": "Available Demo: Prepared in an isolated environment with its matching schema (16 migrations through 20261019000100_user_collections.sql) and fresh-account provisioning.",
+    "demo": {
+      "port": 4102,
+      "eraSummary": "Predefined libraries give way to user-created Collections (/[collection] UUID routes), collection-scoped labels, per-file cover progress, device artwork uploads, Obsidian-style tasks/images in notes, and empty starter workspaces.",
+      "retentionHours": 24,
+      "defaultPath": "/",
+      "features": [
+        "Create, rename and delete your own Collections",
+        "Collection-scoped custom labels and per-file cover progress",
+        "Obsidian-style checkboxes and isolated local image uploads in notes"
+      ],
+      "containedIntegrations": [
+        "Device uploads are stored in an isolated per-visitor local bucket with a 5-file / 5 MB quota",
+        "Remote image proxy requests return deterministic local SVG artwork with no external network calls"
+      ]
+    }
+  },
+  {
+    "sha": "d295b55e6d254afdc4411fd36148c484b8cd0c49",
+    "shortSha": "d295b55",
+    "title": "feat: improve UI of Collections",
+    "summary": null,
+    "commitTimestamp": "2026-10-19T19:55:09+02:00",
+    "commitDate": "2026-10-19",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 16,
+    "schemaVersion": "20261019000100_user_collections.sql",
+    "milestone": null,
+    "state": "unavailable",
+    "stateReason": "Unavailable: Production build fails TypeScript validation on legacy test fixtures prior to 7ec9aa4 (use enabled demo 7ec9aa4 from 8 minutes later).",
+    "demo": null
+  },
+  {
+    "sha": "247e4f1845a0a8e54b57b1b6d77f341b6a364144",
+    "shortSha": "247e4f1",
+    "title": "feat: you can now create, delete and rename your owns collections. no more predefined collections.",
+    "summary": null,
+    "commitTimestamp": "2026-10-19T15:31:25+02:00",
+    "commitDate": "2026-10-19",
+    "releaseDate": "2026-10-19",
+    "releaseId": "2026-10-19-collections",
+    "releaseTitle": "Your own collections",
+    "releaseDescription": "Collections are now entirely yours to create, rename and delete.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 16,
+    "schemaVersion": "20261019000100_user_collections.sql",
+    "milestone": null,
+    "state": "unavailable",
+    "stateReason": "Unavailable: Production build fails TypeScript validation on legacy test fixtures prior to 7ec9aa4 (fixed 4 hours later on the same day in 7ec9aa4, which is enabled as a playable demo).",
+    "demo": null
+  },
+  {
+    "sha": "649289526de279bfb294f9d0fb20516a03ba4063",
+    "shortSha": "6492895",
+    "title": "fix: match Markdown tasks to checklist styling",
+    "summary": "Align boxed Markdown task rows with dedicated checklists and keep task toggles accessible and undoable.",
+    "commitTimestamp": "2026-10-08T14:21:03+02:00",
+    "commitDate": "2026-10-08",
+    "releaseDate": "2026-10-08",
+    "releaseId": "2026-10-08-labels",
+    "releaseTitle": "Labels per collection and per-file progress",
+    "releaseDescription": "Labels belong to a collection, filters match all selected labels, and you choose which files count toward progress.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 15,
+    "schemaVersion": "20261008000200_file_cover_progress.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (15 migrations through 20261008000200_file_cover_progress.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "46cd8e0d3a12b19b1a239b17b62db27635580677",
+    "shortSha": "46cd8e0",
+    "title": "feat: scope categories and add per-file cover progress",
+    "summary": "Require all selected categories, stabilize rename interactions, and persist progress inclusion for Markdown notes and checklists.",
+    "commitTimestamp": "2026-10-08T13:53:26+02:00",
+    "commitDate": "2026-10-08",
+    "releaseDate": "2026-10-08",
+    "releaseId": "2026-10-08-labels",
+    "releaseTitle": "Labels per collection and per-file progress",
+    "releaseDescription": "Labels belong to a collection, filters match all selected labels, and you choose which files count toward progress.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 15,
+    "schemaVersion": "20261008000200_file_cover_progress.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (15 migrations through 20261008000200_file_cover_progress.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "94ca646616cf9be62383358dd5862de5617b7196",
+    "shortSha": "94ca646",
+    "title": "feat: new entries start with an empty workspace",
+    "summary": null,
+    "commitTimestamp": "2026-10-03T16:40:04+02:00",
+    "commitDate": "2026-10-03",
+    "releaseDate": "2026-10-03",
+    "releaseId": "2026-10-03-empty-workspaces",
+    "releaseTitle": "A clean slate for new entries",
+    "releaseDescription": "New entries start with an empty workspace.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 13,
+    "schemaVersion": "20261002000100_uploaded_artwork.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (13 migrations through 20261002000100_uploaded_artwork.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "8bbce4f009fbe8dfaf7626757fadbbe4baf162e5",
+    "shortSha": "8bbce4f",
+    "title": "feat: upload cover and banner images from your device",
+    "summary": "The artwork fields get an Upload button and drag-and-drop; uploads go to the private per-account attachments bucket and are stored as their /api/attachments path. Migration 20261002000100_uploaded_artwork lets cover_url and banner_url hold those paths.",
+    "commitTimestamp": "2026-10-02T15:50:57+02:00",
+    "commitDate": "2026-10-02",
+    "releaseDate": "2026-10-02",
+    "releaseId": "2026-10-02-uploads",
+    "releaseTitle": "Upload your own artwork",
+    "releaseDescription": "Covers and banners can come straight from your device.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 13,
+    "schemaVersion": "20261002000100_uploaded_artwork.sql",
+    "milestone": "Device Artwork Uploads",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (13 migrations through 20261002000100_uploaded_artwork.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "d95906990c3921b209cb554f8798ef0935b923a3",
+    "shortSha": "d959069",
+    "title": "feat: show note tasks as To Do style cards",
+    "summary": "Each - [ ] line in a note gets the checklist row surface, hover ring and glow, with a quieter style once done.",
+    "commitTimestamp": "2026-10-01T19:35:02+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": "2026-10-01",
+    "releaseId": "2026-10-01-notes-and-labels",
+    "releaseTitle": "Richer notes, labels and polish",
+    "releaseDescription": "Images and tasks inside notes, custom labels and smoother interactions.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 12,
+    "schemaVersion": "20261001000200_note_attachments.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (12 migrations through 20261001000200_note_attachments.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "b7cd72458e5ba43a2145757cfd2c0faba06be421",
+    "shortSha": "b7cd724",
+    "title": "feat: round task checkboxes and auto-closing brackets in notes",
+    "summary": "Note task items use the checklist's round check (hover tick, amethyst fill, completion pop); typing [ or ( inserts the closing bracket.",
+    "commitTimestamp": "2026-10-01T19:16:29+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 12,
+    "schemaVersion": "20261001000200_note_attachments.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (12 migrations through 20261001000200_note_attachments.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "a084498cb88ab70f19fe795733c16ad2c5057b71",
+    "shortSha": "a084498",
+    "title": "feat: Obsidian-style task checkboxes in notes",
+    "summary": "Render - [ ] / - [x] items as clickable checkboxes in live preview, with raw syntax shown only while the caret is inside the marker; Enter continues the task list and checked items are dimmed and struck through.",
+    "commitTimestamp": "2026-10-01T19:08:52+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 12,
+    "schemaVersion": "20261001000200_note_attachments.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (12 migrations through 20261001000200_note_attachments.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "36ba1fc800e348a34ee8bfd18a809cff9804ab60",
+    "shortSha": "36ba1fc",
+    "title": "feat: Obsidian-style images in notes",
+    "summary": "- Paste, drop or insert images into notes; they upload to a private per-account Storage bucket and embed as ![[Pasted image <timestamp>.png]] - Live preview renders ![[name.png|300]] and ![alt](url) inline; the syntax shows above the image on the caret line - /api/attachments/<name> redirects to a short-lived signed URL; CSP allows the Supabase origin for uploads and images",
+    "commitTimestamp": "2026-10-01T18:53:00+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 12,
+    "schemaVersion": "20261001000200_note_attachments.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (12 migrations through 20261001000200_note_attachments.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "205cd8435d120c4f93a3dd7ab155833242c8d9dd",
+    "shortSha": "205cd84",
+    "title": "feat: custom categories for entries",
+    "summary": "- Add one private, reusable set of categories per account, independent of the Anime/Games/Other collections; entries of any kind can have many or none - Optional searchable multi-select when creating or editing entries, with inline \"Create\" for new names and removable chips; category-only edits never modify the entry or its workspace - Separate Categories filter in the library toolbar: searchable checkbox list",
+    "commitTimestamp": "2026-10-01T17:51:33+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 11,
+    "schemaVersion": "20261001000100_categories.sql",
+    "milestone": "Custom Entry Categories",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (11 migrations through 20261001000100_categories.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "896927604d34e756a3f663e3ba796e43e9ea2bfe",
+    "shortSha": "8969276",
+    "title": "feat: update navigation to include 'Other' collection and enhance entry creation tests",
+    "summary": null,
+    "commitTimestamp": "2026-10-01T11:51:30+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 10,
+    "schemaVersion": "20260930001000_amethyst.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "bb143985e1c1c3c750b152039762ae1f2c8594f7",
+    "shortSha": "bb14398",
+    "title": "chore: add .npmrc file to set npm registry",
+    "summary": null,
+    "commitTimestamp": "2026-10-01T10:30:34+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 10,
+    "schemaVersion": "20260930001000_amethyst.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "41c0112c17c378d94c50f72fa7c04ddc9803e88b",
+    "shortSha": "41c0112",
+    "title": "Trigger initial Vercel deploy",
+    "summary": null,
+    "commitTimestamp": "2026-10-01T09:53:06+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 10,
+    "schemaVersion": "20260930001000_amethyst.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "a33650c9d40e8baf4bb0e8ba3f9825c970c555de",
+    "shortSha": "a33650c",
+    "title": "feat(ui): polish interactions, To Do-style checklists and square game covers",
+    "summary": "- Make page entrances visible on load and internal navigation with short staggers; skip replays on filter-only changes and respect reduced motion - Add hover personality: poster cards lift, scale, glow in amethyst, zoom the artwork and sweep a one-shot diagonal shine; distinct button, nav, menu and explorer-row hover/pressed states with keyboard focus equivalents - Redesign task rows and details after Microsoft To...",
+    "commitTimestamp": "2026-10-01T08:45:18+02:00",
+    "commitDate": "2026-10-01",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 10,
+    "schemaVersion": "20260930001000_amethyst.sql",
+    "milestone": null,
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "3c27ef532b3fa8bd60968b0f9841348fde95ca8b",
+    "shortSha": "3c27ef5",
+    "title": "feat: Amethyst Archives with live Markdown editor, task details and public sign-up",
+    "summary": "- Rebrand to Amethyst Archives with a pitch-black theme, amethyst accents and restrained rose; short page-entry animations and scroll-driven header/card exits, all disabled with prefers-reduced-motion - Replace the Write/Preview note editor with a CodeMirror 6 live preview: Markdown syntax shows on the caret line only, coloured headings H1-H6, formatting toolbar and shortcuts; notes keep autosave, draft recovery and",
+    "commitTimestamp": "2026-09-30T20:36:10+02:00",
+    "commitDate": "2026-09-30",
+    "releaseDate": "2026-10-01",
+    "releaseId": "2026-09-30-workspaces",
+    "releaseTitle": "Amethyst Archives",
+    "releaseDescription": "A personal archive where every entry has its own workspace.",
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 10,
+    "schemaVersion": "20260930001000_amethyst.sql",
+    "milestone": "Amethyst Archives Launch",
+    "state": "available",
+    "stateReason": "Available Demo: Prepared in an isolated environment with its matching schema (10 migrations through 20260930001000_amethyst.sql) and fresh-account provisioning.",
+    "demo": {
+      "port": 4101,
+      "eraSummary": "The original Amethyst Archives launch: fixed Anime, Games and Other libraries (/anime, /games, /other), automatic starter workspace files on new entries, nested folders, live CodeMirror 6 Markdown notes and To Do-style checklists.",
+      "retentionHours": 24,
+      "defaultPath": "/anime",
+      "features": [
+        "Fixed Anime, Games and Other libraries",
+        "Starter workspace files (Overview.md & Progress) created with each entry",
+        "Nested folders, live Markdown editor and checklists with task steps"
+      ],
+      "containedIntegrations": [
+        "Remote cover URLs are rendered via an isolated local SVG artwork generator with no outbound internet requests",
+        "Account emails (sign-up, OTP, password reset) are simulated locally without sending real email"
+      ]
+    }
+  },
+  {
+    "sha": "4cd98fceef80408437788fe99a203bf3a079a218",
+    "shortSha": "4cd98fc",
+    "title": "feat!: replace MyAnimeList sync with personal anime/game workspaces",
+    "summary": "- Create anime manually from a title and artwork, like games and custom entries - Give every entry a VS Code-style workspace: nested folders, Markdown notes and user-defined checklists in an explorer/editor layout - Create, rename, move (menu or drag and drop) and delete files and folders, with keyboard navigation and a collapsible explorer on small screens - Autosave notes with save status, local draft recovery a...",
+    "commitTimestamp": "2026-09-30T18:49:56+02:00",
+    "commitDate": "2026-09-30",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 9,
+    "schemaVersion": "20260930000900_workspaces.sql",
+    "milestone": "Personal Entry Workspaces",
+    "state": "not_prepared",
+    "stateReason": "Not Prepared: Cataloged from Git history (9 migrations through 20260930000900_workspaces.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "demo": null
+  },
+  {
+    "sha": "38b204ae34eb9e2c48923624fd5081ef9f129e33",
+    "shortSha": "38b204a",
+    "title": "beta version",
+    "summary": null,
+    "commitTimestamp": "2026-09-30T18:49:39+02:00",
+    "commitDate": "2026-09-30",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "main"
+    ],
+    "migrationCount": 8,
+    "schemaVersion": "20260930000800_worker_schedule_toggle.sql",
+    "milestone": "Squashed Beta (MAL Sync)",
+    "state": "unavailable",
+    "stateReason": "Unavailable: Pre-workspace beta; requires external MyAnimeList OAuth, Jikan API imports and the retired sync-worker Edge Function.",
+    "demo": null
+  },
+  {
+    "sha": "4baae8e46d43c1434009f95abd75cbe77dc56d1e",
+    "shortSha": "4baae8e",
+    "title": "feat: beta version",
+    "summary": null,
+    "commitTimestamp": "2026-09-30T17:14:55+02:00",
+    "commitDate": "2026-09-30",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "backup/pre-squash"
+    ],
+    "migrationCount": 8,
+    "schemaVersion": "20260930000800_worker_schedule_toggle.sql",
+    "milestone": "Pre-Squash Beta (MAL Sync)",
+    "state": "unavailable",
+    "stateReason": "Unavailable: Pre-workspace beta on backup/pre-squash; requires external MyAnimeList OAuth, Jikan API access and the retired sync-worker Edge Function.",
+    "demo": null
+  },
+  {
+    "sha": "34dd75c715f5514554030b243df5868fc666b52c",
+    "shortSha": "34dd75c",
+    "title": "Phase 4,5,6,7 finished",
+    "summary": null,
+    "commitTimestamp": "2026-09-30T15:59:46+02:00",
+    "commitDate": "2026-09-30",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "backup/pre-squash"
+    ],
+    "migrationCount": 8,
+    "schemaVersion": "20260930000800_worker_schedule_toggle.sql",
+    "milestone": "Pre-Archive Prototype (Phases 4–7)",
+    "state": "unavailable",
+    "stateReason": "Unavailable: Depends on retired MyAnimeList OAuth credentials, live Jikan catalog sync jobs and pg_cron/pg_net Edge Function workers.",
+    "demo": null
+  },
+  {
+    "sha": "bd01e8803519e1b20259eb92844eddaf489a9930",
+    "shortSha": "bd01e88",
+    "title": "Phase 1, 2 & 3 finished",
+    "summary": null,
+    "commitTimestamp": "2026-09-30T15:35:46+02:00",
+    "commitDate": "2026-09-30",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "backup/pre-squash"
+    ],
+    "migrationCount": 6,
+    "schemaVersion": "20260930000600_read_helpers.sql",
+    "milestone": "Pre-Archive Prototype (Phases 1–3)",
+    "state": "unavailable",
+    "stateReason": "Unavailable: Depends on external MyAnimeList OAuth, live Jikan API imports and retired Edge Function background workers that are disabled for security.",
+    "demo": null
+  },
+  {
+    "sha": "40299ceca6abeea9783ab6b0fc46337342042f64",
+    "shortSha": "40299ce",
+    "title": "Phase 1",
+    "summary": null,
+    "commitTimestamp": "2026-09-30T14:53:23+02:00",
+    "commitDate": "2026-09-30",
+    "releaseDate": null,
+    "releaseId": null,
+    "releaseTitle": null,
+    "releaseDescription": null,
+    "refs": [
+      "backup/pre-squash"
+    ],
+    "migrationCount": 5,
+    "schemaVersion": "20260930000500_worker_schedule.sql",
+    "milestone": "Pre-Archive Prototype (Phase 1)",
+    "state": "unavailable",
+    "stateReason": "Unavailable: Initial prototype built around retired MyAnimeList/Jikan catalog tables and invite-only accounts; lacks standalone workspace creation.",
+    "demo": null
+  }
+]

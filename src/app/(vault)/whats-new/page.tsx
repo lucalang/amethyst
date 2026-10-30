@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { MarkUpdatesSeen } from "@/components/layout/whats-new";
+import { VersionHistoryLinkButton } from "@/components/version-history/version-history-browser";
 import { CHANGELOG, formatChangeDate, releasePath } from "@/lib/changelog";
 import { requireUser } from "@/lib/supabase/auth";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,12 @@ export default async function WhatsNewPage() {
         <PageHeader
           title="What’s new"
           description="The latest changes to Amethyst at a glance. Open any update for its full notes."
-          actions={<KindLegend />}
+          actions={
+            <div className="flex flex-wrap items-center gap-3">
+              <VersionHistoryLinkButton />
+              <KindLegend />
+            </div>
+          }
         />
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_13rem]">
           <ol aria-label="Updates, newest first" className="min-w-0">

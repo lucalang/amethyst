@@ -276,6 +276,79 @@ npm run codes -- disable <id>                # stop a code; rewards already gran
 - Each account can redeem a code once. `--max` caps total redemptions, `--expires` sets an end date. Expired, used-up and disabled codes tell players the seal is dormant.
 - Disable instead of deleting: redeemed codes can't be deleted (redemptions reference them). In an emergency you can also set `secret_codes.disabled_at` in the Supabase Table Editor.
 
+## Version history and interactive milestone demos
+
+`/version-history` catalogs all retained commits reachable from the repository's branches and tags (`main` and `backup/pre-squash`), deduplicated by full 40-character SHA, and lets visitors explore enabled historical milestones as isolated, fresh-account demos.
+
+### Refreshing the commit catalog
+
+```bash
+npm run versions:catalog
+```
+
+`scripts/version-history-catalog.ts` is operator-controlled and reads only from the local Git repository:
+
+- Walks all commits reachable from `refs/heads/*` and `refs/tags/*`, deduplicating by full 40-character SHA.
+- Distinguishes the Git commit date (`commitDate`) from the verified production deployment date (`releaseDate`) and release description in `src/lib/changelog.ts`.
+- Excludes author emails and applies `redactSensitiveText` so tokens, JWTs, credential URLs, emails or secret codes never enter `src/lib/version-history-catalog.json`.
+- Marks every commit with an explicit state: `Available Demo`, `Not Prepared`, or `Unavailable` with a concise technical reason. Listing a commit never implies it has a working demo.
+
+### Enabled milestone demos and why schemas are isolated per commit
+
+Historical commits cannot share a single database schema because Amethyst's schema and RPC contracts changed incompatibly across eras:
+
+| Milestone commit | Demo port | Isolated DB | Migrations | Historical architecture |
+| --- | --- | --- | --- | --- |
+| `3c27ef5` (`3c27ef532b3fa8bd60968b0f9841348fde95ca8b`) | `:4101` | `demo_3c27ef5` | 10 (`..001000_amethyst`) | Fixed `/anime`, `/games`, `/other` libraries (`entries` has no `collection_id`); `create_entry` seeds starter `Overview.md` and `Progress` files |
+| `7ec9aa4` (`7ec9aa4310412268843a6bd5db9da4f277405dd3`) | `:4102` | `demo_7ec9aa4` | 16 (`..1019000100_user_collections`) | User-created `collections` (`/[collection]` UUID routes), collection-scoped labels, per-file cover progress and empty starter workspaces |
+| `03070fc` (`03070fca5ce3cf9635a182d93932f81623db2176`) | `:4103` | `demo_03070fc` | 22 (`..1025000100_settings_capacity`) | First Home dashboard, Settings sidebar, workspace templates, collection identities and 5 themes |
+| `3882439` (`38824391ee82b53f9016a38ad5ad3385f44e094c`) | `:4104` | `demo_3882439` | 29 (`..1030000100_arcade_economy`) | Readable slug URLs (`/collections/[slug]`, `/entries/[slug]`), collection layouts, 3D Showcase, Achievements cabinet and Arcade hall + demo shop |
+| `688565d` (`688565d1429381610f4ec0810348d66850031a3a`) | `:4105` | `demo_688565d` | 32 (`..1102000100_tasks`) | Top-bar `Archive \| Tasks` workspace switcher and Tasks with permanent `Inbox` (`ensure_task_inbox()` RPC, which was dropped in migration 33) |
+
+### Unavailable commits
+
+Commits marked `Unavailable` are kept visible in the catalog with their exact reason:
+
+- `40299ce`, `bd01e88`, `34dd75c`, `4baae8e`, `38b204a` (2026-09-30 pre-workspace prototypes/betas): depended on retired MyAnimeList OAuth credentials, live Jikan API catalog imports and `pg_cron`/`pg_net` Edge Function sync workers.
+- `247e4f1`, `d295b55` (2026-10-19): production `next build` failed TypeScript checks on legacy `/tests` fixtures before `7ec9aa4` scoped build typechecking via `tsconfig.build.json` later the same day.
+- `d8b23c2`, `851d01f` (2026-10-29): `serverEnv()` unconditionally required live Cloudflare R2 credentials on every write route until `2c844bb` made R2 configuration optional when unconfigured.
+- `743b007` (2026-10-30): `/vault` and its 3D chamber components were committed out of sync and failed compilation until `c5de608`.
+
+### Preparing, starting and stopping demos locally
+
+Requires local Supabase running (`npx supabase start`, providing local Postgres on `127.0.0.1:54322`):
+
+```bash
+npm run demos -- prepare all        # create demo_<shortSha> DBs, apply commit migrations, extract & build in /tmp/amethyst-version-demos
+npm run demos -- start all          # launch PostgREST + Next.js + Demo Isolation Gateway on ports 4101–4105
+npm run demos -- status             # check DB, build and HTTP status for all enabled milestones
+npm run demos -- reset-db 3c27ef5   # wipe and rebuild a single commit's demo database and visitor storage
+npm run demos -- stop all           # stop all running demo processes
+```
+
+All extracted historical source trees, `.next-demo` build outputs, ephemeral demo keys and visitor uploads live under `/tmp/amethyst-version-demos` (override with `AMETHYST_DEMO_ROOT`), completely separate from the repository working tree.
+
+### Enabling an additional commit
+
+1. Add an entry to `ENABLED_DEMO_SPECS` in `src/lib/version-history.ts` with the commit's full 40-character SHA, port (`410x`), internal Next port (`420x`), PostgREST port (`430x`), database name (`demo_<shortSha>`) and milestone metadata (or test ad-hoc with `npm run demos -- prepare --sha <full-40-char-sha> --port 4109`).
+2. Run `npm run versions:catalog` to update `src/lib/version-history-catalog.json`.
+3. Run `npm run demos -- prepare <shortSha> && npm run demos -- start <shortSha>`.
+
+### Security, visitor isolation, retention and Reset Demo
+
+- **Zero production access:** Demo builds and gateways never load `.env.local`, hosted Supabase URLs/keys or Cloudflare R2 credentials. Demo JWTs are signed with an ephemeral local ES256 keypair generated in `/tmp/amethyst-version-demos/keys/demo-jwt.json`.
+- **Origin & cookie isolation:** Each demo runs on its own origin (`http://localhost:4101`..`4105`), isolating `localStorage` and `sessionStorage`. Cookies are scoped per commit (`amethyst_demo_vid_<shortSha>`, `sb-demo-<shortSha>-auth-token`, `archive-started-demo-<shortSha>`), and the Demo Isolation Gateway strips all other cookies before forwarding requests to the historical Next.js server.
+- **Fresh-account provisioning & 24-hour retention:** Each visitor is provisioned a dedicated `auth.users` + `public.users` identity per commit using that commit's own `ensure_profile()` and triggers. Workspaces persist across navigation and refresh for 24 hours (`DEMO_RETENTION_HOURS`) and are automatically pruned when expired.
+- **Quotas & contained integrations:** Each visitor workspace is capped at 50 entries, 250 workspace nodes, 500 tasks, 256 KB per write request, and 5 uploaded raster images (≤ 2 MB each, ≤ 5 MB total). Outbound requests from `/api/image` are intercepted locally and served deterministic safe SVG artwork; all account email endpoints (`/recover`, `/otp`, `/resend`, `/verify`) are simulated locally without sending email.
+- **Reset Demo:** Available both inside every running demo (via the corner Shadow DOM demo bar) and on `/version-history`, with confirmation. Resetting deletes only that visitor's `auth.users` row (cascading all rows in `demo_<shortSha>`) and uploaded files, provisions a fresh account and clears demo `localStorage`/`sessionStorage`.
+
+### Hosted deployment steps for live demos
+
+To expose historical milestone demos on a hosted environment alongside production:
+
+1. Provision an isolated multi-database Postgres instance (never the production Supabase project) and run `scripts/version-demos.ts` on an isolated container/VM host.
+2. Route distinct demo subdomains (e.g. `demo-3c27ef5.<domain>`) to each Demo Isolation Gateway port (`4101`–`4105`) with `MAIN_APP_ORIGIN` set to the main app origin, and keep all demo processes without production Supabase or R2 credentials.
+
 ## Commands
 
 ```bash
