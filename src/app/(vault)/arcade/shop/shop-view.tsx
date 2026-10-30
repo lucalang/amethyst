@@ -3,7 +3,7 @@
 import { useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, Coins, Eye, History, Loader2, Lock, Trophy } from "lucide-react";
+import { ArrowRight, Award, Check, Coins, Eye, History, Loader2, Lock, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { CatalogEmpty, CatalogSearch, FilterChip, OwnershipFilter } from "@/components/catalog/catalog-search";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { achievementForItem } from "@/lib/achievements";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { ARCADE_GAMES, DAILY_COIN_LIMIT, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type SudokuDifficulty } from "@/lib/arcade";
 import { catalogMatcher, ownershipMatches, type Ownership } from "@/lib/catalog-search";
@@ -29,7 +30,7 @@ import { SampleArt, type FrameSample } from "../../settings/frame-settings";
 
 type Profile = { name: string | null; avatarUrl: string | null };
 type Samples = { portrait: FrameSample | null; square: FrameSample | null };
-type Filter = "all" | CosmeticKind;
+type Filter = "all" | CosmeticKind | "achievement";
 type Busy = { action: "buy" | "equip"; id: CosmeticId | null } | null;
 type Purchase = { item: ShopItem; stage: "confirm" | "done"; already?: boolean; balanceAfter?: number; error?: string | null };
 
@@ -37,6 +38,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "frame", label: "Frames" },
   { id: "avatar_decoration", label: "Avatar decorations" },
+  { id: "achievement", label: "Achievements" },
 ];
 
 const coinsText = (value: number) => `${value.toLocaleString("en")} coin${value === 1 ? "" : "s"}`;
@@ -162,14 +164,20 @@ export function ShopView({
     return { ...item, owned, equipped: owned && (item.kind === "frame" ? equippedFrame === item.id : equippedDecoration === item.id) };
   });
   const match = catalogMatcher(query);
-  const searched = items.filter(
-    (item) => ownershipMatches(ownership, item.owned) && (!match || match(COSMETICS[item.id].name, COSMETICS[item.id].description, COSMETIC_KIND_LABELS[item.kind])),
-  );
-  const shown = searched.filter((item) => filter === "all" || item.kind === filter);
+  const searched = items.filter((item) => {
+    const ach = item.source === "achievement" ? achievementForItem(item.id) : undefined;
+    const achTerm = ach ? (ach.hidden && !item.owned ? "hidden achievement" : ach.name) : null;
+    return (
+      ownershipMatches(ownership, item.owned) &&
+      (!match || match(COSMETICS[item.id].name, COSMETICS[item.id].description, COSMETIC_KIND_LABELS[item.kind], item.source === "achievement" ? "achievement" : "shop", achTerm))
+    );
+  });
+  const shown = searched.filter((item) => filter === "all" || (filter === "achievement" ? item.source === "achievement" : item.kind === filter));
   const counts: Record<Filter, number> = {
     all: searched.length,
     frame: searched.filter((item) => item.kind === "frame").length,
     avatar_decoration: searched.filter((item) => item.kind === "avatar_decoration").length,
+    achievement: searched.filter((item) => item.source === "achievement").length,
   };
   const focus = items.find((item) => item.id === selected) ?? items[0] ?? null;
   const scoreRules = ARCADE_GAMES.flatMap((game) => shop.rules.filter((rule) => rule.game === game.id && game.id !== "sudoku"));
@@ -251,6 +259,18 @@ export function ShopView({
         </Button>
       );
     }
+    if (item.source === "achievement") {
+      const ach = achievementForItem(item.id);
+      const href = ach && !ach.hidden ? `/achievements#${ach.id}` : "/achievements";
+      return (
+        <Button asChild size="sm" variant="outline" className={cn(wide && "w-full sm:w-auto")}>
+          <Link href={href}>
+            <Award aria-hidden />
+            {ach ? (ach.hidden ? "Hidden achievement" : ach.name) : "View achievement"}
+          </Link>
+        </Button>
+      );
+    }
     if (balance < item.price) {
       return (
         <Button size="sm" variant="outline" disabled aria-label={`${name}: you need ${coinsText(item.price - balance)} more`} className={cn(wide && "w-full sm:w-auto")}>
@@ -317,7 +337,14 @@ export function ShopView({
               <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{COSMETIC_KIND_LABELS[focus.kind]}</p>
               <p className="mt-0.5 flex items-center justify-between gap-3 text-base font-semibold text-foreground">
                 {COSMETICS[focus.id].name}
-                {focus.owned ? null : <Price value={focus.price} />}
+                {focus.owned ? null : focus.source === "achievement" ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amethyst">
+                    <Award aria-hidden className="size-3.5" />
+                    Achievement
+                  </span>
+                ) : (
+                  <Price value={focus.price} />
+                )}
               </p>
               <p className="mt-1 text-sm text-pretty text-muted-foreground">{COSMETICS[focus.id].description}</p>
             </div>
@@ -426,7 +453,14 @@ export function ShopView({
                       <div className="flex flex-1 flex-col gap-1 border-t border-border p-4">
                         <div className="flex items-start justify-between gap-3">
                           <h3 className="text-sm font-semibold text-foreground">{info.name}</h3>
-                          {item.owned ? null : <Price value={item.price} className="text-sm" />}
+                          {item.owned ? null : item.source === "achievement" ? (
+                            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-amethyst">
+                              <Award aria-hidden className="size-3.5" />
+                              Achievement
+                            </span>
+                          ) : (
+                            <Price value={item.price} className="text-sm" />
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{COSMETIC_KIND_LABELS[item.kind]}</p>
                         <p className="mt-1 text-xs leading-5 text-pretty text-muted-foreground">{info.description}</p>
@@ -448,11 +482,15 @@ export function ShopView({
             How to earn coins
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every finished run is counted once by the server, so replays and reloads never pay twice. Coins from play and net Coin Slots winnings share a limit of {DAILY_COIN_LIMIT} in any 24 hours; coins from Vault codes don’t count toward it.
-            Achievements stay as recognition and don’t pay coins.{" "}
+            Every finished run is counted once by the server, so replays and reloads never pay twice. Coins from play and net Coin Slots winnings share a limit of {DAILY_COIN_LIMIT} in any 24 hours; one-time rewards from{" "}
+            <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
+              Achievements
+            </Link>{" "}
+            and{" "}
             <Link href="/vault" className="text-amethyst underline-offset-4 hover:underline">
-              Have a code? Try the Vault.
-            </Link>
+              Vault codes
+            </Link>{" "}
+            don’t count toward it.
           </p>
           <dl className="mt-4 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[minmax(7rem,auto)_1fr] [&_dd]:mb-2 [&_dd]:text-muted-foreground sm:[&_dd]:mb-1">
             {scoreRules.map((rule) => (

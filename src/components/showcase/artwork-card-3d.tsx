@@ -162,6 +162,24 @@ const SPECS: Record<ArtworkFrameId, FrameSpec> = {
     fx: { kind: FX.amethyst, a: 0xc7d2fe, b: 0xfef3c7 },
     glints: (band) => cornerGlints(band, [1.6, 3.1, 4.6, 5.8]),
   },
+  "obsidian-relic": {
+    margin: 0.048,
+    relief: 0.006,
+    band: { metalness: 0.72, roughness: 0.24, clearcoat: 1, clearcoatRoughness: 0.1 },
+    edge: { color: 0xd9a845, metalness: 0.95, roughness: 0.22, clearcoat: 0.6, clearcoatRoughness: 0.16 },
+    light: { a: 0xfbbf24, b: 0xa855f7, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xfde68a, b: 0xd8b4fe },
+    glints: (band) => [...cornerGlints(band, [1.2, 2.7, 4.1, 5.5]), [0, band.height / 2 - band.margin / 2, 3.2]],
+  },
+  "celestial-prism": {
+    margin: 0.038,
+    relief: 0.0045,
+    band: { metalness: 0.45, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08, iridescence: 0.9, iridescenceIOR: 1.5, iridescenceThicknessRange: [220, 760] },
+    edge: { color: 0x7dd3fc, metalness: 0.8, roughness: 0.2, clearcoat: 0.9, clearcoatRoughness: 0.12 },
+    light: { a: 0x7dd3fc, b: 0xc4b5fd, mix: 0.6 },
+    fx: { kind: FX.aurora, a: 0x7dd3fc, b: 0xe9d5ff },
+    glints: (band) => cornerGlints(band, [1.5, 3.0, 4.5, 6.0]),
+  },
 };
 
 const PLANE_VERTEX = /* glsl */ `
@@ -584,6 +602,36 @@ function paintBand(frame: ArtworkFrameId, { cw, ch, m, r, ra }: Layout): HTMLCan
       ctx.fill();
       ctx.restore();
     });
+  } else if (frame === "obsidian-relic") {
+    const obsidian = ctx.createLinearGradient(0, 0, W, H);
+    obsidian.addColorStop(0, "#14101f");
+    obsidian.addColorStop(0.5, "#09070e");
+    obsidian.addColorStop(1, "#1e1533");
+    ctx.fillStyle = obsidian;
+    ctx.fillRect(0, 0, W, H);
+    line(M * 0.22, Math.max(1.5, M * 0.06), "#e8b84a", r * scale - M * 0.22);
+    line(art.x - M * 0.06, Math.max(2, M * 0.09), "#d9a845", art.r + M * 0.06);
+    corners(() => {
+      const s = M * 0.42;
+      ctx.save();
+      ctx.translate(M / 2, M / 2);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = "#9333ea";
+      ctx.fillRect(-s / 2, -s / 2, s, s);
+      ctx.strokeStyle = "#fde68a";
+      ctx.lineWidth = Math.max(1, M * 0.05);
+      ctx.strokeRect(-s / 2, -s / 2, s, s);
+      ctx.restore();
+    });
+  } else if (frame === "celestial-prism") {
+    const prism = ctx.createLinearGradient(0, 0, W, H);
+    prism.addColorStop(0, "#162447");
+    prism.addColorStop(0.5, "#1f1d47");
+    prism.addColorStop(1, "#0f2942");
+    ctx.fillStyle = prism;
+    ctx.fillRect(0, 0, W, H);
+    line(M * 0.24, Math.max(1.2, M * 0.05), "rgba(186, 230, 253, 0.75)", r * scale - M * 0.24);
+    line(art.x - M * 0.05, Math.max(1.5, M * 0.07), "rgba(221, 214, 254, 0.85)", art.r + M * 0.05);
   }
   return canvas;
 }

@@ -24,10 +24,28 @@ export type Database = {
         },"public": {
           Tables: {
             "achievement_definitions": {
-              Row: { id: string; metric: string; target: number; display_order: number }
-              Insert: { id: string; metric: string; target: number; display_order: number }
-              Update: { id?: string; metric?: string; target?: number; display_order?: number }
+              Row: { id: string; metric: string; target: number; display_order: number; reward_coins: number; hidden: boolean }
+              Insert: { id: string; metric: string; target: number; display_order: number; reward_coins?: number; hidden?: boolean }
+              Update: { id?: string; metric?: string; target?: number; display_order?: number; reward_coins?: number; hidden?: boolean }
               Relationships: []
+            },
+            "achievement_reward_items": {
+              Row: { achievement_id: string; item_id: string; position: number }
+              Insert: { achievement_id: string; item_id: string; position?: number }
+              Update: { achievement_id?: string; item_id?: string; position?: number }
+              Relationships: [
+                { foreignKeyName: "achievement_reward_items_achievement_id_fkey"; columns: ["achievement_id"]; isOneToOne: false; referencedRelation: "achievement_definitions"; referencedColumns: ["id"] },
+                { foreignKeyName: "achievement_reward_items_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "cosmetic_items"; referencedColumns: ["id"] },
+              ]
+            },
+            "user_achievement_rewards": {
+              Row: { user_id: string; achievement_id: string; coins_granted: number; items_granted: string[]; items_new: string[]; items_already_owned: string[]; transaction_id: number | null; source: "event" | "backfill"; granted_at: string; notification_claimed_at: string | null }
+              Insert: { user_id: string; achievement_id: string; coins_granted?: number; items_granted?: string[]; items_new?: string[]; items_already_owned?: string[]; transaction_id?: number | null; source: "event" | "backfill"; granted_at?: string; notification_claimed_at?: string | null }
+              Update: { user_id?: string; achievement_id?: string; coins_granted?: number; items_granted?: string[]; items_new?: string[]; items_already_owned?: string[]; transaction_id?: number | null; source?: "event" | "backfill"; granted_at?: string; notification_claimed_at?: string | null }
+              Relationships: [
+                { foreignKeyName: "user_achievement_rewards_achievement_id_fkey"; columns: ["achievement_id"]; isOneToOne: false; referencedRelation: "achievement_definitions"; referencedColumns: ["id"] },
+                { foreignKeyName: "user_achievement_rewards_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+              ]
             },
             "user_achievement_progress": {
               Row: { user_id: string; achievement_id: string; progress: number; details: Json; updated_at: string }
@@ -130,15 +148,15 @@ export type Database = {
               Relationships: [{ foreignKeyName: "coin_wallets_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "coin_transactions": {
-              Row: { id: number; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots"; reference: string; details: NonNullable<Json>; created_at: string }
-              Insert: { id?: never; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots"; reference: string; details?: NonNullable<Json>; created_at?: string }
-              Update: { id?: never; user_id?: string; amount?: number; balance_after?: number; kind?: "reward" | "purchase" | "code" | "slots"; reference?: string; details?: NonNullable<Json>; created_at?: string }
+              Row: { id: number; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots" | "achievement"; reference: string; details: NonNullable<Json>; created_at: string }
+              Insert: { id?: never; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots" | "achievement"; reference: string; details?: NonNullable<Json>; created_at?: string }
+              Update: { id?: never; user_id?: string; amount?: number; balance_after?: number; kind?: "reward" | "purchase" | "code" | "slots" | "achievement"; reference?: string; details?: NonNullable<Json>; created_at?: string }
               Relationships: [{ foreignKeyName: "coin_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "cosmetic_items": {
-              Row: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available: boolean; secret: boolean; created_at: string; game: string | null; category: string | null }
-              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available?: boolean; secret?: boolean; created_at?: string; game?: string | null; category?: string | null }
-              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price?: number; available?: boolean; secret?: boolean; created_at?: string; game?: string | null; category?: string | null }
+              Row: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available: boolean; secret: boolean; source: "shop" | "vault" | "achievement"; created_at: string; game: string | null; category: string | null }
+              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null }
+              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price?: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null }
               Relationships: []
             },
             "game_loadouts": {
@@ -561,6 +579,9 @@ isOneToOne: false
                            },
 "reconcile_achievements":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"backfill_achievement_rewards":
+{ Args: { "p_limit"?: number }; Returns: Json
                            },
 "reorder_collections":
 { Args: { "p_collection_ids": (string)[] }; Returns: undefined

@@ -49,6 +49,55 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-30-achievement-rewards",
+    date: "2026-10-30",
+    title: "Achievement rewards, exclusive cosmetics and milestone flair",
+    intro: "Every achievement in your cabinet now grants a one-time reward: coins for ordinary milestones, and exclusive artwork frames, avatar decorations, profile badges and titles for major feats.",
+    icon: "trophy",
+    highlights: [
+      { kind: "new", feature: "Milestone rewards", text: "Ordinary achievements grant 30–75 coins; significant milestones grant 100–150 coins and 13 achievement-exclusive frames, decorations, badges and titles." },
+      { kind: "new", feature: "Hidden milestones", text: "Secret achievements stay masked in your cabinet and search until you discover and unlock them." },
+      { kind: "improved", feature: "Coordinated celebrations", text: "Unlock notifications reveal the medal alongside its coin payout and real cosmetic artwork, with a one-click Equip action and a grouped summary for backfilled milestones." },
+      { kind: "improved", feature: "Reward & source filters", text: "Filter achievements by reward type, and filter Artwork frames, Profile decorations, Badges & titles and the Arcade shop to achievement-exclusive items." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Coins and exclusive cosmetics for every achievement",
+          body: "Each achievement now grants a deliberate one-time reward verified by the server. Ordinary milestones award 30–75 Arcade coins, while capstone challenges across 2048, Flutter, Snake, Hard Sudoku, Fruit Slice, Tower Stacker, your Archive and Discovery unlock 13 exclusive items — including the Obsidian relic and Celestial prism artwork frames, the Archivist’s plume and Champion’s halo avatar decorations, four profile badges and five profile titles.",
+          points: [
+            "Every achievement reward is granted at most once per account and recorded in your wallet ledger as an Achievement transaction.",
+            "Milestone coins are exempt from the 600-coin daily play and Coin Slots limit: reaching the daily play cap never clips an achievement reward, and achievement coins don’t reduce your daily play room.",
+            "If you already own a reward item when a milestone is granted, ownership is preserved without duplicate grants or synthetic coin compensation.",
+            "Previously unlocked achievements are automatically backfilled so existing accounts receive their full historical coins and cosmetics.",
+          ],
+          where: "Home → Achievements",
+          link: { href: "/achievements", label: "Open Achievements" },
+        },
+        {
+          title: "Hidden discovery achievements",
+          body: "Secret milestones stay genuinely hidden — their name, goal, icon and reward are masked on cards, detail views and search until you meet their reveal condition.",
+          where: "Achievements → Discovery",
+          link: { href: "/achievements", label: "Explore your cabinet" },
+        },
+      ],
+      improved: [
+        {
+          title: "Coordinated reward reveal & one-click Equip",
+          body: "When you earn an achievement, the celebration reveals both the medal and its granted coins or cosmetic artwork, with a button to equip a newly unlocked frame, decoration, badge or title on the spot. Multiple backfilled milestones are grouped into a single summary notification instead of playing back-to-back.",
+          where: "Achievements → select any earned medal",
+          link: { href: "/achievements", label: "View your medals" },
+        },
+        {
+          title: "Reward filters and achievement-exclusive views",
+          body: "Narrow the achievement cabinet by Coins, Frames & decorations or Badges & titles alongside status, group, game and search. In Customization (Artwork frames and Profile) and the Arcade shop, a dedicated Achievements filter lets you browse and equip milestone-exclusive cosmetics.",
+          where: "Customization → Profile, Customization → Artwork frames, and Arcade → Shop",
+          link: { href: "/customization/profile", label: "Open Profile customization" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-version-history",
     date: "2026-10-30",
     title: "Version history and playable milestone demos",

@@ -2247,6 +2247,63 @@
 .art-frame[data-frame="constellation"] .art-frame-deco {
   filter: drop-shadow(0 0 calc(2px + 0.8cqi) rgb(129 140 248 / 0.4));
 }
+
+/* Obsidian relic (Achievement): faceted black obsidian with gold-leaf seams and amethyst corner seals. */
+.art-frame[data-frame="obsidian-relic"] {
+  --fw: clamp(3.5px, 2.4cqi, 8.5px);
+  --orn: clamp(18px, 14cqi, 42px);
+}
+.art-frame[data-frame="obsidian-relic"] .art-frame-ring {
+  background:
+    linear-gradient(135deg, rgb(250 204 21 / 0.22), transparent 36%, rgb(168 85 247 / 0.25) 70%, transparent),
+    linear-gradient(160deg, #1b1429 0%, #09070f 48%, #221638 100%);
+}
+.art-frame[data-frame="obsidian-relic"] .art-frame-deco::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid rgb(232 184 74 / 0.85);
+  border-radius: calc(var(--fr) + var(--fw) + 1px);
+}
+.art-frame[data-frame="obsidian-relic"] .art-frame-deco::after {
+  content: "";
+  position: absolute;
+  inset: var(--fw);
+  border-radius: var(--fr);
+  box-shadow: 0 0 0 1px rgb(232 184 74 / 0.9), inset 0 0 10px rgb(147 51 234 / 0.35);
+}
+.art-frame[data-frame="obsidian-relic"] .art-frame-deco {
+  filter: drop-shadow(0 0 calc(2px + 0.9cqi) rgb(168 85 247 / 0.45));
+}
+
+/* Celestial prism (Achievement): crystal astrolabe bevels with a slow starlight trace. */
+.art-frame[data-frame="celestial-prism"] {
+  --fw: clamp(3px, 2.2cqi, 7.5px);
+  --orn: clamp(16px, 13cqi, 38px);
+}
+.art-frame[data-frame="celestial-prism"] .art-frame-deco {
+  animation: art-aurora 10s linear infinite;
+}
+.art-frame[data-frame="celestial-prism"] .art-frame-ring {
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 35%, #c084fc 68%, #67e8f9 100%);
+}
+.art-frame[data-frame="celestial-prism"] :is(.art-frame-trace, .art-frame-glow > .art-frame-ring) {
+  background: conic-gradient(from var(--aurora-angle), transparent 0deg, #bae6fd 70deg, #e9d5ff 140deg, transparent 220deg);
+}
+.art-frame[data-frame="celestial-prism"] .art-frame-glow > .art-frame-ring {
+  opacity: 0.55;
+  padding: calc(var(--fw) * 2);
+}
+[data-motion="subtle"] .art-frame[data-frame="celestial-prism"] .art-frame-deco {
+  animation-duration: 20s;
+}
+.art-frame[data-frame="celestial-prism"] .art-frame-deco::after {
+  content: "";
+  position: absolute;
+  inset: var(--fw);
+  border-radius: var(--fr);
+  box-shadow: 0 0 0 1px rgb(224 242 254 / 0.85);
+}
 :root[data-motion="off"] .art-frame-deco {
   animation: none !important;
 }
@@ -3834,6 +3891,9 @@
 }
 .ach-toast-text > :nth-child(4) {
   animation-delay: 720ms;
+}
+.ach-toast-text > :nth-child(5) {
+  animation-delay: 820ms;
 }
 
 /* Subtle motion: quick pops, a short lift, no tilt, rays or sparks. */

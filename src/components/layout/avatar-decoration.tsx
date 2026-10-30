@@ -139,6 +139,63 @@ function VaultSigil({ id }: { id: string }) {
   );
 }
 
+function ArchivistQuill({ id }: { id: string }) {
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${id}-quill-arc`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fde68a" />
+          <stop offset="0.5" stopColor="#c084fc" />
+          <stop offset="1" stopColor="#6d28d9" />
+        </linearGradient>
+        <linearGradient id={`${id}-plume`} x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stopColor="#8b5cf6" />
+          <stop offset="0.55" stopColor="#e9d5ff" />
+          <stop offset="1" stopColor="#fff7d6" />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="59" fill="none" stroke={`url(#${id}-quill-arc)`} strokeWidth="2" />
+      <circle cx="50" cy="50" r="63.5" fill="none" stroke="#fde68a" strokeOpacity="0.45" strokeWidth="0.9" strokeDasharray="3 4" />
+      <g transform="translate(86 14) rotate(28)">
+        <path d="M0,26 C-8,10 -5,-12 8,-24 C14,-10 10,8 0,26 Z" fill={`url(#${id}-plume)`} stroke="#4c1d95" strokeWidth="1.1" />
+        <path d="M-2,34 L8,-24" stroke="#fef08a" strokeWidth="1.5" strokeLinecap="round" />
+        <polygon points="-2,34 -5,28 1,28" fill="#fbbf24" stroke="#78350f" strokeWidth="0.7" />
+      </g>
+      <polygon points="14,88 19,82 24,88 19,94" fill="#c084fc" stroke="#fff1b8" strokeWidth="1" />
+      <circle cx="11" cy="22" r="2.2" fill="#fde68a" />
+      <circle cx="88" cy="86" r="1.8" fill="#e9d5ff" />
+    </>
+  );
+}
+
+const HALO_STARS = [0, 45, 90, 135, 180, 225, 270, 315];
+
+function ChampionHalo({ id }: { id: string }) {
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${id}-halo`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff7d6" />
+          <stop offset="0.45" stopColor="#f59e0b" />
+          <stop offset="0.8" stopColor="#a855f7" />
+          <stop offset="1" stopColor="#fde68a" />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r="59" fill="none" stroke={`url(#${id}-halo)`} strokeWidth="2.4" />
+      <circle cx="50" cy="50" r="64" fill="none" stroke="#fde68a" strokeOpacity="0.4" strokeWidth="1" />
+      {HALO_STARS.map((deg, idx) => (
+        <g key={deg} transform={`rotate(${deg} 50 50) translate(50 -10.5)`}>
+          {idx % 2 === 0 ? (
+            <path d="M0,-5.5 L1.5,-1.5 L5.5,0 L1.5,1.5 L0,5.5 L-1.5,1.5 L-5.5,0 L-1.5,-1.5 Z" fill="#fef08a" stroke="#92400e" strokeWidth="0.7" />
+          ) : (
+            <polygon points="0,-4 4,0 0,4 -4,0" fill="#c084fc" stroke="#f5d0fe" strokeWidth="0.7" />
+          )}
+        </g>
+      ))}
+    </>
+  );
+}
+
 /**
  * A decoration drawn around (never over the middle of) a round avatar. The box extends 30% past
  * the avatar on every side; the avatar image itself is untouched.
@@ -158,6 +215,10 @@ export function AvatarDecoration({ decoration, className }: { decoration: Avatar
         <Orbit id={id} />
       ) : decoration === "vault-sigil" ? (
         <VaultSigil id={id} />
+      ) : decoration === "archivist-quill" ? (
+        <ArchivistQuill id={id} />
+      ) : decoration === "champion-halo" ? (
+        <ChampionHalo id={id} />
       ) : (
         <Crown id={id} />
       )}

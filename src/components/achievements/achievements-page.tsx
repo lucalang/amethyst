@@ -1,25 +1,42 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
-import { Sparkles } from "lucide-react";
+import { Check, Coins, EyeOff, Gift, Loader2, Lock, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { CatalogEmpty, CatalogSearch } from "@/components/catalog/catalog-search";
 import { PageContainer } from "@/components/layout/app-shell";
+import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
+import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AchievementBadge, BADGE_STYLES, badgeVars } from "@/components/achievements/achievement-badge";
 import { replayAchievementCelebration } from "@/components/achievements/achievement-notifications";
-import { ACHIEVEMENTS, ARCADE_GAME_FILTERS, type AchievementGroup } from "@/lib/achievements";
-import type { AchievementCardData } from "@/lib/data/achievements";
+import { RewardItemVisual, rewardCustomizeHref, rewardKindLabel } from "@/components/achievements/reward-visual";
+import {
+  ACHIEVEMENTS,
+  ARCADE_GAME_FILTERS,
+  REWARD_FILTERS,
+  isAchievementRevealed,
+  matchesRewardFilter,
+  type AchievementDefinition,
+  type AchievementGroup,
+  type RewardFilter,
+} from "@/lib/achievements";
+import { apiFetch } from "@/lib/api-client";
 import { catalogMatcher } from "@/lib/catalog-search";
+import { rewardItemInfo } from "@/lib/cosmetics";
+import type { AchievementCardData } from "@/lib/data/achievements";
 import { cn } from "@/lib/utils";
 
-type Filter = "all" | "earned" | "in-progress";
-type Definition = (typeof ACHIEVEMENTS)[number];
+type Filter = "all" | "earned" | "in-progress" | "locked";
+type Definition = AchievementDefinition;
 
 const GROUPS: AchievementGroup[] = ["Arcade", "Archive", "Discovery"];
 const GAME_IDS = new Set<string>(ARCADE_GAME_FILTERS.map((game) => game.id));
-const gameOf = (definition: Definition) => ("game" in definition ? definition.game : undefined);
+const gameOf = (definition: Definition) => definition.game;
 
 function formatProgress(value: number, target: number, unit: string) {
   if (unit === "%") return `${Math.min(value, target)}%`;
@@ -49,6 +66,7 @@ export type CabinetOwner = { name: string; avatarUrl: string | null };
 export function AchievementsPage({ items, owner }: { items: AchievementCardData[]; owner: CabinetOwner }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [groupFilter, setGroupFilter] = useState("all");
+  const [rewardFilter, setRewardFilter] = useState<RewardFilter>("all");
   const [query, setQuery] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -59,12 +77,22 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
   const visible = ACHIEVEMENTS.filter((definition) => {
     const item = byId.get(definition.id);
     if (!item) return false;
+    const revealed = isAchievementRevealed(definition, item);
     if (filter === "earned" && !item.earnedAt) return false;
-    if (filter === "in-progress" && (item.earnedAt || item.progress >= definition.target)) return false;
+    if (filter === "locked" && item.earnedAt) return false;
+    if (filter === "in-progress" && (item.earnedAt || item.progress >= definition.target || !revealed)) return false;
     if (groupFilter !== "all" && groupFilter !== definition.group && groupFilter !== gameOf(definition)) return false;
+    if (!matchesRewardFilter(definition, rewardFilter, revealed)) return false;
     if (match) {
+      if (!revealed) {
+        return match("Hidden achievement", "Secret milestone", BADGE_STYLES[definition.group].label, definition.group);
+      }
       const game = ARCADE_GAME_FILTERS.find((entry) => entry.id === gameOf(definition));
-      return match(definition.name, definition.description, BADGE_STYLES[definition.group].label, definition.group, game?.title);
+      const rewardTerms = [
+        definition.reward.coins > 0 ? `${definition.reward.coins} coins` : null,
+        ...definition.reward.items.flatMap((id) => [rewardItemInfo(id).name, rewardKindLabel(id)]),
+      ];
+      return match(definition.name, definition.description, BADGE_STYLES[definition.group].label, definition.group, game?.title, ...rewardTerms);
     }
     return true;
   });
@@ -98,13 +126,25 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
     <PageContainer>
       <CabinetHeader byId={byId} earnedCount={earnedCount} owner={owner} />
 
-      <CatalogSearch value={query} onChange={setQuery} label="Search achievements" placeholder="Search achievements" className="enter mb-3 sm:w-80" />
+      <div className="enter mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <CatalogSearch value={query} onChange={setQuery} label="Search achievements" placeholder="Search medals or rewards" className="sm:w-80" />
+        <div role="group" aria-label="Filter by reward" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] sm:mx-0 sm:px-0">
+          {REWARD_FILTERS.map((entry) => (
+            <Chip key={entry.id} size="sm" pressed={rewardFilter === entry.id} onClick={() => setRewardFilter(entry.id)}>
+              {entry.id === "coins" ? <Coins aria-hidden className="coin-ink size-3.5" /> : entry.id !== "all" ? <Gift aria-hidden className="size-3.5 text-amethyst" /> : null}
+              {entry.label}
+            </Chip>
+          ))}
+        </div>
+      </div>
+
       <div className="enter mb-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div role="group" aria-label="Filter by status" className="flex w-full rounded-md border border-white/[0.1] bg-white/[0.02] p-0.5 sm:w-auto">
           {([
             ["all", "All"],
             ["earned", "Earned"],
             ["in-progress", "In progress"],
+            ["locked", "Locked"],
           ] as const).map(([value, label]) => (
             <Button key={value} type="button" size="sm" variant={filter === value ? "secondary" : "ghost"} aria-pressed={filter === value} onClick={() => setFilter(value)} className="h-8 flex-1 px-3 sm:flex-none">
               {label}
@@ -172,6 +212,7 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
             setQuery("");
             setFilter("all");
             setGroupFilter("all");
+            setRewardFilter("all");
           }}
         />
       )}
@@ -181,6 +222,7 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
           <AchievementDetails
             definition={detail}
             item={byId.get(detail.id)}
+            owner={owner}
             onReplay={() => {
               setDetailOpen(false);
               replayAchievementCelebration(detail.id);
@@ -197,35 +239,59 @@ function CabinetHeader({ byId, earnedCount, owner }: { byId: Map<string, Achieve
   const ratio = total ? earnedCount / total : 0;
   const radius = 30;
   const circumference = 2 * Math.PI * radius;
+  const totalCoinsEarned = ACHIEVEMENTS.reduce((sum, def) => {
+    const card = byId.get(def.id);
+    return sum + (card?.rewardGrantedAt ? card.coinsGranted : card?.earnedAt ? def.reward.coins : 0);
+  }, 0);
+  const totalItemsEarned = ACHIEVEMENTS.reduce((sum, def) => {
+    const card = byId.get(def.id);
+    return sum + (card?.earnedAt ? def.reward.items.length : 0);
+  }, 0);
+  const totalItemsAvailable = ACHIEVEMENTS.reduce((sum, def) => sum + def.reward.items.length, 0);
+
   return (
     <header className="enter relative mb-6 overflow-hidden rounded-lg border border-white/[0.08] bg-[radial-gradient(70%_120%_at_0%_0%,rgb(var(--accent-rgb)/0.14),transparent_60%)] bg-surface/50">
-      <div className="flex items-center gap-4 px-4 pt-4 pb-3.5 sm:gap-5 sm:px-5 sm:pt-5">
-        <div className="relative grid size-[72px] shrink-0 place-items-center">
-          <svg aria-hidden viewBox="0 0 72 72" className="absolute inset-0 -rotate-90">
-            <defs>
-              <linearGradient id="ach-gold" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#fff1b8" />
-                <stop offset="0.5" stopColor="#e7b546" />
-                <stop offset="1" stopColor="#a8701a" />
-              </linearGradient>
-            </defs>
-            <circle cx="36" cy="36" r={radius} fill="none" strokeWidth="5" style={{ stroke: "rgb(var(--ink-rgb) / 0.09)" }} />
-            <circle cx="36" cy="36" r={radius} fill="none" stroke="url(#ach-gold)" strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - ratio)} />
-          </svg>
-          <span className="text-center leading-none">
-            <span className="block text-xl font-extrabold tabular-nums">{earnedCount}</span>
-            <span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">of {total}</span>
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-4 pb-3.5 sm:gap-5 sm:px-5 sm:pt-5">
+        <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+          <div className="relative grid size-[72px] shrink-0 place-items-center">
+            <svg aria-hidden viewBox="0 0 72 72" className="absolute inset-0 -rotate-90">
+              <defs>
+                <linearGradient id="ach-gold" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stopColor="#fff1b8" />
+                  <stop offset="0.5" stopColor="#e7b546" />
+                  <stop offset="1" stopColor="#a8701a" />
+                </linearGradient>
+              </defs>
+              <circle cx="36" cy="36" r={radius} fill="none" strokeWidth="5" style={{ stroke: "rgb(var(--ink-rgb) / 0.09)" }} />
+              <circle cx="36" cy="36" r={radius} fill="none" stroke="url(#ach-gold)" strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - ratio)} />
+            </svg>
+            <span className="text-center leading-none">
+              <span className="block text-xl font-extrabold tabular-nums">{earnedCount}</span>
+              <span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">of {total}</span>
+            </span>
+          </div>
+          <div className="min-w-0">
+            <p className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+              {owner.name || owner.avatarUrl ? <ProfileAvatar name={owner.name} src={owner.avatarUrl} className="size-5 shrink-0 text-[9px]" /> : null}
+              <span className="truncate">{owner.name ? `${owner.name}’s cabinet` : "Your cabinet"}</span>
+            </p>
+            <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight md:text-3xl">Achievements</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              <span className="font-semibold text-foreground tabular-nums">{Math.round(ratio * 100)}% complete.</span> Medals for play, archive milestones and discoveries — each with a one-time reward of coins or exclusive cosmetics.
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-            {owner.name || owner.avatarUrl ? <ProfileAvatar name={owner.name} src={owner.avatarUrl} className="size-5 shrink-0 text-[9px]" /> : null}
-            <span className="truncate">{owner.name ? `${owner.name}’s cabinet` : "Your cabinet"}</span>
-          </p>
-          <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight md:text-3xl">Achievements</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground tabular-nums">{Math.round(ratio * 100)}% complete.</span> Medals for play, archive milestones and discoveries. Recognition only; nothing to unlock.
-          </p>
+        <div className="flex flex-wrap items-center gap-2.5 text-xs">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 font-medium tabular-nums">
+            <Coins aria-hidden className="coin-ink size-3.5" />
+            <span className="coin-ink font-semibold">+{totalCoinsEarned.toLocaleString("en")}</span>
+            <span className="text-muted-foreground">milestone coins</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 font-medium tabular-nums">
+            <Gift aria-hidden className="size-3.5 text-amethyst" />
+            <span className="font-semibold text-foreground">{totalItemsEarned}/{totalItemsAvailable}</span>
+            <span className="text-muted-foreground">exclusive items</span>
+          </span>
         </div>
       </div>
       <div className="flex flex-wrap gap-x-6 gap-y-2.5 border-t border-white/[0.06] px-4 py-3 sm:px-5">
@@ -284,10 +350,49 @@ function Chip({
   );
 }
 
+function TileRewardPill({ definition, revealed, rewardGranted }: { definition: Definition; revealed: boolean; rewardGranted: boolean }) {
+  if (!revealed) {
+    return (
+      <span className="mt-2 inline-flex max-w-full items-center gap-1 rounded-md border border-white/[0.07] bg-white/[0.025] px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+        <EyeOff aria-hidden className="size-3 shrink-0" />
+        <span className="truncate">Hidden reward</span>
+      </span>
+    );
+  }
+  const { coins, items } = definition.reward;
+  const firstItem = items[0] ? rewardItemInfo(items[0]) : null;
+  const extraCount = items.length > 1 ? items.length - 1 : 0;
+  return (
+    <span
+      className={cn(
+        "mt-2 inline-flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-0.5 rounded-md border px-2 py-0.5 text-[11px] font-medium",
+        rewardGranted ? "border-amethyst/35 bg-amethyst/[0.09] text-foreground" : "border-white/[0.08] bg-white/[0.03] text-muted-foreground",
+      )}
+    >
+      {coins > 0 ? (
+        <span className="inline-flex items-center gap-1 tabular-nums">
+          <Coins aria-hidden className="coin-ink size-3 shrink-0" />
+          <span className="coin-ink font-semibold">+{coins}</span>
+        </span>
+      ) : null}
+      {firstItem ? (
+        <span className="inline-flex min-w-0 items-center gap-1 truncate">
+          <Gift aria-hidden className="size-3 shrink-0 text-amethyst" />
+          <span className="truncate text-foreground/90">{firstItem.name}</span>
+          {extraCount > 0 ? <span className="text-muted-foreground">+{extraCount}</span> : null}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function AchievementTile({ definition, item, onOpen }: { definition: Definition; item: AchievementCardData; onOpen: () => void }) {
   const earned = Boolean(item.earnedAt);
+  const rewardGranted = Boolean(item.rewardGrantedAt);
+  const revealed = isAchievementRevealed(definition, item);
   const progress = Math.min(item.progress, definition.target);
   const percent = Math.min(100, (progress / definition.target) * 100);
+  const badgeDef = revealed ? definition : { icon: "HelpCircle", group: definition.group };
   return (
     <button
       type="button"
@@ -299,18 +404,29 @@ function AchievementTile({ definition, item, onOpen }: { definition: Definition;
       onPointerMove={tilt}
       onPointerLeave={untilt}
     >
-      <AchievementBadge achievement={definition} earned={earned} size={84} />
+      <AchievementBadge achievement={badgeDef} earned={earned} size={84} />
       <span className="mt-1.5 block w-full min-w-0">
-        <span className={cn("block text-[13px] leading-snug font-semibold text-balance sm:text-sm", !earned && "text-foreground/85")}>{definition.name}</span>
-        <span className="mt-1 line-clamp-3 block text-xs leading-[1.45] text-muted-foreground">{definition.description}</span>
+        <span className={cn("block text-[13px] leading-snug font-semibold text-balance sm:text-sm", !earned && "text-foreground/85")}>
+          {revealed ? definition.name : "Hidden achievement"}
+        </span>
+        <span className="mt-1 line-clamp-3 block text-xs leading-[1.45] text-muted-foreground">
+          {revealed ? definition.description : "Keep exploring Amethyst to reveal this milestone."}
+        </span>
       </span>
-      <span className="mt-auto block w-full pt-1">
+      <TileRewardPill definition={definition} revealed={revealed} rewardGranted={rewardGranted} />
+      <span className="mt-auto block w-full pt-2">
         {earned ? (
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-            <span aria-hidden className="size-1.5 rotate-45 rounded-[1px] bg-[#e7b546] shadow-[0_0_6px_#e7b546]" />
-            <span suppressHydrationWarning>Earned {new Date(item.earnedAt!).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+          <span className="flex flex-col items-center gap-0.5 text-[11px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden className="size-1.5 rotate-45 rounded-[1px] bg-[#e7b546] shadow-[0_0_6px_#e7b546]" />
+              <span suppressHydrationWarning>Unlocked {new Date(item.earnedAt!).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 text-[10px] text-amethyst">
+              <Check aria-hidden className="size-3" />
+              {rewardGranted ? "Reward granted" : "Unlocked"}
+            </span>
           </span>
-        ) : (
+        ) : revealed ? (
           <>
             <span className="sr-only">Locked. </span>
             <span className="ach-meter block" aria-hidden>
@@ -318,14 +434,36 @@ function AchievementTile({ definition, item, onOpen }: { definition: Definition;
             </span>
             <span className="mt-1.5 block text-[11px] font-medium text-muted-foreground tabular-nums">{formatProgress(progress, definition.target, definition.unit)}</span>
           </>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+            <Lock aria-hidden className="size-3" />
+            Locked · Hidden goal
+          </span>
         )}
       </span>
     </button>
   );
 }
 
-function AchievementDetails({ definition, item, onReplay }: { definition: Definition; item: AchievementCardData | undefined; onReplay: () => void }) {
+function AchievementDetails({
+  definition,
+  item,
+  owner,
+  onReplay,
+}: {
+  definition: Definition;
+  item: AchievementCardData | undefined;
+  owner: CabinetOwner;
+  onReplay: () => void;
+}) {
+  const router = useRouter();
+  const cosmetics = useCosmetics();
+  const { settings, update } = useSettings();
+  const [equipping, setEquipping] = useState<string | null>(null);
+  const [equippedLocal, setEquippedLocal] = useState<Record<string, boolean>>({});
   const earned = Boolean(item?.earnedAt);
+  const rewardGranted = Boolean(item?.rewardGrantedAt);
+  const revealed = isAchievementRevealed(definition, item);
   const progress = earned ? definition.target : Math.min(item?.progress ?? 0, definition.target);
   const ratio = progress / definition.target;
   const { emblem: Emblem, label } = BADGE_STYLES[definition.group];
@@ -333,8 +471,37 @@ function AchievementDetails({ definition, item, onReplay }: { definition: Defini
   const ringSize = 196;
   const radius = ringSize / 2 - 4;
   const circumference = 2 * Math.PI * radius;
+  const badgeDef = revealed ? definition : { icon: "HelpCircle", group: definition.group };
+
+  function isItemEquipped(id: string) {
+    if (id in equippedLocal) return equippedLocal[id];
+    const { kind } = rewardItemInfo(id);
+    if (kind === "frame") return settings.artworkFrame === id;
+    if (kind === "avatar_decoration") return cosmetics.avatarDecoration === id;
+    if (kind === "badge") return cosmetics.badge === id;
+    if (kind === "title") return cosmetics.title === id;
+    return false;
+  }
+
+  async function equipItem(id: string) {
+    if (equipping) return;
+    setEquipping(id);
+    try {
+      await apiFetch("/api/shop/equip", { method: "POST", json: { item: id } });
+      const info = rewardItemInfo(id);
+      if (info.kind === "frame") update({ artworkFrame: id as typeof settings.artworkFrame });
+      setEquippedLocal((current) => ({ ...current, [id]: true }));
+      toast.success(`${info.name} equipped`);
+      router.refresh();
+    } catch {
+      toast.error("Could not equip that reward right now.");
+    } finally {
+      setEquipping(null);
+    }
+  }
+
   return (
-    <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md" style={badgeVars(definition.group) as CSSProperties}>
+    <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-md" style={badgeVars(definition.group) as CSSProperties}>
       <div className="ach-stage" data-state={earned ? "earned" : "locked"} onPointerMove={tilt} onPointerLeave={untilt}>
         <span aria-hidden className="ach-stage-rays" />
         {!earned ? (
@@ -348,52 +515,163 @@ function AchievementDetails({ definition, item, onReplay }: { definition: Defini
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - ratio)}
+              strokeDashoffset={circumference * (1 - (revealed ? ratio : 0))}
               style={{ stroke: "rgb(var(--ach-glow))", filter: "drop-shadow(0 0 4px rgb(var(--ach-glow) / 0.6))" }}
             />
           </svg>
         ) : null}
-        <AchievementBadge key={definition.id} achievement={definition} earned={earned} size={148} motion="reveal" />
+        <AchievementBadge key={definition.id} achievement={badgeDef} earned={earned} size={148} motion="reveal" />
       </div>
       <div className="px-5 pt-5 pb-4">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+        <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-muted-foreground">
           <Emblem aria-hidden className="size-3.5 text-[rgb(var(--ach-glow))]" />
           {label}
-          {game ? <span className="font-normal">· {game.title}</span> : null}
+          {revealed && game ? <span className="font-normal">· {game.title}</span> : null}
+          {definition.hidden ? (
+            <span className="rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {revealed ? "Secret milestone" : "Hidden"}
+            </span>
+          ) : null}
         </p>
-        <DialogTitle className="mt-2 text-xl leading-tight font-bold">{definition.name}</DialogTitle>
-        <DialogDescription className="mt-1.5 text-sm leading-6">{definition.description}</DialogDescription>
-        <dl className="mt-5 grid gap-3 rounded-md border border-white/[0.08] bg-white/[0.02] p-3.5 text-sm">
+        <DialogTitle className="mt-2 text-xl leading-tight font-bold">
+          {revealed ? definition.name : "Hidden achievement"}
+        </DialogTitle>
+        <DialogDescription className="mt-1.5 text-sm leading-6">
+          {revealed ? definition.description : "Keep exploring Amethyst to reveal this hidden milestone and its exclusive reward."}
+        </DialogDescription>
+
+        <dl className="mt-4 grid gap-3 rounded-md border border-white/[0.08] bg-white/[0.02] p-3.5 text-sm">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-muted-foreground">Goal</dt>
-            <dd className="text-right font-medium">{formatGoal(definition.target, definition.unit)}</dd>
+            <dd className="text-right font-medium">{revealed ? formatGoal(definition.target, definition.unit) : "Hidden until discovered"}</dd>
           </div>
-          <div>
-            <div className="flex items-baseline justify-between gap-4">
-              <dt className="text-muted-foreground">Progress</dt>
-              <dd className="text-right font-medium tabular-nums">{formatProgress(progress, definition.target, definition.unit)}</dd>
+          {revealed ? (
+            <div>
+              <div className="flex items-baseline justify-between gap-4">
+                <dt className="text-muted-foreground">Progress</dt>
+                <dd className="text-right font-medium tabular-nums">{formatProgress(progress, definition.target, definition.unit)}</dd>
+              </div>
+              <div
+                className="ach-meter mt-2"
+                role="progressbar"
+                aria-label={`${definition.name} progress`}
+                aria-valuemin={0}
+                aria-valuemax={definition.target}
+                aria-valuenow={progress}
+              >
+                <span style={{ width: `${ratio * 100}%` }} />
+              </div>
             </div>
-            <div
-              className="ach-meter mt-2"
-              role="progressbar"
-              aria-label={`${definition.name} progress`}
-              aria-valuemin={0}
-              aria-valuemax={definition.target}
-              aria-valuenow={progress}
-            >
-              <span style={{ width: `${ratio * 100}%` }} />
-            </div>
-          </div>
+          ) : null}
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-muted-foreground">Status</dt>
-            <dd className="text-right font-medium">
-              {earned ? `Earned ${new Date(item!.earnedAt!).toLocaleString(undefined, { dateStyle: "long", timeStyle: "short" })}` : "Not earned yet"}
+            <dd className="text-right font-medium" suppressHydrationWarning>
+              {earned ? `Unlocked ${new Date(item!.earnedAt!).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}` : "Locked"}
+            </dd>
+          </div>
+          <div className="flex items-baseline justify-between gap-4">
+            <dt className="text-muted-foreground">Reward state</dt>
+            <dd className="text-right font-medium" suppressHydrationWarning>
+              {rewardGranted
+                ? `Reward granted ${new Date(item!.rewardGrantedAt!).toLocaleDateString(undefined, { dateStyle: "medium" })}`
+                : earned
+                  ? "Unlocked · reward pending"
+                  : "Granted once on unlock"}
             </dd>
           </div>
         </dl>
+
+        <div className="mt-4 rounded-md border border-white/[0.08] bg-white/[0.02] p-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              {definition.reward.items.length + (definition.reward.coins > 0 ? 1 : 0) > 1 ? "Milestone rewards" : "Milestone reward"}
+            </h3>
+            {rewardGranted ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amethyst/15 px-2 py-0.5 text-[11px] font-semibold text-amethyst ring-1 ring-amethyst/35">
+                <Check aria-hidden className="size-3" />
+                Reward granted
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Lock aria-hidden className="size-3" />
+                Locked
+              </span>
+            )}
+          </div>
+
+          {!revealed ? (
+            <p className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
+              <EyeOff aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+              Unlock this hidden achievement to reveal its exclusive reward.
+            </p>
+          ) : (
+            <ul className="mt-3 space-y-2.5">
+              {definition.reward.coins > 0 ? (
+                <li className="flex items-center gap-3 rounded-md border border-white/[0.07] bg-white/[0.02] p-2.5">
+                  <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-md bg-warning/15 ring-1 ring-warning/35">
+                    <Coins className="coin-ink size-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-muted-foreground">Arcade wallet</p>
+                    <p className="coin-ink text-sm font-bold tabular-nums">
+                      +{(rewardGranted && item?.coinsGranted ? item.coinsGranted : definition.reward.coins).toLocaleString("en")} coins
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {rewardGranted ? "Credited to your wallet (exempt from daily play limit)." : "One-time milestone bonus; does not count toward the daily limit."}
+                    </p>
+                  </div>
+                </li>
+              ) : null}
+
+              {definition.reward.items.map((id) => {
+                const info = rewardItemInfo(id);
+                const owned = cosmetics.owned.includes(id) || Boolean(item?.itemsGranted.includes(id));
+                const alreadyOwnedAtGrant = Boolean(item?.itemsAlreadyOwned.includes(id));
+                const equipped = isItemEquipped(id);
+                return (
+                  <li key={id} className="flex items-center gap-3 rounded-md border border-white/[0.07] bg-white/[0.02] p-2.5">
+                    <RewardItemVisual id={id} size="md" owner={owner} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-[11px] font-medium text-muted-foreground">{rewardKindLabel(id)}</span>
+                        {alreadyOwnedAtGrant ? (
+                          <span className="rounded-full border border-white/15 px-1.5 py-0.2 text-[10px] text-muted-foreground">Already in inventory</span>
+                        ) : rewardGranted ? (
+                          <span className="rounded-full bg-amethyst/15 px-1.5 py-0.2 text-[10px] font-medium text-amethyst">Granted</span>
+                        ) : owned ? (
+                          <span className="rounded-full border border-white/15 px-1.5 py-0.2 text-[10px] text-muted-foreground">Owned</span>
+                        ) : null}
+                      </div>
+                      <p className="text-sm font-semibold">{info.name}</p>
+                      <p className="line-clamp-2 text-xs text-muted-foreground">{info.description}</p>
+                      {owned ? (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {equipped ? (
+                            <span className="inline-flex h-7 items-center gap-1 text-xs font-semibold text-amethyst">
+                              <Check aria-hidden className="size-3.5" />
+                              Equipped
+                            </span>
+                          ) : (
+                            <Button type="button" size="sm" variant="secondary" className="h-7 px-2.5 text-xs" disabled={equipping !== null} onClick={() => void equipItem(id)}>
+                              {equipping === id ? <Loader2 aria-hidden className="size-3.5 animate-spin" /> : null}
+                              Equip
+                            </Button>
+                          )}
+                          <Link href={rewardCustomizeHref(id)} className="text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                            Customize
+                          </Link>
+                        </div>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
       <div className="flex flex-col-reverse gap-2 border-t border-white/[0.08] px-5 py-4 sm:flex-row sm:justify-end">
-        {earned ? (
+        {earned && revealed ? (
           <Button type="button" variant="outline" onClick={onReplay}>
             <Sparkles aria-hidden /> Replay celebration
           </Button>

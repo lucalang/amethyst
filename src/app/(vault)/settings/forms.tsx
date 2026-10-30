@@ -2,8 +2,8 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Loader2, X } from "lucide-react";
-import { CatalogSearch } from "@/components/catalog/catalog-search";
+import { Award, Loader2, Lock, X } from "lucide-react";
+import { CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { BadgeEmblem, ProfileFlair } from "@/components/layout/profile-flair";
@@ -11,6 +11,7 @@ import { ImageUrlField } from "@/components/media/image-url-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { achievementForItem } from "@/lib/achievements";
 import {
   AVATAR_DECORATION_IDS,
   AVATAR_DECORATIONS,
@@ -19,6 +20,7 @@ import {
   PROFILE_TITLE_IDS,
   PROFILE_TITLES,
   type AvatarDecorationId,
+  type CosmeticSource,
   type ProfileBadgeId,
   type ProfileTitleId,
 } from "@/lib/cosmetics";
@@ -40,14 +42,22 @@ function StatusLine({ state }: { state: FormState }) {
 export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: string; motto: string; avatarUrl: string }) {
   const [state, action, pending] = useActionState(updateProfile, initial);
   const cosmetics = useCosmetics();
-  const ownedDecorations = AVATAR_DECORATION_IDS.filter((id) => cosmetics.owned.includes(id));
+  const visibleDecorations = AVATAR_DECORATION_IDS.filter(
+    (id) => cosmetics.owned.includes(id) || AVATAR_DECORATIONS[id].source === "achievement",
+  );
   const [decoration, setDecoration] = useState<AvatarDecorationId | null>(cosmetics.avatarDecoration);
-  const ownedBadges = PROFILE_BADGE_IDS.filter((id) => cosmetics.owned.includes(id));
-  const ownedTitles = PROFILE_TITLE_IDS.filter((id) => cosmetics.owned.includes(id));
+  const [decorationSource, setDecorationSource] = useState<"all" | CosmeticSource>("all");
+  const visibleBadges = PROFILE_BADGE_IDS.filter(
+    (id) => cosmetics.owned.includes(id) || PROFILE_BADGES[id].source === "achievement",
+  );
+  const visibleTitles = PROFILE_TITLE_IDS.filter(
+    (id) => cosmetics.owned.includes(id) || PROFILE_TITLES[id].source === "achievement",
+  );
+  const [flairSource, setFlairSource] = useState<"all" | "achievement" | "vault">("all");
   const [badge, setBadge] = useState<ProfileBadgeId | null>(cosmetics.badge);
   const [title, setTitle] = useState<ProfileTitleId | null>(cosmetics.title);
   const [decorationQuery, setDecorationQuery] = useState("");
-  const decorationMatch = ownedDecorations.length + 1 >= PICKER_SEARCH_MIN ? catalogMatcher(decorationQuery) : null;
+  const decorationMatch = visibleDecorations.length + 1 >= PICKER_SEARCH_MIN ? catalogMatcher(decorationQuery) : null;
   const [name, setName] = useState(displayName);
   const [line, setLine] = useState(motto);
   const [avatar, setAvatar] = useState(avatarUrl);
@@ -106,69 +116,178 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
           </Button>
         ) : null}
       </div>
-      <fieldset id="settings-avatar-decoration" className="space-y-2">
+      <fieldset id="settings-avatar-decoration" className="space-y-2.5">
         <legend className="text-sm font-medium">Avatar decoration</legend>
-        {ownedDecorations.length + 1 >= PICKER_SEARCH_MIN ? (
+        <input type="hidden" name="avatarDecoration" value={decoration ?? ""} />
+        <div role="group" aria-label="Filter decorations by source" className="flex flex-wrap gap-1.5">
+          {([
+            ["all", "All"],
+            ["shop", "Arcade shop"],
+            ["achievement", "Achievements"],
+            ["vault", "The Vault"],
+          ] as const).map(([value, label]) => (
+            <FilterChip key={value} pressed={decorationSource === value} onClick={() => setDecorationSource(value)}>
+              {label}
+            </FilterChip>
+          ))}
+        </div>
+        {visibleDecorations.length + 1 >= PICKER_SEARCH_MIN ? (
           <CatalogSearch value={decorationQuery} onChange={setDecorationQuery} label="Search avatar decorations" placeholder="Search decorations" />
         ) : null}
         <div className="flex flex-wrap gap-2">
-          {[null, ...ownedDecorations].filter((id) => !decorationMatch || id === decoration || (id && decorationMatch(AVATAR_DECORATIONS[id].name, AVATAR_DECORATIONS[id].description))).map((id) => {
-            const checked = decoration === id;
-            return (
-              <label
-                key={id ?? "none"}
-                className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                  checked ? "border-amethyst/60 bg-amethyst/[0.08] text-foreground" : "border-white/[0.09] text-muted-foreground hover:border-amethyst/35 hover:text-foreground",
-                )}
-              >
-                <input type="radio" name="avatarDecoration" value={id ?? ""} checked={checked} onChange={() => setDecoration(id)} className="sr-only" />
-                <span className="grid size-11 place-items-center">
-                  <ProfileAvatar name={name} src={avatar} decoration={id} className="size-7 text-[10px]" />
-                </span>
-                {id ? AVATAR_DECORATIONS[id].name : "None"}
-              </label>
-            );
-          })}
+          {[null, ...visibleDecorations]
+            .filter((id) => {
+              if (id === null) return decorationSource === "all" || decoration === null;
+              if (decorationSource !== "all" && AVATAR_DECORATIONS[id].source !== decorationSource && id !== decoration) return false;
+              return !decorationMatch || id === decoration || decorationMatch(AVATAR_DECORATIONS[id].name, AVATAR_DECORATIONS[id].description);
+            })
+            .map((id) => {
+              const checked = decoration === id;
+              const isOwned = id === null || cosmetics.owned.includes(id);
+              const ach = id ? achievementForItem(id) : undefined;
+              const achLabel = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : null;
+              return (
+                <label
+                  key={id ?? "none"}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                    isOwned ? "cursor-pointer" : "opacity-75",
+                    checked
+                      ? "border-amethyst/60 bg-amethyst/[0.08] text-foreground"
+                      : "border-white/[0.09] text-muted-foreground hover:border-amethyst/35 hover:text-foreground",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="avatarDecorationChoice"
+                    value={id ?? ""}
+                    checked={checked}
+                    disabled={!isOwned}
+                    onChange={() => isOwned && setDecoration(id)}
+                    className="sr-only"
+                  />
+                  <span className="grid size-11 place-items-center">
+                    <ProfileAvatar name={name} src={avatar} decoration={id} className="size-7 text-[10px]" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-medium text-foreground">{id ? AVATAR_DECORATIONS[id].name : "None"}</span>
+                    {id && AVATAR_DECORATIONS[id].source === "achievement" ? (
+                      <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-amethyst">
+                        {isOwned ? <Award aria-hidden className="size-3" /> : <Lock aria-hidden className="size-3" />}
+                        {isOwned ? "Achievement" : achLabel}
+                      </span>
+                    ) : null}
+                  </span>
+                </label>
+              );
+            })}
         </div>
         <p className="text-xs text-muted-foreground">
-          {ownedDecorations.length
-            ? "Drawn around your picture everywhere it appears; the picture itself isn't changed."
-            : "Decorations are drawn around your picture without changing it. "}
+          Drawn around your picture everywhere it appears; the picture itself isn’t changed. Unlock more in the{" "}
           <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
-            {ownedDecorations.length ? " Visit the Arcade shop" : "Earn coins in the Arcade to buy one in the shop"}
+            Arcade shop
+          </Link>{" "}
+          or your{" "}
+          <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
+            Achievements cabinet
           </Link>
           .
         </p>
       </fieldset>
-      {ownedBadges.length || ownedTitles.length ? (
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium">Badges & titles</p>
+          <div role="group" aria-label="Filter badges and titles by source" className="flex flex-wrap gap-1.5">
+            {([
+              ["all", "All"],
+              ["achievement", "Achievements"],
+              ["vault", "The Vault"],
+            ] as const).map(([value, label]) => (
+              <FilterChip key={value} pressed={flairSource === value} onClick={() => setFlairSource(value)}>
+                {label}
+              </FilterChip>
+            ))}
+          </div>
+        </div>
+        <input type="hidden" name="profileBadge" value={badge ?? ""} />
+        <input type="hidden" name="profileTitle" value={title ?? ""} />
         <div className="grid gap-5 sm:grid-cols-2">
           <fieldset id="settings-profile-badge" className="space-y-2">
-            <legend className="text-sm font-medium">Badge</legend>
+            <legend className="text-xs font-medium text-muted-foreground">Badge</legend>
             <div className="flex flex-wrap gap-2">
-              {[null, ...ownedBadges].map((id) => (
-                <label key={id ?? "none"} className={cn("flair-option", badge === id && "flair-option-on")}>
-                  <input type="radio" name="profileBadge" value={id ?? ""} checked={badge === id} onChange={() => setBadge(id)} className="sr-only" />
-                  {id ? <BadgeEmblem badge={id} className="size-6" /> : null}
-                  {id ? PROFILE_BADGES[id].name : "None"}
-                </label>
-              ))}
+              {[null, ...visibleBadges]
+                .filter((id) => id === null || id === badge || flairSource === "all" || PROFILE_BADGES[id].source === flairSource)
+                .map((id) => {
+                  const isOwned = id === null || cosmetics.owned.includes(id);
+                  const ach = id ? achievementForItem(id) : undefined;
+                  const lockedHint = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : "Vault";
+                  return (
+                    <label
+                      key={id ?? "none"}
+                      title={id ? `${PROFILE_BADGES[id].name} — ${isOwned ? PROFILE_BADGES[id].description : `Locked (${lockedHint})`}` : "No badge"}
+                      className={cn("flair-option", badge === id && "flair-option-on", !isOwned && "opacity-70")}
+                    >
+                      <input
+                        type="radio"
+                        name="profileBadgeChoice"
+                        value={id ?? ""}
+                        checked={badge === id}
+                        disabled={!isOwned}
+                        onChange={() => isOwned && setBadge(id)}
+                        className="sr-only"
+                      />
+                      {id ? <BadgeEmblem badge={id} className="size-6" /> : null}
+                      <span>{id ? PROFILE_BADGES[id].name : "None"}</span>
+                      {!isOwned ? <Lock aria-hidden className="size-3 text-muted-foreground" /> : null}
+                    </label>
+                  );
+                })}
             </div>
           </fieldset>
           <fieldset id="settings-profile-title" className="space-y-2">
-            <legend className="text-sm font-medium">Title</legend>
+            <legend className="text-xs font-medium text-muted-foreground">Title</legend>
             <div className="flex flex-wrap gap-2">
-              {[null, ...ownedTitles].map((id) => (
-                <label key={id ?? "none"} className={cn("flair-option", title === id && "flair-option-on")}>
-                  <input type="radio" name="profileTitle" value={id ?? ""} checked={title === id} onChange={() => setTitle(id)} className="sr-only" />
-                  {id ? PROFILE_TITLES[id].name : "None"}
-                </label>
-              ))}
+              {[null, ...visibleTitles]
+                .filter((id) => id === null || id === title || flairSource === "all" || PROFILE_TITLES[id].source === flairSource)
+                .map((id) => {
+                  const isOwned = id === null || cosmetics.owned.includes(id);
+                  const ach = id ? achievementForItem(id) : undefined;
+                  const lockedHint = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : "Vault";
+                  return (
+                    <label
+                      key={id ?? "none"}
+                      title={id ? `${PROFILE_TITLES[id].name} — ${isOwned ? PROFILE_TITLES[id].description : `Locked (${lockedHint})`}` : "No title"}
+                      className={cn("flair-option", title === id && "flair-option-on", !isOwned && "opacity-70")}
+                    >
+                      <input
+                        type="radio"
+                        name="profileTitleChoice"
+                        value={id ?? ""}
+                        checked={title === id}
+                        disabled={!isOwned}
+                        onChange={() => isOwned && setTitle(id)}
+                        className="sr-only"
+                      />
+                      <span>{id ? PROFILE_TITLES[id].name : "None"}</span>
+                      {!isOwned ? <Lock aria-hidden className="size-3 text-muted-foreground" /> : null}
+                    </label>
+                  );
+                })}
             </div>
           </fieldset>
-          <p className="text-xs text-muted-foreground sm:col-span-2">Shown with your name on Home and in the account menu. More turn up in the Vault.</p>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Shown with your name on Home and in the account menu. Earn milestone badges and titles in{" "}
+            <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
+              Achievements
+            </Link>{" "}
+            or discover secret ones in the{" "}
+            <Link href="/vault" className="text-amethyst underline-offset-4 hover:underline">
+              Vault
+            </Link>
+            .
+          </p>
         </div>
-      ) : null}
+      </div>
       <div className="space-y-1.5">
         <Label htmlFor="motto">Motto</Label>
         <Input

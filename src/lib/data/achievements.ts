@@ -6,6 +6,10 @@ export type AchievementCardData = {
   id: string;
   progress: number;
   earnedAt: string | null;
+  rewardGrantedAt: string | null;
+  coinsGranted: number;
+  itemsGranted: string[];
+  itemsAlreadyOwned: string[];
 };
 
 const eventPayload = (event: AchievementEvent): { event: string; payload: Record<string, string | number> } => {
@@ -50,12 +54,28 @@ export async function recordVerifiedSudokuCompletion(ctx: AuthContext, difficult
 }
 
 export async function loadAchievementCards(ctx: AuthContext): Promise<AchievementCardData[]> {
-  const [progressResult, awardResult] = await Promise.all([
+  const [progressResult, awardResult, rewardResult] = await Promise.all([
     ctx.supabase.from("user_achievement_progress").select("achievement_id, progress").eq("user_id", ctx.userId),
     ctx.supabase.from("user_achievements").select("achievement_id, earned_at").eq("user_id", ctx.userId),
+    ctx.supabase
+      .from("user_achievement_rewards")
+      .select("achievement_id, granted_at, coins_granted, items_granted, items_already_owned")
+      .eq("user_id", ctx.userId),
   ]);
   if (progressResult.error || awardResult.error) throw new Error("Could not load achievements.");
   const progress = new Map((progressResult.data ?? []).map((row) => [row.achievement_id, row.progress]));
   const earned = new Map((awardResult.data ?? []).map((row) => [row.achievement_id, row.earned_at]));
-  return ACHIEVEMENTS.map(({ id }) => ({ id, progress: progress.get(id) ?? 0, earnedAt: earned.get(id) ?? null }));
+  const rewards = new Map((rewardResult.data ?? []).map((row) => [row.achievement_id, row]));
+  return ACHIEVEMENTS.map(({ id }) => {
+    const grant = rewards.get(id);
+    return {
+      id,
+      progress: progress.get(id) ?? 0,
+      earnedAt: earned.get(id) ?? null,
+      rewardGrantedAt: grant?.granted_at ?? null,
+      coinsGranted: grant?.coins_granted ?? 0,
+      itemsGranted: grant?.items_granted ?? [],
+      itemsAlreadyOwned: grant?.items_already_owned ?? [],
+    };
+  });
 }

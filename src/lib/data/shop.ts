@@ -1,4 +1,5 @@
 import "server-only";
+import { achievementDefinition } from "@/lib/achievements";
 import { SUDOKU_DIFFICULTIES, type SudokuDifficulty } from "@/lib/arcade";
 import { COSMETICS, isAvatarDecorationId, isCosmeticId, type AvatarDecorationId, type CosmeticKind, type ShopItem } from "@/lib/cosmetics";
 import { GAME_SHOPS, gameCosmetic, lookFromItems, type GameLook, type ShopGame } from "@/lib/game-cosmetics";
@@ -21,7 +22,14 @@ export async function loadOwnedCosmetics(ctx: AuthContext): Promise<string[]> {
 
 export const toAvatarDecoration = (value: string | null | undefined): AvatarDecorationId | null => (isAvatarDecorationId(value) ? value : null);
 
-export type CoinTransaction = { id: number; amount: number; balanceAfter: number; kind: "reward" | "purchase" | "code" | "slots"; label: string; createdAt: string };
+export type CoinTransaction = {
+  id: number;
+  amount: number;
+  balanceAfter: number;
+  kind: "reward" | "purchase" | "code" | "slots" | "achievement";
+  label: string;
+  createdAt: string;
+};
 
 const GAME_NAMES: Record<string, string> = {
   "2048": "2048",
@@ -36,6 +44,10 @@ function transactionLabel(kind: CoinTransaction["kind"], details: unknown) {
   const info = (details ?? {}) as Record<string, unknown>;
   if (kind === "code") return "Secret code";
   if (kind === "slots") return "Coin Slots";
+  if (kind === "achievement") {
+    const achievement = typeof info.achievement === "string" ? achievementDefinition(info.achievement) : undefined;
+    return achievement ? `Achievement · ${achievement.name}` : "Achievement reward";
+  }
   if (kind === "purchase") {
     if (isCosmeticId(info.item)) return `Bought ${COSMETICS[info.item].name}`;
     const game = gameCosmetic(info.item);
@@ -66,7 +78,7 @@ export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | P
   };
   const [wallet, items, owned, history, rules, look] = await Promise.all([
     measureServer("shop.wallet", () => ctx.supabase.from("coin_wallets").select("balance, earned").eq("user_id", ctx.userId).maybeSingle().then(check)),
-    measureServer("shop.catalog", () => ctx.supabase.from("cosmetic_items").select("id, kind, price, available").neq("kind", "game").then(check)),
+    measureServer("shop.catalog", () => ctx.supabase.from("cosmetic_items").select("id, kind, price, available, source").neq("kind", "game").then(check)),
     measureServer("shop.ownership", () => ctx.supabase.from("user_cosmetics").select("item_id").eq("user_id", ctx.userId).then(check)),
     ctx.supabase
       .from("coin_transactions")
@@ -90,16 +102,18 @@ export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | P
         const id = item.id as ShopItem["id"];
         const kind = item.kind as CosmeticKind;
         const isOwned = ownedIds.has(id);
+        const source = item.source ?? COSMETICS[id].source;
         return {
           id,
           kind,
           price: item.price,
           available: item.available,
+          source,
           owned: isOwned,
           equipped: isOwned && (kind === "frame" ? look.frame === id : look.decoration === id),
         };
       })
-      .filter((item) => item.available || item.owned)
+      .filter((item) => item.available || item.owned || item.source === "achievement")
       .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
     history: (history ?? []).map((row) => ({
       id: row.id,

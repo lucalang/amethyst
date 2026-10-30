@@ -23,10 +23,12 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
     ],
   },
   {
-    area: "Customization", section: "Profile", path: "/customization/profile", keywords: "account identity avatar", settings: [
+    area: "Customization", section: "Profile", path: "/customization/profile", keywords: "account identity avatar badge title achievement vault", settings: [
       { label: "Display name", target: "displayName", keywords: "nickname greeting" },
       { label: "Picture", target: "settings-avatar-picture", keywords: "avatar photo image upload" },
-      { label: "Avatar decoration", target: "settings-avatar-decoration", keywords: "border cosmetic" },
+      { label: "Avatar decoration", target: "settings-avatar-decoration", keywords: "border cosmetic achievement shop vault" },
+      { label: "Profile badge", target: "settings-profile-badge", keywords: "emblem flair achievement vault" },
+      { label: "Profile title", target: "settings-profile-title", keywords: "flair rank achievement vault" },
       { label: "Motto", target: "motto", keywords: "bio welcome tagline" },
     ],
   },

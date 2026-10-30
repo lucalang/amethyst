@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { refreshArchiveAchievements } from "@/lib/data/achievements";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { CODE_RULES, typedCodeHashes } from "@/lib/secret-codes";
 
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
   if (error) return dbError(error, "The vault didn’t answer. Nothing was used up, so try again.");
   const result = data as Redemption | null;
   if (!result || !STATUSES.includes(result.status)) return apiError(500, "server_error", "The vault didn’t answer.");
-  return jsonResponse(result);
+  const achievementUnlocks = result.status === "unlocked" || result.status === "already" ? await refreshArchiveAchievements(ctx) : [];
+  return jsonResponse({ ...result, achievementUnlocks });
 }
 
 /** The account's latest finds, so an interrupted redemption can be confirmed without sending the code again. */

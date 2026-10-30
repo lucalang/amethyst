@@ -26,6 +26,44 @@ function BadgeArt({ badge }: { badge: ProfileBadgeId }) {
       </>
     );
   }
+  if (badge === "badge-sovereign") {
+    return (
+      <>
+        <rect x="8.5" y="10.5" width="15" height="13" rx="2.4" fill="#f43f5e" stroke="#fde68a" strokeWidth="1" />
+        <path d="M10.5,16 L9.5,11.2 L13.2,13.8 L16,9.5 L18.8,13.8 L22.5,11.2 L21.5,16 Z" fill="#fde68a" stroke="#78350f" strokeWidth="0.6" />
+        <polygon points="16,17.2 18.2,19.8 16,22.2 13.8,19.8" fill="#fffbeb" />
+      </>
+    );
+  }
+  if (badge === "badge-needle") {
+    return (
+      <>
+        <rect x="9.2" y="7.5" width="3.2" height="17" rx="1" fill="#38bdf8" opacity="0.8" />
+        <rect x="19.6" y="7.5" width="3.2" height="17" rx="1" fill="#38bdf8" opacity="0.8" />
+        <path d="M7,16 C11,12.5 14,12.5 16,16 C18,12.5 21,12.5 25,16 C21,18.8 18,18.8 16,16 C14,18.8 11,18.8 7,16 Z" fill="#fef08a" stroke="#0284c7" strokeWidth="0.8" />
+        <circle cx="16" cy="16" r="1.8" fill="#fff" />
+      </>
+    );
+  }
+  if (badge === "badge-ouroboros") {
+    return (
+      <>
+        <circle cx="16" cy="16" r="7.2" fill="none" stroke="#34d399" strokeWidth="2.8" strokeDasharray="39 6" strokeLinecap="round" />
+        <circle cx="16" cy="16" r="7.2" fill="none" stroke="#a7f3d0" strokeWidth="1" strokeDasharray="2 3" />
+        <polygon points="21.5,10 24.5,11.8 21.2,13.6" fill="#fde68a" />
+        <circle cx="22.4" cy="11.5" r="0.7" fill="#064e3b" />
+      </>
+    );
+  }
+  if (badge === "badge-aegis") {
+    return (
+      <>
+        <polygon points="16,6.8 23.2,11.2 23.2,20.8 16,25.2 8.8,20.8 8.8,11.2" fill="#be123c" stroke="#fda4af" strokeWidth="0.9" />
+        <circle cx="16" cy="14.2" r="2.6" fill="#ffe4e6" />
+        <path d="M14.8,15.8 L14,21.5 H18 L17.2,15.8 Z" fill="#ffe4e6" />
+      </>
+    );
+  }
   return (
     <>
       <circle cx="16" cy="17" r="8.5" fill="#ffd36b" opacity="0.2" />

@@ -32,13 +32,13 @@ function FrameDecoration({ frame }: { frame: Exclude<ArtworkFrameId, "none"> }) 
   const id = useId();
   return (
     <span aria-hidden className="art-frame-deco">
-      {frame === "holo" || frame === "aurora" || frame === "neon-marquee" ? (
+      {frame === "holo" || frame === "aurora" || frame === "neon-marquee" || frame === "celestial-prism" ? (
         <span className="art-frame-glow">
           <span className="art-frame-ring" />
         </span>
       ) : null}
       <span className="art-frame-ring" />
-      {frame === "aurora" ? <span className="art-frame-ring art-frame-trace" /> : null}
+      {frame === "aurora" || frame === "celestial-prism" ? <span className="art-frame-ring art-frame-trace" /> : null}
       {frame === "gilt" ? (
         <>
           <span className="art-frame-stud" data-corner="tl" />
@@ -50,6 +50,8 @@ function FrameDecoration({ frame }: { frame: Exclude<ArtworkFrameId, "none"> }) 
       {frame === "amethyst" ? <AmethystOrnaments id={id} /> : null}
       {frame === "pixel-quest" ? <PixelOrnaments /> : null}
       {frame === "constellation" ? <ConstellationOrnaments /> : null}
+      {frame === "obsidian-relic" ? <ObsidianRelicOrnaments id={id} /> : null}
+      {frame === "celestial-prism" ? <CelestialPrismOrnaments /> : null}
     </span>
   );
 }
@@ -137,6 +139,54 @@ function AmethystOrnaments({ id }: { id: string }) {
         <polygon points="20,1 27,9 20,19 13,9" fill={`url(#${gem})`} stroke="#f3e8ff" strokeOpacity="0.6" strokeWidth="0.6" />
         <path d="M13 9h14M20 1l-3 8 3 10 3-10z" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.5" />
       </svg>
+    </>
+  );
+}
+
+function ObsidianRelicOrnaments({ id }: { id: string }) {
+  const gold = `${id}-relic-gold`;
+  const gem = `${id}-relic-gem`;
+  return (
+    <>
+      <svg className="art-frame-defs" width="0" height="0" focusable="false">
+        <defs>
+          <linearGradient id={gold} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#fff7d6" />
+            <stop offset="0.5" stopColor="#e8b84a" />
+            <stop offset="1" stopColor="#92400e" />
+          </linearGradient>
+          <linearGradient id={gem} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#f5d0fe" />
+            <stop offset="0.5" stopColor="#9333ea" />
+            <stop offset="1" stopColor="#3b0764" />
+          </linearGradient>
+        </defs>
+      </svg>
+      {CORNERS.map((position) => (
+        <svg key={position} className="art-frame-corner" data-corner={position} viewBox="0 0 40 40" fill="none" focusable="false">
+          <path d="M2 24 L2 6 L6 2 L24 2" stroke={`url(#${gold})`} strokeWidth="1.8" strokeLinecap="square" />
+          <polygon points="6,1.5 10.5,6 6,10.5 1.5,6" fill={`url(#${gem})`} stroke={`url(#${gold})`} strokeWidth="0.9" />
+        </svg>
+      ))}
+      <svg className="art-frame-crest" viewBox="0 0 44 20" fill="none" focusable="false">
+        <path d="M4 12 L14 12 L18 6 M40 12 L30 12 L26 6" stroke={`url(#${gold})`} strokeWidth="1.3" strokeLinecap="round" />
+        <polygon points="22,1 29,10 22,19 15,10" fill={`url(#${gem})`} stroke={`url(#${gold})`} strokeWidth="1" />
+        <polygon points="22,4.2 26,10 22,15.8 18,10" fill="#f5d0fe" fillOpacity="0.35" />
+      </svg>
+    </>
+  );
+}
+
+function CelestialPrismOrnaments() {
+  return (
+    <>
+      {CORNERS.map((position) => (
+        <svg key={position} className="art-frame-corner" data-corner={position} viewBox="0 0 40 40" fill="none" focusable="false">
+          <circle cx="8" cy="8" r="5.5" stroke="#a5f3fc" strokeOpacity="0.7" strokeWidth="0.9" />
+          <path d="M8 0.5 L9.4 6.6 L15.5 8 L9.4 9.4 L8 15.5 L6.6 9.4 L0.5 8 L6.6 6.6 Z" fill="#e0f2fe" />
+          <path d="M8 8 L26 3 M8 8 L3 26" stroke="#c4b5fd" strokeOpacity="0.6" strokeWidth="0.8" />
+        </svg>
+      ))}
     </>
   );
 }

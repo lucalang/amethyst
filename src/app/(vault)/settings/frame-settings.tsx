@@ -1,12 +1,14 @@
 "use client";
 
-import { Check } from "lucide-react";
+import Link from "next/link";
+import { Award, Check, Lock } from "lucide-react";
 import { useState } from "react";
 import { CatalogEmpty, CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { MediaImage } from "@/components/media/media-image";
-import { ARTWORK_FRAMES, availableFrames, isShopFrameId, type ArtworkFrameId } from "@/lib/frames";
+import { achievementForItem } from "@/lib/achievements";
+import { ARTWORK_FRAMES, ARTWORK_FRAME_IDS, isAchievementFrameId, isShopFrameId, isUnlockableFrameId, type ArtworkFrameId } from "@/lib/frames";
 import { catalogMatcher } from "@/lib/catalog-search";
 import { cn } from "@/lib/utils";
 import { useSetting } from "./setting-controls";
@@ -40,14 +42,26 @@ export function FrameSettings({
   const [frame, setFrame] = useSetting("artworkFrame", value);
   const { owned } = useCosmetics();
   const [query, setQuery] = useState("");
-  const [source, setSource] = useState<"all" | "free" | "shop">("all");
-  const frames = availableFrames(owned).concat(availableFrames(owned).includes(frame) ? [] : [frame]);
+  const [source, setSource] = useState<"all" | "free" | "shop" | "achievement">("all");
+  const frames = ARTWORK_FRAME_IDS.filter((id) => !isShopFrameId(id) || owned.includes(id) || id === frame);
   const match = catalogMatcher(query);
   const shown = frames.filter((id) => {
     const info = ARTWORK_FRAMES[id];
     const shop = isShopFrameId(id);
-    if (source !== "all" && shop !== (source === "shop")) return false;
-    return !match || match(info.name, info.description, info.animated ? "animated" : "static", shop ? "arcade shop" : "free");
+    const achievement = isAchievementFrameId(id);
+    const isOwned = !isUnlockableFrameId(id) || owned.includes(id);
+    const ach = achievement ? achievementForItem(id) : undefined;
+    const maskedAch = Boolean(ach?.hidden && !isOwned);
+    if (source === "free" && (shop || achievement)) return false;
+    if (source === "shop" && !shop) return false;
+    if (source === "achievement" && !achievement) return false;
+    return !match || match(
+      info.name,
+      info.description,
+      info.animated ? "animated" : "static",
+      shop ? "arcade shop" : achievement ? "achievement" : "free",
+      maskedAch ? "hidden achievement" : ach?.name,
+    );
   });
 
   return (
@@ -55,9 +69,9 @@ export function FrameSettings({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <CatalogSearch value={query} onChange={setQuery} label="Search artwork frames" placeholder="Search frames" />
         <div role="group" aria-label="Source" className="flex flex-wrap gap-2">
-          {(["all", "free", "shop"] as const).map((option) => (
+          {(["all", "free", "shop", "achievement"] as const).map((option) => (
             <FilterChip key={option} pressed={source === option} onClick={() => setSource(option)}>
-              {option === "all" ? "All" : option === "free" ? "Free" : "From the shop"}
+              {option === "all" ? "All" : option === "free" ? "Free" : option === "shop" ? "From the shop" : "Achievements"}
             </FilterChip>
           ))}
         </div>
@@ -75,15 +89,19 @@ export function FrameSettings({
         {shown.map((id) => {
           const info = ARTWORK_FRAMES[id];
           const checked = frame === id;
+          const isOwned = !isUnlockableFrameId(id) || owned.includes(id);
+          const ach = isAchievementFrameId(id) ? achievementForItem(id) : undefined;
+          const achLabel = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : "Achievement";
           return (
             <label
               key={id}
               className={cn(
-                "frame-option relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-white/[0.02] p-3 transition-[border-color,background-color,box-shadow] duration-200 hover:border-amethyst/40 hover:bg-amethyst/[0.04] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                "frame-option relative flex flex-col gap-3 rounded-lg border bg-white/[0.02] p-3 transition-[border-color,background-color,box-shadow] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                isOwned ? "cursor-pointer hover:border-amethyst/40 hover:bg-amethyst/[0.04]" : "opacity-80",
                 checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-white/[0.09]",
               )}
             >
-              <input type="radio" name="artwork-frame" value={id} checked={checked} onChange={() => setFrame(id)} className="sr-only" />
+              <input type="radio" name="artwork-frame" value={id} checked={checked} disabled={!isOwned} onChange={() => isOwned && setFrame(id)} className="sr-only" />
               <span
                 aria-hidden
                 className="flex items-end justify-center gap-5 rounded-md border border-border bg-[radial-gradient(18rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.14),transparent_70%)] px-4 pt-8 pb-5"
@@ -103,15 +121,26 @@ export function FrameSettings({
                     checked ? "border-amethyst bg-amethyst text-amethyst-foreground" : "border-white/25",
                   )}
                 >
-                  {checked ? <Check className="size-3" strokeWidth={3} /> : null}
+                  {checked ? <Check className="size-3" strokeWidth={3} /> : !isOwned ? <Lock className="size-2.5 text-muted-foreground" /> : null}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
+                  <span className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{info.name}</span>
                     {info.animated ? <span className="text-[11px] text-muted-foreground">Animated</span> : null}
                     {isShopFrameId(id) ? <span className="coin-ink text-[11px]">Arcade shop</span> : null}
+                    {isAchievementFrameId(id) ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amethyst">
+                        <Award aria-hidden className="size-3" />
+                        {isOwned ? "Achievement" : achLabel}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{info.description}</span>
+                  {!isOwned && ach ? (
+                    <Link href={ach.hidden ? "/achievements" : `/achievements#${ach.id}`} className="mt-1 inline-block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                      Unlock in Achievements
+                    </Link>
+                  ) : null}
                 </span>
               </span>
             </label>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { refreshArchiveAchievements } from "@/lib/data/achievements";
 import { jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 import { presetNameSchema, readViewerLook, viewerLookSchema } from "@/lib/viewer-looks";
 import { presetError } from "./errors";
@@ -19,5 +20,6 @@ export async function POST(request: Request) {
     .select("id, name, look")
     .single();
   if (error) return presetError(error);
-  return jsonResponse({ preset: { id: data.id, name: data.name, look: readViewerLook(data.look) } }, { status: 201 });
+  const achievementUnlocks = await refreshArchiveAchievements(ctx);
+  return jsonResponse({ preset: { id: data.id, name: data.name, look: readViewerLook(data.look) }, achievementUnlocks }, { status: 201 });
 }
