@@ -583,6 +583,15 @@ isOneToOne: false
 "admin_vault_disable":
 { Args: { "p_id": string }; Returns: boolean
                            },
+"admin_vault_enable":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"admin_vault_update":
+{ Args: { "p_id": string,"p_label": string,"p_coins": number,"p_items": string[],"p_achievements": string[],"p_starts_at": string | null,"p_expires_at": string | null,"p_max_redemptions": number | null,"p_per_account_limit": number,"p_audience": "everyone" | "allowlist","p_allowlist": string[],"p_confirm_repeat": boolean }; Returns: Json
+                           },
+"admin_vault_stats":
+{ Args: { "p_tz"?: string }; Returns: Json
+                           },
 "admin_vault_save_draft":
 { Args: { "p_id": string | null,"p_label": string,"p_config": Json }; Returns: string
                            },

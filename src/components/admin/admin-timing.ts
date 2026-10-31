@@ -1,53 +1,34 @@
 /**
- * The System window's reveal language in ms, shared by the 3D scene, the page (text decoding,
- * controls) and the sound so every layer moves as one. A window opens from a luminous line: a
- * narrow strip forms between the two bars, expands vertically while a brief horizontal distortion
- * runs through it, the frame flares and settles, the text decodes and the controls arrive last.
- * Closing is the same in reverse. "late" lights the frame around content that is already shown.
+ * Timings shared by the Crimson Sanctum scene, its sounds and its DOM effects, in ms.
+ * Ranges are [start, end] from the beginning of the sequence.
  */
-export type OpenKind = "full" | "short" | "unfold" | "late";
-export type RevealKind = OpenKind | "fold" | "close" | "none";
 
-type Window = readonly [number, number];
-export type OpenTimes = {
-  /** A line of light grows out from the centre with a flare. */
-  line: Window;
-  /** The line parts into a narrow strip between the two bars. */
-  strip: Window;
-  /** The strip expands vertically to the full window. */
-  expand: Window;
-  /** Horizontal slices tear and smear sideways. */
-  distort: Window;
-  /** The frame flares and settles to its resting glow. */
-  frame: Window;
-  /** The text decodes from scrambled glyphs, left to right. */
-  decode: Window;
-  /** When the controls fade in. */
-  controls: number;
-  total: number;
+export type IntroKind = "full" | "short";
+
+type Range = readonly [number, number];
+export type IntroTiming = {
+  /** The sigil starts tracing itself. */
+  trace: Range;
+  /** The ring spins up; the bloom flash lands at `flash`. */
+  spin: Range;
+  flash: number;
+  /** Panels assemble from shards, staggered across this range. */
+  assemble: Range;
+  /** Panel text decodes. */
+  decode: Range;
+  end: number;
 };
 
-const NEVER: Window = [-2, -1];
-
-export const OPEN: Record<OpenKind, OpenTimes> = {
-  full: { line: [0, 300], strip: [220, 420], expand: [400, 760], distort: [420, 700], frame: [400, 1150], decode: [560, 1300], controls: 980, total: 1350 },
-  short: { line: [0, 140], strip: [100, 220], expand: [200, 470], distort: [220, 420], frame: [200, 760], decode: [300, 820], controls: 560, total: 860 },
-  unfold: { line: NEVER, strip: NEVER, expand: [0, 300], distort: [20, 220], frame: [0, 560], decode: [90, 600], controls: 300, total: 620 },
-  late: { line: NEVER, strip: NEVER, expand: NEVER, distort: NEVER, frame: [0, 760], decode: NEVER, controls: -1, total: 800 },
+export const INTRO: Record<IntroKind, IntroTiming> = {
+  full: { trace: [250, 1450], spin: [1150, 2250], flash: 2000, assemble: [2050, 3150], decode: [2600, 3700], end: 3800 },
+  short: { trace: [0, 380], spin: [120, 700], flash: 520, assemble: [450, 1050], decode: [700, 1300], end: 1350 },
 };
 
-/** A step change: the window compresses into a strip, then unfolds on the new state. */
-export const FOLD = 230;
-/** Leaving a page: compression into a strip, which then shrinks to the centre and disappears. */
-export const CLOSE = 380;
-/** Share of CLOSE spent compressing (the rest shrinks the strip sideways). */
-export const CLOSE_SPLIT = 0.55;
+/** Camera flights between views: panels dissolve out, the camera travels, the next panels assemble. */
+export const FLIGHT = { duration: 1450, out: [0, 420] as Range, in: [820, 1450] as Range };
 
-/**
- * After the server confirms a publish (ms from its answer): the window folds and reopens on the
- * result, then the frame activates with an energy accent and the real code decodes.
- */
-export const PUBLISH = { accent: FOLD + 300, code: FOLD + 520 };
+/** Publishing: how long the button has to be held, and the implosion before the answer can land. */
+export const PUBLISH = { hold: 1300, implode: 650, plate: 900 };
 
-/** Session key: the full opening plays once per tab session, later visits get the short one. */
-export const BOOT_KEY = "archive:admin:activated";
+/** Session flag: the full intro plays once per browser session. */
+export const INTRO_KEY = "archive:sanctum:intro";

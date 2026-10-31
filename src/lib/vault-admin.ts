@@ -32,7 +32,7 @@ const configShape = {
   expiresAt: isoDate,
   maxRedemptions: z.number().int().min(1).max(LIMITS.maxRedemptions).nullable(),
   perAccountLimit: z.number().int().min(1).max(LIMITS.perAccount),
-  codeMode: z.enum(["phrase", "random"]),
+  codeMode: z.enum(["phrase", "random", "custom"]),
 };
 
 export const codeConfigSchema = z.strictObject(configShape);
@@ -40,6 +40,10 @@ export const codeConfigSchema = z.strictObject(configShape);
 export const draftConfigSchema = z.strictObject({ ...configShape, label: z.string().max(LIMITS.label) }).partial();
 
 export type CodeConfig = z.infer<typeof codeConfigSchema>;
+
+/** Editing a published code: everything except how the code text was made. Only future redemptions change. */
+export const codeUpdateSchema = codeConfigSchema.omit({ codeMode: true });
+export type CodeUpdate = z.infer<typeof codeUpdateSchema>;
 
 export const EMPTY_CONFIG: CodeConfig = {
   label: "",
@@ -96,8 +100,41 @@ export type AdminCodeDetail = AdminCode & {
     achievements: string[];
     achievementsNew: string[];
   }[];
-  audit: { action: "publish" | "disable"; via: "app" | "cli"; at: string; actor: AdminAccount | null }[];
+  audit: AdminAuditEntry[];
 };
+
+export type AuditAction = "publish" | "disable" | "enable" | "update";
+
+export type AdminAuditEntry = {
+  id: number;
+  action: AuditAction;
+  via: "app" | "cli";
+  at: string;
+  actor: AdminAccount | null;
+  /** For edits: each changed field with its value before and after. */
+  changes: Record<string, { from: unknown; to: unknown }> | null;
+};
+
+export type AdminActivity = {
+  id: number;
+  action: AuditAction;
+  via: "app" | "cli";
+  at: string;
+  codeId: string;
+  label: string;
+  actor: AdminAccount | null;
+  changed: string[] | null;
+};
+
+export type AdminStats = {
+  timeZone: string;
+  totals: { redemptions: number; coins: number; week: number; accounts: number };
+  /** The last 30 local days, oldest first. */
+  timeline: { day: string; redemptions: number; coins: number }[];
+  activity: AdminActivity[];
+};
+
+export type AdminSnapshot = { codes: AdminCode[]; drafts: AdminDraft[]; stats: AdminStats; now: number };
 
 export type AdminDraft = { id: string; label: string; config: unknown; updatedAt: string; updatedByName: string | null };
 
@@ -116,13 +153,18 @@ export type CatalogAchievement = { id: string; coins: number; hidden: boolean; i
 
 export type CodeStatus = "active" | "scheduled" | "expired" | "used-up" | "disabled";
 
-export const STATUS_LABEL: Record<CodeStatus, string> = {
-  active: "Active",
-  scheduled: "Scheduled",
-  expired: "Expired",
-  "used-up": "Used up",
-  disabled: "Disabled",
+/** Code statuses in display order. Add a status here and the dashboard picks up its label and filter. */
+export const CODE_STATUS: Record<CodeStatus, { label: string; hint: string; order: number }> = {
+  active: { label: "Active", hint: "Players can redeem it now.", order: 0 },
+  scheduled: { label: "Scheduled", hint: "Published, but its start time hasn’t come yet.", order: 1 },
+  expired: { label: "Expired", hint: "Its expiry has passed.", order: 2 },
+  "used-up": { label: "Used up", hint: "Every redemption it allowed has been made.", order: 3 },
+  disabled: { label: "Disabled", hint: "Switched off by an administrator.", order: 4 },
 };
+
+export const CODE_STATUSES = (Object.keys(CODE_STATUS) as CodeStatus[]).sort((a, b) => CODE_STATUS[a].order - CODE_STATUS[b].order);
+
+export const STATUS_LABEL = Object.fromEntries(CODE_STATUSES.map((s) => [s, CODE_STATUS[s].label])) as Record<CodeStatus, string>;
 
 export function codeStatus(code: Pick<AdminCode, "disabledAt" | "startsAt" | "expiresAt" | "maxRedemptions" | "redemptionCount">, now: number): CodeStatus {
   if (code.disabledAt) return "disabled";

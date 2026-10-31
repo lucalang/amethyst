@@ -49,6 +49,57 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-31-crimson-sanctum",
+    date: "2026-10-31",
+    title: "The admin panel becomes the Crimson Sanctum",
+    intro: "For administrators, the Vault code panel is rebuilt as a real-time 3D sanctum: a huge vault sigil turns in a crimson void, and the panels float around it as true 3D objects, with a full overview, complete code management and a new Forge for creating codes.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Crimson Sanctum", text: "A live 3D scene with fog, light rays, drifting embers and a reflective floor; panels tilt toward the pointer, and moving between views is a camera flight." },
+      { kind: "new", feature: "Overview and management", text: "Live counters, a 30-day redemption timeline, expiring and nearly used-up codes, an activity feed, and full editing of existing codes with their redemption history and audit log." },
+      { kind: "new", feature: "The Forge", text: "Rewards become 3D tokens that fly into the core; drafts save automatically, and publishing is a hold-to-confirm charge that ends in a shockwave and the code decoding on its plate." },
+    ],
+    details: {
+      new: [
+        {
+          title: "A real-time 3D dashboard",
+          body: "The admin panel is now one 3D scene. Panels are real page elements placed in 3D, so text stays sharp and every field works with the keyboard and screen readers, while glass, frames, glow and light are drawn around them.",
+          points: [
+            "The first visit in a session plays the full opening: the sigil ignites, the ring spins up and the panels assemble from shards. Later visits play a short version, and any key or click skips it.",
+            "Overview, Codes and the Forge are stations around the core; switching views flies the camera between them while panels dissolve out and in.",
+            "Panels and code tablets lean toward the pointer, lift on hover and press in on click, and hold still while you type or scroll.",
+            "Optional sound follows the panel's sound switch. Reduced motion and the in-app motion setting keep a still, lit scene; devices without 3D graphics get a styled flat layout with every feature.",
+          ],
+          where: "Admin panel (administrators only)",
+          link: { href: "/admin", label: "Open the admin panel" },
+        },
+        {
+          title: "Overview and code management",
+          body: "The overview counts active codes, redemptions, coins granted and this week's redemptions, shows the last 30 days as a timeline, and lists codes that expire soon or are nearly used up, next to a live activity feed.",
+          points: [
+            "Codes are searchable, filterable by status and sortable. Each status has its own look: active codes pulse crimson, scheduled ones glow dimly, expired ones turn ashen, used-up ones crack and disabled ones go dark.",
+            "A code's page shows its full setup, who redeemed it and when, and its audit log.",
+            "Label, start, expiry, limits, audience and rewards can be edited; changes only affect future redemptions. Codes can be disabled and re-enabled, and cloned into the Forge. Drafts can be deleted after a confirmation.",
+          ],
+          where: "Admin panel (administrators only)",
+          link: { href: "/admin/codes", label: "Open the codes" },
+        },
+        {
+          title: "Forging and publishing codes",
+          body: "The Forge collects rewards (coins, cosmetics including secret ones, and achievements), then the limits, audience, schedule and code type: a phrase, a random code or custom text.",
+          points: [
+            "Every reward appears as a token (a coin stack, a cosmetic card or an achievement medallion) that flies into the core; removing it ejects it again.",
+            "Drafts save automatically. The review shows the most coins the code can pay out.",
+            "Publishing is a hold-to-confirm charge. Only after the server confirms does the core implode and the real code decode on its plate, with a prominent Copy button; it's shown only then.",
+            "If publishing fails, the core glitches, a clear message appears, and every value stays in place.",
+          ],
+          where: "Admin panel (administrators only)",
+          link: { href: "/admin/new", label: "Open the Forge" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-31-system-vault-console",
     date: "2026-10-31",
     title: "The admin panel becomes a crimson System window",

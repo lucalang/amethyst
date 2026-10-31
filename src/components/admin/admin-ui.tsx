@@ -1,182 +1,238 @@
 "use client";
 
-import "./admin.css";
-import type { ReactNode, Ref } from "react";
-import { useSyncExternalStore } from "react";
-import { cn } from "cn";
-import { ArrowLeft, Coins } from "lucide-react";
-import { ACHIEVEMENT_PREFIX, kindLabel, RewardArt, rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
-import { STATUS_LABEL, type AdminCode, type CodeStatus } from "@/lib/vault-admin";
-import { ConsoleLink } from "./admin-console";
-import { displayFont, systemFont } from "./system-font";
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { CODE_STATUS, type CodeStatus } from "@/lib/vault-admin";
+import { sanctumFont } from "./admin-font";
 
-/** Class for admin surfaces portaled outside the console (dialogs). */
-export const adminDialogClass = cn("ax-dialog", systemFont.variable, displayFont.variable);
+/* A shared one-second clock for countdowns, so many tablets use one interval. */
+const listeners = new Set<() => void>();
+let ticker = 0;
+let current = 0;
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  if (!ticker) {
+    current = Date.now();
+    ticker = window.setInterval(() => {
+      current = Date.now();
+      for (const item of listeners) item();
+    }, 1000);
+  }
+  return () => {
+    listeners.delete(listener);
+    if (!listeners.size) {
+      window.clearInterval(ticker);
+      ticker = 0;
+    }
+  };
+}
+export const useNow = (fallback: number) => useSyncExternalStore(subscribe, () => current || fallback, () => fallback);
 
-/**
- * One state of the System window: the framed title strip (back sigil, eyebrow and title), optional
- * lede and meta line, the body scrolling inside the window and an action bar pinned to its bottom
- * edge. `size` sets the window's width; its height follows the content up to the stage.
- */
-export function ConsoleView({
-  eyebrow,
-  title,
-  lede,
-  back,
-  meta,
-  footer,
-  size = "full",
-  headingRef,
-  mainKey,
-  children,
-}: {
-  eyebrow: string;
-  title: ReactNode;
-  lede?: ReactNode;
-  back?: { href: string; label: string };
-  meta?: ReactNode;
-  footer?: ReactNode;
-  size?: "compact" | "medium" | "full";
-  headingRef?: Ref<HTMLHeadingElement>;
-  mainKey?: string | number;
-  children: ReactNode;
-}) {
-  return (
-    <div className="ax-view" data-size={size}>
-      <header className="ax-head">
-        <div className="ax-head-strip">
-          {back ? (
-            <ConsoleLink href={back.href} className="ax-sigil" aria-label={back.label} title={back.label}>
-              <ArrowLeft aria-hidden className="size-4" />
-            </ConsoleLink>
-          ) : (
-            <span aria-hidden className="ax-sigil" data-mark="" />
-          )}
-          <div className="ax-plate">
-            <p className="ax-eyebrow">{eyebrow}</p>
-            <h1 ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="ax-title">
-              {title}
-            </h1>
-          </div>
-        </div>
-        {lede ? <p className="ax-lede">{lede}</p> : null}
-        {meta ? <div className="ax-head-meta">{meta}</div> : null}
-      </header>
-      <div key={mainKey} className="ax-view-body">
-        {children}
-      </div>
-      {footer ? <div className="ax-view-foot">{footer}</div> : null}
-    </div>
-  );
+const noop = () => () => {};
+/** False on the server and during hydration: panel content (dates, portals) renders only in the browser. */
+export const useMounted = () => useSyncExternalStore(noop, () => true, () => false);
+
+const WHEN = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
+const DAY = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
+export const formatWhen = (iso: string | null) => (iso ? WHEN.format(new Date(iso)) : "—");
+export const formatDay = (day: string) => DAY.format(new Date(`${day}T12:00:00`));
+export const number = (value: number) => value.toLocaleString("en");
+export const plural = (count: number, word: string, many = `${word}s`) => `${number(count)} ${count === 1 ? word : many}`;
+
+/** "3d 4h", "2h 05m", "4m 09s". */
+export function countdown(ms: number) {
+  if (ms <= 0) return "now";
+  const total = Math.floor(ms / 1000);
+  const days = Math.floor(total / 86_400);
+  const hours = Math.floor((total % 86_400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
 }
 
-/** A section of the window's body: a ruled heading with an optional count, then the content. */
-export function Pane({
-  id,
-  title,
-  count,
-  tone,
-  headingRef,
-  className,
-  children,
-}: {
-  id: string;
-  title: ReactNode;
-  count?: ReactNode;
-  tone?: "draft";
-  headingRef?: Ref<HTMLHeadingElement>;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className={cn("ax-pane", className)} data-tone={tone} aria-labelledby={id}>
-      <div className="ax-pane-head">
-        <h2 id={id} ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="ax-pane-title">
-          {title}
-        </h2>
-        {count !== undefined ? <span className="ax-pane-count">{count}</span> : null}
-      </div>
-      {children}
-    </section>
-  );
+export function timeAgo(iso: string, now: number) {
+  const seconds = Math.max(0, (now - Date.parse(iso)) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86_400) return `${Math.floor(seconds / 3600)} h ago`;
+  if (seconds < 86_400 * 7) return plural(Math.floor(seconds / 86_400), "day") + " ago";
+  return formatWhen(iso);
 }
 
-export function StatusPill({ status }: { status: CodeStatus }) {
+/** An ISO time as the value of a datetime-local input (local time), and back. */
+export function toLocalInput(iso: string | null) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+export function fromLocalInput(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+/** A whole number typed into a field, or null when empty or not a number. */
+export function wholeNumber(value: string) {
+  const trimmed = value.replace(/[\s,_]/g, "");
+  if (!/^\d+$/.test(trimmed)) return null;
+  return Number(trimmed);
+}
+
+/** Counts up to `value` (once per change); static when motion is off. */
+export function CountUp({ value, animate, delay = 0 }: { value: number; animate: boolean; delay?: number }) {
+  const [shown, setShown] = useState(0);
+  const latest = useRef(0);
+  useEffect(() => {
+    if (!animate) return;
+    let frame = 0;
+    let start = 0;
+    const from = latest.current;
+    const step = (now: number) => {
+      if (!start) start = now + delay;
+      const k = Math.min(1, Math.max(0, (now - start) / 1300));
+      const next = Math.round(from + (value - from) * (1 - (1 - k) ** 4));
+      latest.current = next;
+      setShown(next);
+      if (k < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [value, animate, delay]);
   return (
-    <span className="ax-tag" data-status={status}>
-      {STATUS_LABEL[status]}
+    <span className="tabular-nums" data-no-decode>
+      {number(animate ? shown : value)}
     </span>
   );
 }
 
-const subscribeMinute = (onChange: () => void) => {
-  const id = window.setInterval(onChange, 30_000);
-  return () => window.clearInterval(id);
-};
-const nowMinute = () => Math.floor(Date.now() / 60_000) * 60_000;
-
-/** The current minute; the server's time until hydration so statuses render the same on both. */
-export function useNow(serverNow: number) {
-  return useSyncExternalStore(subscribeMinute, nowMinute, () => serverNow);
-}
-
-const noSubscribe = () => () => {};
-/** The device's time zone (null while rendering on the server). */
-export function useTimeZone() {
-  return useSyncExternalStore(noSubscribe, () => Intl.DateTimeFormat().resolvedOptions().timeZone, () => null);
-}
-
-export const formatWhen = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-
-export function When({ iso, fallback = "—" }: { iso: string | null; fallback?: string }) {
-  if (!iso) return <>{fallback}</>;
+export function Field({ id, label, hint, error, children, className }: { id: string; label: ReactNode; hint?: ReactNode; error?: string | null; children: ReactNode; className?: string }) {
   return (
-    <time dateTime={iso} suppressHydrationWarning>
-      {formatWhen(iso)}
-    </time>
-  );
-}
-
-export const codeRewards = (code: Pick<AdminCode, "coins" | "items" | "achievements">) =>
-  rewardSummary(code.coins, [...code.items, ...code.achievements.map((id) => `${ACHIEVEMENT_PREFIX}${id}`)]);
-
-/** Each reward with its real preview: coins, cosmetics, then achievements. */
-export function RewardTiles({ coins, items, achievements, looks }: { coins: number; items: string[]; achievements: string[]; looks: VaultLooks }) {
-  const ids = [...items, ...achievements.map((id) => `${ACHIEVEMENT_PREFIX}${id}`)];
-  return (
-    <ul className="ax-tiles">
-      {coins > 0 ? (
-        <li className="ax-tile">
-          <span aria-hidden className="ax-tile-art">
-            <span className="vx-coin" data-size="slot">
-              <Coins />
-            </span>
-          </span>
-          <span className="min-w-0">
-            <span className="ax-tile-kind">Coins</span>
-            <span className="ax-tile-name">{coins.toLocaleString("en")}</span>
-          </span>
-        </li>
+    <div className={`cs-field ${className ?? ""}`} data-invalid={error ? "" : undefined}>
+      <label htmlFor={id} className="cs-label">
+        {label}
+      </label>
+      {children}
+      {hint ? (
+        <p id={`${id}-hint`} className="cs-hint">
+          {hint}
+        </p>
       ) : null}
-      {ids.map((id) => {
-        const info = rewardInfo(id);
-        return (
-          <li key={id} className="ax-tile">
-            <span aria-hidden className="ax-tile-art">
-              <RewardArt id={id} size="slot" looks={looks} />
-            </span>
-            <span className="min-w-0">
-              <span className="ax-tile-kind">{kindLabel(info)}</span>
-              <span className="ax-tile-name">{info.name}</span>
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+      {error ? (
+        <p id={`${id}-error`} className="cs-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
-export function audienceSummary(code: Pick<AdminCode, "audience" | "allowlistCount" | "perAccountLimit">) {
-  const who = code.audience === "allowlist" ? `${code.allowlistCount} listed account${code.allowlistCount === 1 ? "" : "s"}` : "All signed-in accounts";
-  return `${who} · ${code.perAccountLimit === 1 ? "once per account" : `up to ${code.perAccountLimit}× per account`}`;
+/** aria-describedby for a Field's control. */
+export const describedBy = (id: string, hint: boolean, error: unknown) => [hint ? `${id}-hint` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
+
+export function ConfirmAction({
+  trigger,
+  title,
+  description,
+  confirm,
+  onConfirm,
+  danger = false,
+}: {
+  trigger: ReactNode;
+  title: string;
+  description: ReactNode;
+  confirm: string;
+  onConfirm: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogContent className={`cs-dialog ${sanctumFont.variable}`}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="cs-dialog-title">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="cs-dialog-text">{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="cs-button" variant="ghost">
+            Cancel
+          </AlertDialogCancel>
+          <AlertDialogAction className={danger ? "cs-button cs-button-danger" : "cs-button cs-button-primary"} onClick={onConfirm}>
+            {confirm}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+export function StatusBadge({ status }: { status: CodeStatus }) {
+  return (
+    <span className="cs-status" data-status={status} title={CODE_STATUS[status].hint}>
+      <span aria-hidden className="cs-status-dot" />
+      {CODE_STATUS[status].label}
+    </span>
+  );
+}
+
+export const ACTION_LABEL: Record<string, string> = { publish: "Published", disable: "Disabled", enable: "Re-enabled", update: "Edited" };
+export const FIELD_LABEL: Record<string, string> = {
+  label: "label",
+  coins: "coins",
+  items: "cosmetics",
+  achievements: "achievements",
+  startsAt: "start",
+  expiresAt: "expiry",
+  maxRedemptions: "total limit",
+  perAccountLimit: "per-account limit",
+  audience: "audience",
+  allowlist: "allowlist",
+};
+export const accountName = (account: { name: string | null; email: string | null } | null | undefined) => account?.name || account?.email || "Unknown account";
+
+/** In-app navigation without a page load (the scene keeps running and flies to the next view). */
+const NavigateContext = createContext<(href: string) => void>(() => {});
+export const NavigateProvider = NavigateContext.Provider;
+export const useNavigate = () => useContext(NavigateContext);
+
+export function NavLink({ href, onClick, ...props }: ComponentProps<"a"> & { href: string }) {
+  const navigate = useNavigate();
+  return (
+    <a
+      {...props}
+      href={href}
+      onClick={(event) => {
+        onClick?.(event);
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        navigate(href);
+      }}
+    />
+  );
+}
+
+/** A small engraved heading row for panels. */
+export function PanelHead({ title, kicker, id, children }: { title: string; kicker?: string; id?: string; children?: ReactNode }) {
+  return (
+    <header className="cs-head">
+      <div className="min-w-0">
+        {kicker ? <p className="cs-kicker">{kicker}</p> : null}
+        <h2 id={id} className="cs-title">
+          {title}
+        </h2>
+      </div>
+      {children ? <div className="cs-head-actions">{children}</div> : null}
+    </header>
+  );
 }

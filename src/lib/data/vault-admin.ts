@@ -3,7 +3,7 @@ import type { FrameSample } from "@/app/(vault)/settings/frame-settings";
 import type { VaultLooks } from "@/components/vault/vault-reveal";
 import { artworkSrc } from "@/lib/attachments";
 import type { AuthContext } from "@/lib/supabase/auth";
-import type { AdminAccount, AdminCode, AdminCodeDetail, AdminDraft, CatalogAchievement, CatalogItem } from "@/lib/vault-admin";
+import type { AdminAccount, AdminCode, AdminCodeDetail, AdminDraft, AdminSnapshot, AdminStats, CatalogAchievement, CatalogItem } from "@/lib/vault-admin";
 
 /** Admin reads; each database function checks the administrator list itself. */
 async function call<T>(promise: PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T> {
@@ -21,6 +21,18 @@ export const loadAdminCode = async (ctx: AuthContext, id: string) => ({
   code: await call<AdminCodeDetail | null>(ctx.supabase.rpc("admin_vault_code", { p_id: id })),
   now: Date.now(),
 });
+
+export const loadAdminStats = (ctx: AuthContext, timeZone = "UTC") =>
+  call<AdminStats>(ctx.supabase.rpc("admin_vault_stats", { p_tz: timeZone.slice(0, 64) }));
+
+/** Everything the dashboard shows at once: codes, drafts and stats. */
+export async function loadAdminSnapshot(ctx: AuthContext, timeZone?: string): Promise<AdminSnapshot> {
+  const [overview, stats] = await Promise.all([
+    call<{ codes: AdminCode[]; drafts: AdminDraft[] }>(ctx.supabase.rpc("admin_vault_overview")),
+    loadAdminStats(ctx, timeZone),
+  ]);
+  return { ...overview, stats, now: Date.now() };
+}
 
 export const loadAdminCatalog = (ctx: AuthContext) =>
   call<{ items: CatalogItem[]; achievements: CatalogAchievement[] }>(ctx.supabase.rpc("admin_vault_catalog"));

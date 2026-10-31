@@ -1,4 +1,3 @@
-import { OPEN } from "@/components/admin/admin-timing";
 import { CARD_STAGGER, SUMMON, UNLOCK, type SummonKind } from "./timing";
 
 /**
@@ -168,60 +167,147 @@ export function playVaultReveal(count: number, at = 0) {
   for (let i = 0; i < Math.min(count, 8); i++) tone(1568 + i * 196, at + (i * CARD_STAGGER) / 1000, 0.5, "sine", 0.05);
 }
 
-export type AdminSound = "step" | "fold" | "publish" | "draft" | "error";
+export type SanctumSound =
+  | "hover"
+  | "select"
+  | "confirm"
+  | "flight"
+  | "token"
+  | "eject"
+  | "implode"
+  | "boom"
+  | "error"
+  | "draft"
+  | "copy"
+  | "tick";
+
+let lastHover = 0;
 
 /**
- * Admin panel cues, kept apart from the Vault's answers so publishing a code never sounds like
- * finding one: publish is a short system notice, a crisp click and a bright rising dyad. `delay` is
- * in ms (the publish cue waits for the window's confirmation accent).
+ * Crimson Sanctum (admin) cues, kept apart from the Vault's answers so publishing a code never sounds
+ * like finding one. `delay` is in ms. Hover ticks are throttled so sweeping across cards stays quiet.
  */
-export function playAdminSound(name: AdminSound, delay = 0) {
+export function playSanctumSound(name: SanctumSound, delay = 0) {
+  if (!allowed()) return;
   const at = delay / 1000;
   switch (name) {
-    case "step":
-      tone(1200, at, 0.04, "triangle", 0.03);
+    case "hover": {
+      const now = performance.now();
+      if (now - lastHover < 70) return;
+      lastHover = now;
+      tone(2600 + Math.random() * 500, at, 0.025, "triangle", 0.012);
       break;
-    case "fold":
-      noise(at, 0.22, 2600, 700, 0.035, "bandpass", undefined, 0.2);
-      tone(520, at, 0.16, "sine", 0.025, 330);
+    }
+    case "tick":
+      tone(1750, at, 0.03, "square", 0.012);
       break;
-    case "publish":
-      tone(2400, at, 0.025, "square", 0.025);
-      noise(at, 0.35, 1800, 5200, 0.06, "bandpass", undefined, 0.8);
-      tone(880, at + 0.3, 0.5, "sine", 0.12);
-      tone(1318.5, at + 0.42, 0.9, "sine", 0.1);
-      tone(2637, at + 0.42, 0.6, "sine", 0.025);
+    case "select":
+      tone(660, at, 0.09, "triangle", 0.05, 990);
+      tone(2200, at, 0.03, "square", 0.012);
       break;
-    case "draft":
-      tone(523.25, at, 0.18, "sine", 0.08);
-      tone(392, at + 0.12, 0.3, "sine", 0.07);
+    case "confirm":
+      tone(523.25, at, 0.3, "sine", 0.08);
+      tone(784, at + 0.07, 0.4, "sine", 0.07);
+      break;
+    case "flight":
+      noise(at, 1.2, 180, 2400, 0.09, "bandpass", undefined, 0.55);
+      tone(42, at, 1.2, "sine", 0.22, 70);
+      break;
+    case "token":
+      noise(at, 0.4, 900, 4200, 0.05, "bandpass", undefined, 0.7);
+      tone(988, at + 0.32, 0.35, "sine", 0.06);
+      tone(1480, at + 0.36, 0.45, "sine", 0.03);
+      break;
+    case "eject":
+      noise(at, 0.35, 3600, 500, 0.06, "bandpass", undefined, 0.15);
+      tone(392, at, 0.25, "triangle", 0.05, 196);
+      break;
+    case "implode":
+      noise(at, 0.7, 5200, 160, 0.16, "lowpass", undefined, 0.9);
+      tone(220, at, 0.65, "sawtooth", 0.05, 40);
+      break;
+    case "boom":
+      tone(48, at, 2.2, "sine", 0.9, 26);
+      noise(at, 1.6, 2400, 90, 0.45, "lowpass", undefined, 0.03);
+      clank(at, 1.1);
+      [261.63, 392, 523.25, 783.99].forEach((freq, i) => tone(freq, at + 0.25 + i * 0.06, 1.8, "triangle", 0.1));
+      [1567.98, 2093, 3135.96].forEach((freq, i) => tone(freq, at + 0.6 + i * 0.1, 1.4, "sine", 0.035));
       break;
     case "error":
-      tone(130, at, 0.18, "square", 0.05, 110);
+      [0, 0.09, 0.18].forEach((offset) => tone(110 - offset * 80, at + offset, 0.08, "square", 0.06));
+      noise(at, 0.3, 4000, 1200, 0.07, "highpass", undefined, 0.05);
+      break;
+    case "draft":
+      tone(523.25, at, 0.18, "sine", 0.06);
+      tone(392, at + 0.12, 0.3, "sine", 0.05);
+      break;
+    case "copy":
+      tone(1318.5, at, 0.12, "sine", 0.06);
+      tone(1975.5, at + 0.06, 0.2, "sine", 0.04);
       break;
   }
 }
 
 /**
- * The admin System window's opening, in step with the scene: a low hum under the first line of light,
- * an airy sweep as the strip expands, faint crackle through the distortion and a soft two-note chime
- * as the text settles. Silent before any gesture; skipping fades it out.
+ * The Sanctum's ignition, in step with the scene: a low drone as the sigil traces, a rising rush as the
+ * ring spins up, a bright strike at the bloom flash and soft seats as the panels assemble. Silent before
+ * any gesture; skipping fades it out.
  */
-export function playAdminBoot(kind: "full" | "short") {
+export function playSanctumIntro(timing: { trace: readonly [number, number]; spin: readonly [number, number]; flash: number; assemble: readonly [number, number] }, full: boolean) {
   if (!allowed()) return;
   hushVault();
   const { ctx, master } = out();
   const bus = ctx.createGain();
-  bus.gain.value = 0.8;
   bus.connect(master);
   sequence = bus;
-  const t = OPEN[kind];
   const s = (ms: number) => ms / 1000;
-  if (kind === "full") tone(48, 0, s(t.expand[1]), "sine", 0.18, 62, bus);
-  noise(s(t.strip[0]), s(t.expand[1] - t.strip[0]), 500, 2600, kind === "full" ? 0.07 : 0.05, "bandpass", bus, 0.75);
-  for (let i = 0; i < 3; i++) noise(s(t.distort[0] + (i * (t.distort[1] - t.distort[0])) / 3), 0.05, 4200, 2400, 0.018, "highpass", bus, 0.1);
-  tone(1318.5, s(t.decode[1]) - 0.12, 0.5, "sine", 0.032, undefined, bus);
-  tone(1975.5, s(t.decode[1]) - 0.03, 0.6, "sine", 0.022, undefined, bus);
+  if (full) tone(38, s(timing.trace[0]), s(timing.flash - timing.trace[0]) + 0.6, "sine", 0.4, 58, bus);
+  noise(s(timing.trace[0]), s(timing.trace[1] - timing.trace[0]), 200, 900, full ? 0.08 : 0.05, "bandpass", bus, 0.8);
+  noise(s(timing.spin[0]), s(timing.flash - timing.spin[0]) + 0.05, 300, 4800, full ? 0.14 : 0.08, "bandpass", bus, 0.92);
+  tone(55, s(timing.flash), 1.4, "sine", full ? 0.55 : 0.3, 30, bus);
+  noise(s(timing.flash), 0.9, 3000, 140, full ? 0.25 : 0.12, "lowpass", bus, 0.03);
+  for (let i = 0; i < (full ? 5 : 3); i++) seat(s(timing.assemble[0] + i * ((timing.assemble[1] - timing.assemble[0]) / 6)), bus);
+  tone(1318.5, s(timing.assemble[1]), 0.6, "sine", 0.03, undefined, bus);
+}
+
+/**
+ * The publish charge: a rising drone whose pitch follows `set(level)` (0–1) while the button is held.
+ * `stop(true)` lets it swell into the implosion, `stop(false)` sinks it (released early).
+ */
+export function startSanctumCharge() {
+  if (!allowed()) return null;
+  const { ctx, master } = out();
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.16, ctx.currentTime + 0.15);
+  gain.connect(master);
+  const oscillators = [55, 82.5, 110.6].map((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = i === 1 ? "sawtooth" : "sine";
+    osc.frequency.value = freq;
+    const level = ctx.createGain();
+    level.gain.value = i === 1 ? 0.18 : 0.5;
+    osc.connect(level).connect(gain);
+    osc.start();
+    return { osc, base: freq };
+  });
+  let stopped = false;
+  return {
+    set(level: number) {
+      if (stopped) return;
+      const t = ctx.currentTime;
+      for (const { osc, base } of oscillators) osc.frequency.setTargetAtTime(base * (1 + level * 2.2), t, 0.05);
+      gain.gain.setTargetAtTime(0.12 + level * 0.18, t, 0.05);
+    },
+    stop(done: boolean) {
+      if (stopped) return;
+      stopped = true;
+      const t = ctx.currentTime;
+      if (!done) for (const { osc, base } of oscillators) osc.frequency.setTargetAtTime(base * 0.7, t, 0.12);
+      gain.gain.setTargetAtTime(0, t, done ? 0.08 : 0.12);
+      for (const { osc } of oscillators) osc.stop(t + 0.8);
+    },
+  };
 }
 
 /** Fades out the summon (on skip). */
