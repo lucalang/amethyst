@@ -1,79 +1,82 @@
 /* ---------------------------------------------------------------------------
- * Admin panel: one System window summoned into a dark vault (admin-scene.tsx).
- * The window, its side window and the reward satellites are real DOM mapped
- * onto 3D surfaces; nothing here may set transform, translate, scale or
- * transform-origin on .ax-console, .ax-side, .ax-sat or .ax-glare > span (the
- * scene owns them). Without WebGL every surface draws its own chamfered frame.
- * Motion off and reduced motion keep every state, without sequences.
+ * Admin panel: one floating crimson System window over the vault
+ * (admin-scene.tsx). The window's page surface (.ax-console) is real DOM mapped
+ * onto the scene's tilted glass: nothing here may set transform, translate,
+ * scale or transform-origin on it, nor animate its opacity or filter (the scene
+ * writes those inline). Without the scene, .ax-fallback draws the frame, glass
+ * and bars. Motion off and reduced motion keep every state, without sequences.
  * ------------------------------------------------------------------------- */
 .ax-stage,
 .ax-dialog {
-  --ax-bg: #040509;
-  --ax-ink: #f6ecdc;
-  --ax-soft: #c2b49c;
-  --ax-dim: #8a7f6c;
-  --ax-ice: #ffe1b0;
-  --ax-cyan: #ffb547;
-  /* Channels: accent amber, warm pale for lines, deep panel tint. */
-  --ax-a: 255 181 71;
-  --ax-w: 255 214 160;
-  --ax-k: 10 7 4;
-  --ax-edge: rgb(255 200 130 / 0.5);
-  --ax-line: rgb(var(--ax-w) / 0.14);
-  --ax-glow: rgb(255 160 60 / 0.45);
+  --ax-bg: #030203;
+  --ax-ink: #f3e9eb;
+  --ax-soft: #c9b7bb;
+  --ax-dim: #8c7f82;
+  --ax-ice: #ffe2e7;
+  /* Accent text: the Vault's crimson lifted for contrast on the dark glass. */
+  --ax-cyan: #ff7286;
+  /* Channels: accent crimson, pale rose for lines, deep panel tint. */
+  --ax-a: 255 31 61;
+  --ax-w: 255 218 224;
+  --ax-k: 8 2 4;
+  --ax-edge: rgb(255 96 120 / 0.5);
+  --ax-line: rgb(var(--ax-w) / 0.13);
+  --ax-glow: rgb(255 31 61 / 0.45);
   --ax-violet: #c9b8ff;
-  --ax-danger: #ff5a6e;
-  --ax-danger-rgb: 255 90 110;
+  /* Danger is warm amber so it never reads as the accent. */
+  --ax-danger: #ffb052;
+  --ax-danger-rgb: 255 176 82;
   --ax-cut: 14px;
+  --ax-pad-x: 1rem;
   --ax-font: var(--font-system), var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   --ax-display: var(--font-system-display), var(--ax-font);
   /* RewardArt and the decode text read the Vault's variables. */
   --vx-black: var(--ax-bg);
-  --vx-red: var(--ax-cyan);
+  --vx-red: #ff1f3d;
   --vx-text: var(--ax-ink);
   --vx-ash: var(--ax-dim);
   --vx-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
-/* Fills the viewport under the nav; the window scrolls inside, never the page. */
+/* Fills the viewport under the nav, leaving room for the frame and bars; the window scrolls inside. */
 .ax-stage {
   position: relative;
   isolation: isolate;
   overflow: clip;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "main";
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   place-items: center;
   height: calc(100dvh - 3.5rem - 1px);
   min-height: 30rem;
   margin-bottom: -6rem;
-  padding: 1.5rem 1.75rem calc(4rem + 1px + 1.25rem + env(safe-area-inset-bottom));
+  padding: 2.25rem 1.75rem calc(4rem + 1px + 2rem + env(safe-area-inset-bottom));
   font-family: var(--ax-font);
   color: var(--ax-ink);
   background:
-    radial-gradient(55% 45% at 50% 55%, rgb(70 36 10 / 0.28), transparent 70%),
-    radial-gradient(45% 30% at 50% 0%, rgb(40 30 80 / 0.22), transparent 70%),
+    radial-gradient(60% 50% at 50% 58%, rgb(161 10 31 / 0.2), transparent 70%),
+    radial-gradient(45% 30% at 50% 0%, rgb(90 6 22 / 0.24), transparent 70%),
     var(--ax-bg);
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
 }
 @media (min-width: 48rem) {
   .ax-stage {
+    --ax-pad-x: 1.75rem;
     margin-bottom: -2.5rem;
-    padding: 2rem 2.5rem 2.25rem;
+    padding: 3.25rem 4rem;
   }
 }
-/* Wide: side window, System window, reward satellites. */
-@media (min-width: 80rem) {
-  .ax-stage {
-    grid-template-columns: 13rem minmax(0, 56rem) 13rem;
-    grid-template-areas: "side main sats";
-    justify-content: center;
-    column-gap: 2rem;
-  }
+.ax-stage > :is(.ax-loader, .ax-console) {
+  grid-area: 1 / 1;
 }
 .ax-stage ::selection {
   color: #fff;
-  background: rgb(var(--ax-a) / 0.4);
+  background: rgb(var(--ax-a) / 0.45);
+}
+.ax-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 .ax-scene {
   position: absolute;
@@ -86,13 +89,59 @@
   height: 100%;
 }
 
-/* Fallback frames (chamfered edge + glass), hidden once the scene draws the real ones. */
-:is(.ax-console, .ax-side, .ax-sat)::before,
-:is(.ax-console, .ax-side, .ax-sat)::after {
-  content: "";
+/* The System window: sized by the current view, as tall as its content up to the stage. */
+.ax-console {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(62rem, 100%);
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  backface-visibility: hidden;
+}
+.ax-console:has(.ax-view[data-size="medium"]) {
+  width: min(50rem, 100%);
+}
+.ax-console:has(.ax-view[data-size="compact"]) {
+  width: min(38rem, 100%);
+}
+.ax-stage[data-shifting] .ax-console {
+  pointer-events: none;
+}
+.ax-console-screen,
+.ax-view {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.ax-console-sound {
   position: absolute;
+  z-index: 2;
+  top: calc(0.9rem + 0.375rem);
+  right: calc(var(--ax-pad-x) + 0.375rem);
+  background: rgb(var(--ax-k) / 0.6);
+}
+
+/* Without the scene: a CSS frame with cut corners, dark glass and the detached bars. */
+.ax-fallback {
+  position: absolute;
+  inset: -1.15rem 1rem;
   z-index: -1;
   pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgb(var(--ax-a)) 14%, #ffc4ce 50%, rgb(var(--ax-a)) 86%, transparent) top / 100% 3px no-repeat,
+    linear-gradient(90deg, transparent, rgb(var(--ax-a)) 14%, #ffc4ce 50%, rgb(var(--ax-a)) 86%, transparent) bottom / 100% 3px no-repeat;
+  transition: opacity 500ms ease-out;
+}
+.ax-fallback::before,
+.ax-fallback::after {
+  content: "";
+  position: absolute;
+  inset: 1.15rem -1rem;
   clip-path: polygon(
     var(--ax-cut) 0,
     calc(100% - var(--ax-cut)) 0,
@@ -103,222 +152,30 @@
     0 calc(100% - var(--ax-cut)),
     0 var(--ax-cut)
   );
-  transition: opacity 600ms ease-out;
 }
-:is(.ax-console, .ax-side, .ax-sat)::before {
-  inset: 0;
-  background: linear-gradient(180deg, rgb(255 200 130 / 0.7), rgb(255 170 80 / 0.25) 40%, rgb(255 200 130 / 0.5));
+.ax-fallback::before {
+  background: linear-gradient(180deg, rgb(255 90 112 / 0.85), rgb(var(--ax-a) / 0.35) 45%, rgb(255 90 112 / 0.7));
 }
-:is(.ax-console, .ax-side, .ax-sat)::after {
-  inset: 1px;
+.ax-fallback::after {
+  inset: calc(1.15rem + 1px) calc(-1rem + 1px);
   background:
-    radial-gradient(120% 60% at 50% 0%, rgb(var(--ax-a) / 0.1), transparent 60%),
-    linear-gradient(180deg, rgb(14 10 8 / 0.97), rgb(5 5 9 / 0.98));
+    radial-gradient(120% 60% at 50% 0%, rgb(var(--ax-a) / 0.12), transparent 60%),
+    linear-gradient(180deg, rgb(16 5 8 / 0.94), rgb(5 2 3 / 0.96));
 }
-.ax-stage[data-scene="ready"] :is(.ax-console, .ax-side, .ax-sat)::before,
-.ax-stage[data-scene="ready"] :is(.ax-console, .ax-side, .ax-sat)::after {
+.ax-stage[data-scene="ready"] .ax-fallback {
   opacity: 0;
 }
 
-/* The System window: title plate on top, the screen below. */
-.ax-console {
-  position: relative;
-  z-index: 1;
-  grid-area: main;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  width: min(64rem, 100%);
-  height: min(100%, 60rem);
-  min-height: 0;
-  backface-visibility: hidden;
-}
-@media (min-width: 80rem) {
-  .ax-console {
-    width: 100%;
-  }
-}
-.ax-glare {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  overflow: hidden;
-  pointer-events: none;
-}
-.ax-glare > span {
-  position: absolute;
-  top: -30%;
-  left: 15%;
-  width: 70%;
-  height: 160%;
-  opacity: 0;
-  background: linear-gradient(105deg, transparent 38%, rgb(255 228 190 / 0.07) 50%, transparent 62%);
-  mix-blend-mode: screen;
-}
-.ax-stage:not([data-scene="ready"]) .ax-glare {
-  display: none;
-}
-.ax-console-bar {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 3rem;
-  padding: 0.25rem 0.5rem;
-  background: linear-gradient(90deg, transparent, rgb(var(--ax-a) / 0.55) 30%, rgb(var(--ax-a) / 0.55) 70%, transparent) bottom / 100% 1px no-repeat;
-  font-family: var(--ax-display);
-  font-size: 0.75rem;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-}
-.ax-console-mark {
-  justify-self: center;
-  width: 0.5rem;
-  height: 0.5rem;
-  border: 1px solid var(--ax-ice);
-  rotate: 45deg;
-  box-shadow: 0 0 8px var(--ax-glow);
-}
-.ax-console-id {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.9em;
-  min-width: 0;
-  overflow: hidden;
-  font-weight: 600;
-  white-space: nowrap;
-  color: #fff;
-  text-shadow: 0 0 12px rgb(var(--ax-a) / 0.6);
-}
-.ax-console-id::before,
-.ax-console-id::after {
-  content: "";
-  flex: 0 1 3rem;
-  min-width: 0.75rem;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--ax-ice));
-}
-.ax-console-id::after {
-  order: 1;
-  background: linear-gradient(90deg, var(--ax-ice), transparent);
-}
-.ax-console-sub {
-  overflow: hidden;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  color: var(--ax-soft);
-  text-shadow: none;
-}
-@media (max-width: 30rem) {
-  .ax-console-sub {
-    display: none;
-  }
-}
-.ax-console-sound {
-  justify-self: end;
-}
-.ax-console-screen {
-  display: grid;
-  min-width: 0;
-  min-height: 0;
-}
-
-/* The side window (portaled side column) and the reward satellites; wide screens only. */
-.ax-side,
-.ax-sats {
-  display: none;
-}
-@media (min-width: 80rem) {
-  .ax-side {
-    position: relative;
-    z-index: 1;
-    grid-area: side;
-    display: block;
-    align-self: center;
-    width: 100%;
-    max-height: min(100%, 40rem);
-    padding: 1.1rem 1rem 1.2rem;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: rgb(var(--ax-w) / 0.3) transparent;
-    backface-visibility: hidden;
-  }
-  .ax-side:empty {
-    visibility: hidden;
-  }
-  .ax-sats {
-    position: relative;
-    z-index: 1;
-    grid-area: sats;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 1.1rem;
-    align-self: stretch;
-    min-height: 0;
-    overflow: hidden;
-    padding: 0.5rem 0.25rem;
-    pointer-events: none;
-  }
-}
-.ax-sat {
-  --ax-cut: 10px;
-  position: relative;
-  display: grid;
-  flex-shrink: 0;
-  justify-items: center;
-  align-content: center;
-  gap: 0.35rem;
-  width: 9.5rem;
-  height: 6.25rem;
-  padding: 0.4rem 0.5rem;
-  backface-visibility: hidden;
-}
-.ax-sat:nth-child(even) {
-  margin-left: 2rem;
-}
-.ax-sat-art {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 4.2rem;
-  overflow: hidden;
-}
-.ax-sat-art > * {
-  zoom: 0.7;
-}
-.ax-sat-more {
-  font-family: var(--ax-display);
-  font-size: 1.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--ax-ice);
-  text-shadow: 0 0 14px var(--ax-glow);
-}
-.ax-sat-name {
-  max-width: 100%;
-  overflow: hidden;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--ax-ink);
-}
-
-/* Loading: a seam waits where the window will open. */
+/* Loading: a line of light waits where the window will open. */
 .ax-loader {
   position: relative;
   z-index: 2;
-  grid-area: main;
   display: grid;
   justify-items: center;
   gap: 1rem;
   pointer-events: none;
 }
-.ax-loader-seam {
+.ax-loader-line {
   width: min(22rem, 70vw);
   height: 2px;
   background: linear-gradient(90deg, transparent, rgb(var(--ax-a) / 0.9), transparent);
@@ -341,7 +198,7 @@
   min-height: 2.25rem;
   padding: 0.35rem 0.9rem;
   border: 1px solid rgb(var(--ax-w) / 0.35);
-  background: rgb(4 4 8 / 0.8);
+  background: rgb(var(--ax-k) / 0.85);
   font-family: var(--ax-display);
   font-size: 0.6875rem;
   letter-spacing: 0.22em;
@@ -360,183 +217,209 @@
   }
 }
 
-/* One screen: heading row, the main column scrolling inside, an action bar. */
-.ax-view {
+/* One window state: the framed title strip, the body scrolling inside, an action bar pinned below. */
+.ax-head {
+  flex: none;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  min-width: 0;
-  min-height: 0;
+  gap: 0.7rem;
+  padding: 0.9rem var(--ax-pad-x) 0.85rem;
 }
-.ax-view-head {
+.ax-head-strip {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.75rem 1rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--ax-line);
-}
-.ax-view-body,
-.ax-view-aside,
-.ax-view-main {
+  align-items: center;
+  gap: 0.75rem;
   min-width: 0;
-  min-height: 0;
+  min-height: 3.25rem;
+  padding: 0.375rem 3.5rem 0.375rem 0.375rem;
+  border: 1px solid rgb(var(--ax-a) / 0.6);
+  outline: 1px solid rgb(var(--ax-w) / 0.1);
+  outline-offset: -4px;
+  background:
+    linear-gradient(90deg, rgb(var(--ax-a) / 0.2), rgb(var(--ax-a) / 0.05) 55%, transparent),
+    rgb(var(--ax-k) / 0.55);
+  box-shadow:
+    0 0 18px -8px var(--ax-glow),
+    inset 0 0 22px -12px rgb(var(--ax-a) / 0.8);
+}
+/* Corner ticks on the strip's outer edge. */
+.ax-head-strip::before,
+.ax-head-strip::after {
+  content: "";
+  position: absolute;
+  width: 0.75rem;
+  height: 0.75rem;
+  pointer-events: none;
+}
+.ax-head-strip::before {
+  top: -4px;
+  left: -4px;
+  border-top: 2px solid var(--ax-ice);
+  border-left: 2px solid var(--ax-ice);
+}
+.ax-head-strip::after {
+  right: -4px;
+  bottom: -4px;
+  border-right: 2px solid var(--ax-ice);
+  border-bottom: 2px solid var(--ax-ice);
+}
+.ax-sigil {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid rgb(var(--ax-a) / 0.75);
+  background: rgb(var(--ax-a) / 0.14);
+  color: var(--ax-ice);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  transition:
+    background-color 160ms,
+    color 160ms;
+}
+a.ax-sigil:hover {
+  background: rgb(var(--ax-a) / 0.32);
+  color: #fff;
+}
+.ax-sigil[data-mark]::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 1px solid var(--ax-ice);
+  rotate: 45deg;
+  box-shadow: 0 0 8px var(--ax-glow);
+}
+.ax-plate {
+  display: grid;
+  min-width: 0;
+}
+.ax-eyebrow {
+  overflow: hidden;
+  font-family: var(--ax-display);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ax-cyan);
+}
+.ax-stage .ax-title {
+  font-family: var(--ax-display);
+  font-size: clamp(1.15rem, 0.95rem + 0.8vw, 1.6rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 18px rgb(var(--ax-a) / 0.45);
+  outline: none;
+}
+.ax-lede {
+  max-width: 46rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ax-soft);
+}
+.ax-head .ax-lede {
+  font-size: 0.8125rem;
+}
+.ax-head-meta {
+  min-width: 0;
+}
+@media (min-width: 40rem) {
+  .ax-head-meta .ax-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 1rem;
+  }
 }
 .ax-view-body {
   display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
-  gap: 1.25rem;
-  padding: 1rem;
+  gap: 1.5rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.6rem var(--ax-pad-x) 1.25rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: rgb(var(--ax-w) / 0.3) transparent;
-}
-.ax-view-aside,
-.ax-view-main {
-  display: grid;
-  align-content: start;
-  gap: 1.25rem;
+  scrollbar-color: rgb(var(--ax-a) / 0.5) transparent;
 }
 .ax-view-foot {
-  padding: 0.65rem 0.75rem;
-  background: linear-gradient(90deg, transparent, rgb(var(--ax-w) / 0.22) 20%, rgb(var(--ax-w) / 0.22) 80%, transparent) top / 100% 1px no-repeat;
+  flex: none;
+  padding: 0.75rem var(--ax-pad-x) 0.85rem;
+  border-top: 1px solid var(--ax-line);
+  background: linear-gradient(180deg, rgb(var(--ax-a) / 0.07), transparent);
 }
-@media (min-width: 48rem) {
-  .ax-view-head {
-    padding: 1.1rem 1.75rem 1rem;
-  }
-  .ax-view-body {
-    padding: 1.25rem 1.75rem 1.5rem;
-  }
-  .ax-view-foot {
-    padding: 0.75rem 1.75rem;
-  }
-}
-
-/* Header. */
-.ax-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  justify-self: start;
-  margin-bottom: 0.4rem;
-  font-size: 0.6875rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ax-soft);
-}
-.ax-back:hover {
-  color: var(--ax-ice);
-}
-.ax-head-actions,
-.ax-done-actions,
 .ax-actions-end {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.ax-eyebrow {
-  font-family: var(--ax-display);
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: var(--ax-cyan);
-}
-.ax-stage .ax-title {
-  margin-top: 0.2rem;
-  font-family: var(--ax-display);
-  font-size: clamp(1.35rem, 1.1rem + 1vw, 2rem);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fff;
-  overflow-wrap: anywhere;
-  text-shadow: 0 0 22px rgb(var(--ax-a) / 0.35);
-}
-.ax-lede {
-  max-width: 46rem;
-  margin-top: 0.4rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  color: var(--ax-soft);
-}
-.ax-view-head .ax-lede {
-  font-size: 0.8125rem;
-}
 
-/* System panes: no boxes, a heading on a traced rule and the content on the glass. */
-.ax-window {
+/* Sections of the body: no boxes, a heading on a traced rule and the content on the glass. */
+.ax-pane {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
   min-width: 0;
 }
-.ax-window-head {
+.ax-pane-head {
   position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 0.25rem 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.55rem;
-  border-bottom: 1px solid rgb(var(--ax-w) / 0.24);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgb(var(--ax-w) / 0.18);
 }
-.ax-window-head::after {
+.ax-pane-head::after {
   content: "";
   position: absolute;
   left: 0;
   bottom: -1px;
-  width: 3rem;
+  width: 2.5rem;
   height: 1px;
-  background: var(--ax-ice);
-  box-shadow: 0 0 8px var(--ax-cyan);
-  transform-origin: left;
+  background: rgb(var(--ax-a));
+  box-shadow: 0 0 8px var(--ax-glow);
 }
-.ax-window-title {
+.ax-pane-title {
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem 0.6rem;
+  gap: 0.6rem;
   font-family: var(--ax-display);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #fff;
-  text-shadow: 0 0 12px rgb(var(--ax-a) / 0.45);
+  color: var(--ax-ice);
   outline: none;
 }
-.ax-window-title::before {
+.ax-pane-title::before {
   content: "";
   flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  border: 1px solid var(--ax-cyan);
+  width: 5px;
+  height: 5px;
+  background: rgb(var(--ax-a));
   rotate: 45deg;
   box-shadow: 0 0 6px var(--ax-glow);
 }
-.ax-window-index,
-.ax-window-count {
+.ax-pane-count {
   font-family: var(--vx-mono);
   font-size: 0.6875rem;
-  font-weight: 400;
   letter-spacing: 0.08em;
   color: var(--ax-cyan);
-  text-shadow: none;
 }
-.ax-window-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-  min-width: 0;
-}
-.ax-window[data-tone="draft"] .ax-window-head {
+.ax-pane[data-tone="draft"] .ax-pane-head {
   border-bottom-style: dashed;
 }
-.ax-window[data-tone="draft"] .ax-window-head::after {
+.ax-pane[data-tone="draft"] .ax-pane-head::after {
   opacity: 0.4;
   box-shadow: none;
 }
@@ -594,7 +477,7 @@
 .ax-error {
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: #ff8a98;
+  color: #ffc27a;
 }
 .ax-warning {
   display: flex;
@@ -606,7 +489,7 @@
   font-size: 0.8125rem;
   line-height: 1.5;
   text-align: left;
-  color: #ffc2c9;
+  color: #ffdcae;
 }
 .ax-warning svg {
   margin-top: 0.1rem;
@@ -665,24 +548,25 @@
   box-shadow: 0 0 16px -4px var(--ax-glow);
 }
 .ax-btn[data-variant="primary"] {
-  border-color: #ffd28a;
-  background: linear-gradient(180deg, #ffc469, #e98a2b);
+  border-color: rgb(var(--ax-a));
+  background: linear-gradient(180deg, rgb(var(--ax-a) / 0.3), rgb(var(--ax-a) / 0.14));
   font-weight: 600;
-  color: #1a0e02;
+  color: #fff;
   box-shadow:
     0 0 18px -6px var(--ax-glow),
-    inset 0 1px 0 rgb(255 255 255 / 0.35);
+    inset 0 0 0 1px rgb(var(--ax-w) / 0.12);
 }
 .ax-btn[data-variant="primary"]:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ffd389, #f39a3c);
+  border-color: #ff6d82;
+  background: linear-gradient(180deg, rgb(var(--ax-a) / 0.48), rgb(var(--ax-a) / 0.24));
   box-shadow:
     0 0 26px -4px var(--ax-glow),
-    inset 0 1px 0 rgb(255 255 255 / 0.4);
+    inset 0 0 0 1px rgb(var(--ax-w) / 0.2);
 }
 .ax-btn[data-variant="danger"] {
   border-color: rgb(var(--ax-danger-rgb) / 0.6);
   background: rgb(var(--ax-danger-rgb) / 0.08);
-  color: #ffc2c9;
+  color: #ffdcae;
 }
 .ax-btn[data-variant="danger"]:hover:not(:disabled) {
   border-color: var(--ax-danger);
@@ -719,7 +603,7 @@
   color: var(--ax-ice);
   box-shadow: 0 0 12px -4px var(--ax-glow);
 }
-.ax-stage :is(.ax-btn, .ax-icon-btn, .ax-chip, .ax-item, .ax-ach, .ax-step, .ax-row, .ax-link, .ax-back, .ax-tray-remove):focus-visible,
+.ax-stage :is(.ax-btn, .ax-icon-btn, .ax-chip, .ax-item, .ax-ach, .ax-step, .ax-row, .ax-link, .ax-sigil, .ax-tray-remove):focus-visible,
 .ax-stage .ax-choice:has(input:focus-visible),
 .ax-dialog button:focus-visible {
   outline: 2px solid #fff;
@@ -741,7 +625,7 @@
   border-radius: 0;
   font-size: 0.9375rem;
   color: var(--ax-ink);
-  background: rgb(4 3 2 / 0.78);
+  background: rgb(6 2 3 / 0.8);
   box-shadow: inset 0 0 12px -6px rgb(var(--ax-a) / 0.35);
 }
 .ax-stage .ax-search input {
@@ -758,11 +642,11 @@
   border-color: var(--ax-danger);
 }
 .ax-stage :is(.ax-input, .ax-search input)::placeholder {
-  color: rgb(194 180 156 / 0.5);
+  color: rgb(201 183 187 / 0.5);
 }
 .ax-stage select.ax-input option {
   color: var(--ax-ink);
-  background: #0e0b08;
+  background: #100407;
 }
 .ax-stage .ax-search {
   width: 100%;
@@ -899,7 +783,7 @@
 }
 .ax-flag[data-tone="hidden"] {
   border-style: dashed;
-  border-color: rgb(255 225 176 / 0.5);
+  border-color: rgb(var(--ax-w) / 0.5);
   color: var(--ax-ice);
 }
 
@@ -923,12 +807,6 @@
   gap: 0.75rem;
   padding: 0.5rem 0;
   border-bottom: 1px solid var(--ax-line);
-}
-.ax-side .ax-stats {
-  grid-template-columns: minmax(0, 1fr);
-}
-.ax-side .ax-stats > div:last-child {
-  border-bottom: 0;
 }
 .ax-stats dt {
   font-family: var(--ax-display);
@@ -1112,9 +990,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-.ax-side .ax-facts > div {
-  grid-template-columns: minmax(0, 1fr);
-}
 .ax-facts dt {
   padding-top: 0.15rem;
   font-size: 0.6875rem;
@@ -1183,7 +1058,7 @@
   background: rgb(var(--ax-k) / 0.45);
 }
 .ax-accounts[data-variant="chosen"] > li {
-  border-color: rgb(255 225 176 / 0.35);
+  border-color: rgb(var(--ax-w) / 0.35);
   box-shadow: inset 2px 0 0 var(--ax-cyan);
 }
 .ax-accounts[data-variant="compact"] {
@@ -1287,7 +1162,7 @@
   color: var(--ax-cyan);
 }
 .ax-audit-action[data-action="disable"] {
-  color: #ff8a98;
+  color: var(--ax-danger);
 }
 
 /* Builder: the sequence, across above the content on smaller screens, down the side window on wide ones. */
@@ -1393,39 +1268,6 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
-}
-.ax-side .ax-steps {
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.ax-side .ax-steps > li {
-  flex: none;
-}
-.ax-side .ax-step {
-  gap: 0.6rem;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.25rem 0.5rem 0.9rem;
-}
-.ax-side .ax-step::before {
-  top: 0.35rem;
-  bottom: 0.35rem;
-  right: auto;
-  width: 2px;
-  height: auto;
-}
-.ax-side .ax-step[aria-current="step"] {
-  background: linear-gradient(90deg, rgb(var(--ax-a) / 0.14), transparent);
-}
-.ax-side .ax-step[data-final]::before {
-  background: repeating-linear-gradient(180deg, rgb(var(--ax-w) / 0.3) 0 4px, transparent 4px 8px);
-}
-.ax-side .ax-step[data-final][data-busy]::before {
-  background: var(--ax-cyan);
-}
-.ax-side .ax-step-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.12em;
-  white-space: normal;
 }
 .ax-builder {
   display: grid;
@@ -1667,7 +1509,7 @@
   gap: 0.45rem;
   max-width: 100%;
   padding: 0.2rem;
-  border: 1px solid rgb(255 225 176 / 0.35);
+  border: 1px solid rgb(var(--ax-w) / 0.35);
   background: rgb(var(--ax-k) / 0.75);
 }
 .ax-tray-art {
@@ -1702,7 +1544,7 @@
 .ax-tray-remove:hover {
   border-color: rgb(var(--ax-danger-rgb) / 0.6);
   background: rgb(var(--ax-danger-rgb) / 0.12);
-  color: #ffc2c9;
+  color: #ffdcae;
 }
 
 /* Builder: review, confirmation and the action bar. */
@@ -1752,7 +1594,7 @@
   gap: 0.65rem;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: #ffd9de;
+  color: #ffe4c2;
   cursor: pointer;
 }
 .ax-confirm input {
@@ -1779,28 +1621,14 @@
 
 /* Publish and draft confirmations. */
 .ax-done {
-  justify-self: center;
-  width: 100%;
-  max-width: 44rem;
-  margin-top: clamp(0rem, 4vh, 2rem);
-}
-.ax-done .ax-window-head {
-  justify-content: center;
-}
-.ax-done .ax-window-head::after {
-  left: calc(50% - 1.5rem);
-  transform-origin: center;
-}
-.ax-done .ax-window-body {
+  display: grid;
   justify-items: center;
+  justify-self: center;
   gap: 1.1rem;
+  width: 100%;
+  max-width: 34rem;
+  padding-top: 0.5rem;
   text-align: center;
-}
-.ax-done .ax-lede {
-  margin-top: 0;
-}
-.ax-done-actions {
-  justify-content: center;
 }
 .ax-done-icon {
   width: 2.5rem;
@@ -1855,7 +1683,7 @@
   border-block: 1px solid var(--ax-edge);
   background:
     linear-gradient(90deg, transparent, rgb(var(--ax-a) / 0.1), transparent),
-    rgb(6 5 4 / 0.85);
+    rgb(8 2 4 / 0.85);
   box-shadow: inset 0 0 22px -10px var(--ax-glow);
 }
 .ax-codeplate::after {
@@ -1864,7 +1692,7 @@
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  background: linear-gradient(100deg, transparent 30%, rgb(255 225 176 / 0.2) 50%, transparent 70%);
+  background: linear-gradient(100deg, transparent 30%, rgb(255 200 210 / 0.22) 50%, transparent 70%);
 }
 .ax-codeplate code {
   font-family: var(--vx-mono);
@@ -1881,7 +1709,7 @@
 .ax-dialog {
   border-radius: 0;
   border: 1px solid var(--ax-edge);
-  background: linear-gradient(180deg, rgb(60 34 12 / 0.45), rgb(8 6 6 / 0.96) 40%), var(--ax-bg);
+  background: linear-gradient(180deg, rgb(110 8 26 / 0.4), rgb(8 3 4 / 0.96) 40%), var(--ax-bg);
   box-shadow:
     0 0 0 1px rgb(0 0 0 / 0.7),
     0 0 36px -8px var(--ax-glow),
@@ -1934,76 +1762,35 @@
   background: rgb(var(--ax-a) / 0.12);
 }
 .ax-dialog [data-slot="alert-dialog-action"] {
-  border: 1px solid #ffd28a;
-  background: linear-gradient(180deg, #ffc469, #e98a2b);
-  color: #1a0e02;
+  border: 1px solid rgb(var(--ax-a));
+  background: rgb(var(--ax-a) / 0.28);
+  color: #fff;
 }
 .ax-dialog [data-slot="alert-dialog-action"][data-variant="destructive"] {
   border-color: rgb(var(--ax-danger-rgb) / 0.7);
   background: rgb(var(--ax-danger-rgb) / 0.18);
-  color: #ffd9de;
+  color: #ffe4c2;
 }
 .ax-dialog [data-slot="alert-dialog-action"][data-variant="destructive"]:hover {
   background: rgb(var(--ax-danger-rgb) / 0.3);
 }
 
-/* Motion: the window opens from its seam once; panes open in sequence, content follows. */
-.ax-window-body > :nth-child(2) {
-  --ax-i: 1;
-}
-.ax-window-body > :nth-child(3) {
-  --ax-i: 2;
-}
-.ax-window-body > :nth-child(4) {
-  --ax-i: 3;
-}
-.ax-window-body > :nth-child(5) {
-  --ax-i: 4;
-}
-.ax-window-body > :nth-child(n + 6) {
-  --ax-i: 5;
-}
-/* Until the scene is up the content waits (briefly: the shell shows it after 2.2 s regardless). */
+/* Motion. The window itself is driven by the scene (inline styles) and WAAPI clip-paths, never by CSS
+   animations, which would override them. Until the scene is up the window waits (the shell gives up
+   after 2.2 s; this is the CSS backstop). */
 .ax-stage[data-intro="pending"] .ax-console {
-  opacity: 0;
+  visibility: hidden;
   animation: ax-hold 1ms linear 3s forwards;
-}
-.ax-stage[data-intro="pending"] :is(.ax-side, .ax-sats) {
-  opacity: 0;
 }
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-motion="off"]) .ax-loader {
     animation: ax-fade 400ms ease-out 200ms backwards;
   }
-  :root:not([data-motion="off"]) .ax-loader-seam {
+  :root:not([data-motion="off"]) .ax-loader-line {
     animation: ax-seam 1.8s ease-in-out infinite;
-  }
-  :root:not([data-motion="off"]) .ax-stage:is([data-intro="full"], [data-intro="short"]) .ax-console {
-    animation: ax-live 700ms cubic-bezier(0.2, 0.8, 0.2, 1) var(--ax-live) backwards;
-  }
-  :root:not([data-motion="off"]) .ax-stage:is([data-intro="full"], [data-intro="short"]) :is(.ax-view-head, .ax-window) {
-    animation-delay: calc(var(--ax-live) + 160ms + var(--ax-order, 0) * 90ms);
-  }
-  :root:not([data-motion="off"]) .ax-stage[data-intro="none"] .ax-console {
-    animation: ax-fade 420ms ease-out backwards;
   }
   :root:not([data-motion="off"]) .ax-skip {
     animation: ax-fade 300ms ease-out 400ms backwards;
-  }
-  :root:not([data-motion="off"]) .ax-view-head {
-    animation: ax-fade 420ms ease-out backwards;
-  }
-  :root:not([data-motion="off"]) .ax-stats {
-    animation: ax-fade-up 460ms cubic-bezier(0.2, 0.8, 0.2, 1) 60ms backwards;
-  }
-  :root:not([data-motion="off"]) .ax-window {
-    animation: ax-open 520ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--ax-order, 0) * 90ms) backwards;
-  }
-  :root:not([data-motion="off"]) .ax-window-head::after {
-    animation: ax-trace 480ms ease-out calc(var(--ax-order, 0) * 90ms + 200ms) backwards;
-  }
-  :root:not([data-motion="off"]) .ax-window-body > * {
-    animation: ax-fade-up 380ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--ax-order, 0) * 90ms + 220ms + var(--ax-i, 0) * 50ms) backwards;
   }
   :root:not([data-motion="off"]) :is(.ax-item, .ax-ach)[aria-pressed="true"],
   :root:not([data-motion="off"]) .ax-choice[data-checked] {
@@ -2019,65 +1806,41 @@
   :root:not([data-motion="off"]) .ax-step[data-final][data-busy]::before {
     animation: ax-charge 1.1s ease-in-out infinite;
   }
-  /* The seal plays only after the server confirmed: the scene draws the rewards in first. */
+  /* The seal mounts once the server confirmed, as the window unfolds; the code decodes at ~520 ms. */
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-emblem {
-    animation: ax-fade 300ms ease-out 450ms backwards;
+    animation: ax-fade 300ms ease-out 200ms backwards;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-emblem-line {
-    animation: ax-draw 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 500ms backwards;
+    animation: ax-draw 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 250ms backwards;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-emblem-line[data-delay="1"] {
-    animation-delay: 620ms;
+    animation-delay: 370ms;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-emblem-ticks {
-    animation: ax-fade 300ms ease-out 800ms backwards;
+    animation: ax-fade 300ms ease-out 550ms backwards;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-emblem-check {
-    animation: ax-draw 380ms ease-out 1000ms backwards;
+    animation: ax-draw 380ms ease-out 700ms backwards;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] > .ax-tag {
-    animation: ax-fade 300ms ease-out 1100ms backwards;
+    animation: ax-fade 300ms ease-out 800ms backwards;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-codeplate {
-    animation: ax-plate 500ms cubic-bezier(0.2, 0.8, 0.2, 1) 900ms backwards;
+    animation: ax-plate 500ms cubic-bezier(0.2, 0.8, 0.2, 1) 420ms backwards;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-codeplate::after {
-    animation: ax-sweep 900ms ease-in-out 1400ms;
+    animation: ax-sweep 900ms ease-in-out 1000ms;
   }
   :root:not([data-motion="off"]) .ax-forge[data-animate] .ax-warning {
-    animation: ax-fade-up 400ms ease-out 1300ms backwards;
+    animation: ax-fade-up 400ms ease-out 900ms backwards;
   }
-  :root:not([data-motion="off"]) .ax-done:has(.ax-forge[data-animate]) :is(.ax-lede, .ax-done-actions) {
-    animation-delay: 1400ms;
-  }
-}
-@keyframes ax-open {
-  0% {
-    opacity: 0;
-    clip-path: inset(0 50% 0 50%);
-  }
-  30% {
-    opacity: 1;
-  }
-  100% {
-    clip-path: inset(-40px);
-  }
-}
-@keyframes ax-live {
-  0% {
-    opacity: 0;
-    clip-path: inset(50% 0 50% 0);
-  }
-  30% {
-    opacity: 1;
-  }
-  100% {
-    clip-path: inset(0 0 0 0);
+  :root:not([data-motion="off"]) .ax-done:has(.ax-forge[data-animate]) .ax-hint {
+    animation: ax-fade 400ms ease-out 1000ms backwards;
   }
 }
 @keyframes ax-hold {
   to {
-    opacity: 1;
+    visibility: visible;
   }
 }
 @keyframes ax-seam {

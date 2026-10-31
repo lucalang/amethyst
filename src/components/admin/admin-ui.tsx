@@ -1,107 +1,102 @@
 "use client";
 
 import "./admin.css";
-import type { CSSProperties, ReactNode, Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import { useSyncExternalStore } from "react";
-import { createPortal } from "react-dom";
 import { cn } from "cn";
-import { Coins } from "lucide-react";
+import { ArrowLeft, Coins } from "lucide-react";
 import { ACHIEVEMENT_PREFIX, kindLabel, RewardArt, rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { STATUS_LABEL, type AdminCode, type CodeStatus } from "@/lib/vault-admin";
-import { useConsoleSide } from "./admin-console";
+import { ConsoleLink } from "./admin-console";
 import { displayFont, systemFont } from "./system-font";
 
 /** Class for admin surfaces portaled outside the console (dialogs). */
 export const adminDialogClass = cn("ax-dialog", systemFont.variable, displayFont.variable);
 
 /**
- * One screen of the System window: a heading row, the main column scrolling inside the window and an
- * optional action bar pinned to its bottom edge. The side column (status, steps) floats in its own
- * window beside it on wide screens and stacks above the main column otherwise.
+ * One state of the System window: the framed title strip (back sigil, eyebrow and title), optional
+ * lede and meta line, the body scrolling inside the window and an action bar pinned to its bottom
+ * edge. `size` sets the window's width; its height follows the content up to the stage.
  */
 export function ConsoleView({
   eyebrow,
   title,
   lede,
   back,
-  actions,
-  aside,
-  asideLabel,
+  meta,
   footer,
+  size = "full",
+  headingRef,
   mainKey,
   children,
 }: {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   lede?: ReactNode;
-  back?: ReactNode;
-  actions?: ReactNode;
-  aside?: ReactNode;
-  asideLabel?: string;
+  back?: { href: string; label: string };
+  meta?: ReactNode;
   footer?: ReactNode;
+  size?: "compact" | "medium" | "full";
+  headingRef?: Ref<HTMLHeadingElement>;
   mainKey?: string | number;
   children: ReactNode;
 }) {
-  const side = useConsoleSide();
-  const asideNode = aside ? (
-    <aside className="ax-view-aside" aria-label={asideLabel}>
-      {aside}
-    </aside>
-  ) : null;
   return (
-    <div className="ax-view" data-aside={asideNode && !side ? "" : undefined}>
-      <header className="ax-view-head">
-        <div className="min-w-0">
-          {back}
-          <p className="ax-eyebrow">{eyebrow}</p>
-          <h1 className="ax-title">{title}</h1>
-          {lede ? <p className="ax-lede">{lede}</p> : null}
+    <div className="ax-view" data-size={size}>
+      <header className="ax-head">
+        <div className="ax-head-strip">
+          {back ? (
+            <ConsoleLink href={back.href} className="ax-sigil" aria-label={back.label} title={back.label}>
+              <ArrowLeft aria-hidden className="size-4" />
+            </ConsoleLink>
+          ) : (
+            <span aria-hidden className="ax-sigil" data-mark="" />
+          )}
+          <div className="ax-plate">
+            <p className="ax-eyebrow">{eyebrow}</p>
+            <h1 ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="ax-title">
+              {title}
+            </h1>
+          </div>
         </div>
-        {actions ? <div className="ax-head-actions">{actions}</div> : null}
+        {lede ? <p className="ax-lede">{lede}</p> : null}
+        {meta ? <div className="ax-head-meta">{meta}</div> : null}
       </header>
-      <div className="ax-view-body">
-        {side ? null : asideNode}
-        <div key={mainKey} className="ax-view-main">
-          {children}
-        </div>
+      <div key={mainKey} className="ax-view-body">
+        {children}
       </div>
       {footer ? <div className="ax-view-foot">{footer}</div> : null}
-      {side && asideNode ? createPortal(asideNode, side) : null}
     </div>
   );
 }
 
-/** A system pane inside the console: a heading with its rule and count, then the content. */
-export function SystemWindow({
+/** A section of the window's body: a ruled heading with an optional count, then the content. */
+export function Pane({
   id,
   title,
   count,
-  order = 0,
   tone,
   headingRef,
-  motion,
   className,
   children,
 }: {
   id: string;
   title: ReactNode;
   count?: ReactNode;
-  order?: number;
   tone?: "draft";
   headingRef?: Ref<HTMLHeadingElement>;
-  motion?: string;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <section className={cn("ax-window", className)} data-tone={tone} data-motion={motion} aria-labelledby={id} style={{ "--ax-order": order } as CSSProperties}>
-      <div className="ax-window-head">
-        <h2 id={id} ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="ax-window-title">
+    <section className={cn("ax-pane", className)} data-tone={tone} aria-labelledby={id}>
+      <div className="ax-pane-head">
+        <h2 id={id} ref={headingRef} tabIndex={headingRef ? -1 : undefined} className="ax-pane-title">
           {title}
         </h2>
-        {count !== undefined ? <span className="ax-window-count">{count}</span> : null}
+        {count !== undefined ? <span className="ax-pane-count">{count}</span> : null}
       </div>
-      <div className="ax-window-body">{children}</div>
+      {children}
     </section>
   );
 }

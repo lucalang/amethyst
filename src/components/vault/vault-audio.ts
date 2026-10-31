@@ -1,4 +1,4 @@
-import { BOOT, PIECE_LANDINGS } from "@/components/admin/admin-timing";
+import { OPEN } from "@/components/admin/admin-timing";
 import { CARD_STAGGER, SUMMON, UNLOCK, type SummonKind } from "./timing";
 
 /**
@@ -168,38 +168,44 @@ export function playVaultReveal(count: number, at = 0) {
   for (let i = 0; i < Math.min(count, 8); i++) tone(1568 + i * 196, at + (i * CARD_STAGGER) / 1000, 0.5, "sine", 0.05);
 }
 
-export type AdminSound = "step" | "publish" | "draft" | "error";
+export type AdminSound = "step" | "fold" | "publish" | "draft" | "error";
 
 /**
  * Admin panel cues, kept apart from the Vault's answers so publishing a code never sounds like
- * finding one: publish is a short system notice, a crisp click and a bright rising dyad.
+ * finding one: publish is a short system notice, a crisp click and a bright rising dyad. `delay` is
+ * in ms (the publish cue waits for the window's confirmation accent).
  */
-export function playAdminSound(name: AdminSound) {
+export function playAdminSound(name: AdminSound, delay = 0) {
+  const at = delay / 1000;
   switch (name) {
     case "step":
-      tone(1200, 0, 0.04, "triangle", 0.03);
+      tone(1200, at, 0.04, "triangle", 0.03);
+      break;
+    case "fold":
+      noise(at, 0.22, 2600, 700, 0.035, "bandpass", undefined, 0.2);
+      tone(520, at, 0.16, "sine", 0.025, 330);
       break;
     case "publish":
-      tone(2400, 0, 0.025, "square", 0.025);
-      noise(0, 0.35, 1800, 5200, 0.06, "bandpass", undefined, 0.8);
-      tone(880, 0.3, 0.5, "sine", 0.12);
-      tone(1318.5, 0.42, 0.9, "sine", 0.1);
-      tone(2637, 0.42, 0.6, "sine", 0.025);
+      tone(2400, at, 0.025, "square", 0.025);
+      noise(at, 0.35, 1800, 5200, 0.06, "bandpass", undefined, 0.8);
+      tone(880, at + 0.3, 0.5, "sine", 0.12);
+      tone(1318.5, at + 0.42, 0.9, "sine", 0.1);
+      tone(2637, at + 0.42, 0.6, "sine", 0.025);
       break;
     case "draft":
-      tone(523.25, 0, 0.18, "sine", 0.08);
-      tone(392, 0.12, 0.3, "sine", 0.07);
+      tone(523.25, at, 0.18, "sine", 0.08);
+      tone(392, at + 0.12, 0.3, "sine", 0.07);
       break;
     case "error":
-      tone(130, 0, 0.18, "square", 0.05, 110);
+      tone(130, at, 0.18, "square", 0.05, 110);
       break;
   }
 }
 
 /**
- * The admin System window's summoning, in step with the scene: a low rising hum while the seam
- * gathers, an airy sweep as it opens, a seat per corner bracket and a soft chime as the surface goes
- * live. Silent before any gesture; skipping fades it out.
+ * The admin System window's opening, in step with the scene: a low hum under the first line of light,
+ * an airy sweep as the strip expands, faint crackle through the distortion and a soft two-note chime
+ * as the text settles. Silent before any gesture; skipping fades it out.
  */
 export function playAdminBoot(kind: "full" | "short") {
   if (!allowed()) return;
@@ -209,13 +215,13 @@ export function playAdminBoot(kind: "full" | "short") {
   bus.gain.value = 0.8;
   bus.connect(master);
   sequence = bus;
-  const t = BOOT[kind];
+  const t = OPEN[kind];
   const s = (ms: number) => ms / 1000;
-  if (kind === "full") tone(46, 0, s(t.open[1]), "sine", 0.2, 58, bus);
-  noise(s(t.open[0]) * 0.6, s(t.open[1]), 400, 2400, kind === "full" ? 0.07 : 0.05, "bandpass", bus, 0.8);
-  for (const landing of PIECE_LANDINGS) seat(s(t.pieces[0] + landing * (t.pieces[1] - t.pieces[0])), bus);
-  tone(1318.5, s(t.live), 0.5, "sine", 0.035, undefined, bus);
-  tone(1975.5, s(t.live) + 0.09, 0.6, "sine", 0.025, undefined, bus);
+  if (kind === "full") tone(48, 0, s(t.expand[1]), "sine", 0.18, 62, bus);
+  noise(s(t.strip[0]), s(t.expand[1] - t.strip[0]), 500, 2600, kind === "full" ? 0.07 : 0.05, "bandpass", bus, 0.75);
+  for (let i = 0; i < 3; i++) noise(s(t.distort[0] + (i * (t.distort[1] - t.distort[0])) / 3), 0.05, 4200, 2400, 0.018, "highpass", bus, 0.1);
+  tone(1318.5, s(t.decode[1]) - 0.12, 0.5, "sine", 0.032, undefined, bus);
+  tone(1975.5, s(t.decode[1]) - 0.03, 0.6, "sine", 0.022, undefined, bus);
 }
 
 /** Fades out the summon (on skip). */

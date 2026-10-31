@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type MouseEvent } from "react";
-import { ArrowLeft, Ban, Copy, Loader2 } from "lucide-react";
+import { Ban, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -18,8 +17,8 @@ import {
 import { ACHIEVEMENT_PREFIX, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, maxPayout, type AdminAccount, type AdminCodeDetail } from "@/lib/vault-admin";
-import { useConsoleLayers, useConsoleRewards } from "./admin-console";
-import { adminDialogClass, ConsoleView, RewardTiles, StatusPill, SystemWindow, useNow, When } from "./admin-ui";
+import { ConsoleLink } from "./admin-console";
+import { adminDialogClass, ConsoleView, Pane, RewardTiles, StatusPill, useNow, When } from "./admin-ui";
 
 const accountName = (account: AdminAccount | null) => (account ? account.name || account.email || "Unnamed account" : "Deleted account");
 
@@ -30,8 +29,6 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
   const payout = maxPayout({ ...code, allowlist: code.allowlist.map((account) => account.id) });
-  useConsoleLayers(1);
-  useConsoleRewards({ coins: code.coins, ids: [...code.items, ...code.achievements.map((id) => ACHIEVEMENT_PREFIX + id)], looks });
 
   async function disable(event: MouseEvent) {
     event.preventDefault();
@@ -50,29 +47,27 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
 
   return (
     <ConsoleView
-      back={
-        <Link href="/admin" className="ax-back">
-          <ArrowLeft aria-hidden className="size-4" /> All codes
-        </Link>
-      }
+      back={{ href: "/admin", label: "All codes" }}
       eyebrow={`Vault code · ${code.format === "phrase" ? "chosen words" : "random"}`}
       title={code.label}
       lede="Published codes can’t be edited. Disable this one, or clone it into a new code. The code itself was shown once when it was published and can’t be recovered."
-      actions={
-        <>
-          <Link href={`/admin/new?clone=${code.id}`} className="ax-btn">
-            <Copy aria-hidden className="size-4" /> Clone
-          </Link>
-          {code.disabledAt ? null : (
-            <button type="button" className="ax-btn" data-variant="danger" onClick={() => setConfirming(true)}>
-              <Ban aria-hidden className="size-4" /> Disable
-            </button>
-          )}
-        </>
+      footer={
+        <div className="ax-actions">
+          <span />
+          <div className="ax-actions-end">
+            {code.disabledAt ? null : (
+              <button type="button" className="ax-btn" data-variant="danger" onClick={() => setConfirming(true)}>
+                <Ban aria-hidden className="size-4" /> Disable
+              </button>
+            )}
+            <ConsoleLink href={`/admin/new?clone=${code.id}`} className="ax-btn" data-variant="primary">
+              <Copy aria-hidden className="size-4" /> Clone
+            </ConsoleLink>
+          </div>
+        </div>
       }
-      asideLabel="Status and rules"
-      aside={
-        <SystemWindow id="ax-rules-title" title="Status and rules">
+    >
+      <Pane id="ax-rules-title" title="Status and rules">
           <dl className="ax-facts">
             <div>
               <dt>Status</dt>
@@ -143,17 +138,16 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
               ))}
             </ul>
           ) : null}
-        </SystemWindow>
-      }
-    >
-      <SystemWindow id="ax-rewards-title" title="Rewards" count={code.coins > 0 ? code.items.length + code.achievements.length + 1 : code.items.length + code.achievements.length}>
+      </Pane>
+
+      <Pane id="ax-rewards-title" title="Rewards" count={code.coins > 0 ? code.items.length + code.achievements.length + 1 : code.items.length + code.achievements.length}>
         <RewardTiles coins={code.coins} items={code.items} achievements={code.achievements} looks={looks} />
         {code.achievements.length ? (
           <p className="ax-hint">Unlocked achievements also grant their own reward once per account. Accounts that already have one keep its original unlock date.</p>
         ) : null}
-      </SystemWindow>
+      </Pane>
 
-      <SystemWindow id="ax-history-title" title="Redemption history" count={code.redemptions.length === 500 ? "Latest 500" : code.redemptions.length} order={1}>
+      <Pane id="ax-history-title" title="Redemption history" count={code.redemptions.length === 500 ? "Latest 500" : code.redemptions.length}>
         {code.redemptions.length ? (
           <div className="ax-table-wrap">
             <table className="ax-table">
@@ -190,9 +184,9 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
         ) : (
           <p className="ax-empty">Nobody has redeemed this code yet.</p>
         )}
-      </SystemWindow>
+      </Pane>
 
-      <SystemWindow id="ax-audit-title" title="Audit trail" order={2}>
+      <Pane id="ax-audit-title" title="Audit trail">
         {code.audit.length ? (
           <ol className="ax-audit">
             {code.audit.map((entry, index) => (
@@ -211,7 +205,7 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
         ) : (
           <p className="ax-empty">This code predates the audit trail.</p>
         )}
-      </SystemWindow>
+      </Pane>
 
       <AlertDialog open={confirming} onOpenChange={(open) => !busy && setConfirming(open)}>
         <AlertDialogContent className={adminDialogClass}>

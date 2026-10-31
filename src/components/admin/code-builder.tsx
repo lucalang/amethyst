@@ -1,14 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, Coins, FilePenLine, Loader2, Shapes, Trophy } from "lucide-react";
 import { useArcade } from "@/components/arcade/game-shell";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { playAdminSound, type AdminSound } from "@/components/vault/vault-audio";
-import { ACHIEVEMENT_PREFIX, rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
+import { rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { achievementDefinition } from "@/lib/achievements";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { CODE_RULES, normalizePhrase } from "@/lib/code-format";
@@ -24,8 +23,9 @@ import {
   type CatalogItem,
   type CodeConfig,
 } from "@/lib/vault-admin";
-import { useConsole, useConsoleLayers, useConsoleRewards, useConsoleStep } from "./admin-console";
-import { ConsoleView, formatWhen, RewardTiles, SystemWindow, useTimeZone } from "./admin-ui";
+import { ConsoleLink, useConsole } from "./admin-console";
+import { PUBLISH } from "./admin-timing";
+import { ConsoleView, formatWhen, RewardTiles, useTimeZone } from "./admin-ui";
 import { AccountPicker, accountLabel, AchievementPicker, CosmeticPicker } from "./reward-pickers";
 
 const PublishSeal = dynamic(() => import("./publish-seal"), { ssr: false, loading: () => <div className="ax-forge" aria-hidden /> });
@@ -105,7 +105,7 @@ type BuilderProps = {
 
 export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts, draftId: initialDraft, cloneOf }: BuilderProps) {
   const { sound, effects } = useArcade();
-  const { signal } = useConsole();
+  const { signal, shift } = useConsole();
   const timeZone = useTimeZone();
   const [config, setConfig] = useState(initial);
   const [types, setTypes] = useState<RewardTypes>(() => ({ coins: initial.coins > 0, cosmetics: initial.items.length > 0, achievements: initial.achievements.length > 0 }));
@@ -121,7 +121,6 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
   const [done, setDone] = useState<Done | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const moveFocus = useRef(false);
-  useConsoleLayers(done ? 0 : STEPS.length - step);
 
   useEffect(() => {
     if (!moveFocus.current) return;
@@ -130,20 +129,14 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
   }, [step, done]);
 
   const effective = effectiveConfig(config, types);
-  // The window's step mechanism sits on Publish while the request runs and after it lands; the
-  // selection stays in the scene through the seal so it can be drawn into it.
-  useConsoleStep(done?.kind === "draft" ? -1 : done || busy === "publish" ? STEPS.length : step);
-  useConsoleRewards(
-    done?.kind === "draft" ? null : { coins: effective.coins, ids: [...effective.items, ...effective.achievements.map((id) => ACHIEVEMENT_PREFIX + id)], looks },
-  );
   const achievementData = new Map(catalog.achievements.map((entry) => [entry.id, entry]));
   const chosenAchievements = effective.achievements.map((id) => ({ id, definition: achievementDefinition(id), data: achievementData.get(id) }));
   const achievementCoins = chosenAchievements.reduce((sum, entry) => sum + (entry.data?.coins ?? 0), 0);
   const payout = maxPayout(effective);
   const repeatable = needsRepeatConfirmation(effective);
   const normalized = normalizePhrase(phrase);
-  const sfx = (name: AdminSound) => {
-    if (sound) playAdminSound(name);
+  const sfx = (name: AdminSound, delay = 0) => {
+    if (sound) playAdminSound(name, effects === "off" ? 0 : delay);
   };
 
   const clear = (...keys: ErrorKey[]) =>
@@ -174,34 +167,39 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
     return null;
   }
 
+  /** Shows the first invalid step's problems, folding over to that step when it isn't this one. */
+  function flag(invalid: { index: number; found: Errors }) {
+    if (invalid.index === step) setErrors(invalid.found);
+    else
+      shift(() => {
+        setErrors(invalid.found);
+        show(invalid.index);
+      });
+    sfx("error");
+    signal("error");
+  }
+
   function goTo(target: number) {
     setFailure(null);
     if (target > step) {
       const invalid = firstInvalid(step, target - 1);
-      if (invalid) {
-        setErrors(invalid.found);
-        if (invalid.index !== step) show(invalid.index);
-        sfx("error");
-        signal("error");
-        return;
-      }
+      if (invalid) return flag(invalid);
     }
-    setErrors({});
-    show(target);
-    sfx("step");
-    if (target !== step) signal(target > step ? "forward" : "back");
+    if (target === step) {
+      setErrors({});
+      show(target);
+      return;
+    }
+    shift(() => {
+      setErrors({});
+      show(target);
+    });
   }
 
   async function publish() {
     setFailure(null);
     const invalid = firstInvalid(0, LAST);
-    if (invalid) {
-      setErrors(invalid.found);
-      if (invalid.index !== step) show(invalid.index);
-      sfx("error");
-      signal("error");
-      return;
-    }
+    if (invalid) return flag(invalid);
     setBusy("publish");
     signal("pending");
     try {
@@ -209,31 +207,38 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
         method: "POST",
         json: { config: effective, code: effective.codeMode === "phrase" ? phrase : undefined, confirmRepeat: repeatable && confirmRepeat, draftId },
       });
+      // Confirmed: the window folds and reopens on the result while its frame takes the accent. The
+      // buttons stay busy until the result is on screen, so nothing can publish twice.
       setPhrase("");
       setDraftId(null);
-      moveFocus.current = true;
-      setDone({
-        kind: "published",
-        id: result.id,
-        code: result.code,
-        startsAt: effective.startsAt,
-        scheduled: isFuture(effective.startsAt),
-      });
-      sfx("publish");
       signal("publish");
+      sfx("publish", PUBLISH.accent);
+      shift(() => {
+        moveFocus.current = true;
+        setBusy(null);
+        setDone({
+          kind: "published",
+          id: result.id,
+          code: result.code,
+          startsAt: effective.startsAt,
+          scheduled: isFuture(effective.startsAt),
+        });
+      });
     } catch (error) {
+      setBusy(null);
       sfx("error");
       signal("error");
       if (error instanceof ApiError && (error.code === "duplicate_code" || error.code === "invalid_code")) {
-        setErrors({ code: error.message });
-        show(2);
+        const message = error.message;
+        shift(() => {
+          setErrors({ code: message });
+          show(2);
+        });
       } else if (error instanceof ApiError && error.code === "confirm_repeat") {
         setErrors({ confirmRepeat: error.message });
       } else {
         setFailure(error instanceof ApiError ? error.message : "No answer from the server. Check the code list before publishing again.");
       }
-    } finally {
-      setBusy(null);
     }
   }
 
@@ -244,24 +249,22 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
       const { id } = await apiFetch<{ id: string }>("/api/admin/vault/drafts", { method: "POST", json: { id: draftId, config: draftable(effective) } });
       setDraftId(id);
       window.history.replaceState(null, "", `/admin/new?draft=${id}`);
-      moveFocus.current = true;
-      setDone({ kind: "draft", id });
       sfx("draft");
       signal("draft");
+      shift(() => {
+        moveFocus.current = true;
+        setBusy(null);
+        setDone({ kind: "draft", id });
+      });
     } catch (error) {
+      setBusy(null);
       sfx("error");
       signal("error");
       setFailure(error instanceof ApiError ? error.message : "The draft couldn’t be saved. Your choices are still here; try again.");
-    } finally {
-      setBusy(null);
     }
   }
 
-  const back = (
-    <Link href="/admin" className="ax-back">
-      <ArrowLeft aria-hidden className="size-4" /> All codes
-    </Link>
-  );
+  const back = { href: "/admin", label: "All codes" };
   const title = config.label.trim() || "New Vault code";
 
   function startOver() {
@@ -280,54 +283,76 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
   if (done?.kind === "published") {
     const { scheduled } = done;
     return (
-      <ConsoleView back={back} eyebrow="Admin · Published" title={title}>
-        <SystemWindow id="ax-done-title" headingRef={headingRef} title="Code published" className="ax-done" motion={effects}>
+      <ConsoleView
+        back={back}
+        eyebrow={title}
+        title="Code published"
+        size="compact"
+        headingRef={headingRef}
+        footer={
+          <div className="ax-actions">
+            <ConsoleLink href="/admin" className="ax-btn">
+              All codes
+            </ConsoleLink>
+            <div className="ax-actions-end">
+              <button type="button" className="ax-btn" onClick={() => shift(startOver)}>
+                Build another
+              </button>
+              <ConsoleLink href={`/admin/codes/${done.id}`} className="ax-btn">
+                View code
+              </ConsoleLink>
+            </div>
+          </div>
+        }
+      >
+        <div className="ax-done">
           <PublishSeal code={done.code} status={scheduled ? "scheduled" : "active"} animate={effects !== "off"} />
-          <p className="ax-lede">
+          <p className="ax-hint">
             {scheduled && done.startsAt ? `Redeemable from ${formatWhen(done.startsAt)}. ` : "Anyone it’s meant for can redeem it in the Vault right away. "}
             Rewards and rules are now fixed; you can disable or clone it from its page.
           </p>
-          <div className="ax-done-actions">
-            <Link href={`/admin/codes/${done.id}`} className="ax-btn" data-variant="primary">
-              View code
-            </Link>
-            <button type="button" className="ax-btn" onClick={startOver}>
-              Build another
-            </button>
-            <Link href="/admin" className="ax-btn">
-              All codes
-            </Link>
-          </div>
-        </SystemWindow>
+        </div>
       </ConsoleView>
     );
   }
 
   if (done?.kind === "draft") {
     return (
-      <ConsoleView back={back} eyebrow="Admin · Draft" title={title}>
-        <SystemWindow id="ax-done-title" headingRef={headingRef} title="Draft saved" tone="draft" className="ax-done" motion={effects}>
+      <ConsoleView
+        back={back}
+        eyebrow={title}
+        title="Draft saved"
+        size="compact"
+        headingRef={headingRef}
+        footer={
+          <div className="ax-actions">
+            <ConsoleLink href="/admin" className="ax-btn">
+              All codes
+            </ConsoleLink>
+            <div className="ax-actions-end">
+              <button
+                type="button"
+                className="ax-btn"
+                data-variant="primary"
+                onClick={() =>
+                  shift(() => {
+                    moveFocus.current = true;
+                    setDone(null);
+                  })
+                }
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        }
+      >
+        <div className="ax-done" data-tone="draft">
           <FilePenLine aria-hidden className="ax-done-icon" />
           <p className="ax-lede">
             Not redeemable. No code exists until you publish it{config.codeMode === "phrase" ? ", and the phrase isn’t stored with drafts" : ""}. It waits under Drafts in the admin panel.
           </p>
-          <div className="ax-done-actions">
-            <button
-              type="button"
-              className="ax-btn"
-              data-variant="primary"
-              onClick={() => {
-                moveFocus.current = true;
-                setDone(null);
-              }}
-            >
-              Keep editing
-            </button>
-            <Link href="/admin" className="ax-btn">
-              All codes
-            </Link>
-          </div>
-        </SystemWindow>
+        </div>
       </ConsoleView>
     );
   }
@@ -340,45 +365,52 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
     ) : null;
   const invalid = (key: ErrorKey) => (errors[key] ? { "aria-invalid": true, "aria-describedby": `ax-err-${key}` } : {});
   const errorCount = Object.keys(errors).length;
+  const total = STEPS.length + 1;
 
   return (
     <ConsoleView
       back={back}
-      eyebrow={draftId ? "Admin · Draft" : cloneOf ? "Admin · Clone" : "Admin · New code"}
-      title={title}
-      lede={cloneOf ? "A copy of an existing code’s rewards and rules. It gets a new code of its own when you publish it." : undefined}
-      asideLabel="Builder progress"
-      aside={
-        <SystemWindow id="ax-sequence-title" title="Sequence" count={`${pad(Math.min(step, STEPS.length) + 1)} / ${pad(STEPS.length + 1)}`}>
-          <nav aria-label="Builder steps">
-            <ol className="ax-steps">
-              {STEPS.map((label, index) => {
-                const complete = index < step || (index <= reached && index !== step);
-                return (
-                  <li key={label}>
-                    <button
-                      type="button"
-                      className="ax-step"
-                      aria-current={index === step ? "step" : undefined}
-                      data-done={complete ? "" : undefined}
-                      disabled={index > reached || busy !== null}
-                      onClick={() => goTo(index)}
-                    >
-                      <span className="ax-step-index">{complete ? <Check aria-hidden className="size-3.5" /> : pad(index + 1)}</span>
-                      <span className="ax-step-label">{label}</span>
-                    </button>
-                  </li>
-                );
-              })}
-              <li>
-                <span className="ax-step" data-final="" data-busy={busy === "publish" ? "" : undefined} aria-busy={busy === "publish" || undefined}>
-                  <span className="ax-step-index">{busy === "publish" ? <Loader2 aria-hidden className="size-3.5 animate-spin" /> : pad(STEPS.length + 1)}</span>
-                  <span className="ax-step-label">{busy === "publish" ? "Publishing…" : "Publish"}</span>
-                </span>
-              </li>
-            </ol>
-          </nav>
-        </SystemWindow>
+      eyebrow={`${config.label.trim() || (draftId ? "Draft" : cloneOf ? "Clone" : "New code")} · ${pad(step + 1)}/${pad(total)}`}
+      title={
+        <>
+          <span className="sr-only">
+            Step {step + 1} of {total}:{" "}
+          </span>
+          {STEPS[step]}
+        </>
+      }
+      headingRef={headingRef}
+      size={step === 0 ? "medium" : "full"}
+      lede={cloneOf && step === 0 ? "A copy of an existing code’s rewards and rules. It gets a new code of its own when you publish it." : undefined}
+      meta={
+        <nav aria-label="Builder steps">
+          <ol className="ax-steps">
+            {STEPS.map((label, index) => {
+              const complete = index < step || (index <= reached && index !== step);
+              return (
+                <li key={label}>
+                  <button
+                    type="button"
+                    className="ax-step"
+                    aria-current={index === step ? "step" : undefined}
+                    data-done={complete ? "" : undefined}
+                    disabled={index > reached || busy !== null}
+                    onClick={() => goTo(index)}
+                  >
+                    <span className="ax-step-index">{complete ? <Check aria-hidden className="size-3.5" /> : pad(index + 1)}</span>
+                    <span className="ax-step-label">{label}</span>
+                  </button>
+                </li>
+              );
+            })}
+            <li>
+              <span className="ax-step" data-final="" data-busy={busy === "publish" ? "" : undefined} aria-busy={busy === "publish" || undefined}>
+                <span className="ax-step-index">{busy === "publish" ? <Loader2 aria-hidden className="size-3.5 animate-spin motion-reduce:animate-none" /> : pad(total)}</span>
+                <span className="ax-step-label">{busy === "publish" ? "Publishing…" : "Publish"}</span>
+              </span>
+            </li>
+          </ol>
+        </nav>
       }
       mainKey={step}
       footer={
@@ -409,24 +441,7 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
         </div>
       }
     >
-      <div className="ax-builder" data-motion={effects}>
-        <SystemWindow
-          key={step}
-          id="ax-step-title"
-          headingRef={headingRef}
-          className="ax-step-window"
-          title={
-            <>
-              <span aria-hidden className="ax-window-index">
-                {pad(step + 1)}/{pad(STEPS.length)}
-              </span>
-              <span className="sr-only">
-                Step {step + 1} of {STEPS.length}:{" "}
-              </span>
-              {STEPS[step]}
-            </>
-          }
-        >
+      <div className="ax-builder">
           {errorCount > 1 ? (
             <p role="alert" className="ax-error">
               {errorCount} things need attention below.
@@ -800,7 +815,6 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
               {failure}
             </p>
           ) : null}
-        </SystemWindow>
       </div>
     </ConsoleView>
   );

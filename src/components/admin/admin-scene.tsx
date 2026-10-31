@@ -3,119 +3,97 @@
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, type Ref, type RefObject } from "react";
 import {
   AdditiveBlending,
-  AmbientLight,
   BufferGeometry,
-  CanvasTexture,
   Color,
-  DirectionalLight,
+  DoubleSide,
   Euler,
-  ExtrudeGeometry,
   Float32BufferAttribute,
   Group,
-  LineSegments,
-  Material,
   Matrix4,
   Mesh,
-  MeshPhysicalMaterial,
-  MeshStandardMaterial,
   NeutralToneMapping,
-  Path,
   PerspectiveCamera,
   PlaneGeometry,
-  PointLight,
   Points,
   Quaternion,
-  RepeatWrapping,
   Scene,
   ShaderMaterial,
-  Shape,
   SRGBColorSpace,
   Vector3,
   WebGLRenderer,
+  type Material,
   type Object3D,
-  type Texture,
 } from "three";
-import { follow, spring, studioEnvironment, type Spring } from "@/components/showcase/three-kit";
-import { bracket, clamp01, easeBack, easeInOut, easeOut, lerp, span, TAU } from "@/components/vault/vault-forge";
+import { follow, spring, type Spring } from "@/components/showcase/three-kit";
+import { clamp01, easeIn, easeInOut, easeOut, EMBER_VERTEX, hash, lerp, POINT_FRAGMENT, span, TAU } from "@/components/vault/vault-forge";
 import type { MotionLevel } from "@/lib/preferences";
-import { BOOT, PIECE_LANDINGS, type BootKind } from "./admin-timing";
+import { CLOSE, CLOSE_SPLIT, FOLD, OPEN, PUBLISH, type OpenKind, type RevealKind } from "./admin-timing";
 
 /**
- * The System window, summoned into the dark of the vault: a chamfered amber contour around a
- * smoked-glass slab in a metal rim, corner brackets in front, an engraved mechanism and a lit back
- * plate behind, step sheets stacked further back, and curved system panes, rain and dust drifting
- * in the void. On wide screens a side window and reward satellites hang beside it.
+ * The System window in the Vault's dark: a dark translucent surface with a faint circuit texture,
+ * an angular crimson frame with stepped side rails, an echo contour and corner pieces in front of
+ * it, a ghost contour and a glow behind it, and two detached bars floating furthest forward. Embers
+ * drift through the crimson haze like in the Vault.
  *
- * Every page surface (the window, the side window, each satellite) is mapped onto its 3D object
- * every frame, so the real controls sit exactly on it; at rest the window's mapping collapses to no
- * transform and its text stays crisp.
+ * The page surface is mapped onto the window every frame, so the real controls sit exactly on it.
+ * The camera is an off-axis eye with a lens shift that keeps the page plane fixed on screen: moving
+ * the eye parallaxes every other layer while the page stays crisp. With a pointer the eye follows it
+ * and the window tilts strongly around the point under it; without one (touch) the eye rests at an
+ * oblique angle so the depth still shows. Tilt freezes while pressing and settles flat while typing,
+ * scrolling, in dialogs or once the pointer rests, then resumes.
  *
- * The window tilts strongly toward the pointer around the point under it (so controls never slide
- * away), with light and reflections following the tilt. It freezes while pressing, settles flat while
- * typing, scrolling, in dialogs or once the pointer rests, then resumes. Rendering stops when idle,
- * hidden or off screen.
+ * Reveals open the window from a luminous line into a strip that expands vertically with a brief
+ * horizontal distortion; folding and closing run it in reverse. Rendering stops when idle, hidden or
+ * off screen.
  */
 
-export type ConsoleSignal = "forward" | "back" | "page" | "pending" | "settle" | "publish" | "draft" | "error";
+export type ConsoleSignal = "pending" | "settle" | "publish" | "draft" | "error";
 export type AdminSceneHandle = {
-  start: (kind: BootKind) => void;
+  reveal: (kind: RevealKind) => void;
   skip: () => void;
   signal: (signal: ConsoleSignal) => void;
-  setLayers: (count: number) => void;
-  setStep: (step: number) => void;
-  setRewards: (count: number) => void;
 };
-export type SceneState = { layers: number; step: number; rewards: number };
 
-const FOV = 30;
+const FOV = 34;
 const TAN = Math.tan((FOV * Math.PI) / 360);
 const DIST = 14;
-const TILT_Y = 0.2;
-const TILT_X = 0.14;
+const TILT_Y = 0.24;
+const TILT_X = 0.17;
 /** How far (CSS px) the window comes forward while the pointer is over it. */
-const APPROACH = 18;
-const SHEETS = 3;
-const STEPS = 5;
-const MAX_PIPS = 12;
-const SIDE_TURN = 0.26;
-const SIDE_Z = 30;
-const SAT_TURN = -0.34;
-const SAT_Z = 40;
-const RAIN = { full: 420, compact: 160 };
-const DUST = { full: 500, compact: 200 };
+const APPROACH = 16;
+/** How far the eye travels off-axis with the pointer, as fractions of the stage. */
+const EYE = { x: 0.22, y: 0.16 };
+/** Where the eye rests without a pointer: below and to the left, so the layers keep their depth. */
+const EYE_REST = { wide: { x: -0.1, y: 0.07 }, compact: { x: -0.3, y: 0.1 } };
+/** Layer depths in CSS px: in front of (+) or behind (−) the surface the page sits on. */
+const Z = { bars: 70, flare: 60, corners: 42, rails: 28, echo: 22, frame: 12, ring: 10, tears: 6, surface: -0.5, halo: -34, ghost: -90 };
+const EMBERS = { wide: 120, compact: 60 };
+/** The window's height while it is a line and a strip, as a fraction of its full height. */
+const LINE_H = 0.004;
+const STRIP_H = 0.06;
+const TEARS = 6;
+const HALO_PAD = 120;
 
-const AMBER = new Color(0xffa63d);
-const GOLD = new Color(0xffd9a0);
-const CORE = new Color(0xfff1d6);
-const COLD = new Color(0x8fa7c8);
-const INDIGO = new Color(0x1d1838);
-const ALERT = new Color(0xff4d5e);
+const RED = new Color(0xff1f3d);
+const DEEP = new Color(0x9e0a1e);
+const PALE = new Color(0xffe2e7);
+const ALERT = new Color(0xff9a5c);
 
-/** System panes in the void: position as fractions of the view at their depth, size in world units. */
-type Pane = { x: number; y: number; z: number; w: number; h: number; word: string; rows: number; compact?: boolean };
-const PANES: Pane[] = [
-  { x: -0.82, y: 0.56, z: -6, w: 3.2, h: 1.9, word: "Status", rows: 4, compact: true },
-  { x: -0.9, y: -0.32, z: -4.2, w: 2.4, h: 2.9, word: "Ledger", rows: 6 },
-  { x: 0.9, y: 0.6, z: -7.5, w: 3.3, h: 1.5, word: "Signal", rows: 2, compact: true },
-  { x: 0.88, y: -0.3, z: -5, w: 2.6, h: 2.5, word: "Access", rows: 5 },
-  { x: -0.34, y: 0.92, z: -11, w: 4.4, h: 1.4, word: "Archive", rows: 2 },
-  { x: 0.42, y: -0.92, z: -10, w: 3.8, h: 1.3, word: "Seal", rows: 2 },
-];
+type Geo = { m: number; gap: number; ext: number; step: number; c: number; rail: number; arm: number };
+const WIDE: Geo = { m: 18, gap: 16, ext: 44, step: 8, c: 16, rail: 6, arm: 46 };
+const COMPACT: Geo = { m: 10, gap: 10, ext: 14, step: 5, c: 10, rail: 4, arm: 26 };
 
 /* ----------------------------------------------------------------------------
  * Shaders
  * ------------------------------------------------------------------------- */
 
 const SDF = /* glsl */ `
-float box(vec2 p, vec2 b, float r) {
-  vec2 q = abs(p) - b + r;
-  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
-}
 float cut(vec2 p, vec2 b, float c) {
   vec2 q = abs(p) - b;
   float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
   return max(d, (abs(p.x) + abs(p.y) - b.x - b.y + c) * 0.70710678);
-}`;
+}
+float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }`;
 
 const VOID_VERTEX = /* glsl */ `
 varying vec2 vScreen;
@@ -124,21 +102,22 @@ void main() {
   gl_Position = vec4(position.xy, 0.9999, 1.0);
 }`;
 
-/** The void, in screen space so it reads as infinitely far: indigo haze, warm wisps and a shaft of light behind the window. */
+/** The Vault's dark, in screen space so it reads as infinitely far: crimson haze, smoke and a glow behind the window. */
 const VOID_FRAGMENT = /* glsl */ `
+${SDF}
 uniform float uTime;
 uniform float uLevel;
 uniform float uAspect;
 uniform vec2 uShift;
 uniform vec2 uCentre;
+uniform vec2 uGlow;
 uniform float uBeam;
 varying vec2 vScreen;
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+  return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x), f.y);
 }
 float fbm(vec2 p) {
   float v = 0.0;
@@ -153,15 +132,14 @@ float fbm(vec2 p) {
 void main() {
   vec2 uv = vec2((vScreen.x - 0.5) * uAspect, vScreen.y - 0.5);
   vec2 p = uv + uShift;
-  vec3 col = mix(vec3(0.0011, 0.0012, 0.0024), vec3(0.0024, 0.0022, 0.0062), smoothstep(-0.6, 0.6, uv.y));
-  float haze = fbm(p * 1.7 + vec2(uTime * 0.012, -uTime * 0.008));
-  col += vec3(0.005, 0.0035, 0.013) * haze * haze * 2.0;
-  float wisp = fbm(p * vec2(1.1, 3.6) + vec2(-uTime * 0.018, uTime * 0.006) + 4.0);
-  col += vec3(0.03, 0.012, 0.0025) * pow(wisp, 3.0) * smoothstep(0.75, 0.0, abs(uv.y + 0.1));
-  vec2 c = uv - uCentre;
-  col += vec3(0.034, 0.016, 0.004) * exp(-c.x * c.x * 5.0 - c.y * c.y * 3.0) * uBeam;
-  col += vec3(0.022, 0.012, 0.004) * exp(-c.x * c.x * 26.0) * smoothstep(-0.2, 0.7, uv.y) * uBeam;
-  col *= 1.0 - smoothstep(0.35, 1.1, length(uv * vec2(0.8, 1.1)));
+  vec3 col = mix(vec3(0.0016, 0.0006, 0.0009), vec3(0.0034, 0.0011, 0.0017), smoothstep(-0.6, 0.6, uv.y));
+  float haze = fbm(p * 1.6 + vec2(uTime * 0.01, -uTime * 0.012));
+  col += vec3(0.02, 0.0022, 0.0045) * haze * haze * 1.6;
+  float wisp = fbm(p * vec2(1.2, 3.2) + vec2(-uTime * 0.016, uTime * 0.007) + 4.0);
+  col += vec3(0.045, 0.0035, 0.009) * pow(wisp, 3.0) * smoothstep(0.8, 0.0, abs(uv.y + 0.05));
+  vec2 c = (uv - uCentre) / max(uGlow, vec2(0.04));
+  col += vec3(0.06, 0.005, 0.012) * exp(-dot(c, c) * 1.4) * uBeam;
+  col *= 1.0 - smoothstep(0.4, 1.15, length(uv * vec2(0.75, 1.1)));
   gl_FragColor = vec4(col * uLevel, 1.0);
   #include <colorspace_fragment>
 }`;
@@ -173,86 +151,111 @@ void main() {
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 
-/** A system pane: dark smoked glass with a traced amber border and optional painted contents (premultiplied). */
-const PANE_FRAGMENT = /* glsl */ `
-${SDF}
-uniform sampler2D uMap;
-uniform vec4 uRect;
-uniform float uHasMap;
-uniform vec2 uSize;
-uniform float uRadius;
-uniform float uLine;
-uniform float uDraw;
-uniform float uLive;
-uniform float uGlow;
-uniform float uFade;
-uniform float uBody;
-uniform vec3 uTint;
-varying vec2 vUv;
-void main() {
-  vec2 p = (vUv - 0.5) * uSize;
-  float d = box(p, uSize * 0.5 - uLine * 3.0, uRadius);
-  float aa = fwidth(d);
-  float around = fract(atan(p.x, p.y) / 6.2831853 + 0.125);
-  float drawn = step(around, uDraw);
-  float lit = smoothstep(0.0, 0.35, uDraw);
-  float inside = 1.0 - smoothstep(-aa, aa, d);
-  float line = (1.0 - smoothstep(uLine * 0.5, uLine * 0.5 + aa, abs(d))) * drawn;
-  float halo = exp(-abs(d) / (uLine * 1.5)) * 0.35 * drawn;
-  float text = uHasMap > 0.5 ? texture2D(uMap, uRect.xy + vUv * uRect.zw).a * uLive * inside : 0.0;
-  float body = inside * lit;
-  vec3 light = uTint * ((line * 1.1 + halo) * (1.0 + uGlow) + text * 0.5 + body * (0.01 + 0.02 * vUv.y + uGlow * 0.05));
-  float alpha = body * uBody;
-  gl_FragColor = vec4((vec3(0.002, 0.002, 0.004) * alpha + light) * uFade, alpha * uFade);
-  #include <colorspace_fragment>
-}`;
-
-/** The dark layer right behind the page content: keeps text legible, activates with a scan, carries the step wipe, the charge and a moving sheen. */
-const SCREEN_FRAGMENT = /* glsl */ `
+/**
+ * The surface right behind the page content: dark translucent glass that keeps text legible, a
+ * faint circuit texture toward the edges, light under the pointer and a sheen that turns with the
+ * tilt. Rows tear sideways while the window distorts; a bright line runs through the middle while it forms.
+ */
+const SURFACE_FRAGMENT = /* glsl */ `
 ${SDF}
 uniform vec2 uSize;
 uniform float uCut;
-uniform float uFill;
-uniform float uHead;
-uniform float uPulse;
 uniform float uAlpha;
+uniform float uLevel;
+uniform float uScan;
+uniform float uGlitch;
+uniform float uSeed;
 uniform float uCharge;
+uniform float uSurge;
 uniform float uAlert;
-uniform vec3 uTint;
-uniform vec3 uAlertColor;
-uniform vec3 uSheen;
-uniform float uWipe;
-uniform float uWipeDir;
 uniform float uTime;
+uniform vec2 uPointer;
+uniform float uPointerOn;
+uniform vec3 uSheen;
+uniform vec3 uColor;
+uniform vec3 uPale;
+uniform vec3 uAlertColor;
 varying vec2 vUv;
 void main() {
   vec2 p = (vUv - 0.5) * uSize;
+  float row = floor(p.y / 7.0);
+  float torn = step(0.7, hash2(vec2(row, uSeed)));
+  p.x += (hash2(vec2(row * 1.7, uSeed + 3.1)) - 0.5) * 60.0 * uGlitch * torn;
   float d = cut(p, uSize * 0.5, uCut);
-  float aa = fwidth(d);
+  float aa = fwidth(d) + 0.001;
   float inside = 1.0 - smoothstep(-aa, aa, d);
-  float y = 1.0 - vUv.y;
-  float filled = 1.0 - smoothstep(uFill - 0.004, uFill, y);
-  float py = y * uSize.y;
-  float band = uHead > 0.0 ? 1.0 - smoothstep(uHead - 1.0, uHead + 1.0, py) : 0.0;
-  float rule = uHead > 0.0 ? exp(-abs(py - uHead) * 1.2) : 0.0;
-  vec3 tint = mix(uTint, uAlertColor, uAlert);
-  float lines = 0.5 + 0.5 * sin(py * 1.5708);
-  vec3 col = vec3(0.004, 0.0035, 0.006) + tint * (band * 0.022 + 0.008 * (1.0 - y) + exp(d / 22.0) * 0.045 + uPulse * 0.07 + lines * 0.004);
-  col += tint * uCharge * (0.02 + 0.016 * sin(uTime * 4.0 - y * 9.0));
-  float alpha = uAlpha + band * 0.06;
-  float scan = uFill > 0.0 && uFill < 1.0 ? exp(-abs(y - uFill) * uSize.y / 5.0) : 0.0;
-  col += tint * (scan * 0.9 + rule * 0.3);
-  float s = dot(vUv - 0.5 - uSheen.xy, vec2(0.6, 0.8));
-  col += vec3(1.0, 0.84, 0.62) * exp(-s * s * 50.0) * uSheen.z * 0.045;
-  float w = uWipeDir > 0.0 ? vUv.x : 1.0 - vUv.x;
-  float wipe = uWipe > 0.0 && uWipe < 1.0 ? exp(-abs(w - uWipe) * uSize.x / 10.0) * (1.0 - uWipe * 0.6) : 0.0;
-  col += tint * wipe * 0.7;
-  alpha = min(1.0, alpha + scan * 0.35 + wipe * 0.12 + uAlert * 0.08);
-  gl_FragColor = vec4(col, alpha * inside * filled);
+  vec3 tint = mix(uColor, uAlertColor, uAlert);
+  float edge = exp(d / 26.0);
+  vec3 col = vec3(0.0045, 0.0012, 0.0018) + tint * edge * 0.035;
+  vec2 g = p / 24.0;
+  vec2 f = fract(g) - 0.5;
+  float h = hash2(floor(g));
+  float trace = h > 0.6 ? (1.0 - smoothstep(0.0, 0.05, abs(f.y))) * step(f.x, h - 0.5)
+    : h < 0.22 ? (1.0 - smoothstep(0.0, 0.05, abs(f.x))) * step(-f.y, h * 2.0 - 0.1) : 0.0;
+  float node = (1.0 - smoothstep(0.07, 0.13, length(f))) * step(0.9, h);
+  float fade = 0.25 + 0.75 * smoothstep(-220.0, -10.0, d);
+  col += tint * (trace * 0.4 + node) * 0.03 * fade;
+  col *= 0.92 + 0.08 * step(0.5, fract(p.y / 3.0));
+  vec2 lp = p - uPointer;
+  col += tint * exp(-dot(lp, lp) / 30000.0) * 0.06 * uPointerOn;
+  float s = dot(p / uSize - uSheen.xy, vec2(0.6, 0.8));
+  col += uPale * exp(-s * s * 36.0) * 0.022 * uSheen.z;
+  col += tint * uCharge * (0.02 + 0.018 * sin(uTime * 5.0 - p.y / 30.0));
+  col += mix(tint, uPale, 0.35) * uSurge * (0.04 + 0.12 * edge);
+  float line = exp(-abs(p.y) / 1.4) + 0.4 * exp(-abs(p.y) / 16.0);
+  col += mix(tint, uPale, 0.7) * line * uScan;
+  float alpha = min(1.0, (uAlpha + uSurge * 0.04) + line * uScan * 0.6) * inside;
+  gl_FragColor = vec4(col, alpha * uLevel);
   #include <colorspace_fragment>
 }`;
 
-/** Light lines: a bright core with a soft glow, traced along `aT` up to `uDraw`, brighter on the side facing the light. */
+/** The glow behind the window, offset away from the light. */
+const HALO_FRAGMENT = /* glsl */ `
+${SDF}
+uniform vec2 uSize;
+uniform vec2 uBox;
+uniform float uCut;
+uniform float uLevel;
+uniform vec2 uLight;
+uniform vec3 uColor;
+varying vec2 vUv;
+void main() {
+  vec2 p = (vUv - 0.5) * uSize;
+  float d = cut(p - uLight, uBox, uCut);
+  float glow = exp(-max(d, 0.0) / 44.0) * (d > 0.0 ? 1.0 : 0.3);
+  float fall = 1.0 - smoothstep(0.6, 1.0, max(abs(vUv.x - 0.5), abs(vUv.y - 0.5)) * 2.0);
+  gl_FragColor = vec4(uColor * glow * fall * uLevel, 1.0);
+  #include <colorspace_fragment>
+}`;
+
+/** A horizontal tear of light while the window distorts. */
+const TEAR_FRAGMENT = /* glsl */ `
+uniform vec3 uColor;
+uniform float uLevel;
+varying vec2 vUv;
+void main() {
+  float a = smoothstep(0.0, 0.25, vUv.x) * (1.0 - smoothstep(0.55, 1.0, vUv.x));
+  float y = 1.0 - abs(vUv.y - 0.5) * 2.0;
+  gl_FragColor = vec4(uColor * a * y * uLevel, 1.0);
+  #include <colorspace_fragment>
+}`;
+
+/** The flare at the centre of the line the window opens from: a hot core and a long horizontal streak. */
+const FLARE_FRAGMENT = /* glsl */ `
+uniform vec3 uColor;
+uniform vec3 uPale;
+uniform float uLevel;
+varying vec2 vUv;
+void main() {
+  vec2 p = (vUv - 0.5) * 2.0;
+  float core = exp(-(p.x * p.x * 16.0 + p.y * p.y * 30.0));
+  float streak = exp(-abs(p.y) * 30.0) * (1.0 - smoothstep(0.0, 1.0, abs(p.x)));
+  float glow = exp(-dot(p, p) * 5.0) * 0.25;
+  gl_FragColor = vec4(mix(uColor, uPale, core) * (core * 1.4 + streak * 0.8 + glow) * uLevel, 1.0);
+  #include <colorspace_fragment>
+}`;
+
+/** Light lines: a bright core with a soft glow, drawn along `aT` up to `uDraw`, brighter on the side facing the light, with an optional running highlight. */
 const RIBBON_VERTEX = /* glsl */ `
 attribute float aT;
 attribute float aSide;
@@ -270,163 +273,64 @@ void main() {
 
 const RIBBON_FRAGMENT = /* glsl */ `
 uniform vec3 uColor;
+uniform vec3 uHot;
 uniform vec3 uAlertColor;
 uniform float uAlert;
 uniform float uLevel;
 uniform float uDraw;
 uniform float uCore;
-uniform float uHeads;
 uniform float uDash;
 uniform float uShine;
+uniform float uHeat;
+uniform float uRun;
+uniform float uRunLevel;
 varying float vT;
 varying float vSide;
 varying float vLit;
 void main() {
-  float t = fract(vT * uHeads);
-  if (t > uDraw || uLevel <= 0.0) discard;
-  if (uDash > 0.0 && fract(vT * uDash) > 0.4) discard;
+  if (vT > uDraw || uLevel <= 0.0) discard;
+  if (uDash > 0.0 && fract(vT * uDash) > 0.45) discard;
   float x = abs(vSide);
   float core = 1.0 - smoothstep(uCore * 0.5, uCore, x);
-  float glow = exp(-x * x * 9.0) * 0.32 * (1.0 - core);
-  float head = uDraw < 1.0 ? exp(-(uDraw - t) * 40.0 * uHeads) * 1.4 : 0.0;
+  float glow = exp(-x * x * 7.0) * 0.36 * (1.0 - core);
+  float run = uRunLevel > 0.0 ? exp(-abs(fract(vT - uRun + 0.5) - 0.5) * 24.0) * uRunLevel : 0.0;
   float shine = 1.0 + uShine * clamp(vLit, -0.6, 1.0);
-  float a = (core + glow) * uLevel * (1.0 + head) * shine;
-  gl_FragColor = vec4(mix(uColor, uAlertColor, uAlert) * a, 1.0);
-  #include <colorspace_fragment>
-}`;
-
-/** Cold rain streaking down through the void, generated in the shader. */
-const RAIN_VERTEX = /* glsl */ `
-attribute vec4 aSeed;
-attribute float aEnd;
-uniform float uTime;
-uniform float uAspect;
-varying float vA;
-void main() {
-  float depth = ${DIST.toFixed(1)} - aSeed.z;
-  float hh = depth * ${TAN.toFixed(5)} * 1.1;
-  float range = hh * 2.0;
-  float y = hh - mod(aSeed.y * range + uTime * aSeed.w, range);
-  float len = depth * 0.04;
-  vec3 p = vec3((aSeed.x - 0.5) * 2.0 * hh * uAspect + (y + aEnd * len) * 0.06, y + aEnd * len, aSeed.z);
-  vA = (1.0 - aEnd) * (0.45 + 0.55 * fract(aSeed.x * 31.7)) * mix(1.0, 0.35, clamp((depth - 17.0) / 23.0, 0.0, 1.0));
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-}`;
-
-const GLOW_FRAGMENT = /* glsl */ `
-uniform vec3 uColor;
-uniform float uLevel;
-varying float vA;
-void main() {
-  gl_FragColor = vec4(uColor * vA * uLevel, 1.0);
-  #include <colorspace_fragment>
-}`;
-
-/** Dust motes drifting upward; during the summoning they gather into the seam. */
-const DUST_VERTEX = /* glsl */ `
-attribute vec4 aSeed;
-uniform float uTime;
-uniform float uAspect;
-uniform float uGather;
-uniform vec3 uSeam;
-uniform float uSeamW;
-uniform float uSize;
-varying float vA;
-void main() {
-  float depth = ${DIST.toFixed(1)} - aSeed.z;
-  float hh = depth * ${TAN.toFixed(5)} * 1.1;
-  vec3 p = vec3((aSeed.x - 0.5) * 2.0 * hh * uAspect, (fract(aSeed.y + uTime * (0.004 + aSeed.w * 0.006)) - 0.5) * 2.0 * hh, aSeed.z);
-  p.x += sin(uTime * 0.13 + aSeed.w * 6.283) * 0.3;
-  vec3 seam = uSeam + vec3((aSeed.x - 0.5) * 2.0 * uSeamW, (aSeed.y - 0.5) * 0.06, (aSeed.w - 0.5) * 0.4);
-  float g = clamp(uGather * (0.55 + 0.45 * aSeed.w) * 1.25, 0.0, 1.0);
-  p = mix(p, seam, g * g * (3.0 - 2.0 * g));
-  vec4 mv = modelViewMatrix * vec4(p, 1.0);
-  gl_PointSize = uSize * (0.6 + aSeed.w) * clamp(12.0 / -mv.z, 0.25, 2.0) * (1.0 + g);
-  vA = (0.25 + 0.75 * fract(aSeed.w * 13.0)) * clamp(1.4 - depth / 40.0, 0.2, 1.0) * (1.0 + g * 2.0);
-  gl_Position = projectionMatrix * mv;
-}`;
-
-const DUST_FRAGMENT = /* glsl */ `
-uniform vec3 uColor;
-uniform float uLevel;
-varying float vA;
-void main() {
-  vec2 c = gl_PointCoord - 0.5;
-  float a = exp(-dot(c, c) * 18.0) * vA * uLevel;
-  gl_FragColor = vec4(uColor * a, 1.0);
-  #include <colorspace_fragment>
-}`;
-
-/** A tether between a satellite and the window, with pulses running along it. */
-const TETHER_FRAGMENT = /* glsl */ `
-uniform vec3 uColor;
-uniform float uLevel;
-uniform float uPhase;
-varying vec2 vUv;
-void main() {
-  float x = abs(vUv.y - 0.5) * 2.0;
-  float core = exp(-x * x * 8.0);
-  float q = fract(vUv.x - uPhase);
-  float travel = exp(-(q - 0.5) * (q - 0.5) * 40.0);
-  float ends = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.85, vUv.x);
-  gl_FragColor = vec4(uColor * core * uLevel * (0.3 + travel * 1.2) * ends, 1.0);
+  float a = (core + glow) * uLevel * shine * (1.0 + run * 2.0);
+  vec3 col = mix(uColor, uHot, clamp(core * uHeat + run * 0.6, 0.0, 1.0));
+  gl_FragColor = vec4(mix(col, uAlertColor, uAlert) * a, 1.0);
   #include <colorspace_fragment>
 }`;
 
 /* ----------------------------------------------------------------------------
- * Geometry (window parts are built in CSS px; the window group scales them)
+ * Geometry
  * ------------------------------------------------------------------------- */
 
-/** A rectangle with 45° cut corners. */
-function chamfer<T extends Path>(path: T, hw: number, hh: number, c: number): T {
-  path.moveTo(-hw + c, -hh);
-  path.lineTo(hw - c, -hh);
-  path.lineTo(hw, -hh + c);
-  path.lineTo(hw, hh - c);
-  path.lineTo(hw - c, hh);
-  path.lineTo(-hw + c, hh);
-  path.lineTo(-hw, hh - c);
-  path.lineTo(-hw, -hh + c);
-  path.closePath();
-  return path;
-}
+type Pt = [number, number];
 
-/** Points around a chamfered rectangle, clockwise from the top-left; each corner split so the strip keeps its width. */
-function chamferLoop(hw: number, hh: number, c: number): [number, number][] {
-  const corners: [number, number][] = [
-    [-hw + c, hh],
-    [hw - c, hh],
-    [hw, hh - c],
-    [hw, -hh + c],
-    [hw - c, -hh],
-    [-hw + c, -hh],
-    [-hw, -hh + c],
-    [-hw, hh - c],
-  ];
-  const n = corners.length;
-  const points: [number, number][] = [];
+/** Splits every corner by a hair so a strip keeps its width around it (open lines keep their ends). */
+function split(points: Pt[], closed: boolean) {
+  const n = points.length;
+  const out: Pt[] = [];
   for (let i = 0; i < n; i++) {
-    const [x, y] = corners[i];
-    const [ax, ay] = corners[(i - 1 + n) % n];
-    const [bx, by] = corners[(i + 1) % n];
+    const [x, y] = points[i];
+    if (!closed && (i === 0 || i === n - 1)) {
+      out.push([x, y]);
+      continue;
+    }
+    const [ax, ay] = points[(i - 1 + n) % n];
+    const [bx, by] = points[(i + 1) % n];
     const a = Math.hypot(x - ax, y - ay) || 1;
     const b = Math.hypot(bx - x, by - y) || 1;
-    points.push([x - ((x - ax) / a) * 0.6, y - ((y - ay) / a) * 0.6], [x + ((bx - x) / b) * 0.6, y + ((by - y) / b) * 0.6]);
+    out.push([x - ((x - ax) / a) * 0.6, y - ((y - ay) / a) * 0.6], [x + ((bx - x) / b) * 0.6, y + ((by - y) / b) * 0.6]);
   }
-  return points;
+  return out;
 }
 
-function circle(r: number, segments: number): [number, number][] {
-  return Array.from({ length: segments }, (_, i) => {
-    const a = Math.PI / 2 - (i / segments) * TAU;
-    return [Math.cos(a) * r, Math.sin(a) * r] as [number, number];
-  });
-}
-
-/** A flat closed strip `width` wide along clockwise points: position along the loop, across the strip, and the outward normal. */
-function ribbon(points: [number, number][], width: number) {
+/** A flat strip `width` wide along points: position along it, across it, and the normal. */
+function strip(source: Pt[], width: number, closed = true) {
+  const points = split(source, closed);
   const n = points.length;
-  const count = n + 1;
+  const count = closed ? n + 1 : n;
   const lengths = [0];
   for (let i = 1; i < count; i++) {
     const a = points[(i - 1) % n];
@@ -441,8 +345,8 @@ function ribbon(points: [number, number][], width: number) {
   const index: number[] = [];
   for (let i = 0; i < count; i++) {
     const p = points[i % n];
-    const prev = points[(i - 1 + n) % n];
-    const next = points[(i + 1) % n];
+    const prev = closed ? points[(i - 1 + n) % n] : points[Math.max(0, i - 1)];
+    const next = closed ? points[(i + 1) % n] : points[Math.min(n - 1, i + 1)];
     const tx = next[0] - prev[0];
     const ty = next[1] - prev[1];
     const length = Math.hypot(tx, ty) || 1;
@@ -465,136 +369,50 @@ function ribbon(points: [number, number][], width: number) {
   return geometry;
 }
 
-/** The seam of light the window opens from: drawn outward from the centre (`aT` = distance from it). */
-function seamBar() {
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute([-1, -0.5, 0, 0, -0.5, 0, 1, -0.5, 0, -1, 0.5, 0, 0, 0.5, 0, 1, 0.5, 0], 3));
-  geometry.setAttribute("aT", new Float32BufferAttribute([1, 0, 1, 1, 0, 1], 1));
-  geometry.setAttribute("aSide", new Float32BufferAttribute([-1, -1, -1, 1, 1, 1], 1));
-  geometry.setAttribute("aNormal", new Float32BufferAttribute(new Array(12).fill(0), 2));
-  geometry.setIndex([0, 1, 4, 0, 4, 3, 1, 2, 5, 1, 5, 4]);
-  return geometry;
+const mirror = (points: Pt[], sx: number, sy: number) => points.map(([x, y]): Pt => [x * sx, y * sy]);
+
+/** A rectangle with 45° cut corners, clockwise from the top-left. */
+function chamfered(hw: number, hh: number, c: number): Pt[] {
+  return [
+    [-hw + c, hh],
+    [hw - c, hh],
+    [hw, hh - c],
+    [hw, -hh + c],
+    [hw - c, -hh],
+    [-hw + c, -hh],
+    [-hw, -hh + c],
+    [-hw, hh - c],
+  ];
 }
 
-/** A plane bent like a section of a cylinder, its edges toward the viewer. */
-function curved(w: number, h: number, bend: number) {
-  const geometry = new PlaneGeometry(w, h, 32, 1);
-  const position = geometry.attributes.position;
-  for (let i = 0; i < position.count; i++) {
-    const x = position.getX(i) / (w / 2);
-    position.setZ(i, bend * x * x);
-  }
-  geometry.computeVertexNormals();
-  return geometry;
+/** The outer frame: cut corners and, when there is room, a rail stepping outward along the middle of each side. */
+function frameShape(X: number, Y: number, c: number, r: number, a: number): Pt[] {
+  if (a <= 0) return chamfered(X, Y, c);
+  return [
+    [-X + c, Y],
+    [X - c, Y],
+    [X, Y - c],
+    [X, a + r],
+    [X + r, a],
+    [X + r, -a],
+    [X, -a - r],
+    [X, -Y + c],
+    [X - c, -Y],
+    [-X + c, -Y],
+    [-X, -Y + c],
+    [-X, -a - r],
+    [-X - r, -a],
+    [-X - r, a],
+    [-X, a + r],
+    [-X, Y - c],
+  ];
 }
 
-const noise = (n: number) => {
-  const x = Math.sin(n * 91.7 + 13.1) * 43758.5453;
-  return x - Math.floor(x);
-};
-
-/** Seeds for particles drawn entirely in the shader; `ends` vertices per particle. */
-function seeds(count: number, ends: number, depth: [number, number], speed: [number, number]) {
-  const position = new Float32Array(count * ends * 3);
-  const seed: number[] = [];
-  const end: number[] = [];
-  for (let i = 0; i < count; i++) {
-    const s = [noise(i * 1.31 + 1), noise(i * 2.17 + 7), lerp(depth[0], depth[1], noise(i * 3.71 + 3)), lerp(speed[0], speed[1], noise(i * 5.3 + 11))];
-    for (let e = 0; e < ends; e++) {
-      seed.push(...s);
-      end.push(e);
-    }
-  }
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(position, 3));
-  geometry.setAttribute("aSeed", new Float32BufferAttribute(seed, 4));
-  geometry.setAttribute("aEnd", new Float32BufferAttribute(end, 1));
-  return geometry;
-}
-
-/* ----------------------------------------------------------------------------
- * Painted textures
- * ------------------------------------------------------------------------- */
-
-function canvas(width: number, height: number) {
-  const element = document.createElement("canvas");
-  element.width = width;
-  element.height = height;
-  const ctx = element.getContext("2d");
-  if (!ctx) throw new Error("2D canvas unavailable");
-  return { element, ctx };
-}
-
-/** A faint amber grid for the back plate, lit from inside. */
-function paintGrid() {
-  const { element, ctx } = canvas(128, 128);
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, 128, 128);
-  ctx.fillStyle = "rgb(255,160,70)";
-  ctx.globalAlpha = 0.4;
-  ctx.fillRect(0, 0, 128, 1);
-  ctx.fillRect(0, 0, 1, 128);
-  ctx.globalAlpha = 0.9;
-  ctx.fillRect(0, 0, 6, 1);
-  ctx.fillRect(0, 0, 1, 6);
-  const texture = new CanvasTexture(element);
-  texture.wrapS = texture.wrapT = RepeatWrapping;
-  texture.colorSpace = SRGBColorSpace;
-  return texture;
-}
-
-const ATLAS = 1024;
-const CELL = { w: 512, h: 256 };
-
-/** Where each pane's contents sit in the atlas, keeping the pane's proportions. */
-function atlasRect(index: number, pane: Pane) {
-  const aspect = pane.w / pane.h;
-  const w = aspect >= CELL.w / CELL.h ? CELL.w : CELL.h * aspect;
-  const h = w / aspect;
-  return { x: (index % 2) * CELL.w, y: Math.floor(index / 2) * CELL.h, w, h };
-}
-
-/** Pane contents: a heading with a rule, a close mark and ruled rows (abstract, no data). */
-function paintPanes(ctx: CanvasRenderingContext2D, family: string) {
-  ctx.clearRect(0, 0, ATLAS, ATLAS);
-  PANES.forEach((pane, index) => {
-    const { x, y, w, h } = atlasRect(index, pane);
-    const pad = Math.min(w, h) * 0.09;
-    const size = Math.min(h * 0.15, 40);
-    ctx.fillStyle = "#fff";
-    ctx.strokeStyle = "#fff";
-    ctx.globalAlpha = 1;
-    ctx.font = `600 ${size}px ${family}`;
-    ctx.textBaseline = "alphabetic";
-    ctx.letterSpacing = `${(size * 0.1).toFixed(1)}px`;
-    ctx.fillText(pane.word.toUpperCase(), x + pad, y + pad + size * 0.85);
-    ctx.globalAlpha = 0.75;
-    ctx.fillRect(x + pad, y + pad + size * 1.2, w - pad * 2, 2);
-    const mark = size * 0.62;
-    const mx = x + w - pad - mark;
-    const my = y + pad + size * 0.1;
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.6;
-    ctx.beginPath();
-    ctx.moveTo(mx, my);
-    ctx.lineTo(mx + mark, my + mark);
-    ctx.moveTo(mx + mark, my);
-    ctx.lineTo(mx, my + mark);
-    ctx.stroke();
-    const top = y + pad + size * 1.65;
-    const row = (y + h - pad - top) / pane.rows;
-    for (let r = 0; r < pane.rows; r++) {
-      const ry = top + r * row;
-      ctx.globalAlpha = 0.42;
-      ctx.fillRect(x + pad, ry + row * 0.34, (w - pad * 2) * (0.16 + noise(index * 10 + r) * 0.26), Math.max(3, row * 0.26));
-      ctx.globalAlpha = 0.7;
-      const value = (w - pad * 2) * (0.06 + noise(index * 10 + r + 50) * 0.12);
-      ctx.fillRect(x + w - pad - value, ry + row * 0.34, value, Math.max(3, row * 0.26));
-      ctx.globalAlpha = 0.16;
-      if (r < pane.rows - 1) ctx.fillRect(x + pad, ry + row, w - pad * 2, 1.5);
-    }
+function circle(r: number, segments: number): Pt[] {
+  return Array.from({ length: segments }, (_, i) => {
+    const a = Math.PI / 2 - (i / segments) * TAU;
+    return [Math.cos(a) * r, Math.sin(a) * r] as Pt;
   });
-  ctx.globalAlpha = 1;
 }
 
 /* ----------------------------------------------------------------------------
@@ -619,33 +437,73 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 const pulse = (t: number, start: number, peak: number, end: number) =>
   t < start || t > end ? 0 : t < peak ? easeOut((t - start) / (peak - start)) : 1 - easeInOut((t - peak) / (end - peak));
 
-type Pose = { seam: number; open: number; arrive: number; pieces: number; glass: number; scan: number; unfold: number; planes: number; gather: number; level: number };
-const SETTLED: Pose = { seam: 1, open: 1, arrive: 1, pieces: 1, glass: 1, scan: 1, unfold: 1, planes: 1, gather: 0, level: 1 };
-const DARK: Pose = { seam: 0, open: 0, arrive: 0, pieces: 0, glass: 0, scan: 0, unfold: 0, planes: 0, gather: 0, level: 0.35 };
-const bootTotal = (kind: BootKind | "pending") => (kind === "none" || kind === "pending" ? 0 : BOOT[kind].total);
+/**
+ * One moment of a reveal. `w`/`h`: the window's width and height (fractions); `ui`: the page's
+ * opacity; `bars`, `frame`, `surface`: layer power; `flare`, `scan`, `glitch`: the opening effects;
+ * `draw`: how much of the contours is drawn; `spread`: how far the bars still have to travel in.
+ */
+type Pose = { w: number; h: number; ui: number; bars: number; flare: number; scan: number; glitch: number; frame: number; surface: number; draw: number; spread: number; level: number };
+const REST: Pose = { w: 1, h: 1, ui: 1, bars: 1, flare: 0, scan: 0, glitch: 0, frame: 1, surface: 1, draw: 1, spread: 0, level: 1 };
+const DARK: Pose = { w: 0, h: LINE_H, ui: 0, bars: 0, flare: 0, scan: 0, glitch: 0, frame: 0, surface: 0, draw: 1, spread: 0, level: 0.6 };
 
-function bootPose(kind: BootKind | "pending", e: number): Pose {
-  if (kind === "none") return SETTLED;
+type Kind = RevealKind | "pending";
+const isOpen = (kind: Kind): kind is OpenKind => kind === "full" || kind === "short" || kind === "unfold" || kind === "late";
+const revealTotal = (kind: Kind) => (kind === "fold" ? FOLD : kind === "close" ? CLOSE : isOpen(kind) ? OPEN[kind].total : 0);
+
+function revealPose(kind: Kind, e: number): Pose {
+  if (kind === "none") return REST;
   if (kind === "pending") return DARK;
-  const t = BOOT[kind];
-  const late = kind === "late";
+  if (kind === "fold") {
+    const p = easeIn(span(e, 0, FOLD));
+    return { ...REST, h: lerp(1, STRIP_H, p), glitch: Math.sin(Math.PI * span(e, 0, FOLD * 0.8)) * 0.8, scan: span(e, FOLD * 0.4, FOLD), bars: 1 + 0.8 * p, frame: 1 + 0.4 * p };
+  }
+  if (kind === "close") {
+    const cut = CLOSE * CLOSE_SPLIT;
+    const p = easeIn(span(e, 0, cut));
+    const q = easeIn(span(e, cut, CLOSE));
+    return {
+      w: 1 - q,
+      h: lerp(lerp(1, STRIP_H, p), LINE_H, q),
+      ui: 1 - span(e, cut * 0.7, CLOSE * 0.9),
+      bars: (1 + 0.8 * p) * (1 - q),
+      flare: pulse(e, cut, cut + 60, CLOSE),
+      scan: p * (1 - q),
+      glitch: Math.sin(Math.PI * span(e, 0, cut)) * 0.9,
+      frame: (1 + 0.3 * p) * (1 - q),
+      surface: 1 - q,
+      draw: 1,
+      spread: 0,
+      level: 1 - 0.4 * q,
+    };
+  }
+  const t = OPEN[kind];
+  if (kind === "late") {
+    return { ...REST, draw: easeOut(span(e, ...t.frame)), spread: 1 - easeOut(span(e, 0, 500)), frame: 1 + 1.2 * pulse(e, 300, 450, 760), bars: span(e, 0, 400) };
+  }
+  const unfold = kind === "unfold";
+  const line = easeOut(span(e, ...t.line));
+  const strip = easeOut(span(e, ...t.strip));
+  const expand = easeOut(span(e, ...t.expand));
+  const flash = pulse(e, t.frame[0], t.frame[0] + (t.frame[1] - t.frame[0]) * 0.25, t.frame[1]);
   return {
-    seam: span(e, ...t.seam),
-    open: span(e, ...t.open),
-    arrive: span(e, ...t.arrive),
-    pieces: span(e, ...t.pieces),
-    glass: easeOut(span(e, ...t.glass)),
-    scan: span(e, ...t.scan),
-    unfold: span(e, ...t.unfold),
-    planes: span(e, ...t.planes),
-    gather: late ? 0 : easeInOut(span(e, 0, t.seam[1])) * (1 - easeOut(span(e, t.open[0], t.open[1] + 300))),
-    level: late ? 1 : 0.35 + 0.65 * easeOut(span(e, t.open[0], t.arrive[1])),
+    w: unfold ? 1 : lerp(0.02, 1, line),
+    h: unfold || e >= t.expand[0] ? lerp(STRIP_H, 1, expand) : lerp(LINE_H, STRIP_H, strip),
+    ui: unfold ? 1 : span(e, t.strip[0], t.strip[1]),
+    bars: unfold ? 1 + 0.8 * (1 - expand) : line * (1 + 1.2 * (1 - expand)),
+    flare: unfold ? 0 : pulse(e, t.line[0], (t.line[0] + t.line[1]) / 2, t.strip[1] + 80),
+    scan: (unfold ? 1 : span(e, t.line[0], t.strip[1])) * (1 - span(e, t.expand[0] + (t.expand[1] - t.expand[0]) * 0.3, t.expand[1])),
+    glitch: Math.sin(Math.PI * span(e, ...t.distort)) * (unfold ? 0.7 : 1),
+    frame: (unfold ? 1 : 0.3 + 0.7 * strip) + 1.3 * flash,
+    surface: unfold ? 1 : strip,
+    draw: 1,
+    spread: 0,
+    level: unfold ? 1 : 0.55 + 0.45 * span(e, 0, t.expand[1]),
   };
 }
 
 type Box = { x: number; y: number; w: number; h: number };
 
-/** Layout position relative to the stage (offsets, since the elements themselves carry transforms). */
+/** Layout position relative to the stage (offsets, since the element itself carries a transform). */
 function layoutBox(el: HTMLElement, stage: HTMLElement, s: DOMRect): Box {
   let x = el.offsetLeft;
   let y = el.offsetTop;
@@ -662,28 +520,7 @@ function layoutBox(el: HTMLElement, stage: HTMLElement, s: DOMRect): Box {
  * Engine
  * ------------------------------------------------------------------------- */
 
-type Refs = { panel: RefObject<HTMLElement | null>; side: RefObject<HTMLElement | null>; sats: RefObject<HTMLElement | null> };
-type Init = SceneState & { motion: MotionLevel };
-
-type Sat = {
-  key: string;
-  el: HTMLElement | null;
-  g: Group;
-  plate: Mesh;
-  plateMat: ShaderMaterial;
-  tether: Mesh;
-  tetherMat: ShaderMaterial;
-  box: Box;
-  order: number;
-  born: number;
-  gone: number;
-  seal: number;
-  phase: number;
-  transform: string;
-  opacity: string;
-};
-
-function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { ready: () => void; fail: () => void }) {
+function createAdminEngine(host: HTMLDivElement, panelRef: RefObject<HTMLElement | null>, initialMotion: MotionLevel, cb: { ready: () => void; fail: () => void }) {
   const fineQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
   let compact = window.innerWidth < 768;
   const maxDpr = () => Math.min(window.devicePixelRatio || 1, compact ? 1.25 : 1.5);
@@ -692,29 +529,16 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
   const renderer = new WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = NeutralToneMapping;
-  renderer.setClearColor(0x030407, 1);
+  renderer.setClearColor(0x030203, 1);
   host.appendChild(renderer.domElement);
 
   const scene = new Scene();
-  const camera = new PerspectiveCamera(FOV, 1, 0.1, 140);
+  const camera = new PerspectiveCamera(FOV, 1, 0.1, 100);
   camera.position.set(0, 0, DIST);
-  const owned: Texture[] = [];
-  const env = studioEnvironment(renderer, AMBER, INDIGO, true, 0.55);
-  owned.push(env);
-  scene.environment = env;
 
-  scene.add(new AmbientLight(0x1d1a2c, 0.5));
-  const key = new DirectionalLight(0xfff0dc, 1.5);
-  key.position.set(-5, 7, 9);
-  const rim = new DirectionalLight(0xffa64a, 1.3);
-  rim.position.set(7, -3, -5);
-  const cursor = new PointLight(0xffc27a, 0, 0, 1.6);
-  cursor.position.set(0, 0, 2.4);
-  scene.add(key, rim, cursor);
-
-  /* ---------------------------------------------------------------- the void */
+  /* ---------------------------------------------------------------- the dark */
   const clockU = { value: 0 };
-  const voidU = { uTime: clockU, uLevel: { value: 0.35 }, uAspect: { value: 1 }, uShift: { value: [0, 0] }, uCentre: { value: [0, 0] }, uBeam: { value: 0 } };
+  const voidU = { uTime: clockU, uLevel: { value: 0.6 }, uAspect: { value: 1 }, uShift: { value: [0, 0] }, uCentre: { value: [0, 0] }, uGlow: { value: [0.3, 0.3] }, uBeam: { value: 0 } };
   const backdropGeo = new BufferGeometry();
   backdropGeo.setAttribute("position", new Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3));
   const backdrop = new Mesh(backdropGeo, new ShaderMaterial({ uniforms: voidU, vertexShader: VOID_VERTEX, fragmentShader: VOID_FRAGMENT, depthWrite: false, depthTest: false }));
@@ -722,273 +546,161 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
   backdrop.renderOrder = -10;
   scene.add(backdrop);
 
-  const world = new Group();
-  scene.add(world);
-
-  const glowMaterial = (vertexShader: string, fragmentShader: string, uniforms: Record<string, { value: unknown }>) =>
-    new ShaderMaterial({ uniforms, vertexShader, fragmentShader, transparent: true, blending: AdditiveBlending, depthWrite: false });
-
-  const rainMat = glowMaterial(RAIN_VERTEX, GLOW_FRAGMENT, { uTime: clockU, uAspect: voidU.uAspect, uColor: { value: COLD.clone() }, uLevel: { value: 0 } });
-  const rain = new LineSegments(seeds(RAIN.full, 2, [-30, -3], [5, 10]), rainMat);
-  rain.frustumCulled = false;
-  world.add(rain);
-
-  const dustU = { uTime: clockU, uAspect: voidU.uAspect, uGather: { value: 0 }, uSeam: { value: new Vector3() }, uSeamW: { value: 3 }, uSize: { value: 2 }, uColor: { value: COLD.clone() }, uLevel: { value: 0.5 } };
-  const dust = new Points(seeds(DUST.full, 1, [-36, 4], [0, 1]), glowMaterial(DUST_VERTEX, DUST_FRAGMENT, dustU));
-  dust.frustumCulled = false;
-  world.add(dust);
-
-  /* The distant sigil: concentric rings slowly turning far behind the window. */
-  const sigil = new Group();
-  sigil.position.set(0, 0.6, -46);
-  world.add(sigil);
-
-  /* ---------------------------------------------------------------- system panes */
-  const atlasCanvas = canvas(ATLAS, ATLAS);
-  const atlas = new CanvasTexture(atlasCanvas.element);
-  atlas.anisotropy = 4;
-  owned.push(atlas);
-  const family = () => getComputedStyle(host).getPropertyValue("--font-system-display").trim() || "sans-serif";
-  paintPanes(atlasCanvas.ctx, family());
-  let disposed = false;
-  void document.fonts?.ready.then(() => {
-    if (disposed) return;
-    paintPanes(atlasCanvas.ctx, family());
-    atlas.needsUpdate = true;
+  const emberCount = EMBERS.wide;
+  const emberGeo = new BufferGeometry();
+  const emberSeeds = new Float32Array(emberCount * 4);
+  for (let i = 0; i < emberCount; i++) emberSeeds.set([hash(i * 1.3 + 7), hash(i * 2.1 + 3), hash(i * 3.7 + 1), hash(i * 5.3 + 9)], i * 4);
+  emberGeo.setAttribute("position", new Float32BufferAttribute(new Float32Array(emberCount * 3), 3));
+  emberGeo.setAttribute("aSeed", new Float32BufferAttribute(emberSeeds, 4));
+  const emberMat = new ShaderMaterial({
+    uniforms: {
+      uTime: clockU,
+      uPixel: { value: 1 },
+      uAlpha: { value: 0 },
+      uSize: { value: 0.045 },
+      uPull: { value: 0 },
+      uCenter: { value: new Vector3() },
+      uBox: { value: new Vector3(7, 4.5, 2.5) },
+      uColor: { value: RED.clone() },
+      uHot: { value: PALE.clone() },
+    },
+    vertexShader: EMBER_VERTEX,
+    fragmentShader: POINT_FRAGMENT,
+    blending: AdditiveBlending,
+    transparent: true,
+    depthWrite: false,
   });
-
-  const paneMaterial = (line: number, radius: number, map: { x: number; y: number; w: number; h: number } | null, body = 0.55) =>
-    new ShaderMaterial({
-      uniforms: {
-        uMap: { value: atlas },
-        uRect: { value: map ? [map.x / ATLAS, 1 - (map.y + map.h) / ATLAS, map.w / ATLAS, map.h / ATLAS] : [0, 0, 1, 1] },
-        uHasMap: { value: map ? 1 : 0 },
-        uSize: { value: [1, 1] },
-        uRadius: { value: radius },
-        uLine: { value: line },
-        uDraw: { value: 0 },
-        uLive: { value: 0 },
-        uGlow: { value: 0 },
-        uFade: { value: 1 },
-        uBody: { value: body },
-        uTint: { value: GOLD.clone().lerp(AMBER, 0.55) },
-      },
-      vertexShader: UV_VERTEX,
-      fragmentShader: PANE_FRAGMENT,
-      transparent: true,
-      premultipliedAlpha: true,
-      depthWrite: false,
-    });
-
-  const panes = PANES.map((pane, index) => {
-    const material = paneMaterial(0.012, 0.05, atlasRect(index, pane));
-    material.uniforms.uSize.value = [pane.w, pane.h];
-    const mesh = new Mesh(curved(pane.w, pane.h, pane.w * 0.08), material);
-    world.add(mesh);
-    return { pane, mesh, material, rest: new Vector3(), order: index, on: true, room: spring(1) };
-  });
+  const embers = new Points(emberGeo, emberMat);
+  embers.position.z = -2.5;
+  embers.frustumCulled = false;
+  embers.renderOrder = -5;
+  scene.add(embers);
 
   /* ---------------------------------------------------------------- the window */
   const con = new Group();
+  /** Built in CSS px; the page is mapped onto it. Squashed by the reveal. */
   const px = new Group();
-  con.add(px);
+  /** The detached bars and the flare: px too, but never squashed vertically. */
+  const lift = new Group();
+  con.add(px, lift);
   scene.add(con);
 
   const alertU = { value: 0 };
   const lightU = { value: [0, 0] };
-  type RibbonOptions = { heads?: number; dash?: number; shine?: number; alert?: boolean };
-  const ribbonMaterial = (color: Color, core: number, level: number, o: RibbonOptions = {}) =>
+  type RibbonOptions = { core: number; level: number; color?: Color; heat?: number; dash?: number; shine?: number };
+  const ribbonMaterial = (o: RibbonOptions) =>
     new ShaderMaterial({
       uniforms: {
-        uColor: { value: color.clone() },
-        uAlertColor: { value: ALERT },
-        uAlert: o.alert === false ? { value: 0 } : alertU,
-        uLevel: { value: level },
+        uColor: { value: (o.color ?? RED).clone() },
+        uHot: { value: PALE.clone() },
+        uAlertColor: { value: ALERT.clone() },
+        uAlert: alertU,
+        uLevel: { value: o.level },
         uDraw: { value: 1 },
-        uCore: { value: core },
-        uHeads: { value: o.heads ?? 1 },
+        uCore: { value: o.core },
         uDash: { value: o.dash ?? 0 },
         uShine: { value: o.shine ?? 0 },
         uLight: o.shine ? lightU : { value: [0, 0] },
+        uHeat: { value: o.heat ?? 0 },
+        uRun: { value: 0 },
+        uRunLevel: { value: 0 },
       },
       vertexShader: RIBBON_VERTEX,
       fragmentShader: RIBBON_FRAGMENT,
       transparent: true,
       blending: AdditiveBlending,
       depthWrite: false,
+      side: DoubleSide,
       toneMapped: false,
     });
+  const glowMaterial = (fragmentShader: string, uniforms: Record<string, { value: unknown }>) =>
+    new ShaderMaterial({ uniforms, vertexShader: UV_VERTEX, fragmentShader, transparent: true, blending: AdditiveBlending, depthWrite: false, toneMapped: false });
 
-  const screenMaterial = (alpha: number) =>
-    new ShaderMaterial({
-      uniforms: {
-        uSize: { value: [1, 1] },
-        uCut: { value: 10 },
-        uFill: { value: 0 },
-        uHead: { value: 0 },
-        uPulse: { value: 0 },
-        uAlpha: { value: alpha },
-        uCharge: { value: 0 },
-        uAlert: alertU,
-        uTint: { value: AMBER.clone() },
-        uAlertColor: { value: ALERT },
-        uSheen: { value: [0, 0, 0] },
-        uWipe: { value: 0 },
-        uWipeDir: { value: 1 },
-        uTime: clockU,
-      },
-      vertexShader: UV_VERTEX,
-      fragmentShader: SCREEN_FRAGMENT,
-      transparent: true,
-      depthWrite: false,
-    });
-
-  const sigilMats = [
-    ribbonMaterial(AMBER, 0.3, 0.1, { alert: false }),
-    ribbonMaterial(GOLD, 0.4, 0.12, { dash: 180, alert: false }),
-    ribbonMaterial(AMBER, 0.3, 0.06, { alert: false }),
-  ];
-  const sigilRings = [ribbon(circle(14, 160), 0.06), ribbon(circle(12.6, 160), 0.45), ribbon(circle(19, 180), 0.05)].map((geometry, index) => {
-    const mesh = new Mesh(geometry, sigilMats[index]);
-    sigil.add(mesh);
-    return mesh;
-  });
-
-  const rimMat = new MeshStandardMaterial({ color: 0x100d12, metalness: 0.92, roughness: 0.24, envMapIntensity: 1.25 });
-  const glassMat = new MeshPhysicalMaterial({
-    color: 0x17131d,
-    metalness: 0,
-    roughness: 0.12,
+  const surfaceMat = new ShaderMaterial({
+    uniforms: {
+      uSize: { value: [1, 1] },
+      uCut: { value: 16 },
+      uAlpha: { value: 0.86 },
+      uLevel: { value: 0 },
+      uScan: { value: 0 },
+      uGlitch: { value: 0 },
+      uSeed: { value: 0 },
+      uCharge: { value: 0 },
+      uSurge: { value: 0 },
+      uAlert: alertU,
+      uTime: clockU,
+      uPointer: { value: [0, 0] },
+      uPointerOn: { value: 0 },
+      uSheen: { value: [0, 0, 0] },
+      uColor: { value: RED.clone() },
+      uPale: { value: PALE.clone() },
+      uAlertColor: { value: ALERT.clone() },
+    },
+    vertexShader: UV_VERTEX,
+    fragmentShader: SURFACE_FRAGMENT,
     transparent: true,
-    opacity: 0,
-    clearcoat: 1,
-    clearcoatRoughness: 0.06,
-    envMapIntensity: 1.1,
     depthWrite: false,
   });
-  const grid = paintGrid();
-  owned.push(grid);
-  const backMat = new MeshStandardMaterial({ color: 0x08070b, metalness: 0.55, roughness: 0.5, emissive: 0xffffff, emissiveMap: grid, emissiveIntensity: 0.32 });
-  const screenMat = screenMaterial(0.74);
-  const outerMat = ribbonMaterial(AMBER, 0.13, 1, { heads: 2, shine: 0.85 });
-  const innerMat = ribbonMaterial(GOLD, 0.16, 0.34, { shine: 0.6 });
-  const seamMat = ribbonMaterial(CORE, 0.2, 0);
-  const ghostMat = ribbonMaterial(GOLD, 0.12, 0);
-  const ringMats = [ribbonMaterial(GOLD, 0.2, 0), ribbonMaterial(AMBER, 0.24, 0, { dash: 90 })];
-  const engraveMats = {
-    ring: ribbonMaterial(AMBER, 0.3, 0.4, { shine: 0.4 }),
-    ticks: ribbonMaterial(AMBER, 0.5, 0.32, { dash: 240 }),
-    halo: ribbonMaterial(GOLD, 0.3, 0.16),
-    marker: ribbonMaterial(CORE, 0.3, 0.7),
-  };
-  const notchMats = Array.from({ length: STEPS }, () => ribbonMaterial(GOLD, 0.3, 0.2));
-  const pipMat = ribbonMaterial(GOLD, 0.34, 0.9);
+  const haloMat = glowMaterial(HALO_FRAGMENT, { uSize: { value: [1, 1] }, uBox: { value: [1, 1] }, uCut: { value: 16 }, uLevel: { value: 0 }, uLight: { value: [0, 0] }, uColor: { value: DEEP.clone().lerp(RED, 0.4) } });
+  const flareMat = glowMaterial(FLARE_FRAGMENT, { uColor: { value: RED.clone() }, uPale: { value: PALE.clone() }, uLevel: { value: 0 } });
 
+  const frameMat = ribbonMaterial({ core: 0.22, level: 1, heat: 0.3, shine: 0.8 });
+  const echoMat = ribbonMaterial({ core: 0.25, level: 0.3, color: RED.clone().lerp(PALE, 0.25), shine: 0.5 });
+  const ghostMat = ribbonMaterial({ core: 0.3, level: 0.16, color: DEEP, dash: 90 });
+  const innerMat = ribbonMaterial({ core: 0.3, level: 0.42, color: PALE.clone().lerp(RED, 0.35), shine: 0.4 });
+  const railMat = ribbonMaterial({ core: 0.45, level: 1.1, heat: 0.45, shine: 0.6 });
+  const cornerMat = ribbonMaterial({ core: 0.3, level: 0.9, heat: 0.3, color: RED.clone().lerp(PALE, 0.15), shine: 0.7 });
+  const barMat = ribbonMaterial({ core: 0.3, level: 0.95, heat: 0.2 });
+  const slabMat = ribbonMaterial({ core: 0.6, level: 1.1, heat: 0.45 });
+  const ringMat = ribbonMaterial({ core: 0.35, level: 0, heat: 0.6 });
+
+  const unit = new PlaneGeometry(1, 1);
   const empty = new BufferGeometry();
-  const ringGeo = ribbon(circle(100, 120), 1.2);
-  const notchGeo = ribbon(circle(8, 4), 3);
-  const markerGeo = ribbon(circle(9, 3), 2.4);
-  const pipGeo = ribbon(circle(5.5, 4), 2.6);
-  const shared = new Set<BufferGeometry>([empty, ringGeo, notchGeo, markerGeo, pipGeo]);
+  const ringGeo = strip(circle(100, 96), 4);
+  const shared = new Set<BufferGeometry>([unit, empty, ringGeo]);
   const replace = (mesh: Mesh, geometry: BufferGeometry) => {
     if (!shared.has(mesh.geometry) && mesh.geometry !== geometry) mesh.geometry.dispose();
     mesh.geometry = geometry;
   };
+  const place = (mesh: Mesh, parent: Object3D, z: number, order = 0) => {
+    mesh.position.z = z;
+    mesh.renderOrder = order;
+    parent.add(mesh);
+    return mesh;
+  };
 
-  const frame3 = new Group();
-  const rimMesh = new Mesh(empty, rimMat);
-  const glass = new Mesh(empty, glassMat);
-  const outer = new Mesh(empty, outerMat);
-  const inner = new Mesh(empty, innerMat);
-  outer.position.z = 3;
-  inner.position.z = 0.6;
-  frame3.add(rimMesh, glass, outer, inner);
-  const screen = new Mesh(new PlaneGeometry(1, 1), screenMat);
-  screen.position.z = -1;
-  const ghost = new Mesh(empty, ghostMat);
-  const seam = new Mesh(seamBar(), seamMat);
-  seam.position.z = 3;
-  const rings = ringMats.map((material) => new Mesh(ringGeo, material));
-  const engrave = new Group();
-  const ringMesh = new Mesh(empty, engraveMats.ring);
-  const tickMesh = new Mesh(empty, engraveMats.ticks);
-  const haloMesh = new Mesh(empty, engraveMats.halo);
-  const notches = notchMats.map((material) => new Mesh(notchGeo, material));
-  engrave.add(ringMesh, tickMesh, haloMesh, ...notches);
-  const marker = new Mesh(markerGeo, engraveMats.marker);
-  marker.rotation.z = Math.PI;
-  const front = new Group();
-  const back = new Group();
-  const backPlate = new Mesh(empty, backMat);
-  back.add(backPlate);
-  const pips = Array.from({ length: MAX_PIPS }, () => {
-    const mesh = new Mesh(pipGeo, pipMat);
+  const ghost = place(new Mesh(empty, ghostMat), px, Z.ghost, -4);
+  const halo = place(new Mesh(unit, haloMat), px, Z.halo, -3);
+  const surface = place(new Mesh(unit, surfaceMat), px, Z.surface, -2);
+  const inner = place(new Mesh(empty, innerMat), px, 0);
+  const outline = place(new Mesh(empty, frameMat), px, Z.frame);
+  const echo = place(new Mesh(empty, echoMat), px, Z.echo);
+  const rails = [place(new Mesh(empty, railMat), px, Z.rails), place(new Mesh(empty, railMat), px, Z.rails)];
+  const corners = [0, 1, 2, 3].map(() => place(new Mesh(empty, cornerMat), px, Z.corners));
+  const ring = place(new Mesh(ringGeo, ringMat), px, Z.ring);
+  ring.visible = false;
+  const tears = Array.from({ length: TEARS }, (_, i) => {
+    const material = glowMaterial(TEAR_FRAGMENT, { uColor: { value: RED.clone().lerp(PALE, i % 2 ? 0.5 : 0.1) }, uLevel: { value: 0 } });
+    const mesh = place(new Mesh(unit, material), px, Z.tears);
     mesh.visible = false;
-    return { mesh, shown: spring(0) };
+    return { mesh, material, level: 0.6 + hash(i * 4.1) * 0.8 };
   });
-  px.add(back, engrave, marker, frame3, screen, front, ghost, seam, ...rings, ...pips.map((p) => p.mesh));
-
-  const brackets = [0, 1, 2, 3].map((index) => {
-    const material = new MeshStandardMaterial({ color: 0x15100c, metalness: 0.85, roughness: 0.3, emissive: AMBER, emissiveIntensity: 0.3 });
-    const mesh = new Mesh(empty, material);
-    front.add(mesh);
-    // Top-right, top-left, bottom-left, bottom-right.
-    const sx = index === 0 || index === 3 ? 1 : -1;
-    const sy = index < 2 ? 1 : -1;
-    return { mesh, material, sx, sy, angle: [0, Math.PI / 2, Math.PI, -Math.PI / 2][index], rest: new Vector3() };
+  /** The bars: a thin line with a stepped, thicker section and a cap; the bottom one is the top one turned around. */
+  const barGeos = { line: empty, slab: empty, cap: empty };
+  const barGroups = [new Group(), new Group()];
+  const barMeshes = barGroups.flatMap((group, i) => {
+    group.position.z = Z.bars;
+    group.rotation.z = i ? Math.PI : 0;
+    lift.add(group);
+    return [new Mesh(empty, barMat), new Mesh(empty, slabMat), new Mesh(empty, slabMat)].map((mesh) => {
+      group.add(mesh);
+      return mesh;
+    });
   });
-  const sheets = Array.from({ length: SHEETS }, (_, index) => {
-    const material = paneMaterial(1.2, 10, null, 0.4);
-    const mesh = new Mesh(new PlaneGeometry(1, 1), material);
-    back.add(mesh);
-    return { mesh, material, hidden: spring(index < init.layers ? 0 : 1) };
-  });
-
-  /* The side window. */
-  const sideG = new Group();
-  const sideScreenMat = screenMaterial(0.7);
-  const sideScreen = new Mesh(new PlaneGeometry(1, 1), sideScreenMat);
-  sideScreen.position.z = -1;
-  const sideOuterMat = ribbonMaterial(AMBER, 0.14, 0.9, { heads: 2, shine: 0.7 });
-  const sideOuter = new Mesh(empty, sideOuterMat);
-  sideOuter.position.z = 1;
-  const sideInnerMat = ribbonMaterial(GOLD, 0.2, 0.25, { shine: 0.5 });
-  const sideInner = new Mesh(empty, sideInnerMat);
-  const sideSlab = new Mesh(empty, rimMat);
-  sideG.add(sideSlab, sideScreen, sideOuter, sideInner);
-  sideG.visible = false;
-  px.add(sideG);
-
-  /* Reward satellites. */
-  const sats = new Map<string, Sat>();
-  const satPlane = new PlaneGeometry(1, 1);
-  const tetherGeo = new PlaneGeometry(1, 1);
-  tetherGeo.translate(0.5, 0, 0);
-  shared.add(satPlane).add(tetherGeo);
-  const X_AXIS = new Vector3(1, 0, 0);
-
-  function makeSat(key: string, born: number, order: number): Sat {
-    const g = new Group();
-    const plateMat = paneMaterial(1.4, 7, null, 0.5);
-    const plate = new Mesh(satPlane, plateMat);
-    plate.position.z = -2;
-    g.add(plate);
-    const tetherMat = glowMaterial(UV_VERTEX, TETHER_FRAGMENT, { uColor: { value: AMBER.clone() }, uLevel: { value: 0 }, uPhase: { value: 0 } });
-    const tether = new Mesh(tetherGeo, tetherMat);
-    g.visible = tether.visible = false;
-    px.add(g, tether);
-    return { key, el: null, g, plate, plateMat, tether, tetherMat, box: { x: 0, y: 0, w: 0, h: 0 }, order, born, gone: -1, seal: -1, phase: noise(born) * TAU, transform: "\u0000", opacity: "\u0000" };
-  }
-  function dropSat(sat: Sat) {
-    px.remove(sat.g, sat.tether);
-    sat.plateMat.dispose();
-    sat.tetherMat.dispose();
-    if (sat.el) {
-      sat.el.style.transform = "";
-      sat.el.style.opacity = "";
-    }
-    sats.delete(sat.key);
-  }
+  const flare = new Mesh(unit, flareMat);
+  flare.position.z = Z.flare;
+  flare.visible = false;
+  lift.add(flare);
 
   /* ---------------------------------------------------------------- layout */
   let W = 0;
@@ -998,15 +710,10 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
   let hostLeft = 0;
   let hostTop = 0;
   const panelBox: Box = { x: 0, y: 0, w: 0, h: 0 };
-  const sideBox: Box = { x: 0, y: 0, w: 0, h: 0 };
-  let sideOn = false;
+  let geo = WIDE;
   let shapeKey = "";
-  let sideKey = "";
   let dirty = true;
-  let glareEl: HTMLElement | null = null;
   const conRest = new Vector3();
-  const slot = new Vector3(22, 18, -190);
-  const geo = { m: 12, bw: 5, c: 18 };
 
   function resize() {
     renderer.setPixelRatio(dpr);
@@ -1015,146 +722,95 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
     camera.updateProjectionMatrix();
     f = H / (2 * TAN);
     k = DIST / f;
-    px.scale.setScalar(k);
     voidU.uAspect.value = W / H;
-    dustU.uSize.value = 2.2 * dpr;
-    rain.geometry.setDrawRange(0, (compact ? RAIN.compact : RAIN.full) * 2);
-    dust.geometry.setDrawRange(0, compact ? DUST.compact : DUST.full);
+    emberMat.uniforms.uPixel.value = (H * dpr) / (2 * TAN);
+    const halfH = (DIST - embers.position.z) * TAN;
+    emberMat.uniforms.uBox.value.set(halfH * camera.aspect * 1.05, halfH * 1.05, 2.5);
+    emberGeo.setDrawRange(0, compact ? EMBERS.compact : EMBERS.wide);
   }
 
-  function buildConsole() {
+  function buildWindow() {
     const hw = panelBox.w / 2;
     const hh = panelBox.h / 2;
-    const m = (geo.m = compact ? 6 : 12);
-    const bw = (geo.bw = compact ? 3 : 5);
-    const c = (geo.c = compact ? 12 : 22);
-    const gw = hw + m;
-    const gh = hh + m;
-    const slab = new ExtrudeGeometry(chamfer(new Shape(), gw, gh, c), { depth: 9, bevelEnabled: true, bevelThickness: 1.5, bevelSize: 1, bevelSegments: 2 });
-    slab.translate(0, 0, -12);
-    replace(glass, slab);
-    const ring = chamfer(new Shape(), gw + bw, gh + bw, c + bw * 0.42);
-    ring.holes.push(chamfer(new Path(), gw, gh, c));
-    const rimGeo = new ExtrudeGeometry(ring, { depth: 11, bevelEnabled: true, bevelThickness: 1.2, bevelSize: 0.8, bevelSegments: 2 });
-    rimGeo.translate(0, 0, -10);
-    replace(rimMesh, rimGeo);
-    const outerGeo = ribbon(chamferLoop(gw + bw + 1.5, gh + bw + 1.5, c + bw * 0.42 + 0.6), compact ? 8 : 12);
-    if (ghost.geometry === outer.geometry) ghost.geometry = empty;
-    replace(outer, outerGeo);
-    ghost.geometry = outerGeo;
-    const ic = Math.max(4, c - m);
-    replace(inner, ribbon(chamferLoop(hw + 1, hh + 1, ic), compact ? 4 : 6));
-    screen.scale.set(panelBox.w, panelBox.h, 1);
-    screenMat.uniforms.uSize.value = [panelBox.w, panelBox.h];
-    screenMat.uniforms.uCut.value = ic;
-    const plate = new ExtrudeGeometry(chamfer(new Shape(), gw + (compact ? 10 : 30), gh + (compact ? 10 : 22), c + 8), { depth: 6, bevelEnabled: false });
-    plate.translate(0, 0, -6);
-    replace(backPlate, plate);
-    grid.repeat.set(1 / 44, 1 / 44);
-    // The mechanism: a ring with a counter-turning tick ring, step notches and a fixed marker.
-    const R = Math.min(hw, hh) * 0.9;
-    replace(ringMesh, ribbon(circle(R, 160), 2));
-    replace(tickMesh, ribbon(circle(R - 18, 160), 10));
-    replace(haloMesh, ribbon(circle(R + 30, 180), 1.4));
-    for (const [index, notch] of notches.entries()) {
-      const a = Math.PI / 2 - (index / STEPS) * TAU;
-      notch.position.set(Math.cos(a) * R, Math.sin(a) * R, 0);
-    }
-    marker.position.set(0, R + 16, -46);
-    const arm = compact ? 22 : 48;
-    const bracketGeo = new ExtrudeGeometry(bracket(arm, compact ? 3 : 5, compact ? 3 : 4), { depth: 3, bevelEnabled: true, bevelThickness: 0.8, bevelSize: 0.6, bevelSegments: 1 });
-    const gap = compact ? 4 : 10;
-    for (const [index, b] of brackets.entries()) {
-      if (index === 0) replace(b.mesh, bracketGeo);
-      else b.mesh.geometry = bracketGeo;
-      b.rest.set(b.sx * (gw + bw + gap), b.sy * (gh + bw + gap), 24);
-    }
-    const sw = (gw + bw) * 2;
-    const sh = (gh + bw) * 2;
-    for (const sheet of sheets) {
-      sheet.mesh.scale.set(sw, sh, 1);
-      sheet.material.uniforms.uSize.value = [sw, sh];
-    }
-    if (compact) slot.set(8, 10, -90);
-    else slot.set(22, 18, -190);
+    geo = compact ? COMPACT : WIDE;
+    const { m, c, rail, ext, step, arm } = geo;
+    const X = hw + m;
+    const Y = hh + m;
+    const a = Math.min(Y * 0.3, Y - c - rail - 8);
+    surface.scale.set(2 * X, 2 * Y, 1);
+    surfaceMat.uniforms.uSize.value = [2 * X, 2 * Y];
+    surfaceMat.uniforms.uCut.value = c;
+    halo.scale.set(2 * (X + HALO_PAD), 2 * (Y + HALO_PAD), 1);
+    haloMat.uniforms.uSize.value = [2 * (X + HALO_PAD), 2 * (Y + HALO_PAD)];
+    haloMat.uniforms.uBox.value = [X, Y];
+    haloMat.uniforms.uCut.value = c;
+    replace(inner, strip(chamfered(hw - 0.5, hh - 0.5, Math.min(6, hh)), 4));
+    replace(outline, strip(frameShape(X, Y, c, rail, a), 10));
+    replace(echo, strip(frameShape(X + 6, Y + 6, c + 2.5, rail, a), 4));
+    replace(ghost, strip(frameShape(X + 14, Y + 14, c + 6, rail, a), 5));
+    const rx = X + rail + 7;
+    const ra = Math.max(0, a * 0.85);
+    const railShape: Pt[] = [
+      [rx - 5, ra + 5],
+      [rx, ra],
+      [rx, -ra],
+      [rx - 5, -ra - 5],
+    ];
+    replace(rails[0], ra > 6 ? strip(railShape, 8, false) : empty);
+    replace(rails[1], ra > 6 ? strip(mirror(railShape, -1, 1), 8, false) : empty);
+    const cx = X + 8;
+    const cy = Y + 8;
+    const cc = c + 3;
+    const reach = Math.min(arm, cx * 0.4, cy * 0.6);
+    const cornerShape: Pt[] = [
+      [-cx, cy - cc - reach],
+      [-cx, cy - cc],
+      [-cx + cc, cy],
+      [-cx + cc + reach, cy],
+    ];
+    [
+      [1, 1],
+      [-1, 1],
+      [-1, -1],
+      [1, -1],
+    ].forEach(([sx, sy], i) => replace(corners[i], strip(mirror(cornerShape, sx, sy), 6, false)));
+    const L = -(X + ext);
+    const R = X + ext * 0.35;
+    const s = L + (R - L) * 0.32;
+    for (const geometry of Object.values(barGeos)) if (!shared.has(geometry)) geometry.dispose();
+    barGeos.line = strip(
+      [
+        [L, 0],
+        [s, 0],
+        [s + step, step],
+        [R, step],
+      ],
+      5,
+      false,
+    );
+    barGeos.slab = strip(
+      [
+        [s + step + 8, step],
+        [R, step],
+      ],
+      10,
+      false,
+    );
+    barGeos.cap = strip(
+      [
+        [L, 0],
+        [L + 16, 0],
+      ],
+      9,
+      false,
+    );
+    barMeshes.forEach((mesh, i) => (mesh.geometry = [barGeos.line, barGeos.slab, barGeos.cap][i % 3]));
   }
 
-  function buildSide() {
-    const hw = sideBox.w / 2;
-    const hh = sideBox.h / 2;
-    sideScreen.scale.set(sideBox.w, sideBox.h, 1);
-    sideScreenMat.uniforms.uSize.value = [sideBox.w, sideBox.h];
-    sideScreenMat.uniforms.uCut.value = 8;
-    replace(sideOuter, ribbon(chamferLoop(hw + 7, hh + 7, 14), 9));
-    replace(sideInner, ribbon(chamferLoop(hw + 1, hh + 1, 9), 4));
-    const slab = new ExtrudeGeometry(chamfer(new Shape(), hw + 6, hh + 6, 13), { depth: 5, bevelEnabled: true, bevelThickness: 1, bevelSize: 0.8, bevelSegments: 1 });
-    slab.translate(0, 0, -9);
-    replace(sideSlab, slab);
-  }
-
-  function syncSats(stage: HTMLElement, s: DOMRect, now: number) {
-    const holder = refs.sats.current;
-    const els = holder ? Array.from(holder.querySelectorAll<HTMLElement>(".ax-sat")) : [];
-    const seen = new Set<string>();
-    let fresh = 0;
-    for (const [order, el] of els.entries()) {
-      const key = el.dataset.sat;
-      if (!key) continue;
-      const b = layoutBox(el, stage, s);
-      if (!b.w || !b.h) continue;
-      seen.add(key);
-      let sat = sats.get(key);
-      if (sat && sat.gone >= 0) {
-        dropSat(sat);
-        sat = undefined;
-      }
-      if (!sat) {
-        sat = makeSat(key, now + fresh++ * 70, order);
-        sats.set(key, sat);
-      }
-      if (sat.el !== el) {
-        sat.el = el;
-        sat.transform = sat.opacity = "\u0000";
-      }
-      sat.order = order;
-      if (b.w !== sat.box.w || b.h !== sat.box.h) {
-        sat.plate.scale.set(b.w + 16, b.h + 16, 1);
-        sat.plateMat.uniforms.uSize.value = [b.w + 16, b.h + 16];
-      }
-      sat.box = b;
-    }
-    for (const sat of sats.values())
-      if (!seen.has(sat.key) && sat.gone < 0) {
-        sat.gone = now;
-        sat.el = null;
-      }
-  }
-
-  function placePanes() {
-    const aspect = W / H;
-    const liveSats = [...sats.values()].some((sat) => sat.el);
-    let shown = 0;
-    for (const entry of panes) {
-      const { pane, mesh, rest } = entry;
-      const on = !compact || pane.compact === true;
-      entry.on = mesh.visible = on;
-      if (!on) continue;
-      // Flank panes make room for the side window (left) and the reward satellites (right).
-      const flank = Math.abs(pane.x) > 0.6 && Math.abs(pane.y) < 0.75 && (pane.x < 0 ? sideOn : liveSats);
-      entry.room.target = flank ? 0 : 1;
-      entry.order = shown++;
-      const halfH = (DIST - pane.z) * TAN;
-      const halfW = halfH * aspect;
-      rest.set(pane.x * halfW, pane.y * halfH, pane.z);
-      mesh.scale.setScalar(compact ? Math.min(1, aspect * 1.4) : 1);
-      mesh.rotation.set(Math.atan2(rest.y, DIST - rest.z) * 0.85, Math.atan2(-rest.x, DIST - rest.z) * 0.85, 0);
-    }
-  }
-
-  /** Reads the layout: canvas size and where the window, side window and satellites sit. */
+  /** Reads the layout: canvas size and where the window sits. */
   function measure() {
     const stage = host.parentElement;
-    const panel = refs.panel.current;
+    const panel = panelRef.current;
     if (!stage || !panel) return;
     const s = stage.getBoundingClientRect();
     hostLeft = s.left;
@@ -1174,37 +830,17 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
       pivotX.value = pivotX.target = hostLeft + panelBox.x + panelBox.w / 2;
       pivotY.value = pivotY.target = hostTop + panelBox.y + panelBox.h / 2;
     }
-    screenMat.uniforms.uHead.value = panel.querySelector<HTMLElement>(".ax-console-bar")?.offsetHeight ?? 0;
-    glareEl = panel.querySelector<HTMLElement>(".ax-glare > span");
     const shape = `${panelBox.w}x${panelBox.h}:${compact}`;
     if (shape !== shapeKey) {
       shapeKey = shape;
-      buildConsole();
+      buildWindow();
     }
-    const side = refs.side.current;
-    sideOn = !!side && side.childElementCount > 0 && side.offsetWidth > 0 && side.offsetHeight > 0;
-    if (side && sideOn) {
-      Object.assign(sideBox, layoutBox(side, stage, s));
-      const next = `${sideBox.w}x${sideBox.h}`;
-      if (next !== sideKey) {
-        sideKey = next;
-        buildSide();
-      }
-    } else if (side && sideStyle.opacity !== "\u0000") {
-      side.style.transform = side.style.opacity = "";
-      sideStyle.transform = sideStyle.opacity = "\u0000";
-    }
-    syncSats(stage, s, performance.now());
-    placePanes();
   }
 
   /* ---------------------------------------------------------------- state */
-  let motion = init.motion;
-  let layers = init.layers;
-  let step = init.step;
-  let rewards = init.rewards;
-  let introKind: BootKind | "pending" = "pending";
-  let introStart = 0;
+  let motion = initialMotion;
+  let kind: Kind = "pending";
+  let kindStart = 0;
   let skipAt = -1;
   let skipFrom = 0;
   let awakeUntil = 0;
@@ -1215,57 +851,43 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
   let movedAt = -1e7;
   let pressing = false;
   let releasedAt = -1e7;
-  let ghostAt = -1e7;
-  let wipeAt = -1e7;
-  let wipeDir = 1;
   let celebrateAt = -1e7;
   let draftAt = -1e7;
   let errorAt = -1e7;
   let pending = false;
-  let sealFound = false;
-  let scrollTop = 0;
-  const sealAt = new Vector3(0, 0, 10);
+  let tornAt = 0;
+  let jitter = 0;
+  let eyeSet = false;
   const pointer = { x: 0, y: 0, seen: false };
   const aim = { x: 0, y: 0, near: 0 };
+  const eye = { x: 0, y: 0 };
   const pivotX = spring();
   const pivotY = spring();
   const tiltX = osc();
   const tiltY = osc();
   const approach = osc();
-  const dip = osc();
   const shake = osc();
-  const stack = osc();
-  const layerX = osc();
-  const layerY = osc();
-  const turn = osc(step >= 0 ? (step * TAU) / STEPS : 0);
-  const spin = spring();
+  const eyeX = osc();
+  const eyeY = osc();
   const charge = spring();
-  const drift = spring();
-  const scrollShift = spring();
-  const lightX = spring();
-  const lightY = spring();
   const lightOn = spring();
   const euler = new Euler();
   const quat = new Quaternion();
   const pivotV = new Vector3();
   const turned = new Vector3();
   const ray = new Vector3();
-  const tetherA = new Vector3();
-  const tetherB = new Vector3();
   const M = new Matrix4();
   const A = new Matrix4();
-  const panelStyle = { transform: "\u0000" };
-  const sideStyle = { transform: "\u0000", opacity: "\u0000" };
-  const glareStyle = { transform: "\u0000", opacity: "\u0000" };
+  const panelStyle = { transform: "\u0000", opacity: "\u0000", filter: "\u0000" };
   let slowFrames = 0;
   let sampled = 0;
 
   const elapsed = (now: number) => {
-    if (introKind === "none") return 1e9;
-    if (introKind === "pending") return 0;
-    const raw = now - introStart;
+    if (kind === "none") return 1e9;
+    if (kind === "pending") return 0;
+    const raw = now - kindStart;
     if (skipAt < 0) return raw;
-    return lerp(skipFrom, bootTotal(introKind), easeOut(span(now - skipAt, 0, 380)));
+    return lerp(skipFrom, revealTotal(kind), easeOut(span(now - skipAt, 0, 260)));
   };
   const inDialog = () => document.activeElement instanceof HTMLElement && document.activeElement.closest("[role='dialog'], [role='alertdialog']") !== null;
 
@@ -1289,12 +911,14 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
       }
     };
     const e = elapsed(now);
-    const pose = bootPose(introKind, e);
-    const booting = introKind !== "pending" && introKind !== "none" && e < bootTotal(introKind);
-    const settled = introKind !== "pending" && !booting;
-    if (pending) awakeUntil = Math.max(awakeUntil, now + 2000);
+    const total = revealTotal(kind);
+    const pose = revealPose(kind, e);
+    const revealing = kind !== "pending" && kind !== "none" && e < total;
+    const closed = kind === "close" && e >= total;
+    const settled = !revealing && !closed && kind !== "pending" && kind !== "fold";
+    if (pending || (closed && e < total + 6000)) awakeUntil = Math.max(awakeUntil, now + 600);
     const awake = full ? clamp01((awakeUntil - now) / 1500) : 0;
-    const alive = full ? Math.max(awake, booting ? 1 : 0) : 0;
+    const alive = full ? Math.max(awake, revealing ? 1 : 0) : 0;
     clock += dt * alive;
 
     const hw = panelBox.w / 2;
@@ -1304,23 +928,10 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
     const pcx = hostLeft + panelBox.x + hw;
     const pcy = hostTop + panelBox.y + hh;
 
-    /* pointer: tilt around the point under it, come closer along its ray */
+    /* pointer: tilt around the point under it, come closer along its ray; the eye follows it */
     const fine = moving && fineQuery.matches;
     const seen = fine && pointer.seen;
-    let left = pcx - hw;
-    let top = pcy - hh;
-    let right = pcx + hw;
-    let bottom = pcy + hh;
-    if (sideOn) {
-      left = Math.min(left, hostLeft + sideBox.x);
-      top = Math.min(top, hostTop + sideBox.y);
-      right = Math.max(right, hostLeft + sideBox.x + sideBox.w);
-      bottom = Math.max(bottom, hostTop + sideBox.y + sideBox.h);
-    }
-    const over =
-      seen &&
-      ((Math.abs(pointer.x - pcx) < hw && Math.abs(pointer.y - pcy) < hh) ||
-        (sideOn && pointer.x > hostLeft + sideBox.x && pointer.x < hostLeft + sideBox.x + sideBox.w && pointer.y > hostTop + sideBox.y && pointer.y < hostTop + sideBox.y + sideBox.h));
+    const over = seen && Math.abs(pointer.x - pcx) < hw + geo.m && Math.abs(pointer.y - pcy) < hh + geo.m;
     const flatten = now - typedAt < 1100 || now - scrolledAt < 800 || (seen && now - movedAt > 2400) || inDialog();
     const frozen = pressing || now - releasedAt < 250;
     const reach = full ? 1 : 0.45;
@@ -1329,314 +940,145 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
         aim.x = soft(((pointer.x - pcx) / hw) * 1.1);
         aim.y = soft(((pointer.y - pcy) / hh) * 1.1);
         aim.near = over ? 1 : 0;
-        pivotX.target = clamp(pointer.x, left, right);
-        pivotY.target = clamp(pointer.y, top, bottom);
+        pivotX.target = clamp(pointer.x, pcx - hw, pcx + hw);
+        pivotY.target = clamp(pointer.y, pcy - hh, pcy + hh);
       } else aim.x = aim.y = aim.near = 0;
+      if (seen && settled) {
+        eye.x = soft(((pointer.x - cx) / (W / 2)) * 1.2) * EYE.x * W * reach;
+        eye.y = soft(((pointer.y - cy) / (H / 2)) * 1.2) * EYE.y * H * reach;
+      } else if (!seen) {
+        const rest = compact ? EYE_REST.compact : EYE_REST.wide;
+        const sway = full && !fine ? 1 : 0;
+        eye.x = (rest.x + Math.sin(clock * 0.35) * 0.05 * sway) * W;
+        eye.y = (rest.y + Math.cos(clock * 0.27) * 0.02 * sway) * H;
+      }
+    }
+    if (!eyeSet || !moving) {
+      eyeSet = true;
+      eyeX.value = eye.x;
+      eyeY.value = eye.y;
+      eyeX.velocity = eyeY.velocity = 0;
+    } else {
+      oscillate(eyeX, eye.x, 0.8, 0.6, dt);
+      oscillate(eyeY, eye.y, 0.8, 0.6, dt);
     }
     follow(pivotX, 0.12, dt);
     follow(pivotY, 0.12, dt);
-    const damping = flatten ? 0.85 : full ? 0.42 : 0.8;
-    oscillate(tiltY, aim.x * TILT_Y * reach, 1.5, damping, dt);
-    oscillate(tiltX, aim.y * TILT_X * reach, 1.5, damping, dt);
+    const damping = flatten ? 0.85 : full ? 0.4 : 0.8;
+    oscillate(tiltY, aim.x * TILT_Y * reach, 1.4, damping, dt);
+    oscillate(tiltX, aim.y * TILT_X * reach, 1.4, damping, dt);
     oscillate(approach, aim.near * APPROACH * reach, 1.6, 0.55, dt);
-    oscillate(dip, 0, 2.2, 0.45, dt);
     oscillate(shake, 0, 6.5, 0.22, dt);
-    oscillate(stack, 0, 1.6, 0.62, dt);
-    const wx = seen && settled ? soft(((pointer.x - cx) / (W / 2)) * 1.2) : 0;
-    const wy = seen && settled ? soft(((pointer.y - cy) / (H / 2)) * 1.2) : 0;
-    oscillate(layerX, wx, 1.1, 0.5, dt);
-    oscillate(layerY, wy, 1.1, 0.5, dt);
-    drift.target = full && settled && !flatten && !frozen && !over ? awake : 0;
-    follow(drift, 0.9, dt);
-    const float = drift.value;
-    const layerFloat = alive;
 
-    /* the summoning, the step mechanism and the publish charge */
+    /* the publish charge and its confirmation, drafts and errors */
     charge.target = pending ? 1 : 0;
     track(charge, 0.35);
-    if (pending && moving) {
-      spin.value += dt * 2.4 * charge.value;
-      spin.target = spin.value;
-    } else spin.target = Math.ceil(spin.value / TAU - 0.02) * TAU;
-    track(spin, 0.6);
-    if (moving) oscillate(turn, step >= 0 ? (step * TAU) / STEPS : 0, 0.9, 0.55, dt);
-    else turn.value = step >= 0 ? (step * TAU) / STEPS : 0;
-    scrollShift.target = clamp(scrollTop * 0.06, 0, 40);
-    follow(scrollShift, 0.25, dt);
-    const sinceSeal = age(celebrateAt);
-    const surge = pulse(sinceSeal, 650, 820, 1800);
-    const dim = pulse(age(draftAt), 0, 220, 900);
+    const since = age(celebrateAt);
+    const surge = pulse(since, 0, 140, 1300);
+    const ringT = span(since, 40, 1000);
+    const pull = pulse(since, 0, 380, 1500);
+    const sweep = since >= 0 && since < 900 ? 1 - span(since, 0, 900) * 0.6 : 0;
+    const dim = pulse(age(draftAt), 0, 200, 900);
+    const alert = pulse(age(errorAt), 0, 60, 650);
+    const glitch = Math.max(pose.glitch, pulse(age(errorAt), 0, 40, 280) * 0.55);
+    if (glitch > 0.01 && now - tornAt > 45) {
+      tornAt = now;
+      jitter = Math.random() * 2 - 1;
+      surfaceMat.uniforms.uSeed.value = Math.random() * 100;
+      for (const { mesh } of tears) {
+        mesh.position.set((Math.random() - 0.5) * hw, (Math.random() - 0.5) * 2 * hh, Z.tears);
+        mesh.scale.set((0.3 + Math.random() * 0.6) * 2 * (hw + geo.m), 1.5 + Math.random() * 4, 1);
+      }
+    } else if (glitch <= 0.01) jitter = 0;
 
     /* window pose */
-    const swing = 1 - easeBack(pose.arrive);
-    euler.set(
-      tiltX.value + swing * 0.32 + Math.sin(clock * 0.71) * 0.006 * float,
-      tiltY.value - swing * 0.95 + Math.sin(clock * 0.53 + 1.3) * 0.008 * float,
-      swing * 0.06,
-    );
+    euler.set(tiltX.value, tiltY.value, 0);
     quat.setFromEuler(euler);
     pivotV.set((pivotX.value - cx) * k - conRest.x, -(pivotY.value - cy) * k - conRest.y, 0);
     turned.copy(pivotV).applyQuaternion(quat);
     con.position.copy(conRest).add(pivotV).sub(turned);
-    ray.set(conRest.x + pivotV.x, conRest.y + pivotV.y, -DIST).normalize();
-    con.position.addScaledVector(ray, -(approach.value + dip.value) * k);
-    con.position.x += shake.value * k;
-    con.position.y += Math.sin(clock * 0.9) * 2.4 * float * k;
-    con.position.z -= (1 - easeOut(pose.arrive)) * 5;
+    ray.set(conRest.x + pivotV.x - eyeX.value * k, conRest.y + pivotV.y + eyeY.value * k, -DIST).normalize();
+    con.position.addScaledVector(ray, -approach.value * k);
+    con.position.x += (shake.value + jitter * 9 * glitch) * k;
     con.quaternion.copy(quat);
+    const h = Math.max(0.002, pose.h);
+    const w = Math.max(0.001, pose.w);
+    px.scale.set(k * w, k * h, k);
+    lift.scale.set(k * w, k, k);
+    const barY = (hh + geo.m + geo.gap) * h + pose.spread * 40;
+    barGroups[0].position.y = barY;
+    barGroups[1].position.y = -barY;
 
-    /* camera: from a low oblique angle to frontal; a push when the seal lands */
-    const away = 1 - easeInOut(pose.arrive);
-    const push = pulse(sinceSeal, 300, 700, 1900) * 0.35;
-    camera.position.set(-3.2 * away, -2.4 * away, DIST + 7 * away - push);
-    camera.up.set(Math.sin(away * 0.08), Math.cos(away * 0.08), 0);
-    camera.lookAt(0, 0.4 * away, 0);
+    /* the eye: off-axis, with a lens shift that keeps the page plane exactly in place */
+    camera.position.set(eyeX.value * k, -eyeY.value * k, DIST);
+    camera.setViewOffset(W, H, -eyeX.value, -eyeY.value, W, H);
 
-    /* the void and the world behind: parallax opposite the pointer, a slow sway on touch */
-    const sway = full && !fine ? Math.sin(clock * 0.21) : 0;
-    world.rotation.set(layerY.value * 0.025 + sway * 0.006, layerX.value * 0.035 + sway * 0.018, 0);
+    /* the dark and the embers */
     voidU.uLevel.value = pose.level;
-    voidU.uShift.value[0] = layerX.value * 0.03;
-    voidU.uShift.value[1] = -layerY.value * 0.02;
+    voidU.uShift.value[0] = (-eyeX.value / H) * 0.12;
+    voidU.uShift.value[1] = (eyeY.value / H) * 0.12;
     voidU.uCentre.value[0] = ((pcx - hostLeft) / W - 0.5) * (W / H);
     voidU.uCentre.value[1] = 0.5 - (pcy - hostTop) / H;
-    voidU.uBeam.value = pose.level * (0.7 + charge.value * 0.5 + surge * 0.6) * (1 - pose.gather * 0.5);
-    rain.visible = full;
-    rainMat.uniforms.uLevel.value = 0.24 * awake * pose.level;
-    dustU.uGather.value = pose.gather;
-    dustU.uSeam.value.copy(con.position);
-    dustU.uSeamW.value = (hw + geo.m) * k;
-    dustU.uLevel.value = (0.35 + 0.25 * awake) * pose.level + pose.gather * 0.6;
-    dustU.uColor.value.copy(COLD).lerp(AMBER, pose.gather);
-    sigil.rotation.z += dt * alive * (0.02 + charge.value * 0.12);
-    sigilRings[1].rotation.z -= dt * alive * 0.03;
-    for (const [index, material] of sigilMats.entries()) material.uniforms.uLevel.value = [0.1, 0.12, 0.06][index] * pose.level * (1 + charge.value * 0.8 + surge * 2.5);
+    voidU.uGlow.value[0] = ((hw + geo.m) / H) * 1.25;
+    voidU.uGlow.value[1] = ((hh + geo.m) / H) * Math.max(0.12, h) * 1.3;
+    voidU.uBeam.value = (0.35 + 0.65 * pose.surface) * (1 + charge.value * 0.4 + surge * 0.9);
+    emberMat.uniforms.uAlpha.value = (0.3 + 0.4 * pose.surface) * (kind === "pending" ? 0.5 : 1);
+    emberMat.uniforms.uPull.value = pull * 0.9;
+    emberMat.uniforms.uCenter.value.copy(con.position).sub(embers.position);
 
-    /* the seam opens into the contour */
-    const open = easeInOut(pose.open);
-    seam.visible = pose.seam > 0 && pose.open < 1;
-    seam.scale.set(hw + geo.m + geo.bw, compact ? 10 : 16, 1);
-    seamMat.uniforms.uDraw.value = easeOut(pose.seam);
-    seamMat.uniforms.uLevel.value = 1.6 * (1 - span(pose.open, 0.4, 1));
-    frame3.visible = pose.open > 0;
-    frame3.scale.y = lerp(0.012, 1, open);
-
-    /* frame pieces lock into place */
-    const p = pose.pieces;
-    const seat = easeBack(span(p, 0, 0.42));
-    rimMesh.position.z = (1 - seat) * -160;
-    front.position.set(layerX.value * 7, -layerY.value * 7, 0);
-    for (const [index, b] of brackets.entries()) {
-      const end = PIECE_LANDINGS[index];
-      const t = span(p, end - 0.4, end);
-      const r = easeBack(t);
-      const bob = Math.sin(clock * 0.8 + index * 1.9) * 1.5 * layerFloat;
-      b.mesh.visible = t > 0;
-      b.mesh.position.set(b.rest.x + b.sx * (1 - r) * 180, b.rest.y + b.sy * (1 - r) * 180 + bob, b.rest.z + (1 - r) * 240);
-      b.mesh.rotation.z = b.angle + (1 - r) * 0.9 * b.sx * b.sy;
-      const landed = p - end;
-      b.material.emissiveIntensity = 0.3 + charge.value * 0.35 + surge * 0.8 + (settled ? 0 : landed >= 0 ? Math.exp(-landed * 14) * 1.2 : t * t * 0.5);
+    /* layers */
+    const breath = moving ? 0.5 + 0.5 * Math.sin(now / 160) : 1;
+    const power = pose.frame * (1 + surge * 1.6 + charge.value * 0.3 * breath) * (1 - dim * 0.4);
+    frameMat.uniforms.uLevel.value = 1.05 * power;
+    frameMat.uniforms.uHeat.value = 0.3 + surge * 0.7;
+    frameMat.uniforms.uRun.value = pending ? ((now / 1000) * 0.55) % 1 : span(since, 0, 900);
+    frameMat.uniforms.uRunLevel.value = Math.max(charge.value * 0.8, sweep);
+    echoMat.uniforms.uLevel.value = 0.3 * power;
+    railMat.uniforms.uLevel.value = 1.1 * power;
+    cornerMat.uniforms.uLevel.value = 0.9 * power;
+    for (const material of [frameMat, echoMat, railMat, cornerMat]) material.uniforms.uDraw.value = pose.draw;
+    ghostMat.uniforms.uLevel.value = 0.16 * pose.surface * (1 + surge);
+    innerMat.uniforms.uLevel.value = 0.42 * pose.surface * (1 + surge * 1.2);
+    barMat.uniforms.uLevel.value = 0.95 * pose.bars * (1 + surge);
+    slabMat.uniforms.uLevel.value = 1.1 * pose.bars * (1 + surge);
+    for (const material of [barMat, slabMat]) {
+      material.uniforms.uRun.value = span(since, 0, 700);
+      material.uniforms.uRunLevel.value = sweep;
     }
-    backPlate.visible = p > 0.2;
-    back.position.set(-layerX.value * 12, layerY.value * 12, 0);
-    backPlate.position.z = lerp(-700, -110, easeOut(span(p, 0.2, 0.75)));
-    backMat.emissiveIntensity = 0.32 + charge.value * 0.2 + surge * 0.5;
-
-    const engraveIn = easeBack(span(p, 0.3, 0.95));
-    engrave.visible = marker.visible = p > 0.3;
-    engrave.position.set(-layerX.value * 5, scrollShift.value + layerY.value * 5, -46);
-    marker.position.x = engrave.position.x;
-    engrave.rotation.z = turn.value + spin.value - (1 - engraveIn) * 1.2;
-    tickMesh.rotation.z = -1.6 * (turn.value + spin.value) + (1 - engraveIn) * 2;
-    const engraveLevel = span(p, 0.3, 0.8) * (1 + charge.value * 0.9 + surge * 1.5);
-    engraveMats.ring.uniforms.uLevel.value = 0.4 * engraveLevel;
-    engraveMats.ticks.uniforms.uLevel.value = 0.32 * engraveLevel;
-    engraveMats.halo.uniforms.uLevel.value = 0.16 * engraveLevel;
-    engraveMats.marker.uniforms.uLevel.value = (step >= 0 ? 0.8 : 0.3) * engraveLevel;
-    for (const [index, material] of notchMats.entries())
-      material.uniforms.uLevel.value = engraveLevel * (step < 0 ? 0.14 : index < step ? 0.5 : index === step ? 1.2 : 0.16);
-
-    for (const [index, sheet] of sheets.entries()) {
-      sheet.hidden.target = index < layers ? 0 : 1;
-      track(sheet.hidden, 0.5);
-      const s = Math.max(0.35, index + 1 + stack.value);
-      const enter = 1 - easeOut(span(pose.unfold, index * 0.12, 0.6 + index * 0.12));
-      const gone = sheet.hidden.value;
-      const bob = Math.sin(clock * 0.6 + index * 2.1) * 3 * layerFloat;
-      sheet.mesh.visible = enter < 1 && gone < 0.995;
-      sheet.mesh.position.set(
-        slot.x * s * (1 - gone) - layerX.value * (6 + 8 * index),
-        slot.y * s * (1 - gone) + layerY.value * (6 + 8 * index) + bob,
-        slot.z * s - enter * 600 - gone * 300,
-      );
-      sheet.material.uniforms.uDraw.value = 1 - enter;
-      sheet.material.uniforms.uGlow.value = pulse(sinceSeal, 700 + index * 120, 900 + index * 120, 1900) + charge.value * 0.3;
+    alertU.value = alert;
+    surfaceMat.uniforms.uLevel.value = pose.surface;
+    surfaceMat.uniforms.uScan.value = pose.scan * 1.3;
+    surfaceMat.uniforms.uGlitch.value = glitch;
+    surfaceMat.uniforms.uCharge.value = charge.value;
+    surfaceMat.uniforms.uSurge.value = surge;
+    for (const tear of tears) {
+      tear.mesh.visible = glitch > 0.02;
+      tear.material.uniforms.uLevel.value = glitch * tear.level;
     }
+    ring.visible = ringT > 0 && ringT < 1;
+    ring.scale.setScalar(lerp(0.15, ((Math.max(hw, hh) + geo.m) / 100) * 1.25, easeOut(ringT)));
+    ringMat.uniforms.uLevel.value = (1 - ringT) * 1.1;
+    const loader = closed && moving ? 0.22 + 0.12 * Math.sin(now / 200) : 0;
+    flareMat.uniforms.uLevel.value = pose.flare * 1.5 + loader;
+    flare.visible = flareMat.uniforms.uLevel.value > 0.01;
+    flare.scale.set(360 / Math.max(w, 0.25), 90, 1);
 
-    /* glass, screen and contours */
-    glass.visible = pose.glass > 0;
-    glassMat.opacity = 0.42 * pose.glass;
-    screen.visible = pose.scan > 0;
-    screenMat.uniforms.uFill.value = pose.scan;
-    screenMat.uniforms.uPulse.value = surge;
-    screenMat.uniforms.uCharge.value = charge.value;
-    const wipe = span(age(wipeAt), 0, 520);
-    screenMat.uniforms.uWipe.value = wipe > 0 && wipe < 1 ? easeInOut(wipe) : 0;
-    screenMat.uniforms.uWipeDir.value = wipeDir;
-    const breathe = charge.value * (0.45 + 0.3 * Math.sin(clock * 5.5));
-    outerMat.uniforms.uDraw.value = 1;
-    outerMat.uniforms.uLevel.value = (1 + (1 - p) * 0.6 + (1 - open) * 1.2) * (1 - dim * 0.45) + breathe + surge * 1.4;
-    innerMat.uniforms.uDraw.value = easeInOut(span(p, 0.2, 0.8));
-    innerMat.uniforms.uLevel.value = 0.34 + surge * 0.6 + breathe * 0.4 + (1 - pose.scan) * 0.25;
-    alertU.value = pulse(age(errorAt), 0, 120, 1100);
-
-    const g = span(age(ghostAt), 0, 560);
-    ghost.visible = g > 0 && g < 1 && ghost.geometry !== empty;
-    ghost.position.z = 3 + easeOut(g) * 160;
-    ghost.scale.setScalar(1 + easeOut(g) * 0.04);
-    ghostMat.uniforms.uLevel.value = (1 - g) ** 2 * 0.8;
-
-    /* publish: rings collapse into the seal; while pending they hover around the window */
-    if (sinceSeal < 2200 && !sealFound) {
-      const emblem = refs.panel.current?.querySelector<HTMLElement>(".ax-emblem");
-      if (emblem) {
-        const r = emblem.getBoundingClientRect();
-        sealAt.set(r.left + r.width / 2 - pcx, -(r.top + r.height / 2 - pcy), 10);
-        sealFound = true;
-      }
-    }
-    const ringSize = Math.max(hw, hh) * 1.12;
-    for (const [index, ring] of rings.entries()) {
-      const rp = span(sinceSeal, index * 120, 760 + index * 120);
-      const sealing = rp > 0 && rp < 1;
-      const toward = easeInOut(rp);
-      const radius = sealing ? lerp(ringSize, 46, toward) : ringSize * (1.02 + 0.02 * Math.sin(clock * 1.3 + index));
-      const level = sealing ? Math.sin(Math.PI * rp) * (index ? 0.6 : 1) : charge.value * (index ? 0.2 : 0.3);
-      ring.visible = level > 0.005;
-      ring.position.set(sealing ? sealAt.x * toward : 0, sealing ? sealAt.y * toward : 0, 8);
-      ring.rotation.z = clock * (index ? -0.4 : 0.3) * (1 + charge.value * 2);
-      ring.scale.setScalar(radius / 100);
-      ringMats[index].uniforms.uLevel.value = level;
-    }
-
-    /* reward pips under the window */
-    const shownPips = Math.min(rewards, MAX_PIPS);
-    for (const [index, pip] of pips.entries()) {
-      pip.shown.target = index < shownPips ? 1 : 0;
-      track(pip.shown, 0.22);
-      const v = pip.shown.value * span(p, 0.6, 1);
-      pip.mesh.visible = v > 0.01;
-      pip.mesh.position.set((index - (Math.max(shownPips, 1) - 1) / 2) * 20, -(hh + geo.m + geo.bw + 16), 6);
-      pip.mesh.scale.setScalar(easeBack(clamp01(v)) * (1 + surge * 0.5));
-    }
-    pipMat.uniforms.uLevel.value = 0.8 + charge.value * 0.5 + surge;
-
-    /* the side window unfolds from edge-on */
-    if (sideOn) {
-      const u = pose.unfold;
-      const slide = easeOut(span(u, 0, 0.7));
-      const rx = sideBox.x + sideBox.w / 2 - (panelBox.x + hw);
-      const ry = -(sideBox.y + sideBox.h / 2 - (panelBox.y + hh));
-      sideG.visible = u > 0;
-      sideG.position.set(lerp(rx * 0.35, rx, slide), ry + Math.sin(clock * 0.5 + 0.7) * 2 * float, lerp(-120, SIDE_Z, slide));
-      sideG.rotation.set(0, lerp(1.35, SIDE_TURN, easeBack(span(u, 0.05, 0.85))), 0);
-      sideOuterMat.uniforms.uDraw.value = easeInOut(span(u, 0.15, 0.85));
-      sideOuterMat.uniforms.uLevel.value = 0.9 * (1 - dim * 0.4) + breathe * 0.5 + surge;
-      sideInnerMat.uniforms.uDraw.value = easeInOut(span(u, 0.3, 0.95));
-      sideScreenMat.uniforms.uFill.value = span(u, 0.35, 0.95);
-      sideScreenMat.uniforms.uCharge.value = charge.value * 0.6;
-    } else sideG.visible = false;
-
-    /* reward satellites: spawn from the window edge, retract when removed, converge into the seal */
-    const edgeX = hw + geo.m + geo.bw + 2;
-    for (const sat of sats.values()) {
-      const unfoldGate = span(pose.unfold, 0.25 + sat.order * 0.08, 0.75 + sat.order * 0.08);
-      const grow = Math.min(span(age(sat.born), 0, 650), unfoldGate);
-      const inT = easeBack(grow);
-      const outT = sat.gone >= 0 && sat.seal < 0 ? easeInOut(span(age(sat.gone), 0, 450)) : 0;
-      const sealT = sat.seal >= 0 ? easeInOut(span(age(sat.seal), 0, 650)) : 0;
-      if (outT >= 1 || (sat.gone >= 0 && sealT >= 1)) {
-        dropSat(sat);
-        continue;
-      }
-      const b = sat.box;
-      const rx = b.x + b.w / 2 - (panelBox.x + hw);
-      const ry = -(b.y + b.h / 2 - (panelBox.y + hh));
-      const oy = clamp(ry, -hh + 40, hh - 40);
-      let x = lerp(edgeX, rx, inT);
-      let y = lerp(oy, ry, inT) + Math.sin(clock * 0.8 + sat.phase) * 4 * layerFloat;
-      let z = lerp(0, SAT_Z, inT) + Math.cos(clock * 0.6 + sat.phase) * 5 * layerFloat;
-      x = lerp(x, edgeX, outT);
-      y = lerp(y, oy, outT);
-      z = lerp(z, 0, outT);
-      x = lerp(x, sealAt.x, sealT);
-      y = lerp(y, sealAt.y, sealT);
-      z = lerp(z, sealAt.z, sealT);
-      const show = Math.min(span(age(sat.born), 0, 400), unfoldGate) * (1 - outT) * (1 - sealT) * span(p, 0.5, 1);
-      sat.g.visible = show > 0.005;
-      sat.g.position.set(x, y, z);
-      const rotY = lerp(-1.1, SAT_TURN, inT) * (1 - sealT);
-      sat.g.rotation.set(0, rotY, 0);
-      sat.g.scale.setScalar(lerp(0.4, 1, clamp01(inT)) * (1 - 0.75 * sealT) * (1 - 0.5 * outT));
-      sat.plateMat.uniforms.uDraw.value = span(age(sat.born), 100, 600) * (unfoldGate > 0 ? 1 : 0);
-      sat.plateMat.uniforms.uFade.value = show;
-      sat.plateMat.uniforms.uGlow.value = surge + charge.value * 0.6;
-      // The tether runs from the satellite's inner edge to the window's edge.
-      const half = (b.w / 2 + 8) * sat.g.scale.x;
-      tetherA.set(x - half * Math.cos(rotY), y, z + half * Math.sin(rotY));
-      tetherB.set(edgeX, oy, 0);
-      const length = tetherA.distanceTo(tetherB);
-      sat.tether.visible = show > 0.02 && length > 4;
-      if (sat.tether.visible) {
-        sat.tether.position.copy(tetherA);
-        sat.tether.quaternion.setFromUnitVectors(X_AXIS, tetherB.sub(tetherA).normalize());
-        sat.tether.scale.set(length, 3, 1);
-        sat.tetherMat.uniforms.uLevel.value = show * (0.45 + charge.value * 0.5);
-        sat.tetherMat.uniforms.uPhase.value = clock * (0.5 + charge.value * 1.5) + sat.phase;
-      }
-    }
-
-    /* the system panes: draw in, ignite, drift */
-    for (const { mesh, material, rest, order, on, room } of panes) {
-      if (!on) continue;
-      track(room, 0.35);
-      mesh.visible = room.value > 0.01;
-      if (!mesh.visible) continue;
-      material.uniforms.uFade.value = room.value;
-      const draw = span(pose.planes, order * 0.08, 0.5 + order * 0.08);
-      material.uniforms.uDraw.value = draw;
-      material.uniforms.uLive.value = span(pose.planes, 0.4 + order * 0.08, 0.8 + order * 0.08);
-      material.uniforms.uGlow.value = pulse(sinceSeal, 700 + order * 90, 950 + order * 90, 2000) * 0.9 + charge.value * 0.25;
-      mesh.position.set(
-        rest.x + Math.sin(clock * 0.4 + order * 1.7) * 0.05 * layerFloat,
-        rest.y + Math.cos(clock * 0.33 + order) * 0.04 * layerFloat,
-        rest.z - (1 - easeOut(draw)) * 3,
-      );
-    }
-
-    /* light: follows the pointer across metal and glass; contours and sheen respond to the tilt */
+    /* light: a spot under the pointer, contours and sheen respond to the tilt */
     const tY = tiltY.value / TILT_Y;
     const tX = tiltX.value / TILT_X;
-    const sweep = booting ? pulse(e, 0, 400, bootTotal(introKind)) : 0;
-    if (seen) {
-      lightX.target = (pointer.x - cx) * k;
-      lightY.target = -(pointer.y - cy) * k;
-    }
     lightOn.target = seen && settled ? 1 : 0;
-    follow(lightX, 0.15, dt);
-    follow(lightY, 0.15, dt);
-    follow(lightOn, 0.4, dt);
-    const sweepX = lerp(-W / 2, W / 2, pose.scan) * k;
-    cursor.position.set(lerp(lightX.value, sweepX, sweep), lerp(lightY.value, (H / 4) * k, sweep), 2.4);
-    cursor.intensity = 7 * Math.max(lightOn.value, sweep);
+    track(lightOn, 0.4);
     lightU.value[0] = tY;
     lightU.value[1] = -tX;
     const tilt = Math.min(1, Math.hypot(tY, tX));
-    screenMat.uniforms.uSheen.value = [-tY * 0.35, tX * 0.35, tilt];
-    sideScreenMat.uniforms.uSheen.value = [-tY * 0.35, tX * 0.35, tilt * 0.8];
+    surfaceMat.uniforms.uPointer.value = [pointer.x - pcx, -(pointer.y - pcy)];
+    surfaceMat.uniforms.uPointerOn.value = lightOn.value;
+    surfaceMat.uniforms.uSheen.value = [-tY * 0.35, tX * 0.35, tilt];
+    haloMat.uniforms.uLight.value = [-tY * 12, tX * 9];
+    haloMat.uniforms.uLevel.value = 0.42 * pose.surface * (1 + surge * 1.5 + charge.value * 0.4) + pose.flare * 0.2;
 
     renderer.render(scene, camera);
-    register(now, lightOn.value * tilt);
+    register(pose.ui, full ? glitch : 0);
 
     // Adaptive resolution: drop a step when frames run long.
     if (moving && dt > 0.026) slowFrames++;
@@ -1650,16 +1092,20 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
     }
     // Keep running while anything still moves toward rest.
     return (
-      Math.abs(tiltX.velocity) + Math.abs(tiltY.velocity) + Math.abs(approach.velocity) + Math.abs(dip.velocity) + Math.abs(stack.velocity) > 1e-3 ||
-      drift.value > 1e-3 ||
-      Math.abs(spin.value - spin.target) > 1e-3 ||
-      Math.abs(turn.velocity) > 1e-3 ||
-      panes.some(({ room }) => Math.abs(room.value - room.target) > 1e-3) ||
-      [...sats.values()].some((sat) => sat.gone >= 0 || age(sat.born) < 700 || (sat.seal >= 0 && age(sat.seal) < 700))
+      revealing ||
+      Math.abs(tiltX.velocity) + Math.abs(tiltY.velocity) + Math.abs(approach.velocity) + Math.abs(shake.velocity) > 1e-3 ||
+      Math.abs(eyeX.velocity) + Math.abs(eyeY.velocity) > 1e-2 ||
+      Math.abs(eyeX.value - eye.x) + Math.abs(eyeY.value - eye.y) > 0.05 ||
+      Math.abs(pivotX.value - pivotX.target) + Math.abs(pivotY.value - pivotY.target) > 0.05 ||
+      Math.abs(charge.value - charge.target) > 1e-3 ||
+      Math.abs(lightOn.value - lightOn.target) > 1e-3 ||
+      (since > -PUBLISH.accent - 100 && since < 1600) ||
+      age(errorAt) < 700 ||
+      age(draftAt) < 950
     );
   }
 
-  /** The 3D-to-page mapping for an object built in px: CSS px around the canvas centre, y down, camera at z = f. */
+  /** The 3D-to-page mapping for an object built in px: CSS px around the canvas centre, y down, eye at z = f. */
   function mapping(obj: Object3D, centreX: number, centreY: number) {
     M.makeScale(1, -1, 1);
     A.multiplyMatrices(obj.matrixWorld, M).premultiply(camera.matrixWorldInverse);
@@ -1667,65 +1113,46 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
     A.premultiply(M);
     M.makeTranslation(0, 0, f);
     A.premultiply(M);
-    return { ax: hostLeft + W / 2 - centreX, ay: hostTop + H / 2 - centreY, el: A.elements };
+    return { ax: hostLeft + W / 2 - centreX + eyeX.value, ay: hostTop + H / 2 - centreY + eyeY.value, el: A.elements };
   }
   const css = (ax: number, ay: number, el: ArrayLike<number>) =>
     `translate(${ax.toFixed(2)}px, ${ay.toFixed(2)}px) perspective(${f.toFixed(2)}px) matrix3d(${Array.from(el, (v) => +v.toFixed(6)).join(",")})`;
-  const write = (el: HTMLElement, cache: { transform: string; opacity?: string }, transform: string, opacity?: string) => {
-    if (transform !== cache.transform) el.style.transform = cache.transform = transform;
-    if (opacity !== undefined && opacity !== cache.opacity) el.style.opacity = cache.opacity = opacity;
-  };
 
-  function register(now: number, glare: number) {
-    const panel = refs.panel.current;
+  function register(ui: number, smear: number) {
+    const panel = panelRef.current;
     if (!panel || !panelBox.w) return;
-    // Until the summoning starts the page keeps its own place.
-    if (introKind === "pending") {
-      write(panel, panelStyle, "");
-      return;
-    }
+    const write = (transform: string, opacity: string, filter: string) => {
+      if (transform !== panelStyle.transform) panel.style.transform = panelStyle.transform = transform;
+      if (opacity !== panelStyle.opacity) panel.style.opacity = panelStyle.opacity = opacity;
+      if (filter !== panelStyle.filter) panel.style.filter = panelStyle.filter = filter;
+    };
+    // Until the opening starts the page keeps its own place.
+    if (kind === "pending") return write("", "", "");
     scene.updateMatrixWorld();
     camera.updateMatrixWorld();
     const hw = panelBox.w / 2;
     const hh = panelBox.h / 2;
-    {
-      const { ax, ay, el } = mapping(px, hostLeft + panelBox.x + hw, hostTop + panelBox.y + hh);
-      let worst = 0;
-      for (const [ux, uy] of [
-        [-hw, -hh],
-        [hw, -hh],
-        [hw, hh],
-        [-hw, hh],
-      ]) {
-        const z = el[2] * ux + el[6] * uy + el[14];
-        const scale = f / Math.max(1, f - z);
-        worst = Math.max(worst, Math.abs((el[0] * ux + el[4] * uy + el[12]) * scale + ax - ux), Math.abs((el[1] * ux + el[5] * uy + el[13]) * scale + ay - uy));
-      }
-      // At rest the transform collapses to none, so text stays crisp.
-      write(panel, panelStyle, worst < 0.25 ? "" : css(ax, ay, el));
+    const { ax, ay, el } = mapping(px, hostLeft + panelBox.x + hw, hostTop + panelBox.y + hh);
+    let worst = 0;
+    for (const [ux, uy] of [
+      [-hw, -hh],
+      [hw, -hh],
+      [hw, hh],
+      [-hw, hh],
+    ]) {
+      const z = el[2] * ux + el[6] * uy + el[14];
+      const scale = f / Math.max(1, f - z);
+      worst = Math.max(worst, Math.abs((el[0] * ux + el[4] * uy + el[12]) * scale + ax - ux), Math.abs((el[1] * ux + el[5] * uy + el[13]) * scale + ay - uy));
     }
-    if (glareEl) {
-      const gx = clamp(pointer.x - (hostLeft + panelBox.x + hw), -hw, hw);
-      const gy = clamp(pointer.y - (hostTop + panelBox.y + hh), -hh, hh);
-      write(glareEl, glareStyle, `translate(${gx.toFixed(1)}px, ${gy.toFixed(1)}px)`, glare > 0.02 ? (glare * 0.9).toFixed(3) : "0");
-    }
-    const side = refs.side.current;
-    if (side && sideOn) {
-      const { ax, ay, el } = mapping(sideG, hostLeft + sideBox.x + sideBox.w / 2, hostTop + sideBox.y + sideBox.h / 2);
-      write(side, sideStyle, css(ax, ay, el), span(bootPose(introKind, elapsed(now)).unfold, 0.55, 1).toFixed(3));
-    }
-    for (const sat of sats.values()) {
-      if (!sat.el) continue;
-      const b = sat.box;
-      const { ax, ay, el } = mapping(sat.g, hostLeft + b.x + b.w / 2, hostTop + b.y + b.h / 2);
-      write(sat.el, sat, sat.g.visible ? css(ax, ay, el) : sat.transform, (sat.g.visible ? sat.plateMat.uniforms.uFade.value : 0).toFixed(3));
-    }
+    // At rest the transform collapses to none, so text stays crisp.
+    write(worst < 0.25 ? "" : css(ax, ay, el), ui > 0.999 ? "" : ui.toFixed(3), smear > 0.5 ? "url(#ax-smear-strong)" : smear > 0.12 ? "url(#ax-smear)" : "");
   }
 
   /* ---------------------------------------------------------------- loop & lifecycle */
   let raf = 0;
   let ready = false;
   let visible = true;
+  let disposed = false;
   const canRun = () => ready && visible && !document.hidden;
   const loop = (now: number) => {
     raf = 0;
@@ -1768,10 +1195,8 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
     pressing = false;
     releasedAt = performance.now();
   };
-  const onScroll = (event: Event) => {
+  const onScroll = () => {
     scrolledAt = performance.now();
-    const target = event.target;
-    if (target instanceof HTMLElement && refs.panel.current?.contains(target)) scrollTop = target.scrollTop;
     poke(4000);
   };
   const onFocus = () => poke(4000);
@@ -1804,9 +1229,7 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
   });
   sight.observe(host);
   const resizes = new ResizeObserver(onLayout);
-  for (const el of [stage, refs.panel.current, refs.side.current, refs.sats.current]) if (el) resizes.observe(el);
-  const changes = new MutationObserver(onLayout);
-  for (const el of [refs.side.current, refs.sats.current]) if (el) changes.observe(el, { childList: true, subtree: true });
+  for (const el of [stage, panelRef.current]) if (el) resizes.observe(el);
 
   measure();
   renderer
@@ -1824,17 +1247,20 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
     });
 
   return {
-    start(kind: BootKind) {
-      introKind = motion === "off" ? "none" : kind;
-      introStart = performance.now();
+    reveal(next: RevealKind) {
+      kind = motion === "off" ? "none" : next;
+      kindStart = performance.now();
       skipAt = -1;
-      poke(bootTotal(introKind) + 1500);
+      dirty = true;
+      // Draw at once so the page takes its first pose before the browser paints it.
+      if (ready) frame(kindStart);
+      poke(revealTotal(kind) + 1500);
     },
     skip() {
-      if (introKind === "pending" || introKind === "none") return;
+      if (!isOpen(kind)) return;
       const now = performance.now();
       const e = elapsed(now);
-      if (skipAt < 0 && e < bootTotal(introKind)) {
+      if (skipAt < 0 && e < revealTotal(kind)) {
         skipFrom = e;
         skipAt = now;
         poke(1500);
@@ -1846,52 +1272,17 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
       else if (signal === "settle") pending = false;
       else if (signal === "publish") {
         pending = false;
-        celebrateAt = now;
-        sealFound = false;
-        let index = 0;
-        for (const sat of sats.values()) if (sat.gone < 0) sat.seal = now + index++ * 70;
+        celebrateAt = now + PUBLISH.accent;
       } else if (signal === "error") {
         pending = false;
         errorAt = now;
         if (motion !== "off") shake.velocity += 260;
-      } else if (signal === "draft") {
-        draftAt = now;
-        if (motion !== "off") stack.value -= 1;
-      } else if (motion !== "off") {
-        wipeAt = now;
-        wipeDir = signal === "back" ? -1 : 1;
-        if (signal === "back") {
-          stack.value -= 1;
-          dip.value = 22;
-        } else {
-          ghostAt = now;
-          stack.value += 1;
-          dip.value = signal === "page" ? -18 : -26;
-        }
-      }
-      if (signal === "page")
-        for (const sat of sats.values())
-          if (sat.seal >= 0) {
-            sat.seal = -1;
-            sat.born = now;
-          }
-      poke(signal === "publish" ? 4000 : 2600);
-    },
-    setLayers(next: number) {
-      layers = next;
-      poke(1500);
-    },
-    setStep(next: number) {
-      step = next;
-      poke(2000);
-    },
-    setRewards(next: number) {
-      rewards = next;
-      poke(1500);
+      } else if (signal === "draft") draftAt = now;
+      poke(signal === "publish" ? PUBLISH.accent + 3000 : 2600);
     },
     setMotion(next: MotionLevel) {
       motion = next;
-      if (motion === "off" && introKind !== "pending") introKind = "none";
+      if (motion === "off" && kind !== "pending") kind = "none";
       poke(1500);
     },
     dispose() {
@@ -1899,7 +1290,6 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
       cancelAnimationFrame(raf);
       sight.disconnect();
       resizes.disconnect();
-      changes.disconnect();
       window.removeEventListener("pointermove", onPointerMove);
       document.documentElement.removeEventListener("mouseleave", onLeave);
       window.removeEventListener("keydown", onKey, true);
@@ -1913,23 +1303,19 @@ function createAdminEngine(host: HTMLDivElement, refs: Refs, init: Init, cb: { r
       window.removeEventListener("scroll", onLayout);
       document.removeEventListener("visibilitychange", onVisibility);
       renderer.domElement.removeEventListener("webglcontextlost", onLost);
-      const panel = refs.panel.current;
-      if (panel) panel.style.transform = "";
-      if (glareEl) glareEl.style.transform = glareEl.style.opacity = "";
-      const side = refs.side.current;
-      if (side) side.style.transform = side.style.opacity = "";
-      for (const sat of [...sats.values()]) dropSat(sat);
+      const panel = panelRef.current;
+      if (panel) panel.style.transform = panel.style.opacity = panel.style.filter = "";
       const geometries = new Set<BufferGeometry>(shared);
       const materials = new Set<Material>();
       scene.traverse((object) => {
-        if (object instanceof Mesh || object instanceof Points || object instanceof LineSegments) {
+        if (object instanceof Mesh || object instanceof Points) {
           geometries.add(object.geometry);
           for (const material of [object.material].flat() as Material[]) materials.add(material);
         }
       });
+      for (const geometry of Object.values(barGeos)) geometries.add(geometry);
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
-      for (const item of owned) item.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();
@@ -1941,28 +1327,25 @@ type Engine = ReturnType<typeof createAdminEngine>;
 
 type Props = {
   panel: RefObject<HTMLElement | null>;
-  side: RefObject<HTMLElement | null>;
-  sats: RefObject<HTMLElement | null>;
   motion: MotionLevel;
-  state: RefObject<SceneState>;
   ref?: Ref<AdminSceneHandle>;
   onReady: () => void;
   onFail: () => void;
 };
 
-export default function AdminScene({ panel, side, sats, motion, state, ref, onReady, onFail }: Props) {
+export default function AdminScene({ panel, motion, ref, onReady, onFail }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<Engine | null>(null);
   const ready = useEffectEvent(() => onReady());
   const fail = useEffectEvent(() => onFail());
-  const initial = useEffectEvent((): Init => ({ motion, ...state.current }));
+  const initialMotion = useEffectEvent(() => motion);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     let engine: Engine;
     try {
-      engine = createAdminEngine(host, { panel, side, sats }, initial(), { ready: () => ready(), fail: () => fail() });
+      engine = createAdminEngine(host, panel, initialMotion(), { ready: () => ready(), fail: () => fail() });
     } catch {
       // No WebGL context: the drawn window stays.
       fail();
@@ -1973,18 +1356,15 @@ export default function AdminScene({ panel, side, sats, motion, state, ref, onRe
       engine.dispose();
       engineRef.current = null;
     };
-  }, [panel, side, sats]);
+  }, [panel]);
 
   useEffect(() => engineRef.current?.setMotion(motion), [motion]);
   useImperativeHandle(
     ref,
     () => ({
-      start: (kind) => engineRef.current?.start(kind),
+      reveal: (kind) => engineRef.current?.reveal(kind),
       skip: () => engineRef.current?.skip(),
       signal: (signal) => engineRef.current?.signal(signal),
-      setLayers: (count) => engineRef.current?.setLayers(count),
-      setStep: (next) => engineRef.current?.setStep(next),
-      setRewards: (count) => engineRef.current?.setRewards(count),
     }),
     [],
   );

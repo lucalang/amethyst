@@ -7,80 +7,59 @@ import {
   lazy,
   Suspense,
   use,
-  useCallback,
   useEffect,
   useEffectEvent,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
-  type CSSProperties,
+  type ComponentProps,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
+import { flushSync } from "react-dom";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "cn";
-import { Coins, Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
 import { useMotionLevel, webglAvailable } from "@/components/showcase/motion";
-import { closeVaultAudio, hushVault, playAdminBoot } from "@/components/vault/vault-audio";
-import { RewardArt, rewardInfo, type VaultLooks } from "@/components/vault/vault-reveal";
-import type { AdminSceneHandle, ConsoleSignal, SceneState } from "./admin-scene";
-import { BOOT, BOOT_KEY, type BootKind } from "./admin-timing";
+import { closeVaultAudio, hushVault, playAdminBoot, playAdminSound } from "@/components/vault/vault-audio";
+import type { MotionLevel } from "@/lib/preferences";
+import { decode, type Decoder } from "./admin-decode";
+import type { AdminSceneHandle, ConsoleSignal } from "./admin-scene";
+import { BOOT_KEY, CLOSE, CLOSE_SPLIT, FOLD, OPEN, type OpenKind, type RevealKind } from "./admin-timing";
 import { displayFont, systemFont } from "./system-font";
 
 const AdminScene = lazy(() => import("./admin-scene"));
 
-/** Rewards to show as satellites beside the window; achievement ids carry their prefix. */
-export type ConsoleRewards = { coins: number; ids: string[]; looks: VaultLooks };
-
 type ConsoleApi = {
+  /** Cues for the window: the pending publish, publish and draft confirmations, errors. */
   signal: (signal: ConsoleSignal) => void;
-  setLayers: (count: number) => void;
-  setStep: (step: number) => void;
-  setRewards: (rewards: ConsoleRewards | null) => void;
+  /** Folds the window into a strip, commits `change` there, then opens the new state from it. */
+  shift: (change: () => void) => void;
+  /** Closes the window into a strip, then navigates to `href`; the next page opens from it. */
+  leave: (href: string) => void;
 };
-const ConsoleContext = createContext<ConsoleApi>({ signal: () => {}, setLayers: () => {}, setStep: () => {}, setRewards: () => {} });
-const SideContext = createContext<HTMLElement | null>(null);
+const ConsoleContext = createContext<ConsoleApi>({ signal: () => {}, shift: (change) => change(), leave: () => {} });
 
-/** Cues for the 3D window: step changes, the pending publish, publish and draft confirmations, errors. */
 export const useConsole = () => use(ConsoleContext);
 
-/** Where a page's side column goes on wide screens: the side window beside the System window (null: inline). */
-export const useConsoleSide = () => use(SideContext);
-
-/** How many system sheets wait behind the window (the builder's remaining steps, for example). */
-export function useConsoleLayers(count: number) {
-  const { setLayers } = useConsole();
-  useEffect(() => setLayers(count), [count, setLayers]);
-}
-
-/** Turns the window's step mechanism to `step` (0-based, of five including Publish). */
-export function useConsoleStep(step: number) {
-  const { setStep } = useConsole();
-  useEffect(() => {
-    setStep(step);
-    return () => setStep(-1);
-  }, [step, setStep]);
-}
-
-/** Shows rewards as satellites in the scene while the calling page is mounted. */
-export function useConsoleRewards(rewards: ConsoleRewards | null) {
-  const { setRewards } = useConsole();
-  const key = rewards && (rewards.coins > 0 || rewards.ids.length > 0) ? `${rewards.coins}|${rewards.ids.join(",")}` : "";
-  const latest = useEffectEvent(() => rewards);
-  useEffect(() => {
-    setRewards(key ? latest() : null);
-    return () => setRewards(null);
-  }, [key, setRewards]);
+/** A link inside the window that closes it before navigating. Modifier clicks behave like any link. */
+export function ConsoleLink({ href, ...props }: Omit<ComponentProps<typeof Link>, "href" | "onNavigate"> & { href: string }) {
+  const { leave } = useConsole();
+  return (
+    <Link
+      href={href}
+      {...props}
+      onNavigate={(event) => {
+        event.preventDefault();
+        leave(href);
+      }}
+    />
+  );
 }
 
 const noSubscribe = () => () => {};
-const WIDE = "(min-width: 80rem)";
-const subscribeWide = (onChange: () => void) => {
-  const query = window.matchMedia(WIDE);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-};
 
 /** A failed scene chunk (offline, blocked) leaves the drawn window in place instead of breaking the page. */
 class SceneBoundary extends Component<{ onError: () => void; children: ReactNode }, { failed: boolean }> {
@@ -97,10 +76,10 @@ class SceneBoundary extends Component<{ onError: () => void; children: ReactNode
 }
 
 /**
- * The admin panel as one System window summoned into the vault: a Three.js scene around page
- * elements that are mapped onto its 3D surfaces. It persists across admin pages, so the summoning
- * plays once (full the first time per tab session, short afterwards) and can be skipped with any key
- * or click.
+ * The admin panel as one floating System window over the vault: a Three.js frame, glass and light
+ * bars around page elements mapped onto the tilted surface. It persists across admin pages, so the
+ * opening plays once (full the first time per tab session, short afterwards; skippable with any key or
+ * click), while steps and pages fold into a strip and reopen.
  */
 export function AdminConsole({ children }: { children: ReactNode }) {
   return (
@@ -110,34 +89,170 @@ export function AdminConsole({ children }: { children: ReactNode }) {
   );
 }
 
-/** pending: waiting for the scene; full/short: summoning; late/none/done: content shown. */
-type Intro = "pending" | BootKind | "done";
-/** How long the content waits for the scene before showing without the summoning. */
+/** pending: waiting for the scene; full/short: opening; late/none/done: content shown. */
+type Intro = "pending" | "full" | "short" | "late" | "none" | "done";
+/** How long the content waits for the scene before showing without the opening. */
 const SCENE_WAIT = 2200;
-const MAX_SATS = 6;
+/** How long a closed window waits for the next page before opening again anyway. */
+const LEAVE_WAIT = 5000;
+const STRIP = "inset(49% 0 49% 0)";
+
+type Live = { scene: boolean; motion: MotionLevel; sound: boolean; intro: Intro };
 
 function Shell({ children }: { children: ReactNode }) {
   const motion = useMotionLevel();
   const { sound, toggleSound } = useArcade();
   const hydrated = useSyncExternalStore(noSubscribe, () => true, () => false);
   const canWebgl = useSyncExternalStore(noSubscribe, webglAvailable, () => false);
-  const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(WIDE).matches, () => false);
   const [scene, setScene] = useState<"loading" | "ready" | "failed">("loading");
   const [intro, setIntro] = useState<Intro>("pending");
-  const [rewards, setRewardState] = useState<ConsoleRewards | null>(null);
-  const [sideEl, setSideEl] = useState<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const sideRef = useRef<HTMLDivElement>(null);
-  const satsRef = useRef<HTMLDivElement>(null);
   const engine = useRef<AdminSceneHandle>(null);
-  const state = useRef<SceneState>({ layers: 2, step: -1, rewards: 0 });
+  const live = useRef<Live>({ scene: false, motion, sound, intro: "pending" });
   const repeat = useRef(false);
+  const fallbackPlayed = useRef(false);
+  const router = useRouter();
   const pathname = usePathname();
   const lastPath = useRef(pathname);
 
   const webgl = hydrated && canWebgl && scene !== "failed";
   const shown: Intro = !hydrated ? "pending" : intro === "pending" && (!webgl || motion === "off") ? "none" : intro;
-  const activating = shown === "full" || shown === "short";
+  const opening = shown === "full" || shown === "short";
+
+  useEffect(() => {
+    live.current = { scene: webgl && scene === "ready", motion, sound, intro: shown };
+  });
+
+  /** Everything transitions share: timers, the running decode and control fades, the fallback clip. */
+  const fx = useMemo(() => {
+    const timers = new Set<number>();
+    let decoder: Decoder | null = null;
+    let fades: Animation[] = [];
+    let clip: Animation | null = null;
+    let queue: (() => void)[] | null = null;
+    let leaving = false;
+
+    const later = (ms: number, run: () => void) => {
+      const id = window.setTimeout(() => {
+        timers.delete(id);
+        run();
+      }, ms);
+      timers.add(id);
+    };
+    const settle = () => {
+      decoder?.finish();
+      decoder = null;
+      for (const fade of fades) fade.finish();
+      fades = [];
+    };
+    /** Text decoding and the controls' late arrival, in step with an opening of `kind`. */
+    const play = (kind: OpenKind) => {
+      settle();
+      const panel = panelRef.current;
+      const t = OPEN[kind];
+      if (!panel || live.current.motion === "off" || t.decode[0] < 0) return;
+      decoder = decode(panel, t.decode[0], t.decode[1]);
+      if (t.controls <= 0) return;
+      fades = [...panel.querySelectorAll<HTMLElement>(".ax-view-foot")].map((foot) =>
+        foot.animate([{ opacity: 0 }, { opacity: 0, offset: t.controls / t.total }, { opacity: 1 }], { duration: t.total, easing: "ease-out" }),
+      );
+    };
+    /** Without a scene the drawn window still opens from, and folds into, a strip. */
+    const clipTo = (kind: RevealKind) => {
+      const panel = panelRef.current;
+      clip?.cancel();
+      clip = null;
+      if (!panel || live.current.motion === "off" || kind === "none" || kind === "late") return;
+      const full = "inset(0% 0% 0% 0%)";
+      if (kind === "fold") clip = panel.animate([{ clipPath: full }, { clipPath: STRIP }], { duration: FOLD, easing: "ease-in", fill: "forwards" });
+      else if (kind === "close")
+        clip = panel.animate([{ clipPath: full }, { clipPath: STRIP, offset: CLOSE_SPLIT }, { clipPath: "inset(49.5% 50% 49.5% 50%)" }], {
+          duration: CLOSE,
+          easing: "ease-in",
+          fill: "forwards",
+        });
+      else {
+        const t = OPEN[kind];
+        const from = Math.max(0, t.expand[0]);
+        clip = panel.animate([{ clipPath: STRIP }, { clipPath: STRIP, offset: from / t.total }, { clipPath: full, offset: Math.min(1, t.expand[1] / t.total) }, { clipPath: full }], {
+          duration: t.total,
+          easing: "ease-out",
+        });
+      }
+    };
+    const reveal = (kind: RevealKind) => {
+      if (live.current.scene) engine.current?.reveal(kind);
+      else clipTo(kind);
+    };
+    const stage = () => stageRef.current?.dataset ?? ({} as DOMStringMap);
+    const reopen = () => {
+      leaving = false;
+      queue = null;
+      delete stage().shifting;
+      reveal("short");
+      play("short");
+    };
+
+    const api: ConsoleApi = {
+      signal: (signal) => engine.current?.signal(signal),
+      shift: (change) => {
+        if (queue) {
+          queue.push(change);
+          return;
+        }
+        if (live.current.motion === "off" || leaving) {
+          change();
+          return;
+        }
+        queue = [change];
+        settle();
+        stage().shifting = "";
+        if (live.current.sound) playAdminSound("fold");
+        reveal("fold");
+        later(FOLD, () => {
+          const changes = queue ?? [];
+          queue = null;
+          flushSync(() => {
+            for (const run of changes) run();
+          });
+          delete stage().shifting;
+          reveal("unfold");
+          play("unfold");
+        });
+      },
+      leave: (href) => {
+        const target = new URL(href, window.location.href);
+        if (live.current.motion === "off" || leaving || target.pathname === window.location.pathname) {
+          router.push(href);
+          return;
+        }
+        leaving = true;
+        settle();
+        stage().shifting = "";
+        if (live.current.sound) playAdminSound("fold");
+        reveal("close");
+        later(CLOSE, () => router.push(href));
+        later(CLOSE + LEAVE_WAIT, () => {
+          if (leaving) reopen();
+        });
+      },
+    };
+
+    return {
+      api,
+      play,
+      reveal,
+      reopen,
+      settle,
+      dispose: () => {
+        for (const id of timers) window.clearTimeout(id);
+        timers.clear();
+        settle();
+        clip?.cancel();
+      },
+    };
+  }, [router]);
 
   useEffect(() => {
     try {
@@ -149,17 +264,27 @@ function Shell({ children }: { children: ReactNode }) {
     return () => closeVaultAudio();
   }, []);
 
-  // A slow scene doesn't hold the content back; it assembles around it when it arrives.
+  useEffect(() => fx.dispose, [fx]);
+
+  // A slow scene doesn't hold the content back; the window frames it when it arrives.
   useEffect(() => {
     if (shown !== "pending") return;
     const id = window.setTimeout(() => setIntro((current) => (current === "pending" ? "late" : current)), SCENE_WAIT);
     return () => window.clearTimeout(id);
   }, [shown]);
 
+  // Without WebGL the drawn window still opens once (unless motion is off).
+  useEffect(() => {
+    if (!hydrated || canWebgl || motion === "off" || fallbackPlayed.current) return;
+    fallbackPlayed.current = true;
+    fx.reveal("short");
+    fx.play("short");
+  }, [hydrated, canWebgl, motion, fx]);
+
   const skipNow = useEffectEvent(() => skip());
   useEffect(() => {
-    if (!activating) return;
-    const id = window.setTimeout(() => setIntro("done"), BOOT[shown].total);
+    if (!opening) return;
+    const id = window.setTimeout(() => setIntro("done"), OPEN[shown].total);
     window.addEventListener("keydown", skipNow);
     window.addEventListener("pointerdown", skipNow);
     return () => {
@@ -167,41 +292,18 @@ function Shell({ children }: { children: ReactNode }) {
       window.removeEventListener("keydown", skipNow);
       window.removeEventListener("pointerdown", skipNow);
     };
-  }, [activating, shown]);
+  }, [opening, shown]);
 
+  // Every admin page opens from the strip the last one closed into (back and forward included).
   useEffect(() => {
     if (lastPath.current === pathname) return;
     lastPath.current = pathname;
-    engine.current?.signal("page");
-  }, [pathname]);
-
-  const api = useMemo<ConsoleApi>(
-    () => ({
-      signal: (signal) => engine.current?.signal(signal),
-      setLayers: (count) => {
-        state.current.layers = count;
-        engine.current?.setLayers(count);
-      },
-      setStep: (step) => {
-        state.current.step = step;
-        engine.current?.setStep(step);
-      },
-      setRewards: (next) => {
-        const count = next ? (next.coins > 0 ? 1 : 0) + next.ids.length : 0;
-        state.current.rewards = count;
-        engine.current?.setRewards(count);
-        setRewardState(next);
-      },
-    }),
-    [],
-  );
-  const attachSide = useCallback((el: HTMLDivElement | null) => {
-    sideRef.current = el;
-    setSideEl(el);
-  }, []);
+    if (live.current.intro !== "pending") fx.reopen();
+  }, [pathname, fx]);
 
   function skip() {
     engine.current?.skip();
+    fx.settle();
     hushVault();
     setIntro("done");
   }
@@ -209,11 +311,12 @@ function Shell({ children }: { children: ReactNode }) {
   function ready() {
     setScene("ready");
     if (intro === "pending" && motion !== "off") {
-      const kind: BootKind = motion === "subtle" || repeat.current ? "short" : "full";
-      engine.current?.start(kind);
+      const kind = motion === "subtle" || repeat.current ? "short" : "full";
+      engine.current?.reveal(kind);
+      fx.play(kind);
       setIntro(kind);
       if (sound) playAdminBoot(kind);
-    } else engine.current?.start(intro === "late" && motion !== "off" ? "late" : "none");
+    } else engine.current?.reveal(intro === "late" && motion !== "off" ? "late" : "none");
   }
 
   function fail() {
@@ -223,84 +326,48 @@ function Shell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ConsoleContext value={api}>
-      <SideContext value={wide ? sideEl : null}>
-        <div
-          className={cn("ax-stage", systemFont.variable, displayFont.variable)}
-          data-scene={webgl ? scene : "none"}
-          data-intro={shown}
-          style={{ "--ax-live": `${activating ? BOOT[shown].live : 0}ms` } as CSSProperties}
-        >
-          {webgl ? (
-            <SceneBoundary onError={fail}>
-              <Suspense fallback={null}>
-                <AdminScene ref={engine} panel={panelRef} side={sideRef} sats={satsRef} motion={motion} state={state} onReady={ready} onFail={fail} />
-              </Suspense>
-            </SceneBoundary>
-          ) : null}
-          {shown === "pending" ? (
-            <div className="ax-loader" role="status">
-              <span aria-hidden className="ax-loader-seam" />
-              <span className="ax-loader-text">Summoning the System</span>
-            </div>
-          ) : null}
-          <div ref={attachSide} className="ax-side" />
-          <div ref={panelRef} className="ax-console">
-            <span aria-hidden className="ax-glare">
-              <span />
-            </span>
-            <div className="ax-console-bar">
-              <span aria-hidden className="ax-console-mark" />
-              <span className="ax-console-id">
-                System <span className="ax-console-sub">Vault admin</span>
-              </span>
-              <button type="button" className="ax-icon-btn ax-console-sound" aria-pressed={sound} aria-label={sound ? "Mute panel sounds" : "Play panel sounds"} onClick={toggleSound}>
-                {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}
-              </button>
-            </div>
-            <div className="ax-console-screen">{children}</div>
+    <ConsoleContext value={fx.api}>
+      <div ref={stageRef} className={cn("ax-stage", systemFont.variable, displayFont.variable)} data-scene={webgl ? scene : "none"} data-intro={shown}>
+        <svg aria-hidden className="ax-filters" width="0" height="0" focusable="false">
+          <filter id="ax-smear" x="-4%" y="0" width="108%" height="100%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur stdDeviation="3 0" />
+          </filter>
+          <filter id="ax-smear-strong" x="-8%" y="0" width="116%" height="100%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8 0" result="blur" />
+            <feOffset in="SourceGraphic" dx="-12" result="shifted" />
+            <feColorMatrix in="shifted" type="matrix" values="1 0 0 0 0  0 0.12 0 0 0  0 0 0.18 0 0  0 0 0 0.5 0" result="ghost" />
+            <feMerge>
+              <feMergeNode in="ghost" />
+              <feMergeNode in="blur" />
+            </feMerge>
+          </filter>
+        </svg>
+        {webgl ? (
+          <SceneBoundary onError={fail}>
+            <Suspense fallback={null}>
+              <AdminScene ref={engine} panel={panelRef} motion={motion} onReady={ready} onFail={fail} />
+            </Suspense>
+          </SceneBoundary>
+        ) : null}
+        {shown === "pending" ? (
+          <div className="ax-loader" role="status">
+            <span aria-hidden className="ax-loader-line" />
+            <span className="ax-loader-text">Opening the System</span>
           </div>
-          <div ref={satsRef} aria-hidden className="ax-sats">
-            {wide && rewards ? <Satellites rewards={rewards} /> : null}
-          </div>
-          {activating ? (
-            <button type="button" className="ax-skip" onClick={skip}>
-              Skip summoning
-            </button>
-          ) : null}
+        ) : null}
+        <div ref={panelRef} className="ax-console">
+          <span aria-hidden className="ax-fallback" />
+          <div className="ax-console-screen">{children}</div>
+          <button type="button" className="ax-icon-btn ax-console-sound" aria-pressed={sound} aria-label={sound ? "Mute panel sounds" : "Play panel sounds"} onClick={toggleSound}>
+            {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}
+          </button>
         </div>
-      </SideContext>
+        {opening ? (
+          <button type="button" className="ax-skip" onClick={skip}>
+            Skip
+          </button>
+        ) : null}
+      </div>
     </ConsoleContext>
-  );
-}
-
-/** The selected rewards as tokens beside the window, with their real artwork (the scene adds plates and tethers). */
-function Satellites({ rewards }: { rewards: ConsoleRewards }) {
-  const keys = [...(rewards.coins > 0 ? ["coins"] : []), ...rewards.ids];
-  const shown = keys.length > MAX_SATS ? keys.slice(0, MAX_SATS - 1) : keys;
-  const extra = keys.length - shown.length;
-  return (
-    <>
-      {shown.map((key) => (
-        <div key={key} className="ax-sat" data-sat={key}>
-          <span className="ax-sat-art">
-            {key === "coins" ? (
-              <span className="vx-coin" data-size="card">
-                <Coins />
-              </span>
-            ) : (
-              <RewardArt id={key} size="card" looks={rewards.looks} />
-            )}
-          </span>
-          <span className="ax-sat-name">{key === "coins" ? `${rewards.coins.toLocaleString("en")} coins` : rewardInfo(key).name}</span>
-        </div>
-      ))}
-      {extra > 0 ? (
-        <div className="ax-sat" data-sat="more">
-          <span className="ax-sat-art ax-sat-more">+{extra}</span>
-          <span className="ax-sat-name">More rewards</span>
-        </div>
-      ) : null}
-    </>
   );
 }

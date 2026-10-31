@@ -51,34 +51,34 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-10-31-system-vault-console",
     date: "2026-10-31",
-    title: "The admin panel becomes a summoned System window",
-    intro: "For administrators, the Vault code panel is now a System window summoned into a dark dimension: it opens from a seam of light, leans toward your pointer in real depth and shows the rewards you pick as artwork floating beside it.",
+    title: "The admin panel becomes a crimson System window",
+    intro: "For administrators, the Vault code panel is now a single floating System window in the Vault's crimson: it unfolds from a thin strip of light, leans toward your pointer in real depth and decodes its text into place.",
     icon: "sparkles",
     highlights: [
-      { kind: "improved", feature: "System window", text: "The code panel floats in the dark as a layered 3D window with amber contours that tilts with the pointer and steadies while you type, press or scroll." },
-      { kind: "improved", feature: "Rewards in the scene", text: "While you build a code, the chosen cosmetics, achievements and coins appear beside the window with their real artwork." },
-      { kind: "improved", feature: "Publishing", text: "The window charges while the request runs; the rewards are drawn into the seal and the code is revealed only once the server confirms it." },
+      { kind: "improved", feature: "System window", text: "A dark translucent window with layered crimson framing, a framed title strip and glowing bars above and below, tilting with the pointer and steadying while you type, press or scroll." },
+      { kind: "improved", feature: "Builder steps", text: "Each builder step folds the window to a strip and unfolds the next one, keeping every value, selection and focus." },
+      { kind: "improved", feature: "Publishing", text: "The code is revealed only after the server confirms it: the frame flares crimson, then the real code decodes with a clear Copy button." },
     ],
     details: {
       improved: [
         {
-          title: "A summoned System window",
-          body: "Creating and reviewing Vault codes happens on one System window in a dark vault: a seam of light appears, the frame assembles around it and the window opens. Every form and list on it is still a regular, accessible page element.",
+          title: "A crimson System window",
+          body: "Creating and reviewing Vault codes happens in one System window: a narrow strip expands into the window, the frame lights up, a brief distortion passes and the text decodes from scrambled fragments. Every form and list on it is still a regular, accessible page element.",
           points: [
-            "A short loading line shows while the 3D scene starts. The first visit in a session plays the full summoning, later visits a shorter one, and any key or click skips it.",
-            "The window, its frame and the layers behind it sit at different depths and catch the light as it leans toward the pointer. It steadies while you type, press or scroll and resumes afterwards; on phones it drifts gently on its own.",
-            "On wide screens the overview, the builder steps and the code's status sit in a side window turned toward the main one.",
+            "The first visit in a session plays the full opening, later visits a shorter one, and any key, click or the Skip button ends it. Leaving the panel from inside folds the window back into a strip.",
+            "The frame, the glass and the bars sit at different depths and catch the light as the window leans toward the pointer. It steadies while you type, press or scroll; on phones it keeps its depth without hover.",
+            "The window grows to fit what it shows; long lists scroll inside while the title and actions stay in place.",
             "Optional sound follows the panel's mute switch. Reduced motion and the in-app motion setting keep everything still, and devices without 3D graphics get a drawn window instead.",
           ],
           where: "Admin panel (administrators only)",
         },
         {
           title: "Building and publishing codes",
-          body: "The builder keeps its steps (rewards, values and selections, eligibility and limits, review, publish); each step change turns the window's step ring and slides the next sheet forward.",
+          body: "The builder keeps its steps (rewards, values and selections, eligibility and limits, review, publish); each step is its own state of the window rather than a card inside it.",
           points: [
-            "On wide screens, chosen rewards appear beside the window as their actual cosmetic artwork and achievement icons, linked to it by threads of light.",
-            "Publishing charges the window while the request is underway. Only after the server confirms do the rewards converge into the seal and the code decode on its plate, with a prominent Copy button.",
-            "If publishing fails, every value stays in place and the window shows the error; nothing is celebrated.",
+            "Searches, filters, cosmetic previews, achievement picks, coins, permissions, dates and limits all carry over between steps.",
+            "Publishing sends the request right away. Only after the server confirms does the frame flare and the real code decode on its plate, with a prominent Copy button.",
+            "If publishing fails, every value stays in place and the error stays readable; nothing is celebrated and retries never create a second code.",
           ],
           where: "Admin panel (administrators only)",
         },

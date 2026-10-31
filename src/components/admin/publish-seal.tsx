@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { Check, Copy, ShieldAlert } from "lucide-react";
 import { DecodeText } from "@/components/vault/vault-reveal";
+import { FOLD, PUBLISH } from "./admin-timing";
 import { StatusPill } from "./admin-ui";
 
 /**
- * The admin's publish confirmation, shown only after the server confirms: the scene draws the
- * rewards into the seal, the emblem ring traces and the check settles, then the code plate is
- * decoded. Shown this one time only.
+ * The admin's publish confirmation, shown only after the server confirms: it mounts as the window
+ * reopens, the emblem traces while the frame takes its crimson accent, then the real code decodes and
+ * settles beside the Copy action. Shown this one time only.
  */
 export default function PublishSeal({ code, status, animate }: { code: string; status: "active" | "scheduled"; animate: boolean }) {
   const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
@@ -31,7 +32,7 @@ export default function PublishSeal({ code, status, animate }: { code: string; s
       <StatusPill status={status} />
       <div className="ax-codeplate">
         <code aria-label={code}>
-          <DecodeText text={code} animate={animate} delay={animate ? 1000 : 0} />
+          <DecodeText text={code} animate={animate} delay={animate ? PUBLISH.code - FOLD : 0} />
         </code>
         <button type="button" className="ax-btn" data-variant="primary" onClick={copy}>
           {copied === "yes" ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}

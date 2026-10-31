@@ -1,41 +1,53 @@
 /**
- * The System window's summoning timeline in ms, shared by the 3D scene, the page (when the surface
- * goes live) and the sound. "late" is for a scene that arrives after the content is already shown.
+ * The System window's reveal language in ms, shared by the 3D scene, the page (text decoding,
+ * controls) and the sound so every layer moves as one. A window opens from a luminous line: a
+ * narrow strip forms between the two bars, expands vertically while a brief horizontal distortion
+ * runs through it, the frame flares and settles, the text decodes and the controls arrive last.
+ * Closing is the same in reverse. "late" lights the frame around content that is already shown.
  */
-export type BootKind = "full" | "short" | "late" | "none";
+export type OpenKind = "full" | "short" | "unfold" | "late";
+export type RevealKind = OpenKind | "fold" | "close" | "none";
 
 type Window = readonly [number, number];
-export type BootTimes = {
-  /** Dust gathers and a seam of light grows across the centre. */
-  seam: Window;
-  /** The seam opens into the window's contour. */
-  open: Window;
-  /** Camera and window turn from a low oblique angle to face the viewer. */
-  arrive: Window;
-  /** Rim, corner brackets, back plate and engraving lock into place. */
-  pieces: Window;
-  /** The glass fills and the scan line activates the surface. */
-  glass: Window;
-  scan: Window;
-  /** Supporting layers unfold: side window, reward satellites, step sheets. */
-  unfold: Window;
-  /** Background system panes draw in, staggered. */
-  planes: Window;
-  /** When the page content starts to appear. */
-  live: number;
+export type OpenTimes = {
+  /** A line of light grows out from the centre with a flare. */
+  line: Window;
+  /** The line parts into a narrow strip between the two bars. */
+  strip: Window;
+  /** The strip expands vertically to the full window. */
+  expand: Window;
+  /** Horizontal slices tear and smear sideways. */
+  distort: Window;
+  /** The frame flares and settles to its resting glow. */
+  frame: Window;
+  /** The text decodes from scrambled glyphs, left to right. */
+  decode: Window;
+  /** When the controls fade in. */
+  controls: number;
   total: number;
 };
 
 const NEVER: Window = [-2, -1];
 
-export const BOOT: Record<Exclude<BootKind, "none">, BootTimes> = {
-  full: { seam: [150, 750], open: [650, 1350], arrive: [0, 2300], pieces: [1000, 2100], glass: [1500, 2100], scan: [1750, 2450], unfold: [2050, 3000], planes: [1300, 3000], live: 1950, total: 3200 },
-  short: { seam: [0, 220], open: [120, 480], arrive: [0, 850], pieces: [200, 750], glass: [350, 650], scan: [450, 850], unfold: [600, 1150], planes: [250, 1100], live: 520, total: 1250 },
-  late: { seam: NEVER, open: [0, 500], arrive: NEVER, pieces: [100, 800], glass: [0, 450], scan: NEVER, unfold: [300, 950], planes: [0, 950], live: -1, total: 1000 },
+export const OPEN: Record<OpenKind, OpenTimes> = {
+  full: { line: [0, 300], strip: [220, 420], expand: [400, 760], distort: [420, 700], frame: [400, 1150], decode: [560, 1300], controls: 980, total: 1350 },
+  short: { line: [0, 140], strip: [100, 220], expand: [200, 470], distort: [220, 420], frame: [200, 760], decode: [300, 820], controls: 560, total: 860 },
+  unfold: { line: NEVER, strip: NEVER, expand: [0, 300], distort: [20, 220], frame: [0, 560], decode: [90, 600], controls: 300, total: 620 },
+  late: { line: NEVER, strip: NEVER, expand: NEVER, distort: NEVER, frame: [0, 760], decode: NEVER, controls: -1, total: 800 },
 };
 
-/** Where the corner brackets land (as fractions of the pieces window), for the scene and the sound. */
-export const PIECE_LANDINGS = [0.52, 0.61, 0.7, 0.79];
+/** A step change: the window compresses into a strip, then unfolds on the new state. */
+export const FOLD = 230;
+/** Leaving a page: compression into a strip, which then shrinks to the centre and disappears. */
+export const CLOSE = 380;
+/** Share of CLOSE spent compressing (the rest shrinks the strip sideways). */
+export const CLOSE_SPLIT = 0.55;
 
-/** Session key: the full activation plays once per tab session, later visits get the short one. */
+/**
+ * After the server confirms a publish (ms from its answer): the window folds and reopens on the
+ * result, then the frame activates with an energy accent and the real code decodes.
+ */
+export const PUBLISH = { accent: FOLD + 300, code: FOLD + 520 };
+
+/** Session key: the full opening plays once per tab session, later visits get the short one. */
 export const BOOT_KEY = "archive:admin:activated";

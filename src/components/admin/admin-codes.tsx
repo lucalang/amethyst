@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type MouseEvent } from "react";
 import { ChevronRight, FilePenLine, Loader2, Plus, Trash2 } from "lucide-react";
@@ -18,8 +17,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, configFrom, STATUS_LABEL, type AdminCode, type AdminDraft, type CodeStatus } from "@/lib/vault-admin";
-import { useConsoleLayers } from "./admin-console";
-import { adminDialogClass, audienceSummary, codeRewards, ConsoleView, StatusPill, SystemWindow, useNow, When } from "./admin-ui";
+import { ConsoleLink } from "./admin-console";
+import { adminDialogClass, audienceSummary, codeRewards, ConsoleView, Pane, StatusPill, useNow, When } from "./admin-ui";
 
 const FILTERS: readonly ("all" | CodeStatus)[] = ["all", "active", "scheduled", "expired", "used-up", "disabled"];
 
@@ -41,45 +40,46 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
       (!needle || [code.label, rewards, code.id, code.createdByName ?? ""].some((text) => text.toLowerCase().includes(needle))),
   );
   const redemptions = codes.reduce((sum, code) => sum + code.redemptionCount, 0);
-  useConsoleLayers(2);
 
   return (
     <ConsoleView
       eyebrow="Admin panel"
       title="Vault codes"
       lede="Build, publish and retire Vault codes. Codes are stored as hashes only, so a published code can’t be shown again."
-      actions={
-        <Link href="/admin/new" className="ax-btn" data-variant="primary">
-          <Plus aria-hidden className="size-4" /> Build a code
-        </Link>
+      meta={
+        <dl className="ax-stats" aria-label="Overview">
+          <div>
+            <dt>Active</dt>
+            <dd>{counts.active ?? 0}</dd>
+          </div>
+          <div>
+            <dt>Scheduled</dt>
+            <dd>{counts.scheduled ?? 0}</dd>
+          </div>
+          <div>
+            <dt>Drafts</dt>
+            <dd>{drafts.length}</dd>
+          </div>
+          <div>
+            <dt>Redemptions</dt>
+            <dd>{redemptions.toLocaleString("en")}</dd>
+          </div>
+        </dl>
       }
-      asideLabel="Overview"
-      aside={
-        <SystemWindow id="ax-status-title" title="Status">
-          <dl className="ax-stats">
-            <div>
-              <dt>Active</dt>
-              <dd>{counts.active ?? 0}</dd>
-            </div>
-            <div>
-              <dt>Scheduled</dt>
-              <dd>{counts.scheduled ?? 0}</dd>
-            </div>
-            <div>
-              <dt>Drafts</dt>
-              <dd>{drafts.length}</dd>
-            </div>
-            <div>
-              <dt>Redemptions</dt>
-              <dd>{redemptions.toLocaleString("en")}</dd>
-            </div>
-          </dl>
-        </SystemWindow>
+      footer={
+        <div className="ax-actions">
+          <span />
+          <div className="ax-actions-end">
+            <ConsoleLink href="/admin/new" className="ax-btn" data-variant="primary">
+              <Plus aria-hidden className="size-4" /> Build a code
+            </ConsoleLink>
+          </div>
+        </div>
       }
     >
       {drafts.length ? <Drafts drafts={drafts} /> : null}
 
-      <SystemWindow id="ax-codes-title" title="Published codes" count={`${shown.length}/${rows.length}`} order={drafts.length ? 2 : 1}>
+      <Pane id="ax-codes-title" title="Published codes" count={`${shown.length}/${rows.length}`}>
         <div className="ax-toolbar">
           <div className="ax-chips" role="group" aria-label="Filter by status">
             {FILTERS.map((id) => (
@@ -94,7 +94,7 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
           <ul className="ax-rows">
             {shown.map(({ code, status, rewards }) => (
               <li key={code.id}>
-                <Link href={`/admin/codes/${code.id}`} className="ax-row">
+                <ConsoleLink href={`/admin/codes/${code.id}`} className="ax-row">
                   <span className="ax-row-status">
                     <StatusPill status={status} />
                   </span>
@@ -134,7 +134,7 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
                     </span>
                   </span>
                   <ChevronRight aria-hidden className="ax-row-go" />
-                </Link>
+                </ConsoleLink>
               </li>
             ))}
           </ul>
@@ -155,7 +155,7 @@ export function AdminCodes({ codes, drafts, now: serverNow }: { codes: AdminCode
             ) : null}
           </div>
         )}
-      </SystemWindow>
+      </Pane>
     </ConsoleView>
   );
 }
@@ -181,7 +181,7 @@ function Drafts({ drafts }: { drafts: AdminDraft[] }) {
   }
 
   return (
-    <SystemWindow id="ax-drafts-title" title="Drafts" count="Not redeemable" tone="draft" order={1}>
+    <Pane id="ax-drafts-title" title="Drafts" count="Not redeemable" tone="draft">
       <ul className="ax-drafts">
         {drafts.map((draft) => {
           const config = configFrom(draft.config);
@@ -195,9 +195,9 @@ function Drafts({ drafts }: { drafts: AdminDraft[] }) {
                   {draft.updatedByName ? ` by ${draft.updatedByName}` : ""}
                 </span>
               </span>
-              <Link href={`/admin/new?draft=${draft.id}`} className="ax-btn" data-size="sm">
+              <ConsoleLink href={`/admin/new?draft=${draft.id}`} className="ax-btn" data-size="sm">
                 Continue
-              </Link>
+              </ConsoleLink>
               <button type="button" className="ax-icon-btn" aria-label={`Delete draft ${draft.label || "Untitled draft"}`} onClick={() => setRemoving(draft)}>
                 <Trash2 aria-hidden className="size-4" />
               </button>
@@ -220,6 +220,6 @@ function Drafts({ drafts }: { drafts: AdminDraft[] }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SystemWindow>
+    </Pane>
   );
 }
