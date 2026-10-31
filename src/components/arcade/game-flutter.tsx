@@ -533,7 +533,6 @@ export default function GameFlutter({ records: initialRecords }: { records: Reco
           </Button>
         ) : null
       }
-      help="Tap, click or press Space to flap. Fly through the gaps between the crystal pillars; touching a pillar or the ground ends the run. P or Esc pauses, and the game also pauses when you switch away; it resumes only when you choose, after a short countdown."
     >
       {daily ? (
         <p className="mb-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-center text-xs text-muted-foreground">

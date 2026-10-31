@@ -295,7 +295,6 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
             </span>{" "}
             coin{balance === 1 ? "" : "s"}
           </span>
-          <span className="block text-xs text-muted-foreground">Earned by playing. Purchases are permanent unlocks; equipping and restoring defaults are free.</span>
         </span>
       </section>
 
@@ -360,7 +359,6 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
               {focus.name}
               {focus.owned ? null : <Price value={focus.price} />}
             </p>
-            <p className="mt-1 text-sm text-pretty text-muted-foreground">{focus.description}</p>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">{action(focus, true)}</div>
           <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
@@ -374,7 +372,6 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
             <Icon aria-hidden className="size-4 text-amethyst" />
             {category.label}
           </h2>
-          <p className="mt-1 text-sm text-pretty text-muted-foreground">{category.blurb}</p>
           {shown.length === 0 ? (
             <div className="mt-4">
               <CatalogEmpty
@@ -425,7 +422,6 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                         <StateBadge entry={entry} />
                       </span>
                       {entry.slug ? null : <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Default · free</span>}
-                      <span className="text-xs leading-5 text-pretty text-muted-foreground">{entry.description}</span>
                     </button>
                     <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
                       <span className={cn("inline-flex items-center gap-1 text-xs", isFocus ? "font-medium text-amethyst" : "text-muted-foreground")}>

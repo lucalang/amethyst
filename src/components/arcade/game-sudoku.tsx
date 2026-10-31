@@ -734,7 +734,6 @@ export default function GameSudoku({
           </>
         ) : null
       }
-      help="Select a cell, then type 1–9 or use the pad. Shift+digit or Notes mode adds pencil marks. 0/Backspace erases, Ctrl+Z undoes, H reveals a cell (marks the solve as assisted), arrows move, P pauses."
     >
       {view === "picker" || !game ? (
         picker

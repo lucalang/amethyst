@@ -49,6 +49,32 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-31-amethyst-text-cleanup",
+    date: "2026-10-31",
+    title: "Amethyst Text Cleanup",
+    intro: "Redundant explanatory copy is trimmed across What’s New, Arcade and Version History while release details, game controls, shop actions and demo access stay intact.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "What’s New", text: "Release titles, dates, notices, highlights and full notes now lead without repeated intro paragraphs." },
+      { kind: "improved", feature: "Arcade", text: "Shop and minigame surfaces keep balances, controls, cosmetic state and purchase actions with less helper copy." },
+      { kind: "improved", feature: "Version History", text: "Playable milestones are condensed while the complete commit catalog and demo actions remain." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Less repeated copy",
+          body: "What’s New, Arcade and Version History now emphasize release information, game controls, shop state and demo actions without repeating explanatory prose.",
+          points: [
+            "Historical release intro data remains stored, but release pages no longer render those paragraphs.",
+            "Arcade coin balances, cosmetic search, ownership, purchase confirmations, game input and demo routing are unchanged.",
+            "Version History retains its full commit catalog, filters, launch behavior and reset confirmation.",
+          ],
+          where: "What’s new, Arcade and Version history",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-31-sculpted-frames-beta",
     date: "2026-10-31",
     title: "Sculpted 3D Frames (Beta)",

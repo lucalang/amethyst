@@ -579,7 +579,6 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
           </Button>
         ) : null
       }
-      help={`Click, tap or press Space to drop the sliding block; it lands where it was at the moment of your input. Only the part over the block below stays, and the overhang falls away. Land within ${PERFECT / BOX * 100}% of the block below for a perfect, which keeps the full width. Classic and Daily never give width back; Casual (its own records) widens the block again from three perfects in a row. Missing the tower ends the run. P pauses.`}
     >
       {daily ? (
         <p className="mb-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-center text-xs text-muted-foreground">

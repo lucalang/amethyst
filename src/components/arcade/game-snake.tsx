@@ -241,7 +241,6 @@ export default function GameSnake({ records: initialRecords }: { records: Record
           </Button>
         ) : null
       }
-      help="Arrows/WASD or swipe to steer · Space/P pause · R restart"
     >
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <div className="flex min-w-0 flex-col items-center gap-3">

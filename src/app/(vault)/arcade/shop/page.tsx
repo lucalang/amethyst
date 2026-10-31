@@ -40,7 +40,6 @@ export default async function ArcadeShopPage() {
       <PageContainer>
         <PageHeader
           title="Arcade shop"
-          description="Cosmetics for your archive, paid for with coins from Arcade games. They change how things look, never how games play, and once bought they’re yours for good."
           actions={
             <Button asChild variant="ghost" size="sm">
               <Link href="/arcade">
@@ -55,7 +54,6 @@ export default async function ArcadeShopPage() {
             <Store aria-hidden className="size-4 text-amethyst" />
             Game shops
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Skins, themes, effects and art styles for each game, bought with the same coins.</p>
           <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {SHOP_GAMES.map((game) => {
               const shop = GAME_SHOPS[game];

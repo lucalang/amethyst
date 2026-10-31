@@ -818,7 +818,6 @@ export default function GameFruit({ records: initialRecords }: { records: Record
           </Button>
         ) : null
       }
-      help={`Press and drag (mouse or finger) through fruit to slice it. A stroke lasts until you lift or hold still for a moment; 3 or more fruit in one stroke pays a combo bonus. Classic: 3 misses or a bomb ends the round. Arcade and Daily: 60 seconds, bombs cost ${BOMB_PENALTY} points. Zen: 90 seconds, no bombs. P pauses.`}
     >
       {daily ? (
         <p className="mb-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-center text-xs text-muted-foreground">

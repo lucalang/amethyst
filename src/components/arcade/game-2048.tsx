@@ -367,7 +367,6 @@ export default function Game2048({ records: initialRecords, userId }: { records:
           New game
         </Button>
       }
-      help="Use the arrow keys (or WASD), or swipe on the board. Matching tiles merge once per move; reach 2048 to win, then keep going if you like. Every board size and the daily challenge keep their own round and best, and unfinished rounds resume where you left them."
     >
       {mode === "daily" && round.date ? (
         <p className="mb-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-center text-xs text-muted-foreground">

@@ -3,7 +3,7 @@
 import { useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Award, Check, Coins, Eye, History, Loader2, Lock, Trophy } from "lucide-react";
+import { ArrowRight, Award, Check, Coins, Eye, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { CatalogEmpty, CatalogSearch, FilterChip, OwnershipFilter } from "@/components/catalog/catalog-search";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
@@ -20,10 +20,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { achievementForItem } from "@/lib/achievements";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { ARCADE_GAMES, DAILY_COIN_LIMIT, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type SudokuDifficulty } from "@/lib/arcade";
 import { catalogMatcher, ownershipMatches, type Ownership } from "@/lib/catalog-search";
 import { COSMETICS, COSMETIC_KIND_LABELS, type AvatarDecorationId, type CosmeticId, type CosmeticKind, type ShopItem } from "@/lib/cosmetics";
-import type { CoinRule, ShopData } from "@/lib/data/shop";
+import type { ShopData } from "@/lib/data/shop";
 import { ARTWORK_FRAMES, type ArtworkFrameId } from "@/lib/frames";
 import { cn } from "@/lib/utils";
 import { SampleArt, type FrameSample } from "../../settings/frame-settings";
@@ -99,31 +98,7 @@ function Price({ value, className }: { value: number; className?: string }) {
   );
 }
 
-function RuleLine({ rule }: { rule: CoinRule }) {
-  if (rule.game === "sudoku") {
-    const label = SUDOKU_LABELS[rule.variant as SudokuDifficulty] ?? rule.variant;
-    return (
-      <>
-        <dt className="text-foreground">Sudoku · {label}</dt>
-        <dd>
-          <Price value={rule.flatCoins} /> per solved puzzle
-          {rule.minSeconds > 0 ? <span className="text-muted-foreground"> (solved in {formatDuration(rule.minSeconds)} or more)</span> : null}
-        </dd>
-      </>
-    );
-  }
-  const title = ARCADE_GAMES.find((game) => game.id === rule.game)?.title ?? rule.game;
-  return (
-    <>
-      <dt className="text-foreground">{title}</dt>
-      <dd>
-        Score {rule.minScore.toLocaleString("en")}+ in a run of {rule.minSeconds}s or longer · more for higher scores, up to <Price value={rule.maxCoins} /> a run
-      </dd>
-    </>
-  );
-}
-
-/** The shop: balance, a fitting room that previews without equipping, the catalogue, earning rules and coin history. */
+/** The shop: balance, a fitting room that previews without equipping, and the catalogue. */
 export function ShopView({
   shop,
   frame,
@@ -180,8 +155,6 @@ export function ShopView({
     achievement: searched.filter((item) => item.source === "achievement").length,
   };
   const focus = items.find((item) => item.id === selected) ?? items[0] ?? null;
-  const scoreRules = ARCADE_GAMES.flatMap((game) => shop.rules.filter((rule) => rule.game === game.id && game.id !== "sudoku"));
-  const sudokuRules = SUDOKU_DIFFICULTIES.flatMap((difficulty) => shop.rules.filter((rule) => rule.game === "sudoku" && rule.variant === difficulty));
 
   function preview(id: CosmeticId) {
     setSelected(id);
@@ -304,9 +277,6 @@ export function ShopView({
             </span>{" "}
             coin{balance === 1 ? "" : "s"}
           </span>
-          <span className="block text-xs text-muted-foreground">
-            {shop.earned > 0 ? `${coinsText(shop.earned)} earned from play so far.` : "Finish a good run in any Arcade game to earn your first coins."} Coins can’t be bought.
-          </span>
         </span>
         <Link href="/arcade" className="arcade-counter-cta">
           <span className="hidden sm:inline">Earn more</span>
@@ -346,7 +316,6 @@ export function ShopView({
                   <Price value={focus.price} />
                 )}
               </p>
-              <p className="mt-1 text-sm text-pretty text-muted-foreground">{COSMETICS[focus.id].description}</p>
             </div>
             <div className="mt-4">{itemAction(focus, true)}</div>
             <p className="mt-4 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
@@ -463,7 +432,6 @@ export function ShopView({
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">{COSMETIC_KIND_LABELS[item.kind]}</p>
-                        <p className="mt-1 text-xs leading-5 text-pretty text-muted-foreground">{info.description}</p>
                         <div className="mt-auto pt-3">{itemAction(item)}</div>
                       </div>
                     </article>
@@ -471,71 +439,6 @@ export function ShopView({
                 );
               })}
             </ul>
-          )}
-        </section>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section aria-labelledby="earn-heading" className="rounded-2xl border border-border bg-surface/40 p-4 md:p-5">
-          <h2 id="earn-heading" className="flex items-center gap-2 text-base font-semibold">
-            <Trophy aria-hidden className="size-4 text-amethyst" />
-            How to earn coins
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every finished run is counted once by the server, so replays and reloads never pay twice. Coins from play and net Coin Slots winnings share a limit of {DAILY_COIN_LIMIT} in any 24 hours; one-time rewards from{" "}
-            <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
-              Achievements
-            </Link>{" "}
-            and{" "}
-            <Link href="/vault" className="text-amethyst underline-offset-4 hover:underline">
-              Vault codes
-            </Link>{" "}
-            don’t count toward it.
-          </p>
-          <dl className="mt-4 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[minmax(7rem,auto)_1fr] [&_dd]:mb-2 [&_dd]:text-muted-foreground sm:[&_dd]:mb-1">
-            {scoreRules.map((rule) => (
-              <RuleLine key={`${rule.game}:${rule.variant}`} rule={rule} />
-            ))}
-            {sudokuRules.map((rule) => (
-              <RuleLine key={`${rule.game}:${rule.variant}`} rule={rule} />
-            ))}
-          </dl>
-        </section>
-
-        <section aria-labelledby="history-heading" className="rounded-2xl border border-border bg-surface/40 p-4 md:p-5">
-          <h2 id="history-heading" className="flex items-center gap-2 text-base font-semibold">
-            <History aria-hidden className="size-4 text-amethyst" />
-            Recent coins
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Coin Slots spins are listed{" "}
-            <Link href="/arcade/slots" className="text-amethyst underline-offset-4 hover:underline">
-              on the machine
-            </Link>
-            .
-          </p>
-          {shop.history.length === 0 ? (
-            <p className="mt-3 text-sm text-muted-foreground">No coins yet. Finish a qualifying run in any Arcade game and it will show up here.</p>
-          ) : (
-            <ol className="mt-3 divide-y divide-border">
-              {shop.history.map((entry) => (
-                <li key={entry.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                  <span className="min-w-0">
-                    <span className="block truncate text-foreground">{entry.label}</span>
-                    <span suppressHydrationWarning className="block text-xs text-muted-foreground">
-                      {new Date(entry.createdAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className={cn("block font-semibold tabular-nums", entry.amount > 0 ? "coin-ink" : "text-muted-foreground")}>
-                      {entry.amount > 0 ? "+" : "−"}
-                      {Math.abs(entry.amount).toLocaleString("en")}
-                    </span>
-                    <span className="block text-xs text-muted-foreground tabular-nums">Balance {entry.balanceAfter.toLocaleString("en")}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
           )}
         </section>
       </div>

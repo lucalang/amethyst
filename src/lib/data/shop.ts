@@ -1,6 +1,4 @@
 import "server-only";
-import { achievementDefinition } from "@/lib/achievements";
-import { SUDOKU_DIFFICULTIES, type SudokuDifficulty } from "@/lib/arcade";
 import { COSMETICS, isAvatarDecorationId, isCosmeticId, type AvatarDecorationId, type CosmeticKind, type ShopItem } from "@/lib/cosmetics";
 import { GAME_SHOPS, gameCosmetic, lookFromItems, type GameLook, type ShopGame } from "@/lib/game-cosmetics";
 import type { AuthContext } from "@/lib/supabase/auth";
@@ -22,53 +20,12 @@ export async function loadOwnedCosmetics(ctx: AuthContext): Promise<string[]> {
 
 export const toAvatarDecoration = (value: string | null | undefined): AvatarDecorationId | null => (isAvatarDecorationId(value) ? value : null);
 
-export type CoinTransaction = {
-  id: number;
-  amount: number;
-  balanceAfter: number;
-  kind: "reward" | "purchase" | "code" | "slots" | "achievement";
-  label: string;
-  createdAt: string;
-};
-
-const GAME_NAMES: Record<string, string> = {
-  "2048": "2048",
-  flutter: "Flutter",
-  snake: "Snake",
-  sudoku: "Sudoku",
-  "fruit-slice": "Fruit Slice",
-  stacker: "Tower Stacker",
-};
-
-function transactionLabel(kind: CoinTransaction["kind"], details: unknown) {
-  const info = (details ?? {}) as Record<string, unknown>;
-  if (kind === "code") return "Secret code";
-  if (kind === "slots") return "Coin Slots";
-  if (kind === "achievement") {
-    const achievement = typeof info.achievement === "string" ? achievementDefinition(info.achievement) : undefined;
-    return achievement ? `Achievement · ${achievement.name}` : "Achievement reward";
-  }
-  if (kind === "purchase") {
-    if (isCosmeticId(info.item)) return `Bought ${COSMETICS[info.item].name}`;
-    const game = gameCosmetic(info.item);
-    return game ? `Bought ${game.name} (${GAME_SHOPS[game.game].title})` : "Purchase";
-  }
-  const game = typeof info.game === "string" ? (GAME_NAMES[info.game] ?? "Arcade") : "Arcade";
-  if (info.game === "sudoku" && SUDOKU_DIFFICULTIES.includes(info.difficulty as SudokuDifficulty)) return `${game} · ${info.difficulty as string} puzzle`;
-  return typeof info.score === "number" ? `${game} · score ${info.score.toLocaleString("en")}` : game;
-}
-
-export type CoinRule = { game: string; variant: string; minScore: number; minSeconds: number; pointsPerCoin: number; flatCoins: number; maxCoins: number };
-
 export type ShopData = {
   balance: number;
-  earned: number;
   items: ShopItem[];
-  history: CoinTransaction[];
-  rules: CoinRule[];
 };
 
-/** Everything the shop shows: server prices, ownership, what is equipped, recent coin history and the earning rules. */
+/** The shop balance, catalog, ownership and equipped state. */
 type EquippedCosmetics = { frame: string; decoration: string | null };
 
 export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | Promise<EquippedCosmetics>): Promise<ShopData> {
@@ -76,26 +33,16 @@ export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | P
     if (error) throw new Error(`Could not load the shop: ${error.code}`);
     return data;
   };
-  const [wallet, items, owned, history, rules, look] = await Promise.all([
-    measureServer("shop.wallet", () => ctx.supabase.from("coin_wallets").select("balance, earned").eq("user_id", ctx.userId).maybeSingle().then(check)),
+  const [wallet, items, owned, look] = await Promise.all([
+    measureServer("shop.wallet", () => ctx.supabase.from("coin_wallets").select("balance").eq("user_id", ctx.userId).maybeSingle().then(check)),
     measureServer("shop.catalog", () => ctx.supabase.from("cosmetic_items").select("id, kind, price, available, source").neq("kind", "game").then(check)),
     measureServer("shop.ownership", () => ctx.supabase.from("user_cosmetics").select("item_id").eq("user_id", ctx.userId).then(check)),
-    ctx.supabase
-      .from("coin_transactions")
-      .select("id, amount, balance_after, kind, details, created_at")
-      .eq("user_id", ctx.userId)
-      .neq("kind", "slots")
-      .order("created_at", { ascending: false })
-      .limit(12)
-      .then(check),
-    ctx.supabase.from("arcade_reward_rules").select("game, variant, min_score, min_seconds, points_per_coin, flat_coins, max_coins").then(check),
     equipped,
   ]);
   const ownedIds = new Set((owned ?? []).map((row) => row.item_id));
   const order = Object.keys(COSMETICS);
   return {
     balance: wallet?.balance ?? 0,
-    earned: wallet?.earned ?? 0,
     items: (items ?? [])
       .filter((item) => item.kind !== "game" && isCosmeticId(item.id))
       .map((item) => {
@@ -115,23 +62,6 @@ export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | P
       })
       .filter((item) => item.available || item.owned || item.source === "achievement")
       .sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)),
-    history: (history ?? []).map((row) => ({
-      id: row.id,
-      amount: row.amount,
-      balanceAfter: row.balance_after,
-      kind: row.kind,
-      label: transactionLabel(row.kind, row.details),
-      createdAt: row.created_at,
-    })),
-    rules: (rules ?? []).map((rule) => ({
-      game: rule.game,
-      variant: rule.variant,
-      minScore: rule.min_score,
-      minSeconds: rule.min_seconds,
-      pointsPerCoin: Number(rule.points_per_coin),
-      flatCoins: rule.flat_coins,
-      maxCoins: rule.max_coins,
-    })),
   };
 }
 

@@ -43,7 +43,6 @@ export default async function ArcadePage() {
                 <span className="coin-ink tabular-nums">{balance.toLocaleString("en")}</span> coin{balance === 1 ? "" : "s"} to spend
               </>}
             </span>
-            <span className="block text-xs text-pretty text-muted-foreground">Good runs earn coins. Trade them for artwork frames and avatar decorations in the shop.</span>
           </span>
           <span className="arcade-counter-cta">
             <Store aria-hidden className="size-4" />

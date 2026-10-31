@@ -54,7 +54,7 @@ export default function GameShopDialog({
             <Store aria-hidden className="size-5 text-amethyst" />
             {shop.title} shop
           </DialogTitle>
-          <DialogDescription>{shop.blurb} Your game is paused and stays exactly as it was.</DialogDescription>
+          <DialogDescription>Your game is paused and stays exactly as it was.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => onOpenChange(false)}>

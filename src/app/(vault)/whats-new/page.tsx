@@ -20,7 +20,6 @@ export default async function WhatsNewPage() {
         <MarkUpdatesSeen />
         <PageHeader
           title="What’s new"
-          description="The latest changes to Amethyst at a glance. Open any update for its full notes."
           actions={
             <div className="flex flex-wrap items-center gap-3">
               <VersionHistoryLinkButton />
@@ -52,7 +51,6 @@ export default async function WhatsNewPage() {
                         {release.title}
                       </Link>
                     </h2>
-                    <p className="mt-1.5 max-w-2xl text-[15px] leading-6 text-pretty text-foreground/80">{release.intro}</p>
                     {release.notice ? (
                       <div className="mt-4 max-w-2xl">
                         <ReleaseNotice>{release.notice}</ReleaseNotice>

@@ -113,7 +113,6 @@ export function GameShell({
   active = false,
   stats,
   actions,
-  help,
   children,
 }: {
   game: ArcadeGameId;
@@ -121,7 +120,6 @@ export function GameShell({
   active?: boolean;
   stats?: ReactNode;
   actions?: ReactNode;
-  help?: ReactNode;
   children: ReactNode;
 }) {
   const { rootRef, sound, toggleSound, look, setLook } = useArcade();
@@ -202,7 +200,6 @@ export function GameShell({
         <div data-game-skin={game} className="flex flex-col gap-3 rounded-lg p-3 md:p-4">
           {stats ? <div className="flex flex-wrap items-stretch gap-2">{stats}</div> : null}
           <div className="relative min-h-0">{children}</div>
-          {help ? <div className="text-xs leading-5 text-muted-foreground">{help}</div> : null}
         </div>
         {shop !== "closed" ? (
           <GameShopDialog

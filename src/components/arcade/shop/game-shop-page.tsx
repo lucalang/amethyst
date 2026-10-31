@@ -19,7 +19,6 @@ export async function GameShopPage({ game }: { game: ShopGame }) {
       <PageContainer>
         <PageHeader
           title={`${shop.title} shop`}
-          description={`${shop.blurb} Cosmetics only change how the game looks, never how it plays.`}
           actions={
             <div className="flex flex-wrap gap-2">
               <Button asChild size="sm">

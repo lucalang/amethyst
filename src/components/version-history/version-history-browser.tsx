@@ -10,12 +10,10 @@ import {
   Copy,
   Database,
   GitBranch,
-  GitCommitHorizontal,
   History,
   Info,
   Play,
   RotateCcw,
-  ShieldCheck,
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +24,6 @@ import { catalogMatcher } from "@/lib/catalog-search";
 import { formatChangeDate, releasePath } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
 import {
-  DEMO_RETENTION_HOURS,
   ENABLED_DEMO_SPECS,
   VERSION_HISTORY_CATALOG,
   getCatalogSummary,
@@ -195,58 +192,23 @@ export function VersionHistoryBrowser({
   return (
     <div className="space-y-10">
       {/* Summary & Honest Disclosure Banner */}
-      <section aria-label="Version history overview" className="space-y-4">
+      <section aria-label="Version history overview">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-xl border border-border bg-card/70 p-4">
             <p className="text-xs font-medium text-muted-foreground">Cataloged commits</p>
             <p className="mt-1 text-2xl font-bold tabular-nums">{summary.total}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Reachable across <code className="text-foreground/85">main</code> &amp;{" "}
-              <code className="text-foreground/85">backup/pre-squash</code>
-            </p>
           </div>
           <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.05] p-4">
             <p className="text-xs font-medium text-emerald-300">Available Demo</p>
             <p className="mt-1 text-2xl font-bold text-emerald-200 tabular-nums">{summary.available}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Runnable milestones with isolated databases &amp; schemas
-            </p>
           </div>
           <div className="rounded-xl border border-border bg-card/70 p-4">
             <p className="text-xs font-medium text-muted-foreground">Not Prepared</p>
             <p className="mt-1 text-2xl font-bold tabular-nums">{summary.notPrepared}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Cataloged commits not currently built as live demo targets
-            </p>
           </div>
           <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.04] p-4">
             <p className="text-xs font-medium text-warning">Unavailable</p>
             <p className="mt-1 text-2xl font-bold text-warning tabular-nums">{summary.unavailable}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Retired external sync or mid-series build constraints
-            </p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-amethyst/25 bg-amethyst/[0.06] p-4 text-sm leading-relaxed text-foreground/90">
-          <div className="flex flex-wrap items-start gap-3">
-            <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-amethyst" />
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <p className="font-semibold text-foreground">
-                Isolated fresh-account historical demos ({DEMO_RETENTION_HOURS}-hour workspace retention)
-              </p>
-              <p className="text-xs leading-5 text-muted-foreground">
-                Listing a commit in the catalog below does not mean it has a live demo: only commits marked{" "}
-                <strong className="font-medium text-emerald-300">Available Demo</strong> are prepared and playable,
-                while <strong className="font-medium text-foreground/85">Not Prepared</strong> commits are cataloged for
-                reference and future expansion. Each enabled milestone runs its original historical code and database
-                migrations on a separate origin with a fresh demo account per visitor. Changes you make inside a demo
-                persist across navigation and refresh for {DEMO_RETENTION_HOURS} hours, and{" "}
-                <strong className="font-medium text-foreground/85">Reset Demo</strong> clears only your workspace for
-                that specific version. Demos never connect to your production account, private uploads, or real coin
-                balance.
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -258,9 +220,6 @@ export function VersionHistoryBrowser({
             <h2 id="playable-milestones-heading" className="text-lg font-bold tracking-tight">
               Playable historical milestones
             </h2>
-            <p className="text-sm text-muted-foreground">
-              Five prepared eras of Amethyst running their original interfaces and database schemas.
-            </p>
           </div>
         </div>
 
@@ -280,7 +239,6 @@ export function VersionHistoryBrowser({
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <StateBadge state={commit.state} />
                       {commit.milestone ? (
                         <span className="inline-flex items-center gap-1 rounded-md border border-amethyst/35 bg-amethyst/15 px-2 py-0.5 text-xs font-semibold text-amethyst">
                           <Sparkles aria-hidden className="size-3" />
@@ -303,25 +261,18 @@ export function VersionHistoryBrowser({
                           isOnline ? "bg-emerald-400" : "bg-amber-400",
                         )}
                       />
-                      {isOnline ? `Online · :${commit.demo?.port}` : `Local runtime stopped · :${commit.demo?.port}`}
+                      {isOnline ? "Online" : "Offline"}
                     </span>
                   </div>
 
                   <div>
                     <h3 className="text-base font-semibold tracking-tight text-foreground">{commit.title}</h3>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{commit.demo?.eraSummary}</p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span>
-                      Committed:{" "}
-                      <time dateTime={commit.commitDate} className="font-medium text-foreground/85">
-                        {formatChangeDate(commit.commitDate)}
-                      </time>
-                    </span>
                     {commit.releaseDate ? (
                       <span>
-                        Verified release:{" "}
+                        Release:{" "}
                         <time dateTime={commit.releaseDate} className="font-medium text-foreground/85">
                           {formatChangeDate(commit.releaseDate)}
                         </time>
@@ -332,58 +283,13 @@ export function VersionHistoryBrowser({
                               href={releasePath(commit.releaseId)}
                               className="text-amethyst underline-offset-4 hover:underline"
                             >
-                              Release notes
+                              Release
                             </Link>
                           </>
                         ) : null}
                       </span>
                     ) : null}
-                    <span className="inline-flex items-center gap-1">
-                      <Database aria-hidden className="size-3 text-muted-foreground/75" />
-                      {commit.migrationCount} migrations
-                    </span>
                   </div>
-
-                  <div className="flex items-center gap-2 rounded-lg border border-white/[0.07] bg-black/35 px-2.5 py-1.5 font-mono text-[11px] text-muted-foreground">
-                    <GitCommitHorizontal aria-hidden className="size-3.5 shrink-0 text-amethyst" />
-                    <span className="truncate select-all" title={commit.sha}>
-                      {commit.sha}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => void handleCopySha(commit.sha)}
-                      aria-label={`Copy full SHA ${commit.sha}`}
-                      className="ml-auto inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-sans font-medium text-foreground/80 hover:bg-white/[0.08]"
-                    >
-                      {copiedSha === commit.sha ? (
-                        <>
-                          <Check aria-hidden className="size-3 text-emerald-400" /> Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy aria-hidden className="size-3" /> Copy SHA
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {commit.demo?.features.length ? (
-                    <ul className="space-y-1 text-xs text-foreground/85">
-                      {commit.demo.features.map((feat) => (
-                        <li key={feat} className="flex items-start gap-2">
-                          <span aria-hidden className="mt-1.5 size-1 shrink-0 rounded-full bg-amethyst" />
-                          <span>{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-
-                  {commit.demo?.containedIntegrations.length ? (
-                    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[11px] leading-4 text-muted-foreground">
-                      <span className="font-semibold text-foreground/80">Sandbox containment: </span>
-                      {commit.demo.containedIntegrations.join(" · ")}
-                    </div>
-                  ) : null}
                 </div>
 
                 <div className="mt-4 space-y-2 border-t border-white/[0.07] pt-3.5">
@@ -393,13 +299,13 @@ export function VersionHistoryBrowser({
                         <Button asChild size="sm">
                           <a href={demoUrl}>
                             <Play aria-hidden className="size-3.5" />
-                            Launch Fresh Demo ({commit.shortSha})
+                            Launch Demo
                             <ArrowUpRight aria-hidden className="size-3.5" />
                           </a>
                         </Button>
                       ) : (
                         <Button size="sm" variant="outline" disabled>
-                          Demo server offline (run npm run demos -- start {commit.shortSha})
+                          Launch Demo
                         </Button>
                       )}
                       <Button
@@ -416,7 +322,7 @@ export function VersionHistoryBrowser({
                       </Button>
                     </div>
                     <span className="text-[11px] text-muted-foreground">
-                      {runtime?.hasWorkspace ? "Active demo workspace" : "Starts fresh on first open"}
+                      {runtime?.hasWorkspace ? "Workspace active" : "Fresh workspace"}
                     </span>
                   </div>
 

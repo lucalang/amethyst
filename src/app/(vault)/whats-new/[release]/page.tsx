@@ -39,7 +39,6 @@ export default async function ReleasePage({ params }: Props) {
             </time>
           </div>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-balance md:text-4xl">{release.title}</h1>
-          <p className="mt-3 text-base leading-7 text-pretty text-foreground/80">{release.intro}</p>
           {release.notice ? (
             <div className="mt-5">
               <ReleaseNotice>{release.notice}</ReleaseNotice>
