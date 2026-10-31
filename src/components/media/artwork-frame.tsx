@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, type CSSProperties, type ReactNode } from "react";
-import type { ArtworkFrameId } from "@/lib/frames";
+import type { FrameLookId } from "@/lib/frames";
 import { cn } from "@/lib/utils";
 
 /**
@@ -15,7 +15,7 @@ export function ArtworkFrame({
   style,
   children,
 }: {
-  frame: ArtworkFrameId;
+  frame: FrameLookId;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
@@ -28,7 +28,7 @@ export function ArtworkFrame({
   );
 }
 
-function FrameDecoration({ frame }: { frame: Exclude<ArtworkFrameId, "none"> }) {
+function FrameDecoration({ frame }: { frame: Exclude<FrameLookId, "none"> }) {
   const id = useId();
   return (
     <span aria-hidden className="art-frame-deco">
@@ -52,6 +52,7 @@ function FrameDecoration({ frame }: { frame: Exclude<ArtworkFrameId, "none"> }) 
       {frame === "constellation" ? <ConstellationOrnaments /> : null}
       {frame === "obsidian-relic" ? <ObsidianRelicOrnaments id={id} /> : null}
       {frame === "celestial-prism" ? <CelestialPrismOrnaments /> : null}
+      {frame === "seraph-wings" ? <SeraphOrnaments id={id} /> : null}
     </span>
   );
 }
@@ -187,6 +188,57 @@ function CelestialPrismOrnaments() {
           <path d="M8 8 L26 3 M8 8 L3 26" stroke="#c4b5fd" strokeOpacity="0.6" strokeWidth="0.8" />
         </svg>
       ))}
+    </>
+  );
+}
+
+/** Feathers as [angle°, length] fanning from the wing root; the same tiers as the 3D build. */
+const SERAPH_TIERS: { width: number; fill: string; feathers: [number, number][] }[] = [
+  { width: 8.4, fill: "#efe4d0", feathers: [[6, 29], [16, 38], [26, 46], [36, 49], [46, 48], [56, 43], [66, 36], [76, 28]] },
+  { width: 9, fill: "#f7f0e2", feathers: [[12, 24], [26, 30], [40, 32], [54, 30], [68, 23]] },
+  { width: 9, fill: "#fffaf0", feathers: [[18, 13], [38, 16], [58, 13]] },
+];
+const featherPath = (l: number, w: number) =>
+  `M0 0C${0.15 * l} ${-0.55 * w} ${0.62 * l} ${-0.62 * w} ${l} ${-0.1 * w}C${0.86 * l} ${0.2 * w} ${0.56 * l} ${0.48 * w} ${0.26 * l} ${0.4 * w}Q${0.05 * l} ${0.26 * w} 0 0Z`;
+
+function SeraphOrnaments({ id }: { id: string }) {
+  const gold = `${id}-seraph-gold`;
+  return (
+    <>
+      <svg className="art-frame-defs" width="0" height="0" focusable="false">
+        <defs>
+          <linearGradient id={gold} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#fff4d6" />
+            <stop offset="0.5" stopColor="#e3bd72" />
+            <stop offset="1" stopColor="#8a6424" />
+          </linearGradient>
+        </defs>
+      </svg>
+      {(["l", "r"] as const).map((side) => (
+        <svg key={side} className="art-frame-wing" data-side={side} viewBox="0 0 56 56" focusable="false">
+          {SERAPH_TIERS.map((tier, t) =>
+            tier.feathers.map(([angle, length]) => (
+              <path
+                key={`${t}-${angle}`}
+                d={featherPath(length, tier.width)}
+                transform={`translate(5 51) rotate(${-angle})`}
+                fill={tier.fill}
+                stroke="#b08a45"
+                strokeOpacity="0.55"
+                strokeWidth="0.5"
+              />
+            )),
+          )}
+          <circle cx="5" cy="50" r="2.6" fill="#fffaf0" stroke={`url(#${gold})`} strokeWidth="1.3" />
+        </svg>
+      ))}
+      <svg className="art-frame-crest" viewBox="0 0 44 26" fill="none" focusable="false">
+        <path d="M22 26V20.5" stroke={`url(#${gold})`} strokeWidth="1.2" strokeLinecap="round" />
+        <ellipse cx="22" cy="14" rx="18" ry="6.5" stroke={`url(#${gold})`} strokeWidth="2" />
+        <path d="M22 6.5 L23.9 12.1 L29.5 14 L23.9 15.9 L22 21.5 L20.1 15.9 L14.5 14 L20.1 12.1Z" fill="#fff1cc" stroke="#e3bd72" strokeWidth="0.5" />
+      </svg>
+      <span className="art-frame-pearl" data-corner="bl" />
+      <span className="art-frame-pearl" data-corner="br" />
     </>
   );
 }

@@ -49,9 +49,37 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-31-sculpted-frames-beta",
+    date: "2026-10-31",
+    title: "Sculpted 3D Frames (Beta)",
+    intro: "The first step toward truly sculpted artwork frames: in the 3D Showcase, Amethyst filigree's ornaments are now real 3D objects instead of painted lines. This is a beta and only the beginning, with far bolder frames to come.",
+    icon: "palette",
+    highlights: [
+      { kind: "improved", feature: "Curled corners", text: "Amethyst's corner filigree is raised metal scrollwork around a faceted gem, reaching slightly past the frame's edge." },
+      { kind: "improved", feature: "Crest", text: "The top crest is a faceted amethyst in a metal setting with curling wings, rising above the frame." },
+      { kind: "improved", feature: "Real depth", text: "The ornaments catch the light and keep their shape as you turn the card, on portrait and square artwork alike." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Amethyst filigree, sculpted",
+          body: "In the 3D Showcase, Amethyst filigree's decoration is now built as real 3D ornaments that match its look in the frame picker.",
+          points: [
+            "Each corner curls into raised metal scrollwork with a faceted violet gem.",
+            "The crest is a faceted amethyst with a metal setting, curling wings and beads, and it rises above the top of the frame.",
+            "The ornaments stay dimensional at any angle, and the card is framed so they are never cut off.",
+            "Your Motion setting is respected; the flat 2D view is unchanged.",
+          ],
+          where: "Customization → Artwork frames, then open an artwork in Showcase",
+          link: { href: "/customization/frames", label: "Choose a frame" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-31-crimson-sanctum",
     date: "2026-10-31",
-    title: "The admin panel becomes the Crimson Sanctum",
+    title: "The Admin Panel - Crimson Sanctum",
     intro: "For administrators, the Vault code panel is rebuilt as a real-time 3D sanctum: a huge vault sigil turns in a crimson void, and the panels float around it as true 3D objects, with a full overview, complete code management and a new Forge for creating codes.",
     icon: "sparkles",
     highlights: [
@@ -102,7 +130,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-10-31-system-vault-console",
     date: "2026-10-31",
-    title: "The admin panel becomes a crimson System window",
+    title: "The Admin Panel",
     intro: "For administrators, the Vault code panel is now a single floating System window in the Vault's crimson: it unfolds from a thin strip of light, leans toward your pointer in real depth and decodes its text into place.",
     icon: "sparkles",
     highlights: [
@@ -139,7 +167,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-10-30-vault-code-rules",
     date: "2026-10-30",
-    title: "Vault codes that unlock achievements",
+    title: "The Vault Rework",
     intro: "Secret codes in the Vault can now unlock achievements alongside coins and cosmetics, open on a set date, and be meant for specific members — and a retried redemption never counts twice.",
     icon: "sparkles",
     highlights: [
@@ -177,7 +205,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-10-30-achievement-rewards",
     date: "2026-10-30",
-    title: "Achievement rewards, exclusive cosmetics and milestone flair",
+    title: "Achievement Rewards",
     intro: "Every achievement in your cabinet now grants a one-time reward: coins for ordinary milestones, and exclusive artwork frames, avatar decorations, profile badges and titles for major feats.",
     icon: "trophy",
     highlights: [
@@ -226,7 +254,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-10-30-version-history",
     date: "2026-10-30",
-    title: "Version history and playable milestone demos",
+    title: "Version History & Demos",
     intro: "Browse every retained commit in Amethyst’s history and step into five prepared historical milestones as isolated, fresh-account demos.",
     icon: "box",
     highlights: [
@@ -485,7 +513,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-13-first-load",
     date: "2026-10-30",
-    title: "A lighter first load",
+    title: "A Lighter Load - Performance Upgrades",
     intro: "Home gives its first screen priority, with smaller startup downloads and less unrelated background work.",
     icon: "home",
     highlights: [
@@ -608,7 +636,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-10-sudoku-fruit-stacker",
     date: "2026-10-29",
-    title: "Daily Sudoku, Fruit Slice modes and a new Tower Stacker",
+    title: "Tower Stracker Rework & Sudoku, Fruit Slice improvements",
     intro: "Sudoku gets a daily puzzle and reliable saves, Fruit Slice gets sharper slicing, new modes and a daily run, and Tower Stacker is rebuilt in a three-quarter view with precise drops.",
     icon: "gamepad",
     highlights: [

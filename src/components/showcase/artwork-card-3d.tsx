@@ -4,6 +4,7 @@ import { useEffect, useEffectEvent, useRef } from "react";
 import {
   AdditiveBlending,
   AmbientLight,
+  Box3,
   CanvasTexture,
   Color,
   DirectionalLight,
@@ -32,9 +33,10 @@ import {
   type MeshPhysicalMaterialParameters,
 } from "three";
 import { isUploadedImagePath } from "@/lib/attachments";
-import type { ArtworkFrameId } from "@/lib/frames";
+import type { FrameLookId } from "@/lib/frames";
 import type { MotionLevel } from "@/lib/preferences";
 import { CLASSIC_VIEWER_LOOK, type ViewerLighting, type ViewerLook } from "@/lib/viewer-looks";
+import { ORNAMENTS } from "./frame-ornaments";
 import { follow, radialTexture, spring, studioEnvironment, type Spring } from "./three-kit";
 
 const MAX_YAW = 0.85;
@@ -57,6 +59,7 @@ const LIGHTING: Record<
 };
 const DEPTH = 0.03;
 const BEVEL = 0.006;
+const LIP = 0.0012;
 /** Direction of the softbox whose reflection drifts across the art as the card turns. */
 const SOFTBOX = new Vector3(-0.45, 0.55, 1).normalize();
 
@@ -88,8 +91,8 @@ type FrameSpec = {
   glints: (band: BandBox) => Glint[];
 };
 
-/** The 3D build of each frame. New frames only need an entry here (plus a painter in paintBand). */
-const SPECS: Record<ArtworkFrameId, FrameSpec> = {
+/** The 3D build of each frame. New frames need an entry here, a painter in paintBand and optionally ORNAMENTS. */
+const SPECS: Record<FrameLookId, FrameSpec> = {
   none: {
     margin: 0,
     relief: 0,
@@ -115,7 +118,7 @@ const SPECS: Record<ArtworkFrameId, FrameSpec> = {
     edge: { color: 0x5b21b6, metalness: 0.7, roughness: 0.26, clearcoat: 1, clearcoatRoughness: 0.12 },
     light: { a: 0xa77bff, b: 0xf0abfc, mix: 0.5 },
     fx: { kind: FX.amethyst, a: 0xd8b4fe, b: 0xfdf4ff },
-    glints: (band) => [...cornerGlints(band, [1.3, 2.9, 4.4, 5.4]), [0, band.height / 2 - band.margin / 2, 3.5]],
+    glints: (band) => cornerGlints(band, [1.3, 2.9, 4.4, 5.4]),
   },
   holo: {
     margin: 0.03,
@@ -179,6 +182,15 @@ const SPECS: Record<ArtworkFrameId, FrameSpec> = {
     light: { a: 0x7dd3fc, b: 0xc4b5fd, mix: 0.6 },
     fx: { kind: FX.aurora, a: 0x7dd3fc, b: 0xe9d5ff },
     glints: (band) => cornerGlints(band, [1.5, 3.0, 4.5, 6.0]),
+  },
+  "seraph-wings": {
+    margin: 0.04,
+    relief: 0.005,
+    band: { metalness: 0.55, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.15 },
+    edge: { color: 0xe3bd72, metalness: 1, roughness: 0.24, clearcoat: 0.5, clearcoatRoughness: 0.18 },
+    light: { a: 0xffe2a8, b: 0xfff4e0, mix: 0.55 },
+    fx: { kind: FX.gilt, a: 0xfff1c9, b: 0xffffff },
+    glints: () => [],
   },
 };
 
@@ -346,7 +358,7 @@ function panel(width: number, height: number, radius: number, hole?: { width: nu
 type Layout = { cw: number; ch: number; aw: number; ah: number; m: number; r: number; ra: number };
 
 /** Paints the frame band (the art area is cut out of the geometry, so only the edges show). */
-function paintBand(frame: ArtworkFrameId, { cw, ch, m, r, ra }: Layout): HTMLCanvasElement | null {
+function paintBand(frame: FrameLookId, { cw, ch, m, r, ra }: Layout): HTMLCanvasElement | null {
   if (frame === "none") return null;
   const scale = 1400 / Math.max(cw, ch);
   const canvas = document.createElement("canvas");
@@ -415,71 +427,13 @@ function paintBand(frame: ArtworkFrameId, { cw, ch, m, r, ra }: Layout): HTMLCan
     lavender.addColorStop(1, "#a855f7");
     line(M * 0.28, Math.max(1.5, M * 0.05), "rgba(233, 213, 255, 0.55)", r * scale - M * 0.28);
     line(art.x - M * 0.06, Math.max(2, M * 0.11), lavender, art.r + M * 0.06);
-    // Scrolled corner filigree, kept inside the band.
-    corners(() => {
-      ctx.strokeStyle = lavender;
-      ctx.lineCap = "round";
-      ctx.lineWidth = Math.max(1.5, M * 0.075);
-      const c = M * 0.5;
-      ctx.beginPath();
-      ctx.moveTo(c, M * 3.2);
-      ctx.bezierCurveTo(c, M * 1.4, c * 0.9, c * 0.9, M * 1.4, c);
-      ctx.lineTo(M * 3.2, c);
-      ctx.stroke();
-      for (const [x, y] of [[c, M * 3.2], [M * 3.2, c]]) {
-        ctx.beginPath();
-        ctx.arc(x, y, M * 0.12, 0, Math.PI * 2);
-        ctx.fillStyle = "#e9d5ff";
-        ctx.fill();
-      }
-      ctx.save();
-      ctx.translate(c, c);
-      ctx.rotate(Math.PI / 4);
-      const g = M * 0.32;
-      ctx.fillStyle = "#f0abfc";
-      ctx.fillRect(-g / 2, -g / 2, g, g);
-      ctx.strokeStyle = "#faf5ff";
-      ctx.lineWidth = Math.max(1, M * 0.04);
-      ctx.strokeRect(-g / 2, -g / 2, g, g);
-      ctx.restore();
-    });
-    // A faceted crest centred in the top band.
-    const cx = W / 2;
-    const cy = M / 2;
-    const gw = M * 1.5;
-    const gh = M * 0.72;
-    const gem = ctx.createLinearGradient(cx - gw / 2, cy - gh / 2, cx + gw / 2, cy + gh / 2);
-    gem.addColorStop(0, "#fdf4ff");
-    gem.addColorStop(0.45, "#c084fc");
-    gem.addColorStop(1, "#581c87");
-    ctx.beginPath();
-    ctx.moveTo(cx - gw / 2, cy);
-    ctx.lineTo(cx - gw / 4, cy - gh / 2);
-    ctx.lineTo(cx + gw / 4, cy - gh / 2);
-    ctx.lineTo(cx + gw / 2, cy);
-    ctx.lineTo(cx, cy + gh / 2);
-    ctx.closePath();
-    ctx.fillStyle = gem;
-    ctx.fill();
-    ctx.lineWidth = Math.max(1, M * 0.045);
-    ctx.strokeStyle = "#faf5ff";
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx - gw / 2, cy);
-    ctx.lineTo(cx + gw / 2, cy);
-    ctx.moveTo(cx - gw / 4, cy - gh / 2);
-    ctx.lineTo(cx, cy + gh / 2);
-    ctx.lineTo(cx + gw / 4, cy - gh / 2);
-    ctx.strokeStyle = "rgba(250, 245, 255, 0.55)";
-    ctx.stroke();
-    for (const side of [-1, 1]) {
-      ctx.beginPath();
-      ctx.moveTo(cx + side * gw * 0.62, cy);
-      ctx.lineTo(cx + side * gw * 1.5, cy);
-      ctx.strokeStyle = lavender;
-      ctx.lineWidth = Math.max(1, M * 0.06);
-      ctx.stroke();
-    }
+  } else if (frame === "seraph-wings") {
+    const ivory = ctx.createLinearGradient(0, 0, W * 0.4, H);
+    for (const [stop, color] of [[0, "#fffaf0"], [0.35, "#efe2c8"], [0.6, "#fff7e8"], [1, "#e2cfa6"]] as const) ivory.addColorStop(stop, color);
+    ctx.fillStyle = ivory;
+    ctx.fillRect(0, 0, W, H);
+    line(M * 0.24, Math.max(1.5, M * 0.07), "#d9b25e", r * scale - M * 0.24);
+    line(art.x - M * 0.06, Math.max(2, M * 0.1), "#c99a3f", art.r + M * 0.06);
   } else if (frame === "holo") {
     const colors = ["#ff9fd6", "#ffd29f", "#fff6a3", "#a6ffd0", "#9fe1ff", "#b9a6ff", "#ff9fd6"];
     const holo = ctx.createConicGradient(-Math.PI / 3, W / 2, H / 2);
@@ -786,7 +740,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   let image: HTMLImageElement | null = null;
   let src = "";
   let shown = "";
-  let frame: ArtworkFrameId = "none";
+  let frame: FrameLookId = "none";
   let direction = 1;
   let loadToken = 0;
   let builds = 0;
@@ -864,7 +818,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       // A raised band with bevelled inner and outer edges, so the art sits recessed inside it.
       const shape = roundedRect(new Shape(), bw, bh, rb);
       shape.holes.push(roundedRect(new Path(), aw, ah, ra));
-      const lip = 0.0012;
+      const lip = LIP;
       const bandGeometry = track(
         spanUv(new ExtrudeGeometry(shape, { depth: spec.relief, bevelEnabled: true, bevelThickness: lip, bevelSize: Math.min(0.002, m * 0.1), bevelSegments: 3, curveSegments: 14 }), bw, bh),
       );
@@ -893,6 +847,15 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       group.add(fx);
     }
     state.animated = spec.fx?.kind === FX.aurora;
+
+    const ornament = ORNAMENTS[frame]?.({ bw, bh, m, s: Math.min(aw, ah), z: front + spec.relief + LIP * 2 }, track);
+    if (ornament) {
+      group.add(ornament);
+      // Fit the camera to the ornaments too, so crests and wings stay on screen.
+      const bounds = new Box3().setFromObject(ornament);
+      state.cw = Math.max(cw, 2 * Math.max(-bounds.min.x, bounds.max.x));
+      state.ch = Math.max(ch, 2 * Math.max(-bounds.min.y, bounds.max.y));
+    }
 
     const texture = track(new Texture(image));
     texture.colorSpace = SRGBColorSpace;
@@ -1270,7 +1233,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   resize();
 
   return {
-    setArtwork(nextSrc: string, nextFrame: ArtworkFrameId, nextDirection: number) {
+    setArtwork(nextSrc: string, nextFrame: FrameLookId, nextDirection: number) {
       direction = nextDirection < 0 ? -1 : 1;
       const frameChanged = nextFrame !== frame;
       frame = nextFrame;
@@ -1358,7 +1321,7 @@ export default function ArtworkCard3D({
   onFail,
 }: {
   src: string;
-  frame: ArtworkFrameId;
+  frame: FrameLookId;
   /** Which way the visitor browsed (1 = next, -1 = previous), so cards arrive from that side. */
   direction: number;
   zoom: number;

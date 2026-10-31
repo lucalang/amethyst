@@ -2088,6 +2088,52 @@
   overflow: visible;
 }
 
+/* Seraph wings (draft): an ivory-gold rim, feathered wings from the shoulders and a halo above. */
+.art-frame[data-frame="seraph-wings"] {
+  --fw: clamp(2px, 1.3cqi, 4.5px);
+  --wing: 46.7cqi;
+}
+.art-frame[data-frame="seraph-wings"] .art-frame-deco {
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.45)) drop-shadow(0 0 calc(2px + 1cqi) rgb(255 214 140 / 0.35));
+}
+.art-frame[data-frame="seraph-wings"] .art-frame-ring {
+  background: linear-gradient(160deg, #fffaf0 0%, #e3bd72 30%, #fff7e8 60%, #c99a3f 100%);
+}
+.art-frame[data-frame="seraph-wings"] .art-frame-crest {
+  width: 36.7cqi;
+  aspect-ratio: 44 / 26;
+}
+.art-frame-wing {
+  position: absolute;
+  top: calc(var(--wing) * -0.482);
+  width: var(--wing);
+  height: var(--wing);
+  overflow: visible;
+}
+.art-frame-wing[data-side="r"] {
+  left: calc(100% - var(--wing) * 0.089);
+}
+.art-frame-wing[data-side="l"] {
+  right: calc(100% - var(--wing) * 0.089);
+  scale: -1 1;
+}
+.art-frame-pearl {
+  position: absolute;
+  bottom: calc(var(--fw) / 2);
+  width: clamp(4px, 3.4cqi, 10px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #efe2c8 45%, #b9a27a);
+}
+.art-frame-pearl[data-corner="bl"] {
+  left: calc(var(--fw) / 2);
+  translate: -50% 50%;
+}
+.art-frame-pearl[data-corner="br"] {
+  right: calc(var(--fw) / 2);
+  translate: 50% 50%;
+}
+
 /* Holographic edge: an iridescent rim with a soft halo; the colors turn when you point at Showcase art. */
 .art-frame[data-frame="holo"] {
   --fw: clamp(2px, 1.3cqi, 4.5px);

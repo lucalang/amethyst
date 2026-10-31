@@ -16,6 +16,11 @@ export type ShopFrameId = (typeof SHOP_FRAME_IDS)[number];
 export type AchievementFrameId = (typeof ACHIEVEMENT_FRAME_IDS)[number];
 export type UnlockableFrameId = (typeof UNLOCKABLE_FRAME_IDS)[number];
 export const DEFAULT_ARTWORK_FRAME: ArtworkFrameId = "none";
+/** Frames still in design: the frame renderers draw them, but nobody can select or save them yet. */
+export const DRAFT_FRAME_IDS = ["seraph-wings"] as const;
+export type DraftFrameId = (typeof DRAFT_FRAME_IDS)[number];
+/** Any frame the 2D and 3D renderers can draw. */
+export type FrameLookId = ArtworkFrameId | DraftFrameId;
 
 export const isArtworkFrameId = (value: unknown): value is ArtworkFrameId => ARTWORK_FRAME_IDS.includes(value as ArtworkFrameId);
 export const isShopFrameId = (value: unknown): value is ShopFrameId => SHOP_FRAME_IDS.includes(value as ShopFrameId);
