@@ -18,7 +18,7 @@ import {
 import { ACHIEVEMENT_PREFIX, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, maxPayout, type AdminAccount, type AdminCodeDetail } from "@/lib/vault-admin";
-import { useConsoleLayers } from "./admin-console";
+import { useConsoleLayers, useConsoleRewards } from "./admin-console";
 import { adminDialogClass, ConsoleView, RewardTiles, StatusPill, SystemWindow, useNow, When } from "./admin-ui";
 
 const accountName = (account: AdminAccount | null) => (account ? account.name || account.email || "Unnamed account" : "Deleted account");
@@ -31,6 +31,7 @@ export function CodeDetail({ code, now: serverNow, looks }: { code: AdminCodeDet
   const [busy, setBusy] = useState(false);
   const payout = maxPayout({ ...code, allowlist: code.allowlist.map((account) => account.id) });
   useConsoleLayers(1);
+  useConsoleRewards({ coins: code.coins, ids: [...code.items, ...code.achievements.map((id) => ACHIEVEMENT_PREFIX + id)], looks });
 
   async function disable(event: MouseEvent) {
     event.preventDefault();

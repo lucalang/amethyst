@@ -197,9 +197,9 @@ export function playAdminSound(name: AdminSound) {
 }
 
 /**
- * The admin console's activation, in step with the scene: a quiet rising scan while the contours
- * trace, a low swell as the console arrives, a seat per corner bracket and a soft chime as the
- * surface goes live. Silent before any gesture; skipping fades it out.
+ * The admin System window's summoning, in step with the scene: a low rising hum while the seam
+ * gathers, an airy sweep as it opens, a seat per corner bracket and a soft chime as the surface goes
+ * live. Silent before any gesture; skipping fades it out.
  */
 export function playAdminBoot(kind: "full" | "short") {
   if (!allowed()) return;
@@ -211,8 +211,8 @@ export function playAdminBoot(kind: "full" | "short") {
   sequence = bus;
   const t = BOOT[kind];
   const s = (ms: number) => ms / 1000;
-  noise(0, s(t.trace[1]), 400, 2400, kind === "full" ? 0.07 : 0.05, "bandpass", bus, 0.8);
-  if (kind === "full") tone(48, 0, s(t.arrive[1]), "sine", 0.22, 62, bus);
+  if (kind === "full") tone(46, 0, s(t.open[1]), "sine", 0.2, 58, bus);
+  noise(s(t.open[0]) * 0.6, s(t.open[1]), 400, 2400, kind === "full" ? 0.07 : 0.05, "bandpass", bus, 0.8);
   for (const landing of PIECE_LANDINGS) seat(s(t.pieces[0] + landing * (t.pieces[1] - t.pieces[0])), bus);
   tone(1318.5, s(t.live), 0.5, "sine", 0.035, undefined, bus);
   tone(1975.5, s(t.live) + 0.09, 0.6, "sine", 0.025, undefined, bus);

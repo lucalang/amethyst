@@ -8,7 +8,7 @@ import { useArcade } from "@/components/arcade/game-shell";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { playAdminSound, type AdminSound } from "@/components/vault/vault-audio";
-import { rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
+import { ACHIEVEMENT_PREFIX, rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { achievementDefinition } from "@/lib/achievements";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { CODE_RULES, normalizePhrase } from "@/lib/code-format";
@@ -24,7 +24,7 @@ import {
   type CatalogItem,
   type CodeConfig,
 } from "@/lib/vault-admin";
-import { useConsole, useConsoleLayers } from "./admin-console";
+import { useConsole, useConsoleLayers, useConsoleRewards, useConsoleStep } from "./admin-console";
 import { ConsoleView, formatWhen, RewardTiles, SystemWindow, useTimeZone } from "./admin-ui";
 import { AccountPicker, accountLabel, AchievementPicker, CosmeticPicker } from "./reward-pickers";
 
@@ -130,6 +130,12 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
   }, [step, done]);
 
   const effective = effectiveConfig(config, types);
+  // The window's step mechanism sits on Publish while the request runs and after it lands; the
+  // selection stays in the scene through the seal so it can be drawn into it.
+  useConsoleStep(done?.kind === "draft" ? -1 : done || busy === "publish" ? STEPS.length : step);
+  useConsoleRewards(
+    done?.kind === "draft" ? null : { coins: effective.coins, ids: [...effective.items, ...effective.achievements.map((id) => ACHIEVEMENT_PREFIX + id)], looks },
+  );
   const achievementData = new Map(catalog.achievements.map((entry) => [entry.id, entry]));
   const chosenAchievements = effective.achievements.map((id) => ({ id, definition: achievementDefinition(id), data: achievementData.get(id) }));
   const achievementCoins = chosenAchievements.reduce((sum, entry) => sum + (entry.data?.coins ?? 0), 0);
@@ -197,6 +203,7 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
       return;
     }
     setBusy("publish");
+    signal("pending");
     try {
       const result = await apiFetch<{ id: string; code: string }>("/api/admin/vault/codes", {
         method: "POST",
@@ -342,34 +349,36 @@ export function CodeBuilder({ catalog, looks, initial, accounts: initialAccounts
       lede={cloneOf ? "A copy of an existing code’s rewards and rules. It gets a new code of its own when you publish it." : undefined}
       asideLabel="Builder progress"
       aside={
-        <nav aria-label="Builder steps">
-          <ol className="ax-steps">
-            {STEPS.map((label, index) => {
-              const complete = index < step || (index <= reached && index !== step);
-              return (
-                <li key={label}>
-                  <button
-                    type="button"
-                    className="ax-step"
-                    aria-current={index === step ? "step" : undefined}
-                    data-done={complete ? "" : undefined}
-                    disabled={index > reached || busy !== null}
-                    onClick={() => goTo(index)}
-                  >
-                    <span className="ax-step-index">{complete ? <Check aria-hidden className="size-3.5" /> : pad(index + 1)}</span>
-                    <span className="ax-step-label">{label}</span>
-                  </button>
-                </li>
-              );
-            })}
-            <li>
-              <span className="ax-step" data-final="">
-                <span className="ax-step-index">{pad(STEPS.length + 1)}</span>
-                <span className="ax-step-label">Publish</span>
-              </span>
-            </li>
-          </ol>
-        </nav>
+        <SystemWindow id="ax-sequence-title" title="Sequence" count={`${pad(Math.min(step, STEPS.length) + 1)} / ${pad(STEPS.length + 1)}`}>
+          <nav aria-label="Builder steps">
+            <ol className="ax-steps">
+              {STEPS.map((label, index) => {
+                const complete = index < step || (index <= reached && index !== step);
+                return (
+                  <li key={label}>
+                    <button
+                      type="button"
+                      className="ax-step"
+                      aria-current={index === step ? "step" : undefined}
+                      data-done={complete ? "" : undefined}
+                      disabled={index > reached || busy !== null}
+                      onClick={() => goTo(index)}
+                    >
+                      <span className="ax-step-index">{complete ? <Check aria-hidden className="size-3.5" /> : pad(index + 1)}</span>
+                      <span className="ax-step-label">{label}</span>
+                    </button>
+                  </li>
+                );
+              })}
+              <li>
+                <span className="ax-step" data-final="" data-busy={busy === "publish" ? "" : undefined} aria-busy={busy === "publish" || undefined}>
+                  <span className="ax-step-index">{busy === "publish" ? <Loader2 aria-hidden className="size-3.5 animate-spin" /> : pad(STEPS.length + 1)}</span>
+                  <span className="ax-step-label">{busy === "publish" ? "Publishing…" : "Publish"}</span>
+                </span>
+              </li>
+            </ol>
+          </nav>
+        </SystemWindow>
       }
       mainKey={step}
       footer={

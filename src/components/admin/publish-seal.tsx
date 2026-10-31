@@ -6,8 +6,9 @@ import { DecodeText } from "@/components/vault/vault-reveal";
 import { StatusPill } from "./admin-ui";
 
 /**
- * The admin's publish confirmation: the emblem ring traces, the check settles, then the code
- * plate is scanned and decoded. Shown this one time only.
+ * The admin's publish confirmation, shown only after the server confirms: the scene draws the
+ * rewards into the seal, the emblem ring traces and the check settles, then the code plate is
+ * decoded. Shown this one time only.
  */
 export default function PublishSeal({ code, status, animate }: { code: string; status: "active" | "scheduled"; animate: boolean }) {
   const [copied, setCopied] = useState<"yes" | "failed" | null>(null);
@@ -30,11 +31,11 @@ export default function PublishSeal({ code, status, animate }: { code: string; s
       <StatusPill status={status} />
       <div className="ax-codeplate">
         <code aria-label={code}>
-          <DecodeText text={code} animate={animate} delay={animate ? 700 : 0} />
+          <DecodeText text={code} animate={animate} delay={animate ? 1000 : 0} />
         </code>
-        <button type="button" className="ax-btn" data-size="sm" onClick={copy}>
-          {copied === "yes" ? <Check aria-hidden className="size-3.5" /> : <Copy aria-hidden className="size-3.5" />}
-          {copied === "yes" ? "Copied" : "Copy"}
+        <button type="button" className="ax-btn" data-variant="primary" onClick={copy}>
+          {copied === "yes" ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
+          {copied === "yes" ? "Copied" : "Copy code"}
         </button>
       </div>
       <p role="status" className="ax-hint">

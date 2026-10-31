@@ -49,6 +49,43 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-10-31-system-vault-console",
+    date: "2026-10-31",
+    title: "The admin panel becomes a summoned System window",
+    intro: "For administrators, the Vault code panel is now a System window summoned into a dark dimension: it opens from a seam of light, leans toward your pointer in real depth and shows the rewards you pick as artwork floating beside it.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "System window", text: "The code panel floats in the dark as a layered 3D window with amber contours that tilts with the pointer and steadies while you type, press or scroll." },
+      { kind: "improved", feature: "Rewards in the scene", text: "While you build a code, the chosen cosmetics, achievements and coins appear beside the window with their real artwork." },
+      { kind: "improved", feature: "Publishing", text: "The window charges while the request runs; the rewards are drawn into the seal and the code is revealed only once the server confirms it." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "A summoned System window",
+          body: "Creating and reviewing Vault codes happens on one System window in a dark vault: a seam of light appears, the frame assembles around it and the window opens. Every form and list on it is still a regular, accessible page element.",
+          points: [
+            "A short loading line shows while the 3D scene starts. The first visit in a session plays the full summoning, later visits a shorter one, and any key or click skips it.",
+            "The window, its frame and the layers behind it sit at different depths and catch the light as it leans toward the pointer. It steadies while you type, press or scroll and resumes afterwards; on phones it drifts gently on its own.",
+            "On wide screens the overview, the builder steps and the code's status sit in a side window turned toward the main one.",
+            "Optional sound follows the panel's mute switch. Reduced motion and the in-app motion setting keep everything still, and devices without 3D graphics get a drawn window instead.",
+          ],
+          where: "Admin panel (administrators only)",
+        },
+        {
+          title: "Building and publishing codes",
+          body: "The builder keeps its steps (rewards, values and selections, eligibility and limits, review, publish); each step change turns the window's step ring and slides the next sheet forward.",
+          points: [
+            "On wide screens, chosen rewards appear beside the window as their actual cosmetic artwork and achievement icons, linked to it by threads of light.",
+            "Publishing charges the window while the request is underway. Only after the server confirms do the rewards converge into the seal and the code decode on its plate, with a prominent Copy button.",
+            "If publishing fails, every value stays in place and the window shows the error; nothing is celebrated.",
+          ],
+          where: "Admin panel (administrators only)",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-30-vault-code-rules",
     date: "2026-10-30",
     title: "Vault codes that unlock achievements",
@@ -58,7 +95,6 @@ export const CHANGELOG: readonly Release[] = [
       { kind: "new", feature: "Achievement codes", text: "A code can unlock achievements, complete with their own rewards and notifications, shown in the Vault’s reveal and access log." },
       { kind: "new", feature: "Scheduled codes", text: "Some codes open on a set date; until then the seal stays dormant." },
       { kind: "improved", feature: "Safer redemptions", text: "If your connection drops mid-redemption, trying again picks up the original result instead of redeeming twice." },
-      { kind: "improved", feature: "Code management console", text: "Administrators now manage Vault codes in a floating 3D system console that assembles once, tilts gently with the pointer and holds still while you work, with clearer step-by-step creation and a selected-rewards tray." },
     ],
     details: {
       new: [
@@ -83,18 +119,6 @@ export const CHANGELOG: readonly Release[] = [
         {
           title: "Retries never redeem twice",
           body: "Each redemption attempt carries its own identifier. If the answer gets lost and you try the same code again, the Vault shows the original result instead of granting it a second time.",
-        },
-        {
-          title: "Code management as a floating system console",
-          body: "For administrators, creating and reviewing Vault codes now happens inside one floating system console: a frosted glass panel in a metal frame with traced light contours, hanging among translucent system panes in a dark sky. Every form and list on it is still a regular, accessible page element.",
-          points: [
-            "On first visit in a session the console assembles: contours trace, the frame pieces seat, the panel moves into place and its surface switches on. Any key or click skips it, later visits use a shorter version, and the optional sound follows the panel's mute switch.",
-            "The console leans slightly toward the pointer and settles flat while you type, scroll, press or rest the pointer, so controls never move away; phones get a calm, fixed composition.",
-            "The steps (rewards, values and selection, eligibility and limits, review, publish) run down the side; each step change slides the stack of planes behind the console, and long catalogs scroll inside it.",
-            "Chosen cosmetics and achievements gather in a selected-rewards tray; the review separates what each redemption grants from eligibility, timing and limits. The console only celebrates once the server has confirmed a publish.",
-            "Reduced motion and the in-app motion setting keep everything still, and devices without 3D graphics get a drawn console instead.",
-          ],
-          where: "Admin panel (administrators only)",
         },
       ],
     },

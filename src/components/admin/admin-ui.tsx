@@ -3,18 +3,21 @@
 import "./admin.css";
 import type { CSSProperties, ReactNode, Ref } from "react";
 import { useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "cn";
 import { Coins } from "lucide-react";
 import { ACHIEVEMENT_PREFIX, kindLabel, RewardArt, rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { STATUS_LABEL, type AdminCode, type CodeStatus } from "@/lib/vault-admin";
+import { useConsoleSide } from "./admin-console";
 import { displayFont, systemFont } from "./system-font";
 
 /** Class for admin surfaces portaled outside the console (dialogs). */
 export const adminDialogClass = cn("ax-dialog", systemFont.variable, displayFont.variable);
 
 /**
- * One screen of the console: a heading row, an optional side column (status, steps) and the main
- * column, each scrolling inside the console, and an optional action bar pinned to its bottom edge.
+ * One screen of the System window: a heading row, the main column scrolling inside the window and an
+ * optional action bar pinned to its bottom edge. The side column (status, steps) floats in its own
+ * window beside it on wide screens and stacks above the main column otherwise.
  */
 export function ConsoleView({
   eyebrow,
@@ -39,8 +42,14 @@ export function ConsoleView({
   mainKey?: string | number;
   children: ReactNode;
 }) {
+  const side = useConsoleSide();
+  const asideNode = aside ? (
+    <aside className="ax-view-aside" aria-label={asideLabel}>
+      {aside}
+    </aside>
+  ) : null;
   return (
-    <div className="ax-view" data-aside={aside ? "" : undefined}>
+    <div className="ax-view" data-aside={asideNode && !side ? "" : undefined}>
       <header className="ax-view-head">
         <div className="min-w-0">
           {back}
@@ -51,16 +60,13 @@ export function ConsoleView({
         {actions ? <div className="ax-head-actions">{actions}</div> : null}
       </header>
       <div className="ax-view-body">
-        {aside ? (
-          <aside className="ax-view-aside" aria-label={asideLabel}>
-            {aside}
-          </aside>
-        ) : null}
+        {side ? null : asideNode}
         <div key={mainKey} className="ax-view-main">
           {children}
         </div>
       </div>
       {footer ? <div className="ax-view-foot">{footer}</div> : null}
+      {side && asideNode ? createPortal(asideNode, side) : null}
     </div>
   );
 }
