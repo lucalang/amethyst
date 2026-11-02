@@ -27,6 +27,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <Link href="/register" className="font-medium text-amethyst underline-offset-4 hover:underline">
             Create an account
           </Link>
+          <span className="mt-2 block">
+            Curious first?{" "}
+            <Link href="/tour" className="font-medium text-amethyst underline-offset-4 hover:underline">
+              Take the tour
+            </Link>
+          </span>
         </>
       }
     >

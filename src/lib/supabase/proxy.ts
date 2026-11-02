@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { STARTUP_COOKIE, STARTUP_PATH, startupCookieOptions } from "@/lib/startup";
 import type { Database } from "./database.types";
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/signout", "/auth/session-expired"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/signout", "/auth/session-expired", "/tour"];
 // Signed-in visitors skip these and go straight to their library.
 const GUEST_ONLY_PATHS = new Set(["/login", "/register", "/forgot-password"]);
 

@@ -49,6 +49,39 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-02-product-tour",
+    date: "2026-11-02",
+    title: "The Tour - Amethyst in 3D",
+    intro: "A new scrolling 3D tour walks through everything Amethyst does, from the Archive and To Do to every Arcade game, Coin Slots, the Vault, the Lab and customization. Anyone can watch it, signed in or not.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "The Tour", text: "Scroll through a 3D trailer with one scene per feature, each with a short explanation and a link to try it." },
+      { kind: "new", feature: "Every Arcade game", text: "2048, Flutter, Snake, Sudoku, Fruit Slice and Stacker each get their own scene, followed by Coin Slots." },
+      { kind: "new", feature: "Easy to find", text: "Open it from The Tour in the account menu, or from the sign-in page before you have an account." },
+    ],
+    details: {
+      new: [
+        {
+          title: "A 3D tour of Amethyst",
+          body: "Scrolling moves the camera from scene to scene; nothing takes over your scroll wheel. Each stop has a heading, a short description and a link to the feature.",
+          points: [
+            "The Archive: cover art fanning out like a shelf.",
+            "To Do: a My Day list that checks itself off as you scroll.",
+            "The Arcade: a row of cabinets, then one scene per game - 2048 tiles merging, Flutter flying through crystal pillars, Snake eating, Sudoku filling in, Fruit Slice cutting and Stacker trimming its tower.",
+            "Coin Slots: the reels spin and land on a win.",
+            "The Vault and the Lab: the vault door unlocks and the Lab's experiments play out.",
+            "Customization and achievements: the cover viewer steps through every theme, and a hidden achievement flips to reveal itself.",
+            "Administrators also see a link to the admin panel in its scene.",
+            "The side rail jumps to any chapter; the tour ends with a button to open Amethyst or sign in.",
+            "Your Motion setting is respected: with reduced motion the tour shows still scenes, and without 3D support each chapter shows an icon instead.",
+          ],
+          where: "Account menu → The Tour, or the sign-in page",
+          link: { href: "/tour", label: "Take the tour" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-02-forge-in-steps",
     date: "2026-11-02",
     title: "The Admin Panel - Forge in Steps",

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck } from "lucide-react";
+import { Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -146,6 +146,11 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
               <DropdownMenuItem asChild>
                 <Link href="/version-history">
                   <History aria-hidden /> Version history
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/tour">
+                  <Clapperboard aria-hidden /> The Tour
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
