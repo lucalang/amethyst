@@ -13,12 +13,12 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { CODE_STATUS, type CodeStatus } from "@/lib/vault-admin";
-import { sanctumFont } from "./admin-font";
 
 /* A shared one-second clock for countdowns, so many tablets use one interval. */
 const listeners = new Set<() => void>();
 let ticker = 0;
 let current = 0;
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   if (!ticker) {
@@ -159,7 +159,7 @@ export function ConfirmAction({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent className={`cs-dialog ${sanctumFont.variable}`}>
+      <AlertDialogContent className="cs-dialog">
         <AlertDialogHeader>
           <AlertDialogTitle className="cs-dialog-title">{title}</AlertDialogTitle>
           <AlertDialogDescription className="cs-dialog-text">{description}</AlertDialogDescription>

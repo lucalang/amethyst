@@ -118,7 +118,7 @@ export function RewardsEditor({ value, onChange, context, error, idPrefix }: Edi
           ))}
         </ul>
       ) : (
-        <p className="cs-hint">Nothing chosen yet. Pick coins, cosmetics or achievements; each becomes a token in the core.</p>
+        <p className="cs-hint">Nothing chosen yet. Pick coins, cosmetics or achievements; each becomes a token that circles the code.</p>
       )}
       {error ? (
         <p className="cs-error" role="alert">
@@ -388,7 +388,7 @@ function AchievementPicker({ value, onChange, context, idPrefix }: EditorProps) 
   );
 }
 
-/* 3D tokens: each reward becomes a token flying into the core; faces are real DOM (the art), owned here. */
+/* 3D tokens: each reward becomes a token circling the code plate; faces are real DOM (the art), owned here. */
 
 const MAX_TOKENS = 12;
 const holders = new Map<string, HTMLElement>();

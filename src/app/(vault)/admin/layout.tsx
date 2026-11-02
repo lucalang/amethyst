@@ -1,6 +1,5 @@
 import { Suspense, type ReactNode } from "react";
 import { AdminApp } from "@/components/admin/admin-app";
-import { sanctumFont } from "@/components/admin/admin-font";
 import { requireAdminPage } from "@/lib/admin";
 import { loadAdminCatalog, loadAdminLooks, loadAdminSnapshot } from "@/lib/data/vault-admin";
 import type { AuthContext } from "@/lib/supabase/auth";
@@ -25,7 +24,7 @@ function AdminSkeleton() {
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const ctx = await requireAdminPage();
   return (
-    <div className={sanctumFont.variable}>
+    <div>
       <Suspense fallback={<AdminSkeleton />}>
         <AdminLoader ctx={ctx} />
       </Suspense>

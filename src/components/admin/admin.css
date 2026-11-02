@@ -78,6 +78,7 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgb(255 31 61 / 0.4) transparent;
+  transition: opacity 0.6s ease;
 }
 
 .cs-viewport {
@@ -91,10 +92,13 @@
   display: none;
 }
 
+/* The drawing buffer is devicePixelRatio× the stage; CSS must size the element to the stage. */
 .cs-canvas {
   position: absolute;
   inset: 0;
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .cs-layer {
@@ -170,33 +174,41 @@
   gap: 0.2rem;
   margin-inline: auto;
   padding: 0.22rem;
-  border: 1px solid var(--cs-line);
+  border: 1px solid rgb(255 90 114 / 0.38);
   border-radius: 999px;
-  background: rgb(12 3 6 / 0.7);
-  box-shadow: 0 0 24px -10px rgb(255 31 61 / 0.6);
+  background: linear-gradient(180deg, rgb(36 7 15 / 0.92), rgb(14 3 7 / 0.92));
+  box-shadow:
+    inset 0 1px 0 rgb(255 140 160 / 0.08),
+    0 6px 18px -10px rgb(0 0 0 / 0.9),
+    0 0 24px -10px rgb(255 31 61 / 0.6);
 }
 
 .cs-hud-link {
   padding: 0.38rem 0.95rem;
   border-radius: 999px;
-  color: var(--cs-soft);
+  color: var(--cs-text);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-decoration: none;
-  transition: color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  transition: color 0.2s, background-color 0.2s, box-shadow 0.2s, scale 0.1s;
 }
 
 .cs-hud-link:hover {
   color: #fff;
-  background: rgb(255 31 61 / 0.14);
+  background: rgb(255 31 61 / 0.2);
+  box-shadow: inset 0 0 0 1px rgb(255 90 114 / 0.35);
+}
+
+.cs-hud-link:active {
+  scale: 0.96;
 }
 
 .cs-hud-link[aria-current="page"] {
   color: #fff;
-  background: linear-gradient(180deg, rgb(255 31 61 / 0.42), rgb(130 6 26 / 0.45));
-  box-shadow: inset 0 0 0 1px rgb(255 90 114 / 0.6), 0 0 18px rgb(255 31 61 / 0.4);
+  background: linear-gradient(180deg, rgb(255 31 61 / 0.5), rgb(130 6 26 / 0.55));
+  box-shadow: inset 0 0 0 1px rgb(255 90 114 / 0.7), 0 0 18px rgb(255 31 61 / 0.4);
 }
 
 .cs-hud-tools {
@@ -209,27 +221,47 @@
   align-items: center;
   height: 2rem;
   padding: 0 0.8rem;
-  border: 1px solid var(--cs-line);
+  border: 1px solid rgb(255 90 114 / 0.5);
   border-radius: 999px;
-  background: rgb(12 3 6 / 0.7);
-  color: var(--cs-soft);
+  background: linear-gradient(180deg, rgb(60 12 24 / 0.94), rgb(26 5 11 / 0.94));
+  box-shadow: inset 0 1px 0 rgb(255 150 168 / 0.1), 0 4px 14px -6px rgb(0 0 0 / 0.9);
+  color: var(--cs-text);
   font: inherit;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s, scale 0.1s;
 }
 
 .cs-hud-button:hover {
   color: #fff;
-  border-color: var(--cs-line-hi);
+  border-color: rgb(255 125 145 / 0.85);
+  background: linear-gradient(180deg, rgb(92 17 34 / 0.96), rgb(40 7 16 / 0.96));
+  box-shadow: inset 0 1px 0 rgb(255 150 168 / 0.14), 0 0 16px -4px rgb(255 31 61 / 0.6);
+}
+
+.cs-hud-button:active {
+  scale: 0.96;
+  background: rgb(30 5 12 / 0.96);
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.6);
 }
 
 .cs-hud-button[aria-pressed="true"] {
   color: #fff;
-  border-color: rgb(255 90 114 / 0.5);
+  border-color: rgb(255 110 134 / 0.8);
+  background: linear-gradient(180deg, rgb(200 22 50 / 0.72), rgb(110 6 24 / 0.8));
+  box-shadow: inset 0 1px 0 rgb(255 190 200 / 0.18), 0 0 16px -4px rgb(255 31 61 / 0.55);
+}
+
+.cs-hud-button:disabled {
+  border-color: rgb(255 90 114 / 0.2);
+  background: rgb(22 8 12 / 0.85);
+  box-shadow: none;
+  color: var(--cs-dim);
+  cursor: not-allowed;
+  scale: 1;
 }
 
 .cs-hud-skip {
@@ -245,38 +277,147 @@
   transition: opacity 0.6s ease;
 }
 
-.cs-root[data-intro] :is(.cs-hud-title, .cs-hud-nav) {
+.cs-root:is([data-intro], [data-mode="pending"]) :is(.cs-hud-title, .cs-hud-nav) {
   opacity: 0;
 }
 
-/* Veil (while the scene compiles) ------------------------------------------ */
+.cs-root[data-mode="pending"] :is(.cs-hud-title, .cs-hud-nav) {
+  visibility: hidden;
+}
 
-.cs-veil {
+/* Seal: the full-stage opening while the scene compiles, then the 2D backdrop - */
+
+/* The panels sit unplaced until the scene is ready; the scene then fades in over the seal. */
+.cs-root[data-mode="pending"] .cs-scroller {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.cs-backdrop {
   position: absolute;
   inset: 0;
-  z-index: 30;
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 1.25rem;
-  background: var(--vx-black);
+  gap: 1.1rem;
+  overflow: hidden;
+  container-type: size;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgb(255 31 61 / 0.16), rgb(110 6 24 / 0.08) 55%, transparent);
 }
 
-.cs-veil-sigil {
-  width: 64px;
-  height: 64px;
-  border: 1px solid rgb(255 31 61 / 0.55);
+.cs-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-conic-gradient(rgb(255 60 90 / 0.07) 0deg 0.35deg, transparent 0.35deg 5deg);
+  mask: radial-gradient(closest-side, transparent 25%, #000 55%, transparent);
+}
+
+.cs-seal {
+  position: relative;
+  width: min(84vmin, 1000px);
+  width: min(88cqw, 100cqh - 7rem, 1000px);
+  aspect-ratio: 1;
+  border: 1.5px solid rgb(255 60 90 / 0.7);
   border-radius: 50%;
-  box-shadow: 0 0 40px rgb(255 31 61 / 0.35), inset 0 0 18px rgb(255 31 61 / 0.45);
-  animation: cs-veil 1.6s ease-in-out infinite;
+  background: radial-gradient(closest-side, rgb(46 5 14 / 0.55), rgb(18 2 7 / 0.3) 72%, transparent);
+  box-shadow: 0 0 70px -8px rgb(255 31 61 / 0.5), inset 0 0 80px -12px rgb(255 31 61 / 0.4);
+  animation: cs-seal-in 0.9s ease-out backwards;
+}
+
+.cs-seal::after {
+  content: "";
+  position: absolute;
+  inset: 3.5%;
+  border: 1px dashed rgb(255 110 134 / 0.28);
+  border-radius: 50%;
+}
+
+.cs-seal > span {
+  position: absolute;
+}
+
+.cs-seal-runes,
+.cs-seal-sweep,
+.cs-seal-inner,
+.cs-seal-core {
+  border-radius: 50%;
+}
+
+.cs-seal-runes {
+  inset: 7%;
+  background: repeating-conic-gradient(rgb(255 110 134 / 0.7) 0deg 0.6deg, transparent 0.6deg 4deg);
+  mask: radial-gradient(closest-side, transparent 88%, #000 89% 97%, transparent 98%);
+  animation: cs-seal-spin 120s linear infinite;
+}
+
+.cs-seal-sweep {
+  inset: 12%;
+  background: conic-gradient(transparent 0deg 250deg, rgb(255 31 61 / 0.12) 300deg, rgb(255 70 100 / 0.55) 356deg, rgb(255 200 210 / 0.9) 360deg);
+  mask: radial-gradient(closest-side, transparent 62%, #000 63% 99%, transparent);
+  animation: cs-seal-spin 3.6s linear infinite;
+}
+
+.cs-seal-inner {
+  inset: 27%;
+  border: 1px solid rgb(255 120 140 / 0.6);
+  box-shadow: 0 0 34px -6px rgb(255 31 61 / 0.55), inset 0 0 28px -8px rgb(255 31 61 / 0.6);
+}
+
+.cs-seal-mark {
+  inset: 34.5%;
+  border: 1px solid rgb(255 130 150 / 0.75);
+  rotate: 45deg;
+  box-shadow: 0 0 18px -4px rgb(255 31 61 / 0.7);
+  animation: cs-seal-spin 80s linear infinite reverse;
+}
+
+.cs-seal-mark::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid rgb(255 130 150 / 0.35);
+  rotate: 45deg;
+}
+
+.cs-seal-core {
+  inset: 44%;
+  background: radial-gradient(closest-side, #fff, #ffb3bf 22%, #ff1f3d 52%, rgb(255 31 61 / 0));
+  box-shadow: 0 0 90px 14px rgb(255 31 61 / 0.4);
+  animation: cs-seal-pulse 2.6s ease-in-out infinite;
 }
 
 .cs-veil-text {
+  margin: 0;
   font-family: var(--vx-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.3em;
+  font-size: 0.74rem;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
-  color: var(--cs-dim);
+  color: var(--cs-soft);
+  text-shadow: 0 0 14px rgb(255 31 61 / 0.7);
+}
+
+.cs-root[data-mode="3d"] .cs-backdrop {
+  visibility: hidden;
+  transition: visibility 0s 0.7s;
+}
+
+.cs-root[data-mode="3d"] .cs-seal > * {
+  animation-play-state: paused;
+}
+
+/* 2D: the seal stays behind the flat panels, still and dimmed. */
+.cs-root[data-mode="2d"] .cs-backdrop {
+  opacity: 0.55;
+}
+
+.cs-root[data-mode="2d"] .cs-seal > * {
+  animation: none;
+}
+
+.cs-root[data-mode="2d"] .cs-seal-sweep {
+  display: none;
 }
 
 /* Panels ------------------------------------------------------------------- */
@@ -336,15 +477,20 @@
   transform: translateZ(24px);
 }
 
-.cs-layer .cs-hold {
-  transform: translateZ(12px);
-}
-
-/* Panels with a height cap (set by the scene's layout) scroll inside. */
+/* Panels with a height cap (set by the scene's layout) scroll inside; content fades out within the
+   padding instead of running into the cut corners. */
 .cs-layer .cs-panel[style*="--cs-max-h"] .cs-panel-inner {
   max-height: var(--cs-max-h);
   overflow: hidden auto;
   overscroll-behavior: contain;
+  mask-image: linear-gradient(to bottom, transparent, #000 1.1rem, #000 calc(100% - 1.25rem), transparent);
+}
+
+/* The Forge's step panel keeps a steady height; only its body scrolls, so head and footer keep depth. */
+.cs-layer .cs-panel[style*="--cs-max-h"] .cs-panel-inner.cs-step {
+  height: min(var(--cs-max-h), 44rem);
+  overflow: visible;
+  mask-image: none;
 }
 
 .cs-panel-inner,
@@ -451,21 +597,15 @@
   }
 
   .cs-flat-forge:not([hidden]) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "plate plate" "rewards rules" "rewards seal";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-areas: "plate step";
     align-items: start;
   }
   .cs-flat-slot-plate {
     grid-area: plate;
   }
-  .cs-flat-slot-rewards {
-    grid-area: rewards;
-  }
-  .cs-flat-slot-rules {
-    grid-area: rules;
-  }
-  .cs-flat-slot-seal {
-    grid-area: seal;
+  .cs-flat-slot-step {
+    grid-area: step;
   }
 }
 
@@ -1341,14 +1481,18 @@ button.cs-account[aria-pressed="true"] {
   display: grid;
   gap: 0.3rem;
   padding: 1.05rem 1.2rem 1.1rem;
+  container-type: inline-size;
 }
 
+/* Long numbers shrink to fit their counter (--cs-chars is the formatted length). */
 .cs-counter-value {
   margin: 0;
   font-family: var(--cs-display);
   font-size: clamp(1.9rem, 3vw, 2.6rem);
+  font-size: clamp(1.1rem, 100cqi / (var(--cs-chars, 4) * 0.72), 2.6rem);
   font-weight: 700;
   line-height: 1.05;
+  white-space: nowrap;
   color: #fff;
   text-shadow: 0 0 10px rgb(255 90 114 / 0.8), 0 0 34px rgb(255 31 61 / 0.6);
 }
@@ -1438,15 +1582,22 @@ button.cs-account[aria-pressed="true"] {
   transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s, scale 0.1s;
 }
 
+a.cs-list-row {
+  border-color: rgb(255 80 108 / 0.3);
+  background: linear-gradient(180deg, rgb(40 8 17 / 0.85), rgb(20 4 9 / 0.85));
+  box-shadow: inset 0 1px 0 rgb(255 140 160 / 0.06);
+}
+
 a.cs-list-row:hover,
 a.cs-list-row:focus-visible {
-  border-color: var(--cs-line-hi);
-  background: rgb(42 6 15 / 0.75);
-  box-shadow: 0 0 20px -6px rgb(255 31 61 / 0.55);
+  border-color: rgb(255 110 134 / 0.75);
+  background: linear-gradient(180deg, rgb(72 13 28 / 0.9), rgb(34 6 14 / 0.9));
+  box-shadow: 0 0 20px -6px rgb(255 31 61 / 0.6);
 }
 
 a.cs-list-row:active {
   scale: 0.985;
+  background: rgb(28 5 11 / 0.92);
 }
 
 .cs-list-main {
@@ -1828,6 +1979,12 @@ a.cs-list-row:active {
   gap: 0.65rem;
   padding: 1.4rem 1.5rem 1.5rem;
   text-align: center;
+  container-type: inline-size;
+}
+
+.cs-plate > .cs-draft-row {
+  justify-self: stretch;
+  text-align: left;
 }
 
 .cs-plate-code {
@@ -1835,6 +1992,7 @@ a.cs-list-row:active {
   margin: 0;
   font-family: var(--vx-mono);
   font-size: clamp(1.35rem, 3.2vw, 2.3rem);
+  font-size: clamp(1.1rem, 9cqi, 2.3rem);
   font-weight: 600;
   letter-spacing: 0.16em;
   color: #fff;
@@ -1933,6 +2091,105 @@ a.cs-list-row:active {
   border-top: 1px solid var(--cs-line);
 }
 
+/* Forge steps ------------------------------------------------------------------ */
+
+.cs-step-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: -0.3rem;
+  padding: 0.3rem;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+}
+
+.cs-step-page {
+  display: grid;
+  gap: 0.9rem;
+  animation: cs-step-in 0.35s ease-out;
+}
+
+.cs-steps {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cs-step-pip {
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid var(--cs-line);
+  border-radius: 50%;
+  background: rgb(20 3 8 / 0.7);
+  color: var(--cs-dim);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+
+.cs-step-pip:hover:not(:disabled) {
+  border-color: rgb(255 120 140 / 0.85);
+  color: #fff;
+}
+
+.cs-step-pip[data-state="done"] {
+  border-color: rgb(255 90 114 / 0.75);
+  color: #ffc2cc;
+}
+
+.cs-step-pip[data-state="error"] {
+  border-color: var(--cs-amber);
+  color: var(--cs-amber);
+  box-shadow: 0 0 12px -2px rgb(255 178 74 / 0.6);
+}
+
+.cs-step-pip[aria-current="step"] {
+  border-color: rgb(255 160 175 / 0.95);
+  background: linear-gradient(180deg, #ff2a48, #b0001d);
+  color: #fff;
+  box-shadow: 0 0 16px -2px rgb(255 31 61 / 0.9);
+}
+
+.cs-step-pip[aria-current="step"][data-state="error"] {
+  box-shadow: 0 0 0 2px var(--cs-amber), 0 0 16px -2px rgb(255 31 61 / 0.9);
+}
+
+.cs-step-pip:disabled {
+  cursor: not-allowed;
+}
+
+.cs-step-foot {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--cs-line);
+}
+
+.cs-step-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.cs-step-nav > :last-child {
+  margin-left: auto;
+}
+
+.cs-step-nav > .cs-hint {
+  flex: 1 1 12rem;
+  margin: 0;
+  text-align: right;
+}
+
 /* Reward tokens: DOM faces riding on the scene's 3D tokens. --------------------- */
 
 .cs-token-holder {
@@ -1991,15 +2248,35 @@ a.cs-list-row:active {
 
 /* Motion ----------------------------------------------------------------------- */
 
-@keyframes cs-veil {
+@keyframes cs-step-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+@keyframes cs-seal-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+
+@keyframes cs-seal-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes cs-seal-pulse {
   0%,
   100% {
-    opacity: 0.5;
-    scale: 0.96;
+    opacity: 0.75;
+    scale: 0.9;
   }
   50% {
     opacity: 1;
-    scale: 1.04;
+    scale: 1.06;
   }
 }
 

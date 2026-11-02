@@ -94,7 +94,7 @@ export type SanctumHooks = {
 };
 
 export type TokenShape = "coins" | "card" | "medallion";
-/** A reward shown as a physical token orbiting the core; `face` is DOM shown on the token (card art, badge). */
+/** A reward shown as a physical token circling the code plate; `face` is DOM shown on the token (card art, badge). */
 export type TokenSpec = { key: string; shape: TokenShape; face: HTMLElement | null };
 export type PublishPhase = "idle" | "implode" | "success" | "error";
 
@@ -166,6 +166,10 @@ const TIERS: Tier[] = [
 ];
 const MAX_DUST = 7000;
 const BURST = 1500;
+/** Reward tokens: CSS px per world unit of token geometry (a card is ~47px tall). */
+const TOKEN_PX = 48;
+/** How far outside the Forge's code plate the tokens' track runs, in CSS px (the layout leaves room). */
+const TRACK_GAP = 34;
 
 function initialTier(width: number) {
   const cores = navigator.hardwareConcurrency || 8;
@@ -200,6 +204,30 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+
+const CORNERS = [[1, 1], [1, -1], [-1, -1], [-1, 1]] as const;
+/** A point on the loop `gap` px outside a w×h rectangle centered at 0 (y up), `t` laps clockwise from the top-left. */
+function aroundRect(out: Vector3, w: number, h: number, gap: number, t: number) {
+  const arc = (Math.PI / 2) * gap;
+  let rest = (t - Math.floor(t)) * (2 * (w + h) + 4 * arc);
+  for (let i = 0; i < 4; i++) {
+    const [ax, ay] = CORNERS[(i + 3) % 4];
+    const [bx, by] = CORNERS[i];
+    const side = i % 2 ? h : w;
+    const normal = Math.PI / 2 - (i * Math.PI) / 2;
+    if (rest <= side) {
+      const k = side > 0 ? rest / side : 0;
+      return out.set((lerp(ax, bx, k) * w) / 2 + Math.cos(normal) * gap, (lerp(ay, by, k) * h) / 2 + Math.sin(normal) * gap, 0);
+    }
+    rest -= side;
+    if (rest <= arc) {
+      const angle = normal - rest / gap;
+      return out.set((bx * w) / 2 + Math.cos(angle) * gap, (by * h) / 2 + Math.sin(angle) * gap, 0);
+    }
+    rest -= arc;
+  }
+  return out.set(-w / 2, h / 2 + gap, 0);
+}
 
 /** Panel bodies: a jittered unit grid split into triangles, each with its own centroid and random seed. */
 function shardGeometry(nx: number, ny: number) {
@@ -373,6 +401,8 @@ type Token = {
   leaveFrom: Vector3;
   leaveDir: Vector3;
   seed: number;
+  /** Place on the plate's track (laps), eased toward an even share as tokens come and go. */
+  spot: number;
 };
 
 export function createSanctum(options: SanctumOptions): Sanctum {
@@ -574,9 +604,8 @@ export function createSanctum(options: SanctumOptions): Sanctum {
 
   const forgeAngle = STATION_ANGLE.forge;
   const forgeNormal = new Vector3(Math.sin(forgeAngle), 0, Math.cos(forgeAngle));
-  const forgeRight = new Vector3(Math.cos(forgeAngle), 0, -Math.sin(forgeAngle));
   const UP = new Vector3(0, 1, 0);
-  /** Where reward tokens gather: just in front of the core, as seen from the Forge. */
+  /** The heart of the publish effects, just in front of the core as seen from the Forge. */
   const forgeCore = forgeNormal.clone().multiplyScalar(2.4);
   const forgeQuaternion = new Quaternion().setFromAxisAngle(UP, forgeAngle);
 
@@ -966,7 +995,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       let bottomMost = HUD_HEIGHT;
       for (const slot of stationSlots(id, W, H)) {
         const list = (bySlot.get(slot.id) ?? []).sort((a, b) => a.spec.order - b.spec.order);
-        let top = slot.y ?? (slot.after ? (placed.get(slot.after)?.bottom ?? HUD_HEIGHT) + (compact ? 14 : 22) : HUD_HEIGHT + 16);
+        let top = slot.y ?? (slot.after ? (placed.get(slot.after)?.bottom ?? HUD_HEIGHT) + (compact ? 14 : 22) + (slot.space ?? 0) : HUD_HEIGHT + 16);
         const columns = slot.columns ?? 1;
         const gap = slot.gap ?? 18;
         const cell = (slot.width - gap * (columns - 1)) / columns;
@@ -1129,10 +1158,16 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     },
   };
 
+  function forgeEntry(slot: string) {
+    for (const entry of entries.values()) if (entry.spec.station === "forge" && entry.spec.slot === slot) return entry;
+    return undefined;
+  }
+
+  // New tokens fly in from the Forge's step panel (where rewards are chosen); leaving ones fly off the plate.
+  const plateCenter = forgeCore.clone();
   function rewardsOrigin(out: Vector3) {
-    for (const entry of entries.values()) {
-      if (entry.spec.station === "forge" && entry.spec.slot === "rewards" && entry.root.visible) return out.setFromMatrixPosition(entry.root.matrixWorld);
-    }
+    const entry = forgeEntry("step");
+    if (entry?.root.visible) return out.setFromMatrixPosition(entry.root.matrixWorld);
     return out.copy(forgeCore).addScaledVector(UP, -4);
   }
 
@@ -1143,7 +1178,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       if (!keys.has(token.spec.key) && token.leaving === null) {
         token.leaving = now;
         token.leaveFrom.copy(token.pos);
-        token.leaveDir.copy(token.pos).sub(forgeCore).normalize().multiplyScalar(6).addScaledVector(UP, 1.2).addScaledVector(forgeNormal, 4);
+        token.leaveDir.copy(token.pos).sub(plateCenter).normalize().multiplyScalar(4).addScaledVector(UP, 1.2).addScaledVector(forgeNormal, 2);
         if (token.face) token.face.element.setAttribute("aria-hidden", "true");
       }
     }
@@ -1167,11 +1202,12 @@ export function createSanctum(options: SanctumOptions): Sanctum {
         leaveFrom: new Vector3(),
         leaveDir: new Vector3(),
         seed: Math.random() * 10,
+        spot: Number.NaN,
       };
       tokenRoot.add(token.group);
       tokens.set(spec.key, token);
     }
-    // Keep the given order for the orbit; leaving tokens go last.
+    // Keep the given order on the track; leaving tokens go last.
     const ordered = new Map<string, Token>();
     for (const spec of list) ordered.set(spec.key, tokens.get(spec.key)!);
     for (const [k, token] of tokens) if (!ordered.has(k)) ordered.set(k, token);
@@ -1190,6 +1226,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   }
 
   let orbit = 0;
+  const sink = new Vector3();
   const tokenTarget = new Vector3();
   const bezierA = new Vector3();
   const bezierB = new Vector3();
@@ -1197,15 +1234,29 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     const active = [...tokens.values()].filter((token) => token.leaving === null);
     const collapse = phase === "implode" ? easeIn(span(now, phaseAt, phaseAt + PUBLISH.implode)) : 0;
     const still = motion === "off";
-    if (!still) orbit += dt * (0.22 + charge * 2.4 + collapse * 6);
-    const radius = 2.1 * (1 - charge * 0.45) * (1 - collapse);
+    if (!still) orbit += dt * (0.025 + charge * 0.3 + collapse * 0.6);
+    // The tokens float along a loop just outside the code plate, in its plane (so they never hide behind it),
+    // and sink into the phrase as it implodes.
+    const codePlate = forgeEntry("plate");
+    const frame = codePlate?.placed ? codePlate.root.matrixWorld : null;
+    if (frame) plateCenter.setFromMatrixPosition(frame);
+    sink.copy(plateCenter).addScaledVector(forgeNormal, -0.6);
+    const size = TOKEN_PX * s;
     active.forEach((token, index) => {
-      const a = (index / Math.max(1, active.length)) * TAU + orbit;
-      tokenTarget.copy(forgeCore).addScaledVector(forgeRight, Math.cos(a) * radius).addScaledVector(UP, Math.sin(a) * radius * 0.72);
+      const share = index / active.length;
+      token.spot = Number.isNaN(token.spot) || still ? share : damp(token.spot, share, 3, dt);
+      aroundRect(tokenTarget, codePlate?.w ?? 0, codePlate?.h ?? 0, TRACK_GAP, token.spot + orbit);
+      if (!still) {
+        tokenTarget.y += Math.sin(now * 0.0017 + token.seed) * 4;
+        tokenTarget.z += Math.sin(now * 0.0011 + token.seed * 2) * 10;
+      }
+      if (frame) tokenTarget.applyMatrix4(frame);
+      else tokenTarget.multiplyScalar(s).applyQuaternion(forgeQuaternion).add(forgeCore);
+      tokenTarget.lerp(sink, collapse);
       const k = still ? 1 : span(now, token.born, token.born + 900);
       if (k < 1) {
         const e = easeInOut(k);
-        bezierA.copy(token.from).lerp(tokenTarget, 0.5).addScaledVector(forgeNormal, 3).addScaledVector(UP, 1.5);
+        bezierA.copy(token.from).lerp(tokenTarget, 0.5).addScaledVector(forgeNormal, 2).addScaledVector(UP, 1.2);
         bezierB.copy(token.from).lerp(bezierA, e);
         token.pos.copy(bezierA).lerp(tokenTarget, e);
         token.pos.lerp(bezierB, 1 - e);
@@ -1221,7 +1272,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       const spin = still ? 0 : token.spec.shape === "coins" ? now * 0.0016 + token.seed : Math.sin(now * 0.0011 + token.seed) * 0.55;
       token.group.rotateY(spin);
       if (token.spec.shape === "coins") token.group.rotateX(0.35);
-      token.group.scale.setScalar((0.35 + 0.65 * easeOut(k)) * (1 - collapse * 0.9));
+      token.group.scale.setScalar(size * (0.35 + 0.65 * easeOut(k)) * (1 - collapse * 0.9));
     });
     for (const token of tokens.values()) {
       if (token.leaving === null) continue;
@@ -1229,7 +1280,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       token.pos.copy(token.leaveFrom).addScaledVector(token.leaveDir, easeIn(k));
       token.group.position.copy(token.pos);
       token.group.rotateY(dt * 9);
-      token.group.scale.setScalar(Math.max(0.001, 1 - k));
+      token.group.scale.setScalar(size * Math.max(0.001, 1 - k));
       if (k >= 1) dropToken(token);
     }
   }

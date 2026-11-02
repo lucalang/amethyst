@@ -98,30 +98,30 @@ function presetExpiry(startsAt: string | null, ms: number) {
   return new Date(Math.max(Date.now(), startsAt ? Date.parse(startsAt) : 0) + ms).toISOString();
 }
 
-/** Label, code type (Forge only), audience, schedule and limits. */
-export function RulesFields({
-  idPrefix,
-  config,
-  onChange,
-  errors,
-  code,
-  onCode,
-  accounts = [],
-}: {
-  idPrefix: string;
-  config: CodeConfig;
-  onChange: (patch: Partial<CodeConfig>) => void;
-  errors: ConfigErrors;
+type FieldsProps = { idPrefix: string; config: CodeConfig; onChange: (patch: Partial<CodeConfig>) => void; errors: ConfigErrors };
+type NameProps = FieldsProps & {
   /** The code text (phrase or custom); undefined when editing a published code. */
   code?: string;
   onCode?: (code: string) => void;
-  accounts?: AdminAccount[];
-}) {
-  const id = (name: string) => `${idPrefix}-${name}`;
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const phrase = code !== undefined && config.codeMode === "phrase" ? normalizePhrase(code) : null;
+};
+type SealProps = FieldsProps & { accounts?: AdminAccount[] };
+
+/** Label, code type (Forge only), audience, schedule and limits. */
+export function RulesFields({ code, onCode, accounts, ...fields }: NameProps & SealProps) {
   return (
     <div className="cs-rules">
+      <NameFields {...fields} code={code} onCode={onCode} />
+      <SealFields {...fields} accounts={accounts} />
+    </div>
+  );
+}
+
+/** The label and, in the Forge, the code type and text; siblings for a `.cs-rules` container. */
+export function NameFields({ idPrefix, config, onChange, errors, code, onCode }: NameProps) {
+  const id = (name: string) => `${idPrefix}-${name}`;
+  const phrase = code !== undefined && config.codeMode === "phrase" ? normalizePhrase(code) : null;
+  return (
+    <>
       <Field id={id("label")} label="Admin label (never shown to players)" error={errors.label}>
         <input
           id={id("label")}
@@ -176,7 +176,16 @@ export function RulesFields({
           )}
         </fieldset>
       ) : null}
+    </>
+  );
+}
 
+/** Who can redeem the code, when, and how often; siblings for a `.cs-rules` container. */
+export function SealFields({ idPrefix, config, onChange, errors, accounts = [] }: SealProps) {
+  const id = (name: string) => `${idPrefix}-${name}`;
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return (
+    <>
       <fieldset className="cs-fieldset">
         <legend className="cs-label">Who can redeem it</legend>
         <div className="cs-segment" role="radiogroup" aria-label="Audience">
@@ -270,7 +279,7 @@ export function RulesFields({
           />
         </Field>
       </div>
-    </div>
+    </>
   );
 }
 

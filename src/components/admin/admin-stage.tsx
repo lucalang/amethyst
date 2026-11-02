@@ -241,6 +241,21 @@ export function AdminStage({
     <ControlContext.Provider value={control}>
       <StateContext.Provider value={state}>
         <div className="cs-root" data-mode={state.mode} data-station={station} data-motion={motion} data-intro={introRunning ? "" : undefined}>
+          {/* The seal: the full-stage opening while the scene compiles, then the backdrop of the 2D fallback. */}
+          <div className="cs-backdrop">
+            <div aria-hidden className="cs-seal">
+              <span className="cs-seal-runes" />
+              <span className="cs-seal-sweep" />
+              <span className="cs-seal-inner" />
+              <span className="cs-seal-mark" />
+              <span className="cs-seal-core" />
+            </div>
+            {state.mode === "pending" ? (
+              <p className="cs-veil-text" role="status">
+                Opening the sanctum…
+              </p>
+            ) : null}
+          </div>
           <div ref={scrollerRef} className="cs-scroller">
             <div ref={viewportRef} className="cs-viewport" />
             <div ref={spacerRef} className="cs-spacer" aria-hidden />
@@ -255,12 +270,6 @@ export function AdminStage({
             </div>
           </div>
           {hud}
-          {state.mode === "pending" ? (
-            <div className="cs-veil" role="status">
-              <span aria-hidden className="cs-veil-sigil" />
-              <span className="cs-veil-text">Opening the sanctum…</span>
-            </div>
-          ) : null}
           {children}
         </div>
       </StateContext.Provider>

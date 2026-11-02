@@ -193,7 +193,8 @@ void main() {
   float r = length(p) * 2.0;
   float angle = fract(atan(p.x, p.y) / 6.2831853 + 1.0);
   float traced = smoothstep(uTrace, uTrace - 0.02, angle) * step(0.001, uTrace);
-  float head = exp(-pow((angle - uTrace) * 60.0, 2.0)) * step(0.001, uTrace) * (1.0 - step(0.999, uTrace));
+  float lead = (angle - uTrace) * 60.0;
+  float head = exp(-lead * lead) * step(0.001, uTrace) * (1.0 - step(0.999, uTrace));
   float lines = texture2D(uMap, vUv).r;
   float fade = smoothstep(1.0, 0.7, r);
   float pulse = 0.8 + 0.2 * sin(uTime * 1.3 - r * 8.0);
@@ -225,7 +226,8 @@ void main() {
   float across = 1.0 - abs(vUv.x - 0.5) * 2.0;
   float along = vUv.y;
   float flicker = 0.55 + 0.45 * sin(uTime * (0.6 + fract(vRay * 7.31) * 1.4) + vRay * 11.0);
-  float a = pow(across, 3.0) * pow(1.0 - along, 1.6) * smoothstep(0.0, 0.12, along) * flicker * uLevel;
+  // MSAA shades edge pixels with extrapolated uvs; pow() of a negative base is NaN, which bloom spreads over the frame.
+  float a = pow(max(across, 0.0), 3.0) * pow(max(1.0 - along, 0.0), 1.6) * smoothstep(0.0, 0.12, along) * flicker * uLevel;
   gl_FragColor = vec4(uColor * a, 1.0);
 }`;
 
@@ -444,7 +446,9 @@ uniform vec3 uColor;
 varying vec2 vUv;
 void main() {
   float r = length(vUv - 0.5) * 2.0;
-  float ring = exp(-pow((r - 0.92) * 22.0, 2.0)) + exp(-pow((r - 0.8) * 9.0, 2.0)) * 0.35;
+  float rim = (r - 0.92) * 22.0;
+  float halo = (r - 0.8) * 9.0;
+  float ring = exp(-rim * rim) + exp(-halo * halo) * 0.35;
   gl_FragColor = vec4(uColor * ring * uLife * 3.0, 1.0);
 }`;
 
@@ -499,7 +503,8 @@ void main() {
   vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
   vec2 dv = (uv - uShock.xy) * aspect;
   float dist = length(dv);
-  float ring = exp(-pow((dist - uShock.z) * 16.0, 2.0)) * uShockStrength;
+  float band = (dist - uShock.z) * 16.0;
+  float ring = exp(-band * band) * uShockStrength;
   uv -= dv / max(dist, 1e-4) / aspect * ring * 0.035;
   vec2 dir = uv - 0.5;
   float ca = uAberration * (0.35 + dot(dir, dir) * 2.4) + uGlitch * 0.008 + ring * 0.012;

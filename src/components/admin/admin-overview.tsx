@@ -53,7 +53,7 @@ export function Overview({ snapshot, animate, current }: { snapshot: AdminSnapsh
         <Panel key={counter.key} station="overview" slot="counters" order={index} kind="counter" label={counter.label}>
           <div className="cs-counter">
             <p className="cs-kicker">{counter.label}</p>
-            <p className="cs-counter-value">
+            <p className="cs-counter-value" style={{ "--cs-chars": number(counter.value).length } as CSSProperties}>
               <CountUp value={counter.value} animate={counting} delay={250 + index * 120} />
             </p>
             <p className="cs-counter-note">{counter.note}</p>

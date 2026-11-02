@@ -49,6 +49,48 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-02-forge-in-steps",
+    date: "2026-11-02",
+    title: "The Admin Panel - Forge in Steps",
+    intro: "For administrators, the Forge now walks through one step at a time beside the always-visible code plate, panel text no longer spills out of its cards, and the 3D scene shows up reliably on desktop.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "The Forge", text: "Code name, rewards and the seal are separate steps, followed by a final Forge step to review and publish; everything fits on screen without scrolling." },
+      { kind: "fixed", feature: "Panel text", text: "Large numbers shrink to fit their counters, and scrolling panels fade out inside their frames instead of running past the cut corners." },
+      { kind: "fixed", feature: "Desktop display", text: "The scene no longer stays black on some desktop graphics cards; the opening plays again and buttons show clear hover, focus and pressed states." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "The Forge, one step at a time",
+          body: "The code plate stays in view while a single panel beside it shows the current step: 1. Code name, 2. Rewards, 3. Seal (who, when and how often) and 4. Forge, the review with the hold-to-publish seal.",
+          points: [
+            "Reward tokens fly out of the Rewards step and float on a loop around the code plate, always in view; when you publish they sink into the phrase.",
+            "The phrase on the plate updates live as you type.",
+            "Back and Next buttons move between steps; Next checks the current step and points out what's missing, and the numbered step markers jump to any step and turn amber when a step needs attention.",
+            "The review lists every remaining problem with a link to its step.",
+            "The draft status and Discard draft now sit under the code plate; drafts still save automatically.",
+          ],
+          where: "Admin panel → Forge (administrators only)",
+          link: { href: "/admin/new", label: "Open the Forge" },
+        },
+      ],
+      fixed: [
+        {
+          title: "Text stays inside its cards",
+          body: "Overview counters size long numbers to fit and switch to two rows when four in a row would be too narrow. Panels that scroll fade their content out within the frame, and the code plate scales its text to its width.",
+          where: "Admin panel (administrators only)",
+          link: { href: "/admin", label: "Open the admin panel" },
+        },
+        {
+          title: "Reliable 3D scene on desktop",
+          body: "On some desktop graphics cards the scene stayed black. It now renders everywhere, the opening plays, and HUD links, buttons and code rows show clear hover, focus and pressed states.",
+          where: "Admin panel (administrators only)",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-10-31-amethyst-text-cleanup",
     date: "2026-10-31",
     title: "Amethyst Text Cleanup",

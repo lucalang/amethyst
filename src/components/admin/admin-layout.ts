@@ -24,6 +24,8 @@ export type Slot = {
   /** Top edge; or below the slot named in `after`; or kept `bottom` px above the viewport's bottom edge. */
   y?: number;
   after?: string;
+  /** Extra px kept free above a slot placed `after` another. */
+  space?: number;
   bottom?: number;
   columns?: number;
   gap?: number;
@@ -40,10 +42,12 @@ export const SLOT_ORDER: Record<StationId, string[]> = {
   overview: ["counters", "timeline", "lists", "activity"],
   codes: ["toolbar", "grid", "drafts"],
   detail: ["summary", "main", "history"],
-  forge: ["plate", "rewards", "rules", "seal"],
+  forge: ["plate", "step"],
 };
 
 export const HUD_HEIGHT = 64;
+/** Room the Forge keeps around its code plate for the reward tokens circling it (see TRACK_GAP in the scene). */
+const RING = 60;
 
 export const layoutSize = (width: number) => (width < 760 ? "compact" : width < 1180 ? "medium" : "wide");
 
@@ -70,6 +74,12 @@ export function stationSlots(station: StationId, width: number, height: number):
 
   if (size === "compact") {
     const full = width - 24;
+    if (station === "forge") {
+      return [
+        { id: "plate", x: 0, y: HUD_HEIGHT + RING, width: full - 2 * RING },
+        { id: "step", x: 0, after: "plate", space: RING, width: full },
+      ];
+    }
     const order = SLOT_ORDER[station];
     return order.map((id, index) => ({
       id,
@@ -93,8 +103,10 @@ export function stationSlots(station: StationId, width: number, height: number):
     }
     const side = Math.min(380, (width - 700) / 2);
     const center = Math.min(width - side * 2 - 120, 900);
+    // Four counters in a row only when each still fits a long number.
+    const counterColumns = center >= 4 * 170 + 3 * 16 ? 4 : 2;
     return [
-      { id: "counters", x: 0, y: top, width: center, columns: 4, gap: 16, curve: 1600 },
+      { id: "counters", x: 0, y: top, width: center, columns: counterColumns, gap: 16, curve: 1600 },
       { id: "timeline", x: 0, after: "counters", bottom: 28, width: Math.min(center, 640), rotX: -0.16, z: 20 },
       { id: "lists", x: -(edge - side / 2), y: top, width: side, rotY: 0.24, z: -40 },
       { id: "activity", x: edge - side / 2, y: top, width: side, rotY: -0.24, z: -40, maxHeight: height - top - 28 },
@@ -142,22 +154,20 @@ export function stationSlots(station: StationId, width: number, height: number):
     ];
   }
 
-  // Forge: rewards on the left, rules and the seal on the right, the core free in the middle.
+  // Forge: the code plate with room for the reward tokens circling it, and one step at a time beside it.
   if (size === "medium") {
     const half = (width - 72) / 2;
     return [
-      { id: "plate", x: 0, y: top, width: Math.min(width - 56, 520), z: 40 },
-      { id: "rewards", x: -(half / 2 + 8), y: top, width: half, rotY: 0.08, maxHeight: height - top - 28 },
-      { id: "rules", x: half / 2 + 8, y: top, width: half, rotY: -0.08, maxHeight: height - top - 300 },
-      { id: "seal", x: half / 2 + 8, after: "rules", width: half, rotY: -0.08 },
+      { id: "plate", x: -(width / 2 + 8) / 2, y: Math.max(top, height / 2 - 120), width: Math.min(460, width / 2 - 8 - 2 * RING) },
+      { id: "step", x: half / 2 + 8, y: top, width: half, rotY: -0.08, maxHeight: height - top - 28 },
     ];
   }
-  const rewards = Math.min(480, (width - 560) / 2 + 20);
-  const rules = Math.min(430, (width - 560) / 2);
+  const step = Math.min(520, Math.max(380, width * 0.3));
+  // The plate stays centered unless its tokens would crowd the step panel.
+  const room = edge - step - RING - 16;
+  const plate = Math.min(460, room + edge - RING);
   return [
-    { id: "plate", x: 0, y: Math.max(top, height / 2 - 150), width: Math.min(460, width - rewards - rules - 140), z: 60 },
-    { id: "rewards", x: -(edge - rewards / 2), y: top, width: rewards, rotY: 0.26, z: -30, maxHeight: height - top - 28 },
-    { id: "rules", x: edge - rules / 2, y: top, width: rules, rotY: -0.26, z: -30, maxHeight: Math.max(300, height - top - 300) },
-    { id: "seal", x: edge - rules / 2, after: "rules", width: rules, rotY: -0.26, z: -30 },
+    { id: "plate", x: Math.min(0, room - plate / 2), y: Math.max(top, height / 2 - 150), width: plate },
+    { id: "step", x: edge - step / 2, y: top, width: step, rotY: -0.14, z: -20, maxHeight: height - top - 28 },
   ];
 }
