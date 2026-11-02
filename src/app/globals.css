@@ -924,6 +924,12 @@
 .poster-card:hover .poster-frame {
   border-color: rgb(var(--accent-soft-rgb) / 0.9);
   box-shadow:
+    0 0 22px -4px rgb(var(--accent-rgb) / 0.55),
+    0 26px 50px -18px rgb(var(--accent-rgb) / 0.75),
+    0 10px 64px -24px rgb(var(--rose-rgb) / 0.4);
+}
+.poster-card:hover .art-frame[data-frame="none"] .poster-frame {
+  box-shadow:
     0 0 0 1px rgb(var(--accent-rgb) / 0.55),
     0 0 22px -4px rgb(var(--accent-rgb) / 0.55),
     0 26px 50px -18px rgb(var(--accent-rgb) / 0.75),
@@ -969,7 +975,7 @@
 }
 @property --fan-part {
   syntax: "<number>";
-  inherits: false;
+  inherits: true;
   initial-value: 0;
 }
 @property --fan-t {
@@ -1013,33 +1019,45 @@
   }
 }
 .home-fan {
-  --fan-w: 6.25rem;
-  --fan-lift: 1.35rem;
-  --fan-arc: 1.1rem;
-  --fan-part-gap: 0.7rem;
+  --fan-w: 7.25rem;
+  --fan-lift: 0.65rem;
+  --fan-arc: 1rem;
+  --fan-part-gap: 0.75rem;
   --fan-motion: 1;
-  --fan-grow: calc((var(--card-hover-scale, 1.05) - 1) * 1.3);
+  --fan-grow: calc((var(--card-hover-scale, 1.05) - 1) * 1.1);
   position: relative;
   isolation: isolate;
   container-type: inline-size;
   width: 100%;
-  height: calc(var(--fan-w) * 1.5 + var(--fan-arc) + var(--fan-lift) + 3rem);
+  height: calc(var(--fan-w) * 1.5 + var(--fan-arc) + var(--fan-lift) + 2.75rem);
   margin: 0;
   padding: 0;
   list-style: none;
   transition:
-    --fan-spread 560ms var(--ease-out-soft),
-    --fan-n 560ms var(--ease-out-soft),
-    --fan-swing 560ms var(--ease-out-soft);
+    --fan-spread 520ms var(--ease-out-soft),
+    --fan-n 520ms var(--ease-out-soft),
+    --fan-swing 520ms var(--ease-out-soft);
 }
 @media (min-width: 40rem) {
   .home-fan {
-    --fan-w: 7.25rem;
+    --fan-w: 8.5rem;
+  }
+}
+@media (min-width: 48rem) {
+  .home-fan {
+    --fan-w: 8.75rem;
   }
 }
 @media (min-width: 64rem) {
   .home-fan {
-    --fan-w: 8.5rem;
+    --fan-w: 9.5rem;
+    --fan-lift: 0.75rem;
+    --fan-part-gap: 0.9rem;
+  }
+}
+@media (min-width: 80rem) {
+  .home-fan {
+    --fan-w: 10.25rem;
   }
 }
 /* Theme-tinted floor light and a soft contact shadow under the hand. */
@@ -1055,32 +1073,33 @@
 }
 .home-fan::before {
   bottom: 0;
-  width: 92%;
-  height: 46%;
-  background: radial-gradient(closest-side, rgb(var(--accent-rgb) / 0.32), rgb(var(--rose-rgb) / 0.1) 62%, transparent);
-  filter: blur(20px);
+  width: 94%;
+  height: 50%;
+  background: radial-gradient(closest-side, rgb(var(--accent-rgb) / 0.34), rgb(var(--rose-rgb) / 0.12) 62%, transparent);
+  filter: blur(22px);
 }
 .home-fan::after {
   bottom: 1.1rem;
-  width: min(84%, calc(var(--fan-w) * 3.2));
-  height: 1.25rem;
+  width: min(86%, calc(var(--fan-w) * 3.3));
+  height: 1.35rem;
   background: radial-gradient(closest-side, rgb(var(--shadow-rgb) / calc(0.95 * var(--shadow-alpha))), transparent);
   filter: blur(6px);
 }
 .home-fan-slot {
   --fan-step: max(
     0px,
-    min(calc(var(--fan-w) * 0.56), calc((100cqi - var(--fan-w) * (1 + 3 * var(--fan-swing)) - 2 * var(--fan-part-gap) - 1rem) / max(1, var(--fan-n) - 1)))
+    min(calc(var(--fan-w) * 0.58), calc((100cqi - var(--fan-w) * (1 + 2.4 * var(--fan-swing)) - 2 * var(--fan-part-gap) - 0.5rem) / max(1, var(--fan-n) - 1)))
   );
   position: absolute;
   left: 50%;
-  bottom: 1.75rem;
+  bottom: 1.65rem;
   width: var(--fan-w);
+  aspect-ratio: 2 / 3;
   z-index: var(--fan-z, 1);
   transform-origin: 50% 100%;
   transform: translateX(-50%)
     translate(
-      calc(var(--fan-t) * var(--fan-step) * var(--fan-deal) + var(--fan-part) * var(--fan-part-gap) * var(--fan-motion)),
+      calc(var(--fan-t) * var(--fan-step) * var(--fan-deal)),
       calc(var(--fan-u) * var(--fan-u) * var(--fan-arc) * var(--fan-deal) + (1 - var(--fan-deal)) * 2.75rem)
     )
     rotate(calc(var(--fan-u) * var(--fan-spread) * var(--fan-deal) + (1 - var(--fan-deal)) * var(--fan-tilt, 0deg)))
@@ -1091,44 +1110,31 @@
     fan-deal 980ms cubic-bezier(0.2, 1.16, 0.32, 1) backwards,
     fan-fade 300ms ease-out backwards;
   animation-delay: calc(120ms + var(--fan-i, 0) * 75ms);
-  /* Leaving: ease back down, and only drop behind neighbours once nearly settled. */
   transition:
-    --fan-t 560ms var(--ease-out-soft),
-    --fan-u 560ms var(--ease-out-soft),
-    --fan-au 560ms var(--ease-out-soft),
-    --fan-part 480ms var(--ease-out-soft),
-    --fan-hover 560ms var(--ease-out-soft),
-    z-index 460ms linear;
+    --fan-t 460ms var(--ease-out-soft),
+    --fan-u 460ms var(--ease-out-soft),
+    --fan-au 460ms var(--ease-out-soft),
+    --fan-hover 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .home-fan-slot[data-shape="square"] {
-  width: calc(var(--fan-w) * 1.2);
+  width: calc(var(--fan-w) * 1.16);
+  aspect-ratio: 1;
 }
 .home-fan[data-dealt] .home-fan-slot {
   animation: none;
 }
-.home-fan-slot:is(:hover, :focus-visible) {
+.home-fan-slot:is(:hover, :focus-visible, :focus) {
   --fan-hover: 1;
-  z-index: 60;
-  transition:
-    --fan-t 560ms var(--ease-out-soft),
-    --fan-u 560ms var(--ease-out-soft),
-    --fan-au 560ms var(--ease-out-soft),
-    --fan-part 480ms var(--ease-out-soft),
-    --fan-hover 640ms cubic-bezier(0.3, 1.3, 0.5, 1),
-    z-index 0s;
-}
-/* Neighbours ease aside so the raised card has room. */
-.home-fan-slot:is(:hover, :focus-visible) ~ .home-fan-slot {
-  --fan-part: 1;
-}
-.home-fan-slot:has(~ .home-fan-slot:is(:hover, :focus-visible)) {
-  --fan-part: -1;
 }
 .home-fan-card {
   display: block;
+  pointer-events: none;
   transform-origin: 50% 100%;
-  transform: translateY(calc(var(--fan-hover) * var(--fan-lift) * -1 * var(--fan-motion)))
-    rotate(calc(var(--fan-u) * var(--fan-spread) * var(--fan-hover) * -0.8 * var(--fan-motion)))
+  transform: translate3d(
+      0,
+      calc(var(--fan-hover) * var(--fan-lift) * -1 * var(--fan-motion)),
+      0
+    )
     scale(calc(1 + var(--fan-hover) * var(--fan-grow) * var(--fan-motion)));
 }
 .home-fan-art {
@@ -1142,12 +1148,12 @@
     0 1px 1px rgb(var(--shadow-rgb) / calc(0.45 * var(--shadow-alpha))),
     0 10px 18px -8px rgb(var(--shadow-rgb) / calc(0.75 * var(--shadow-alpha))),
     0 28px 48px -20px rgb(var(--shadow-rgb) / calc(0.95 * var(--shadow-alpha)));
-  transition: box-shadow 460ms var(--ease-out-soft);
+  transition: box-shadow 360ms var(--ease-out-soft);
 }
 .home-fan-slot[data-shape="square"] .home-fan-art {
   aspect-ratio: 1;
 }
-.home-fan-slot:is(:hover, :focus-visible) .home-fan-art {
+.home-fan-slot:is(:hover, :focus-visible, :focus) .home-fan-art {
   box-shadow:
     0 0 0 1px rgb(var(--accent-soft-rgb) / 0.55),
     0 18px 30px -12px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha))),
@@ -2258,6 +2264,7 @@
   transition: box-shadow 360ms var(--ease-out-soft);
 }
 .showcase-art:is(:hover, :focus-visible) .art-frame[data-frame="neon-marquee"] .art-frame-deco::after,
+.poster-card:is(:hover, :has(.poster-link:focus-visible)) .art-frame[data-frame="neon-marquee"] .art-frame-deco::after,
 .frame-option:is(:hover, :has(:focus-visible)) .art-frame[data-frame="neon-marquee"] .art-frame-deco::after {
   box-shadow:
     0 0 0 1.5px #cffafe,
@@ -2408,6 +2415,7 @@
     0 0 0 2px var(--background),
     0 0 0 4px var(--ring);
 }
+.poster-card:is(:hover, :has(.poster-link:focus-visible)) .art-frame[data-frame="holo"] .art-frame-deco,
 .showcase-art:is(:hover, :focus-visible) .art-frame[data-frame="holo"] .art-frame-deco,
 .frame-option:is(:hover, :has(:focus-visible)) .art-frame[data-frame="holo"] .art-frame-deco {
   --holo-angle: 160deg;

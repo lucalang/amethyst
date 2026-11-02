@@ -41,8 +41,8 @@ export function CoverFan({ items, preview = false, className }: { items: FanItem
   if (!cards.length) return null;
   const n = cards.length;
   const center = (n - 1) / 2;
-  // Fewer cards open less; the edge angle settles around 15 degrees for a full hand.
-  const spread = n === 1 ? 0 : Math.min(15, 4 + 2.75 * (n - 1));
+  // Fewer cards open less; the edge angle settles around 11.5 degrees for a full hand.
+  const spread = n === 1 ? 0 : Math.min(11.5, 3 + 2.1 * (n - 1));
 
   return (
     <ul
@@ -76,7 +76,7 @@ export function CoverFan({ items, preview = false, className }: { items: FanItem
           >
             <ArtworkFrame frame={card.frame} className="home-fan-card">
               <span className="home-fan-art">
-                <MediaImage src={card.src} alt="" sizes="auto, (min-width: 1024px) 168px, (min-width: 768px) 144px, 124px" fallbackLabel={card.title} priority={!preview && index < 5} />
+                <MediaImage src={card.src} alt="" sizes="auto, (min-width: 1280px) 220px, (min-width: 1024px) 190px, (min-width: 640px) 160px, 140px" fallbackLabel={card.title} priority={!preview && index < 5} />
                 <span aria-hidden className="home-fan-shade" />
                 <span aria-hidden className="home-fan-gloss" />
               </span>

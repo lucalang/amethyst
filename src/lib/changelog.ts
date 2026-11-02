@@ -49,6 +49,54 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-02-banners-cover-fan-collection-frames",
+    date: "2026-11-02",
+    title: "Better Banners, Cover Fan & Collection Frames",
+    intro: "Artwork gets more room across Home, collections and entries, with clearer banners, a larger cover fan and per-entry frames you can change from an entry or its artwork viewer.",
+    icon: "image",
+    highlights: [
+      { kind: "improved", feature: "Banners", text: "Collection and entry banners show more of the artwork, with readable titles and actions and accents that carry through Home previews." },
+      { kind: "improved", feature: "Home cover fan", text: "Larger covers lift with calmer hover and keyboard-focus feedback, with responsive layouts and reduced-motion support." },
+      { kind: "new", feature: "Collection frames", text: "Frames explicitly chosen for an entry now appear on its collection card. The account default stays separate and applies in Showcase." },
+      { kind: "improved", feature: "Frame controls", text: "Change an entry’s frame from its three-dot menu or the artwork viewer, rather than during creation or in Edit details." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Clearer banners and a larger Home cover fan",
+          body: "Collection and entry banners have a more prominent presentation, with matching treatment on Home previews. Uploaded artwork and editing behavior are unchanged.",
+          points: [
+            "Banner artwork stays visible behind readable titles and actions, with collection accents tying the presentation together.",
+            "Home’s cover fan is larger on desktop and mobile, with a small hover lift, fixed card order and stable pointer targets instead of shuffling neighboring cards.",
+            "Keyboard focus gets equivalent feedback, and motion respects your settings and system reduced-motion preference.",
+          ],
+          link: { href: "/", label: "Open Home" },
+        },
+        {
+          title: "Change frames where you view your artwork",
+          body: "Use Change artwork frame in an entry’s three-dot menu, or the separate Artwork frame control beside Showcase look in the artwork viewer.",
+          points: [
+            "Frame changes update the artwork viewer and collection card without changing Showcase lighting, glow or motion settings.",
+            "The frame picker is no longer part of entry creation or Edit details. New entries inherit the account default in Showcase and remain unframed in collections until you choose a frame for them.",
+            "Existing frame ownership and unlock requirements still apply.",
+          ],
+          where: "Entry actions and the artwork viewer",
+        },
+      ],
+      new: [
+        {
+          title: "Your chosen frames on collection covers",
+          body: "An entry’s explicitly selected frame now surrounds its cover in the normal collection view, including its decorative ornaments. Collection cards do not inherit the account-wide Showcase frame.",
+          points: [
+            "An explicit frame choice appears on the collection card and in Showcase.",
+            "Following the account default leaves the collection card unframed while Showcase uses that default.",
+            "Choosing No frame explicitly removes the frame in both views.",
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-02-interaction-polish",
     date: "2026-11-02",
     title: "Buttons, Cards & Tactile Feedback",

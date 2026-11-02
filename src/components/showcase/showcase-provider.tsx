@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { GalleryHorizontalEnd } from "lucide-react";
 import { useSettings } from "@/components/layout/settings-context";
@@ -48,7 +49,8 @@ function restoreFocus(element: HTMLElement | null | undefined) {
  * closing them returns to the same filters and scroll position.
  */
 export function ShowcaseProvider({ name, icon, viewerPresets, children }: { name: string; icon: ReactNode; viewerPresets: CustomViewerPreset[]; children: ReactNode }) {
-  const { visible, total } = useLibrary();
+  const router = useRouter();
+  const { visible, total, setEntryFrame } = useLibrary();
   const { artworkFrame } = useSettings();
   const [showcaseOpen, setShowcaseOpen] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
@@ -61,7 +63,14 @@ export function ShowcaseProvider({ name, icon, viewerPresets, children }: { name
     () =>
       visible.flatMap((entry) =>
         entry.coverUrl && artworkSrc(entry.coverUrl)
-          ? [{ id: entry.id, title: entry.title, coverUrl: entry.coverUrl, coverShape: entry.coverShape, frame: resolveFrame(entry.frame, artworkFrame) }]
+          ? [{
+              id: entry.id,
+              title: entry.title,
+              coverUrl: entry.coverUrl,
+              coverShape: entry.coverShape,
+              frame: resolveFrame(entry.frame, artworkFrame),
+              entryFrame: entry.frame ?? null,
+            }]
           : [],
       ),
     [visible, artworkFrame],
@@ -168,6 +177,16 @@ export function ShowcaseProvider({ name, icon, viewerPresets, children }: { name
                   onIndex={(next) => setViewing(items[next]?.id ?? null)}
                   onClose={closeViewer}
                   onManualRotate={() => void apiFetch("/api/achievements/events", { method: "POST", json: { type: "manual_rotation" }, keepalive: true }).catch(() => {})}
+                  onEntryFrameChange={async (entryId, nextFrame, previousFrame) => {
+                    setEntryFrame(entryId, nextFrame);
+                    try {
+                      await apiFetch(`/api/entries/${entryId}`, { method: "PATCH", json: { frame: nextFrame } });
+                      router.refresh();
+                    } catch (error) {
+                      setEntryFrame(entryId, previousFrame);
+                      throw error;
+                    }
+                  }}
                 />
               ) : null}
             </>,

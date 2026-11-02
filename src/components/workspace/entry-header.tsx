@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { FolderInput, Loader2, MoreHorizontal, Pencil, Pin, PinOff, Tag, Trash2 } from "lucide-react";
+import { FolderInput, Frame, Loader2, MoreHorizontal, Pencil, Pin, PinOff, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CategorySelect } from "@/components/categories/category-picker";
+import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { CoverArtworkField } from "@/components/media/cover-artwork-field";
-import { FramePicker, frameChoice } from "@/components/media/frame-picker";
+import { FramePicker, frameChoice, type FrameChoice } from "@/components/media/frame-picker";
 import { useSettings } from "@/components/layout/settings-context";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
@@ -31,21 +32,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
+import { accentStyle } from "@/lib/collection-identity";
 import { collectionPath, entryPath, type LibraryCategory } from "@/lib/collections";
 import type { CoverShape } from "@/lib/cover-shape";
-import { isArtworkFrameId, type ArtworkFrameId } from "@/lib/frames";
+import { resolveFrame, type ArtworkFrameId } from "@/lib/frames";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
 import type { Tables } from "@/lib/supabase/database.types";
+import { cn } from "@/lib/utils";
 import { errorMessage } from "./client-utils";
 
 type Entry = Tables<"entries">;
-
-/** The entry's own frame (posted as `frame`); remounts with the dialog's form, so it starts from the saved value. */
-function EntryFrameField({ entry }: { entry: Entry }) {
-  const { artworkFrame } = useSettings();
-  const [value, setValue] = useState(() => frameChoice(entry.frame));
-  return <FramePicker value={value} onChange={setValue} accountFrame={artworkFrame} coverUrl={entry.cover_url} coverShape={entry.cover_shape} title={entry.title} />;
-}
 
 /**
  * Artwork and title. Part of the normal page flow (never sticky): as it scrolls
@@ -71,7 +67,9 @@ export function EntryHeader({
   onEntryChange: (entry: Entry) => void;
 }) {
   const router = useRouter();
+  const { artworkFrame } = useSettings();
   const [editOpen, setEditOpen] = useState(false);
+  const [frameOpen, setFrameOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveTarget, setMoveTarget] = useState("");
@@ -79,7 +77,10 @@ export function EntryHeader({
   const [moveError, setMoveError] = useState<string | null>(null);
   const [savedCategories, setSavedCategories] = useState<Category[] | null>(null);
   const pin = usePinToggle(entry.id, entry.title, pinned);
-  const banner = entry.banner_url ?? entry.cover_url;
+  const accent = accentStyle(collection.accent_color);
+  const resolvedFrame = resolveFrame(entry.frame, artworkFrame);
+  const banner = entry.banner_url ?? collection.banner_url ?? entry.cover_url;
+  const hasDedicatedBanner = Boolean(entry.banner_url || collection.banner_url);
   // Names always come from the latest server list, so renames show up here too.
   const assigned = sortCategories(
     (savedCategories ?? categoryIds.map((id) => ({ id, name: "" }))).flatMap((category) => {
@@ -89,27 +90,58 @@ export function EntryHeader({
   );
 
   return (
-    <header data-testid="entry-header" className="header-scroll-exit">
-      <div aria-hidden className="relative h-44 overflow-hidden sm:h-56 md:h-72 lg:h-80">
+    <header data-testid="entry-header" className="header-scroll-exit relative border-b border-white/[0.06]" style={accent}>
+      <div aria-hidden className="relative h-48 overflow-hidden sm:h-60 md:h-76 lg:h-88">
         {banner ? (
-          <MediaImage src={banner} alt="" sizes={entry.banner_url ? "100vw" : "200px"} priority className={entry.banner_url ? "opacity-80" : "scale-110 opacity-45 blur-2xl"} />
+          <MediaImage
+            src={banner}
+            alt=""
+            sizes={hasDedicatedBanner ? "100vw" : "200px"}
+            priority
+            className={cn(
+              hasDedicatedBanner
+                ? cn("object-[50%_30%]", entry.banner_url ? "opacity-90" : "opacity-65")
+                : "scale-110 opacity-45 blur-2xl saturate-125",
+            )}
+          />
         ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%),radial-gradient(ellipse_at_90%_10%,rgb(var(--rose-rgb)/0.08),transparent_55%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,var(--ca-glow,rgb(var(--accent-rgb)/0.26)),transparent_62%),radial-gradient(ellipse_at_90%_10%,rgb(var(--rose-rgb)/0.1),transparent_55%)]" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 via-55% to-black" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_15%_100%,rgb(var(--shadow-rgb)/calc(0.55*var(--shadow-alpha))),transparent_70%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(65%_85%_at_16%_100%,var(--ca-soft,rgb(var(--accent-rgb)/0.2)),transparent_70%)]" />
+        <div className="absolute inset-0 bg-linear-to-b from-black/15 via-black/30 via-52% to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_60%_at_18%_100%,rgb(var(--shadow-rgb)/calc(0.65*var(--shadow-alpha))),transparent_72%)]" />
       </div>
       <div className="mx-auto max-w-[88rem] px-4 md:px-6">
-        <div className="relative -mt-20 flex flex-col gap-4 pb-7 sm:-mt-24 md:-mt-36 md:flex-row md:items-end md:gap-7 lg:-mt-40 lg:gap-8">
-          <div
-            className={`enter enter-card relative ${entry.cover_shape === "square" ? "aspect-square w-32 sm:w-36 md:w-48 lg:w-56" : "aspect-[2/3] w-28 sm:w-32 md:w-44 lg:w-48"} shrink-0 overflow-hidden rounded-lg bg-secondary shadow-[0_28px_70px_-24px_rgb(var(--accent-rgb)/0.6),0_12px_40px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))] ring-1 ring-white/10`}
+        <div className="relative -mt-24 flex flex-col gap-4 pb-7 sm:-mt-28 md:-mt-40 md:flex-row md:items-end md:gap-7 lg:-mt-44 lg:gap-8">
+          <ArtworkFrame
+            frame={resolvedFrame}
+            className={cn(
+              "enter enter-card shrink-0",
+              entry.cover_shape === "square" ? "w-32 sm:w-36 md:w-48 lg:w-56" : "w-28 sm:w-32 md:w-44 lg:w-48",
+            )}
             style={{ "--enter-index": 0 } as React.CSSProperties}
           >
-            <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} sizes="(min-width: 1024px) 224px, (min-width: 768px) 192px, 144px" priority fallbackLabel={entry.title} />
-          </div>
+            <div
+              className={cn(
+                "relative overflow-hidden rounded-lg bg-secondary shadow-[0_28px_70px_-24px_var(--ca-glow,rgb(var(--accent-rgb)/0.6)),0_12px_40px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]",
+                entry.cover_shape === "square" ? "aspect-square" : "aspect-[2/3]",
+                resolvedFrame === "none" && "ring-1 ring-white/12",
+              )}
+            >
+              <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} sizes="(min-width: 1024px) 224px, (min-width: 768px) 192px, 144px" priority fallbackLabel={entry.title} />
+            </div>
+          </ArtworkFrame>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>
-            <Link href={collectionPath(collection)} className="text-[11px] font-semibold tracking-[0.16em] break-words text-amethyst uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.8*var(--shadow-alpha)))]">{collection.name}</Link>
-            <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words [text-shadow:0_2px_18px_rgb(var(--shadow-rgb)/calc(0.65*var(--shadow-alpha)))] md:text-[2.1rem] lg:text-[2.5rem]">{entry.title}</h1>
+            <Link
+              href={collectionPath(collection)}
+              className={cn(
+                "text-[11px] font-semibold tracking-[0.16em] break-words uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.85*var(--shadow-alpha)))]",
+                accent ? "text-[var(--ca)]" : "text-amethyst",
+              )}
+            >
+              {collection.name}
+            </Link>
+            <h1 className="mt-1.5 text-2xl leading-tight font-semibold tracking-tight break-words [text-shadow:0_2px_18px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] md:text-[2.1rem] lg:text-[2.5rem]">{entry.title}</h1>
             {entry.platform ? <p className="mt-1 text-sm text-muted-foreground">{entry.platform}</p> : null}
             {assigned.length ? (
               <ul aria-label="Labels" className="mt-2.5 flex flex-wrap gap-1.5">
@@ -118,9 +150,14 @@ export function EntryHeader({
                     <Link
                       href={`${collectionPath(collection)}?${CATEGORY_PARAM}=${category.id}`}
                       title={`Show entries in “${category.name}”`}
-                      className="group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full bg-amethyst/[0.1] px-2.5 text-xs font-medium text-foreground/90 ring-1 ring-amethyst/25 transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:bg-amethyst/20 hover:text-foreground hover:ring-amethyst/60 hover:shadow-[0_6px_18px_-8px_rgb(var(--accent-rgb)/0.8)] focus-visible:ring-2 focus-visible:ring-ring"
+                      className={cn(
+                        "group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-foreground/90 ring-1 backdrop-blur-sm transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                        accent
+                          ? "bg-[var(--ca-soft)] ring-[var(--ca-line)] hover:ring-[var(--ca)] hover:shadow-[0_6px_18px_-8px_var(--ca-glow)]"
+                          : "bg-amethyst/[0.12] ring-amethyst/25 hover:bg-amethyst/20 hover:ring-amethyst/60 hover:shadow-[0_6px_18px_-8px_rgb(var(--accent-rgb)/0.8)]",
+                      )}
                     >
-                      <Tag aria-hidden className="size-3 shrink-0 text-amethyst transition-transform duration-200 group-hover/cat:-rotate-12" />
+                      <Tag aria-hidden className={cn("size-3 shrink-0 transition-transform duration-200 group-hover/cat:-rotate-12", accent ? "text-[var(--ca)]" : "text-amethyst")} />
                       <span className="max-w-[14rem] truncate">{category.name}</span>
                     </Link>
                   </li>
@@ -134,18 +171,21 @@ export function EntryHeader({
             ) : null}
           </div>
           <div className="enter flex gap-2 pb-1" style={{ "--enter-index": 2 } as React.CSSProperties}>
-            <Button variant="secondary" className="h-9 px-3" onClick={() => setEditOpen(true)}>
+            <Button variant="secondary" className="h-9 border border-white/[0.08] bg-surface/80 px-3 backdrop-blur-md hover:bg-surface-raised" onClick={() => setEditOpen(true)}>
               <Pencil aria-hidden /> Edit details
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="size-9" aria-label="More entry actions">
+                <Button variant="outline" size="icon" className="size-9 bg-surface/75 backdrop-blur-md" aria-label="More entry actions">
                   <MoreHorizontal aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem disabled={pin.pending} onSelect={() => void pin.toggle()}>
                   {pin.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />} {pin.pinned ? "Unpin from Home" : "Pin to Home"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setFrameOpen(true)}>
+                  <Frame aria-hidden /> Change artwork frame
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => { setMoveTarget(""); setMoveError(null); setMoveOpen(true); }}>
                   <FolderInput aria-hidden /> Move to collection
@@ -171,8 +211,7 @@ export function EntryHeader({
             (values.coverUrl.trim() || null) !== entry.cover_url ||
             values.coverShape !== entry.cover_shape ||
             (values.bannerUrl.trim() || null) !== entry.banner_url ||
-            (values.progressLabel.trim() || null) !== entry.progress_label ||
-            values.frame !== (entry.frame ?? null);
+            (values.progressLabel.trim() || null) !== entry.progress_label;
           if (detailsChanged) {
             const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, {
               method: "PATCH",
@@ -190,6 +229,24 @@ export function EntryHeader({
           }
           toast.success("Details saved.");
           router.refresh();
+        }}
+      />
+
+      <ChangeFrameDialog
+        open={frameOpen}
+        onOpenChange={setFrameOpen}
+        entry={entry}
+        accountFrame={artworkFrame}
+        onSave={async (nextFrame) => {
+          if (nextFrame !== (entry.frame ?? null)) {
+            const { entry: updated } = await apiFetch<{ entry: Entry }>(`/api/entries/${entry.id}`, {
+              method: "PATCH",
+              json: { frame: nextFrame, expectedVersion: entry.version },
+            });
+            onEntryChange(updated);
+            router.refresh();
+          }
+          toast.success("Artwork frame saved.");
         }}
       />
 
@@ -257,6 +314,81 @@ export function EntryHeader({
   );
 }
 
+function ChangeFrameDialog({
+  open,
+  onOpenChange,
+  entry,
+  accountFrame,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  entry: Entry;
+  accountFrame: ArtworkFrameId;
+  onSave: (frame: ArtworkFrameId | null) => Promise<void>;
+}) {
+  const [choice, setChoice] = useState<FrameChoice>(() => frameChoice(entry.frame));
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [shownKey, setShownKey] = useState(`${entry.id}-${entry.frame ?? "default"}-${open}`);
+  const currentKey = `${entry.id}-${entry.frame ?? "default"}-${open}`;
+  if (shownKey !== currentKey) {
+    setShownKey(currentKey);
+    setChoice(frameChoice(entry.frame));
+    setError(null);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => { if (!pending) onOpenChange(next); }}>
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Change artwork frame</DialogTitle>
+          <DialogDescription>Choose a decorative frame for “{entry.title}” or follow your account default.</DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setPending(true);
+            setError(null);
+            try {
+              await onSave(choice === "default" ? null : choice);
+              onOpenChange(false);
+            } catch (saveError) {
+              setError(errorMessage(saveError));
+            } finally {
+              setPending(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <FramePicker
+            value={choice}
+            onChange={setChoice}
+            accountFrame={accountFrame}
+            coverUrl={entry.cover_url}
+            coverShape={entry.cover_shape}
+            title={entry.title}
+            disabled={pending}
+          />
+          {error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={pending} onClick={() => onOpenChange(false)} className="h-10">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={pending} className="h-10">
+              {pending ? <Loader2 aria-hidden className="animate-spin" /> : null} Save frame
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function EditDetailsDialog({
   open,
   onOpenChange,
@@ -270,7 +402,7 @@ function EditDetailsDialog({
   entry: Entry;
   categories: Category[];
   assigned: Category[];
-  onSave: (values: { title: string; coverUrl: string; coverShape: CoverShape; bannerUrl: string; progressLabel: string; frame: ArtworkFrameId | null }, categories: Category[]) => Promise<void>;
+  onSave: (values: { title: string; coverUrl: string; coverShape: CoverShape; bannerUrl: string; progressLabel: string }, categories: Category[]) => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -298,7 +430,6 @@ function EditDetailsDialog({
                   coverShape: formData.get("coverShape") as CoverShape,
                   bannerUrl: String(formData.get("bannerUrl") ?? ""),
                   progressLabel: String(formData.get("progressLabel") ?? ""),
-                  frame: isArtworkFrameId(formData.get("frame")) ? (formData.get("frame") as ArtworkFrameId) : null,
                 },
                 parseCategoryIds(formData.getAll("categoryIds")).flatMap((id) => {
                   const category =
@@ -331,7 +462,6 @@ function EditDetailsDialog({
             defaultValue={entry.cover_url}
           />
           <ImageUrlField id="edit-banner" name="bannerUrl" label="Banner image URL" hint="Optional wide artwork for the header." defaultValue={entry.banner_url} shape="banner" />
-          <EntryFrameField entry={entry} />
           <div className="space-y-1.5">
             <Label htmlFor="edit-progress-label">Progress name</Label>
             <Input

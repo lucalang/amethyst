@@ -5,7 +5,15 @@ import type { CoverShape } from "@/lib/cover-shape";
 import type { ArtworkFrameId } from "@/lib/frames";
 
 /** One artwork in Showcase; `frame` is already resolved (the entry's own choice, else the account default). */
-export type ArtworkItem = { id: string; title: string; coverUrl: string; coverShape: CoverShape; frame: ArtworkFrameId };
+export type ArtworkItem = {
+  id: string;
+  title: string;
+  coverUrl: string;
+  coverShape: CoverShape;
+  frame: ArtworkFrameId;
+  /** Raw stored choice on the entry (`null` inherits the account default). */
+  entryFrame?: string | null;
+};
 
 export type ShowcaseApi = {
   /** Entries in the current results that have artwork. */

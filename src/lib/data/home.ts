@@ -132,6 +132,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
         : EMPTY_SUMMARY,
       pinned: pinnedIds.has(id),
       progressLabel: entry.progress_label,
+      frame: entry.frame,
     };
   };
 

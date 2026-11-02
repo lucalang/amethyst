@@ -17,8 +17,14 @@ export function ContinueCard({ item }: { item: HomeContinue }) {
   return (
     <Link
       href={item.href}
-      className="group/continue relative flex w-full max-w-2xl min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-white/[0.1] bg-black/45 p-3 pr-4 backdrop-blur-md transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out outline-none hover:-translate-y-0.5 hover:border-amethyst/50 hover:bg-amethyst/[0.07] hover:shadow-[0_22px_48px_-24px_rgb(var(--accent-rgb)/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 sm:gap-5 sm:pr-5"
+      className="group/continue relative isolate flex w-full max-w-2xl min-w-0 items-center gap-4 overflow-hidden rounded-xl border border-white/[0.1] bg-black/50 p-3 pr-4 backdrop-blur-md transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out outline-none hover:-translate-y-0.5 hover:border-amethyst/50 hover:bg-amethyst/[0.07] hover:shadow-[0_22px_48px_-24px_rgb(var(--accent-rgb)/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 sm:gap-5 sm:pr-5"
     >
+      {item.bannerUrl ? (
+        <span aria-hidden className="absolute inset-0 -z-10">
+          <MediaImage src={item.bannerUrl} alt="" sizes="auto, (min-width: 768px) 640px, 100vw" className="object-[50%_32%] opacity-42 transition-[opacity,scale] duration-500 group-hover/continue:scale-[1.02] group-hover/continue:opacity-55" />
+          <span className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/76 to-black/35" />
+        </span>
+      ) : null}
       <span className={cn("relative shrink-0 overflow-hidden rounded-lg border border-white/[0.08] bg-surface shadow-[0_12px_28px_-12px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]", entry.coverShape === "square" ? "size-20" : "h-24 w-16")}>
         <MediaImage src={entry.coverUrl} alt="" sizes="80px" fallbackLabel={entry.title} priority className="transition-[scale] duration-700 group-hover/continue:scale-105" />
       </span>
@@ -63,8 +69,15 @@ export function CollectionCard({ collection }: { collection: HomeCollection }) {
     >
       {collection.bannerUrl ? (
         <span aria-hidden className="absolute inset-0 -z-10">
-          <MediaImage src={collection.bannerUrl} alt="" sizes="auto, (min-width: 1024px) 33vw, 100vw" className="opacity-35 transition-opacity duration-300 group-hover/collection:opacity-45" />
-          <span className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40" />
+          <MediaImage src={collection.bannerUrl} alt="" sizes="auto, (min-width: 1024px) 33vw, 100vw" className="object-[50%_32%] opacity-52 transition-[opacity,scale] duration-500 group-hover/collection:scale-[1.03] group-hover/collection:opacity-65" />
+          <span className="absolute inset-0 bg-[radial-gradient(75%_95%_at_0%_100%,var(--ca-soft,rgb(var(--accent-rgb)/0.18)),transparent_70%)]" />
+          <span className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/72 to-black/30" />
+          <span
+            className={cn(
+              "absolute inset-x-0 bottom-0 h-[1.5px] opacity-75",
+              accent ? "bg-linear-to-r from-[var(--ca)] via-[var(--ca)]/45 to-transparent" : "bg-linear-to-r from-amethyst via-amethyst/45 to-transparent",
+            )}
+          />
         </span>
       ) : null}
       {collection.previews.length ? (

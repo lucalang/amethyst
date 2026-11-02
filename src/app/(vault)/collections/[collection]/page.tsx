@@ -76,41 +76,44 @@ export default async function LibraryPage({ params, searchParams }: Props) {
     <span
       aria-hidden
       className={cn(
-        "grid shrink-0 place-items-center rounded-lg border",
-        banner ? "size-11 backdrop-blur-md md:size-12" : "mt-0.5 size-12",
+        "grid shrink-0 place-items-center rounded-xl border",
+        banner ? "size-12 shadow-[0_12px_28px_-10px_rgb(var(--shadow-rgb)/0.85)] backdrop-blur-md md:size-13" : "mt-0.5 size-12",
         accent
-          ? cn("border-[var(--ca-line)] text-[var(--ca)]", banner ? "bg-[color-mix(in_srgb,var(--background)_70%,var(--ca-soft))]" : "bg-[var(--ca-soft)]")
-          : cn("border-amethyst/25 text-amethyst", banner ? "bg-background/70" : "bg-amethyst/[0.07]"),
+          ? cn(
+              "border-[var(--ca-line)] text-[var(--ca)]",
+              banner ? "bg-[color-mix(in_srgb,var(--background)_68%,var(--ca-soft))] shadow-[0_0_24px_-6px_var(--ca-glow)]" : "bg-[var(--ca-soft)]",
+            )
+          : cn("border-amethyst/30 text-amethyst", banner ? "bg-background/72 shadow-[0_0_24px_-6px_rgb(var(--accent-rgb)/0.45)]" : "bg-amethyst/[0.07]"),
       )}
     >
-      <CollectionIcon icon={collection.icon} className="size-5" strokeWidth={1.75} />
+      <CollectionIcon icon={collection.icon} className="size-5 md:size-5.5" strokeWidth={1.75} />
     </span>
   );
   const eyebrow = (
-    <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-      <span className={accent ? "font-medium text-[var(--ca)]" : undefined}>Collection</span>
-      <span className="border-l border-white/[0.15] pl-2.5">
+    <p className={cn("flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs", banner ? "text-foreground/80" : "text-muted-foreground")}>
+      <span className={cn("font-semibold tracking-[0.08em] uppercase", accent ? "text-[var(--ca)]" : "text-amethyst")}>Collection</span>
+      <span className="border-l border-white/[0.2] pl-2.5">
         <LibraryCount />
       </span>
     </p>
   );
   const title = (
-    <h1 id="library-heading" className="mt-1 text-2xl leading-tight font-semibold tracking-normal break-words md:text-3xl">
+    <h1 id="library-heading" className="mt-1 text-2xl leading-tight font-semibold tracking-tight break-words md:text-3xl lg:text-[2.1rem]">
       <LibraryTitle name={collection.name} />
     </h1>
   );
   const description = collection.description ? (
-    <p className="max-w-[68ch] text-sm leading-6 whitespace-pre-line break-words text-muted-foreground">{collection.description}</p>
+    <p className="max-w-[68ch] text-sm leading-6 whitespace-pre-line break-words text-foreground/75">{collection.description}</p>
   ) : null;
   const actions = (overlay: boolean) => (
     <>
-      <Button asChild className="h-10 flex-1 gap-2 px-4 sm:flex-none">
+      <Button asChild className="h-10 flex-1 gap-2 px-4 shadow-[0_12px_28px_-12px_rgb(var(--accent-rgb)/0.75)] sm:flex-none">
         <Link href={`${path}/new`}>
           <Plus aria-hidden /> New entry
         </Link>
       </Button>
-      <CollectionActions collection={collection} entryCount={library.length} className={cn("size-10", overlay && "bg-background/60 backdrop-blur-md")} />
-      <ShowcaseButton className={cn("h-10 gap-2 px-3.5", overlay && "bg-background/60 backdrop-blur-md")} />
+      <CollectionActions collection={collection} entryCount={library.length} className={cn("size-10", overlay && "border-white/15 bg-background/70 backdrop-blur-md hover:bg-background/85")} />
+      <ShowcaseButton className={cn("h-10 gap-2 px-3.5", overlay && "border-white/15 bg-background/70 backdrop-blur-md hover:bg-background/85")} />
     </>
   );
 
@@ -123,14 +126,29 @@ export default async function LibraryPage({ params, searchParams }: Props) {
           <section aria-labelledby="library-heading">
             {banner ? (
               <header className="scroll-fade enter enter-soft mb-6" style={accent}>
-                <div className="relative overflow-hidden rounded-xl border border-white/[0.08] bg-surface shadow-[0_24px_60px_-40px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]">
-                  <div className="relative h-40 sm:h-52 md:h-60 lg:h-64">
-                    <MediaImage src={banner} alt="" sizes="100vw" priority className="object-[50%_35%]" />
-                    {/* Only the lower band is shaded, so the artwork stays visible. */}
-                    <div aria-hidden className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/90 via-black/45 to-transparent" />
-                    {accent ? <div aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-[var(--ca)] opacity-70" /> : null}
-                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-4 md:p-5">
-                      <div className="flex min-w-0 items-end gap-3.5 [text-shadow:0_1px_12px_rgb(var(--paper-rgb)/0.6)]">
+                <div
+                  className={cn(
+                    "relative overflow-hidden rounded-xl border bg-surface",
+                    accent
+                      ? "border-[var(--ca-line)] shadow-[0_28px_68px_-36px_var(--ca-glow),0_18px_40px_-24px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]"
+                      : "border-white/[0.1] shadow-[0_28px_68px_-36px_rgb(var(--accent-rgb)/0.45),0_18px_40px_-24px_rgb(var(--shadow-rgb)/calc(0.9*var(--shadow-alpha)))]",
+                  )}
+                >
+                  <div className="relative h-48 sm:h-60 md:h-72 lg:h-80">
+                    <MediaImage src={banner} alt="" sizes="100vw" priority className="object-[50%_32%]" />
+                    <div aria-hidden className="absolute inset-0 bg-[radial-gradient(65%_90%_at_10%_100%,var(--ca-soft,rgb(var(--accent-rgb)/0.22)),transparent_70%)]" />
+                    <div aria-hidden className="absolute inset-0 bg-linear-to-t from-black/92 via-black/42 via-48% to-black/10" />
+                    <div
+                      aria-hidden
+                      className={cn(
+                        "absolute inset-x-0 bottom-0 h-[2px] opacity-85",
+                        accent
+                          ? "bg-linear-to-r from-[var(--ca)] via-[var(--ca)]/55 to-transparent"
+                          : "bg-linear-to-r from-amethyst via-amethyst/55 to-transparent",
+                      )}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-4 sm:p-5 md:p-6">
+                      <div className="flex min-w-0 items-end gap-3.5 [text-shadow:0_2px_16px_rgb(0_0_0/0.75)] md:gap-4">
                         {icon}
                         <div className="min-w-0">
                           {eyebrow}
@@ -142,9 +160,18 @@ export default async function LibraryPage({ params, searchParams }: Props) {
                       </div>
                     </div>
                   </div>
-                  {description ? <div className="border-t border-white/[0.06] px-4 py-3 md:px-5">{description}</div> : null}
+                  {description || true ? (
+                    <div
+                      className={cn(
+                        " border-t border-white/[0.07] bg-[linear-gradient(90deg,var(--ca-soft,rgb(var(--accent-rgb)/0.07)),transparent_65%)] px-4 py-3 md:px-6",
+                        !description && "sm:hidden",
+                      )}
+                    >
+                      {description}
+                      <div className={cn("flex items-center gap-2 sm:hidden", description && "mt-3")}>{actions(false)}</div>
+                    </div>
+                  ) : null}
                 </div>
-                <div className="mt-3 flex items-center gap-2 sm:hidden">{actions(false)}</div>
               </header>
             ) : (
               <header className="scroll-fade mb-6 flex flex-wrap items-center justify-between gap-5 border-b border-white/[0.08] pb-6" style={accent}>

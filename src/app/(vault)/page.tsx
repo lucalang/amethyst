@@ -96,7 +96,8 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
   const firstName = home.displayName.split(/\s+/)[0] ?? "";
   const fresh = home.counts.entries === 0;
   const fanArt = home.fan.flatMap((item) => (item.kind === "image" ? [item.url] : item.coverUrl ? [item.coverUrl] : []));
-  const backdrop = home.continueEntry?.bannerUrl ?? home.continueEntry?.entry.coverUrl ?? fanArt[0] ?? null;
+  const heroBanner = home.continueEntry?.bannerUrl ?? home.featured?.bannerUrl ?? null;
+  const backdrop = heroBanner ?? home.continueEntry?.entry.coverUrl ?? fanArt[0] ?? null;
   const showFan = fanArt.length > 0;
   const subline = !home.collections.length
     ? "Your archive is ready. Start with a collection, a shelf for anything you want to keep track of."
@@ -109,11 +110,19 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
   return (
     <section aria-labelledby="home-heading" className="relative isolate overflow-hidden border-b border-white/[0.06]">
       <div aria-hidden className="absolute inset-0 -z-10">
-        {backdrop ? <MediaImage src={backdrop} alt="" sizes={BLURRED_SIZES} priority className="scale-110 opacity-30 blur-2xl saturate-150" /> : null}
-        <div className="absolute inset-0 bg-[radial-gradient(55%_85%_at_12%_0%,rgb(var(--accent-rgb)/0.26),transparent_70%),radial-gradient(40%_70%_at_88%_15%,rgb(var(--rose-rgb)/0.13),transparent_70%)]" />
-        <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/55 to-black" />
+        {backdrop ? (
+          <MediaImage
+            src={backdrop}
+            alt=""
+            sizes={heroBanner ? "100vw" : BLURRED_SIZES}
+            priority
+            className={heroBanner ? "scale-105 object-[50%_30%] opacity-35 blur-md saturate-125" : "scale-110 opacity-30 blur-2xl saturate-150"}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-[radial-gradient(55%_85%_at_12%_0%,rgb(var(--accent-rgb)/0.28),transparent_70%),radial-gradient(45%_75%_at_86%_22%,rgb(var(--rose-rgb)/0.14),transparent_70%)]" />
+        <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/58 to-black" />
       </div>
-      <div className={cn(INNER, "grid items-center gap-6 py-7 md:gap-8 md:py-9", showFan && "md:grid-cols-[minmax(0,1fr)_minmax(20rem,25rem)] lg:grid-cols-[minmax(0,1fr)_29rem] xl:grid-cols-[minmax(0,1fr)_32rem]")}>
+      <div className={cn(INNER, "grid items-center gap-6 py-7 md:gap-8 md:py-9", showFan && "md:grid-cols-[minmax(0,1fr)_minmax(23rem,28rem)] lg:grid-cols-[minmax(0,1fr)_34rem] xl:grid-cols-[minmax(0,1fr)_38.5rem]")}>
         <div className="enter min-w-0" style={enterIndex(0)}>
           <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Gem aria-hidden className="size-3.5 text-amethyst" />
@@ -148,7 +157,7 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
             </div>
           ) : null}
         </div>
-        {showFan ? <CoverFan items={home.fan} className="mx-auto max-w-md md:max-w-none" /> : null}
+        {showFan ? <CoverFan items={home.fan} className="mx-auto max-w-lg md:max-w-none" /> : null}
         <div className="col-span-full">
           <DestinationHub data={hub} />
         </div>
@@ -215,15 +224,25 @@ function FeaturedEntry({ featured }: { featured: HomeFeaturedEntry }) {
   return (
     <Link
       href={featured.href}
-      className="group/featured relative isolate flex min-w-0 items-end gap-5 overflow-hidden rounded-xl border border-white/[0.08] bg-surface/40 p-4 transition-[border-color,box-shadow] duration-200 outline-none hover:border-amethyst/45 hover:shadow-[0_26px_60px_-30px_rgb(var(--accent-rgb)/0.8)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:p-6 md:min-h-60 md:gap-7 md:p-7"
+      className="group/featured relative isolate flex min-w-0 items-end gap-5 overflow-hidden rounded-xl border border-white/[0.1] bg-surface/40 p-4 transition-[border-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:shadow-[0_28px_64px_-30px_rgb(var(--accent-rgb)/0.82)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 sm:p-6 md:min-h-64 md:gap-7 md:p-7"
     >
       <span aria-hidden className="absolute inset-0 -z-10">
         {backdrop ? (
-          <MediaImage src={backdrop} alt="" sizes={featured.bannerUrl ? "auto, 100vw" : BLURRED_SIZES} className={featured.bannerUrl ? "opacity-55 transition-[scale] duration-700 group-hover/featured:scale-[1.02]" : "scale-110 opacity-35 blur-2xl"} />
+          <MediaImage
+            src={backdrop}
+            alt=""
+            sizes={featured.bannerUrl ? "auto, 100vw" : BLURRED_SIZES}
+            className={
+              featured.bannerUrl
+                ? "object-[50%_32%] opacity-70 transition-[scale,opacity] duration-700 group-hover/featured:scale-[1.02] group-hover/featured:opacity-80"
+                : "scale-110 opacity-38 blur-2xl"
+            }
+          />
         ) : (
-          <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.22),transparent_60%)]" />
+          <span className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_0%,rgb(var(--accent-rgb)/0.24),transparent_62%)]" />
         )}
-        <span className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/20" />
+        <span className="absolute inset-0 bg-[radial-gradient(60%_90%_at_0%_100%,rgb(var(--accent-rgb)/0.18),transparent_70%)]" />
+        <span className="absolute inset-0 bg-gradient-to-r from-black/92 via-black/68 via-52% to-black/15" />
       </span>
       <span
         className={cn(

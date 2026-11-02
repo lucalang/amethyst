@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Pin } from "lucide-react";
 import { entryPath } from "@/lib/collections";
+import { resolveFrame } from "@/lib/frames";
 import type { PinStyle } from "@/lib/preferences";
 import { entryProgress, entryState, progressPhrase, type LibraryEntry } from "@/lib/progress/library";
 import { cn } from "@/lib/utils";
+import { ArtworkFrame } from "./artwork-frame";
 import { MediaImage } from "./media-image";
 import { PinButton, PosterMenu, ViewArtworkButton } from "./pin-button";
 import { ProgressMeter } from "./progress-meter";
@@ -29,6 +33,7 @@ export function PosterCard({
   /** Label names for this entry (shown when `display.labels` is on). */
   labels?: string[];
 }) {
+  const frame = resolveFrame(entry.frame, "none");
   const progress = entryProgress(entry);
   const state = entryState(entry.summary);
   const clean = pinStyle === "clean";
@@ -53,31 +58,37 @@ export function PosterCard({
       <div className="scroll-fade">
         <div className="relative">
           <Link href={href} className="poster-link block rounded-lg" aria-label={label}>
-            <div
-              className={`poster-frame relative ${entry.coverShape === "square" ? "aspect-square" : "aspect-[2/3]"} overflow-hidden rounded-lg border border-border bg-surface`}
-            >
-              <MediaImage
-                src={entry.coverUrl}
-                alt=""
-                priority={priority}
-                sizes={sizes}
-                fallbackLabel={entry.title}
-                className="poster-artwork"
-              />
-              {clean || !display.progress ? null : (
-                <>
-                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                  {state === "completed" ? (
-                    <span className="absolute top-2 right-2 rounded-sm bg-amethyst px-1.5 py-0.5 text-[11px] font-semibold text-amethyst-foreground">Done</span>
-                  ) : null}
-                  {progress.total ? (
-                    <div className="absolute inset-x-2 bottom-2">
-                      <ProgressMeter done={progress.done} total={progress.total} compact />
-                    </div>
-                  ) : null}
-                </>
-              )}
-            </div>
+            <ArtworkFrame frame={frame} className="poster-art-frame">
+              <div
+                className={cn(
+                  "poster-frame relative overflow-hidden rounded-lg bg-surface",
+                  entry.coverShape === "square" ? "aspect-square" : "aspect-[2/3]",
+                  frame === "none" && "border border-border",
+                )}
+              >
+                <MediaImage
+                  src={entry.coverUrl}
+                  alt=""
+                  priority={priority}
+                  sizes={sizes}
+                  fallbackLabel={entry.title}
+                  className="poster-artwork"
+                />
+                {clean || !display.progress ? null : (
+                  <>
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                    {state === "completed" ? (
+                      <span className="absolute top-2 right-2 rounded-sm bg-amethyst px-1.5 py-0.5 text-[11px] font-semibold text-amethyst-foreground">Done</span>
+                    ) : null}
+                    {progress.total ? (
+                      <div className="absolute inset-x-2 bottom-2">
+                        <ProgressMeter done={progress.done} total={progress.total} compact />
+                      </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </ArtworkFrame>
             {display.title ? (
               <p className={cn("poster-title mt-2.5 line-clamp-2 text-sm leading-snug font-semibold break-words", menuRoom)}>{entry.title}</p>
             ) : null}

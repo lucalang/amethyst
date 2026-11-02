@@ -39,6 +39,8 @@ type LibraryState = {
   categoryCounts: Record<string, number>;
   /** True once the person has searched on this page, so new results don't replay entrances. */
   searched: boolean;
+  /** Optimistically updates one entry's artwork frame across collection cards and Showcase. */
+  setEntryFrame: (entryId: string, frame: string | null) => void;
 };
 
 const LibrarySearchContext = createContext<LibrarySearchState | null>(null);
@@ -79,6 +81,7 @@ export function LibrarySearchProvider({ library, search, children }: { library: 
   const urlQuery = clean(params.get("q") ?? "");
   const [query, setQueryState] = useState(search.q);
   const [searched, setSearched] = useState(false);
+  const [frameOverrides, setFrameOverrides] = useState<Record<string, string | null>>({});
   // The last query this component put in the URL. A URL query that differs from it came from
   // outside (back/forward, "Clear filters") and replaces what is in the box.
   const [written, setWritten] = useState(urlQuery);
@@ -111,8 +114,15 @@ export function LibrarySearchProvider({ library, search, children }: { library: 
   );
 
   const deferredQuery = useDeferredValue(clean(query));
-  const baseVisible = useMemo(() => filterLibrary(library, { ...search, q: "" }), [library, search]);
-  const visible = useMemo(() => filterLibrary(library, { ...search, q: deferredQuery }), [library, search, deferredQuery]);
+  const mergedLibrary = useMemo(
+    () =>
+      Object.keys(frameOverrides).length
+        ? library.map((entry) => (entry.id in frameOverrides ? { ...entry, frame: frameOverrides[entry.id] } : entry))
+        : library,
+    [library, frameOverrides],
+  );
+  const baseVisible = useMemo(() => filterLibrary(mergedLibrary, { ...search, q: "" }), [mergedLibrary, search]);
+  const visible = useMemo(() => filterLibrary(mergedLibrary, { ...search, q: deferredQuery }), [mergedLibrary, search, deferredQuery]);
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const entry of visible) for (const id of entry.categoryIds) counts[id] = (counts[id] ?? 0) + 1;
@@ -137,12 +147,13 @@ export function LibrarySearchProvider({ library, search, children }: { library: 
 
   const value = useMemo<LibraryState>(() => ({
     appliedQuery: deferredQuery,
-    total: library.length,
+    total: mergedLibrary.length,
     baseVisible,
     visible,
     categoryCounts,
     searched,
-  }), [deferredQuery, library.length, baseVisible, visible, categoryCounts, searched]);
+    setEntryFrame: (entryId, frame) => setFrameOverrides((prev) => ({ ...prev, [entryId]: frame })),
+  }), [deferredQuery, mergedLibrary.length, baseVisible, visible, categoryCounts, searched]);
   return (
     <LibrarySearchContext value={{ query, setQuery, flushQuery: () => commit(clean(query)) }}>
       <LibraryContext value={value}>{children}</LibraryContext>
