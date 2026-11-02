@@ -72,7 +72,7 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
               </span>
               <Link
                 href={area.href}
-                className="flex h-8 items-center gap-1.5 rounded-md px-1.5 text-sm font-semibold text-foreground/90 transition-colors outline-none hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="flex h-8 items-center gap-1.5 rounded-md border border-transparent px-2 text-sm font-semibold text-foreground/90 transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-amethyst/30 hover:bg-amethyst/10 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring/60 active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
               >
                 <area.icon aria-hidden className="size-4 text-amethyst" />
                 {area.label}
@@ -94,7 +94,7 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
                 aria-current={active ? "page" : undefined}
                 style={accent}
                 className={cn(
-                  "nav-link relative flex h-9 shrink-0 items-center gap-2 rounded-md border border-transparent px-3 text-sm font-medium text-muted-foreground transition-[color,background-color,border-color] duration-200 outline-none hover:border-white/[0.08] hover:bg-white/[0.035] hover:text-foreground focus-visible:text-foreground",
+                  "nav-link relative flex h-9 shrink-0 items-center gap-2 rounded-md border border-transparent px-3 text-sm font-medium text-muted-foreground transition-[color,background-color,border-color,scale] duration-200 outline-none select-none hover:border-white/[0.08] hover:bg-white/[0.035] hover:text-foreground focus-visible:text-foreground active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
                   active && (accent ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-foreground" : "border-amethyst/25 bg-amethyst/10 text-foreground"),
                 )}
               >

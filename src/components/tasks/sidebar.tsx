@@ -356,7 +356,7 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
                           type="button"
                           aria-expanded={!group.collapsed}
                           onClick={() => void actions.updateGroup(group.id, { collapsed: !group.collapsed })}
-                          className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left text-[13px] font-semibold text-foreground/80 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+                          className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left text-[13px] font-semibold text-foreground/80 transition-[color,scale] duration-150 outline-none select-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 active:scale-[0.985] motion-reduce:transition-none motion-reduce:active:scale-100"
                         >
                           <ChevronRight aria-hidden className={cn("size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none", !group.collapsed && "rotate-90")} />
                           <span className="truncate">{group.name}</span>
@@ -482,10 +482,10 @@ function NavRow({
     <div
       style={accentStyle(accent)}
       className={cn(
-        "group/nav relative flex h-10 items-center gap-1 rounded-lg pr-1 transition-[background-color,box-shadow] duration-150 motion-reduce:transition-none",
+        "group/nav relative flex h-10 items-center gap-1 rounded-lg pr-1 transition-[background-color,box-shadow,scale] duration-150 has-[>a:active]:scale-[0.985] motion-reduce:transition-none motion-reduce:has-[>a:active]:scale-100",
         handle ? "pl-1" : "pl-2",
         indent && "pl-6",
-        active ? "bg-amethyst/[0.13] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.22)]" : "hover:bg-foreground/[0.05]",
+        active ? "bg-amethyst/[0.13] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.25)] hover:bg-amethyst/[0.17]" : "hover:bg-foreground/[0.055]",
         dragging && "bg-surface-raised shadow-[0_10px_30px_-12px_rgb(var(--shadow-rgb)/0.8),inset_0_0_0_1px_rgb(var(--accent-rgb)/0.4)]",
       )}
     >
@@ -500,10 +500,10 @@ function NavRow({
           event.preventDefault();
           onNavigate(href);
         }}
-        className="flex h-9 min-w-0 flex-1 items-center gap-3 rounded-md px-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+        className="flex h-9 min-w-0 flex-1 items-center gap-3 rounded-md px-1.5 text-sm outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/60"
       >
-        <span className={cn("grid size-5 shrink-0 place-items-center", accent ? "text-[var(--ca)]" : "text-muted-foreground", active && !accent && "text-amethyst")}>{icon}</span>
-        <span className={cn("min-w-0 flex-1 truncate", active ? "font-medium text-foreground" : "text-foreground/85")}>{label}</span>
+        <span className={cn("grid size-5 shrink-0 place-items-center transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/nav:scale-110 motion-reduce:transition-none motion-reduce:group-hover/nav:scale-100", accent ? "text-[var(--ca)]" : "text-muted-foreground group-hover/nav:text-amethyst", active && !accent && "text-amethyst")}>{icon}</span>
+        <span className={cn("min-w-0 flex-1 truncate transition-colors", active ? "font-medium text-foreground" : "text-foreground/85 group-hover/nav:text-foreground")}>{label}</span>
         {count ? <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{count}</span> : null}
       </a>
       {menu}

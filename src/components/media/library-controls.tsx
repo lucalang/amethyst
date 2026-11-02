@@ -158,7 +158,7 @@ export function LibraryControls({
         <button
           type="button"
           onClick={() => updateCategories([])}
-          className="ml-1 inline-flex h-7 items-center rounded-full px-2.5 text-xs font-medium text-muted-foreground transition-colors outline-none hover:bg-white/[0.05] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+          className="ml-1 inline-flex h-7 items-center rounded-full border border-border bg-foreground/[0.02] px-2.5 text-xs font-medium text-muted-foreground transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-amethyst/45 hover:bg-amethyst/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
         >
           Clear labels
         </button>

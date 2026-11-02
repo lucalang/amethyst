@@ -179,8 +179,8 @@ export function viewerBackdropProps(look: ViewerLook) {
 const percent = (value: number) => `${value}%`;
 const segment = (on: boolean) =>
   cn(
-    "min-w-0 flex-1 rounded-[5px] px-2 py-1.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-    on ? "bg-amethyst/20 text-foreground shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]" : "text-muted-foreground hover:bg-white/[0.06] hover:text-foreground",
+    "min-w-0 flex-1 rounded-[5px] px-2 py-1.5 text-xs font-medium transition-[color,background-color,box-shadow,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
+    on ? "bg-amethyst/20 text-foreground shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
   );
 
 /**
@@ -235,7 +235,7 @@ export function ViewerCustomizer({ appearance, motion, compact = false }: { appe
             setConfirmDelete(false);
             appearance.selectPreset(event.target.value);
           }}
-          className="h-9 w-full max-w-md rounded-md border border-white/[0.12] bg-surface px-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-9 w-full max-w-md cursor-pointer rounded-md border border-input bg-surface px-2.5 text-sm text-foreground transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           <optgroup label="Built in">
             {BUILTIN_VIEWER_PRESETS.map((preset) => (

@@ -450,7 +450,7 @@ export function VersionHistoryBrowser({
                 setPageSize(Number(e.target.value));
                 setPage(1);
               }}
-              className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-8 cursor-pointer rounded-md border border-border bg-surface px-2 text-xs text-foreground transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:ring-2 focus-visible:ring-ring"
             >
               {PAGE_SIZES.map((sz) => (
                 <option key={sz} value={sz}>
@@ -564,7 +564,7 @@ export function VersionHistoryBrowser({
                           type="button"
                           onClick={() => void handleCopySha(commit.sha)}
                           aria-label={`Copy full SHA ${commit.sha}`}
-                          className="inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 font-sans text-[11px] text-foreground/75 hover:bg-white/[0.08]"
+                          className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-foreground/[0.03] px-2 py-0.5 font-sans text-[11px] font-medium text-foreground/85 transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-amethyst/50 hover:bg-amethyst/[0.1] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
                         >
                           {copiedSha === commit.sha ? (
                             <>

@@ -852,9 +852,9 @@ export default function GameSudoku({
                       onClick={() => input(digit)}
                       aria-label={`${noteMode ? "Note" : "Enter"} ${digit}, ${Math.max(0, left)} left`}
                       className={cn(
-                        "flex aspect-[3/4] flex-col items-center justify-center rounded-lg border border-white/[0.1] bg-surface/70 transition-colors hover:bg-amethyst/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 md:aspect-square",
+                        "flex aspect-[3/4] flex-col items-center justify-center rounded-lg border border-border bg-surface/80 shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.05)] transition-[background-color,border-color,box-shadow,translate,scale] duration-150 ease-out select-none hover:-translate-y-px hover:border-amethyst/55 hover:bg-amethyst/15 hover:shadow-[0_6px_16px_-10px_rgb(var(--accent-rgb)/0.65)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:translate-y-0 active:scale-93 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 md:aspect-square",
                         left <= 0 && "opacity-45",
-                        digit === selectedDigit && "border-amethyst/60",
+                        digit === selectedDigit && "border-amethyst/65 bg-amethyst/12 shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35)]",
                       )}
                     >
                       <span className={cn("text-lg leading-none font-semibold md:text-2xl", noteMode && "text-base text-muted-foreground md:text-lg")}>{digit}</span>

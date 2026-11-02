@@ -1,8 +1,13 @@
 "use client";
 
 import { Component, lazy, Suspense, useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
-import { Box, ChevronLeft, ChevronRight, LoaderCircle, Maximize, Minimize, RotateCcw, SlidersHorizontal, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Box, ChevronLeft, ChevronRight, Frame, LoaderCircle, Maximize, Minimize, RotateCcw, SlidersHorizontal, X, ZoomIn, ZoomOut } from "lucide-react";
+import { toast } from "sonner";
+import { useSettings } from "@/components/layout/settings-context";
+import { FramePicker, frameChoice, type FrameChoice } from "@/components/media/frame-picker";
+import { errorMessage } from "@/components/workspace/client-utils";
 import { artworkSrc } from "@/lib/attachments";
+import type { ArtworkFrameId } from "@/lib/frames";
 import { cn } from "@/lib/utils";
 import type { CustomViewerPreset } from "@/lib/viewer-looks";
 import { FlatArtwork } from "@/components/showcase/flat-artwork";
@@ -41,7 +46,7 @@ function initialMode(motionOff: boolean): Mode {
 }
 
 const control =
-  "grid size-10 shrink-0 place-items-center rounded-full text-foreground/85 transition-[background-color,color,opacity] outline-none hover:bg-white/[0.09] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-35 [&_svg]:size-[1.15rem]";
+  "grid size-10 shrink-0 place-items-center rounded-full text-foreground/85 transition-[background-color,color,opacity,scale] duration-150 outline-none select-none hover:bg-foreground/[0.1] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 disabled:pointer-events-none disabled:opacity-35 motion-reduce:transition-none motion-reduce:active:scale-100 [&_svg]:size-[1.15rem] [&_svg]:transition-transform [&_svg]:duration-200 hover:[&_svg]:scale-110";
 const glass = "glass border border-white/[0.09] shadow-[0_12px_40px_-16px_rgb(var(--shadow-rgb)/calc(0.8*var(--shadow-alpha)))]";
 
 /** Full-viewport inspection of one entry's artwork: a 3D card (or a flat view), zoom, browsing and fullscreen. */
@@ -53,6 +58,7 @@ export function ArtworkViewer({
   onIndex,
   onClose,
   onManualRotate,
+  onEntryFrameChange,
 }: {
   items: ArtworkItem[];
   index: number;
@@ -62,12 +68,17 @@ export function ArtworkViewer({
   onIndex: (index: number) => void;
   onClose: () => void;
   onManualRotate: () => void;
+  onEntryFrameChange?: (entryId: string, nextFrame: ArtworkFrameId | null, previousFrame: string | null) => Promise<void>;
 }) {
   const motion = useMotionLevel();
+  const { artworkFrame } = useSettings();
   const item = items[index];
   const frame = item.frame;
   const appearance = useViewerAppearance(viewerPresets);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [frameOpen, setFrameOpen] = useState(false);
+  const [frameSaving, setFrameSaving] = useState(false);
+  const [frameError, setFrameError] = useState<string | null>(null);
   const src = artworkSrc(item.coverUrl) ?? "";
   const [mode, setMode] = useState<Mode>(() => initialMode(motion === "off"));
   // Items whose artwork can't be drawn in 3D (e.g. the image host refuses WebGL use) stay flat.
@@ -113,7 +124,26 @@ export function ArtworkViewer({
     setZoom(1);
     setResetKey((key) => key + 1);
     setDirection(next > index ? 1 : -1);
+    setFrameError(null);
     onIndex(next);
+  }
+
+  async function selectEntryFrame(choice: FrameChoice) {
+    if (!onEntryFrameChange || frameSaving) return;
+    const nextFrame: ArtworkFrameId | null = choice === "default" ? null : choice;
+    const previousFrame = item.entryFrame ?? null;
+    if (nextFrame === previousFrame) return;
+    setFrameSaving(true);
+    setFrameError(null);
+    try {
+      await onEntryFrameChange(item.id, nextFrame, previousFrame);
+    } catch (error) {
+      const msg = errorMessage(error);
+      setFrameError(msg);
+      toast.error(`Couldn’t update frame for “${item.title}”: ${msg}`);
+    } finally {
+      setFrameSaving(false);
+    }
   }
 
   function changeZoom(next: number) {
@@ -190,9 +220,10 @@ export function ArtworkViewer({
       data-inspecting={inspecting || undefined}
       data-leaving={leaving || undefined}
       onKeyDown={(event) => {
-        if (event.key === "Escape" && panelOpen) {
+        if (event.key === "Escape" && (panelOpen || frameOpen)) {
           event.preventDefault();
           setPanelOpen(false);
+          setFrameOpen(false);
         }
       }}
       className="artwork-viewer fixed inset-0 z-[95] overflow-hidden animate-in duration-200 fade-in-0"
@@ -239,10 +270,30 @@ export function ArtworkViewer({
           </p>
         </div>
         <div className={cn("pointer-events-auto flex shrink-0 items-center gap-0.5 rounded-full p-1", glass)}>
+          {onEntryFrameChange ? (
+            <button
+              type="button"
+              className={cn(control, frameOpen && "bg-amethyst/15 text-amethyst")}
+              onClick={() => {
+                setFrameOpen((open) => !open);
+                setPanelOpen(false);
+                setFrameError(null);
+              }}
+              aria-expanded={frameOpen}
+              aria-controls="artwork-viewer-frame"
+              aria-label="Artwork frame"
+              title="Artwork frame: change this entry’s frame"
+            >
+              <Frame aria-hidden />
+            </button>
+          ) : null}
           <button
             type="button"
             className={cn(control, panelOpen && "bg-amethyst/15 text-amethyst")}
-            onClick={() => setPanelOpen((open) => !open)}
+            onClick={() => {
+              setPanelOpen((open) => !open);
+              setFrameOpen(false);
+            }}
             aria-expanded={panelOpen}
             aria-controls="artwork-viewer-look"
             aria-label="Showcase look"
@@ -260,6 +311,45 @@ export function ArtworkViewer({
           </button>
         </div>
       </div>
+
+      {frameOpen && onEntryFrameChange ? (
+        <section
+          id="artwork-viewer-frame"
+          aria-label="Artwork frame"
+          className={cn(
+            "absolute top-[4.25rem] right-3 z-20 max-h-[calc(100dvh-9.5rem)] w-[min(22rem,calc(100vw-1.5rem))] overflow-y-auto rounded-lg p-4 md:top-[5.25rem] md:right-5",
+            glass,
+          )}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                Artwork frame
+                {frameSaving ? <LoaderCircle aria-hidden className="size-3.5 animate-spin text-amethyst" /> : null}
+              </h3>
+              <p className="truncate text-xs text-muted-foreground">For “{item.title}”</p>
+            </div>
+            <button type="button" className={cn(control, "size-8")} onClick={() => setFrameOpen(false)} aria-label="Close frame panel">
+              <X aria-hidden />
+            </button>
+          </div>
+          <FramePicker
+            value={frameChoice(item.entryFrame)}
+            onChange={(choice) => void selectEntryFrame(choice)}
+            accountFrame={artworkFrame}
+            coverUrl={item.coverUrl}
+            coverShape={item.coverShape}
+            title={item.title}
+            compact
+            disabled={frameSaving}
+          />
+          {frameError ? (
+            <p role="alert" className="mt-2 text-xs text-rose">
+              {frameError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {panelOpen ? (
         <section

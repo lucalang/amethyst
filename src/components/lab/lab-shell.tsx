@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Accessibility, ArrowLeft, FlaskConical, LogOut, RotateCcw } from "lucide-react";
 import { LAB_COMPONENTS } from "@/components/lab/experiments";
 import { LAB_ICONS } from "@/components/lab/lab-gallery";
+import { Button } from "@/components/ui/button";
 import type { LabExperimentId } from "@/lib/lab";
 import { cn } from "@/lib/utils";
 
@@ -17,10 +18,12 @@ export function LabShell({ id, title, blurb }: { id: LabExperimentId; title: str
 
   return (
     <div className="space-y-4">
-      <Link href="/lab" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
-        <ArrowLeft aria-hidden className="size-4" />
-        All experiments
-      </Link>
+      <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
+        <Link href="/lab">
+          <ArrowLeft aria-hidden className="size-4" />
+          All experiments
+        </Link>
+      </Button>
       <section aria-labelledby="lab-title" className="overflow-hidden rounded-2xl border border-border bg-surface/50">
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4 md:p-5">
           <div className="flex min-w-0 items-start gap-3">

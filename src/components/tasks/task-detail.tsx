@@ -46,7 +46,7 @@ const LiveMarkdownEditor = dynamic(() => import("@/components/editor/live-markdo
 
 const SECTION_LABEL = "text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase";
 const CARD =
-  "rounded-lg bg-black/40 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.06)] transition-shadow duration-200 focus-within:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]";
+  "rounded-lg bg-surface/65 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.07)] transition-[background-color,box-shadow,scale] duration-200 focus-within:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]";
 const stamp = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const notesBackupKey = (taskId: string) => `archive:tasks-notes:${taskId}`;
 
@@ -94,11 +94,11 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
               aria-label={task.important ? "Remove importance" : "Mark as important"}
               onClick={() => void actions.updateTask(task.id, { important: !task.important }, { failure: "Importance not saved" })}
               className={cn(
-                "grid size-8 shrink-0 place-items-center rounded-full transition-colors outline-none hover:bg-rose/10 focus-visible:ring-2 focus-visible:ring-rose/60",
+                "group/star grid size-8 shrink-0 place-items-center rounded-full transition-[background-color,color,scale] duration-200 outline-none hover:bg-rose/10 focus-visible:ring-2 focus-visible:ring-rose/60 active:scale-90 motion-reduce:transition-none",
                 task.important ? "text-rose" : "text-muted-foreground hover:text-rose",
               )}
             >
-              <Star aria-hidden className={cn("size-[1.1rem]", task.important && "fill-current")} />
+              <Star aria-hidden className={cn("size-[1.1rem] transition-[scale,rotate] duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/star:scale-125 group-hover/star:rotate-[18deg]", task.important && "fill-current")} />
             </button>
           </div>
           <Steps task={task} steps={steps} onAllDone={() => !task.completedAt && setAskComplete(true)} />
@@ -128,7 +128,7 @@ export function TaskDetail({ task, onClose }: { task: Task; onClose: () => void 
           onClick={() => today && void actions.updateTask(task.id, { myDay: inMyDay ? null : today }, { failure: "My Day not updated" })}
           className={cn(
             CARD,
-            "flex min-h-12 w-full items-center gap-3 px-3.5 text-left text-sm outline-none hover:bg-white/[0.04] focus-visible:shadow-[inset_0_0_0_2px_var(--amethyst)]",
+            "flex min-h-12 w-full items-center gap-3 px-3.5 text-left text-sm outline-none select-none hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.35)] focus-visible:shadow-[inset_0_0_0_2px_var(--amethyst)] active:scale-[0.985] motion-reduce:transition-none motion-reduce:active:scale-100",
             inMyDay ? "text-amethyst" : "text-foreground/85",
           )}
         >

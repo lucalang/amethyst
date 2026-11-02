@@ -176,13 +176,13 @@ export const TaskRow = memo(function TaskRow({
       data-task-row
       data-id={task.id}
       className={cn(
-        "group/task relative rounded-xl transition-[background-color,box-shadow,opacity] duration-200 ease-out motion-reduce:transition-none",
+        "group/task relative rounded-xl transition-[background-color,box-shadow,opacity,scale] duration-200 ease-out has-[[data-row-button]:active]:scale-[0.992] motion-reduce:transition-none motion-reduce:has-[[data-row-button]:active]:scale-100",
         checked
-          ? "bg-amethyst/[0.09] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.5)]"
+          ? "bg-amethyst/[0.09] shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.5)] hover:bg-amethyst/[0.13]"
           : selected
-            ? "bg-surface-raised shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45),0_8px_24px_-18px_rgb(var(--shadow-rgb)/0.8)]"
+            ? "bg-surface-raised shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45),0_8px_24px_-18px_rgb(var(--shadow-rgb)/0.8)] hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.65),0_10px_28px_-18px_rgb(var(--shadow-rgb)/0.85)]"
             : completed
-              ? "hover:bg-foreground/[0.035]"
+              ? "hover:bg-foreground/[0.04]"
               : "bg-foreground/[0.03] shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.05)] hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.28)]",
         dragging && !lifted && "opacity-35",
         lifted > 0 &&
@@ -199,7 +199,7 @@ export const TaskRow = memo(function TaskRow({
             data-drag-handle
             onPointerDown={(event) => handlers.dragStart(task.id, event)}
             className={cn(
-              "grid h-9 w-5 shrink-0 cursor-grab touch-none place-items-center rounded-md text-muted-foreground/45 transition-colors select-none group-hover/task:text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:cursor-grabbing pointer-coarse:w-7 pointer-coarse:text-muted-foreground",
+              "grid h-9 w-5 shrink-0 cursor-grab touch-none place-items-center rounded-md text-muted-foreground/45 transition-[color,background-color,scale] duration-150 select-none group-hover/task:text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:scale-90 active:cursor-grabbing pointer-coarse:w-7 pointer-coarse:text-muted-foreground motion-reduce:transition-none motion-reduce:active:scale-100",
               lifted > 0 && "cursor-grabbing text-amethyst",
             )}
           >
@@ -215,10 +215,10 @@ export const TaskRow = memo(function TaskRow({
           onClick={(event) => handlers.toggleSelect(task.id, event.shiftKey)}
           onMouseDown={(event) => event.shiftKey && event.preventDefault()}
           className={cn(
-            "grid size-5 shrink-0 place-items-center rounded-[5px] border-[1.5px] outline-none transition-[opacity,background-color,border-color] duration-150 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-amethyst/70 motion-reduce:transition-none",
+            "grid size-5 shrink-0 place-items-center rounded-[5px] border-[1.5px] outline-none transition-[opacity,background-color,border-color,box-shadow,scale] duration-150 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-amethyst/70 active:scale-85 motion-reduce:transition-none motion-reduce:active:scale-100",
             checked
-              ? "border-amethyst bg-amethyst text-amethyst-foreground"
-              : "border-foreground/30 text-transparent hover:border-amethyst",
+              ? "border-amethyst bg-amethyst text-amethyst-foreground hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.2)]"
+              : "border-foreground/30 text-transparent hover:border-amethyst hover:bg-amethyst/10 hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.14)]",
             !checked && !selecting && "opacity-0 group-focus-within/task:opacity-100 group-hover/task:opacity-100 pointer-coarse:hidden",
           )}
         >

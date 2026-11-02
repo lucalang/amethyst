@@ -19,6 +19,7 @@ import { ProfileFlair } from "@/components/layout/profile-flair";
 import { MediaImage } from "@/components/media/media-image";
 import { PosterCard } from "@/components/media/poster-card";
 import { ProgressMeter } from "@/components/media/progress-meter";
+import { Button } from "@/components/ui/button";
 import { loadHome, type HomeData, type HomeFeaturedEntry } from "@/lib/data/home";
 import { loadAchievementCards } from "@/lib/data/achievements";
 import { loadMyDayPreview } from "@/lib/data/tasks";
@@ -375,7 +376,14 @@ export default async function HomePage() {
           title="Earned achievements"
           icon={Award}
           index={position}
-          action={<Link href="/achievements" className="text-sm font-medium text-amethyst underline-offset-4 hover:underline">View all</Link>}
+          action={
+          <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 px-3">
+            <Link href="/achievements">
+              View all
+              <ArrowRight aria-hidden className="size-3.5" />
+            </Link>
+          </Button>
+        }
         >
           {earned.length ? (
             <ul className="grid gap-x-6 gap-y-3 border-y border-white/[0.08] py-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -396,7 +404,14 @@ export default async function HomePage() {
         title="My Day"
         icon={Sun}
         index={position}
-        action={<Link href="/tasks" className="text-sm font-medium text-amethyst underline-offset-4 hover:underline">Open To Do</Link>}
+        action={
+          <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 px-3">
+            <Link href="/tasks">
+              Open To Do
+              <ArrowRight aria-hidden className="size-3.5" />
+            </Link>
+          </Button>
+        }
       >
         <HomeMyDay tasks={myDay.tasks} lists={myDay.lists} />
       </Section>
@@ -440,7 +455,7 @@ export default async function HomePage() {
           <Link
             href="/achievements"
             prefetch={false}
-            className="group/achievements flex w-full items-center gap-3 rounded-xl border border-white/[0.08] bg-surface/40 px-4 py-3 transition-colors outline-none hover:border-amethyst/45 hover:bg-amethyst/[0.06] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50"
+            className="group/achievements flex w-full items-center gap-3 rounded-xl border border-white/[0.08] bg-surface/40 px-4 py-3 transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out outline-none hover:-translate-y-0.5 hover:border-amethyst/45 hover:bg-amethyst/[0.06] hover:shadow-[0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
           >
             <span aria-hidden className="grid size-9 shrink-0 place-items-center">
               <AchievementBadge achievement={{ icon: "Medal", group: "Discovery" }} earned={achievementCards.some((item) => item.earnedAt)} size={36} />

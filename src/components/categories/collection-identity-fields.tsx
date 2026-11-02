@@ -51,14 +51,14 @@ export function IconPicker({ id, value, onChange, accent, disabled }: { id: stri
             disabled={disabled}
             style={style}
             className={cn(
-              "flex h-10 min-w-0 flex-1 items-center gap-3 rounded-md border border-input bg-surface px-3 text-left text-sm transition-colors outline-none hover:border-amethyst/40 focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-50",
+              "group/icon-btn flex h-10 min-w-0 flex-1 items-center gap-3 rounded-md border border-input bg-surface px-3 text-left text-sm transition-[border-color,background-color,box-shadow,scale] duration-200 ease-out outline-none select-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:ring-2 focus-visible:ring-ring/40 active:scale-[0.985] disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
             )}
           >
-            <span aria-hidden className={cn("grid size-7 shrink-0 place-items-center rounded-md border", style ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-[var(--ca)]" : "border-amethyst/25 bg-amethyst/10 text-amethyst")}>
+            <span aria-hidden className={cn("grid size-7 shrink-0 place-items-center rounded-md border transition-transform duration-200 group-hover/icon-btn:scale-105", style ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-[var(--ca)]" : "border-amethyst/25 bg-amethyst/10 text-amethyst")}>
               <ClientCollectionIcon icon={value} className="size-4" />
             </span>
             <span className="min-w-0 flex-1 truncate">{value ?? "Default icon"}</span>
-            <span className="text-xs text-muted-foreground">Change</span>
+            <span className="text-xs font-medium text-muted-foreground transition-colors group-hover/icon-btn:text-amethyst">Change</span>
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] border border-white/[0.08] bg-surface-raised p-3">
@@ -92,7 +92,7 @@ export function IconPicker({ id, value, onChange, accent, disabled }: { id: stri
                     setQuery("");
                   }}
                   className={cn(
-                    "grid aspect-square place-items-center rounded-md border text-foreground/85 transition-colors outline-none hover:border-amethyst/40 hover:bg-amethyst/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
+                    "grid aspect-square place-items-center rounded-md border text-foreground/85 transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:scale-110 hover:border-amethyst/45 hover:bg-amethyst/[0.1] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
                     selected ? "border-amethyst/60 bg-amethyst/15 text-amethyst" : "border-transparent",
                   )}
                 >
@@ -145,7 +145,7 @@ export function AccentPicker({ id, value, onChange, disabled }: { id: string; va
               disabled={disabled}
               onClick={() => onChange(swatch.value)}
               className={cn(
-                "grid size-8 place-items-center rounded-full ring-offset-2 ring-offset-surface transition-[box-shadow,scale] outline-none hover:scale-110 focus-visible:ring-2 focus-visible:ring-foreground motion-reduce:hover:scale-100",
+                "grid size-8 place-items-center rounded-full ring-offset-2 ring-offset-surface transition-[box-shadow,scale] duration-150 outline-none select-none hover:scale-112 focus-visible:ring-2 focus-visible:ring-foreground active:scale-90 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
                 selected && "ring-2 ring-foreground",
               )}
               style={{ backgroundColor: swatch.value }}

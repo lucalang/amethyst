@@ -151,7 +151,7 @@ export function describeSetup(setup: SnakeSetup) {
 }
 
 const tile =
-  "relative grid place-items-center rounded-xl border-2 border-border bg-surface/50 transition-[transform,background-color,border-color,box-shadow] duration-150 motion-safe:hover:-translate-y-0.5 hover:border-foreground/30 hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 motion-safe:aria-disabled:hover:translate-y-0";
+  "relative grid place-items-center rounded-xl border-2 border-border bg-surface/50 transition-[transform,scale,background-color,border-color,box-shadow] duration-150 ease-out motion-safe:hover:-translate-y-0.5 motion-safe:hover:scale-[1.03] hover:border-foreground/30 hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-safe:active:translate-y-0 motion-safe:active:scale-95 disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-40 motion-safe:aria-disabled:hover:translate-y-0 motion-safe:aria-disabled:hover:scale-100 motion-safe:aria-disabled:active:scale-100";
 
 /** Selected look: tinted with the option's color, plus a ring. */
 const picked = (color: string) => ({ borderColor: color, backgroundColor: `color-mix(in oklab, ${color} 18%, transparent)`, boxShadow: `0 0 0 1px ${color}` });
@@ -335,7 +335,7 @@ export const SnakeSetupPanel = memo(function SnakeSetupPanel({
               <div className="flex h-10 items-center justify-between rounded-xl border-2 border-border bg-surface/50">
                 <button
                   type="button"
-                  className="grid size-9 place-items-center rounded-lg hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-40"
+                  className="grid size-9 place-items-center rounded-lg transition-[background-color,scale] duration-150 hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-90 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none motion-reduce:active:scale-100"
                   aria-label="Less fruit"
                   disabled={count <= FRUIT_COUNT.min}
                   onClick={() => update({ fruitCount: count - 1 })}
@@ -350,7 +350,7 @@ export const SnakeSetupPanel = memo(function SnakeSetupPanel({
                 </span>
                 <button
                   type="button"
-                  className="grid size-9 place-items-center rounded-lg hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-40"
+                  className="grid size-9 place-items-center rounded-lg transition-[background-color,scale] duration-150 hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-90 disabled:pointer-events-none disabled:opacity-40 motion-reduce:transition-none motion-reduce:active:scale-100"
                   aria-label="More fruit"
                   disabled={count >= FRUIT_COUNT.max}
                   onClick={() => update({ fruitCount: count + 1 })}

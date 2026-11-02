@@ -142,7 +142,7 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
       <Button
         variant="outline"
         size="sm"
-        className={cn("h-9 shrink-0 gap-2 border-white/[0.12] bg-white/[0.025] px-3 shadow-none hover:translate-y-0 hover:border-amethyst/40 hover:bg-amethyst/[0.08] hover:shadow-none [&_svg]:text-amethyst", className)}
+        className={cn("h-9 shrink-0 gap-2 px-3 [&_svg]:text-amethyst", className)}
         onClick={show}
       >
         <ArrowUpDown aria-hidden className="size-4" />

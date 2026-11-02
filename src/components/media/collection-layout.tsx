@@ -81,8 +81,8 @@ export function LayoutSwitcher({ className }: { className?: string }) {
             }}
             data-layout={id}
             className={cn(
-              "grid h-full w-8 place-items-center rounded-[5px] text-muted-foreground transition-colors outline-none hover:bg-white/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring pointer-coarse:w-9",
-              checked && "bg-amethyst/15 text-amethyst hover:bg-amethyst/20 hover:text-amethyst",
+              "grid h-full w-8 place-items-center rounded-[5px] text-muted-foreground transition-[color,background-color,scale] duration-150 outline-none select-none hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 pointer-coarse:w-9 motion-reduce:transition-none motion-reduce:active:scale-100",
+              checked && "bg-amethyst/15 text-amethyst shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.35)] hover:bg-amethyst/22 hover:text-amethyst",
             )}
           >
             <Icon aria-hidden className="size-4" />

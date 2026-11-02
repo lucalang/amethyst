@@ -71,14 +71,15 @@ export function HomeMyDay({ tasks, lists }: { tasks: Task[]; lists: TaskList[] }
             <li key={task.id} className="min-w-0">
               <Link
                 href={`/tasks?task=${task.id}`}
-                className="group/day flex min-h-14 items-center gap-3 rounded-lg bg-white/[0.04] px-3.5 py-2 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.06)] transition-[background-color,box-shadow] outline-none hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.35)] focus-visible:shadow-[inset_0_0_0_2px_var(--amethyst)]"
+                className="group/day flex min-h-14 items-center gap-3 rounded-lg bg-foreground/[0.04] px-3.5 py-2 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.07)] transition-[background-color,box-shadow,translate,scale] duration-200 ease-out outline-none select-none hover:-translate-y-0.5 hover:bg-surface-raised hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.4),0_10px_24px_-16px_rgb(var(--accent-rgb)/0.65)] focus-visible:shadow-[inset_0_0_0_2px_var(--amethyst)] active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
               >
-                <span aria-hidden className="size-4 shrink-0 rounded-full border-[1.5px] border-white/40" />
+                <span aria-hidden className="size-4 shrink-0 rounded-full border-[1.5px] border-foreground/35 transition-[border-color,box-shadow] duration-200 group-hover/day:border-amethyst group-hover/day:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.14)]" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm">{task.title}</span>
+                  <span className="block truncate text-sm font-medium transition-colors group-hover/day:text-amethyst">{task.title}</span>
                   <span className="block truncate text-xs text-muted-foreground">{names.get(task.listId) ?? "Tasks"}</span>
                 </span>
                 <Star aria-hidden className={cn("size-3.5 shrink-0", task.important ? "fill-current text-rose" : "hidden")} />
+                <ArrowRight aria-hidden className="size-3.5 shrink-0 text-muted-foreground/70 transition-[color,translate] duration-200 group-hover/day:translate-x-0.5 group-hover/day:text-amethyst motion-reduce:transition-none" />
               </Link>
             </li>
           ))}
@@ -91,8 +92,8 @@ export function HomeMyDay({ tasks, lists }: { tasks: Task[]; lists: TaskList[] }
           {open.length} open{done ? ` · ${done} done` : ""}
           {open.length > 9 ? ` · ${open.length - 9} more` : ""}
         </span>
-        <Link href="/tasks" className="inline-flex items-center gap-1 font-medium text-amethyst underline-offset-4 hover:underline">
-          Open My Day <ArrowRight aria-hidden className="size-3.5" />
+        <Link href="/tasks" className="group/link inline-flex items-center gap-1 font-medium text-amethyst underline-offset-4 hover:underline">
+          Open My Day <ArrowRight aria-hidden className="size-3.5 transition-transform duration-200 group-hover/link:translate-x-0.5 motion-reduce:transition-none" />
         </Link>
       </p>
     </div>

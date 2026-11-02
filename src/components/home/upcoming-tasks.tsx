@@ -17,7 +17,7 @@ export function UpcomingTasks({ tasks }: { tasks: HomeTask[] }) {
           <li key={task.id}>
             <Link
               href={task.href}
-              className="group/task flex min-w-0 items-center gap-3 px-2 py-3 transition-colors outline-none hover:bg-white/[0.025] focus-visible:bg-white/[0.035] focus-visible:ring-2 focus-visible:ring-ring sm:gap-4 sm:px-3"
+              className="group/task flex min-w-0 items-center gap-3 px-2 py-3 transition-[background-color,scale] duration-150 outline-none select-none hover:bg-foreground/[0.035] focus-visible:bg-foreground/[0.045] focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99] motion-reduce:transition-none motion-reduce:active:scale-100 sm:gap-4 sm:px-3"
             >
               <span className={cn("flex w-24 shrink-0 items-center gap-1.5 text-xs font-medium tabular-nums sm:w-32", due.overdue ? "text-rose" : "text-muted-foreground")}>
                 <CalendarDays aria-hidden className={cn("size-3.5 shrink-0", due.overdue ? "text-rose" : "text-amethyst/80")} />

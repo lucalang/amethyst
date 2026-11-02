@@ -242,8 +242,8 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
     const working = busy !== null && busy === (entry.id ?? `default:${category.id}`);
     if (entry.equipped) {
       return (
-        <span className={cn("inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-amethyst", wide && "justify-center")}>
-          <Check aria-hidden className="size-4" />
+        <span className={cn("inline-flex h-7 items-center gap-1.5 rounded-[min(var(--radius-md),12px)] border border-amethyst/35 bg-amethyst/[0.11] px-2.5 text-[0.8rem] font-medium text-amethyst select-none", wide && "justify-center")}>
+          <Check aria-hidden className="size-3.5" />
           Equipped
         </span>
       );
@@ -258,14 +258,14 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
     }
     if (!entry.available) {
       return (
-        <Button size="sm" variant="outline" disabled className={cn(wide && "w-full sm:w-auto")}>
+        <Button size="sm" variant="outline" disabled className={cn("border-dashed text-muted-foreground disabled:opacity-65", wide && "w-full sm:w-auto")}>
           Not available
         </Button>
       );
     }
     if (balance < entry.price) {
       return (
-        <Button size="sm" variant="outline" disabled aria-label={`${entry.name}: you need ${coinsText(entry.price - balance)} more`} className={cn(wide && "w-full sm:w-auto")}>
+        <Button size="sm" variant="outline" disabled aria-label={`${entry.name}: you need ${coinsText(entry.price - balance)} more`} className={cn("border-dashed text-muted-foreground disabled:opacity-65", wide && "w-full sm:w-auto")}>
           <Lock aria-hidden />
           Need {(entry.price - balance).toLocaleString("en")} more
         </Button>
@@ -316,19 +316,21 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
               aria-pressed={selected}
               onClick={() => setCategoryId(cat.id)}
               className={cn(
-                "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                selected ? "border-amethyst/60 bg-amethyst/[0.12] text-foreground" : "border-border text-muted-foreground hover:border-amethyst/40 hover:text-foreground",
+                "group/cat inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-[color,background-color,border-color,box-shadow,scale] duration-150 ease-out outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-[0.95] active:duration-75 motion-reduce:transition-none motion-reduce:active:scale-100",
+                selected
+                  ? "border-amethyst/65 bg-amethyst/[0.14] text-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.08),0_6px_18px_-10px_rgb(var(--accent-rgb)/0.75)] hover:border-amethyst/85 hover:bg-amethyst/[0.2]"
+                  : "border-border bg-foreground/[0.02] text-muted-foreground hover:border-amethyst/45 hover:bg-amethyst/[0.07] hover:text-foreground active:bg-amethyst/[0.11]",
                 hits === 0 && !selected && "opacity-60",
               )}
             >
-              <CatIcon aria-hidden className="size-4" />
+              <CatIcon aria-hidden className={cn("size-4 transition-colors", selected ? "text-amethyst" : "group-hover/cat:text-amethyst")} />
               {cat.label}
               {hits !== null ? (
-                <span className="text-xs text-muted-foreground tabular-nums" aria-label={`${hits} ${hits === 1 ? "match" : "matches"}`}>
+                <span className={cn("text-xs tabular-nums transition-colors", selected ? "font-semibold text-amethyst" : "text-muted-foreground")} aria-label={`${hits} ${hits === 1 ? "match" : "matches"}`}>
                   {hits}
                 </span>
               ) : (
-                <span className="text-xs text-muted-foreground tabular-nums" aria-label={`${owned} of ${cat.items.length} owned`}>
+                <span className={cn("text-xs tabular-nums transition-colors", selected ? "font-semibold text-amethyst" : "text-muted-foreground")} aria-label={`${owned} of ${cat.items.length} owned`}>
                   {owned}/{cat.items.length}
                 </span>
               )}
@@ -347,7 +349,12 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
             <Eye aria-hidden className="size-4 text-amethyst" />
             Preview
             {tryingOn.length ? (
-              <button type="button" onClick={() => setTrying({})} className="ml-auto text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+              <button
+                type="button"
+                onClick={() => setTrying({})}
+                className="ml-auto inline-flex h-6 items-center gap-1 rounded-full border border-amethyst/35 bg-amethyst/[0.08] px-2.5 text-xs font-medium text-amethyst transition-[background-color,border-color,scale] duration-150 outline-none hover:border-amethyst/65 hover:bg-amethyst/[0.16] focus-visible:ring-2 focus-visible:ring-ring active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
+              >
+                <RotateCcw aria-hidden className="size-3" />
                 Show what I have equipped
               </button>
             ) : null}
@@ -389,7 +396,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                         key={cat.id}
                         type="button"
                         onClick={() => setCategoryId(cat.id)}
-                        className="rounded-full border border-border px-2.5 py-0.5 text-foreground outline-none hover:border-amethyst/45 focus-visible:ring-2 focus-visible:ring-ring"
+                        className="inline-flex h-7 items-center gap-1 rounded-full border border-border bg-foreground/[0.025] px-2.5 text-xs font-medium text-foreground transition-[border-color,background-color,scale] duration-150 outline-none hover:border-amethyst/50 hover:bg-amethyst/[0.08] focus-visible:ring-2 focus-visible:ring-ring active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
                       >
                         {cat.label} <span className="text-muted-foreground tabular-nums">{count}</span>
                       </button>
@@ -406,8 +413,10 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                 <li key={entry.slug ?? "default"} className="min-w-0">
                   <article
                     className={cn(
-                      "flex h-full flex-col rounded-xl border bg-surface/40 transition-[border-color,box-shadow] duration-200",
-                      isFocus ? "border-amethyst/55 shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.3)]" : "border-border hover:border-amethyst/35",
+                      "group/game-card flex h-full flex-col rounded-xl border bg-surface/40 transition-[border-color,background-color,box-shadow] duration-200",
+                      isFocus
+                        ? "border-amethyst/65 bg-amethyst/[0.04] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.32),0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] hover:border-amethyst/80"
+                        : "border-border hover:border-amethyst/45 hover:bg-surface/65 hover:shadow-[0_14px_34px_-24px_rgb(var(--accent-rgb)/0.45)]",
                     )}
                   >
                     <button
@@ -415,19 +424,31 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                       onClick={() => preview(entry)}
                       aria-pressed={isFocus}
                       aria-label={`Preview ${entry.name}`}
-                      className="flex flex-1 flex-col gap-1 rounded-t-xl p-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                      className="flex flex-1 flex-col gap-1 rounded-t-xl p-3 text-left transition-[background-color,scale] duration-150 outline-none select-none hover:bg-amethyst/[0.04] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:active:scale-100"
                     >
                       <span className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-foreground">{entry.name}</span>
+                        <span className="text-sm font-semibold text-foreground transition-colors group-hover/game-card:text-amethyst">{entry.name}</span>
                         <StateBadge entry={entry} />
                       </span>
+                      <span className="text-xs leading-5 text-muted-foreground">{entry.description}</span>
                       {entry.slug ? null : <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Default · free</span>}
                     </button>
                     <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
-                      <span className={cn("inline-flex items-center gap-1 text-xs", isFocus ? "font-medium text-amethyst" : "text-muted-foreground")}>
+                      <button
+                        type="button"
+                        onClick={() => preview(entry)}
+                        tabIndex={-1}
+                        aria-hidden
+                        className={cn(
+                          "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-[color,border-color,background-color,scale] duration-150 active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100",
+                          isFocus
+                            ? "border-amethyst/45 bg-amethyst/15 font-medium text-amethyst"
+                            : "border-border bg-foreground/[0.02] text-muted-foreground hover:border-amethyst/40 hover:bg-amethyst/[0.08] hover:text-foreground",
+                        )}
+                      >
                         <Eye aria-hidden className="size-3" />
                         {isFocus ? "In preview" : "Preview"}
-                      </span>
+                      </button>
                       {action(entry)}
                     </div>
                   </article>

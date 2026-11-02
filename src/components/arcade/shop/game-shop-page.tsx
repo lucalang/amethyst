@@ -21,13 +21,13 @@ export async function GameShopPage({ game }: { game: ShopGame }) {
           title={`${shop.title} shop`}
           actions={
             <div className="flex flex-wrap gap-2">
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="h-9 px-3.5">
                 <Link href={shop.href}>
                   <Gamepad2 aria-hidden />
                   Play {shop.title}
                 </Link>
               </Button>
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="outline" size="sm" className="h-9 px-3">
                 <Link href="/arcade/shop">
                   <Store aria-hidden />
                   Arcade Shop

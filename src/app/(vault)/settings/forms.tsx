@@ -103,9 +103,9 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
         {avatar ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
-            className="text-muted-foreground hover:text-rose"
+            className="text-muted-foreground hover:border-rose/50 hover:bg-rose/10 hover:text-rose hover:[&_svg]:text-rose"
             onClick={() => {
               setAvatar("");
               setFieldDefault("");
@@ -150,11 +150,13 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                 <label
                   key={id ?? "none"}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                    isOwned ? "cursor-pointer" : "opacity-75",
+                    "group/deco flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-[color,border-color,background-color,box-shadow,translate,scale] duration-200 ease-out select-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none",
+                    isOwned
+                      ? "cursor-pointer hover:-translate-y-0.5 hover:scale-[1.015] active:translate-y-0 active:scale-[0.97] active:duration-75 motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
+                      : "cursor-not-allowed opacity-75",
                     checked
-                      ? "border-amethyst/60 bg-amethyst/[0.08] text-foreground"
-                      : "border-white/[0.09] text-muted-foreground hover:border-amethyst/35 hover:text-foreground",
+                      ? "border-amethyst/65 bg-amethyst/[0.09] text-foreground shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_12px_32px_-18px_rgb(var(--accent-rgb)/0.75)]"
+                      : "border-border bg-foreground/[0.02] text-muted-foreground hover:border-amethyst/45 hover:bg-amethyst/[0.05] hover:text-foreground hover:shadow-[0_10px_26px_-18px_rgb(var(--accent-rgb)/0.55)]",
                   )}
                 >
                   <input
@@ -166,7 +168,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                     onChange={() => isOwned && setDecoration(id)}
                     className="sr-only"
                   />
-                  <span className="grid size-11 place-items-center">
+                  <span className="grid size-11 place-items-center transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/deco:scale-110 motion-reduce:transition-none motion-reduce:group-hover/deco:scale-100">
                     <ProfileAvatar name={name} src={avatar} decoration={id} className="size-7 text-[10px]" />
                   </span>
                   <span className="min-w-0">

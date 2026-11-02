@@ -96,9 +96,11 @@ export function FrameSettings({
             <label
               key={id}
               className={cn(
-                "frame-option relative flex flex-col gap-3 rounded-lg border bg-white/[0.02] p-3 transition-[border-color,background-color,box-shadow] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-                isOwned ? "cursor-pointer hover:border-amethyst/40 hover:bg-amethyst/[0.04]" : "opacity-80",
-                checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-white/[0.09]",
+                "frame-option group/frame relative flex flex-col gap-3 rounded-lg border bg-foreground/[0.02] p-3 transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out select-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none",
+                isOwned
+                  ? "cursor-pointer hover:-translate-y-0.5 hover:scale-[1.01] hover:border-amethyst/45 hover:bg-amethyst/[0.05] hover:shadow-[0_14px_34px_-22px_rgb(var(--accent-rgb)/0.6)] active:translate-y-0 active:scale-[0.98] active:duration-75 motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
+                  : "cursor-not-allowed opacity-80",
+                checked ? "border-amethyst/65 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-border",
               )}
             >
               <input type="radio" name="artwork-frame" value={id} checked={checked} disabled={!isOwned} onChange={() => isOwned && setFrame(id)} className="sr-only" />
@@ -117,8 +119,8 @@ export function FrameSettings({
                 <span
                   aria-hidden
                   className={cn(
-                    "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-colors",
-                    checked ? "border-amethyst bg-amethyst text-amethyst-foreground" : "border-white/25",
+                    "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-[border-color,background-color,scale] duration-150",
+                    checked ? "scale-105 border-amethyst bg-amethyst text-amethyst-foreground" : cn("border-input", isOwned && "group-hover/frame:border-amethyst/65"),
                   )}
                 >
                   {checked ? <Check className="size-3" strokeWidth={3} /> : !isOwned ? <Lock className="size-2.5 text-muted-foreground" /> : null}

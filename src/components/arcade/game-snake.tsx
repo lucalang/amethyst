@@ -187,7 +187,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
       <button
         type="button"
         aria-label={label}
-        className={`${area} grid size-14 place-items-center rounded-2xl border-2 border-white/[0.12] bg-surface/70 text-foreground shadow-[0_3px_0_rgb(0_0_0/0.35)] active:translate-y-0.5 active:bg-amethyst/25 active:shadow-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none`}
+        className={`${area} grid size-14 place-items-center rounded-2xl border-2 border-white/[0.14] bg-surface/75 text-foreground shadow-[0_3px_0_rgb(0_0_0/0.35)] transition-[background-color,border-color,translate,scale,box-shadow] duration-150 hover:border-amethyst/60 hover:bg-surface active:translate-y-0.5 active:scale-95 active:bg-amethyst/25 active:shadow-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none motion-reduce:active:scale-100`}
         onPointerDown={(event) => {
           event.preventDefault();
           gameRef.current?.turn(direction);

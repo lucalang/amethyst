@@ -336,13 +336,13 @@ function Chip({
       onClick={onClick}
       style={group ? badgeVars(group) : undefined}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 font-medium whitespace-nowrap transition-[background-color,border-color,color] outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3 font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow,scale] duration-150 ease-out outline-none select-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.96] active:duration-75 motion-reduce:transition-none motion-reduce:active:scale-100",
         size === "sm" ? "h-7 text-xs" : "h-8 text-sm",
         pressed
           ? group
-            ? "border-[rgb(var(--ach-glow)/0.5)] bg-[rgb(var(--ach-glow)/0.12)] text-foreground"
-            : "border-white/[0.18] bg-white/[0.08] text-foreground"
-          : "border-white/[0.08] text-muted-foreground hover:border-white/[0.16] hover:text-foreground",
+            ? "border-[rgb(var(--ach-glow)/0.55)] bg-[rgb(var(--ach-glow)/0.14)] text-foreground shadow-[0_6px_18px_-12px_rgb(var(--ach-glow)/0.75)] hover:border-[rgb(var(--ach-glow)/0.75)] hover:bg-[rgb(var(--ach-glow)/0.2)]"
+            : "border-amethyst/60 bg-amethyst/[0.14] text-foreground shadow-[0_6px_18px_-12px_rgb(var(--accent-rgb)/0.7)] hover:border-amethyst/80 hover:bg-amethyst/[0.2]"
+          : "border-border bg-foreground/[0.02] text-muted-foreground hover:border-amethyst/40 hover:bg-amethyst/[0.06] hover:text-foreground",
       )}
     >
       {children}

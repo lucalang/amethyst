@@ -44,11 +44,11 @@ export function ResetIconButton({
           disabled={disabled}
           aria-label={`Reset ${label} to default`}
           className={cn(
-            "grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-white/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+            "group/reset grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground transition-[color,background-color,scale] duration-150 outline-none hover:bg-foreground/[0.08] hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring active:scale-90 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100",
             className,
           )}
         >
-          <RotateCcw className="size-3.5" />
+          <RotateCcw className="size-3.5 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/reset:-rotate-45 motion-reduce:transition-none motion-reduce:group-hover/reset:rotate-0" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="top">{tip}</TooltipContent>

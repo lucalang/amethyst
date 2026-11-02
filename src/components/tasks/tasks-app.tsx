@@ -140,7 +140,7 @@ function TasksShell() {
                   type="button"
                   aria-label="Clear search"
                   onClick={() => nav.setQuery("")}
-                  className="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+                  className="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-[color,background-color,scale] duration-150 hover:bg-foreground/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   <X aria-hidden className="size-3.5" />
                 </button>

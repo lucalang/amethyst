@@ -350,14 +350,14 @@ function Machine({ machine, odds, status: initialStatus, history: initialHistory
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-3 py-4 md:px-6 md:py-6">
       <div className="flex flex-wrap items-center gap-2">
-        <nav aria-label="Arcade navigation" className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="sm" className="h-8 px-2">
+        <nav aria-label="Arcade navigation" className="flex items-center gap-1.5">
+          <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
             <Link href="/arcade">
               <ArrowLeft aria-hidden />
               Arcade
             </Link>
           </Button>
-          <Button asChild variant="ghost" size="icon-sm" className="size-8">
+          <Button asChild variant="outline" size="icon-sm" className="size-8">
             <Link href="/" aria-label="Home" title="Home">
               <House aria-hidden />
             </Link>
@@ -366,7 +366,7 @@ function Machine({ machine, odds, status: initialStatus, history: initialHistory
         <h1 className="px-1 text-lg font-bold tracking-tight md:text-xl">Coin Slots</h1>
         <div className="ml-auto">
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon-sm"
             className="size-8"
             onClick={toggleSound}

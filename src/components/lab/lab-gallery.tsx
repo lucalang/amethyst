@@ -38,15 +38,15 @@ export function LabGallery() {
               <li key={item.id} className="enter" style={{ "--enter-index": index } as CSSProperties}>
                 <Link
                   href={`/lab/${item.id}`}
-                  className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface/50 p-4 outline-none transition-colors hover:border-amethyst/50 focus-visible:ring-2 focus-visible:ring-ring"
+                  className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface/50 p-4 outline-none transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out hover:-translate-y-0.5 hover:border-amethyst/50 hover:bg-surface/75 hover:shadow-[0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
                 >
                   <span className="flex items-center justify-between">
-                    <span className="grid size-10 place-items-center rounded-xl bg-amethyst/[0.12] text-amethyst">
+                    <span className="grid size-10 place-items-center rounded-xl bg-amethyst/[0.12] text-amethyst transition-transform duration-200 group-hover:scale-105 motion-reduce:transition-none">
                       <Icon aria-hidden className="size-5" />
                     </span>
                     <span className="lab-demo-tag">Demo</span>
                   </span>
-                  <span className="text-base font-semibold">{item.title}</span>
+                  <span className="text-base font-semibold transition-colors group-hover:text-amethyst">{item.title}</span>
                   <span className="flex-1 text-sm text-pretty text-muted-foreground">{item.blurb}</span>
                   <span className="flex items-center justify-between gap-2">
                     <span className="flex flex-wrap gap-1">

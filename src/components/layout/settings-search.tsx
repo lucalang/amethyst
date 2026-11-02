@@ -99,13 +99,18 @@ export function SettingsSearch({ area }: { area: SettingsArea }) {
 
   return (
     <div className="relative z-30 mb-6 flex min-w-0 flex-wrap items-center justify-between gap-3">
-      <nav aria-label="Account preferences" className="flex shrink-0 gap-1">
+      <nav aria-label="Account preferences" className="flex shrink-0 gap-1.5">
         {(["Settings", "Customization"] as const).map((destination) => (
           <Link
             key={destination}
             href={destination === "Settings" ? "/settings" : "/customization"}
             aria-current={area === destination ? "true" : undefined}
-            className={cn("rounded-md px-3 py-2 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring", area === destination ? "bg-amethyst/10 text-amethyst" : "text-muted-foreground")}
+            className={cn(
+              "rounded-md border px-3 py-1.5 text-sm font-medium transition-[color,background-color,border-color,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
+              area === destination
+                ? "border-amethyst/45 bg-amethyst/12 text-amethyst shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.08)]"
+                : "border-transparent text-muted-foreground hover:border-border hover:bg-foreground/[0.04] hover:text-foreground",
+            )}
           >
             {destination}
           </Link>
@@ -138,7 +143,7 @@ export function SettingsSearch({ area }: { area: SettingsArea }) {
             type="button"
             aria-label="Clear search"
             title="Clear search"
-            className="absolute top-1 right-1 grid size-8 place-items-center rounded text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute top-1 right-1 grid size-8 place-items-center rounded-md text-muted-foreground transition-[color,background-color,scale] duration-150 hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100"
             onClick={() => { setQuery(""); setActive(0); setOpen(false); inputRef.current?.focus(); }}
           >
             <X aria-hidden className="size-4" />

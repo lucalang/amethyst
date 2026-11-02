@@ -49,6 +49,55 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-02-interaction-polish",
+    date: "2026-11-02",
+    title: "Buttons, Cards & Tactile Feedback",
+    intro: "Buttons, filter chips, customization cards and workspace controls across Amethyst now respond with clearer hover lift, tactile press feedback and visible active states.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "Buttons & navigation", text: "Primary, outline and secondary buttons lift gently on hover and compress on press; Arcade, game and Home section header actions now wear framed outline buttons instead of bare text." },
+      { kind: "improved", feature: "Customization & Profile", text: "Avatar decorations, badges, titles, theme cards, frame cards and appearance options lift on hover, press in smoothly and stay readable on both dark and light themes." },
+      { kind: "improved", feature: "Shops, To Do & Catalogs", text: "Filter chips, shop preview cards, Sudoku number keys, Snake setup tiles, Coin Slots bet controls and To Do rows all give crisp hover, focus and press feedback while honoring reduced motion." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Framed header actions and smoother buttons",
+          body: "Shared buttons now combine a slight hover scale and lift with a springy icon response and a crisp press compression, while keeping destructive actions restrained.",
+          points: [
+            "Achievements and Home in the Arcade header, Arcade in the shop header, and game navigation, sound and fullscreen buttons now use framed outline buttons instead of plain ghost text.",
+            "My Day and Earned achievements on Home, Customize Home, and All experiments in the Lab use framed outline buttons as well.",
+            "Switches, checkboxes, tabs, select triggers and reset icon buttons now respond on hover and press.",
+          ],
+          where: "Across the app",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+        {
+          title: "Profile flair, themes, frames and appearance cards",
+          body: "Every choice card in Customization and Settings now gives immediate visual and tactile feedback.",
+          points: [
+            "Avatar decoration cards, profile badges and titles lift and glow on hover, compress on press, and use theme-aware borders so they read clearly on light themes too.",
+            "Theme cards, artwork frame cards and appearance choice cards highlight their radio indicator on hover and respond with a tactile press.",
+            "Shortcut recorders, time-zone selectors and settings navigation tabs share the same hover and press treatment.",
+          ],
+          where: "Customization → Profile, Themes, Artwork frames & Appearance",
+          link: { href: "/customization/profile", label: "Open Profile customization" },
+        },
+        {
+          title: "Arcade shops, games and To Do controls",
+          body: "Catalog filters, shop cards, game controls and task lists now communicate hover, active preview, locked and pressed states consistently.",
+          points: [
+            "In the Arcade shop and per-game shops, the card currently in the preview pane keeps an In preview badge visible, Equipped items sit in a matching pill, and locked buttons use a dashed border.",
+            "Filter chips across the shops, Customization, Achievements and Version History show hover elevation, active count highlights and press scaling, and empty searches offer a framed Clear button.",
+            "Sudoku's number pad, Snake's setup tiles, Coin Slots' bet pills and Spin button, and To Do's task rows, checkboxes and sidebar lists all respond smoothly to hover and press while respecting Motion: Off and reduced motion.",
+          ],
+          where: "Arcade shop, games & To Do",
+          link: { href: "/arcade/shop", label: "Visit the Arcade shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-02-product-tour",
     date: "2026-11-02",
     title: "The Tour - Amethyst in 3D",

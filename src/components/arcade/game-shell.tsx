@@ -152,28 +152,28 @@ export function GameShell({
         className="arcade-shell mx-auto flex w-full max-w-6xl flex-col gap-3 px-3 py-4 outline-none md:px-6 md:py-6"
       >
         <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-          <nav aria-label="Arcade navigation" className="flex items-center gap-1">
-            <Button asChild variant="ghost" size="sm" className="h-8 px-2">
+          <nav aria-label="Arcade navigation" className="flex items-center gap-1.5">
+            <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
               <Link href="/arcade">
                 <ArrowLeft aria-hidden />
                 Arcade
               </Link>
             </Button>
-            <Button asChild variant="ghost" size="icon-sm" className="size-8">
+            <Button asChild variant="outline" size="icon-sm" className="size-8">
               <Link href="/" aria-label="Home" title="Home">
                 <House aria-hidden />
               </Link>
             </Button>
           </nav>
           <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1.5">
             {actions}
             <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
               <Store aria-hidden />
               Shop
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon-sm"
               className="size-8"
               onClick={toggleSound}
@@ -185,7 +185,7 @@ export function GameShell({
             </Button>
             {canFullscreen ? (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="icon-sm"
                 className="size-8"
                 onClick={toggleFullscreen}

@@ -23,11 +23,11 @@ export default async function ArcadePage() {
           title="Arcade"
           description="Six quick games for a break. Your personal records and Sudoku progress are saved to your account."
           actions={
-            <div className="flex items-center gap-1">
-              <Button asChild variant="ghost" size="sm">
+            <div className="flex items-center gap-2">
+              <Button asChild variant="outline" size="sm" className="h-9 px-3">
                 <Link href="/achievements"><Award aria-hidden />Achievements</Link>
               </Button>
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="outline" size="sm" className="h-9 px-3">
                 <Link href="/"><House aria-hidden />Home</Link>
               </Button>
             </div>

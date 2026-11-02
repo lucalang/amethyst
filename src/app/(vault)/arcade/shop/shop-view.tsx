@@ -211,8 +211,8 @@ export function ShopView({
     if (item.equipped) {
       return (
         <div className={cn("flex flex-wrap items-center gap-2", wide && "justify-center")}>
-          <span className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-amethyst">
-            <Check aria-hidden className="size-4" />
+          <span className="inline-flex h-7 items-center gap-1.5 rounded-[min(var(--radius-md),12px)] border border-amethyst/35 bg-amethyst/[0.11] px-2.5 text-[0.8rem] font-medium text-amethyst select-none">
+            <Check aria-hidden className="size-3.5" />
             Equipped
           </span>
           {item.kind === "avatar_decoration" ? (
@@ -246,7 +246,7 @@ export function ShopView({
     }
     if (balance < item.price) {
       return (
-        <Button size="sm" variant="outline" disabled aria-label={`${name}: you need ${coinsText(item.price - balance)} more`} className={cn(wide && "w-full sm:w-auto")}>
+        <Button size="sm" variant="outline" disabled aria-label={`${name}: you need ${coinsText(item.price - balance)} more`} className={cn("border-dashed text-muted-foreground disabled:opacity-65", wide && "w-full sm:w-auto")}>
           <Lock aria-hidden />
           Need {(item.price - balance).toLocaleString("en")} more
         </Button>
@@ -393,8 +393,10 @@ export function ShopView({
                   <li key={item.id} className="enter enter-card min-w-0" style={{ "--enter-index": index + 3 } as CSSProperties}>
                     <article
                       className={cn(
-                        "flex h-full flex-col overflow-hidden rounded-xl border bg-surface/40 transition-[border-color,box-shadow] duration-200",
-                        isFocus ? "border-amethyst/55 shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.3)]" : "border-border hover:border-amethyst/35",
+                        "group/shop-card flex h-full flex-col overflow-hidden rounded-xl border bg-surface/40 transition-[border-color,background-color,box-shadow] duration-200",
+                        isFocus
+                          ? "border-amethyst/65 bg-amethyst/[0.04] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.32),0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] hover:border-amethyst/80"
+                          : "border-border hover:border-amethyst/45 hover:bg-surface/65 hover:shadow-[0_14px_34px_-24px_rgb(var(--accent-rgb)/0.45)]",
                       )}
                     >
                       <button
@@ -402,26 +404,38 @@ export function ShopView({
                         onClick={() => preview(item.id)}
                         aria-pressed={isFocus}
                         aria-label={`Preview ${info.name}`}
-                        className="group/preview relative flex h-40 items-center justify-center bg-[radial-gradient(16rem_9rem_at_50%_0%,rgb(var(--accent-rgb)/0.12),transparent_70%)] px-4 pt-6 pb-5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                        className={cn(
+                          "group/preview relative flex h-40 items-center justify-center px-4 pt-6 pb-5 transition-[background-color,scale] duration-200 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:active:scale-100",
+                          isFocus
+                            ? "bg-[radial-gradient(16rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.2),transparent_72%)]"
+                            : "bg-[radial-gradient(16rem_9rem_at_50%_0%,rgb(var(--accent-rgb)/0.11),transparent_70%)] hover:bg-[radial-gradient(16rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.18),transparent_72%)]",
+                        )}
                       >
-                        <ItemPreview id={item.id} samples={samples} profile={profile} />
+                        <span className="transition-transform duration-200 ease-out group-hover/preview:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/preview:translate-y-0">
+                          <ItemPreview id={item.id} samples={samples} profile={profile} />
+                        </span>
                         {item.owned ? (
-                          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border">
+                          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border">
                             <Check aria-hidden className="size-3 text-amethyst" />
                             {item.equipped ? "Equipped" : "Owned"}
                           </span>
                         ) : null}
                         <span
                           aria-hidden
-                          className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[11px] text-muted-foreground opacity-0 ring-1 ring-border transition-opacity group-hover/preview:opacity-100 group-focus-visible/preview:opacity-100"
+                          className={cn(
+                            "absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-[opacity,color,border-color,background-color] duration-150",
+                            isFocus
+                              ? "border border-amethyst/45 bg-amethyst/15 text-amethyst opacity-100"
+                              : "border border-border bg-background/85 text-muted-foreground opacity-0 group-hover/preview:border-amethyst/35 group-hover/preview:text-foreground group-hover/preview:opacity-100 group-focus-visible/preview:opacity-100",
+                          )}
                         >
                           <Eye className="size-3" />
-                          Preview
+                          {isFocus ? "In preview" : "Preview"}
                         </span>
                       </button>
                       <div className="flex flex-1 flex-col gap-1 border-t border-border p-4">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm font-semibold text-foreground">{info.name}</h3>
+                          <h3 className="text-sm font-semibold text-foreground transition-colors group-hover/shop-card:text-amethyst">{info.name}</h3>
                           {item.owned ? null : item.source === "achievement" ? (
                             <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-amethyst">
                               <Award aria-hidden className="size-3.5" />

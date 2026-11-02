@@ -460,7 +460,7 @@ export function TaskView() {
             onClick={() =>
               view.kind === "list" ? void actions.updateList(list!.id, { showCompleted: !item.open }, { quiet: true }) : setSmartCompletedOpen(!item.open)
             }
-            className="inline-flex items-center gap-1.5 rounded-md bg-foreground/[0.04] px-2.5 py-1.5 text-sm font-medium text-foreground/85 transition-colors outline-none hover:bg-foreground/[0.08] focus-visible:ring-2 focus-visible:ring-amethyst/60 motion-reduce:transition-none"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-foreground/[0.04] px-2.5 py-1.5 text-sm font-medium text-foreground/85 transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-amethyst/40 hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-amethyst/60 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
           >
             <ChevronRight aria-hidden className={cn("size-4 transition-transform duration-200 motion-reduce:transition-none", item.open && "rotate-90")} />
             Completed
@@ -767,7 +767,7 @@ function QuickAdd({ target }: { target: AddTarget }) {
                     type="button"
                     style={accentStyle(destination.accent)}
                     aria-label={`Adds to ${destination.name}. Choose another list`}
-                    className="inline-flex h-7 max-w-56 items-center gap-1.5 rounded-md px-1.5 font-medium text-foreground/85 outline-none hover:bg-foreground/[0.06] focus-visible:ring-2 focus-visible:ring-ring/60 aria-expanded:bg-foreground/[0.06]"
+                    className="inline-flex h-7 max-w-56 items-center gap-1.5 rounded-md border border-border bg-foreground/[0.025] px-2 font-medium text-foreground/85 transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-amethyst/45 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/60 active:scale-[0.97] aria-expanded:border-amethyst/50 aria-expanded:bg-foreground/[0.07] motion-reduce:transition-none motion-reduce:active:scale-100"
                   >
                     <ListGlyph list={destination} className={cn("size-3.5 shrink-0", destination.accent ? "text-[var(--ca)]" : "text-amethyst")} />
                     <span className="truncate">{destination.name}</span>
@@ -890,8 +890,10 @@ function SearchFilters({
       aria-pressed={active}
       onClick={onClick}
       className={cn(
-        "h-8 rounded-full px-3 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-amethyst/60",
-        active ? "bg-amethyst/20 text-foreground shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]" : "bg-foreground/[0.05] text-muted-foreground hover:bg-foreground/[0.09]",
+        "h-8 rounded-full border px-3 text-sm font-medium transition-[color,background-color,border-color,box-shadow,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-amethyst/60 active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100",
+        active
+          ? "border-amethyst/65 bg-amethyst/[0.15] text-foreground shadow-[0_6px_18px_-12px_rgb(var(--accent-rgb)/0.75)] hover:border-amethyst/85 hover:bg-amethyst/[0.2]"
+          : "border-border bg-foreground/[0.03] text-muted-foreground hover:border-amethyst/45 hover:bg-amethyst/[0.07] hover:text-foreground",
       )}
     >
       {label}

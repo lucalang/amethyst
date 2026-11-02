@@ -113,8 +113,10 @@ export function ShortcutSettings({ value }: { value: Settings["shortcuts"] }) {
                   onKeyDown={active ? (event) => record(action, event) : undefined}
                   onBlur={() => active && setRecording(null)}
                   className={cn(
-                    "flex min-h-9 min-w-36 items-center justify-center rounded-md border px-3 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    active ? "animate-pulse border-amethyst bg-amethyst/10 text-amethyst" : "border-white/[0.1] bg-black/30 hover:border-amethyst/40",
+                    "flex min-h-9 min-w-36 items-center justify-center rounded-md border px-3 py-1.5 text-sm transition-[color,background-color,border-color,box-shadow,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
+                    active
+                      ? "animate-pulse border-amethyst bg-amethyst/12 text-amethyst shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35)]"
+                      : "border-border bg-surface hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_6px_16px_-10px_rgb(var(--accent-rgb)/0.55)]",
                   )}
                 >
                   {active ? "Press keys…" : <Keys shortcut={shortcut} mac={mac} />}

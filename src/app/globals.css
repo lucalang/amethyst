@@ -3639,8 +3639,13 @@
   cursor: pointer;
   transition:
     translate 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    scale 140ms ease-out,
     border-color 200ms ease,
     box-shadow 260ms ease;
+}
+.ach-tile:active {
+  translate: 0 -1px;
+  scale: 0.975;
 }
 .ach-tile[data-state="locked"] {
   background: linear-gradient(180deg, rgb(var(--ink-rgb) / 0.022), rgb(var(--ink-rgb) / 0.008));
@@ -4220,24 +4225,38 @@ a.arcade-counter:hover {
   align-items: center;
   gap: 0.375rem;
   border-radius: 999px;
-  padding: 0.375rem 0.75rem;
+  padding: 0.375rem 0.8125rem;
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--primary-foreground);
-  background: var(--primary);
-  transition: filter 160ms ease;
+  background: linear-gradient(135deg, var(--primary-hi), var(--primary) 50%, var(--primary-lo));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.28),
+    0 2px 8px -2px rgb(var(--accent-rgb) / 0.45);
+  transition:
+    filter 160ms ease,
+    box-shadow 180ms ease,
+    translate 160ms ease,
+    scale 100ms ease;
 }
 .arcade-counter-cta svg:last-child {
   transition: translate 220ms var(--ease-out-soft);
 }
 :is(a.arcade-counter:hover .arcade-counter-cta, a.arcade-counter-cta:hover) {
+  translate: 0 -1px;
   filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.35),
+    0 0 0 1px rgb(var(--accent-soft-rgb) / 0.5),
+    0 8px 20px -6px rgb(var(--accent-rgb) / 0.75);
 }
 :is(a.arcade-counter:hover .arcade-counter-cta, a.arcade-counter-cta:hover) svg:last-child {
   translate: 2px 0;
 }
 :is(a.arcade-counter:active .arcade-counter-cta, a.arcade-counter-cta:active) {
-  filter: brightness(0.92);
+  translate: 0 0;
+  scale: 0.96;
+  filter: brightness(0.94);
 }
 
 .arcade-cab {
@@ -4419,7 +4438,7 @@ a.arcade-counter:hover {
 :root[data-motion="off"] .arcade-marquee-title > span {
   animation: none !important;
 }
-:root[data-motion="off"] :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow) {
+:root[data-motion="off"] :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow, .arcade-counter-cta, .arcade-counter-cta svg:last-child) {
   translate: none !important;
   scale: none !important;
 }
@@ -4431,7 +4450,7 @@ a.arcade-counter:hover {
   .arcade-marquee-title > span {
     animation: none !important;
   }
-  :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow) {
+  :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow, .arcade-counter-cta, .arcade-counter-cta svg:last-child) {
     translate: none !important;
     scale: none !important;
   }
@@ -5143,29 +5162,58 @@ a.arcade-counter:hover {
 .flair-option {
   display: inline-flex;
   cursor: pointer;
+  user-select: none;
   align-items: center;
   gap: 0.5rem;
   border-radius: calc(0.5rem * var(--radius-unit, 1));
-  border: 1px solid rgb(255 255 255 / 0.09);
+  border: 1px solid var(--border);
+  background-color: rgb(var(--ink-rgb) / 0.02);
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   color: var(--muted-foreground);
   transition:
     color 160ms ease,
     border-color 160ms ease,
-    background-color 160ms ease;
+    background-color 160ms ease,
+    box-shadow 180ms ease,
+    translate 160ms var(--ease-out-soft),
+    scale 120ms ease-out;
 }
-.flair-option:hover {
-  border-color: color-mix(in oklab, var(--amethyst) 35%, transparent);
+.flair-option:hover:not(:has(input:disabled)) {
+  translate: 0 -1px;
+  scale: 1.02;
+  border-color: color-mix(in oklab, var(--amethyst) 50%, var(--border));
+  background-color: color-mix(in oklab, var(--amethyst) 7%, transparent);
   color: var(--foreground);
+  box-shadow: 0 8px 20px -12px rgb(var(--accent-rgb) / 0.6);
+}
+.flair-option:active:not(:has(input:disabled)) {
+  translate: 0 0;
+  scale: 0.96;
+}
+.flair-option:has(input:disabled) {
+  cursor: not-allowed;
 }
 .flair-option:focus-within {
   box-shadow: 0 0 0 2px var(--ring);
 }
 .flair-option-on {
-  border-color: color-mix(in oklab, var(--amethyst) 60%, transparent);
-  background-color: color-mix(in oklab, var(--amethyst) 8%, transparent);
+  border-color: color-mix(in oklab, var(--amethyst) 65%, transparent);
+  background-color: color-mix(in oklab, var(--amethyst) 12%, transparent);
   color: var(--foreground);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.08),
+    0 8px 22px -14px rgb(var(--accent-rgb) / 0.75);
+}
+:root[data-motion="off"] .flair-option {
+  translate: none !important;
+  scale: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flair-option {
+    translate: none !important;
+    scale: none !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -6908,16 +6956,28 @@ a.arcade-counter:hover {
   gap: 0.4rem;
   border-radius: calc(0.5rem * var(--radius-unit, 1));
   border: 1px solid var(--border);
+  background-color: rgb(var(--ink-rgb) / 0.025);
   padding: 0 0.75rem;
   font-size: 0.875rem;
   font-weight: 500;
   outline: none;
   transition:
+    color 160ms ease,
     border-color 160ms ease,
-    background-color 160ms ease;
+    background-color 160ms ease,
+    box-shadow 180ms ease,
+    translate 160ms var(--ease-out-soft),
+    scale 100ms ease-out;
 }
 .lab-control:hover:not(:disabled) {
-  border-color: color-mix(in oklab, var(--amethyst) 45%, transparent);
+  translate: 0 -1px;
+  border-color: color-mix(in oklab, var(--amethyst) 55%, var(--border));
+  background-color: color-mix(in oklab, var(--amethyst) 10%, transparent);
+  box-shadow: 0 8px 20px -12px rgb(var(--accent-rgb) / 0.55);
+}
+.lab-control:active:not(:disabled) {
+  translate: 0 0;
+  scale: 0.96;
 }
 .lab-control:focus-visible {
   box-shadow: 0 0 0 2px var(--ring);
@@ -6927,8 +6987,18 @@ a.arcade-counter:hover {
   opacity: 0.5;
 }
 .lab-control-on {
-  border-color: color-mix(in oklab, var(--amethyst) 60%, transparent);
-  background-color: color-mix(in oklab, var(--amethyst) 12%, transparent);
+  border-color: color-mix(in oklab, var(--amethyst) 65%, transparent);
+  background-color: color-mix(in oklab, var(--amethyst) 14%, transparent);
+}
+:root[data-motion="off"] .lab-control {
+  translate: none !important;
+  scale: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-control {
+    translate: none !important;
+    scale: none !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -7079,21 +7149,39 @@ a.arcade-counter:hover {
   display: grid;
   height: 2.5rem;
   cursor: pointer;
+  user-select: none;
   place-items: center;
   border-radius: calc(0.6rem * var(--radius-unit, 1));
   border: 1px solid var(--border);
+  background-color: rgb(var(--ink-rgb) / 0.02);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   transition:
     border-color 160ms ease,
-    background-color 160ms ease;
+    background-color 160ms ease,
+    box-shadow 180ms ease,
+    translate 160ms var(--ease-out-soft),
+    scale 100ms ease-out;
+}
+.slots-bet:hover:not(.slots-bet-blocked) {
+  translate: 0 -1px;
+  border-color: rgb(251 191 36 / 0.55);
+  background-color: rgb(251 191 36 / 0.08);
+  box-shadow: 0 8px 18px -12px rgb(251 191 36 / 0.5);
+}
+.slots-bet:active:not(.slots-bet-blocked) {
+  translate: 0 0;
+  scale: 0.95;
 }
 .slots-bet:focus-within {
   box-shadow: 0 0 0 2px var(--ring);
 }
 .slots-bet-on {
   border-color: #f59e0b;
-  background-color: rgb(251 191 36 / 0.14);
+  background-color: rgb(251 191 36 / 0.16);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 8px 20px -12px rgb(245 158 11 / 0.65);
 }
 .slots-bet-blocked {
   color: var(--muted-foreground);
@@ -7118,13 +7206,22 @@ a.arcade-counter:hover {
   outline: none;
   transition:
     filter 160ms ease,
-    scale 120ms ease;
+    box-shadow 180ms ease,
+    translate 160ms var(--ease-out-soft),
+    scale 120ms ease-out;
 }
 .slots-spin:hover:not(:disabled) {
+  translate: 0 -1px;
+  scale: 1.015;
   filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.65),
+    inset 0 -3px 0 rgb(120 53 15 / 0.35),
+    0 14px 28px -10px rgb(245 158 11 / 0.9);
 }
 .slots-spin:active:not(:disabled) {
-  scale: 0.98;
+  translate: 0 1px;
+  scale: 0.96;
 }
 .slots-spin:focus-visible {
   box-shadow:
@@ -7139,8 +7236,16 @@ a.arcade-counter:hover {
 :root[data-motion="off"] :is(.slots-bulbs > span, .slots-payline) {
   animation: none !important;
 }
+:root[data-motion="off"] :is(.slots-bet, .slots-spin) {
+  translate: none !important;
+  scale: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   :is(.slots-bulbs > span, .slots-payline) {
     animation: none !important;
+  }
+  :is(.slots-bet, .slots-spin) {
+    translate: none !important;
+    scale: none !important;
   }
 }

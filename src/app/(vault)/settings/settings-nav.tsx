@@ -91,8 +91,8 @@ export function SettingsNav({ area = "settings" }: { area?: "settings" | "custom
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group/settings-nav relative flex min-h-10 items-center justify-center gap-2 rounded-md border border-transparent px-2 text-sm font-medium text-muted-foreground transition-[color,background-color,border-color] outline-none hover:bg-white/[0.035] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring md:min-h-12 md:justify-start md:gap-3 md:px-3",
-                  active && "border-amethyst/25 bg-amethyst/10 text-foreground hover:bg-amethyst/[0.12]",
+                  "group/settings-nav relative flex min-h-10 items-center justify-center gap-2 rounded-md border border-transparent px-2 text-sm font-medium text-muted-foreground transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-foreground/[0.08] hover:bg-foreground/[0.04] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 md:min-h-12 md:justify-start md:gap-3 md:px-3",
+                  active && "border-amethyst/30 bg-amethyst/12 text-foreground hover:border-amethyst/45 hover:bg-amethyst/[0.16]",
                 )}
               >
                 {active ? <span aria-hidden className="absolute top-2 bottom-2 -left-px hidden w-0.5 rounded-full bg-amethyst shadow-[0_0_10px_rgb(var(--accent-rgb)/0.8)] md:block" /> : null}

@@ -84,11 +84,11 @@ export function CustomizeHomeButton({ className }: { className?: string }) {
     <Button
       id="customize-home-button"
       type="button"
-      variant="ghost"
+      variant="outline"
       aria-haspopup="dialog"
       aria-expanded={customizing}
       onClick={() => setCustomizing(true)}
-      className={cn("h-10 gap-2 px-3 text-muted-foreground hover:bg-amethyst/[0.08] hover:text-foreground [&_svg]:text-amethyst", className)}
+      className={cn("h-10 gap-2 px-3.5 [&_svg]:text-amethyst", className)}
     >
       <SlidersHorizontal aria-hidden className="size-4" />
       Customize Home
