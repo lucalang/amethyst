@@ -112,7 +112,7 @@ export function PosterMenu({
           aria-label={`Actions for ${title}`}
           title="Actions"
           className={cn(
-            "poster-menu grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-[color,background-color,opacity] duration-200 outline-none hover:bg-white/[0.07] hover:text-foreground focus-visible:ring-2 focus-visible:ring-amethyst data-[state=open]:bg-white/[0.08] data-[state=open]:text-foreground pointer-coarse:size-9",
+            "poster-menu grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-[color,background-color,opacity,scale] duration-200 outline-none select-none hover:bg-foreground/[0.08] hover:text-foreground focus-visible:ring-2 focus-visible:ring-amethyst active:scale-90 data-[state=open]:bg-foreground/[0.1] data-[state=open]:text-foreground pointer-coarse:size-9 motion-reduce:transition-none motion-reduce:active:scale-100",
             className,
           )}
         >

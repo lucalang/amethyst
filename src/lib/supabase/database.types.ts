@@ -267,12 +267,15 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
+                    workspace_theme: string | null;
                     "cover_shape": "square" | "portrait","frame": string | null,"collection_id": string,"banner_url": string | null,"cover_url": string | null,"created_at": string,"id": string,"kind": string,"metadata": NonNullable<Json>,"platform": string | null,"progress_label": string | null,"slug": string,"title": string,"updated_at": string,"user_id": string,"version": number
                   }
                   Insert: {
+                    workspace_theme?: string | null;
                     "cover_shape"?: "square" | "portrait","frame"?: string | null,"collection_id": string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title": string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Update: {
+                    workspace_theme?: string | null;
                     "cover_shape"?: "square" | "portrait","frame"?: string | null,"collection_id"?: string,"banner_url"?: string | null,"cover_url"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"metadata"?: NonNullable<Json>,"platform"?: string | null,"progress_label"?: string | null,"slug"?: string,"title"?: string,"updated_at"?: string,"user_id"?: string,"version"?: number
                   }
                   Relationships: [

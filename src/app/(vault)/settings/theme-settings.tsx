@@ -16,7 +16,7 @@ function applyTheme(theme: ThemeId) {
   });
 }
 
-function ThemePreview({ id }: { id: ThemeId }) {
+export function ThemePreview({ id }: { id: ThemeId }) {
   const headings = THEMES[id].headings;
   return (
     <span data-theme-preview={id} aria-hidden className="relative isolate block overflow-hidden rounded-md border border-border p-3.5">

@@ -542,6 +542,480 @@
   color-scheme: light;
 }
 
+/* Higanbana: charcoal night, spider-lily red, bone-white secondary, literary serif display. */
+:root[data-app-theme="higanbana"],
+[data-theme-preview="higanbana"] {
+  --ink-rgb: 246 235 230;
+  --paper-rgb: 12 8 9;
+  --accent-rgb: 240 65 78;
+  --accent-soft-rgb: 255 143 134;
+  --rose-rgb: 221 211 201;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --primary-hi: #ff7a83;
+  --primary-lo: #c41d2c;
+  --strong: #fff6f2;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-literata);
+  --heading-adjust: none;
+  --heading-tracking: -0.015em;
+  --radius-unit: 0.6;
+  --background: #0c0809;
+  --foreground: #efe4df;
+  --surface: #151012;
+  --surface-raised: #1d1618;
+  --card: #151012;
+  --card-foreground: #efe4df;
+  --popover: #1f171a;
+  --popover-foreground: #efe4df;
+  --primary: #f0414e;
+  --primary-foreground: #1d0205;
+  --secondary: #221a1c;
+  --secondary-foreground: #efe4df;
+  --muted: #191315;
+  --muted-foreground: #b5a5a1;
+  --accent: #2a1d20;
+  --accent-foreground: #efe4df;
+  --destructive: #ff8a4d;
+  --border: rgb(var(--ink-rgb) / 0.13);
+  --input: rgb(var(--ink-rgb) / 0.24);
+  --ring: #f0414e;
+  --amethyst: #f0414e;
+  --amethyst-foreground: #1d0205;
+  --rose: #ddd3c9;
+  --rose-foreground: #1a1412;
+  /* One spider lily: six recurved petals and long stamens, used as a faint corner motif. */
+  --lily-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3Cg id='p' fill='%23f0414e'%3E%3Cpath d='M50 50C56 45 64 45 69 48Q72 50 70 53C70 50 67 49 64 50C59 52 55 52 50 50Z'/%3E%3Cpath d='M50 50C60 38 73 31 90 29' fill='none' stroke='%23f0414e' stroke-width='.7'/%3E%3Cellipse cx='90' cy='29' rx='1.6' ry='.9'/%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23p'/%3E%3Cuse href='%23p' transform='rotate(60 50 50)'/%3E%3Cuse href='%23p' transform='rotate(120 50 50)'/%3E%3Cuse href='%23p' transform='rotate(180 50 50)'/%3E%3Cuse href='%23p' transform='rotate(240 50 50)'/%3E%3Cuse href='%23p' transform='rotate(300 50 50)'/%3E%3Ccircle cx='50' cy='50' r='2.2' fill='%237a0a16'/%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+
+/* Koi Bridge: pale river water, koi orange, slate ink and a deep teal secondary. */
+:root[data-app-theme="koi-bridge"],
+[data-theme-preview="koi-bridge"] {
+  --ink-rgb: 27 42 51;
+  --paper-rgb: 236 245 244;
+  --accent-rgb: 196 80 31;
+  --accent-soft-rgb: 232 122 70;
+  --rose-rgb: 31 111 120;
+  --shadow-rgb: 30 60 70;
+  --shadow-alpha: 0.24;
+  --primary-hi: #e06a35;
+  --primary-lo: #9c3a12;
+  --strong: #0c171d;
+  --theme-dark: 0;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-literata);
+  --heading-adjust: none;
+  --heading-tracking: -0.015em;
+  --radius-unit: 1.15;
+  --background: #ecf5f4;
+  --foreground: #1b2a33;
+  --surface: #f5fbfa;
+  --surface-raised: #ffffff;
+  --card: #f5fbfa;
+  --card-foreground: #1b2a33;
+  --popover: #ffffff;
+  --popover-foreground: #1b2a33;
+  --primary: #c4501f;
+  --primary-foreground: #fff8f3;
+  --secondary: #dcebea;
+  --secondary-foreground: #1b2a33;
+  --muted: #e2efee;
+  --muted-foreground: #4a5d63;
+  --accent: #d5e8e6;
+  --accent-foreground: #1b2a33;
+  --destructive: #b42318;
+  --border: rgb(var(--ink-rgb) / 0.17);
+  --input: rgb(var(--ink-rgb) / 0.32);
+  --ring: #c4501f;
+  --amethyst: #c4501f;
+  --amethyst-foreground: #fff8f3;
+  --rose: #1f6f78;
+  --rose-foreground: #f2fbfb;
+  /* Ripple rings and one koi, used as a faint corner motif. */
+  --koi-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%231f6f78' stroke-opacity='.13'%3E%3Ccircle cx='50' cy='52' r='18'/%3E%3Ccircle cx='50' cy='52' r='30'/%3E%3Ccircle cx='50' cy='52' r='43'/%3E%3C/g%3E%3Cg fill='%23c4501f' fill-opacity='.2'%3E%3Cpath d='M28 58C40 42 62 40 78 48C64 58 44 64 28 58Z'/%3E%3Cpath d='M30 57L15 49L20 59L14 70Z'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Petal Diary: warm diary paper, cherry-red ink, spring-sky blue, handwritten headings. */
+:root[data-app-theme="petal-diary"],
+[data-theme-preview="petal-diary"] {
+  --ink-rgb: 52 30 28;
+  --paper-rgb: 250 243 232;
+  --accent-rgb: 179 38 62;
+  --accent-soft-rgb: 224 96 118;
+  --rose-rgb: 47 111 168;
+  --shadow-rgb: 80 40 30;
+  --shadow-alpha: 0.22;
+  --primary-hi: #d2455c;
+  --primary-lo: #851629;
+  --strong: #1f100e;
+  --theme-dark: 0;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-caveat);
+  --heading-adjust: 0.5;
+  --heading-tracking: 0;
+  --radius-unit: 0.9;
+  --background: #faf3e8;
+  --foreground: #341e1c;
+  --surface: #fdf8f0;
+  --surface-raised: #ffffff;
+  --card: #fdf8f0;
+  --card-foreground: #341e1c;
+  --popover: #fffdf9;
+  --popover-foreground: #341e1c;
+  --primary: #b3263e;
+  --primary-foreground: #fff6f4;
+  --secondary: #f1e6d6;
+  --secondary-foreground: #341e1c;
+  --muted: #f3e9da;
+  --muted-foreground: #6b5650;
+  --accent: #f4dfd8;
+  --accent-foreground: #341e1c;
+  --destructive: #b42318;
+  --border: rgb(var(--ink-rgb) / 0.17);
+  --input: rgb(var(--ink-rgb) / 0.32);
+  --ring: #b3263e;
+  --amethyst: #b3263e;
+  --amethyst-foreground: #fff6f4;
+  --rose: #2f6fa8;
+  --rose-foreground: #f3f8fd;
+  /* A five-petal blossom pressed flat, with two loose petals. */
+  --petal-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3Cpath id='p' d='M0 0C-6-5-7-13-3-17L0-14L3-17C7-13 6-5 0 0Z'/%3E%3C/defs%3E%3Cg fill='%23c25b74' fill-opacity='.2' transform='translate(42 46)'%3E%3Cuse href='%23p'/%3E%3Cuse href='%23p' transform='rotate(72)'/%3E%3Cuse href='%23p' transform='rotate(144)'/%3E%3Cuse href='%23p' transform='rotate(216)'/%3E%3Cuse href='%23p' transform='rotate(288)'/%3E%3C/g%3E%3Cg fill='%23c25b74' fill-opacity='.14'%3E%3Cuse href='%23p' transform='translate(78 30) rotate(120)'/%3E%3Cuse href='%23p' transform='translate(70 82) rotate(-40) scale(.8)'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Spring Sonata: ivory and piano black, sky-blue accents, blossom-pink secondary. */
+:root[data-app-theme="spring-sonata"],
+[data-theme-preview="spring-sonata"] {
+  --ink-rgb: 22 24 32;
+  --paper-rgb: 250 248 242;
+  --accent-rgb: 43 108 176;
+  --accent-soft-rgb: 102 160 220;
+  --rose-rgb: 194 71 122;
+  --shadow-rgb: 30 30 50;
+  --shadow-alpha: 0.22;
+  --primary-hi: #4a8bd0;
+  --primary-lo: #1c4f86;
+  --strong: #08090d;
+  --theme-dark: 0;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-playfair);
+  --heading-adjust: none;
+  --heading-tracking: -0.01em;
+  --radius-unit: 0.75;
+  --background: #faf8f2;
+  --foreground: #161820;
+  --surface: #fdfcf8;
+  --surface-raised: #ffffff;
+  --card: #fdfcf8;
+  --card-foreground: #161820;
+  --popover: #ffffff;
+  --popover-foreground: #161820;
+  --primary: #2b6cb0;
+  --primary-foreground: #f5f9fe;
+  --secondary: #ece9e0;
+  --secondary-foreground: #161820;
+  --muted: #f0eee6;
+  --muted-foreground: #575a66;
+  --accent: #e6eef8;
+  --accent-foreground: #161820;
+  --destructive: #b42318;
+  --border: rgb(var(--ink-rgb) / 0.16);
+  --input: rgb(var(--ink-rgb) / 0.3);
+  --ring: #2b6cb0;
+  --amethyst: #2b6cb0;
+  --amethyst-foreground: #f5f9fe;
+  --rose: #c2477a;
+  --rose-foreground: #fff5f9;
+  /* A music staff with three rising notes and two blossom petals. */
+  --sonata-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 100'%3E%3Cg stroke='%23161820' stroke-opacity='.09' stroke-width='1.2'%3E%3Cpath d='M0 24H200M0 34H200M0 44H200M0 54H200M0 64H200'/%3E%3Cpath d='M71 55V23M101 45V13M131 35V7' stroke-width='2'/%3E%3C/g%3E%3Cg fill='%232b6cb0' fill-opacity='.18'%3E%3Cellipse cx='65' cy='56' rx='7' ry='5'/%3E%3Cellipse cx='95' cy='46' rx='7' ry='5'/%3E%3Cellipse cx='125' cy='36' rx='7' ry='5'/%3E%3C/g%3E%3Cg fill='%23c2477a' fill-opacity='.18'%3E%3Cpath d='M160 70C154 66 153 58 157 54L160 57L163 54C167 58 166 66 160 70Z'/%3E%3Cpath d='M180 88C174 84 173 76 177 72L180 75L183 72C187 76 186 84 180 88Z' transform='rotate(40 180 80)'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+/* Sabbath Neon: black-violet night, hot pink, acid teal and blood red, rough brush headings. */
+:root[data-app-theme="sabbath-neon"],
+[data-theme-preview="sabbath-neon"] {
+  --ink-rgb: 244 236 248;
+  --paper-rgb: 11 7 16;
+  --accent-rgb: 255 46 136;
+  --accent-soft-rgb: 255 122 182;
+  --rose-rgb: 25 227 200;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --primary-hi: #ff6aaa;
+  --primary-lo: #c8126a;
+  --strong: #fff7fb;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-permanent-marker);
+  --heading-adjust: none;
+  --heading-tracking: 0;
+  --radius-unit: 0.4;
+  --background: #0b0710;
+  --foreground: #f1e9f4;
+  --surface: #130c19;
+  --surface-raised: #1b1222;
+  --card: #130c19;
+  --card-foreground: #f1e9f4;
+  --popover: #1d1325;
+  --popover-foreground: #f1e9f4;
+  --primary: #ff2e88;
+  --primary-foreground: #1a0010;
+  --secondary: #21152a;
+  --secondary-foreground: #f1e9f4;
+  --muted: #170f1e;
+  --muted-foreground: #b3a3bd;
+  --accent: #2a1934;
+  --accent-foreground: #f1e9f4;
+  --destructive: #ff4d4d;
+  --border: rgb(var(--ink-rgb) / 0.14);
+  --input: rgb(var(--ink-rgb) / 0.25);
+  --ring: #ff2e88;
+  --amethyst: #ff2e88;
+  --amethyst-foreground: #1a0010;
+  --rose: #19e3c8;
+  --rose-foreground: #00211c;
+  color-scheme: dark;
+}
+
+/* Chrome Runner: blue-black city night, signal yellow, cyan and magenta, bold block headings. */
+:root[data-app-theme="chrome-runner"],
+[data-theme-preview="chrome-runner"] {
+  --ink-rgb: 230 244 255;
+  --paper-rgb: 7 10 20;
+  --accent-rgb: 245 225 18;
+  --accent-soft-rgb: 255 240 120;
+  --rose-rgb: 34 211 238;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --primary-hi: #fff36b;
+  --primary-lo: #c9b500;
+  --strong: #ffffff;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-bungee);
+  --heading-adjust: 0.5;
+  --heading-tracking: 0.01em;
+  --radius-unit: 0.3;
+  --background: #070a14;
+  --foreground: #e3eef8;
+  --surface: #0d1220;
+  --surface-raised: #141a2b;
+  --card: #0d1220;
+  --card-foreground: #e3eef8;
+  --popover: #161d2f;
+  --popover-foreground: #e3eef8;
+  --primary: #f5e112;
+  --primary-foreground: #121000;
+  --secondary: #182033;
+  --secondary-foreground: #e3eef8;
+  --muted: #111827;
+  --muted-foreground: #9fb0c4;
+  --accent: #1c2540;
+  --accent-foreground: #e3eef8;
+  --destructive: #ff5470;
+  --border: rgb(var(--ink-rgb) / 0.14);
+  --input: rgb(var(--ink-rgb) / 0.25);
+  --ring: #f5e112;
+  --amethyst: #f5e112;
+  --amethyst-foreground: #121000;
+  --rose: #22d3ee;
+  --rose-foreground: #00161b;
+  color-scheme: dark;
+}
+
+/* Menacing Gold: royal purple, Art Deco gold and teal, dramatic serif headings. */
+:root[data-app-theme="menacing-gold"],
+[data-theme-preview="menacing-gold"] {
+  --ink-rgb: 247 240 255;
+  --paper-rgb: 20 10 34;
+  --accent-rgb: 229 181 58;
+  --accent-soft-rgb: 246 212 120;
+  --rose-rgb: 46 196 182;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --primary-hi: #f6d47a;
+  --primary-lo: #b8871c;
+  --strong: #fffaf0;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-playfair);
+  --heading-adjust: none;
+  --heading-tracking: 0.005em;
+  --radius-unit: 0.5;
+  --background: #140a22;
+  --foreground: #f2e9fb;
+  --surface: #1c0f30;
+  --surface-raised: #24153b;
+  --card: #1c0f30;
+  --card-foreground: #f2e9fb;
+  --popover: #26173e;
+  --popover-foreground: #f2e9fb;
+  --primary: #e5b53a;
+  --primary-foreground: #1e1300;
+  --secondary: #2a1a42;
+  --secondary-foreground: #f2e9fb;
+  --muted: #1f1233;
+  --muted-foreground: #bcaad0;
+  --accent: #301d4b;
+  --accent-foreground: #f2e9fb;
+  --destructive: #ff6b81;
+  --border: rgb(var(--ink-rgb) / 0.14);
+  --input: rgb(var(--ink-rgb) / 0.25);
+  --ring: #e5b53a;
+  --amethyst: #e5b53a;
+  --amethyst-foreground: #1e1300;
+  --rose: #2ec4b6;
+  --rose-foreground: #00201d;
+  /* Two rumbling sound-effect glyphs, drawn as strokes. */
+  --menace-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23e5b53a' stroke-opacity='.09' stroke-width='5' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M12 30H38V58H12M46 18L50 28M55 15L59 25'/%3E%3Cpath d='M50 62H72V86H50M78 52L81 60M86 49L89 57'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+
+/* Hell Butterfly: ink black, paper white and flame orange. */
+:root[data-app-theme="hell-butterfly"],
+[data-theme-preview="hell-butterfly"] {
+  --ink-rgb: 245 242 236;
+  --paper-rgb: 9 9 10;
+  --accent-rgb: 255 122 26;
+  --accent-soft-rgb: 255 166 92;
+  --rose-rgb: 233 228 218;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --primary-hi: #ff9a4d;
+  --primary-lo: #d95a00;
+  --strong: #ffffff;
+  --theme-dark: 1;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-manrope);
+  --heading-adjust: none;
+  --heading-tracking: -0.035em;
+  --radius-unit: 0.35;
+  --background: #09090a;
+  --foreground: #ece8e1;
+  --surface: #111112;
+  --surface-raised: #18181a;
+  --card: #111112;
+  --card-foreground: #ece8e1;
+  --popover: #1b1b1d;
+  --popover-foreground: #ece8e1;
+  --primary: #ff7a1a;
+  --primary-foreground: #1c0b00;
+  --secondary: #1d1d20;
+  --secondary-foreground: #ece8e1;
+  --muted: #141416;
+  --muted-foreground: #a8a39b;
+  --accent: #232326;
+  --accent-foreground: #ece8e1;
+  --destructive: #ff5a5a;
+  --border: rgb(var(--ink-rgb) / 0.14);
+  --input: rgb(var(--ink-rgb) / 0.25);
+  --ring: #ff7a1a;
+  --amethyst: #ff7a1a;
+  --amethyst-foreground: #1c0b00;
+  --rose: #e9e4da;
+  --rose-foreground: #141210;
+  /* A dark butterfly outlined in ember orange. */
+  --butterfly-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 16'%3E%3Cg fill='%23ffffff' fill-opacity='.025' stroke='%23ff7a1a' stroke-opacity='.22' stroke-width='.25'%3E%3Cpath d='M12 7.4C10 3.8 6.2 1.6 3.4 2.4C1.8 3 2.4 6.2 4.6 7.6C6.6 8.8 9.6 8.6 12 8Z'/%3E%3Cpath d='M12 8.4C9.4 8.6 6.4 9.8 5.8 11.8C5.4 13.4 7.4 13.8 9 12.6C10.4 11.6 11.4 10 12 8.8Z'/%3E%3Cpath d='M12 7.4C14 3.8 17.8 1.6 20.6 2.4C22.2 3 21.6 6.2 19.4 7.6C17.4 8.8 14.4 8.6 12 8Z'/%3E%3Cpath d='M12 8.4C14.6 8.6 17.6 9.8 18.2 11.8C18.6 13.4 16.6 13.8 15 12.6C13.6 11.6 12.6 10 12 8.8Z'/%3E%3C/g%3E%3C/svg%3E");
+  color-scheme: dark;
+}
+
+/* Quintet Bloom: blush white, rose pink and teal, with five accent colors in the headings. */
+:root[data-app-theme="quintet-bloom"],
+[data-theme-preview="quintet-bloom"] {
+  --ink-rgb: 58 32 48;
+  --paper-rgb: 255 245 248;
+  --accent-rgb: 194 56 111;
+  --accent-soft-rgb: 232 120 160;
+  --rose-rgb: 47 127 143;
+  --shadow-rgb: 90 40 60;
+  --shadow-alpha: 0.2;
+  --primary-hi: #dc5a8c;
+  --primary-lo: #962455;
+  --strong: #1f0f19;
+  --theme-dark: 0;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-fredoka);
+  --heading-adjust: none;
+  --heading-tracking: -0.01em;
+  --radius-unit: 1.3;
+  --background: #fff5f8;
+  --foreground: #3a2030;
+  --surface: #fffafb;
+  --surface-raised: #ffffff;
+  --card: #fffafb;
+  --card-foreground: #3a2030;
+  --popover: #ffffff;
+  --popover-foreground: #3a2030;
+  --primary: #c2386f;
+  --primary-foreground: #fff6fa;
+  --secondary: #f8e6ee;
+  --secondary-foreground: #3a2030;
+  --muted: #faedf2;
+  --muted-foreground: #6e5664;
+  --accent: #f7dde8;
+  --accent-foreground: #3a2030;
+  --destructive: #b42318;
+  --border: rgb(var(--ink-rgb) / 0.16);
+  --input: rgb(var(--ink-rgb) / 0.3);
+  --ring: #c2386f;
+  --amethyst: #c2386f;
+  --amethyst-foreground: #fff6fa;
+  --rose: #2f7f8f;
+  --rose-foreground: #f2fbfc;
+  color-scheme: light;
+}
+
+/* Snow Glam: ice white, glacier blue, hot pink and lavender. */
+:root[data-app-theme="snow-glam"],
+[data-theme-preview="snow-glam"] {
+  --ink-rgb: 26 36 58;
+  --paper-rgb: 242 248 253;
+  --accent-rgb: 216 27 114;
+  --accent-soft-rgb: 255 105 170;
+  --rose-rgb: 106 79 196;
+  --shadow-rgb: 40 60 100;
+  --shadow-alpha: 0.22;
+  --primary-hi: #f04593;
+  --primary-lo: #a0104f;
+  --strong: #0b1222;
+  --theme-dark: 0;
+  --font-ui: var(--font-manrope);
+  --font-display: var(--font-fredoka);
+  --heading-adjust: none;
+  --heading-tracking: 0;
+  --radius-unit: 1.25;
+  --background: #f2f8fd;
+  --foreground: #1a243a;
+  --surface: #f8fbfe;
+  --surface-raised: #ffffff;
+  --card: #f8fbfe;
+  --card-foreground: #1a243a;
+  --popover: #ffffff;
+  --popover-foreground: #1a243a;
+  --primary: #d81b72;
+  --primary-foreground: #fff4f9;
+  --secondary: #e1edf7;
+  --secondary-foreground: #1a243a;
+  --muted: #e8f1f9;
+  --muted-foreground: #4f5d75;
+  --accent: #e3e9fb;
+  --accent-foreground: #1a243a;
+  --destructive: #b42318;
+  --border: rgb(var(--ink-rgb) / 0.16);
+  --input: rgb(var(--ink-rgb) / 0.3);
+  --ring: #d81b72;
+  --amethyst: #d81b72;
+  --amethyst-foreground: #fff4f9;
+  --rose: #6a4fc4;
+  --rose-foreground: #f7f4ff;
+  /* Two snowflakes, tiled faintly across the page. */
+  --snow-motif: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 100'%3E%3Cg fill='none' stroke='%232f78b7' stroke-opacity='.12' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M30 18V42M19.6 24L40.4 36M19.6 36L40.4 24M30 22L27 19M30 22L33 19M30 38L27 41M30 38L33 41'/%3E%3Cpath d='M90 62V78M83 66L97 74M83 74L97 66'/%3E%3C/g%3E%3Ccircle cx='70' cy='30' r='1.6' fill='%23d81b72' fill-opacity='.14'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
 /* Theme previews paint their own page, since text and fonts are inherited as resolved values. */
 [data-theme-preview] {
   background: var(--background);
@@ -550,20 +1024,19 @@
 }
 
 /* Theme flourishes, kept to decoration so layout and contrast stay the same. */
-:root[data-app-theme="terminal"] body::after,
 [data-theme-preview="terminal"]::after {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 200;
+  z-index: 1;
   pointer-events: none;
   background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.16) 0 1px, transparent 1px 3px);
 }
-[data-theme-preview="terminal"]::after {
-  position: absolute;
-  z-index: 1;
+:root[data-app-theme="terminal"] body {
+  background-image: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.16) 0 1px, transparent 1px 3px);
+  background-attachment: fixed;
 }
-:root[data-app-theme="terminal"] :is(h1, h2, h3),
+:root[data-app-theme="terminal"] :is(h1, h2, h3):not(.entry-workspace *),
 [data-theme-preview="terminal"] :is(h1, h2, h3, [data-preview-heading]) {
   text-shadow: 0 0 10px rgb(var(--accent-rgb) / 0.35);
 }
@@ -577,7 +1050,7 @@
 :root[data-app-theme="arcade"] body {
   background-attachment: fixed;
 }
-:root[data-app-theme="arcade"] :is(h1, h2),
+:root[data-app-theme="arcade"] :is(h1, h2):not(.entry-workspace *),
 [data-theme-preview="arcade"] :is(h1, h2, [data-preview-heading]) {
   text-shadow: 2px 2px 0 rgb(var(--rose-rgb) / 0.45);
   line-height: 1.35;
@@ -592,7 +1065,8 @@
     radial-gradient(60rem 30rem at 100% 110%, rgb(var(--rose-rgb) / 0.05), transparent 70%);
   background-attachment: fixed;
 }
-:root[data-app-theme="ocean"] .glass {
+:root[data-app-theme="ocean"] .glass:not(.entry-workspace *),
+.entry-workspace[data-theme-preview="ocean"] .glass {
   background: color-mix(in srgb, var(--surface) 62%, transparent);
   backdrop-filter: blur(20px) saturate(170%);
   -webkit-backdrop-filter: blur(20px) saturate(170%);
@@ -610,6 +1084,164 @@
 }
 [data-theme-preview="crimson"] {
   background-image: radial-gradient(circle at 50% -20%, rgb(var(--accent-rgb) / 0.16), transparent 65%);
+}
+/* Higanbana: a faded spider lily low in the corner under a faint red glow. */
+:root[data-app-theme="higanbana"] body {
+  background-image:
+    radial-gradient(60rem 30rem at 100% 105%, rgb(var(--accent-rgb) / 0.1), transparent 70%),
+    linear-gradient(rgb(var(--paper-rgb) / 0.88), rgb(var(--paper-rgb) / 0.88)),
+    var(--lily-motif);
+  background-size: auto, auto, 30rem 30rem;
+  background-position: 0 0, 0 0, calc(100% + 7rem) calc(100% + 7rem);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+[data-theme-preview="higanbana"] {
+  background-image:
+    radial-gradient(circle at 100% 100%, rgb(var(--accent-rgb) / 0.16), transparent 60%),
+    linear-gradient(rgb(var(--paper-rgb) / 0.78), rgb(var(--paper-rgb) / 0.78)),
+    var(--lily-motif);
+  background-size: auto, auto, 8.5rem 8.5rem;
+  background-position: 0 0, 0 0, calc(100% + 2.4rem) calc(100% + 2.4rem);
+  background-repeat: no-repeat;
+}
+/* Koi Bridge: river light from the top and a koi among ripples in the lower corner. */
+:root[data-app-theme="koi-bridge"] body {
+  background-image: radial-gradient(70rem 34rem at 10% -10%, rgb(var(--rose-rgb) / 0.08), transparent 70%), var(--koi-motif);
+  background-size: auto, 26rem 26rem;
+  background-position: 0 0, calc(100% + 5rem) calc(100% + 5rem);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+[data-theme-preview="koi-bridge"] {
+  background-image: radial-gradient(circle at 0% 0%, rgb(var(--rose-rgb) / 0.12), transparent 60%), var(--koi-motif);
+  background-size: auto, 8rem 8rem;
+  background-position: 0 0, calc(100% + 1.6rem) calc(100% + 1.6rem);
+  background-repeat: no-repeat;
+}
+/* Petal Diary: faint ruled lines and a pressed blossom in the upper corner. */
+:root[data-app-theme="petal-diary"] body {
+  background-image: var(--petal-motif), repeating-linear-gradient(to bottom, transparent 0 31px, rgb(var(--rose-rgb) / 0.07) 31px 32px);
+  background-size: 22rem 22rem, auto;
+  background-position: calc(100% + 4rem) -4rem, 0 0;
+  background-repeat: no-repeat, repeat;
+  background-attachment: fixed;
+}
+[data-theme-preview="petal-diary"] {
+  background-image: var(--petal-motif), repeating-linear-gradient(to bottom, transparent 0 15px, rgb(var(--rose-rgb) / 0.08) 15px 16px);
+  background-size: 7rem 7rem, auto;
+  background-position: calc(100% + 1.4rem) -1.4rem, 0 0;
+  background-repeat: no-repeat, repeat;
+}
+/* Spring Sonata: a music staff drifting across the top with two falling petals. */
+:root[data-app-theme="spring-sonata"] body {
+  background-image: radial-gradient(70rem 30rem at 100% -10%, rgb(var(--rose-rgb) / 0.07), transparent 70%), var(--sonata-motif);
+  background-size: auto, 36rem 18rem;
+  background-position: 0 0, calc(100% + 3rem) 3.5rem;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+[data-theme-preview="spring-sonata"] {
+  background-image: var(--sonata-motif);
+  background-size: 12rem 6rem;
+  background-position: calc(100% + 1rem) 0.4rem;
+  background-repeat: no-repeat;
+}
+/* Sabbath Neon: a hot-pink glow above, acid teal below and one red brush slash. */
+:root[data-app-theme="sabbath-neon"] body {
+  background-image:
+    radial-gradient(70rem 30rem at 15% -12%, rgb(var(--accent-rgb) / 0.12), transparent 70%),
+    radial-gradient(60rem 28rem at 100% 112%, rgb(var(--rose-rgb) / 0.08), transparent 70%),
+    linear-gradient(160deg, transparent 62%, rgb(209 16 47 / 0.07) 62.5% 64%, transparent 64.5%);
+  background-attachment: fixed;
+}
+[data-theme-preview="sabbath-neon"] {
+  background-image:
+    radial-gradient(circle at 10% -10%, rgb(var(--accent-rgb) / 0.2), transparent 60%),
+    radial-gradient(circle at 100% 110%, rgb(var(--rose-rgb) / 0.14), transparent 60%),
+    linear-gradient(160deg, transparent 62%, rgb(209 16 47 / 0.12) 62.5% 65%, transparent 65.5%);
+}
+:root[data-app-theme="sabbath-neon"] :is(h1, h2):not(.entry-workspace *),
+[data-theme-preview="sabbath-neon"] :is(h1, h2, [data-preview-heading]) {
+  text-shadow: 0 0 14px rgb(var(--accent-rgb) / 0.35);
+}
+/* Chrome Runner: magenta and cyan city glow over fine scanlines. */
+:root[data-app-theme="chrome-runner"] body {
+  background-image:
+    radial-gradient(60rem 30rem at 100% -10%, rgb(255 63 210 / 0.1), transparent 70%),
+    radial-gradient(60rem 30rem at 0% 110%, rgb(var(--rose-rgb) / 0.09), transparent 70%),
+    repeating-linear-gradient(to bottom, rgb(var(--rose-rgb) / 0.025) 0 1px, transparent 1px 4px);
+  background-attachment: fixed;
+}
+[data-theme-preview="chrome-runner"] {
+  background-image:
+    radial-gradient(circle at 100% -10%, rgb(255 63 210 / 0.18), transparent 60%),
+    radial-gradient(circle at 0% 110%, rgb(var(--rose-rgb) / 0.14), transparent 60%),
+    repeating-linear-gradient(to bottom, rgb(var(--rose-rgb) / 0.04) 0 1px, transparent 1px 4px);
+}
+:root[data-app-theme="chrome-runner"] :is(h1, h2):not(.entry-workspace *),
+[data-theme-preview="chrome-runner"] :is(h1, h2, [data-preview-heading]) {
+  text-shadow: 2px 0 0 rgb(255 63 210 / 0.45), -2px 0 0 rgb(var(--rose-rgb) / 0.4);
+}
+/* Menacing Gold: Art Deco rays from above and rumbling glyphs in the lower corner. */
+:root[data-app-theme="menacing-gold"] body {
+  background-image:
+    repeating-conic-gradient(from 0deg at 50% -20rem, rgb(var(--accent-rgb) / 0.035) 0 2deg, transparent 2deg 9deg),
+    var(--menace-motif);
+  background-size: auto, 24rem 24rem;
+  background-position: 0 0, calc(100% + 2rem) calc(100% + 2rem);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+[data-theme-preview="menacing-gold"] {
+  background-image:
+    repeating-conic-gradient(from 0deg at 50% -6rem, rgb(var(--accent-rgb) / 0.06) 0 2deg, transparent 2deg 9deg),
+    var(--menace-motif);
+  background-size: auto, 7rem 7rem;
+  background-position: 0 0, calc(100% + 0.6rem) calc(100% + 0.6rem);
+  background-repeat: no-repeat;
+}
+/* Hell Butterfly: an ember glow below and a dark butterfly in the upper corner. */
+:root[data-app-theme="hell-butterfly"] body {
+  background-image: var(--butterfly-motif), radial-gradient(80rem 30rem at 50% 115%, rgb(var(--accent-rgb) / 0.08), transparent 70%);
+  background-size: 24rem 16rem, auto;
+  background-position: calc(100% + 2rem) 3rem, 0 0;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+[data-theme-preview="hell-butterfly"] {
+  background-image: var(--butterfly-motif), radial-gradient(circle at 50% 120%, rgb(var(--accent-rgb) / 0.16), transparent 60%);
+  background-size: 8rem 5.3rem, auto;
+  background-position: calc(100% + 0.8rem) 0.6rem, 0 0;
+  background-repeat: no-repeat;
+}
+/* Quintet Bloom: five soft color washes around the page. */
+:root[data-app-theme="quintet-bloom"] body,
+[data-theme-preview="quintet-bloom"] {
+  background-image:
+    radial-gradient(circle at 0% 0%, rgb(246 195 68 / 0.12), transparent 30%),
+    radial-gradient(circle at 100% 0%, rgb(232 99 143 / 0.12), transparent 30%),
+    radial-gradient(circle at 0% 100%, rgb(79 179 107 / 0.1), transparent 30%),
+    radial-gradient(circle at 100% 100%, rgb(61 114 184 / 0.1), transparent 30%),
+    radial-gradient(circle at 50% 120%, rgb(180 91 209 / 0.1), transparent 35%);
+}
+:root[data-app-theme="quintet-bloom"] body {
+  background-attachment: fixed;
+}
+/* Snow Glam: faint snowflakes tiled under a pink glow. */
+:root[data-app-theme="snow-glam"] body {
+  background-image: radial-gradient(70rem 30rem at 100% -10%, rgb(var(--accent-rgb) / 0.06), transparent 70%), var(--snow-motif);
+  background-size: auto, 15rem 12.5rem;
+  background-attachment: fixed;
+}
+[data-theme-preview="snow-glam"] {
+  background-image: radial-gradient(circle at 100% 0%, rgb(var(--accent-rgb) / 0.1), transparent 60%), var(--snow-motif);
+  background-size: auto, 6rem 5rem;
+}
+
+.entry-workspace {
+  position: relative;
+  min-height: calc(100dvh - 4rem);
 }
 
 @layer base {
@@ -2357,6 +2989,227 @@
   border-radius: var(--fr);
   box-shadow: 0 0 0 1px rgb(224 242 254 / 0.85);
 }
+
+/* Spider lily: black lacquer veined with red, a bone-thread seam, lily bursts and mask stitches at the corners. */
+.art-frame[data-frame="spider-lily"] {
+  --fw: clamp(5px, 3.6cqi, 12px);
+  --bloom: calc(var(--fw) * 11.3);
+}
+.art-frame[data-frame="spider-lily"] .art-frame-deco {
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.6)) drop-shadow(0 0 calc(2px + 0.8cqi) rgb(220 30 50 / 0.35));
+}
+.art-frame[data-frame="spider-lily"] .art-frame-ring {
+  background:
+    radial-gradient(60% 40% at 0% 0%, rgb(200 16 46 / 0.6), transparent 70%),
+    radial-gradient(60% 40% at 100% 100%, rgb(200 16 46 / 0.5), transparent 70%),
+    repeating-linear-gradient(115deg, transparent 0 14px, rgb(160 12 36 / 0.22) 14px 15px, transparent 15px 31px),
+    linear-gradient(150deg, #241014, #070405 45%, #1a0a0d);
+}
+.art-frame[data-frame="spider-lily"] .art-frame-deco::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: calc(var(--fw) / 2 - 0.6px);
+  border: 1.2px dashed rgb(239 230 220 / 0.7);
+  border-radius: calc(var(--fr) + var(--fw) / 2);
+}
+.art-frame[data-frame="spider-lily"] .art-frame-deco::after {
+  content: "";
+  position: absolute;
+  inset: var(--fw);
+  border-radius: var(--fr);
+  box-shadow: 0 0 0 1px #c8102e, inset 0 0 8px rgb(200 16 46 / 0.35);
+}
+.art-frame-bloom,
+.art-frame-stitch {
+  position: absolute;
+  z-index: 1;
+  overflow: visible;
+}
+.art-frame-bloom {
+  width: var(--bloom);
+  height: var(--bloom);
+}
+.art-frame-bloom[data-corner="tl"] {
+  top: calc(var(--bloom) * -0.1);
+  left: calc(var(--bloom) * -0.1);
+}
+.art-frame-bloom[data-corner="br"] {
+  bottom: calc(var(--bloom) * -0.1);
+  right: calc(var(--bloom) * -0.1);
+  scale: -1 -1;
+}
+.art-frame-stitch {
+  width: calc(var(--fw) * 7.55);
+  height: calc(var(--fw) * 7.55);
+}
+.art-frame-stitch[data-corner="tr"] {
+  top: 0;
+  right: 0;
+  scale: -1 1;
+}
+.art-frame-stitch[data-corner="bl"] {
+  bottom: 0;
+  left: 0;
+  scale: 1 -1;
+}
+
+/* Illustrated frames: a patterned band, an outer and inner line, and motif pieces from frame-motifs.ts. */
+.art-frame-motif {
+  position: absolute;
+  z-index: 1;
+  overflow: visible;
+}
+.art-frame:is(
+    [data-frame="koi-rail"],
+    [data-frame="pressed-diary"],
+    [data-frame="sonata-keys"],
+    [data-frame="demon-wing"],
+    [data-frame="moonshot"],
+    [data-frame="golden-arrow"],
+    [data-frame="tsuba-guard"],
+    [data-frame="five-ribbons"],
+    [data-frame="frost-glam"]
+  ) {
+  --fw: clamp(4px, 3.2cqi, 11px);
+  --line: max(1px, calc(var(--fw) * 0.16));
+}
+.art-frame:is(
+    [data-frame="koi-rail"],
+    [data-frame="pressed-diary"],
+    [data-frame="sonata-keys"],
+    [data-frame="demon-wing"],
+    [data-frame="moonshot"],
+    [data-frame="golden-arrow"],
+    [data-frame="tsuba-guard"],
+    [data-frame="five-ribbons"],
+    [data-frame="frost-glam"]
+  )
+  .art-frame-deco {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.4));
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: var(--line) solid var(--frame-outer);
+    border-radius: inherit;
+  }
+  &::after {
+    content: "";
+    position: absolute;
+    inset: var(--fw);
+    border-radius: var(--fr);
+    box-shadow: 0 0 0 var(--line) var(--frame-inner);
+  }
+}
+/* Koi rail: rippling water inside a wooden bridge rail. */
+.art-frame[data-frame="koi-rail"] {
+  --frame-outer: #7a4b2a;
+  --frame-inner: #fffaf2;
+  --line: max(1.5px, calc(var(--fw) * 0.24));
+}
+.art-frame[data-frame="koi-rail"] .art-frame-ring {
+  background:
+    radial-gradient(closest-side, transparent 55%, rgb(255 255 255 / 0.55) 62% 72%, transparent 78%) 0 0 / calc(var(--fw) * 2.6) calc(var(--fw) * 1.4),
+    linear-gradient(160deg, #8ad8dc, #3c9bb0 55%, #6cc3cc);
+}
+/* Pressed diary: cream linen with a cherry seam and a gold hairline. */
+.art-frame[data-frame="pressed-diary"] {
+  --frame-outer: #7d1427;
+  --frame-inner: #c9a04a;
+}
+.art-frame[data-frame="pressed-diary"] .art-frame-ring {
+  background:
+    repeating-linear-gradient(0deg, rgb(120 90 60 / 0.08) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgb(120 90 60 / 0.08) 0 1px, transparent 1px 3px),
+    #f6ecd9;
+}
+.art-frame[data-frame="pressed-diary"] .art-frame-ring::after {
+  content: "";
+  position: absolute;
+  inset: calc(var(--fw) / 2 - 0.5px);
+  border: 1px dashed rgb(178 38 62 / 0.75);
+  border-radius: calc(var(--fr) + var(--fw) / 2);
+}
+/* Sonata keys: glossy ivory edged in ebony. */
+.art-frame[data-frame="sonata-keys"] {
+  --frame-outer: #141418;
+  --frame-inner: #141418;
+}
+.art-frame[data-frame="sonata-keys"] .art-frame-ring {
+  background: linear-gradient(160deg, #fffdf6, #ece2cc 48%, #fffaf0 62%, #e7dcc3);
+}
+/* Demon wing: black splashed with neon pink, acid teal and red streaks. */
+.art-frame[data-frame="demon-wing"] {
+  --frame-outer: #19e3c8;
+  --frame-inner: #ff2e88;
+}
+.art-frame[data-frame="demon-wing"] .art-frame-deco {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.5)) drop-shadow(0 0 calc(2px + 0.8cqi) rgb(255 46 136 / 0.4));
+}
+.art-frame[data-frame="demon-wing"] .art-frame-ring {
+  background:
+    radial-gradient(40% 30% at 12% 20%, rgb(255 46 136 / 0.55), transparent 70%),
+    radial-gradient(40% 30% at 88% 82%, rgb(25 227 200 / 0.45), transparent 70%),
+    repeating-linear-gradient(118deg, transparent 0 22px, rgb(209 16 47 / 0.55) 22px 24px, transparent 24px 47px),
+    #0b0710;
+}
+/* Moonshot: chrome plating with cyan ticks, a magenta glitch line and a yellow trace. */
+.art-frame[data-frame="moonshot"] {
+  --frame-outer: #ff3fd2;
+  --frame-inner: #f5e112;
+}
+.art-frame[data-frame="moonshot"] .art-frame-deco::before {
+  translate: 1px 1px;
+}
+.art-frame[data-frame="moonshot"] .art-frame-ring {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9px, rgb(34 211 238 / 0.75) 9px 10px),
+    repeating-linear-gradient(0deg, transparent 0 9px, rgb(34 211 238 / 0.75) 9px 10px),
+    linear-gradient(160deg, #f4f7fb, #8a96a8 30%, #e8edf4 52%, #5d6878 78%, #d3dae4);
+}
+/* Golden arrow: a violet Art Deco lattice set in gold. */
+.art-frame[data-frame="golden-arrow"] {
+  --frame-outer: #e5b53a;
+  --frame-inner: #e5b53a;
+}
+.art-frame[data-frame="golden-arrow"] .art-frame-ring {
+  background:
+    repeating-linear-gradient(45deg, transparent 0 5px, rgb(229 181 58 / 0.6) 5px 6px),
+    repeating-linear-gradient(-45deg, transparent 0 5px, rgb(229 181 58 / 0.6) 5px 6px),
+    linear-gradient(160deg, #5a1f78, #2a0a3e 55%, #4a1868);
+}
+/* Sword guard: black diamond hilt wrapping over cream, with an ember inner line. */
+.art-frame[data-frame="tsuba-guard"] {
+  --frame-outer: #0d0d0f;
+  --frame-inner: #ff7a1a;
+}
+.art-frame[data-frame="tsuba-guard"] .art-frame-ring {
+  background:
+    repeating-linear-gradient(45deg, #111114 0 2px, transparent 2px calc(var(--fw) * 0.9)),
+    repeating-linear-gradient(-45deg, #111114 0 2px, transparent 2px calc(var(--fw) * 0.9)),
+    #efe4cc;
+}
+/* Five ribbons: blush satin with lace dots and a rose-gold line. */
+.art-frame[data-frame="five-ribbons"] {
+  --frame-outer: #e8638f;
+  --frame-inner: #c98a7a;
+}
+.art-frame[data-frame="five-ribbons"] .art-frame-ring {
+  background:
+    radial-gradient(circle, rgb(255 255 255 / 0.9) 0 0.9px, transparent 1.4px) 0 0 / 6px 6px,
+    linear-gradient(160deg, #ffe4ec, #f5bfd0 50%, #ffe9f0);
+}
+/* Frost glam: icy rhinestones edged in pink and lavender. */
+.art-frame[data-frame="frost-glam"] {
+  --frame-outer: #ff2e8a;
+  --frame-inner: #a58bf0;
+}
+.art-frame[data-frame="frost-glam"] .art-frame-ring {
+  background:
+    radial-gradient(circle, #fff 0 1px, rgb(255 255 255 / 0.4) 1.5px, transparent 2.2px) 0 0 / 9px 9px,
+    linear-gradient(150deg, #eaf7ff, #b8dcf5 45%, #f2f9ff 70%, #cfe6fb);
+}
 :root[data-motion="off"] .art-frame-deco {
   animation: none !important;
 }
@@ -2479,6 +3332,46 @@
 .artwork-viewer[data-frame="constellation"] {
   --viewer-glow-rgb: 129 140 248;
   --viewer-floor-rgb: 253 230 138;
+}
+.artwork-viewer[data-frame="koi-rail"] {
+  --viewer-glow-rgb: 108 195 204;
+  --viewer-floor-rgb: 240 90 34;
+}
+.artwork-viewer[data-frame="pressed-diary"] {
+  --viewer-glow-rgb: 232 138 166;
+  --viewer-floor-rgb: 47 111 168;
+}
+.artwork-viewer[data-frame="spider-lily"] {
+  --viewer-glow-rgb: 200 16 46;
+  --viewer-floor-rgb: 239 230 220;
+}
+.artwork-viewer[data-frame="sonata-keys"] {
+  --viewer-glow-rgb: 106 168 234;
+  --viewer-floor-rgb: 240 141 176;
+}
+.artwork-viewer[data-frame="demon-wing"] {
+  --viewer-glow-rgb: 255 46 136;
+  --viewer-floor-rgb: 25 227 200;
+}
+.artwork-viewer[data-frame="moonshot"] {
+  --viewer-glow-rgb: 34 211 238;
+  --viewer-floor-rgb: 245 225 18;
+}
+.artwork-viewer[data-frame="golden-arrow"] {
+  --viewer-glow-rgb: 229 181 58;
+  --viewer-floor-rgb: 162 75 192;
+}
+.artwork-viewer[data-frame="tsuba-guard"] {
+  --viewer-glow-rgb: 255 122 26;
+  --viewer-floor-rgb: 239 228 204;
+}
+.artwork-viewer[data-frame="five-ribbons"] {
+  --viewer-glow-rgb: 232 99 143;
+  --viewer-floor-rgb: 246 195 68;
+}
+.artwork-viewer[data-frame="frost-glam"] {
+  --viewer-glow-rgb: 159 211 245;
+  --viewer-floor-rgb: 255 46 138;
 }
 .artwork-viewer[data-leaving] {
   opacity: 0;

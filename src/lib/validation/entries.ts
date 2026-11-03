@@ -3,6 +3,7 @@ import { isUploadedImagePath } from "@/lib/attachments";
 import { COVER_SHAPES } from "@/lib/cover-shape";
 import { ARTWORK_FRAME_IDS } from "@/lib/frames";
 import { progressLabelSchema } from "@/lib/progress/label";
+import { THEME_IDS } from "@/lib/themes";
 import { IMAGE_URL_MESSAGES, checkImageUrl } from "./image-url";
 
 export const ENTRY_KINDS = ["anime", "game", "custom"] as const;
@@ -35,6 +36,7 @@ export const entryPatchSchema = z
     platform: z.string().trim().max(80).nullable().optional(),
     /** null follows the account default frame; "none" keeps this entry unframed. */
     frame: z.enum(ARTWORK_FRAME_IDS).nullable().optional(),
+    workspace_theme: z.enum(THEME_IDS).nullable().optional(),
     collectionId: z.uuid().optional(),
     expectedVersion: z.number().int().positive().optional(),
   })

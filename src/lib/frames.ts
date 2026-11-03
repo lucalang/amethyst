@@ -6,7 +6,21 @@
 /** Frames everyone has. */
 export const FREE_FRAME_IDS = ["none", "gilt", "amethyst", "holo", "aurora"] as const;
 /** Frames bought with Arcade coins (stable ids, also the `cosmetic_items` ids). */
-export const SHOP_FRAME_IDS = ["pixel-quest", "neon-marquee", "constellation"] as const;
+export const SHOP_FRAME_IDS = [
+  "pixel-quest",
+  "neon-marquee",
+  "constellation",
+  "koi-rail",
+  "pressed-diary",
+  "spider-lily",
+  "sonata-keys",
+  "demon-wing",
+  "moonshot",
+  "golden-arrow",
+  "tsuba-guard",
+  "five-ribbons",
+  "frost-glam",
+] as const;
 /** Frames unlocked exclusively by earning milestone achievements. */
 export const ACHIEVEMENT_FRAME_IDS = ["obsidian-relic", "celestial-prism"] as const;
 export const UNLOCKABLE_FRAME_IDS = [...SHOP_FRAME_IDS, ...ACHIEVEMENT_FRAME_IDS] as const;
@@ -51,6 +65,16 @@ export const ARTWORK_FRAMES: Record<ArtworkFrameId, ArtworkFrameInfo> = {
   "pixel-quest": { name: "Pixel quest", description: "A chunky 8-bit border with pixel-gem corners and a little coin crest." },
   "neon-marquee": { name: "Marquee lights", description: "A dark marquee band lined with warm bulbs inside a pink-and-cyan neon tube." },
   constellation: { name: "Constellation", description: "A deep night rim scattered with stars, gold hairlines and star-chart corners." },
+  "koi-rail": { name: "Koi rail", description: "A wooden bridge rail over rippling water, with a koi gliding past and a lily pad among the rings." },
+  "pressed-diary": { name: "Pressed diary", description: "Cream linen bound with cherry leather corners, a pressed blossom and a blue ribbon bookmark." },
+  "spider-lily": { name: "Spider lily", description: "A dark lacquer rim where crimson spider lilies curl in from the corners." },
+  "sonata-keys": { name: "Sonata keys", description: "Ivory and ebony with gold violin scrolls, a keyboard along the bottom and two notes on top." },
+  "demon-wing": { name: "Demon wing", description: "Neon-splashed black with bat wings, horns, a red splatter and one teal tear." },
+  moonshot: { name: "Moonshot", description: "Chrome plating bolted at the corners, glowing circuit traces, glitch slices and a crescent moon." },
+  "golden-arrow": { name: "Golden arrow", description: "A violet Art Deco lattice with gold arrowheads, a ladybug brooch and rumbling pink glyphs." },
+  "tsuba-guard": { name: "Sword guard", description: "Diamond hilt wrapping, iron sword guards at the corners and a black butterfly edged in ember." },
+  "five-ribbons": { name: "Five ribbons", description: "Blush satin and lace with a star, butterfly, bow and clover, a wedding bell and five ribbon tails." },
+  "frost-glam": { name: "Frost glam", description: "Icy rhinestones and snowflake corners around a pink heart charm with lavender sprigs." },
   "obsidian-relic": { name: "Obsidian relic", description: "Faceted black obsidian with gold-leaf seams and a crown-cut amethyst seal." },
   "celestial-prism": { name: "Celestial prism", description: "Crystal prism bevels with a slow starlight refraction and silver astrolabe corners.", animated: true },
 };

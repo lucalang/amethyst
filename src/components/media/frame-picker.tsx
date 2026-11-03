@@ -17,6 +17,35 @@ export type FrameChoice = "default" | ArtworkFrameId;
 
 export const frameChoice = (entryFrame: string | null | undefined): FrameChoice => (entryFrame ? resolveFrame(entryFrame, "none") : "default");
 
+/** The entry's cover (or a themed placeholder) inside a frame. */
+function FramedCover({
+  frame,
+  coverUrl,
+  coverShape,
+  title,
+  className,
+  sizes,
+}: {
+  frame: ArtworkFrameId;
+  coverUrl?: string | null;
+  coverShape: CoverShape;
+  title?: string;
+  className: string;
+  sizes: string;
+}) {
+  return (
+    <ArtworkFrame frame={frame} className={className}>
+      <span className={cn("relative block overflow-hidden rounded-lg bg-surface", coverShape === "square" ? "aspect-square" : "aspect-[2/3]")}>
+        {coverUrl ? (
+          <MediaImage src={coverUrl} alt="" sizes={sizes} fallbackLabel={title} />
+        ) : (
+          <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgb(var(--accent-rgb)/0.75),transparent_60%),radial-gradient(circle_at_75%_80%,rgb(var(--rose-rgb)/0.6),transparent_55%),linear-gradient(160deg,rgb(var(--accent-soft-rgb)/0.5),rgb(var(--paper-rgb)))]" />
+        )}
+      </span>
+    </ArtworkFrame>
+  );
+}
+
 /**
  * Per-entry frame choice with a preview on the entry's own artwork. Posts `frame` with forms
  * (via a hidden input) and also reports changes for client-side forms.
@@ -46,9 +75,9 @@ export function FramePicker({
   const { owned } = useCosmetics();
   const shown = value === "default" ? accountFrame : value;
   const frames = availableFrames(owned).concat(value !== "default" && !availableFrames(owned).includes(value) ? [value] : []);
-  const options: { value: FrameChoice; label: string }[] = [
-    { value: "default", label: `Use my default (${ARTWORK_FRAMES[accountFrame].name})` },
-    ...frames.map((frame) => ({ value: frame, label: ARTWORK_FRAMES[frame].name })),
+  const options: { value: FrameChoice; label: string; frame: ArtworkFrameId }[] = [
+    { value: "default", label: `My default (${ARTWORK_FRAMES[accountFrame].name})`, frame: accountFrame },
+    ...frames.map((frame) => ({ value: frame, label: ARTWORK_FRAMES[frame].name, frame })),
   ];
   const [query, setQuery] = useState("");
   const searchable = options.length >= PICKER_SEARCH_MIN;
@@ -72,38 +101,34 @@ export function FramePicker({
       <div className={cn("flex flex-col gap-4", !compact && "sm:flex-row sm:items-start")}>
         {compact ? null : (
           <div aria-hidden className="flex shrink-0 justify-center rounded-md border border-white/[0.08] bg-[radial-gradient(14rem_8rem_at_50%_0%,rgb(var(--accent-rgb)/0.14),transparent_70%)] px-5 py-4">
-            <ArtworkFrame frame={shown} className={coverShape === "square" ? "w-24" : "w-20"}>
-              <span className={cn("relative block overflow-hidden rounded-lg bg-surface", coverShape === "square" ? "aspect-square" : "aspect-[2/3]")}>
-                {coverUrl ? (
-                  <MediaImage src={coverUrl} alt="" sizes="auto, 96px" fallbackLabel={title} />
-                ) : (
-                  <span className="absolute inset-0 bg-[radial-gradient(circle_at_30%_25%,rgb(var(--accent-rgb)/0.75),transparent_60%),radial-gradient(circle_at_75%_80%,rgb(var(--rose-rgb)/0.6),transparent_55%),linear-gradient(160deg,rgb(var(--accent-soft-rgb)/0.5),rgb(var(--paper-rgb)))]" />
-                )}
-              </span>
-            </ArtworkFrame>
+            <FramedCover frame={shown} coverUrl={coverUrl} coverShape={coverShape} title={title} className={coverShape === "square" ? "w-24" : "w-20"} sizes="auto, 96px" />
           </div>
         )}
         <div className="grid min-w-0 flex-1 gap-2">
         {searchable ? <CatalogSearch value={query} onChange={setQuery} label="Search frames" placeholder="Search frames" className="sm:w-full" /> : null}
-        <div role="radiogroup" aria-labelledby={`${id}-label`} aria-describedby={`${id}-hint`} className="grid gap-1">
+        <div role="radiogroup" aria-labelledby={`${id}-label`} aria-describedby={`${id}-hint`} className="grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-1.5">
           {listed.map((option) => {
             const checked = value === option.value;
             return (
               <label
                 key={option.value}
+                title={option.label}
                 className={cn(
-                  "group/frame-opt flex cursor-pointer items-center gap-2.5 rounded-md border px-3 py-1.5 text-sm transition-[color,background-color,border-color,scale] duration-150 select-none active:scale-[0.985] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none motion-reduce:active:scale-100",
+                  "frame-option group/frame-opt relative flex cursor-pointer flex-col items-center gap-2 rounded-md border px-2 pt-3.5 pb-2 text-center text-xs transition-[color,background-color,border-color,scale] duration-150 select-none active:scale-[0.97] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none motion-reduce:active:scale-100",
                   disabled && "pointer-events-none opacity-60",
                   checked
                     ? "border-amethyst/60 bg-amethyst/[0.1] text-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.06)]"
-                    : "border-transparent text-muted-foreground hover:border-border hover:bg-foreground/[0.04] hover:text-foreground",
+                    : "border-border/60 text-muted-foreground hover:border-border hover:bg-foreground/[0.04] hover:text-foreground",
                 )}
               >
                 <input type="radio" name={`${id}-choice`} value={option.value} checked={checked} disabled={disabled} onChange={() => onChange(option.value)} className="sr-only" />
-                <span aria-hidden className={cn("grid size-4 shrink-0 place-items-center rounded-full border transition-[border-color,background-color,scale] duration-150", checked ? "scale-105 border-amethyst bg-amethyst text-amethyst-foreground" : "border-input group-hover/frame-opt:border-amethyst/65")}>
-                  {checked ? <Check className="size-3" strokeWidth={3} /> : null}
-                </span>
-                <span className="min-w-0 truncate">{option.label}</span>
+                <FramedCover frame={option.frame} coverUrl={coverUrl} coverShape={coverShape} title={title} className={coverShape === "square" ? "w-12" : "w-10"} sizes="auto, 48px" />
+                <span className="line-clamp-2 leading-4">{option.label}</span>
+                {checked ? (
+                  <span aria-hidden className="absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-amethyst text-amethyst-foreground">
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                ) : null}
               </label>
             );
           })}
@@ -112,7 +137,7 @@ export function FramePicker({
         </div>
       </div>
       <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-        Shown on collection cards, in Showcase, and in the artwork viewer. “Use my default” follows your{" "}
+        Shown on collection cards, in Showcase, and in the artwork viewer. “My default” follows your{" "}
         <Link href="/customization/frames" className="text-amethyst underline-offset-4 hover:underline">
           account frame
         </Link>{" "}

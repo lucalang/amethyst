@@ -192,6 +192,96 @@ const SPECS: Record<FrameLookId, FrameSpec> = {
     fx: { kind: FX.gilt, a: 0xfff1c9, b: 0xffffff },
     glints: () => [],
   },
+  "spider-lily": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.42, clearcoat: 0.55, clearcoatRoughness: 0.12 },
+    edge: { color: 0x120709, metalness: 0.4, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.1 },
+    light: { a: 0xff3b4a, b: 0xf2e6dc, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xb3202e, b: 0xfff1ea },
+    glints: () => [],
+  },
+  "koi-rail": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.08 },
+    edge: { color: 0x7a4b2a, metalness: 0.1, roughness: 0.5, clearcoat: 0.6, clearcoatRoughness: 0.2 },
+    light: { a: 0x8ad8dc, b: 0xffb07a, mix: 0.55 },
+    fx: { kind: FX.gilt, a: 0xd9fbff, b: 0xffffff },
+    glints: () => [],
+  },
+  "pressed-diary": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.7, sheen: 1, sheenColor: 0xfff4e0, sheenRoughness: 0.6 },
+    edge: { color: 0x7d1427, metalness: 0.1, roughness: 0.5, clearcoat: 0.4, clearcoatRoughness: 0.3 },
+    light: { a: 0xf2a5b8, b: 0xfff1d6, mix: 0.5 },
+    fx: { kind: FX.gilt, a: 0xffe8c8, b: 0xffffff },
+    glints: () => [],
+  },
+  "sonata-keys": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.06 },
+    edge: { color: 0x141418, metalness: 0.3, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06 },
+    light: { a: 0x8bbcf0, b: 0xffd6e4, mix: 0.5 },
+    fx: { kind: FX.gilt, a: 0xfff4d8, b: 0xffffff },
+    glints: () => [],
+  },
+  "demon-wing": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.2, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 },
+    edge: { color: 0x0b0710, metalness: 0.5, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1, sheen: 1, sheenColor: 0x19e3c8, sheenRoughness: 0.4 },
+    light: { a: 0xff2e88, b: 0x19e3c8, mix: 0.65 },
+    fx: { kind: FX.amethyst, a: 0xff7ab8, b: 0x9ffff0 },
+    glints: () => [],
+  },
+  moonshot: {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.95, roughness: 0.2, clearcoat: 0.6, clearcoatRoughness: 0.1 },
+    edge: { color: 0xc9d1dc, metalness: 1, roughness: 0.18, clearcoat: 0.6, clearcoatRoughness: 0.1 },
+    light: { a: 0x22d3ee, b: 0xff3fd2, mix: 0.6 },
+    fx: { kind: FX.holo, a: 0xbaf6ff, b: 0xffd0f4 },
+    glints: () => [],
+  },
+  "golden-arrow": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.5, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.1 },
+    edge: { color: 0xe5b53a, metalness: 1, roughness: 0.22, clearcoat: 0.5, clearcoatRoughness: 0.16 },
+    light: { a: 0xe5b53a, b: 0xc77ae0, mix: 0.6 },
+    fx: { kind: FX.amethyst, a: 0xffe08a, b: 0xf0c4ff },
+    glints: (band) => cornerGlints(band, [1.4, 2.8, 4.2, 5.6]),
+  },
+  "tsuba-guard": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.6, sheen: 1, sheenColor: 0xfff1d6, sheenRoughness: 0.5 },
+    edge: { color: 0x0d0d0f, metalness: 0.6, roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.2 },
+    light: { a: 0xff7a1a, b: 0xefe4cc, mix: 0.55 },
+    fx: { kind: FX.gilt, a: 0xffc48a, b: 0xfff4e0 },
+    glints: () => [],
+  },
+  "five-ribbons": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.45, sheen: 1, sheenColor: 0xffffff, sheenRoughness: 0.35, clearcoat: 0.4, clearcoatRoughness: 0.2 },
+    edge: { color: 0xe8638f, metalness: 0.3, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 },
+    light: { a: 0xf5bfd0, b: 0xf6c344, mix: 0.5 },
+    fx: { kind: FX.amethyst, a: 0xffd6e4, b: 0xfff6e0 },
+    glints: () => [],
+  },
+  "frost-glam": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.3, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.04, iridescence: 0.5, iridescenceIOR: 1.4, iridescenceThicknessRange: [200, 600] },
+    edge: { color: 0xff2e8a, metalness: 0.4, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.06 },
+    light: { a: 0x9fd3f5, b: 0xff8cc4, mix: 0.55 },
+    fx: { kind: FX.amethyst, a: 0xe6f6ff, b: 0xffd6ea },
+    glints: (band) => cornerGlints(band, [1.2, 2.6, 4.0, 5.4]),
+  },
 };
 
 const PLANE_VERTEX = /* glsl */ `
@@ -358,6 +448,125 @@ function panel(width: number, height: number, radius: number, hole?: { width: nu
 type Layout = { cw: number; ch: number; aw: number; ah: number; m: number; r: number; ra: number };
 
 /** Paints the frame band (the art area is cut out of the geometry, so only the edges show). */
+type Paint = CanvasRenderingContext2D;
+/** Parallel lines across the whole band; slope 1 runs bottom-left to top-right, -1 the other way. */
+function stripes(ctx: Paint, W: number, H: number, step: number, width: number, colour: string, slope: number) {
+  ctx.strokeStyle = colour;
+  ctx.lineWidth = width;
+  for (let x = -H; x < W + H; x += step) {
+    ctx.beginPath();
+    ctx.moveTo(x, H);
+    ctx.lineTo(x + H * slope, 0);
+    ctx.stroke();
+  }
+}
+function dots(ctx: Paint, W: number, H: number, step: number, radius: number, colour: string) {
+  ctx.fillStyle = colour;
+  for (let y = step / 2; y < H; y += step) {
+    for (let x = step / 2; x < W; x += step) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+function pool(ctx: Paint, W: number, H: number, x: number, y: number, colour: string) {
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, Math.max(W, H) * 0.4);
+  glow.addColorStop(0, colour);
+  glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** Bands of the illustrated frames, matching their `.art-frame` CSS; their motifs come from frame-motifs.ts. */
+const BANDS: Partial<Record<FrameLookId, { base: readonly string[]; outer: string; inner: string; pattern?: (ctx: Paint, W: number, H: number, M: number) => void }>> = {
+  "koi-rail": {
+    base: ["#8ad8dc", "#3c9bb0", "#6cc3cc"],
+    outer: "#7a4b2a",
+    inner: "#fffaf2",
+    pattern: (ctx, W, H, M) => {
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.lineWidth = Math.max(1, M * 0.05);
+      for (let y = M * 0.35, row = 0; y < H; y += M * 0.28, row++) {
+        for (let x = (row % 2) * M * 0.26; x < W; x += M * 0.52) {
+          ctx.beginPath();
+          ctx.ellipse(x, y, M * 0.16, M * 0.06, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    },
+  },
+  "pressed-diary": {
+    base: ["#f8efdd", "#f1e4cb", "#f8efdd"],
+    outer: "#7d1427",
+    inner: "#c9a04a",
+    pattern: (ctx, W, H, M) => {
+      stripes(ctx, W, H, 4, 1, "rgba(120, 90, 60, 0.08)", 0);
+      ctx.fillStyle = "rgba(120, 90, 60, 0.08)";
+      for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
+      ctx.save();
+      ctx.setLineDash([M * 0.22, M * 0.16]);
+      ctx.beginPath();
+      ctx.roundRect(M / 2, M / 2, W - M, H - M, Math.max(0, M * 0.6));
+      ctx.lineWidth = Math.max(1, M * 0.06);
+      ctx.strokeStyle = "rgba(178, 38, 62, 0.8)";
+      ctx.stroke();
+      ctx.restore();
+    },
+  },
+  "sonata-keys": { base: ["#fffdf6", "#ece2cc", "#fffaf0", "#e7dcc3"], outer: "#141418", inner: "#141418" },
+  "demon-wing": {
+    base: ["#120a18", "#0b0710", "#140812"],
+    outer: "#19e3c8",
+    inner: "#ff2e88",
+    pattern: (ctx, W, H, M) => {
+      pool(ctx, W, H, W * 0.12, H * 0.2, "rgba(255, 46, 136, 0.55)");
+      pool(ctx, W, H, W * 0.88, H * 0.82, "rgba(25, 227, 200, 0.45)");
+      stripes(ctx, W, H, M * 2.2, Math.max(1.5, M * 0.1), "rgba(209, 16, 47, 0.55)", 0.55);
+    },
+  },
+  moonshot: {
+    base: ["#f4f7fb", "#8a96a8", "#e8edf4", "#5d6878", "#d3dae4"],
+    outer: "#ff3fd2",
+    inner: "#f5e112",
+    pattern: (ctx, W, H, M) => {
+      ctx.fillStyle = "rgba(34, 211, 238, 0.7)";
+      for (let x = M * 0.45; x < W; x += M * 0.45) ctx.fillRect(x, 0, Math.max(1, M * 0.05), H);
+      for (let y = M * 0.45; y < H; y += M * 0.45) ctx.fillRect(0, y, W, Math.max(1, M * 0.05));
+    },
+  },
+  "golden-arrow": {
+    base: ["#5a1f78", "#2a0a3e", "#4a1868"],
+    outer: "#e5b53a",
+    inner: "#e5b53a",
+    pattern: (ctx, W, H, M) => {
+      stripes(ctx, W, H, M * 0.5, Math.max(1, M * 0.06), "rgba(229, 181, 58, 0.6)", 1);
+      stripes(ctx, W, H, M * 0.5, Math.max(1, M * 0.06), "rgba(229, 181, 58, 0.6)", -1);
+    },
+  },
+  "tsuba-guard": {
+    base: ["#efe4cc", "#e6d8ba", "#efe4cc"],
+    outer: "#0d0d0f",
+    inner: "#ff7a1a",
+    pattern: (ctx, W, H, M) => {
+      stripes(ctx, W, H, M * 0.9, Math.max(2, M * 0.2), "#111114", 1);
+      stripes(ctx, W, H, M * 0.9, Math.max(2, M * 0.2), "#111114", -1);
+    },
+  },
+  "five-ribbons": {
+    base: ["#ffe4ec", "#f5bfd0", "#ffe9f0"],
+    outer: "#e8638f",
+    inner: "#c98a7a",
+    pattern: (ctx, W, H, M) => dots(ctx, W, H, M * 0.3, Math.max(0.8, M * 0.05), "rgba(255, 255, 255, 0.9)"),
+  },
+  "frost-glam": {
+    base: ["#eaf7ff", "#b8dcf5", "#f2f9ff", "#cfe6fb"],
+    outer: "#ff2e8a",
+    inner: "#a58bf0",
+    pattern: (ctx, W, H, M) => dots(ctx, W, H, M * 0.42, Math.max(1, M * 0.08), "rgba(255, 255, 255, 0.95)"),
+  },
+};
+
 function paintBand(frame: FrameLookId, { cw, ch, m, r, ra }: Layout): HTMLCanvasElement | null {
   if (frame === "none") return null;
   const scale = 1400 / Math.max(cw, ch);
@@ -386,6 +595,7 @@ function paintBand(frame: FrameLookId, { cw, ch, m, r, ra }: Layout): HTMLCanvas
       ctx.restore();
     }
   };
+  const illustrated = BANDS[frame];
 
   if (frame === "gilt") {
     const gold = ctx.createLinearGradient(0, 0, W, H);
@@ -434,6 +644,47 @@ function paintBand(frame: FrameLookId, { cw, ch, m, r, ra }: Layout): HTMLCanvas
     ctx.fillRect(0, 0, W, H);
     line(M * 0.24, Math.max(1.5, M * 0.07), "#d9b25e", r * scale - M * 0.24);
     line(art.x - M * 0.06, Math.max(2, M * 0.1), "#c99a3f", art.r + M * 0.06);
+  } else if (frame === "spider-lily") {
+    // Black lacquer with red veins pooling at the bloom corners, a bone-thread seam and a red inner lip.
+    const lacquer = ctx.createLinearGradient(0, 0, W, H);
+    lacquer.addColorStop(0, "#241014");
+    lacquer.addColorStop(0.45, "#070405");
+    lacquer.addColorStop(1, "#1a0a0d");
+    ctx.fillStyle = lacquer;
+    ctx.fillRect(0, 0, W, H);
+    for (const [x, y] of [[0, 0], [W, H]]) {
+      const pool = ctx.createRadialGradient(x, y, 0, x, y, Math.max(W, H) * 0.45);
+      pool.addColorStop(0, "rgba(200, 16, 46, 0.6)");
+      pool.addColorStop(1, "rgba(200, 16, 46, 0)");
+      ctx.fillStyle = pool;
+      ctx.fillRect(0, 0, W, H);
+    }
+    ctx.strokeStyle = "rgba(160, 12, 36, 0.28)";
+    ctx.lineWidth = Math.max(1, M * 0.05);
+    for (let x = -H; x < W; x += M * 1.6) {
+      ctx.beginPath();
+      ctx.moveTo(x, H);
+      ctx.lineTo(x + H * 0.47, 0);
+      ctx.stroke();
+    }
+    ctx.save();
+    ctx.setLineDash([M * 0.32, M * 0.22]);
+    ctx.lineCap = "round";
+    line(M / 2, Math.max(1.5, M * 0.08), "rgba(239, 230, 220, 0.8)", r * scale - M / 2);
+    ctx.restore();
+    line(art.x - M * 0.05, Math.max(2, M * 0.08), "#c8102e", art.r + M * 0.05);
+    line(Math.max(1, M * 0.03), Math.max(1.5, M * 0.06), "rgba(0, 0, 0, 0.7)", r * scale);
+  } else if (illustrated) {
+    // Illustrated frames: a base gradient, the frame's pattern, then the outer and inner lines (motifs are 3D ornaments).
+    const band = illustrated;
+    const base = ctx.createLinearGradient(0, 0, W * 0.4, H);
+    band.base.forEach((colour, i) => base.addColorStop(i / (band.base.length - 1), colour));
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, W, H);
+    band.pattern?.(ctx, W, H, M);
+    const width = Math.max(2, M * 0.16);
+    line(width / 2, width, band.outer, r * scale - width / 2);
+    line(art.x - width / 2, width, band.inner, art.r + width / 2);
   } else if (frame === "holo") {
     const colors = ["#ff9fd6", "#ffd29f", "#fff6a3", "#a6ffd0", "#9fe1ff", "#b9a6ff", "#ff9fd6"];
     const holo = ctx.createConicGradient(-Math.PI / 3, W / 2, H / 2);

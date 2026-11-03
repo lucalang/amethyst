@@ -49,18 +49,50 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
-    id: "2026-11-02-banners-cover-fan-collection-frames",
-    date: "2026-11-02",
-    title: "Better Banners, Cover Fan & Collection Frames",
-    intro: "Artwork gets more room across Home, collections and entries, with clearer banners, a larger cover fan and per-entry frames you can change from an entry or its artwork viewer.",
-    icon: "image",
+    id: "2026-11-03-themes-frames-and-polish",
+    date: "2026-11-03",
+    title: "New Themes, Frames & a Polished Feel",
+    intro: "Ten new themes with matching illustrated frames, a theme for each workspace, frames on your collection covers, bigger banners and a tactile feel across the whole app.",
+    icon: "palette",
     highlights: [
-      { kind: "improved", feature: "Banners", text: "Collection and entry banners show more of the artwork, with readable titles and actions and accents that carry through Home previews." },
-      { kind: "improved", feature: "Home cover fan", text: "Larger covers lift with calmer hover and keyboard-focus feedback, with responsive layouts and reduced-motion support." },
-      { kind: "new", feature: "Collection frames", text: "Frames explicitly chosen for an entry now appear on its collection card. The account default stays separate and applies in Showcase." },
-      { kind: "improved", feature: "Frame controls", text: "Change an entry’s frame from its three-dot menu or the artwork viewer, rather than during creation or in Edit details." },
+      { kind: "new", feature: "Ten themes & frames", text: "Ten new light and dark themes, each with a matching illustrated frame in the Arcade shop for 300–500 coins, sculpted in 3D in Showcase." },
+      { kind: "new", feature: "Workspace themes", text: "Give one entry its own theme while the rest of Amethyst keeps your app theme." },
+      { kind: "new", feature: "Collection frames", text: "A frame you choose for an entry now surrounds its collection card, and the frame picker shows every option as a picture." },
+      { kind: "improved", feature: "Banners & cover fan", text: "Collection and entry banners show more of the artwork, and Home's cover fan is larger with calmer hover feedback." },
+      { kind: "improved", feature: "Tactile feedback", text: "Buttons, cards, filter chips, shop items, game controls and To Do rows lift on hover and press in smoothly, honoring reduced motion." },
     ],
     details: {
+      new: [
+        {
+          title: "Ten new themes",
+          body: "Each theme has its own colors, heading font and a quiet background flourish, such as ripples and a koi, ruled diary lines, a music staff, neon splashes, scanlines, Art Deco rays, a butterfly or falling snowflakes.",
+          points: ["Light: Koi Bridge, Petal Diary, Spring Sonata, Quintet Bloom and Snow Glam.", "Dark: Higanbana, Sabbath Neon, Chrome Runner, Menacing Gold and Hell Butterfly."],
+          where: "Settings → Themes",
+          link: { href: "/settings/themes", label: "Open Themes" },
+        },
+        {
+          title: "Ten matching frames",
+          body: "Every theme has a frame drawn to match it, with patterned bands and ornaments on the corners and edges. Buy them with Arcade coins, then use one as your default frame or on single entries.",
+          points: ["300 coins: Koi rail, Pressed diary and Frost glam.", "400 coins: Sonata keys, Five ribbons, Spider lily and Sword guard.", "500 coins: Demon wing, Moonshot and Golden arrow."],
+          where: "Arcade → Shop",
+          link: { href: "/arcade/shop", label: "Open the Arcade shop" },
+        },
+        {
+          title: "A theme for each workspace",
+          body: "Open More entry actions → Workspace theme to change the entry header, explorer, notes, checklists and workspace controls. Use app theme removes the override. Your navigation, other entries, editor preferences and custom heading colors stay unchanged.",
+          where: "Entry → More entry actions → Workspace theme",
+          points: ["Search themes by name or description. A wider entry actions menu keeps its options readable."],
+        },
+        {
+          title: "Your chosen frames on collection covers",
+          body: "An entry’s explicitly selected frame now surrounds its cover in the normal collection view, including its decorative ornaments. Collection cards do not inherit the account-wide Showcase frame.",
+          points: [
+            "An explicit frame choice appears on the collection card and in Showcase.",
+            "Following the account default leaves the collection card unframed while Showcase uses that default.",
+            "Choosing No frame explicitly removes the frame in both views.",
+          ],
+        },
+      ],
       improved: [
         {
           title: "Clearer banners and a larger Home cover fan",
@@ -82,33 +114,11 @@ export const CHANGELOG: readonly Release[] = [
           ],
           where: "Entry actions and the artwork viewer",
         },
-      ],
-      new: [
         {
-          title: "Your chosen frames on collection covers",
-          body: "An entry’s explicitly selected frame now surrounds its cover in the normal collection view, including its decorative ornaments. Collection cards do not inherit the account-wide Showcase frame.",
-          points: [
-            "An explicit frame choice appears on the collection card and in Showcase.",
-            "Following the account default leaves the collection card unframed while Showcase uses that default.",
-            "Choosing No frame explicitly removes the frame in both views.",
-          ],
+          title: "See frames before you pick",
+          body: "The frame picker for a single entry shows a tile for each frame you own, drawn around that entry's cover, including your default frame. It works the same in the entry menu and in the artwork viewer.",
+          where: "Entry → More entry actions → Change artwork frame, or the frame button in the artwork viewer",
         },
-      ],
-    },
-  },
-  {
-    id: "2026-11-02-interaction-polish",
-    date: "2026-11-02",
-    title: "Buttons, Cards & Tactile Feedback",
-    intro: "Buttons, filter chips, customization cards and workspace controls across Amethyst now respond with clearer hover lift, tactile press feedback and visible active states.",
-    icon: "sparkles",
-    highlights: [
-      { kind: "improved", feature: "Buttons & navigation", text: "Primary, outline and secondary buttons lift gently on hover and compress on press; Arcade, game and Home section header actions now wear framed outline buttons instead of bare text." },
-      { kind: "improved", feature: "Customization & Profile", text: "Avatar decorations, badges, titles, theme cards, frame cards and appearance options lift on hover, press in smoothly and stay readable on both dark and light themes." },
-      { kind: "improved", feature: "Shops, To Do & Catalogs", text: "Filter chips, shop preview cards, Sudoku number keys, Snake setup tiles, Coin Slots bet controls and To Do rows all give crisp hover, focus and press feedback while honoring reduced motion." },
-    ],
-    details: {
-      improved: [
         {
           title: "Framed header actions and smoother buttons",
           body: "Shared buttons now combine a slight hover scale and lift with a springy icon response and a crisp press compression, while keeping destructive actions restrained.",

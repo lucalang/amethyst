@@ -3,6 +3,7 @@
 import { useId, type CSSProperties, type ReactNode } from "react";
 import type { FrameLookId } from "@/lib/frames";
 import { cn } from "@/lib/utils";
+import { FRAME_MOTIFS, type MotifPiece, type MotifPlace } from "./frame-motifs";
 
 /**
  * Artwork with an optional decorative frame drawn around (never over) its edges.
@@ -53,8 +54,61 @@ function FrameDecoration({ frame }: { frame: Exclude<FrameLookId, "none"> }) {
       {frame === "obsidian-relic" ? <ObsidianRelicOrnaments id={id} /> : null}
       {frame === "celestial-prism" ? <CelestialPrismOrnaments /> : null}
       {frame === "seraph-wings" ? <SeraphOrnaments id={id} /> : null}
+      {frame === "spider-lily" ? <SpiderLilyOrnaments id={id} /> : null}
+      {FRAME_MOTIFS[frame] ? <MotifOrnaments id={id} pieces={FRAME_MOTIFS[frame]} /> : null}
     </span>
   );
+}
+
+const unit = (value: number) => `calc(var(--fw) * ${value / 5})`;
+
+/** Places a piece so its origin lands on the card's outer corner (mirrored per corner) or edge centre. */
+function motifStyle(piece: MotifPiece, place: MotifPlace): CSSProperties {
+  const [w, h] = piece.box;
+  const [ox, oy] = piece.origin;
+  const style: CSSProperties = { width: unit(w), height: unit(h) };
+  const x = place === "tr" || place === "br" ? -1 : 1;
+  const y = place === "bl" || place === "br" ? -1 : 1;
+  if (place === "top" || place === "bottom") {
+    style.left = `calc(50% - ${unit(ox)})`;
+    style.top = place === "top" ? unit(-oy) : `calc(100% - ${unit(oy)})`;
+    return style;
+  }
+  style[x === 1 ? "left" : "right"] = unit(-ox);
+  style[y === 1 ? "top" : "bottom"] = unit(-oy);
+  if (x !== 1 || y !== 1) style.scale = `${x} ${y}`;
+  return style;
+}
+
+function MotifOrnaments({ id, pieces }: { id: string; pieces: readonly MotifPiece[] }) {
+  return pieces.flatMap((piece, p) => {
+    const [w, h] = piece.box;
+    const art = piece.layers.map((layer, l) => {
+      const gradient = typeof layer.paint === "string" ? null : `${id}-m${p}-${l}`;
+      const paint = gradient ? `url(#${gradient})` : (layer.paint as string);
+      const shape = layer.line ? { fill: "none", stroke: paint, strokeWidth: layer.line, strokeLinecap: "round" as const, strokeLinejoin: "round" as const } : { fill: paint };
+      return (
+        <g key={l}>
+          {gradient ? (
+            <defs>
+              <linearGradient id={gradient} x1="0" y1="0" x2={w} y2={h} gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor={layer.paint[0]} />
+                <stop offset="1" stopColor={layer.paint[1]} />
+              </linearGradient>
+            </defs>
+          ) : null}
+          {(layer.copies ?? [undefined]).map((transform, c) => (
+            <path key={c} d={layer.d} transform={transform} {...shape} />
+          ))}
+        </g>
+      );
+    });
+    return piece.at.map((place) => (
+      <svg key={`${p}-${place}`} className="art-frame-motif" viewBox={`0 0 ${w} ${h}`} style={motifStyle(piece, place)} focusable="false">
+        {art}
+      </svg>
+    ));
+  });
 }
 
 const CORNERS = ["tl", "tr", "bl", "br"] as const;
@@ -186,6 +240,73 @@ function CelestialPrismOrnaments() {
           <circle cx="8" cy="8" r="5.5" stroke="#a5f3fc" strokeOpacity="0.7" strokeWidth="0.9" />
           <path d="M8 0.5 L9.4 6.6 L15.5 8 L9.4 9.4 L8 15.5 L6.6 9.4 L0.5 8 L6.6 6.6 Z" fill="#e0f2fe" />
           <path d="M8 8 L26 3 M8 8 L3 26" stroke="#c4b5fd" strokeOpacity="0.6" strokeWidth="0.8" />
+        </svg>
+      ))}
+    </>
+  );
+}
+
+/** Lily stamens from the bloom centre (8.7, 8.7): three sweep along the top rail, three down the side, one outward. */
+const LILY_STAMENS = [
+  "C18 1 30 3 46 7.4",
+  "C17 4.5 26 6.5 36 10.6",
+  "C16 -2 24 -4 31 1.2",
+  "C1 18 3 30 7.4 46",
+  "C4.5 17 6.5 26 10.6 36",
+  "C-2 16 -4 24 1.2 31",
+  "C5 3 1 0 -3 -3",
+];
+const stamenEnd = (path: string) => path.split(" ").slice(-2).map(Number);
+
+function SpiderLilyOrnaments({ id }: { id: string }) {
+  const petal = `${id}-lily-petal`;
+  return (
+    <>
+      <svg className="art-frame-defs" width="0" height="0" focusable="false">
+        <defs>
+          <linearGradient id={petal} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#6e0614" />
+            <stop offset="0.45" stopColor="#d0182f" />
+            <stop offset="1" stopColor="#ff5a63" />
+          </linearGradient>
+        </defs>
+      </svg>
+      {(["tl", "br"] as const).map((corner) => (
+        <svg key={corner} className="art-frame-bloom" data-corner={corner} viewBox="0 0 60 60" focusable="false">
+          {LILY_STAMENS.map((path) => {
+            const [x, y] = stamenEnd(path);
+            return (
+              <g key={path}>
+                <path d={`M8.7 8.7${path}`} fill="none" stroke="#e8283a" strokeWidth="0.55" strokeLinecap="round" />
+                <ellipse cx={x} cy={y} rx="1.1" ry="0.6" fill="#f6d7c3" />
+              </g>
+            );
+          })}
+          {[15, 75, 135, 195, 255, 315].map((angle) => (
+            <path
+              key={angle}
+              d="M0 0C3 2.2 7.5 1.9 10.4 0.5Q11.6-.2 10.6-1.1C11 0 9 0 7.5-.9C5-2 2.5-1.6 0 0Z"
+              transform={`translate(8.7 8.7) rotate(${angle}) scale(1.55)`}
+              fill={`url(#${petal})`}
+              stroke="#3b0209"
+              strokeOpacity="0.5"
+              strokeWidth="0.3"
+            />
+          ))}
+          <circle cx="8.7" cy="8.7" r="1.9" fill="#4a0410" />
+        </svg>
+      ))}
+      {(["tr", "bl"] as const).map((corner) => (
+        <svg key={corner} className="art-frame-stitch" data-corner={corner} viewBox="0 0 40 40" fill="none" strokeLinecap="round" focusable="false">
+          {[10, 16, 22].flatMap((at) => [
+            [at, 2.65],
+            [2.65, at],
+          ]).map(([x, y]) => (
+            <g key={`${x}-${y}`}>
+              <path d={`M${x - 2.2} ${y - 2.2}L${x + 2.2} ${y + 2.2}M${x + 2.2} ${y - 2.2}L${x - 2.2} ${y + 2.2}`} stroke="#000" strokeOpacity="0.6" strokeWidth="1.6" />
+              <path d={`M${x - 2.2} ${y - 2.2}L${x + 2.2} ${y + 2.2}M${x + 2.2} ${y - 2.2}L${x - 2.2} ${y + 2.2}`} stroke="#efe6dc" strokeWidth="0.9" />
+            </g>
+          ))}
         </svg>
       ))}
     </>

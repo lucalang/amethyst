@@ -6,6 +6,11 @@ import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { AlertTriangle, ChevronRight, FilePlus2, FileText, FolderInput, FolderPlus, ListPlus, Loader2, MoreHorizontal, PanelLeft, PanelLeftOpen, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/media/empty-state";
+import { useSettings } from "@/components/layout/settings-context";
+import { PortalContainer } from "@/components/ui/portal-container";
+import { effectiveHeadingColors } from "@/lib/appearance";
+import { THEME_IDS, type ThemeId } from "@/lib/themes";
+import type { CSSProperties } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,8 +76,14 @@ export function EntryWorkspace({
 }) {
   const [entry, setEntry] = useState(initialEntry);
   const [nodes, setNodes] = useState(initialNodes);
+  const settings = useSettings();
+  const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
+  const theme = THEME_IDS.includes(entry.workspace_theme as ThemeId) ? entry.workspace_theme as ThemeId : settings.theme;
+  const headings = effectiveHeadingColors({ ...settings, theme });
+  const style = Object.fromEntries(Object.entries(headings).map(([level, color]) => [`--md-${level}`, color])) as CSSProperties;
   return (
-    <div>
+    <div ref={setPortalHost} className="entry-workspace" data-theme-preview={theme} data-workspace-theme={entry.workspace_theme ?? undefined} style={style}>
+      <PortalContainer value={portalHost}>
       <EntryHeader
         collection={collection}
         collections={collections}
@@ -84,6 +95,7 @@ export function EntryWorkspace({
         onEntryChange={setEntry}
       />
       <Workspace entry={entry} nodes={nodes} setNodes={setNodes} initialFile={initialFile} />
+      </PortalContainer>
     </div>
   );
 }

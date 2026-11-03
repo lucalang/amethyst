@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { FolderInput, Frame, Loader2, MoreHorizontal, Pencil, Pin, PinOff, Tag, Trash2 } from "lucide-react";
+import { FolderInput, Frame, Loader2, MoreHorizontal, Palette, Pencil, Pin, PinOff, Tag, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CategorySelect } from "@/components/categories/category-picker";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
@@ -40,6 +40,7 @@ import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progres
 import type { Tables } from "@/lib/supabase/database.types";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "./client-utils";
+import { WorkspaceThemeDialog } from "./workspace-theme-dialog";
 
 type Entry = Tables<"entries">;
 
@@ -70,6 +71,7 @@ export function EntryHeader({
   const { artworkFrame } = useSettings();
   const [editOpen, setEditOpen] = useState(false);
   const [frameOpen, setFrameOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveTarget, setMoveTarget] = useState("");
@@ -180,12 +182,15 @@ export function EntryHeader({
                   <MoreHorizontal aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-64 max-w-[calc(100vw-2rem)]">
                 <DropdownMenuItem disabled={pin.pending} onSelect={() => void pin.toggle()}>
                   {pin.pinned ? <PinOff aria-hidden /> : <Pin aria-hidden />} {pin.pinned ? "Unpin from Home" : "Pin to Home"}
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => setFrameOpen(true)}>
                   <Frame aria-hidden /> Change artwork frame
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setThemeOpen(true)}>
+                  <Palette aria-hidden /> Workspace theme
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => { setMoveTarget(""); setMoveError(null); setMoveOpen(true); }}>
                   <FolderInput aria-hidden /> Move to collection
@@ -231,6 +236,8 @@ export function EntryHeader({
           router.refresh();
         }}
       />
+
+      <WorkspaceThemeDialog open={themeOpen} onOpenChange={setThemeOpen} entry={entry} onEntryChange={onEntryChange} />
 
       <ChangeFrameDialog
         open={frameOpen}

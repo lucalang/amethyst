@@ -1,5 +1,6 @@
 import {
   BufferGeometry,
+  Color,
   CubicBezierCurve3,
   CurvePath,
   ExtrudeGeometry,
@@ -16,9 +17,12 @@ import {
   Vector3,
   type Curve,
   type Material,
+  type MeshPhysicalMaterialParameters,
 } from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import type { FrameLookId } from "@/lib/frames";
+import { FRAME_MOTIFS, type MotifFinish, type MotifLayer, type MotifPiece, type MotifPlace } from "@/components/media/frame-motifs";
 
 /** Card measurements an ornament builds against: band size, band width, art short side and the band's top surface. */
 export type OrnamentBox = { bw: number; bh: number; m: number; s: number; z: number };
@@ -251,8 +255,192 @@ function seraph({ bw, bh, m, s, z }: OrnamentBox, track: Track) {
   return group;
 }
 
+/** A narrow wavy petal along +x that arches up off the band and dips at its recurved tip. */
+function lilyPetal(length: number, width: number, thickness: number) {
+  const outline = new Shape();
+  outline.moveTo(0, 0);
+  outline.bezierCurveTo(length * 0.28, width * 0.85, length * 0.72, width * 0.7, length, width * 0.12);
+  outline.quadraticCurveTo(length * 1.05, -width * 0.12, length * 0.9, -width * 0.3);
+  outline.bezierCurveTo(length * 0.62, -width * 0.62, length * 0.26, -width * 0.66, 0, 0);
+  const solid = new ExtrudeGeometry(outline, { depth: thickness, bevelEnabled: false, curveSegments: 14 });
+  solid.deleteAttribute("uv");
+  solid.deleteAttribute("normal");
+  const petal = mergeVertices(solid);
+  solid.dispose();
+  const position = petal.attributes.position;
+  for (let i = 0; i < position.count; i++) {
+    const t = Math.min(1, Math.max(0, position.getX(i) / length));
+    position.setY(i, position.getY(i) + width * 0.22 * Math.sin(t * Math.PI * 3));
+    position.setZ(i, position.getZ(i) + length * (0.62 * t - 0.6 * t * t));
+  }
+  petal.computeVertexNormals();
+  return petal;
+}
+
+/**
+ * Spider lily: two red blooms burst from opposite corners, their long stamens sweeping along both rails,
+ * and bone-thread cross stitches mend the other two corners like a sewn mask.
+ */
+function spiderLily({ bw, bh, m, s, z }: OrnamentBox, track: Track) {
+  const group = new Group();
+  const petalMaterial = track(
+    new MeshPhysicalMaterial({ color: 0xc8102e, roughness: 0.38, sheen: 1, sheenColor: 0xff7a80, sheenRoughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.2, emissive: 0x4a0010, emissiveIntensity: 0.45 }),
+  );
+  const stamenMaterial = track(new MeshPhysicalMaterial({ color: 0xe8283a, roughness: 0.35, clearcoat: 0.6, emissive: 0x5a0012, emissiveIntensity: 0.5 }));
+  const bone = track(new MeshPhysicalMaterial({ color: 0xefe6dc, roughness: 0.55, sheen: 0.6, sheenColor: 0xffffff }));
+
+  // The bloom is built at the top-left corner: the top rail runs along +x, the side rail along -y.
+  const rail = -m * 0.15;
+  const petals: BufferGeometry[] = [];
+  for (const degrees of [-15, -75, -135, 165, 105, 45]) {
+    petals.push(lilyPetal(s * 0.13, s * 0.032, s * 0.003).rotateZ((degrees * Math.PI) / 180).translate(0, 0, s * 0.004));
+  }
+  const sweeps: Pt3[][] = [
+    [[0, 0, 0.012], [0.06, 0.03, 0.034], [0.18, 0.012, 0.028], [0.32, 0, 0.008]],
+    [[0, 0, 0.012], [0.05, 0.01, 0.026], [0.14, -0.006, 0.022], [0.24, -0.004, 0.008]],
+    [[0, 0, 0.012], [0.04, 0.05, 0.03], [0.12, 0.06, 0.022], [0.17, 0.03, 0.01]],
+  ];
+  const stamen = (points: Pt3[], dx = 0, dy = 0) =>
+    new CubicBezierCurve3(...(points.map(([x, y, h]) => new Vector3(x * s + dx, y * s + dy, h * s)) as [Vector3, Vector3, Vector3, Vector3]));
+  const sideways = (points: Pt3[]): Pt3[] => points.map(([x, y, h]) => [-y, -x, h]);
+  const curves = [
+    ...sweeps.map((points) => stamen(points, 0, rail)),
+    ...sweeps.map((points) => stamen(sideways(points), -rail, 0)),
+    stamen([[0, 0, 0.012], [-0.02, 0.025, 0.03], [-0.04, 0.04, 0.026], [-0.06, 0.055, 0.016]]),
+  ];
+  const filaments = curves.flatMap((curve) => wire(curve, s * 0.0022, 28, [0, 0]));
+  const anthers = curves.map((curve) => {
+    const tip = curve.getPoint(1);
+    return new SphereGeometry(s * 0.0042, 10, 8).scale(1.6, 1, 1).translate(tip.x, tip.y, tip.z);
+  });
+  const bloom = {
+    petals: track(merge(petals)),
+    filaments: track(merge(filaments)),
+    anthers: track(merge([...anthers, new SphereGeometry(s * 0.008, 14, 10).translate(0, 0, s * 0.01)])),
+  };
+  for (const [x, y, turn] of [[-bw / 2 + m * 0.35, bh / 2 - m * 0.35, 0], [bw / 2 - m * 0.35, -bh / 2 + m * 0.35, Math.PI]]) {
+    for (const [geometry, material] of [[bloom.petals, petalMaterial], [bloom.filaments, stamenMaterial], [bloom.anthers, bone]] as const) {
+      const mesh = new Mesh(geometry, material);
+      mesh.position.set(x, y, z);
+      mesh.rotation.z = turn;
+      group.add(mesh);
+    }
+  }
+
+  // Cross stitches over the top-right corner's rails; the bottom-left set is the same, turned half a circle.
+  const half = m * 0.42;
+  const stitches = track(
+    merge(
+      [1.9, 3.0, 4.15].flatMap((d) =>
+        [[bw / 2 - d * m, bh / 2 - m / 2], [bw / 2 - m / 2, bh / 2 - d * m]].flatMap(([cx, cy]) =>
+          [[-1, -1, 1, 1], [1, -1, -1, 1]].flatMap(([ax, ay, bx, by], i) =>
+            wire(
+              new CubicBezierCurve3(
+                new Vector3(cx + ax * half, cy + ay * half, z),
+                new Vector3(cx + ax * half * 0.4, cy + ay * half * 0.4, z + s * (0.004 + i * 0.002)),
+                new Vector3(cx + bx * half * 0.4, cy + by * half * 0.4, z + s * (0.004 + i * 0.002)),
+                new Vector3(cx + bx * half, cy + by * half, z),
+              ),
+              s * 0.0024,
+              8,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  for (const turn of [0, Math.PI]) {
+    const mesh = new Mesh(stitches, bone);
+    mesh.rotation.z = turn;
+    group.add(mesh);
+  }
+  return group;
+}
+
+/** Sculpted ornaments per frame (frames without an entry are just the band). */
+const FINISHES: Record<MotifFinish, MeshPhysicalMaterialParameters & { emissiveIntensity: number }> = {
+  metal: { metalness: 1, roughness: 0.24, clearcoat: 0.5, clearcoatRoughness: 0.2, emissiveIntensity: 0.2 },
+  gloss: { metalness: 0.05, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08, emissiveIntensity: 0.14 },
+  satin: { metalness: 0, roughness: 0.55, clearcoat: 0.3, clearcoatRoughness: 0.3, emissiveIntensity: 0.12 },
+  gem: { metalness: 0.1, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.03, iridescence: 0.4, iridescenceIOR: 1.6, emissiveIntensity: 0.3 },
+  glow: { metalness: 0, roughness: 0.4, emissiveIntensity: 0.9 },
+};
+const PLACES: Record<MotifPlace, [x: number, y: number]> = { tl: [-1, 1], tr: [1, 1], bl: [-1, -1], br: [1, -1], top: [0, 1], bottom: [0, -1] };
+const svg = new SVGLoader();
+
+/** One motif layer as geometry in band units, origin at the piece's anchor, with the paint as vertex colours. */
+function motifLayer(layer: MotifLayer, piece: MotifPiece): BufferGeometry | null {
+  const [ox, oy] = piece.origin;
+  const [w, h] = piece.box;
+  const paths = (layer.copies ?? [null]).map((transform) => `<path d="${layer.d}"${transform ? ` transform="${transform}"` : ""}/>`).join("");
+  const data = svg.parse(`<svg xmlns="http://www.w3.org/2000/svg"><g transform="translate(${-ox} ${oy}) scale(1 -1)">${paths}</g></svg>`);
+  const parts: BufferGeometry[] = [];
+  for (const path of data.paths) {
+    if (layer.line) {
+      const radius = layer.line / 2;
+      for (const sub of path.subPaths) {
+        const curve = new CurvePath<Vector3>();
+        let last: Vector3 | null = null;
+        for (const point of sub.getPoints(12)) {
+          const next = new Vector3(point.x, point.y, radius);
+          if (last && last.distanceTo(next) < 1e-3) continue;
+          if (last) curve.add(new LineCurve3(last, next));
+          last = next;
+        }
+        if (curve.curves.length) parts.push(...wire(curve, radius, Math.min(400, curve.curves.length * 3), [1, 1]));
+      }
+    } else {
+      const depth = layer.depth ?? 0.4;
+      const bevel = Math.min(0.15, depth * 0.35);
+      for (const shape of SVGLoader.createShapes(path)) {
+        parts.push(new ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 10 }).translate(0, 0, bevel));
+      }
+    }
+  }
+  if (!parts.length) return null;
+  const geometry = merge(parts);
+  const [a, b] = typeof layer.paint === "string" ? [layer.paint, layer.paint] : layer.paint;
+  const from = new Color(a);
+  const to = new Color(b);
+  const position = geometry.getAttribute("position");
+  const colours = new Float32Array(position.count * 3);
+  const colour = new Color();
+  for (let i = 0; i < position.count; i++) {
+    const t = Math.min(1, Math.max(0, ((position.getX(i) + ox) * w + (oy - position.getY(i)) * h) / (w * w + h * h)));
+    colour.copy(from).lerp(to, t).toArray(colours, i * 3);
+  }
+  geometry.setAttribute("color", new Float32BufferAttribute(colours, 3));
+  return geometry;
+}
+
+/** Extrudes a frame's shared SVG motifs (see frame-motifs.ts) onto the band, one unit being a fifth of its width. */
+function motifs(pieces: readonly MotifPiece[], { bw, bh, m, z }: OrnamentBox, track: Track) {
+  const group = new Group();
+  const u = m / 5;
+  for (const piece of pieces) {
+    for (const layer of piece.layers) {
+      const built = motifLayer(layer, piece);
+      if (!built) continue;
+      const geometry = track(built.scale(u, u, u).translate(0, 0, z + layer.lift * u));
+      const { emissiveIntensity, ...finish } = FINISHES[layer.finish];
+      const [a, b] = typeof layer.paint === "string" ? [layer.paint, layer.paint] : layer.paint;
+      const material = track(new MeshPhysicalMaterial({ ...finish, vertexColors: true, emissive: new Color(a).lerp(new Color(b), 0.5), emissiveIntensity }));
+      for (const place of piece.at) {
+        const [x, y] = PLACES[place];
+        const mesh = new Mesh(geometry, material);
+        mesh.position.set((x * bw) / 2, (y * bh) / 2, 0);
+        if (x) mesh.scale.set(-x, y, 1);
+        group.add(mesh);
+      }
+    }
+  }
+  return group;
+}
+
 /** Sculpted ornaments per frame (frames without an entry are just the band). */
 export const ORNAMENTS: Partial<Record<FrameLookId, (box: OrnamentBox, track: Track) => Group>> = {
   amethyst,
   "seraph-wings": seraph,
+  "spider-lily": spiderLily,
+  ...Object.fromEntries(Object.entries(FRAME_MOTIFS).map(([frame, pieces]) => [frame, (box: OrnamentBox, track: Track) => motifs(pieces, box, track)])),
 };
