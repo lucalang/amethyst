@@ -32,6 +32,7 @@ import {
   AMETHYST,
   clamp01,
   easeBack,
+  easeInOut,
   easeOut,
   GOLD,
   type Kit,
@@ -220,6 +221,7 @@ export const opening: PieceBuilder = (kit) => {
     key: new Color(AMETHYST),
     rim: new Color(ROSE),
     ownEntrance: true,
+    ownExit: true,
     frame: {
       wide: { camera: [-2.3, 0.2, 8.5], look: [-1.2, -0.05, 0], drift: [0.3, -0.1, -1.4] },
       tall: { camera: [0, -0.95, 9.6], look: [0, -1.7, 0], drift: [0, 0.1, -1.3] },
@@ -412,7 +414,10 @@ export const todo: PieceBuilder = (kit) => {
     strike.geometry.translate((width + 0.1) / 2, 0, 0);
     row.add(ring, fill, tick, bar, strike);
     board.add(row);
-    return { row, fill, tick, bar, strike };
+    const sparkle = glowSprite(kit, "rgba(255,226,160,0.95)", 0.9);
+    sparkle.position.set(-1.15, 0, 0.12);
+    row.add(sparkle);
+    return { row, fill, tick, bar, strike, sparkle };
   });
   // Important star, due-date chip and step dots on a few rows.
   const star = new Mesh(keep(new OctahedronGeometry(0.11, 0)), keep(new MeshBasicMaterial({ color: GOLD })));
@@ -462,7 +467,8 @@ export const todo: PieceBuilder = (kit) => {
         group.scale.setScalar(1);
       }
     },
-    update({ t, hold, clock, idle }) {
+    update({ t, hold, clock, energy, layout }) {
+      const leave = Math.max(0, t);
       rows.forEach((item, k) => {
         const enter = easeOut(smooth(-0.7 + k * 0.08, -0.15 + k * 0.08, t));
         item.row.scale.setScalar(Math.max(0.001, enter));
@@ -472,10 +478,17 @@ export const todo: PieceBuilder = (kit) => {
         item.tick.visible = done > 0.4;
         item.bar.material.opacity = 1 - done * 0.6;
         item.strike.scale.x = Math.max(0.001, done);
-        item.row.position.z = 0.12 + done * 0.06 + (idle ? Math.sin(clock * 0.9 + k) * 0.02 : 0);
+        const burst = smooth(thresholds[k] + 0.03, thresholds[k] + 0.2, hold);
+        item.sparkle.material.opacity = Math.sin(burst * Math.PI) * 0.9;
+        item.sparkle.scale.setScalar(0.4 + burst * 1.4);
+        item.row.position.z = 0.12 + done * 0.06 + Math.sin(clock * 0.9 + k) * 0.02 * energy;
       });
-      star.rotation.y = idle ? clock * 1.2 : hold * 6;
-      sunGlow.material.opacity = 0.7 + (idle ? Math.sin(clock * 1.4) * 0.15 : 0);
+      const finale = smooth(0.86, 1, hold);
+      board.rotation.x = -easeInOut(smooth(0.1, 0.9, leave)) * 0.4;
+      star.rotation.y = clock * 1.2 + hold * 6;
+      sunGlow.material.opacity = 0.7 + Math.sin(clock * 1.4) * 0.15 * energy + Math.sin(finale * Math.PI) * 0.3;
+      sunGlow.scale.setScalar(1.4 * (1 + Math.sin(finale * Math.PI) * 0.9 + finale * 0.15));
+      lists.position.y = (layout === "tall" ? 1.2 : 0.5) + Math.sin(clock * 0.5) * 0.06 * energy;
     },
   };
 };

@@ -138,6 +138,7 @@ export const arcade: PieceBuilder = (kit) => {
   const knob = keep(new SphereGeometry(0.05, 12, 8));
   const stick = keep(new CylinderGeometry(0.015, 0.015, 0.14, 6));
   const edges = keep(new EdgesGeometry(body));
+  const screens: MeshBasicMaterial[] = [];
   const cabinets = SCREENS.map((draw, i) => {
     const cabinet = new Group();
     const color = SCREEN_GLOW[i];
@@ -160,11 +161,12 @@ export const arcade: PieceBuilder = (kit) => {
     const shaft = new Mesh(stick, bodyMaterial);
     shaft.position.set(-0.15, 0.04, 0.47);
     cabinet.add(marquee, screen, panel, ball, shaft);
+    screens.push(screen.material);
     const a = (i - 2.5) * 0.3;
     cabinet.position.set(Math.sin(a) * 3.4, -0.2, 3.4 - Math.cos(a) * 3.4 - 0.6);
     cabinet.rotation.y = -a;
     hall.add(cabinet);
-    return cabinet;
+    return { cabinet, screen, home: cabinet.position.clone(), turn: -a };
   });
 
   const sign = new Mesh(
@@ -204,23 +206,61 @@ export const arcade: PieceBuilder = (kit) => {
     hall.add(coin);
     return { coin, angle: rand() * TAU, radius: 1 + rand() * 1.6, y: rand() * 2.4 - 0.9, speed: 0.3 + rand() * 0.4 };
   });
+  // The coin that starts the first game.
+  const token = new Mesh(coinGeometry, coinMaterial);
+  hall.add(token);
 
   return {
     group,
     key: new Color(0xffd6f0),
     rim: new Color(0x4fd6ec),
+    ownExit: true,
+    portal: cabinets[0].screen,
     place(layout) {
       hall.scale.setScalar(layout === "tall" ? 0.66 : 0.72);
     },
-    update({ t, hold, clock, idle }) {
-      cabinets.forEach((cabinet, i) => {
+    update({ t, hold, clock, energy }) {
+      // Once the camera is through the screen, the hall is behind it.
+      hall.visible = t < 0.5;
+      // Leaving: the 2048 cabinet steps forward to face the camera while the others part and dim.
+      const pick = easeInOut(smooth(0, 0.45, t));
+      const part = easeInOut(smooth(0, 0.6, t));
+      cabinets.forEach(({ cabinet, home, turn }, i) => {
         const enter = easeOut(smooth(-0.75 + i * 0.06, -0.2 + i * 0.06, t));
         cabinet.scale.setScalar(Math.max(0.001, enter));
+        cabinet.position.copy(home);
+        cabinet.rotation.y = turn;
+        if (i === 0) {
+          cabinet.position.x = lerp(home.x, 0, pick);
+          cabinet.position.z = home.z + pick * 1.4;
+          cabinet.rotation.y = lerp(turn, 0, pick);
+        } else {
+          cabinet.position.x += part * (1.2 + i * 0.5);
+          cabinet.position.z -= part * 1.5;
+        }
+        // Screens power on one by one through the beat.
+        const on = smooth(0.06 + i * 0.09, 0.12 + i * 0.09, hold);
+        const flicker = on > 0 && on < 1 ? (Math.sin(hold * 400 + i) > 0 ? 1 : 0.3) : 1;
+        const dim = i ? 1 - part * 0.85 : 1;
+        screens[i].color.setScalar((0.08 + on * 0.92 * flicker) * dim);
       });
-      sign.material.opacity = 0.75 + (idle ? Math.sin(clock * 3) * 0.08 + Math.sin(clock * 17) * 0.04 : 0.15);
+      // Coin drop into the first cabinet, then its screen flares.
+      const drop = smooth(0.66, 0.8, hold);
+      token.visible = drop > 0 && drop < 1;
+      token.position.set(cabinets[0].home.x - 0.12, 1.4 - easeInOut(drop) * 1.4, cabinets[0].home.z + 0.5);
+      token.rotation.set(Math.PI / 2, 0, drop * 12);
+      const flare = smooth(0.8, 0.9, hold) * (1 - smooth(0.9, 1, hold) * 0.6) + pick * 1.4;
+      screens[0].color.multiplyScalar(1 + flare);
+
+      // Neon sign flickers alight on arrival.
+      const ignite = smooth(-0.45, -0.05, t);
+      const spark = ignite < 1 ? (Math.sin(t * 120) > 0.1 - ignite ? ignite : 0.08) : 1;
+      const buzz = Math.sin(clock * 3) * 0.08 + Math.sin(clock * 17) * 0.04;
+      sign.material.opacity = spark * (0.82 + buzz * energy) * (1 - part * 0.7);
+      signGlow.material.opacity = spark * (1 - part * 0.8);
       coins.forEach(({ coin, angle, radius, y, speed }, i) => {
-        const a = angle + (idle ? clock * speed : 0) + hold * 2;
-        coin.position.set(Math.cos(a) * radius, y + Math.sin(a * 2 + i) * 0.15, 1.2 + Math.sin(a) * radius * 0.4);
+        const a = angle + clock * speed + hold * 2;
+        coin.position.set(Math.cos(a) * radius * (1 + part), y + Math.sin(a * 2 + i) * 0.15, 1.2 + Math.sin(a) * radius * 0.4);
         coin.rotation.set(Math.PI / 2, 0, a * 2);
       });
     },
@@ -313,6 +353,11 @@ export const game2048: PieceBuilder = (kit) => {
   const spawnAt = cell(0, 3);
   const glow = glowSprite(kit, "rgba(255,195,90,0.8)", 2.6);
   board.add(glow);
+  // The light of the screen the camera just dove through.
+  const arrival = glowSprite(kit, "rgba(200,170,255,0.9)", 11);
+  arrival.position.z = -0.6;
+  arrival.material.fog = false;
+  group.add(arrival);
   tileMaterials(2048);
 
   return {
@@ -323,7 +368,10 @@ export const game2048: PieceBuilder = (kit) => {
       board.rotation.set(layout === "tall" ? -0.2 : -0.28, layout === "tall" ? 0 : -0.3, 0.04);
       board.scale.setScalar(layout === "tall" ? 0.95 : 1);
     },
-    update({ t, hold, clock, idle }) {
+    update({ t, hold, clock, energy, layout }) {
+      arrival.material.opacity = smooth(-0.62, -0.45, t) * (1 - smooth(-0.45, 0, t));
+      board.rotation.z = 0.04 + Math.sin(clock * 0.5) * 0.03 * energy;
+      board.rotation.x = (layout === "tall" ? -0.2 : -0.28) + Math.sin(clock * 0.37) * 0.025 * energy;
       for (const tile of tiles) {
         const enter = easeOut(smooth(-0.7 + tile.order * 0.025, -0.25 + tile.order * 0.025, t));
         tile.mesh.position.copy(tile.home);
@@ -337,9 +385,9 @@ export const game2048: PieceBuilder = (kit) => {
       merged.mesh.material = tileMaterials(done ? 2048 : 1024);
       const pop = smooth(0.45, 0.62, hold);
       merged.mesh.scale.setScalar(done ? 1 + Math.sin(pop * Math.PI) * 0.28 : merged.mesh.scale.x);
-      merged.mesh.position.z += done ? 0.15 + (idle ? Math.sin(clock * 2) * 0.03 : 0) : 0;
+      merged.mesh.position.z += done ? 0.15 + Math.sin(clock * 2) * 0.03 * energy : 0;
       glow.position.copy(merged.mesh.position);
-      glow.material.opacity = smooth(0.45, 0.6, hold);
+      glow.material.opacity = smooth(0.45, 0.6, hold) * (1 + Math.sin(clock * 2.4) * 0.15 * energy);
       spawn.position.copy(spawnAt);
       spawn.scale.setScalar(Math.max(0.001, easeBack(smooth(0.7, 0.85, hold))));
     },

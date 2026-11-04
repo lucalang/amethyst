@@ -1,4 +1,4 @@
-import { CanvasTexture, Color, ExtrudeGeometry, Group, Shape, SRGBColorSpace } from "three";
+import { CanvasTexture, Color, ExtrudeGeometry, Group, type Object3D, Shape, SRGBColorSpace } from "three";
 
 export type Vec = [number, number, number];
 export type Layout = "wide" | "tall";
@@ -6,10 +6,11 @@ export type Layout = "wide" | "tall";
 export type Framing = { camera: Vec; look: Vec; drift: Vec };
 
 /**
- * `t` = scroll position relative to this chapter (-1 arriving … 0 resting … 1 left behind);
- * `hold` = 0..1 progress through the chapter's pinned copy (1 once passed).
+ * `t` = visual position relative to this chapter (-1 arriving … 0 resting … 1 left behind);
+ * `hold` = 0..1 beat of the chapter's feature moment: scrubbed by scroll, and played on by itself while resting (1 once passed);
+ * `energy` = ambient motion strength (1 Full, ~0.4 Subtle, 0 Off); `clock` only advances when it is above 0.
  */
-export type PieceState = { t: number; hold: number; clock: number; idle: boolean; layout: Layout };
+export type PieceState = { t: number; hold: number; clock: number; idle: boolean; energy: number; layout: Layout };
 
 export type Piece = {
   group: Group;
@@ -17,8 +18,12 @@ export type Piece = {
   key: Color;
   rim: Color;
   frame?: Partial<Record<Layout, Partial<Framing>>>;
-  /** Skips the default scale-in entrance. */
+  /** Skips the default rise-in entrance. */
   ownEntrance?: boolean;
+  /** Skips the default drift-away exit. */
+  ownExit?: boolean;
+  /** The camera dives through this object's position when leaving for a sub-chapter. */
+  portal?: Object3D;
   place?: (layout: Layout) => void;
   update: (state: PieceState) => void;
 };

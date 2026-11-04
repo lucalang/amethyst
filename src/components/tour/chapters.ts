@@ -31,7 +31,7 @@ export type TourChapter = {
   link?: { href: string; label: string; adminOnly?: boolean };
   /** Sub-beat of another chapter: shares its rail entry and number. */
   part?: TourChapterId;
-  /** Scroll length in viewport heights (default 2.3). */
+  /** Resting scroll in viewport heights plus 1.2 (default 2.3); the flight to the next chapter comes on top. */
   span?: number;
 };
 

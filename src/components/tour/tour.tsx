@@ -25,13 +25,15 @@ import {
 import { BrandMark } from "@/components/layout/top-nav";
 import type { MotionLevel } from "@/lib/preferences";
 import { TOUR_CHAPTERS, type TourChapterId } from "./chapters";
+import { buildTimeline, copyStage, locate, sectionFrames } from "./timeline";
 import type { TourScene } from "./tour-scene";
 
 type SceneState = "loading" | "ready" | "fallback";
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
-// Viewport heights of scroll spent travelling into the next chapter.
-const TRAVEL = 1.3;
+const TIMELINE = buildTimeline(TOUR_CHAPTERS.map((chapter) => chapter.span ?? 2.3));
+const FRAMES = sectionFrames(TIMELINE);
+const LAST = TOUR_CHAPTERS.length - 1;
 
 function subscribeReduced(onChange: () => void) {
   const query = window.matchMedia(REDUCED);
@@ -40,10 +42,6 @@ function subscribeReduced(onChange: () => void) {
 }
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-const smooth = (a: number, b: number, x: number) => {
-  const t = clamp01((x - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
 const pad = (n: number) => String(n).padStart(2, "0");
 
 function GemArt() {
@@ -116,10 +114,14 @@ export function Tour({ signedIn, admin, motion }: { signedIn: boolean; admin: bo
   const [scene, setScene] = useState<SceneState>("loading");
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const sectionsRef = useRef<(HTMLElement | null)[]>([]);
   const sceneRef = useRef<TourScene | null>(null);
-  const scrollRef = useRef({ position: 0, hold: 0 });
+  const scrollRef = useRef(0);
+  const levelRef = useRef(level);
+  /** Stages chapter copy for a scroll position; the scene calls it with the position it is actually showing. */
+  const copyRef = useRef<(scroll: number) => void>(() => {});
   const startLevel = useEffectEvent(() => level);
 
   useEffect(() => {
@@ -131,17 +133,20 @@ export function Tour({ signedIn, admin, motion }: { signedIn: boolean; admin: bo
       engine?.dispose();
       engine = null;
       sceneRef.current = null;
-      if (!cancelled) setScene("fallback");
+      if (!cancelled) {
+        setScene("fallback");
+        copyRef.current(scrollRef.current);
+      }
     };
     import("./tour-scene").then(({ createTourScene }) => {
       if (cancelled) return;
       try {
-        engine = createTourScene(host, TOUR_CHAPTERS.map((chapter) => chapter.id), startLevel(), fail);
+        engine = createTourScene(host, TOUR_CHAPTERS, TIMELINE, startLevel(), fail, (scroll) => copyRef.current(scroll));
       } catch {
         fail();
         return;
       }
-      engine.setScroll(scrollRef.current.position, scrollRef.current.hold);
+      engine.setScroll(scrollRef.current);
       sceneRef.current = engine;
       setScene("ready");
     }, fail);
@@ -153,70 +158,67 @@ export function Tour({ signedIn, admin, motion }: { signedIn: boolean; admin: bo
   }, []);
 
   useEffect(() => {
-    sceneRef.current?.setMotion(level);
-    sceneRef.current?.setScroll(scrollRef.current.position, scrollRef.current.hold);
+    levelRef.current = level;
+    if (sceneRef.current) sceneRef.current.setMotion(level);
+    else copyRef.current(scrollRef.current);
   }, [level]);
 
   useEffect(() => {
     const sections = sectionsRef.current.filter((section): section is HTMLElement => Boolean(section));
     const root = rootRef.current;
-    if (!sections.length || !root) return;
-    let tops: number[] = [];
-    let heights: number[] = [];
+    const main = mainRef.current;
+    if (!sections.length || !root || !main) return;
+    const staged = sections.map(() => "");
     let vh = 1;
+    let top = 0;
     let frame = 0;
-    const lastIndex = sections.length - 1;
 
-    const measure = () => {
-      vh = window.innerHeight || 1;
-      tops = sections.map((section) => section.getBoundingClientRect().top + window.scrollY);
-      heights = sections.map((section) => section.offsetHeight);
+    copyRef.current = (scroll) => {
+      const { x: at } = locate(TIMELINE, scroll);
+      const x = levelRef.current === "off" ? Math.round(at) : at;
+      sections.forEach((section, i) => {
+        const { enter, leave } = copyStage(i, LAST, x);
+        const key = `${enter.toFixed(3)}/${leave.toFixed(3)}`;
+        if (key === staged[i]) return;
+        staged[i] = key;
+        section.style.setProperty("--enter", enter.toFixed(3));
+        section.style.setProperty("--leave", leave.toFixed(3));
+        section.toggleAttribute("data-live", enter * (1 - leave) > 0.5);
+      });
+      root.style.setProperty("--progress", clamp01(scroll / TIMELINE.end).toFixed(4));
+      setActive(Math.min(LAST, Math.round(x)));
     };
 
+    const position = () => (window.scrollY - top) / vh;
     const update = () => {
       frame = 0;
-      const y = window.scrollY;
-      let index = 0;
-      while (index < lastIndex && y >= tops[index + 1]) index++;
-      const p = (y - tops[index]) / vh;
-      let position = index;
-      let hold: number;
-      if (index < lastIndex) {
-        const start = Math.max(0.01, (tops[index + 1] - tops[index]) / vh - TRAVEL);
-        position = index + clamp01((p - start) / TRAVEL);
-        hold = clamp01(p / start);
-      } else {
-        hold = clamp01(p / Math.max(0.01, heights[index] / vh - 1));
-      }
-      scrollRef.current = { position, hold };
-      sceneRef.current?.setScroll(position, hold);
-
-      sections.forEach((section, j) => {
-        const local = (y - tops[j]) / vh;
-        const pinned = heights[j] / vh - 1;
-        const fadeIn = j === 0 ? 1 : smooth(-0.75, -0.1, local);
-        const fadeOut = j === lastIndex ? 1 : 1 - smooth(pinned, pinned + 0.45, local);
-        section.style.setProperty("--fade", Math.min(fadeIn, fadeOut).toFixed(3));
-      });
-      const max = document.documentElement.scrollHeight - vh;
-      root.style.setProperty("--progress", (max > 0 ? clamp01(y / max) : 0).toFixed(4));
-      setActive(Math.round(position));
+      scrollRef.current = position();
+      if (sceneRef.current) sceneRef.current.setScroll(scrollRef.current);
+      else copyRef.current(scrollRef.current);
     };
-
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
     const onResize = () => {
-      measure();
+      vh = window.innerHeight || 1;
+      top = main.getBoundingClientRect().top + window.scrollY;
       onScroll();
+    };
+    // Tabbing into a chapter that is not on screen brings it there.
+    const onFocus = (event: FocusEvent) => {
+      const index = sections.findIndex((section) => section.contains(event.target as Node));
+      if (index < 0 || Math.round(locate(TIMELINE, position()).x) === index) return;
+      window.scrollTo(0, top + TIMELINE.starts[index] * vh);
     };
     onResize();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    main.addEventListener("focusin", onFocus);
     return () => {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      main.removeEventListener("focusin", onFocus);
     };
   }, []);
 
@@ -259,7 +261,7 @@ export function Tour({ signedIn, admin, motion }: { signedIn: boolean; admin: bo
         </ol>
       </nav>
 
-      <main>
+      <main ref={mainRef} style={{ height: `${Math.round((TIMELINE.end + 1) * 100)}svh` }}>
         {TOUR_CHAPTERS.map((chapter, index) => {
           const Heading = index === 0 ? "h1" : "h2";
           const still = STILL_ART[chapter.id];
@@ -276,7 +278,14 @@ export function Tour({ signedIn, admin, motion }: { signedIn: boolean; admin: bo
               aria-labelledby={`${chapter.id}-title`}
               className="tour-chapter"
               data-chapter={chapter.id}
-              style={{ height: `${Math.round((chapter.span ?? 2.3) * 100)}svh` }}
+              style={
+                {
+                  top: `${(FRAMES[index].top * 100).toFixed(2)}svh`,
+                  height: `${(FRAMES[index].height * 100).toFixed(2)}svh`,
+                  scrollMarginTop: `${(-FRAMES[index].anchor * 100).toFixed(2)}svh`,
+                  "--enter": index ? 0 : 1,
+                } as CSSProperties
+              }
             >
               <div className="tour-pin">
                 {still ? (

@@ -49,6 +49,34 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-04-tour-transitions",
+    date: "2026-11-04",
+    title: "The Tour - Scenes in Motion",
+    intro: "The Tour now flies between scenes instead of jumping: each scene breaks apart as you leave and the next one assembles around the camera, while the text arrives and leaves in step with the picture.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "Scene transitions", text: "Leaving a scene sends its pieces flying past the camera, and the next scene streams in from around you and builds itself." },
+      { kind: "improved", feature: "Alive while you scroll", text: "While you read a chapter, scrolling slowly circles the camera around the scene, and faster scrolling stretches the view." },
+      { kind: "improved", feature: "Into the games", text: "From the Arcade, the camera dives through the 2048 cabinet's screen straight into the game." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Smoother journey through the Tour",
+          body: "The flight between chapters takes more scrolling and every step of it has something happening, so fast scrolling no longer skips straight to the next scene.",
+          points: [
+            "Each chapter's heading, text, tags and link fade in one after another as the camera arrives, and leave before it sets off.",
+            "Scenes play their moment on their own while you pause: To Do ticks its tasks off with sparkles, and the Arcade's sign and screens switch on before a coin drops in.",
+            "Very long jumps, such as picking a chapter from the side rail, cut there with a short fade instead of racing through every scene.",
+            "Motion: Subtle tones everything down; Motion: Off and reduced motion still show composed, still scenes.",
+          ],
+          where: "The Tour",
+          link: { href: "/tour", label: "Take the tour" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-03-ten-more-frames",
     date: "2026-11-03",
     title: "Ten More Frames & Richer Ornaments",

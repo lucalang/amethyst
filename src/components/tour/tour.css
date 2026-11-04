@@ -143,7 +143,13 @@
   z-index: 1;
 }
 .tour-chapter {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.tour-chapter[data-live] .tour-copy {
+  pointer-events: auto;
 }
 .tour-pin {
   position: sticky;
@@ -156,9 +162,33 @@
 .tour-copy {
   position: relative;
   max-width: 36rem;
-  opacity: var(--fade, 1);
-  translate: 0 calc((1 - var(--fade, 1)) * 1.5rem);
   text-shadow: 0 2px 24px rgb(3 2 6 / 0.9);
+}
+/* Copy stages with the camera: eyebrow → title → body → tags → actions in, and the reverse out. */
+.tour-copy > *,
+.tour-still {
+  --in: clamp(0, calc((var(--enter, 1) - var(--d, 0) * 0.1) / 0.6), 1);
+  --out: clamp(0, calc((var(--leave, 0) - (4 - var(--d, 0)) * 0.08) / 0.68), 1);
+  opacity: calc(var(--in) * (1 - var(--out)));
+}
+.tour-copy > * {
+  translate: 0 calc((1 - var(--in)) * var(--rise, 1.6rem) - var(--out) * var(--rise, 1.6rem) * 0.75);
+}
+.tour-title {
+  --d: 1;
+  clip-path: inset(-0.5em calc((1 - var(--in)) * 100%) -0.5em -0.5em);
+}
+.tour-body {
+  --d: 2;
+}
+.tour-tags {
+  --d: 3;
+}
+.tour-actions {
+  --d: 4;
+}
+.tour[data-motion="subtle"] .tour-copy > * {
+  --rise: 0.8rem;
 }
 .tour-eyebrow {
   display: flex;
@@ -341,10 +371,10 @@ h2.tour-title {
   z-index: calc(10 - max(var(--i), -1 * var(--i)));
 }
 
-/* Reduced motion and Motion: Off: composed stills, no fades or bobbing. */
-.tour[data-motion="off"] .tour-copy {
-  opacity: 1;
+/* Reduced motion and Motion: Off: composed stills; copy swaps whole instead of moving. */
+.tour[data-motion="off"] .tour-copy > * {
   translate: none;
+  clip-path: none;
 }
 .tour[data-motion="off"] .tour-canvas,
 .tour[data-motion="off"] .tour-still {
