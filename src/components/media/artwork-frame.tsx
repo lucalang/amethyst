@@ -1,12 +1,12 @@
 "use client";
 
-import { useId, type CSSProperties, type ReactNode } from "react";
+import { useId, useRef, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import type { FrameLookId } from "@/lib/frames";
 import { cn } from "@/lib/utils";
-import { FRAME_MOTIFS, type MotifPiece, type MotifPlace } from "./frame-motifs";
+import { FRAME_MOTIFS, FRAME_MOULDINGS, MOTIF_SCALE, type FrameMoulding, type MotifLayer, type MotifPiece, type MotifPlace } from "./frame-motifs";
 
 /**
- * Artwork with an optional decorative frame drawn around (never over) its edges.
+ * Artwork with an optional decorative frame drawn around its edges (some pieces reach over the art).
  * The decoration ignores pointer events, so it can't block clicks or controls.
  * Styles: `.art-frame` in globals.css. Width must come from the layout (it is a size container).
  */
@@ -21,8 +21,30 @@ export function ArtworkFrame({
   style?: CSSProperties;
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Sculpted frames lean toward a hovering mouse (see .art-frame[data-depth]).
+  const depth = frame !== "none" && FRAME_MOTIFS[frame] ? true : undefined;
+  const lean = (event: PointerEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el || event.pointerType !== "mouse") return;
+    const box = el.getBoundingClientRect();
+    el.style.setProperty("--px", (((event.clientX - box.left) / box.width) * 2 - 1).toFixed(3));
+    el.style.setProperty("--py", (((event.clientY - box.top) / box.height) * 2 - 1).toFixed(3));
+  };
+  const rest = () => {
+    ref.current?.style.removeProperty("--px");
+    ref.current?.style.removeProperty("--py");
+  };
   return (
-    <div data-frame={frame} className={cn("art-frame", className)} style={style}>
+    <div
+      ref={ref}
+      data-frame={frame}
+      data-depth={depth}
+      className={cn("art-frame", className)}
+      style={style}
+      onPointerMove={depth ? lean : undefined}
+      onPointerLeave={depth ? rest : undefined}
+    >
       {children}
       {frame === "none" ? null : <FrameDecoration frame={frame} />}
     </div>
@@ -55,6 +77,7 @@ function FrameDecoration({ frame }: { frame: Exclude<FrameLookId, "none"> }) {
       {frame === "celestial-prism" ? <CelestialPrismOrnaments /> : null}
       {frame === "seraph-wings" ? <SeraphOrnaments id={id} /> : null}
       {frame === "spider-lily" ? <SpiderLilyOrnaments id={id} /> : null}
+      {FRAME_MOULDINGS[frame] ? <MotifMoulding frame={frame} moulding={FRAME_MOULDINGS[frame]} /> : null}
       {FRAME_MOTIFS[frame] ? <MotifOrnaments id={id} pieces={FRAME_MOTIFS[frame]} /> : null}
     </span>
   );
@@ -62,11 +85,64 @@ function FrameDecoration({ frame }: { frame: Exclude<FrameLookId, "none"> }) {
 
 const unit = (value: number) => `calc(var(--fw) * ${value / 5})`;
 
+/** One trim tile as an SVG data URL; `vertical` turns it to run down the side rails. */
+function trimTile(layers: readonly MotifLayer[], tile: number, vertical: boolean) {
+  const defs: string[] = [];
+  const body = layers.map((layer, l) => {
+    let paint = layer.paint as string;
+    if (typeof layer.paint !== "string") {
+      defs.push(`<linearGradient id="t${l}" x1="0" y1="0" x2="${tile}" y2="5" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${layer.paint[0]}"/><stop offset="1" stop-color="${layer.paint[1]}"/></linearGradient>`);
+      paint = `url(#t${l})`;
+    }
+    const shape = layer.line ? `fill="none" stroke="${paint}" stroke-width="${layer.line}" stroke-linecap="round" stroke-linejoin="round"` : `fill="${paint}"`;
+    return (layer.copies ?? [null]).map((transform) => `<path d="${layer.d}" ${shape}${transform ? ` transform="${transform}"` : ""}/>`).join("");
+  });
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${vertical ? `5 ${tile}` : `${tile} 5`}" preserveAspectRatio="none"><defs>${defs.join("")}</defs><g${vertical ? ' transform="matrix(0 1 1 0 0 0)"' : ""}>${body.join("")}</g></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+const tiles = new Map<string, [string, string]>();
+
+/** Repeating trim down each rail (rotated for the far sides), then the sculpted rails over it. */
+function MotifMoulding({ frame, moulding: { trim, rails } }: { frame: string; moulding: FrameMoulding }) {
+  let images = tiles.get(frame);
+  if (trim && !images) {
+    images = [trimTile(trim.layers, trim.tile, false), trimTile(trim.layers, trim.tile, true)];
+    tiles.set(frame, images);
+  }
+  return (
+    <>
+      {trim && images
+        ? (["top", "bottom", "left", "right"] as const).map((side) => {
+            const across = side === "top" || side === "bottom";
+            const style: CSSProperties = across
+              ? { left: unit(trim.skip), right: unit(trim.skip), height: unit(5), [side]: 0, backgroundImage: images[0], backgroundSize: `${unit(trim.tile)} 100%`, backgroundRepeat: "round no-repeat" }
+              : { top: unit(trim.skip), bottom: unit(trim.skip), width: unit(5), [side]: 0, backgroundImage: images[1], backgroundSize: `100% ${unit(trim.tile)}`, backgroundRepeat: "no-repeat round" };
+            if (side === "bottom" || side === "right") style.rotate = "180deg";
+            return <span key={side} className="art-frame-trim" style={style} />;
+          })
+        : null}
+      {rails?.map((rail, i) => {
+        const [a, b] = typeof rail.paint === "string" ? [rail.paint, rail.paint] : rail.paint;
+        const edge = rail.at - rail.width / 2;
+        return (
+          <span
+            key={i}
+            className="art-frame-rail"
+            data-finish={rail.finish}
+            style={{ inset: unit(edge), borderWidth: unit(rail.width), borderColor: `${a} ${b} ${b} ${a}`, borderRadius: `calc(var(--fr) + ${unit(5 - edge)})`, color: b }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 /** Places a piece so its origin lands on the card's outer corner (mirrored per corner) or edge centre. */
 function motifStyle(piece: MotifPiece, place: MotifPlace): CSSProperties {
   const [w, h] = piece.box;
   const [ox, oy] = piece.origin;
-  const style: CSSProperties = { width: unit(w), height: unit(h) };
+  const unit = (value: number) => `calc(var(--fw) * ${(value * MOTIF_SCALE * (piece.scale ?? 1)) / 5})`;
+  const style: CSSProperties & Record<`--${string}`, number> = { width: unit(w), height: unit(h), "--rise": piece.rise ?? 0 };
   const x = place === "tr" || place === "br" ? -1 : 1;
   const y = place === "bl" || place === "br" ? -1 : 1;
   if (place === "top" || place === "bottom") {
@@ -76,30 +152,53 @@ function motifStyle(piece: MotifPiece, place: MotifPlace): CSSProperties {
   }
   style[x === 1 ? "left" : "right"] = unit(-ox);
   style[y === 1 ? "top" : "bottom"] = unit(-oy);
+  // The shadow is drawn before the mirroring, so its offset is mirrored back.
+  style["--mx"] = x;
+  style["--my"] = y;
   if (x !== 1 || y !== 1) style.scale = `${x} ${y}`;
   return style;
+}
+
+/** Blends a #rrggbb colour toward white (`to` 255) or black (0). */
+const shade = (hex: string, to: number, t: number) =>
+  `#${[1, 3, 5].map((i) => Math.round(Number.parseInt(hex.slice(i, i + 2), 16) * (1 - t) + to * t).toString(16).padStart(2, "0")).join("")}`;
+
+/** Gradient stops for a layer: metal gets a bright band across the middle so it reads as polished. */
+function motifStops(layer: MotifLayer): [offset: number, colour: string][] | null {
+  const [a, b] = typeof layer.paint === "string" ? [layer.paint, layer.paint] : layer.paint;
+  if (layer.finish === "metal") return [[0, shade(a, 255, 0.25)], [0.42, b], [0.52, shade(a, 255, 0.5)], [0.62, a], [1, shade(b, 0, 0.2)]];
+  return a === b ? null : [[0, a], [1, b]];
 }
 
 function MotifOrnaments({ id, pieces }: { id: string; pieces: readonly MotifPiece[] }) {
   return pieces.flatMap((piece, p) => {
     const [w, h] = piece.box;
     const art = piece.layers.map((layer, l) => {
-      const gradient = typeof layer.paint === "string" ? null : `${id}-m${p}-${l}`;
-      const paint = gradient ? `url(#${gradient})` : (layer.paint as string);
+      const stops = motifStops(layer);
+      const gradient = stops ? `${id}-m${p}-${l}` : null;
+      const dark = typeof layer.paint === "string" ? layer.paint : layer.paint[1];
+      const paint = gradient ? `url(#${gradient})` : dark;
       const shape = layer.line ? { fill: "none", stroke: paint, strokeWidth: layer.line, strokeLinecap: "round" as const, strokeLinejoin: "round" as const } : { fill: paint };
+      // Filled shapes get a fine ink line in a deep shade of their own colour unless they set one.
+      const outline = layer.outline ?? (layer.line || layer.finish === "glow" ? null : ([shade(dark, 0, 0.6), 0.16] as const));
+      const ink = outline
+        ? { fill: layer.line ? "none" : outline[0], stroke: outline[0], strokeWidth: (layer.line ?? 0) + outline[1] * 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
+        : null;
       return (
-        <g key={l}>
-          {gradient ? (
+        <g key={l} opacity={layer.opacity} data-glow={layer.finish === "glow" ? "" : undefined} color={layer.finish === "glow" ? dark : undefined}>
+          {gradient && stops ? (
             <defs>
               <linearGradient id={gradient} x1="0" y1="0" x2={w} y2={h} gradientUnits="userSpaceOnUse">
-                <stop offset="0" stopColor={layer.paint[0]} />
-                <stop offset="1" stopColor={layer.paint[1]} />
+                {stops.map(([offset, colour]) => (
+                  <stop key={offset} offset={offset} stopColor={colour} />
+                ))}
               </linearGradient>
             </defs>
           ) : null}
-          {(layer.copies ?? [undefined]).map((transform, c) => (
-            <path key={c} d={layer.d} transform={transform} {...shape} />
-          ))}
+          {(layer.copies ?? [undefined]).flatMap((transform, c) => [
+            ink ? <path key={`o${c}`} d={layer.d} transform={transform} {...ink} /> : null,
+            <path key={c} d={layer.d} transform={transform} {...shape} />,
+          ])}
         </g>
       );
     });

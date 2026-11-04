@@ -16,11 +16,13 @@ import {
   MeshPhysicalMaterial,
   NeutralToneMapping,
   Path,
+  PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   Quaternion,
   Scene,
   ShaderMaterial,
+  ShadowMaterial,
   Shape,
   ShapeGeometry,
   SRGBColorSpace,
@@ -282,6 +284,96 @@ const SPECS: Record<FrameLookId, FrameSpec> = {
     fx: { kind: FX.amethyst, a: 0xe6f6ff, b: 0xffd6ea },
     glints: (band) => cornerGlints(band, [1.2, 2.6, 4.0, 5.4]),
   },
+  "hollow-fang": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.1, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.06 },
+    edge: { color: 0x050506, metalness: 0.5, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 },
+    light: { a: 0xdc1432, b: 0xefe6d6, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xff6070, b: 0xfff4ea },
+    glints: () => [],
+  },
+  "summer-fireworks": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.2, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.15 },
+    edge: { color: 0x1a1440, metalness: 0.5, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 },
+    light: { a: 0xffb03a, b: 0xff8ac4, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xffe9a8, b: 0xffb03a },
+    glints: (band) => cornerGlints(band, [1.2, 3.1, 5.0]),
+  },
+  "sakura-storm": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.5, sheen: 1, sheenColor: 0xffffff, sheenRoughness: 0.4, clearcoat: 0.3, clearcoatRoughness: 0.25 },
+    edge: { color: 0x3e2418, metalness: 0.1, roughness: 0.6 },
+    light: { a: 0xf08db0, b: 0xffe5ec, mix: 0.5 },
+    fx: { kind: FX.amethyst, a: 0xffe5ec, b: 0xfff6e0 },
+    glints: () => [],
+  },
+  "kagune-coil": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.1, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.05 },
+    edge: { color: 0x9e0018, metalness: 0.4, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 },
+    light: { a: 0xd81d35, b: 0x2a0a0e, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xff5a64, b: 0xffd0d4 },
+    glints: () => [],
+  },
+  "stained-prelude": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.1, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.03, iridescence: 0.4, iridescenceIOR: 1.4, iridescenceThicknessRange: [200, 600] },
+    edge: { color: 0x16161c, metalness: 0.7, roughness: 0.3 },
+    light: { a: 0x7fb2f0, b: 0xf59ac0, mix: 0.55 },
+    fx: { kind: FX.amethyst, a: 0xbfe3ff, b: 0xffd1e3 },
+    glints: () => [],
+  },
+  "fallen-halo": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.4, sheen: 1, sheenColor: 0xfff1b8, sheenRoughness: 0.4, clearcoat: 0.5, clearcoatRoughness: 0.2 },
+    edge: { color: 0xc48a1c, metalness: 0.9, roughness: 0.25 },
+    light: { a: 0xfff1b8, b: 0xffffff, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xfff1b8, b: 0xffffff },
+    glints: (band) => cornerGlints(band, [1.4, 3.6]),
+  },
+  afterimage: {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0.6, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.08 },
+    edge: { color: 0x5d6878, metalness: 0.9, roughness: 0.2 },
+    light: { a: 0x7dff6a, b: 0xff3fd2, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xd8ffd0, b: 0x7dff6a },
+    glints: () => [],
+  },
+  "zipper-rush": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.6, sheen: 0.6, sheenColor: 0xd9a6ff, sheenRoughness: 0.5 },
+    edge: { color: 0xc48a1c, metalness: 0.9, roughness: 0.25 },
+    light: { a: 0x8a2cdf, b: 0xe5b53a, mix: 0.6 },
+    fx: { kind: FX.gilt, a: 0xfff1b8, b: 0xf0c4ff },
+    glints: (band) => cornerGlints(band, [1.2, 2.8, 4.4]),
+  },
+  "bridal-bouquet": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.4, sheen: 1, sheenColor: 0xffffff, sheenRoughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.15 },
+    edge: { color: 0xb8786a, metalness: 0.8, roughness: 0.25 },
+    light: { a: 0xfff4d6, b: 0xe8638f, mix: 0.5 },
+    fx: { kind: FX.amethyst, a: 0xffffff, b: 0xffe4ec },
+    glints: (band) => cornerGlints(band, [1.2, 2.6, 4.0]),
+  },
+  "lavender-north": {
+    margin: 0.05,
+    relief: 0.006,
+    band: { metalness: 0, roughness: 0.45, sheen: 1, sheenColor: 0xffffff, sheenRoughness: 0.35, clearcoat: 0.4, clearcoatRoughness: 0.2 },
+    edge: { color: 0x6a4fc4, metalness: 0.3, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.1 },
+    light: { a: 0xa58bf0, b: 0xff9a4a, mix: 0.5 },
+    fx: { kind: FX.amethyst, a: 0xe8e0ff, b: 0xffffff },
+    glints: () => [],
+  },
 };
 
 const PLANE_VERTEX = /* glsl */ `
@@ -500,18 +592,10 @@ const BANDS: Partial<Record<FrameLookId, { base: readonly string[]; outer: strin
     base: ["#f8efdd", "#f1e4cb", "#f8efdd"],
     outer: "#7d1427",
     inner: "#c9a04a",
-    pattern: (ctx, W, H, M) => {
+    pattern: (ctx, W, H) => {
       stripes(ctx, W, H, 4, 1, "rgba(120, 90, 60, 0.08)", 0);
       ctx.fillStyle = "rgba(120, 90, 60, 0.08)";
       for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
-      ctx.save();
-      ctx.setLineDash([M * 0.22, M * 0.16]);
-      ctx.beginPath();
-      ctx.roundRect(M / 2, M / 2, W - M, H - M, Math.max(0, M * 0.6));
-      ctx.lineWidth = Math.max(1, M * 0.06);
-      ctx.strokeStyle = "rgba(178, 38, 62, 0.8)";
-      ctx.stroke();
-      ctx.restore();
     },
   },
   "sonata-keys": { base: ["#fffdf6", "#ece2cc", "#fffaf0", "#e7dcc3"], outer: "#141418", inner: "#141418" },
@@ -545,13 +629,10 @@ const BANDS: Partial<Record<FrameLookId, { base: readonly string[]; outer: strin
     },
   },
   "tsuba-guard": {
-    base: ["#efe4cc", "#e6d8ba", "#efe4cc"],
+    base: ["#f4ead4", "#d9c9a6", "#efe4cc"],
     outer: "#0d0d0f",
     inner: "#ff7a1a",
-    pattern: (ctx, W, H, M) => {
-      stripes(ctx, W, H, M * 0.9, Math.max(2, M * 0.2), "#111114", 1);
-      stripes(ctx, W, H, M * 0.9, Math.max(2, M * 0.2), "#111114", -1);
-    },
+    pattern: (ctx, W, H, M) => dots(ctx, W, H, M * 0.12, Math.max(0.6, M * 0.025), "rgba(255, 255, 255, 0.7)"),
   },
   "five-ribbons": {
     base: ["#ffe4ec", "#f5bfd0", "#ffe9f0"],
@@ -564,6 +645,57 @@ const BANDS: Partial<Record<FrameLookId, { base: readonly string[]; outer: strin
     outer: "#ff2e8a",
     inner: "#a58bf0",
     pattern: (ctx, W, H, M) => dots(ctx, W, H, M * 0.42, Math.max(1, M * 0.08), "rgba(255, 255, 255, 0.95)"),
+  },
+  "hollow-fang": {
+    base: ["#1b1b20", "#050506", "#16161a"],
+    outer: "#050506",
+    inner: "#050506",
+    pattern: (ctx, W, H) => {
+      pool(ctx, W, H, W, 0, "rgba(190, 0, 30, 0.55)");
+      pool(ctx, W, H, 0, H, "rgba(190, 0, 30, 0.55)");
+    },
+  },
+  "summer-fireworks": {
+    base: ["#2a1f63", "#120c33", "#3a1f5a"],
+    outer: "#1a1440",
+    inner: "#ffb03a",
+    pattern: (ctx, W, H, M) => dots(ctx, W, H, M * 0.3, Math.max(0.8, M * 0.04), "rgba(255, 233, 168, 0.8)"),
+  },
+  "sakura-storm": {
+    base: ["#ffe5ec", "#f6b8cb", "#ffdbe5"],
+    outer: "#3e2418",
+    inner: "#e88aa6",
+    pattern: (ctx, W, H) => pool(ctx, W, H, W * 0.2, H * 0.3, "rgba(255, 255, 255, 0.55)"),
+  },
+  "kagune-coil": {
+    base: ["#1a0a0e", "#050203", "#160608"],
+    outer: "#000000",
+    inner: "#9e0018",
+    pattern: (ctx, W, H) => {
+      pool(ctx, W, H, 0, 0, "rgba(158, 0, 24, 0.5)");
+      pool(ctx, W, H, W, H, "rgba(158, 0, 24, 0.5)");
+    },
+  },
+  "stained-prelude": { base: ["#bfe3ff", "#ffd1e3", "#fff2b8", "#c9f0dc", "#bfe3ff"], outer: "#16161c", inner: "#c48a1c" },
+  "fallen-halo": {
+    base: ["#fffaf0", "#e9dfcc", "#fbf5ea"],
+    outer: "#c48a1c",
+    inner: "#fffaf0",
+    pattern: (ctx, W, H) => pool(ctx, W, H, W / 2, 0, "rgba(255, 241, 184, 0.8)"),
+  },
+  afterimage: { base: ["#2a3446", "#0b0f17", "#222a38"], outer: "#5d6878", inner: "#7dff6a" },
+  "zipper-rush": {
+    base: ["#5a1f78", "#2e0a44", "#4a1868"],
+    outer: "#c48a1c",
+    inner: "#c48a1c",
+    pattern: (ctx, W, H, M) => stripes(ctx, W, H, M * 0.12, Math.max(0.6, M * 0.03), "rgba(255, 255, 255, 0.07)", 1),
+  },
+  "bridal-bouquet": { base: ["#fffdf8", "#f1e8da", "#fffaf2"], outer: "#d8cbb8", inner: "#b8786a" },
+  "lavender-north": {
+    base: ["#e8e0ff", "#c3b0f5", "#9b84e0"],
+    outer: "#6a4fc4",
+    inner: "#ffffff",
+    pattern: (ctx, W, H, M) => dots(ctx, W, H, M * 0.24, Math.max(0.8, M * 0.04), "rgba(255, 255, 255, 0.85)"),
   },
 };
 
@@ -877,6 +1009,8 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = NeutralToneMapping;
   renderer.setClearColor(0x000000, 0);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = PCFShadowMap;
   const canvas = renderer.domElement;
   canvas.style.display = "block";
   canvas.style.width = "100%";
@@ -900,6 +1034,12 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   const camera = new PerspectiveCamera(30, 1, 0.05, 60);
   const key = new DirectionalLight(0xfff6ec, 1.35);
   key.position.set(-2.2, 2.8, 4);
+  // Only the key light casts shadows: ornaments onto the band, the art and each other.
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.bias = -0.0004;
+  key.shadow.normalBias = 0.0015;
+  key.shadow.radius = 3;
   // Two rims from behind light the card's edges as they turn toward the viewer.
   const rimA = new DirectionalLight(accent, 2.2);
   rimA.position.set(3.2, 0.6, -1.6);
@@ -1059,7 +1199,9 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       new ExtrudeGeometry(roundedRect(new Shape(), bw, bh, rb), { depth: DEPTH, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: BEVEL, bevelSegments: 5, curveSegments: 16 }),
     );
     body.translate(0, 0, -DEPTH / 2);
-    group.add(new Mesh(body, track(new MeshPhysicalMaterial(spec.edge))));
+    const bodyMesh = new Mesh(body, track(new MeshPhysicalMaterial(spec.edge)));
+    bodyMesh.receiveShadow = true;
+    group.add(bodyMesh);
 
     // Theme light, tinted by the frame.
     applyLighting();
@@ -1080,7 +1222,9 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
         bandMap.colorSpace = SRGBColorSpace;
         bandMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
       }
-      group.add(new Mesh(bandGeometry, track(new MeshPhysicalMaterial({ ...spec.band, map: bandMap }))));
+      const bandMesh = new Mesh(bandGeometry, track(new MeshPhysicalMaterial({ ...spec.band, map: bandMap })));
+      bandMesh.receiveShadow = true;
+      group.add(bandMesh);
 
       fxUniforms.uKind.value = spec.fx.kind;
       fxUniforms.uHole.value.set(aw, ah);
@@ -1099,8 +1243,12 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     }
     state.animated = spec.fx?.kind === FX.aurora;
 
-    const ornament = ORNAMENTS[frame]?.({ bw, bh, m, s: Math.min(aw, ah), z: front + spec.relief + LIP * 2 }, track);
+    const ornament = ORNAMENTS[frame]?.({ bw, bh, m, r: rb, s: Math.min(aw, ah), z: front + spec.relief + LIP * 2, floor: front }, track);
     if (ornament) {
+      ornament.traverse((part) => {
+        part.castShadow = true;
+        part.receiveShadow = true;
+      });
       group.add(ornament);
       // Fit the camera to the ornaments too, so crests and wings stay on screen.
       const bounds = new Box3().setFromObject(ornament);
@@ -1120,6 +1268,16 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     const art = new Mesh(track(panel(aw, ah, ra)), track(new ShaderMaterial({ uniforms: artUniforms, vertexShader: PLANE_VERTEX, fragmentShader: ART_FRAGMENT, toneMapped: false })));
     art.position.z = front + 0.0006;
     group.add(art);
+    if (ornament) {
+      // The art is unlit, so ornament shadows land on a clear catcher just above it.
+      const catcher = new Mesh(art.geometry, track(new ShadowMaterial({ opacity: 0.6 })));
+      catcher.position.z = front + 0.001;
+      catcher.receiveShadow = true;
+      group.add(catcher);
+    }
+    const reach = Math.hypot(state.cw, state.ch) * 0.6;
+    Object.assign(key.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 0.5, far: 12 });
+    key.shadow.camera.updateProjectionMatrix();
 
     pivot.add(group);
     card = {

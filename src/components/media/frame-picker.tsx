@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { CatalogSearch } from "@/components/catalog/catalog-search";
@@ -80,6 +80,10 @@ export function FramePicker({
     ...frames.map((frame) => ({ value: frame, label: ARTWORK_FRAMES[frame].name, frame })),
   ];
   const [query, setQuery] = useState("");
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    listRef.current?.querySelector("input:checked")?.closest("label")?.scrollIntoView({ block: "nearest" });
+  }, []);
   const searchable = options.length >= PICKER_SEARCH_MIN;
   const match = searchable ? catalogMatcher(query) : null;
   // The current choice stays listed so the group always shows what's selected.
@@ -106,7 +110,13 @@ export function FramePicker({
         )}
         <div className="grid min-w-0 flex-1 gap-2">
         {searchable ? <CatalogSearch value={query} onChange={setQuery} label="Search frames" placeholder="Search frames" className="sm:w-full" /> : null}
-        <div role="radiogroup" aria-labelledby={`${id}-label`} aria-describedby={`${id}-hint`} className="grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-1.5">
+        <div
+          ref={listRef}
+          role="radiogroup"
+          aria-labelledby={`${id}-label`}
+          aria-describedby={`${id}-hint`}
+          className="grid max-h-[min(24rem,48dvh)] grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2 overflow-y-auto overscroll-contain rounded-md p-0.5 pr-1.5"
+        >
           {listed.map((option) => {
             const checked = value === option.value;
             return (
@@ -114,7 +124,7 @@ export function FramePicker({
                 key={option.value}
                 title={option.label}
                 className={cn(
-                  "frame-option group/frame-opt relative flex cursor-pointer flex-col items-center gap-2 rounded-md border px-2 pt-3.5 pb-2 text-center text-xs transition-[color,background-color,border-color,scale] duration-150 select-none active:scale-[0.97] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none motion-reduce:active:scale-100",
+                  "frame-option group/frame-opt relative flex cursor-pointer flex-col items-center gap-2 overflow-hidden rounded-md border px-2 pt-4 pb-2 text-center text-xs transition-[color,background-color,border-color,scale] duration-150 select-none active:scale-[0.97] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none motion-reduce:active:scale-100",
                   disabled && "pointer-events-none opacity-60",
                   checked
                     ? "border-amethyst/60 bg-amethyst/[0.1] text-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.06)]"
@@ -122,7 +132,7 @@ export function FramePicker({
                 )}
               >
                 <input type="radio" name={`${id}-choice`} value={option.value} checked={checked} disabled={disabled} onChange={() => onChange(option.value)} className="sr-only" />
-                <FramedCover frame={option.frame} coverUrl={coverUrl} coverShape={coverShape} title={title} className={coverShape === "square" ? "w-12" : "w-10"} sizes="auto, 48px" />
+                <FramedCover frame={option.frame} coverUrl={coverUrl} coverShape={coverShape} title={title} className={coverShape === "square" ? "w-16" : "w-14"} sizes="auto, 64px" />
                 <span className="line-clamp-2 leading-4">{option.label}</span>
                 {checked ? (
                   <span aria-hidden className="absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-amethyst text-amethyst-foreground">

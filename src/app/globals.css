@@ -3056,9 +3056,63 @@
 
 /* Illustrated frames: a patterned band, an outer and inner line, and motif pieces from frame-motifs.ts. */
 .art-frame-motif {
+  --mx: 1;
+  --my: 1;
   position: absolute;
   z-index: 1;
   overflow: visible;
+  /* A tight contact shadow where the piece meets the card, then a soft one that lengthens with its height. */
+  filter: drop-shadow(calc(var(--fw) * 0.03 * var(--mx)) calc(var(--fw) * 0.05 * var(--my)) calc(var(--fw) * 0.04) rgb(0 0 0 / 0.6))
+    drop-shadow(
+      calc(var(--fw) * var(--rise) * 0.05 * var(--mx)) calc(var(--fw) * var(--rise) * 0.08 * var(--my)) calc(var(--fw) * (0.1 + var(--rise) * 0.08))
+        rgb(0 0 0 / 0.3)
+    );
+}
+.art-frame[data-depth] {
+  transform: perspective(70em) rotateX(calc(var(--py, 0) * -6deg)) rotateY(calc(var(--px, 0) * 6deg));
+  transition: transform 260ms var(--ease-out-soft);
+}
+/* Glowing motif layers breathe slowly. */
+.art-frame-motif [data-glow] {
+  filter: drop-shadow(0 0 0.8px currentColor);
+  animation: motif-glow 2.6s ease-in-out infinite alternate;
+}
+@keyframes motif-glow {
+  from {
+    filter: drop-shadow(0 0 0.6px currentColor) brightness(0.9);
+  }
+  to {
+    filter: drop-shadow(0 0 1.6px currentColor) brightness(1.25);
+  }
+}
+:root:is([data-motion="off"], [data-motion="subtle"]) .art-frame-motif [data-glow] {
+  animation: none;
+}
+:root:is([data-motion="off"], [data-motion="subtle"]) .art-frame[data-depth] {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .art-frame[data-depth] {
+    transform: none;
+  }
+  .art-frame-motif [data-glow] {
+    animation: none;
+  }
+}
+/* Repeating trim and sculpted rails from FRAME_MOULDINGS, under the motif pieces. */
+.art-frame-trim,
+.art-frame-rail {
+  position: absolute;
+  z-index: 1;
+}
+.art-frame-rail {
+  border-style: solid;
+  box-shadow:
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.3),
+    0 0 0 0.5px rgb(0 0 0 / 0.35);
+  &[data-finish="glow"] {
+    filter: drop-shadow(0 0 calc(1px + 0.4cqi) currentColor);
+  }
 }
 .art-frame:is(
     [data-frame="koi-rail"],
@@ -3069,9 +3123,19 @@
     [data-frame="golden-arrow"],
     [data-frame="tsuba-guard"],
     [data-frame="five-ribbons"],
-    [data-frame="frost-glam"]
+    [data-frame="frost-glam"],
+    [data-frame="hollow-fang"],
+    [data-frame="summer-fireworks"],
+    [data-frame="sakura-storm"],
+    [data-frame="kagune-coil"],
+    [data-frame="stained-prelude"],
+    [data-frame="fallen-halo"],
+    [data-frame="afterimage"],
+    [data-frame="zipper-rush"],
+    [data-frame="bridal-bouquet"],
+    [data-frame="lavender-north"]
   ) {
-  --fw: clamp(4px, 3.2cqi, 11px);
+  --fw: clamp(5px, 3.8cqi, 13px);
   --line: max(1px, calc(var(--fw) * 0.16));
 }
 .art-frame:is(
@@ -3083,7 +3147,17 @@
     [data-frame="golden-arrow"],
     [data-frame="tsuba-guard"],
     [data-frame="five-ribbons"],
-    [data-frame="frost-glam"]
+    [data-frame="frost-glam"],
+    [data-frame="hollow-fang"],
+    [data-frame="summer-fireworks"],
+    [data-frame="sakura-storm"],
+    [data-frame="kagune-coil"],
+    [data-frame="stained-prelude"],
+    [data-frame="fallen-halo"],
+    [data-frame="afterimage"],
+    [data-frame="zipper-rush"],
+    [data-frame="bridal-bouquet"],
+    [data-frame="lavender-north"]
   )
   .art-frame-deco {
   filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.4));
@@ -3123,13 +3197,6 @@
     repeating-linear-gradient(0deg, rgb(120 90 60 / 0.08) 0 1px, transparent 1px 3px),
     repeating-linear-gradient(90deg, rgb(120 90 60 / 0.08) 0 1px, transparent 1px 3px),
     #f6ecd9;
-}
-.art-frame[data-frame="pressed-diary"] .art-frame-ring::after {
-  content: "";
-  position: absolute;
-  inset: calc(var(--fw) / 2 - 0.5px);
-  border: 1px dashed rgb(178 38 62 / 0.75);
-  border-radius: calc(var(--fr) + var(--fw) / 2);
 }
 /* Sonata keys: glossy ivory edged in ebony. */
 .art-frame[data-frame="sonata-keys"] {
@@ -3179,16 +3246,123 @@
     repeating-linear-gradient(-45deg, transparent 0 5px, rgb(229 181 58 / 0.6) 5px 6px),
     linear-gradient(160deg, #5a1f78, #2a0a3e 55%, #4a1868);
 }
-/* Sword guard: black diamond hilt wrapping over cream, with an ember inner line. */
+/* Sword guard: gold-railed silk hilt wrapping (trim) over cream ray skin, with an ember inner line. */
 .art-frame[data-frame="tsuba-guard"] {
   --frame-outer: #0d0d0f;
   --frame-inner: #ff7a1a;
 }
 .art-frame[data-frame="tsuba-guard"] .art-frame-ring {
   background:
-    repeating-linear-gradient(45deg, #111114 0 2px, transparent 2px calc(var(--fw) * 0.9)),
-    repeating-linear-gradient(-45deg, #111114 0 2px, transparent 2px calc(var(--fw) * 0.9)),
-    #efe4cc;
+    radial-gradient(circle, rgb(255 255 255 / 0.7) 0 0.6px, transparent 1px) 0 0 / 3px 3px,
+    linear-gradient(160deg, #f4ead4, #d9c9a6 55%, #efe4cc);
+}
+/* Hollow fang: black lacquer with crimson pooling under a jaw of bone fangs. */
+.art-frame[data-frame="hollow-fang"] {
+  --frame-outer: #050506;
+  --frame-inner: #050506;
+}
+.art-frame[data-frame="hollow-fang"] .art-frame-deco {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.55)) drop-shadow(0 0 calc(2px + 0.8cqi) rgb(220 20 50 / 0.35));
+}
+.art-frame[data-frame="hollow-fang"] .art-frame-ring {
+  background:
+    radial-gradient(50% 35% at 100% 0%, rgb(190 0 30 / 0.55), transparent 70%),
+    radial-gradient(50% 35% at 0% 100%, rgb(190 0 30 / 0.55), transparent 70%),
+    linear-gradient(160deg, #1b1b20, #050506 50%, #16161a);
+}
+/* Summer fireworks: a festival night sky dusted with sparks. */
+.art-frame[data-frame="summer-fireworks"] {
+  --frame-outer: #1a1440;
+  --frame-inner: #ffb03a;
+}
+.art-frame[data-frame="summer-fireworks"] .art-frame-deco {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.45)) drop-shadow(0 0 calc(2px + 0.8cqi) rgb(255 176 58 / 0.4));
+}
+.art-frame[data-frame="summer-fireworks"] .art-frame-ring {
+  background:
+    radial-gradient(circle, rgb(255 233 168 / 0.8) 0 0.6px, transparent 1px) 0 0 / 7px 5px,
+    linear-gradient(160deg, #2a1f63, #120c33 55%, #3a1f5a);
+}
+/* Sakura storm: soft blush bark-edged rim. */
+.art-frame[data-frame="sakura-storm"] {
+  --frame-outer: #3e2418;
+  --frame-inner: #e88aa6;
+}
+.art-frame[data-frame="sakura-storm"] .art-frame-ring {
+  background:
+    radial-gradient(60% 40% at 20% 30%, rgb(255 255 255 / 0.55), transparent 70%),
+    linear-gradient(160deg, #ffe5ec, #f6b8cb 50%, #ffdbe5);
+}
+/* Kagune coil: black lacquer with a red pulse. */
+.art-frame[data-frame="kagune-coil"] {
+  --frame-outer: #000000;
+  --frame-inner: #9e0018;
+}
+.art-frame[data-frame="kagune-coil"] .art-frame-deco {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.55)) drop-shadow(0 0 calc(2px + 0.8cqi) rgb(255 30 60 / 0.4));
+}
+.art-frame[data-frame="kagune-coil"] .art-frame-ring {
+  background:
+    radial-gradient(45% 35% at 0% 0%, rgb(158 0 24 / 0.5), transparent 70%),
+    radial-gradient(45% 35% at 100% 100%, rgb(158 0 24 / 0.5), transparent 70%),
+    linear-gradient(160deg, #1a0a0e, #050203 55%, #160608);
+}
+/* Stained prelude: pastel glass behind leaded silver. */
+.art-frame[data-frame="stained-prelude"] {
+  --frame-outer: #16161c;
+  --frame-inner: #c48a1c;
+}
+.art-frame[data-frame="stained-prelude"] .art-frame-ring {
+  background: linear-gradient(135deg, #bfe3ff, #ffd1e3 35%, #fff2b8 60%, #c9f0dc 85%, #bfe3ff);
+}
+/* Fallen halo: warm ivory with a gold glow. */
+.art-frame[data-frame="fallen-halo"] {
+  --frame-outer: #c48a1c;
+  --frame-inner: #fffaf0;
+}
+.art-frame[data-frame="fallen-halo"] .art-frame-ring {
+  background:
+    radial-gradient(70% 45% at 50% 0%, rgb(255 241 184 / 0.8), transparent 70%),
+    linear-gradient(160deg, #fffaf0, #e9dfcc 55%, #fbf5ea);
+}
+/* Afterimage: dark chrome with a lime trace. */
+.art-frame[data-frame="afterimage"] {
+  --frame-outer: #5d6878;
+  --frame-inner: #7dff6a;
+}
+.art-frame[data-frame="afterimage"] .art-frame-deco {
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.5)) drop-shadow(0 0 calc(2px + 0.8cqi) rgb(125 255 106 / 0.3));
+}
+.art-frame[data-frame="afterimage"] .art-frame-ring {
+  background: linear-gradient(160deg, #2a3446, #0b0f17 50%, #222a38);
+}
+/* Zipper rush: plum denim under a gold zip. */
+.art-frame[data-frame="zipper-rush"] {
+  --frame-outer: #c48a1c;
+  --frame-inner: #c48a1c;
+}
+.art-frame[data-frame="zipper-rush"] .art-frame-ring {
+  background:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, #5a1f78, #2e0a44 55%, #4a1868);
+}
+/* Bridal bouquet: ivory satin edged in rose gold. */
+.art-frame[data-frame="bridal-bouquet"] {
+  --frame-outer: #d8cbb8;
+  --frame-inner: #b8786a;
+}
+.art-frame[data-frame="bridal-bouquet"] .art-frame-ring {
+  background: linear-gradient(160deg, #fffdf8, #f1e8da 50%, #fffaf2);
+}
+/* Lavender north: lavender field fading into snow. */
+.art-frame[data-frame="lavender-north"] {
+  --frame-outer: #6a4fc4;
+  --frame-inner: #ffffff;
+}
+.art-frame[data-frame="lavender-north"] .art-frame-ring {
+  background:
+    radial-gradient(circle, rgb(255 255 255 / 0.85) 0 0.6px, transparent 1px) 0 0 / 6px 6px,
+    linear-gradient(180deg, #e8e0ff, #c3b0f5 55%, #9b84e0);
 }
 /* Five ribbons: blush satin with lace dots and a rose-gold line. */
 .art-frame[data-frame="five-ribbons"] {
@@ -3372,6 +3546,46 @@
 .artwork-viewer[data-frame="frost-glam"] {
   --viewer-glow-rgb: 159 211 245;
   --viewer-floor-rgb: 255 46 138;
+}
+.artwork-viewer[data-frame="hollow-fang"] {
+  --viewer-glow-rgb: 220 20 50;
+  --viewer-floor-rgb: 239 230 214;
+}
+.artwork-viewer[data-frame="summer-fireworks"] {
+  --viewer-glow-rgb: 255 176 58;
+  --viewer-floor-rgb: 255 138 196;
+}
+.artwork-viewer[data-frame="sakura-storm"] {
+  --viewer-glow-rgb: 240 141 176;
+  --viewer-floor-rgb: 255 229 236;
+}
+.artwork-viewer[data-frame="kagune-coil"] {
+  --viewer-glow-rgb: 216 29 53;
+  --viewer-floor-rgb: 40 8 12;
+}
+.artwork-viewer[data-frame="stained-prelude"] {
+  --viewer-glow-rgb: 127 178 240;
+  --viewer-floor-rgb: 245 154 192;
+}
+.artwork-viewer[data-frame="fallen-halo"] {
+  --viewer-glow-rgb: 255 241 184;
+  --viewer-floor-rgb: 255 90 100;
+}
+.artwork-viewer[data-frame="afterimage"] {
+  --viewer-glow-rgb: 125 255 106;
+  --viewer-floor-rgb: 255 63 210;
+}
+.artwork-viewer[data-frame="zipper-rush"] {
+  --viewer-glow-rgb: 138 44 223;
+  --viewer-floor-rgb: 229 181 58;
+}
+.artwork-viewer[data-frame="bridal-bouquet"] {
+  --viewer-glow-rgb: 255 244 214;
+  --viewer-floor-rgb: 232 99 143;
+}
+.artwork-viewer[data-frame="lavender-north"] {
+  --viewer-glow-rgb: 165 139 240;
+  --viewer-floor-rgb: 255 154 74;
 }
 .artwork-viewer[data-leaving] {
   opacity: 0;

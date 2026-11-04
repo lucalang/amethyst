@@ -22,10 +22,10 @@ import {
 import { mergeGeometries, mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import type { FrameLookId } from "@/lib/frames";
-import { FRAME_MOTIFS, type MotifFinish, type MotifLayer, type MotifPiece, type MotifPlace } from "@/components/media/frame-motifs";
+import { FRAME_MOTIFS, FRAME_MOULDINGS, MOTIF_SCALE, type FrameMoulding, type MotifFinish, type MotifLayer, type MotifPiece, type MotifPlace } from "@/components/media/frame-motifs";
 
-/** Card measurements an ornament builds against: band size, band width, art short side and the band's top surface. */
-export type OrnamentBox = { bw: number; bh: number; m: number; s: number; z: number };
+/** Card measurements an ornament builds against: band size, band width, band corner radius, art short side, the band's top surface and the art's surface. */
+export type OrnamentBox = { bw: number; bh: number; m: number; r: number; s: number; z: number; floor: number };
 type Track = <T extends BufferGeometry | Material>(item: T) => T;
 type Pt = [x: number, y: number];
 type Pt3 = [x: number, y: number, h: number];
@@ -359,17 +359,17 @@ function spiderLily({ bw, bh, m, s, z }: OrnamentBox, track: Track) {
 
 /** Sculpted ornaments per frame (frames without an entry are just the band). */
 const FINISHES: Record<MotifFinish, MeshPhysicalMaterialParameters & { emissiveIntensity: number }> = {
-  metal: { metalness: 1, roughness: 0.24, clearcoat: 0.5, clearcoatRoughness: 0.2, emissiveIntensity: 0.2 },
-  gloss: { metalness: 0.05, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.08, emissiveIntensity: 0.14 },
-  satin: { metalness: 0, roughness: 0.55, clearcoat: 0.3, clearcoatRoughness: 0.3, emissiveIntensity: 0.12 },
+  metal: { metalness: 1, roughness: 0.3, clearcoat: 0.3, clearcoatRoughness: 0.3, emissiveIntensity: 0.12 },
+  gloss: { metalness: 0.05, roughness: 0.45, clearcoat: 0.35, clearcoatRoughness: 0.35, emissiveIntensity: 0.06 },
+  satin: { metalness: 0, roughness: 0.72, sheen: 0.5, sheenRoughness: 0.6, emissiveIntensity: 0.05 },
   gem: { metalness: 0.1, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.03, iridescence: 0.4, iridescenceIOR: 1.6, emissiveIntensity: 0.3 },
   glow: { metalness: 0, roughness: 0.4, emissiveIntensity: 0.9 },
 };
 const PLACES: Record<MotifPlace, [x: number, y: number]> = { tl: [-1, 1], tr: [1, 1], bl: [-1, -1], br: [1, -1], top: [0, 1], bottom: [0, -1] };
 const svg = new SVGLoader();
 
-/** One motif layer as geometry in band units, origin at the piece's anchor, with the paint as vertex colours. */
-function motifLayer(layer: MotifLayer, piece: MotifPiece): BufferGeometry | null {
+/** One motif layer as geometry in band units, origin at the piece's anchor, with the paint as vertex colours. `sink` grounds a fill: it runs solid from that far below the band up to its top. */
+function motifLayer(layer: MotifLayer, piece: MotifPiece, sink?: number): BufferGeometry | null {
   const [ox, oy] = piece.origin;
   const [w, h] = piece.box;
   const paths = (layer.copies ?? [null]).map((transform) => `<path d="${layer.d}"${transform ? ` transform="${transform}"` : ""}/>`).join("");
@@ -391,9 +391,10 @@ function motifLayer(layer: MotifLayer, piece: MotifPiece): BufferGeometry | null
       }
     } else {
       const depth = layer.depth ?? 0.4;
-      const bevel = Math.min(0.15, depth * 0.35);
-      for (const shape of SVGLoader.createShapes(path)) {
-        parts.push(new ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 10 }).translate(0, 0, bevel));
+      const bevel = Math.min(sink === undefined ? 0.15 : 0.3, depth * (sink === undefined ? 0.35 : 0.5));
+      const solid = sink === undefined ? depth : Math.max(0.02, depth + layer.lift + sink - bevel * 2);
+      for (const shape of path.toShapes()) {
+        parts.push(new ExtrudeGeometry(shape, { depth: solid, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 4, curveSegments: 10 }).translate(0, 0, bevel));
       }
     }
   }
@@ -413,18 +414,17 @@ function motifLayer(layer: MotifLayer, piece: MotifPiece): BufferGeometry | null
   return geometry;
 }
 
-/** Extrudes a frame's shared SVG motifs (see frame-motifs.ts) onto the band, one unit being a fifth of its width. */
-function motifs(pieces: readonly MotifPiece[], { bw, bh, m, z }: OrnamentBox, track: Track) {
+/** Sculpts a frame's shared SVG motifs (see frame-motifs.ts) as solid pieces standing on the card, one unit being a fifth of the band width. */
+function motifs(pieces: readonly MotifPiece[], { bw, bh, m, z, floor }: OrnamentBox, track: Track) {
   const group = new Group();
-  const u = m / 5;
   for (const piece of pieces) {
+    const u = (m / 5) * MOTIF_SCALE * (piece.scale ?? 1);
+    const sink = (z - floor) / u;
     for (const layer of piece.layers) {
-      const built = motifLayer(layer, piece);
+      const built = motifLayer(layer, piece, layer.line ? undefined : sink);
       if (!built) continue;
-      const geometry = track(built.scale(u, u, u).translate(0, 0, z + layer.lift * u));
-      const { emissiveIntensity, ...finish } = FINISHES[layer.finish];
-      const [a, b] = typeof layer.paint === "string" ? [layer.paint, layer.paint] : layer.paint;
-      const material = track(new MeshPhysicalMaterial({ ...finish, vertexColors: true, emissive: new Color(a).lerp(new Color(b), 0.5), emissiveIntensity }));
+      const geometry = track(built.scale(u, u, u).translate(0, 0, layer.line ? z + layer.lift * u : floor));
+      const material = track(motifMaterial(layer));
       for (const place of piece.at) {
         const [x, y] = PLACES[place];
         const mesh = new Mesh(geometry, material);
@@ -437,10 +437,87 @@ function motifs(pieces: readonly MotifPiece[], { bw, bh, m, z }: OrnamentBox, tr
   return group;
 }
 
+function motifMaterial({ paint, finish }: Pick<MotifLayer, "paint" | "finish">) {
+  const { emissiveIntensity, ...params } = FINISHES[finish];
+  const [a, b] = typeof paint === "string" ? [paint, paint] : paint;
+  return new MeshPhysicalMaterial({ ...params, vertexColors: true, emissive: new Color(a).lerp(new Color(b), 0.5), emissiveIntensity });
+}
+
+/** Round mouldings around the band and the trim tiles repeated along each rail, stretched to whole tiles like the CSS. */
+function moulding({ rails = [], trim }: FrameMoulding, { bw, bh, m, r, z }: OrnamentBox, track: Track) {
+  const group = new Group();
+  const u = m / 5;
+  for (const rail of rails) {
+    const inset = rail.at * u;
+    const [hx, hy, rr] = [bw / 2 - inset, bh / 2 - inset, Math.max(u * 0.2, r - inset)];
+    const points: Vector3[] = [];
+    for (const [cx, cy, start] of [[hx - rr, hy - rr, 0], [-hx + rr, hy - rr, 0.5], [-hx + rr, -hy + rr, 1], [hx - rr, -hy + rr, 1.5]]) {
+      for (let i = 0; i <= 6; i++) {
+        const a = (start + i / 12) * Math.PI;
+        points.push(new Vector3(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, 0));
+      }
+    }
+    const radius = (rail.width / 2) * u;
+    const geometry = new TubeGeometry(loop(points), points.length * 4, radius, 10, true).scale(1, 1, 0.8).translate(0, 0, z + rail.lift * u + radius * 0.7);
+    const [a, b] = typeof rail.paint === "string" ? [rail.paint, rail.paint] : rail.paint;
+    const position = geometry.getAttribute("position");
+    const colours = new Float32Array(position.count * 3);
+    const [from, to, colour] = [new Color(a), new Color(b), new Color()];
+    for (let i = 0; i < position.count; i++) {
+      const t = Math.min(1, Math.max(0, ((position.getX(i) + bw / 2) / bw + (bh / 2 - position.getY(i)) / bh) / 2));
+      colour.copy(from).lerp(to, t).toArray(colours, i * 3);
+    }
+    geometry.setAttribute("color", new Float32BufferAttribute(colours, 3));
+    group.add(new Mesh(track(geometry), track(motifMaterial(rail))));
+  }
+  if (!trim) return group;
+  const tilePiece: MotifPiece = { at: [], box: [trim.tile, 5], origin: [0, 0], layers: trim.layers };
+  // Strips are built along +x with the band inward along -y, then turned onto each side.
+  const strip = (tile: BufferGeometry, length: number) => {
+    const count = Math.max(1, Math.round(length / (trim.tile * u)));
+    const stretch = length / (count * trim.tile * u);
+    const built = merge(Array.from({ length: count }, (_, i) => tile.clone().translate(i * trim.tile, 0, 0)));
+    return built.scale(stretch * u, u, u);
+  };
+  const skip = trim.skip * u;
+  for (const layer of trim.layers) {
+    const tile = motifLayer(layer, tilePiece);
+    if (!tile) continue;
+    const material = track(motifMaterial(layer));
+    const across = track(strip(tile, bw - skip * 2).translate(0, 0, z + layer.lift * u));
+    const down = track(strip(tile, bh - skip * 2).translate(0, 0, z + layer.lift * u));
+    tile.dispose();
+    for (const [geometry, x, y, turn] of [
+      [across, -bw / 2 + skip, bh / 2, 0],
+      [across, bw / 2 - skip, -bh / 2, Math.PI],
+      [down, -bw / 2, -bh / 2 + skip, Math.PI / 2],
+      [down, bw / 2, bh / 2 - skip, -Math.PI / 2],
+    ] as const) {
+      const mesh = new Mesh(geometry, material);
+      mesh.position.set(x, y, 0);
+      mesh.rotation.z = turn;
+      group.add(mesh);
+    }
+  }
+  return group;
+}
+
+/** Mouldings first, then the motif pieces over them. */
+function illustrated(frame: FrameLookId) {
+  return (box: OrnamentBox, track: Track) => {
+    const group = new Group();
+    const mould = FRAME_MOULDINGS[frame];
+    const pieces = FRAME_MOTIFS[frame];
+    if (mould) group.add(moulding(mould, box, track));
+    if (pieces) group.add(motifs(pieces, box, track));
+    return group;
+  };
+}
+
 /** Sculpted ornaments per frame (frames without an entry are just the band). */
 export const ORNAMENTS: Partial<Record<FrameLookId, (box: OrnamentBox, track: Track) => Group>> = {
   amethyst,
   "seraph-wings": seraph,
-  "spider-lily": spiderLily,
-  ...Object.fromEntries(Object.entries(FRAME_MOTIFS).map(([frame, pieces]) => [frame, (box: OrnamentBox, track: Track) => motifs(pieces, box, track)])),
+  ...Object.fromEntries([...new Set([...Object.keys(FRAME_MOTIFS), ...Object.keys(FRAME_MOULDINGS)])].map((frame) => [frame, illustrated(frame as FrameLookId)])),
+  "spider-lily": (box, track) => spiderLily(box, track).add(illustrated("spider-lily")(box, track)),
 };

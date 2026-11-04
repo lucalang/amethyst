@@ -49,6 +49,51 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-03-ten-more-frames",
+    date: "2026-11-03",
+    title: "Ten More Frames & Richer Ornaments",
+    intro: "Ten new illustrated artwork frames in the Arcade shop, and the ten existing illustrated frames redrawn with sculpted mouldings and larger ornaments.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Ten new frames", text: "Ten new illustrated frames for 450–650 coins, each drawn in 2D and sculpted in 3D in Showcase." },
+      { kind: "improved", feature: "Illustrated frames", text: "The existing illustrated frames gained raised mouldings, patterned trim running round the band and bigger, more detailed ornaments." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Ten new frames",
+          body: "Each frame has its own mouldings, trim and ornaments on the corners and edges, kept clear of the artwork on square and portrait covers.",
+          points: [
+            "450 coins: Sakura storm, Bridal bouquet and Lavender north.",
+            "550 coins: Summer fireworks, Stained prelude, Kagune coil and Hollow fang.",
+            "650 coins: Fallen halo, Afterimage and Zipper rush.",
+          ],
+          where: "Arcade → Shop",
+          link: { href: "/arcade/shop", label: "Open the Arcade shop" },
+        },
+      ],
+      improved: [
+        {
+          title: "Richer illustrated frames",
+          body: "Koi rail, Pressed diary, Spider lily, Sonata keys, Demon wing, Moonshot, Golden arrow, Sword guard, Five ribbons and Frost glam keep their names, prices and ownership, with a fuller look.",
+          points: [
+            "Raised inner and outer mouldings and a patterned trim running all the way round, such as keys, rhinestones, ribbons, rivets and hilt wrapping.",
+            "Larger and more detailed ornaments, including a sword guard with an enamelled butterfly and cord knot, a lotus, jewelled wings, a sunburst and a lily crest.",
+            "The thicker band appears in collection cards, the frame picker, the artwork viewer and Showcase.",
+            "Ornaments on every illustrated frame are larger, inked with crisp outlines, cast soft shadows, and polished metal catches a bright highlight; glowing details slowly breathe and the frame leans toward your mouse. In Showcase they're sculpted as solid pieces that cast real shadows on the band and art.",
+            "New centrepieces across the illustrated frames: a breaking wave on Koi rail, a wax seal and pressed cherry spray on Pressed diary, a treble clef on Sonata keys, devil bat wings on Demon wing, a rocket on Moonshot, the Stand Arrow with menacing ゴゴゴ on Golden arrow, a sheathed katana on Tsuba guard, headphones, a bunny-ear ribbon and a wedding bell on Five ribbons, a crystal tiara on Frost glam, paper lanterns on Summer fireworks, a blossoming bough and omikuji fortunes on Sakura storm, torn-open zips on Zipper rush, lavender bundles and a fox by a snow globe on Lavender north, a rose window on Stained prelude and a chevron visor on Afterimage.",
+          ],
+          where: "Customization → Artwork frames",
+        },
+        {
+          title: "An easier frame picker",
+          body: "The frame list in Change artwork frame and the artwork viewer now scrolls on its own with larger previews, so the search, your cover preview and Save stay in view, and it opens scrolled to the frame you're using.",
+          where: "Entry → More entry actions → Change artwork frame, or the frame button in the artwork viewer",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-03-themes-frames-and-polish",
     date: "2026-11-03",
     title: "New Themes, Frames & a Polished Feel",
@@ -765,7 +810,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-12-performance",
     date: "2026-10-29",
-    title: "A quicker archive, with the same detail",
+    title: "A Quicker Archive",
     intro: "Artwork loads at a size suited to its place, collection searches keep their cards ready, and long notes do less repeated work. Your originals, effects and customization stay intact.",
     icon: "sparkles",
     highlights: [
@@ -804,7 +849,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-11-game-shops",
     date: "2026-10-29",
-    title: "A shop for every Arcade game",
+    title: "Arcade - Minigame Shops",
     intro: "Each of the six Arcade games now has its own shop of cosmetics, bought with the coins you earn by playing. They change how a game looks, never how it plays.",
     icon: "gamepad",
     highlights: [
@@ -924,7 +969,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-03-2048-flutter-daily",
     date: "2026-10-29",
-    title: "Daily challenges, board sizes and a fairer Flutter",
+    title: "2048 & Flutter Upgrades + Daily Challenges",
     intro: "2048 and Flutter each get a daily challenge. 2048 also animates more smoothly, saves unfinished rounds and offers three board sizes. Flutter's flight is fairer and pausing is safer.",
     icon: "gamepad",
     highlights: [
@@ -990,7 +1035,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-02-snake-speed-game-colors",
     date: "2026-10-29",
-    title: "Snake speeds, smoother play and game colors",
+    title: "Snake Upgrades + Performance",
     intro: "Snake runs more smoothly and lets you pick a speed, and every Arcade game now has its own colors instead of following your app theme.",
     icon: "gamepad",
     highlights: [
@@ -1030,7 +1075,7 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-01-snake-v2",
     date: "2026-10-29",
-    title: "Snake: cartoon look, 15 new modes and Blender",
+    title: "Snake V2: 15 New Gamemodes",
     intro: "Snake has a new hand-drawn look, an icon-based setup, many new modes you can play alone or mix in Blender, and more fruit.",
     icon: "gamepad",
     highlights: [
