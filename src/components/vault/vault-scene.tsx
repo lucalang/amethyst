@@ -13,6 +13,7 @@ import {
   Float32BufferAttribute,
   FogExp2,
   Group,
+  HalfFloatType,
   HemisphereLight,
   IcosahedronGeometry,
   InstancedMesh,
@@ -40,19 +41,27 @@ import {
   Vector3,
   Vector4,
   WebGLRenderer,
+  WebGLRenderTarget,
   type Material,
   type Texture,
 } from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { follow, radialTexture, spring, studioEnvironment } from "@/components/showcase/three-kit";
 import type { MotionLevel } from "@/lib/preferences";
-import { LATE_ASSEMBLY, SUMMON, UNLOCK, type SummonKind } from "./timing";
+import { LATE_ASSEMBLY, PACE, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
 import {
+  BACKDROP_FRAGMENT,
   BEAM_FRAGMENT,
   BEAM_VERTEX,
   CONE_FRAGMENT,
   CONE_VERTEX,
   DOOR_SPAN,
   EMBER_VERTEX,
+  FINISH_FRAGMENT,
   POINT_FRAGMENT,
   SCREEN_FRAGMENT,
   SIGIL_FRAGMENT,
@@ -61,7 +70,6 @@ import {
   TAU,
   UV_VERTEX,
   band,
-  bracket,
   chamberWall,
   chamfer,
   doorFace,
@@ -69,8 +77,8 @@ import {
   easeIn,
   easeInOut,
   easeOut,
+  engravedSigil,
   frame as slabGeometry,
-  glyphLine,
   grain,
   hash,
   heartbeat,
@@ -82,11 +90,9 @@ import {
   recess,
   runeStrip,
   seams,
-  sigil,
   smoke,
   softRect,
   span,
-  trapezoid,
   wedge,
   wobble,
 } from "./vault-forge";
@@ -118,12 +124,14 @@ const DIST = 14;
 /** The vault floats this far behind the console. */
 const Z_ART = -3.2;
 /** Housing radius as a share of half the artifact box (the rings and shards spill past it on purpose). */
-const ART_FILL = 0.84;
+const ART_FILL = { compact: 0.74, wide: 0.72 };
+/** The chamber's back wall. */
+const BACK_Z = -20;
 const SEGMENTS = 8;
 const BOLTS = 24;
 const SHARDS = 12;
 /** Console measurements in CSS pixels around the page's panel. */
-const CON = { margin: 18, cut: 14, inset: 3, holeCut: 7, depth: 34, recess: 10, bevel: 3, back: 12, backDepth: 9, approach: 22 };
+const CON = { margin: 18, cut: 34, inset: 3, holeCut: 18, depth: 34, recess: 10, bevel: 3, back: 12, backDepth: 9, approach: 22 };
 /** How far the console leans toward the pointer (radians). */
 const MAX_TILT = 0.085;
 
@@ -163,7 +171,7 @@ const HUB: [number, number][] = [
  * Choreography
  * ------------------------------------------------------------------------- */
 
-type LevelKey = "seam" | "core" | "pale" | "ash" | "dim" | "spin" | "tilt" | "teeth" | "halo" | "screen" | "scan" | "noise" | "beam" | "push" | "pull" | "shafts";
+type LevelKey = "seam" | "core" | "pale" | "ash" | "dim" | "spin" | "tilt" | "teeth" | "halo" | "screen" | "scan" | "noise" | "beam" | "push" | "pull" | "shafts" | "surge";
 type Levels = Record<LevelKey, number>;
 /** Smoothing time (seconds) of each continuous level. */
 const LEVEL_TIMES: Levels = {
@@ -183,6 +191,7 @@ const LEVEL_TIMES: Levels = {
   push: 0.7,
   pull: 0.6,
   shafts: 0.3,
+  surge: 0.3,
 };
 const LEVEL_KEYS = Object.keys(LEVEL_TIMES) as LevelKey[];
 
@@ -201,6 +210,14 @@ type Shots = {
   shake: number;
   retract: number;
   sag: number;
+  /** The console's rim flaring, then a wave (0–1, −1 off) running inward through the seal's engravings. */
+  flare: number;
+  wave: number;
+  /** A sent code: the packet striking the seal, charge rings (0–1, −1 off), the link port lighting, the seal's rejection. */
+  impact: number;
+  ring: number;
+  port: number;
+  reject: number;
 };
 
 /**
@@ -228,24 +245,36 @@ function choreograph(phase: ScenePhase, pe: number, now: number, charge: number,
     push: 0,
     pull: 0,
     shafts: 0,
+    surge: 0,
   } satisfies Levels);
-  Object.assign(shot, { open: null, align: 0, flash: 0, burst: -1, shock: -1, disengage: 0, head: -1, back: -1, flow: 0, jolt: 0, shake: 0, retract: 0, sag: 0 } satisfies Shots);
+  Object.assign(shot, { open: null, align: 0, flash: 0, burst: -1, shock: -1, disengage: 0, head: -1, back: -1, flow: 0, jolt: 0, shake: 0, retract: 0, sag: 0, flare: 0, wave: -1, impact: 0, ring: -1, port: 0, reject: 0 } satisfies Shots);
+  const wave = pe >= at(60) && pe < at(700) ? span(pe, at(60), at(640)) : -1;
   const shakes = pace === 1;
   switch (phase) {
     case "verifying": {
-      // The code travels down the link into the seal; the mechanism spins up and the core gathers charge.
-      const build = 1 - Math.exp(-pe / 1400);
-      out.seam = 0.9 + 0.35 * build + 0.12 * Math.sin(pe / 160);
-      out.core = 0.45 + 0.6 * build;
-      out.spin = 4 + 2 * build;
-      out.halo = 0.5 + 0.2 * build;
+      // The code leaves the console as a packet, runs the link and strikes the seal; the mechanism spins up and
+      // charges, then holds, breathing with a ring per beat, until the answer comes.
+      const depart = at(TRANSMIT.depart);
+      const impact = at(TRANSMIT.impact);
+      const charged = easeOut(span(pe, impact, at(TRANSMIT.charged)));
+      const since = pe - impact;
+      const beat = since >= 0 && pe < 1e8 ? 0.5 + 0.5 * Math.cos((TAU * since) / TRANSMIT.breath) : 0;
+      out.seam = 0.6 + 0.45 * charged + 0.15 * beat * charged;
+      out.core = 0.35 + 0.75 * charged + 0.15 * beat * charged;
+      out.spin = 1.5 + 4.5 * charged;
+      out.halo = 0.4 + 0.3 * charged;
       out.screen = 1.1;
       out.scan = 1;
-      out.beam = 1;
-      out.push = 0.12 * build;
-      out.pull = 0.8;
-      shot.head = pe < at(480) ? easeInOut(pe / at(480)) : -1;
-      shot.flow = span(pe, at(380), at(800));
+      out.beam = pe >= depart ? 1 : 0;
+      out.surge = charged * (0.8 + 0.2 * beat);
+      out.push = 0.12 * charged;
+      out.pull = 0.3 + 0.6 * charged;
+      shot.port = 0.7 * span(pe, at(60), depart) * (pe < depart ? 1 : Math.exp(-(pe - depart) / at(260))) + Math.exp(-(((pe - depart) / at(100)) ** 2));
+      shot.head = pe >= depart && pe < impact ? easeIn(span(pe, depart, impact)) : -1;
+      shot.flow = charged;
+      shot.impact = since >= 0 ? Math.exp(-since / at(220)) : 0;
+      shot.ring = since >= 0 && pe < 1e8 ? (since % TRANSMIT.breath) / TRANSMIT.breath : -1;
+      shot.flare = 0.35 * Math.exp(-(((pe - depart) / at(140)) ** 2));
       break;
     }
     case "granted": {
@@ -271,11 +300,17 @@ function choreograph(phase: ScenePhase, pe: number, now: number, charge: number,
       shot.disengage = easeOut(span(pe, burst, burst + at(1150)));
       shot.shake = shakes && pe >= burst ? Math.max(0, 1 - (pe - burst) / 380) : 0;
       shot.retract = revealing ? easeInOut(span(sinceReveal, at(250), at(1000))) : 0;
+      shot.flare = Math.exp(-(((pe - at(40)) / at(240)) ** 2));
+      shot.wave = wave;
       break;
     }
     case "already": {
-      // Recognised but spent: the rings align pale, the teeth twitch and the door lifts and settles shut.
+      // Recognised but spent: the link pales and hands the packet back, the rings align, the door lifts and settles.
       const align = easeInOut(span(pe, 0, at(600)));
+      out.beam = 1 - span(pe, 0, at(700));
+      out.surge = 0.6 * (1 - span(pe, 0, at(900)));
+      shot.back = pe < at(700) ? 1 - easeInOut(pe / at(700)) : -1;
+      shot.ring = pe < at(800) ? span(pe, 0, at(800)) : -1;
       shot.align = align;
       out.pale = 1;
       out.seam = 0.7;
@@ -286,31 +321,42 @@ function choreograph(phase: ScenePhase, pe: number, now: number, charge: number,
       out.halo = 0.36;
       shot.open = 0.07 * Math.sin(Math.PI * span(pe, at(300), at(1150)));
       shot.flash = 0.5 * Math.exp(-(((pe - at(150)) / at(300)) ** 2));
+      shot.flare = 0.6 * Math.exp(-(((pe - at(40)) / at(260)) ** 2));
+      shot.wave = wave;
       break;
     }
     case "invalid": {
-      // The dial jams and snaps back, the seams pulse red twice and the rejected code returns down the link.
-      const pulses = pe < at(1400) ? Math.max(0, Math.sin((Math.PI * pe) / at(700))) : 0;
+      // The seal flashes and throws the packet back down the link; it strikes the console, which recoils, and the
+      // seams pulse red twice while the link fizzles out.
+      const recoil = at(TRANSMIT.recoil);
+      const hit = pe - recoil;
+      const pulses = hit >= 0 && hit < at(1400) ? Math.max(0, Math.sin((Math.PI * hit) / at(700))) : 0;
       out.seam = 0.4 + 0.8 * pulses;
       out.core = 0.12;
       out.spin = 0.3;
       out.dim = 0.1;
       out.halo = 0.25 + 0.3 * pulses;
       out.teeth = -0.05 * Math.exp(-pe / 260);
-      out.beam = 1 - span(pe, at(380), at(700));
-      shot.back = pe < at(420) ? 1 - easeIn(pe / at(420)) : -1;
-      shot.jolt = (shakes ? 1 : 0.35) * Math.exp(-pe / at(170)) * Math.sin((TAU * pe) / at(105));
-      shot.shake = shakes ? 0.35 * Math.exp(-pe / 220) : 0;
+      out.beam = (1 - span(pe, 0, recoil + at(240))) * (0.7 + 0.3 * Math.cos((TAU * pe) / 170));
+      shot.back = pe < recoil ? 1 - easeIn(pe / recoil) : -1;
+      shot.reject = Math.exp(-pe / at(260));
+      shot.port = hit >= 0 ? 1.6 * Math.exp(-hit / at(200)) : 0;
+      shot.jolt = hit >= 0 ? (shakes ? 1 : 0.35) * Math.exp(-hit / at(170)) * Math.sin((TAU * hit) / at(105)) : 0;
+      shot.shake = shakes && hit >= 0 ? 0.35 * Math.exp(-hit / 220) : 0;
+      shot.flare = 0.7 * pulses;
       break;
     }
     case "unavailable":
-      // Dormant: ash-grey, the rings barely turning, the vault sagging a little in the dark.
+      // Dormant: the charge gutters out down an ash-grey link and the vault sags a little in the dark.
       Object.assign(out, { seam: 0.12, core: 0.04, ash: 1, dim: 0.55, spin: 0.06, tilt: 1.2, halo: 0.08, screen: 0.55 });
+      out.beam = (1 - span(pe, 0, at(900))) * (0.55 + 0.45 * Math.cos((TAU * pe) / 190));
       shot.sag = easeOut(span(pe, 0, at(1400)));
       break;
     case "locked": {
-      // Lockdown: the teeth slam in, the rings stop and the seams keep a slow heartbeat.
+      // Lockdown: the link is cut at the port, the teeth slam in, the rings stop and the seams keep a slow heartbeat.
       const beat = heartbeat(pe);
+      shot.reject = Math.exp(-pe / at(200));
+      shot.port = 1.4 * Math.exp(-pe / at(160));
       Object.assign(out, { seam: 0.25 + 0.5 * beat, core: 0.06, dim: 0.45, ash: 0.15, spin: 0, halo: 0.12 + 0.2 * beat, screen: 0.75 });
       out.teeth = pe < at(140) ? -0.1 * (pe / at(140)) : -0.1 + 0.06 * span(pe, at(140), at(500));
       shot.shake = shakes ? 0.8 * Math.exp(-pe / 160) : 0;
@@ -393,10 +439,12 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const lowEnd = (navigator.hardwareConcurrency ?? 8) <= 4;
   const maxDpr = Math.min(window.devicePixelRatio || 1, compact ? (lowEnd ? 1.25 : 1.5) : lowEnd ? 1.5 : 1.75);
   let dpr = maxDpr;
+  const tier = compact ? (lowEnd ? 2 : 1) : lowEnd ? 1 : 0;
 
-  const renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+  // Opaque: the chamber, its haze and the bloom are all drawn here, then finished like a lens.
+  const renderer = new WebGLRenderer({ antialias: false, stencil: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(dpr);
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0x030203, 1);
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = NeutralToneMapping;
   renderer.shadowMap.enabled = true;
@@ -411,7 +459,35 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     owned.push(item);
     return item;
   };
-  scene.environment = own(studioEnvironment(renderer, RED, DEEP, true, 0.35));
+  // Mostly neutral reflections: the metal reads as steel and the red stays in the light it gives off.
+  scene.environment = own(studioEnvironment(renderer, RED.clone().multiplyScalar(0.3), new Color(0x2a2629), true, 0.35));
+
+  const composer = new EffectComposer(renderer, new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: [4, 2, 0][tier] }));
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new Vector2(1, 1), 0.8, 0.18, 0.65);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+  const finish = new ShaderPass({
+    uniforms: {
+      tDiffuse: { value: null },
+      uResolution: { value: new Vector2(1, 1) },
+      uLight: { value: new Vector2(0.5, 0.5) },
+      uTime: { value: 0 },
+      uRays: { value: 0 },
+      uFlash: { value: 0 },
+      uShock: { value: -1 },
+      uAberration: { value: 0 },
+      uGlitch: { value: 0 },
+      uGrain: { value: 0.014 },
+      uVignette: { value: 0.55 },
+      uHot: { value: PALE.clone() },
+    },
+    vertexShader: UV_VERTEX,
+    fragmentShader: FINISH_FRAGMENT,
+    defines: { RAYS: [28, 16, 0][tier] },
+  });
+  composer.addPass(finish);
+  const fx = finish.uniforms;
 
   /* Textures */
   const glowTex = own(radialTexture([
@@ -431,22 +507,21 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const wallTex = own(paint(512, 256, chamberWall));
   wallTex.wrapS = RepeatWrapping;
   wallTex.repeat.set(2, 1);
-  const sigilTex = own(paint(1024, 1024, sigil));
+  const sigilTex = own(paint(1024, 1024, engravedSigil));
   const smokeTex = own(paint(128, 128, smoke));
   smokeTex.wrapS = smokeTex.wrapT = RepeatWrapping;
   const haloTex = own(paint(256, 256, softRect));
-  const lineTex = own(paint(1024, 64, glyphLine));
 
   /* Materials */
-  const iron = new MeshStandardMaterial({ color: 0x2a1c1f, metalness: 0.9, roughness: 0.58, roughnessMap: grainTex, envMapIntensity: 0.85 });
-  const steel = new MeshStandardMaterial({ color: 0x4a3539, metalness: 1, roughness: 0.3, roughnessMap: grainTex, envMapIntensity: 1.1 });
-  const blade = new MeshStandardMaterial({ color: 0x241619, metalness: 0.88, roughness: 0.4, envMapIntensity: 1, emissive: RED.clone(), emissiveMap: doorTex, emissiveIntensity: 0 });
+  const iron = new MeshStandardMaterial({ color: 0x29262a, metalness: 0.92, roughness: 0.4, roughnessMap: grainTex, envMapIntensity: 1.1 });
+  const steel = new MeshStandardMaterial({ color: 0x8c868b, metalness: 1, roughness: 0.2, roughnessMap: grainTex, envMapIntensity: 1.5 });
+  const blade = new MeshStandardMaterial({ color: 0x1e1b1e, metalness: 0.88, roughness: 0.4, envMapIntensity: 1, emissive: RED.clone(), emissiveMap: doorTex, emissiveIntensity: 0 });
   const bladeSide = new MeshStandardMaterial({ color: 0x1a0f12, metalness: 0.85, roughness: 0.5, envMapIntensity: 0.8, emissive: RED.clone(), emissiveIntensity: 0 });
   const chamberMat = new MeshStandardMaterial({ color: 0x160a0d, metalness: 0.6, roughness: 0.6, side: BackSide, emissive: DEEP.clone(), emissiveMap: wallTex, emissiveIntensity: 0 });
   const bedMat = new MeshStandardMaterial({ color: 0x0d0607, metalness: 0.4, roughness: 0.7, emissive: RED.clone(), emissiveMap: sigilTex, emissiveIntensity: 0 });
   const obsidian = new MeshStandardMaterial({ color: 0x0b0607, metalness: 0.35, roughness: 0.12, envMapIntensity: 1.6 });
-  const slabMat = new MeshStandardMaterial({ color: 0x1b1114, metalness: 0.85, roughness: 0.45, envMapIntensity: 0.9 });
-  const trimMat = new MeshStandardMaterial({ color: 0x3c282d, metalness: 1, roughness: 0.28, envMapIntensity: 1.15 });
+  const slabMat = new MeshStandardMaterial({ color: 0x171517, metalness: 0.85, roughness: 0.42, envMapIntensity: 0.9 });
+  const trimMat = new MeshStandardMaterial({ color: 0x7a7479, metalness: 1, roughness: 0.2, envMapIntensity: 1.5 });
   const socketMat = new MeshStandardMaterial({ color: 0x080405, metalness: 0.5, roughness: 0.55, emissive: RED.clone(), emissiveIntensity: 0 });
   const glow = (map: Texture | null, color: Color) =>
     new MeshBasicMaterial({ map, color: color.clone(), blending: AdditiveBlending, transparent: true, depthWrite: false, side: DoubleSide, fog: false });
@@ -506,6 +581,15 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   });
   const hub = new Mesh(lathe(HUB, 64), steel);
   hub.castShadow = true;
+  // The keyhole: a crystal set in the hub, lit from inside; it sinks away with the hub.
+  const keystoneMat = new MeshBasicMaterial({ color: PALE.clone() });
+  const keystone = new Mesh(new OctahedronGeometry(0.046, 0), keystoneMat);
+  keystone.scale.set(1, 1.4, 0.6);
+  keystone.position.z = 0.085;
+  const keyGlowMat = glow(glowTex, RED);
+  const keyGlow = new Mesh(new PlaneGeometry(0.6, 0.6), keyGlowMat);
+  keyGlow.position.z = 0.1;
+  hub.add(keystone, keyGlow);
   const seamMat = glow(null, RED);
   door.add(hub, new Mesh(seams(SEGMENTS, 0.1, 0.69, 0.016), seamMat));
   const rimSeam = new Mesh(band(0.697, 0.708, 160, 1), seamMat);
@@ -571,7 +655,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   art.add(shards);
 
   const sigilMat = new ShaderMaterial({
-    uniforms: { uMap: { value: sigilTex }, uTrace: { value: 0 }, uGlow: { value: 0 }, uTime: { value: 0 }, uColor: { value: RED.clone() } },
+    uniforms: { uMap: { value: sigilTex }, uTrace: { value: 0 }, uGlow: { value: 0 }, uTime: { value: 0 }, uColor: { value: RED.clone() }, uHot: { value: PALE.clone() } },
     vertexShader: UV_VERTEX,
     fragmentShader: SIGIL_FRAGMENT,
     blending: AdditiveBlending,
@@ -600,7 +684,10 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const shockMat = glow(null, PALE);
   const shock = new Mesh(new RingGeometry(0.97, 1, 128), shockMat);
   shock.position.z = 0.09;
-  body.add(cone, shock);
+  const chargeRingMat = glow(null, PALE);
+  const chargeRing = new Mesh(new RingGeometry(0.94, 1, 128), chargeRingMat);
+  chargeRing.position.z = 0.14;
+  body.add(cone, shock, chargeRing);
 
   // Sparks share one buffer: a burst from the core when it opens, and a gathering swarm during the summon.
   const sparkCount = compact ? 140 : 260;
@@ -669,6 +756,24 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   embers.frustumCulled = false;
   scene.add(embers);
 
+  const backdropMat = new ShaderMaterial({
+    uniforms: {
+      uCenter: { value: new Vector2(0.5, 0.5) },
+      uAspect: { value: 1 },
+      uLevel: { value: 0 },
+      uHeat: { value: 0 },
+      uColor: { value: DEEP.clone() },
+      uHot: { value: RED.clone() },
+    },
+    vertexShader: UV_VERTEX,
+    fragmentShader: BACKDROP_FRAGMENT,
+    depthWrite: false,
+  });
+  const backdrop = new Mesh(new PlaneGeometry(1, 1), backdropMat);
+  backdrop.position.z = BACK_Z;
+  backdrop.renderOrder = -20;
+  scene.add(backdrop);
+
   const smokeLayers = [-7, -11, -15].slice(0, compact ? 2 : 3).map((z, i) => {
     const material = new ShaderMaterial({
       uniforms: {
@@ -692,7 +797,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   });
 
   /* Lights */
-  const hemi = new HemisphereLight(0x6a5058, 0x080304, 0);
+  const hemi = new HemisphereLight(0x55505a, 0x060405, 0);
   const key = new DirectionalLight(0xfff1ec, 0);
   key.castShadow = true;
   key.shadow.mapSize.set(compact ? 512 : 1024, compact ? 512 : 1024);
@@ -701,7 +806,9 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const rimLeft = new PointLight(RED, 0, 10, 0);
   const rimRight = new PointLight(RED, 0, 10, 0);
   const conLight = new PointLight(RED, 0, 10, 0);
-  scene.add(hemi, key, key.target, rimLeft, rimRight, conLight);
+  // A pale light from behind and above picks out the metal's edges.
+  const edge = new DirectionalLight(0xf4eef0, 0);
+  scene.add(hemi, key, key.target, rimLeft, rimRight, conLight, edge, edge.target);
 
   /* ------------------------------------------------------------------ the console */
   const con = new Group();
@@ -714,8 +821,11 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       uScan: { value: 0 },
       uNoise: { value: 0 },
       uFlash: { value: 0 },
+      uFlare: { value: 0 },
+      uCut: { value: CON.holeCut },
       uTime: { value: 0 },
       uColor: { value: RED.clone() },
+      uHot: { value: PALE.clone() },
       uSheen: { value: new Vector2() },
       uHoleA: { value: new Vector4(0, 0, -1, -1) },
       uHoleB: { value: new Vector4(0, 0, -1, -1) },
@@ -726,7 +836,6 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const conSeamMat = glow(null, RED);
   const backSeamMat = glow(null, RED);
   const conHaloMat = glow(haloTex, RED);
-  const inlayMat = glow(lineTex, RED);
   const portGlowMat = glow(glowTex, RED);
   const unitPlane = new PlaneGeometry(1, 1);
   const slab = new Mesh(new BufferGeometry(), slabMat);
@@ -735,9 +844,8 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const recessGeometry = recess();
   const sockets = [new Mesh(recessGeometry, [slabMat, socketMat]), new Mesh(recessGeometry, [slabMat, socketMat])];
   const conHalo = new Mesh(unitPlane, conHaloMat);
-  const inlays = [new Mesh(unitPlane, inlayMat), new Mesh(unitPlane, inlayMat)];
   slab.receiveShadow = true;
-  con.add(slab, screen, screenSeam, ...sockets, conHalo, ...inlays);
+  con.add(slab, screen, screenSeam, ...sockets, conHalo);
 
   // Frame pieces fly in from their own directions (CSS px offsets and turns) and lock around the slab.
   type Piece = { group: Group; home: Vector3; away: [number, number, number]; turn: [number, number, number]; order: number };
@@ -753,26 +861,6 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const backPlate = new Mesh(new BufferGeometry(), slabMat);
   const backSeam = new Mesh(new BufferGeometry(), backSeamMat);
   const backPiece = piece(0, [0, 0, -220], [0, 0, 0], backPlate, backSeam);
-  const rivetGeometry = new CylinderGeometry(1, 1, 1, 8);
-  rivetGeometry.rotateX(Math.PI / 2);
-  const rails = [-1, 1].map((side, i) => {
-    const bar = new Mesh(new BufferGeometry(), trimMat);
-    const light = new Mesh(unitPlane, conSeamMat);
-    const rivets = [0, 1, 2].map(() => new Mesh(rivetGeometry, trimMat));
-    return { side, bar, light, rivets, piece: piece(1 + i * 0.5, [side * 140, 0, 60], [0, side * 0.9, 0], bar, light, ...rivets) };
-  });
-  const brackets = [0, 1, 2, 3].map((i) => {
-    const sx = i % 2 ? 1 : -1;
-    const sy = i < 2 ? 1 : -1;
-    const mesh = new Mesh(new BufferGeometry(), trimMat);
-    mesh.scale.set(sx, sy, 1);
-    return { sx, sy, mesh, piece: piece(2 + i * 0.5, [sx * 70, sy * 70, 120], [0, 0, sx * sy * 0.6], mesh) };
-  });
-  const crestMesh = new Mesh(new BufferGeometry(), trimMat);
-  const keelMesh = new Mesh(new BufferGeometry(), trimMat);
-  keelMesh.scale.set(0.72, -1, 1);
-  const crest = piece(4, [0, 110, 40], [0.8, 0, 0], crestMesh);
-  const keel = piece(4.5, [0, -90, 40], [-0.8, 0, 0], keelMesh);
   const port = new Group();
   const portNode = new Mesh(new OctahedronGeometry(1, 0), trimMat);
   const portGlow = new Mesh(unitPlane, portGlowMat);
@@ -780,7 +868,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   con.add(port);
 
   const beamMat = new ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uLevel: { value: 0 }, uFlow: { value: 0 }, uHead: { value: -1 }, uBack: { value: -1 }, uColor: { value: RED.clone() } },
+    uniforms: { uTime: { value: 0 }, uLevel: { value: 0 }, uFlow: { value: 0 }, uHead: { value: -1 }, uBack: { value: -1 }, uColor: { value: RED.clone() }, uHot: { value: PALE.clone() } },
     vertexShader: BEAM_VERTEX,
     fragmentShader: BEAM_FRAGMENT,
     blending: AdditiveBlending,
@@ -789,7 +877,11 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   });
   const beam = new Mesh(new BufferGeometry(), beamMat);
   beam.frustumCulled = false;
-  scene.add(beam);
+  const packetMat = glow(glowTex, RED);
+  const packetCoreMat = glow(glowTex, PALE);
+  const packet = new Mesh(unitPlane, packetMat);
+  const packetCore = new Mesh(unitPlane, packetCoreMat);
+  scene.add(beam, packet, packetCore);
 
   /* ------------------------------------------------------------------ layout */
   let W = 0;
@@ -811,6 +903,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   let panelY = 0;
   let consoleKey = "";
   let beamKey = "";
+  let beamCurve: QuadraticBezierCurve3 | null = null;
   const artBox = { x: 0, y: 0, r: 1 };
   /** Port of the link on the console, in console space. */
   const portAt = new Vector3();
@@ -819,10 +912,6 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const swap = (mesh: Mesh, geometry: BufferGeometry) => {
     mesh.geometry.dispose();
     mesh.geometry = geometry;
-  };
-  const share = (meshes: Mesh[], geometry: BufferGeometry) => {
-    for (const old of new Set(meshes.map((mesh) => mesh.geometry))) old.dispose();
-    for (const mesh of meshes) mesh.geometry = geometry;
   };
 
   function buildConsole() {
@@ -841,44 +930,11 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
 
     const backZ = (CON.recess - CON.depth - 6) * u;
     swap(backPlate, plate(chamfer(new Shape(), hw + CON.back * u, hh + CON.back * u, (CON.cut + 6) * u), CON.backDepth * u, 2 * u));
-    swap(backSeam, outline(hw + 2 * u, hh + 2 * u, CON.cut * u, 2.2 * u));
+    // Just outside the slab, so the plate's silhouette reads as a lit edge.
+    swap(backSeam, outline(hw + 5.5 * u, hh + 5.5 * u, (CON.cut + 3.2) * u, 2 * u));
     backSeam.position.z = 0.4 * u;
     backPiece.home.set(0, 0, backZ);
 
-    const railLength = Math.max(60, panelH * 0.62) * u;
-    share(
-      rails.map((rail) => rail.bar),
-      plate(chamfer(new Shape(), 4 * u, railLength / 2, 3 * u), 16 * u, 1.5 * u),
-    );
-    for (const rail of rails) {
-      rail.light.scale.set(1.4 * u, railLength * 0.78, 1);
-      rail.light.position.z = 0.4 * u;
-      rail.rivets.forEach((rivet, i) => {
-        rivet.scale.set(2.2 * u, 2.2 * u, 3 * u);
-        rivet.position.set(0, (i - 1) * railLength * 0.4, 1 * u);
-      });
-      rail.piece.home.set(rail.side * (hw + 9 * u), 0, (CON.recess - 6) * u);
-    }
-
-    const arm = Math.min(64, panelW * 0.2, panelH * 0.3) * u;
-    share(
-      brackets.map((b) => b.mesh),
-      plate(bracket(arm, 9 * u, 5 * u), 7 * u, 1.2 * u),
-    );
-    for (const b of brackets) {
-      b.piece.home.set(b.sx * (hw - 3 * u), b.sy * (hh - 3 * u), (CON.recess + 7) * u);
-    }
-
-    const crestWidth = Math.min(170, panelW * 0.42) * u;
-    share([crestMesh, keelMesh], plate(trapezoid(crestWidth, crestWidth * 0.7, 12 * u), 12 * u, 1.5 * u));
-    crest.home.set(0, hh - 2 * u, (CON.recess - 2) * u);
-    keel.home.set(0, -hh + 2 * u, (CON.recess - 2) * u);
-
-    const inlayWidth = Math.min(300, panelW * 0.6) * u;
-    inlays.forEach((inlay, i) => {
-      inlay.scale.set(inlayWidth, 9 * u, 1);
-      inlay.position.set(0, (i ? -1 : 1) * (panelH / 2 + CON.inset + 7.5) * u, (CON.recess + 0.3) * u);
-    });
     conHalo.scale.set((panelW + 2 * CON.margin) * u * 1.7, (panelH + 2 * CON.margin) * u * 1.7, 1);
     conHalo.position.z = backZ - 30 * u;
     portNode.scale.set(4 * u, 6 * u, 4 * u);
@@ -904,7 +960,8 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     const mid = start.clone().lerp(end, 0.5);
     mid.y += Math.abs(end.x - start.x) * 0.12 + 0.3;
     mid.z += 1.6;
-    swap(beam, new TubeGeometry(new QuadraticBezierCurve3(start, mid, end), 72, 1.6 * k, 6, false));
+    beamCurve = new QuadraticBezierCurve3(start, mid, end);
+    swap(beam, new TubeGeometry(beamCurve, 72, 2.2 * k, 6, false));
   }
 
   const holes = [screenMat.uniforms.uHoleA.value as Vector4, screenMat.uniforms.uHoleB.value as Vector4];
@@ -939,6 +996,9 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   function resize() {
     renderer.setPixelRatio(dpr);
     renderer.setSize(W, H, false);
+    composer.setPixelRatio(dpr);
+    composer.setSize(W, H);
+    fx.uResolution.value.set(W * dpr, H * dpr);
     camera.aspect = W / H;
     camera.updateProjectionMatrix();
     f = H / (2 * TAN);
@@ -949,6 +1009,9 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       const height = 2 * (DIST - z) * TAN * 1.3;
       layer.scale.set(height * camera.aspect, height, 1);
     }
+    const backHeight = 2 * (DIST - BACK_Z) * TAN * 1.3;
+    backdrop.scale.set(backHeight * camera.aspect, backHeight, 1);
+    backdropMat.uniforms.uAspect.value = camera.aspect;
     const halfH = (DIST + 2.5) * TAN;
     emberMat.uniforms.uBox.value.set(halfH * camera.aspect * 1.05, halfH * 1.05, 3.5);
   }
@@ -992,7 +1055,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     const cy = hostTop + H / 2;
     const kA = (DIST - Z_ART) / f;
     artRest.set((a.left + a.width / 2 - cx) * kA, -(a.top + a.height / 2 - cy) * kA, Z_ART);
-    artScale = (Math.min(a.width, a.height) / 2) * kA * ART_FILL;
+    artScale = (Math.min(a.width, a.height) / 2) * kA * ART_FILL[compact ? "compact" : "wide"];
     artBox.x = a.left + a.width / 2;
     artBox.y = a.top + a.height / 2;
     artBox.r = Math.max(1, Math.min(a.width, a.height) / 2);
@@ -1080,6 +1143,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const camPos = new Vector3();
   const look = new Vector3();
   const corePos = new Vector3();
+  const ndc = new Vector3();
   const A = new Matrix4();
   const M = new Matrix4();
   let lastTransform = "";
@@ -1099,7 +1163,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
 
     const ie = introElapsed(now);
     const I = pose(introKind, ie);
-    const pace = motion === "subtle" ? 0.45 : 1;
+    const pace = motion === "subtle" ? PACE.subtle : 1;
     const pe = still ? 1e9 : now - phaseAt;
     choreograph(phase, pe, now, charge, pace, revealing, still ? 1e9 : now - revealAt, target, shot);
     for (const name of LEVEL_KEYS) {
@@ -1264,35 +1328,44 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     const dim = level.dim.value;
     const ash = level.ash.value;
     const kp = Math.exp(-(now - keyAt) / 180);
+    const surge = level.surge.value + 1.5 * shot.impact;
     tint.copy(RED).lerp(PALE, level.pale.value * 0.85).lerp(ASH, ash);
     coreTint.copy(RED).lerp(PALE, Math.min(1, level.pale.value * 0.7 + open * 0.5)).lerp(ASH, ash);
     const glowSeams = I.seams;
-    seamMat.color.copy(tint).multiplyScalar(seam * glowSeams * (1 - open) * 1.6);
+    // Engravings run hot enough to bloom; the unlock's wave lights them outside-in (gyros, housing, dial, seams).
+    const wv = shot.wave;
+    const swell = (at: number) => (wv < 0 ? 0 : Math.exp(-(((wv - at) / 0.14) ** 2)) * 2.5);
+    seamMat.color.copy(tint).multiplyScalar(seam * glowSeams * (1 - open) * (3 + swell(0.85)));
     blade.emissive.copy(tint);
-    blade.emissiveIntensity = (0.3 + 0.8 * seam) * glowSeams * (1 + 0.6 * open);
+    blade.emissiveIntensity = (0.2 + 0.6 * seam + swell(0.8)) * glowSeams * (1 + 0.6 * open);
     bladeSide.emissive.copy(coreTint);
     bladeSide.emissiveIntensity = open * coreLevel * 0.3;
-    housingRunesMat.color.copy(tint).multiplyScalar((0.35 + 0.65 * seam) * glowSeams);
-    dialRunesMat.color.copy(tint).multiplyScalar((0.45 + 0.8 * seam + 0.5 * kp) * glowSeams);
-    for (const g of gyros) g.inlayMat.color.copy(tint).multiplyScalar((0.3 + 0.5 * seam) * glowSeams * (1 - 0.5 * dis));
+    housingRunesMat.color.copy(tint).multiplyScalar((0.25 + 0.5 * seam + swell(0.45)) * glowSeams);
+    dialRunesMat.color.copy(tint).multiplyScalar((0.5 + 1.0 * seam + 1.2 * kp + swell(0.65)) * glowSeams);
+    for (const g of gyros) g.inlayMat.color.copy(tint).multiplyScalar((0.15 + 0.45 * seam + swell(0.1 + g.index * 0.15)) * glowSeams * (1 - 0.5 * dis));
     chamberMat.emissive.copy(coreTint);
     chamberMat.emissiveIntensity = coreLevel * (0.25 + 0.9 * open) * glowSeams;
     bedMat.emissive.copy(coreTint);
     bedMat.emissiveIntensity = coreLevel * (0.2 + open) * glowSeams;
     crystalMat.color.copy(coreTint).multiplyScalar(0.5 + coreLevel);
-    coreGlowMat.color.copy(coreTint).multiplyScalar(coreLevel * (0.25 + 0.9 * open) * glowSeams);
+    keystoneMat.color
+      .copy(coreTint)
+      .lerp(PALE, 0.55 * (1 - shot.reject))
+      .multiplyScalar((1.6 + 2.2 * seam + swell(0.95) + 2 * kp + 3 * shot.impact + 2.5 * shot.reject) * glowSeams);
+    keyGlowMat.color.copy(tint).multiplyScalar((0.5 + 0.7 * seam + 0.6 * kp + 0.4 * swell(0.95) + 1.6 * shot.impact + 1.2 * shot.reject) * glowSeams);
+    coreGlowMat.color.copy(coreTint).multiplyScalar(coreLevel * (0.25 + 0.9 * open + 0.6 * surge) * glowSeams);
     coreLight.color.copy(coreTint);
-    coreLight.intensity = coreLevel * (0.8 + 3 * open) * glowSeams;
+    coreLight.intensity = coreLevel * (0.8 + 3 * open + 1.5 * surge) * glowSeams;
     coreLight.distance = 2.6 * S;
     flood.color.copy(coreTint);
     flood.intensity = open * coreLevel * 2.2;
     flood.distance = 3.2 * S;
     sigilMat.uniforms.uTrace.value = I.trace;
-    sigilMat.uniforms.uGlow.value = (0.35 + 0.5 * seam + 0.4 * open) * glowSeams * (1 - 0.5 * dim);
+    sigilMat.uniforms.uGlow.value = (0.04 + 0.08 * seam + 0.5 * open + swell(0.3)) * glowSeams * (1 - 0.5 * dim);
     sigilMat.uniforms.uTime.value = time * sway;
     sigilMat.uniforms.uColor.value.copy(tint);
     backSigil.rotation.z = -time * 0.02 * sway;
-    haloMat.color.copy(DEEP).lerp(ASH, ash).multiplyScalar((0.18 + 0.3 * coreLevel) * I.light * (1 - 0.5 * dim));
+    haloMat.color.copy(DEEP).lerp(ASH, ash).multiplyScalar((0.03 + 0.2 * coreLevel * open) * I.light * (1 - 0.5 * dim));
     coneMat.uniforms.uLevel.value = level.shafts.value * open * 1.2;
     coneMat.uniforms.uTime.value = time;
     coneMat.uniforms.uColor.value.copy(coreTint).lerp(PALE, 0.5);
@@ -1300,6 +1373,14 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     if (shock.visible) {
       shock.scale.setScalar(0.8 + 2.6 * easeOut(shot.shock));
       shockMat.color.copy(PALE).multiplyScalar(1.5 * (1 - shot.shock) ** 2 * (motion === "subtle" ? 0.4 : 1));
+    }
+    chargeRing.visible = shot.ring >= 0 && !still;
+    if (chargeRing.visible) {
+      chargeRing.scale.setScalar(0.2 + easeOut(shot.ring));
+      chargeRingMat.color
+        .copy(coreTint)
+        .lerp(PALE, 0.4)
+        .multiplyScalar(1.2 * (1 - shot.ring) ** 2 * Math.min(1, level.surge.value + shot.impact) * (motion === "subtle" ? 0.5 : 1));
     }
     const sparkMat = sparks.material as ShaderMaterial;
     sparks.visible = shot.burst >= 0 && shot.burst < 2.5 && !still;
@@ -1319,7 +1400,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     emberMat.uniforms.uColor.value.copy(RED).lerp(ASH, ash);
     for (const { material } of smokeLayers) {
       material.uniforms.uTime.value = time;
-      material.uniforms.uLevel.value = 0.26 * I.light * (0.6 + 0.4 * Math.min(1, coreLevel)) * (1 - 0.5 * dim);
+      material.uniforms.uLevel.value = 0.04 * I.light * (0.6 + 0.4 * Math.min(1, coreLevel)) * (1 - 0.5 * dim);
       material.uniforms.uColor.value.copy(DEEP).lerp(ASH, ash * 0.6);
     }
     const lit = I.light * (1 - 0.35 * dim);
@@ -1327,8 +1408,8 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     key.intensity = 2.3 * lit;
     rimLeft.color.copy(RED).lerp(ASH, ash);
     rimRight.color.copy(DEEP).lerp(ASH, ash);
-    rimLeft.intensity = 2.6 * I.light * (1 - 0.5 * dim);
-    rimRight.intensity = 1.8 * I.light * (1 - 0.5 * dim);
+    rimLeft.intensity = 3 * I.light * (1 - 0.5 * dim);
+    rimRight.intensity = 1.6 * I.light * (1 - 0.5 * dim);
     key.position.set(art.position.x - 4, art.position.y + 5.5, art.position.z + 8);
     key.target.position.copy(art.position);
     const reach = 1.9 * S;
@@ -1340,6 +1421,9 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     rimLeft.position.set(art.position.x - 1.6 * S, art.position.y + 0.9 * S, art.position.z - 1.2 * S);
     rimRight.position.set(art.position.x + 1.7 * S, art.position.y - 0.5 * S, art.position.z - 1 * S);
     rimLeft.distance = rimRight.distance = 4 * S;
+    edge.intensity = 3.2 * lit;
+    edge.position.set(art.position.x + 3, art.position.y + 4, art.position.z - 4);
+    edge.target.position.copy(art.position);
     scene.environmentIntensity = 0.15 + 0.85 * I.light;
 
     /* The console */
@@ -1370,12 +1454,12 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     }
     const act = I.act;
     const conGlow = act * (1 - 0.65 * r);
-    conSeamMat.color.copy(tint).multiplyScalar(seam * conGlow * 1.3);
-    backSeamMat.color.copy(tint).multiplyScalar((0.4 + 0.6 * seam) * conGlow);
-    inlayMat.color.copy(tint).multiplyScalar((0.35 + 0.6 * seam) * conGlow);
-    conHaloMat.color.copy(tint).multiplyScalar(level.halo.value * conGlow * 0.9);
+    const flare = shot.flare;
+    conSeamMat.color.copy(tint).multiplyScalar((0.22 + 0.45 * seam + 4 * flare) * conGlow);
+    backSeamMat.color.copy(tint).lerp(ASH, 0.45 * (1 - Math.min(1, flare))).multiplyScalar((0.14 + 0.25 * seam + 3 * flare) * conGlow);
+    conHaloMat.color.copy(tint).multiplyScalar(level.halo.value * conGlow * 0.12);
     const beamLevel = level.beam.value;
-    portGlowMat.color.copy(tint).multiplyScalar((0.25 + 1.4 * beamLevel + 0.3 * kp) * act);
+    portGlowMat.color.copy(tint).multiplyScalar((0.18 + 1.4 * beamLevel + 0.3 * kp + 2.5 * shot.port) * act);
     socketMat.emissive.copy(tint);
     socketMat.emissiveIntensity = (0.12 + 0.6 * charge + 0.8 * kp) * act * level.screen.value;
     const su = screenMat.uniforms;
@@ -1384,12 +1468,14 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     su.uScan.value = level.scan.value;
     su.uNoise.value = level.noise.value;
     su.uFlash.value = shot.flash;
+    su.uFlare.value = flare;
     su.uTime.value = time;
     su.uColor.value.copy(tint);
+    su.uHot.value.copy(tint).lerp(PALE, 0.7);
     su.uSheen.value.set(tiltY.value / MAX_TILT, tiltX.value / MAX_TILT);
     conLight.position.set(conRest.x - panelW * u * 0.6, conRest.y + panelH * u * 0.7, 3);
-    conLight.intensity = 1.3 * act * (1 - 0.5 * dim);
-    conLight.color.copy(RED).lerp(ASH, ash);
+    conLight.intensity = 0.8 * act * (1 - 0.5 * dim);
+    conLight.color.copy(RED).lerp(PALE, 0.25).lerp(ASH, ash);
 
     beam.visible = beamKey !== "" && (beamLevel > 0.01 || shot.head >= 0 || shot.back >= 0);
     const bu = beamMat.uniforms;
@@ -1399,6 +1485,19 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     bu.uBack.value = shot.back;
     bu.uTime.value = time;
     bu.uColor.value.copy(tint).multiplyScalar(1.4);
+    bu.uHot.value.copy(tint).lerp(PALE, 0.75);
+    const packetAt = shot.head >= 0 ? shot.head : shot.back;
+    packet.visible = packetCore.visible = beamCurve !== null && packetAt >= 0 && !still;
+    if (beamCurve && packet.visible) {
+      beamCurve.getPointAt(Math.min(1, packetAt), packet.position);
+      packetCore.position.copy(packet.position);
+      packet.quaternion.copy(camera.quaternion);
+      packetCore.quaternion.copy(camera.quaternion);
+      packet.scale.setScalar(70 * u);
+      packetCore.scale.setScalar(20 * u);
+      packetMat.color.copy(tint).multiplyScalar(1.5);
+      packetCoreMat.color.copy(tint).lerp(PALE, 0.8).multiplyScalar(2.2);
+    }
 
     /* Camera */
     const ca = I.cam;
@@ -1415,7 +1514,30 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     camera.updateMatrixWorld();
 
     register(1 - easeInOut(span(r, 0.12, 0.6)));
-    renderer.render(scene, camera);
+
+    // The chamber and the lens.
+    const reachBack = (DIST - BACK_Z) / (DIST - art.position.z);
+    const backHeight = backdrop.scale.y;
+    const wall = backdropMat.uniforms;
+    wall.uCenter.value.set(0.5 + (art.position.x * reachBack) / (backHeight * camera.aspect), 0.5 + (art.position.y * reachBack) / backHeight);
+    wall.uLevel.value = 0.25 * I.light * (1 - 0.5 * dim) * (0.85 + 0.3 * charge);
+    wall.uHeat.value = coreLevel * (0.4 + 1.6 * open + 0.5 * surge) * glowSeams;
+    wall.uColor.value.copy(DEEP).lerp(ASH, ash * 0.7);
+    wall.uHot.value.copy(coreTint);
+    ndc.copy(corePos).project(camera);
+    const calm = motion === "subtle" ? 0.4 : still ? 0 : 1;
+    const glitch = phase === "invalid" ? Math.abs(shot.jolt) : level.noise.value * 0.4 * (0.5 + 0.5 * Math.sin(time * 23));
+    fx.uLight.value.set(ndc.x * 0.5 + 0.5, ndc.y * 0.5 + 0.5);
+    fx.uTime.value = time;
+    fx.uRays.value = 0.3 * level.shafts.value * open * glowSeams;
+    fx.uFlash.value = shot.flash * (motion === "subtle" ? 0.5 : 1);
+    fx.uShock.value = calm && shot.shock >= 0 && shot.shock < 1 ? shot.shock : -1;
+    fx.uGlitch.value = glitch * calm;
+    fx.uVignette.value = 0.7 + 0.2 * dim;
+    fx.uHot.value.copy(coreTint).lerp(PALE, 0.6);
+    // The open door is already bright, so the bloom backs off once it has swung wide.
+    bloom.strength = (0.4 + 0.4 * charge + 1.1 * shot.flash + 0.35 * level.surge.value + 0.7 * shot.impact) * (1 - 0.6 * open) * (0.3 + 0.7 * I.light) * (1 - 0.4 * ash);
+    composer.render(dt);
 
     // Adapt resolution if frames are slow.
     frames += 1;
@@ -1633,6 +1755,8 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
       for (const item of owned) item.dispose();
+      for (const pass of composer.passes) pass.dispose();
+      composer.dispose();
       key.shadow.dispose();
       renderer.dispose();
       renderer.forceContextLoss();

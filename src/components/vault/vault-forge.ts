@@ -237,6 +237,51 @@ export function sigil(ctx: CanvasRenderingContext2D) {
   }
 }
 
+/** The Vault's own summoning circle: hairline rings, graduated ticks and a band of small engraved runes. */
+export function engravedSigil(ctx: CanvasRenderingContext2D) {
+  const u = ctx.canvas.width / 2;
+  ctx.translate(u, u);
+  ctx.strokeStyle = "#fff";
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  const ring = (r: number, width: number, alpha: number) => {
+    ctx.beginPath();
+    ctx.arc(0, 0, r * u, 0, TAU);
+    glowStroke(ctx, width, alpha);
+  };
+  const tick = (a: number, r0: number, r1: number, width: number, alpha: number) => {
+    ctx.beginPath();
+    ctx.moveTo(Math.sin(a) * r0 * u, -Math.cos(a) * r0 * u);
+    ctx.lineTo(Math.sin(a) * r1 * u, -Math.cos(a) * r1 * u);
+    glowStroke(ctx, width, alpha);
+  };
+  ring(0.955, 2, 0.9);
+  ring(0.94, 1, 0.4);
+  ring(0.885, 1.4, 0.6);
+  ring(0.74, 1.4, 0.6);
+  ring(0.715, 2.2, 0.85);
+  ring(0.41, 1.8, 0.7);
+  ring(0.39, 1, 0.35);
+  for (let i = 0; i < 180; i++) tick((i / 180) * TAU, 0.94, i % 5 ? 0.926 : 0.905, 1.1, i % 5 ? 0.35 : 0.7);
+  const glyphs = glyphPaths();
+  const count = 32;
+  for (let i = 0; i < count; i++) {
+    const a = ((i + 0.5) / count) * TAU;
+    rune(ctx, glyphs[(i * 5 + 2) % glyphs.length], a, 0.8125 * u, 0.046 * u, 1.6, 0.85);
+    tick(a + Math.PI / count, 0.795, 0.83, 1, 0.3);
+  }
+  for (const offset of [0, Math.PI / 4]) {
+    ctx.beginPath();
+    for (let k = 0; k <= 4; k++) {
+      const a = offset + (k / 4) * TAU;
+      if (k) ctx.lineTo(Math.sin(a) * 0.715 * u, -Math.cos(a) * 0.715 * u);
+      else ctx.moveTo(Math.sin(a) * 0.715 * u, -Math.cos(a) * 0.715 * u);
+    }
+    glowStroke(ctx, 1.3, 0.4);
+  }
+  for (let i = 0; i < 72; i++) tick((i / 72) * TAU, 0.41, i % 3 ? 0.43 : 0.455, 1.1, i % 3 ? 0.35 : 0.6);
+}
+
 /** Fine lathe marks for roughness maps. */
 export function grain(ctx: CanvasRenderingContext2D) {
   const size = ctx.canvas.width;
@@ -292,36 +337,6 @@ export function softRect(ctx: CanvasRenderingContext2D) {
   ctx.shadowBlur = width * 0.09;
   ctx.fillStyle = "#fff";
   ctx.fillRect(width * 0.2, height * 0.2, width * 0.6, height * 0.6);
-}
-
-/** A line of runes framed by ticks for the console's trim. */
-export function glyphLine(ctx: CanvasRenderingContext2D) {
-  ink(ctx);
-  const { width, height } = ctx.canvas;
-  const mid = height / 2;
-  const glyphs = glyphPaths();
-  const runes = 7;
-  const gap = height * 0.8;
-  const start = width / 2 - ((runes - 1) * gap) / 2;
-  for (let i = 0; i < runes; i++) {
-    ctx.save();
-    ctx.translate(start + i * gap, mid);
-    const scale = (height * 0.46) / 6;
-    ctx.scale(scale, scale);
-    glowStroke(ctx, 2 / scale, 0.95, glyphs[(i * 5 + 2) % glyphs.length]);
-    ctx.restore();
-  }
-  const clear = ((runes + 1) * gap) / 2;
-  for (let x = 8; x < width; x += 14) {
-    const off = Math.abs(x - width / 2);
-    if (off < clear) continue;
-    const long = Math.round(x / 14) % 4 === 0;
-    const fade = 1 - off / (width / 2);
-    ctx.beginPath();
-    ctx.moveTo(x, mid - height * (long ? 0.24 : 0.12));
-    ctx.lineTo(x, mid + height * (long ? 0.24 : 0.12));
-    glowStroke(ctx, 1.4, (long ? 0.75 : 0.4) * fade);
-  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -441,24 +456,6 @@ export function frame(hw: number, hh: number, cut: number, holeW: number, holeH:
   return plate(shape, depth, bevel);
 }
 
-/** An L-shaped corner bracket; its outer corner is the origin and its arms run along −x and −y. */
-export function bracket(arm: number, width: number, cut: number) {
-  return new Shape([
-    new Vector2(-arm, 0),
-    new Vector2(-cut, 0),
-    new Vector2(0, -cut),
-    new Vector2(0, -arm),
-    new Vector2(-width, -arm + width * 0.7),
-    new Vector2(-width, -width),
-    new Vector2(-arm + width * 0.7, -width),
-  ]);
-}
-
-/** A trapezoid standing on the x axis. */
-export function trapezoid(bottom: number, top: number, height: number) {
-  return new Shape([new Vector2(-bottom / 2, 0), new Vector2(bottom / 2, 0), new Vector2(top / 2, height), new Vector2(-top / 2, height)]);
-}
-
 /** A unit box, open at the front (z = 0) and one deep, with its faces turned inward. Group 0: walls, 1: floor. */
 export function recess() {
   const positions: number[] = [];
@@ -516,6 +513,7 @@ uniform float uTrace;
 uniform float uGlow;
 uniform float uTime;
 uniform vec3 uColor;
+uniform vec3 uHot;
 varying vec2 vUv;
 void main() {
   vec2 p = vUv - 0.5;
@@ -525,7 +523,9 @@ void main() {
   float lines = texture2D(uMap, vUv).r;
   float fade = smoothstep(1.0, 0.7, r);
   float pulse = 0.82 + 0.18 * sin(uTime * 1.4 - r * 7.0);
-  gl_FragColor = vec4(uColor * lines * traced * fade * pulse * uGlow, 1.0);
+  // Line cores run hotter than their glow, so the engraving reads as lit from inside.
+  vec3 color = mix(uColor, uHot, smoothstep(0.5, 1.0, lines) * 0.45);
+  gl_FragColor = vec4(color * lines * traced * fade * pulse * uGlow, 1.0);
   ${OUTPUT}
 }`;
 
@@ -616,7 +616,10 @@ void main() {
   gl_Position = projectionMatrix * mv;
 }`;
 
-/** The link from console to vault: a faint body, flowing pulses, an outgoing packet (`uHead`) and a returning one (`uBack`). */
+/**
+ * The link from console to vault: a body lit up to the outgoing packet (`uHead`), flowing pulses, the packet's
+ * hot head with a comet trail, and a returning one (`uBack`) when the seal throws a code back.
+ */
 export const BEAM_FRAGMENT = /* glsl */ `
 uniform float uTime;
 uniform float uLevel;
@@ -624,55 +627,87 @@ uniform float uFlow;
 uniform float uHead;
 uniform float uBack;
 uniform vec3 uColor;
+uniform vec3 uHot;
 varying vec2 vUv;
 varying float vFacing;
 void main() {
   float s = vUv.x;
-  float ends = smoothstep(0.0, 0.04, s) * smoothstep(1.0, 0.94, s);
-  float reach = uHead >= 0.0 ? smoothstep(uHead + 0.02, uHead - 0.02, s) : 1.0;
-  float head = uHead >= 0.0 ? exp(-pow((s - uHead) * 16.0, 2.0)) : 0.0;
-  float back = uBack >= 0.0 ? exp(-pow((s - uBack) * 16.0, 2.0)) : 0.0;
-  float flow = pow(0.5 + 0.5 * sin(s * 40.0 - uTime * 9.0), 8.0) * uFlow;
-  float a = ((0.22 + flow * 0.8) * uLevel * reach + (head + back) * 1.6) * ends * pow(vFacing, 2.0);
-  gl_FragColor = vec4(uColor * a, 1.0);
+  float ends = smoothstep(0.0, 0.03, s) * smoothstep(1.0, 0.96, s);
+  float reach = uHead >= 0.0 ? smoothstep(uHead + 0.015, uHead - 0.015, s) : 1.0;
+  float dh = (s - uHead) * 22.0;
+  float db = (s - uBack) * 22.0;
+  float head = uHead >= 0.0 ? exp(-dh * dh) : 0.0;
+  float back = uBack >= 0.0 ? exp(-db * db) : 0.0;
+  float trail = uHead >= 0.0 ? exp(-max(uHead - s, 0.0) * 7.0) * step(s, uHead) : 0.0;
+  float wake = uBack >= 0.0 ? exp(-max(s - uBack, 0.0) * 7.0) * step(uBack, s) : 0.0;
+  float flow = pow(max(0.5 + 0.5 * sin(s * 34.0 - uTime * 8.0), 0.0), 10.0) * uFlow;
+  float facing = pow(max(vFacing, 0.0), 1.5);
+  vec3 body = uColor * ((0.28 + flow * 1.1) * uLevel * reach + (trail + wake) * 0.7);
+  vec3 hot = uHot * (head * 2.4 + back * 1.8);
+  gl_FragColor = vec4((body + hot) * ends * facing, 1.0);
   ${OUTPUT}
 }`;
 
-/** The console's glass: powers on from a line, carries a faint grid, scans while checking, and has holes for the sockets. */
+/**
+ * The console's glass: smoked and nearly black, with one hot rim, lit corners and a moving sheen. It powers on
+ * from a line, scans while checking (a light runs the rim), flares on an unlock (`uFlare`) and has holes for the
+ * sockets. `uSize` is the quad; the visible opening is 2 px smaller with corners cut by `uCut`.
+ */
 export const SCREEN_FRAGMENT = /* glsl */ `
 uniform vec2 uSize;
+uniform float uCut;
 uniform float uPower;
 uniform float uLevel;
 uniform float uScan;
 uniform float uNoise;
 uniform float uFlash;
+uniform float uFlare;
 uniform float uTime;
 uniform vec3 uColor;
+uniform vec3 uHot;
 uniform vec2 uSheen;
 uniform vec4 uHoleA;
 uniform vec4 uHoleB;
 varying vec2 vUv;
 float hash2(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 float outside(vec2 p, vec4 hole) { vec2 d = abs(p - hole.xy) - hole.zw; return max(d.x, d.y); }
+float chamfered(vec2 p, vec2 b, float c) {
+  vec2 q = abs(p) - b;
+  float box = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+  return max(box, (abs(p.x) + abs(p.y) - (b.x + b.y - c)) * 0.70710678);
+}
 void main() {
   vec2 p = (vUv - 0.5) * uSize;
   if (outside(p, uHoleA) < 0.0 || outside(p, uHoleB) < 0.0) discard;
-  vec2 inset = uSize * 0.5 - abs(p);
-  float edge = min(inset.x, inset.y);
+  float inner = max(-chamfered(p, uSize * 0.5 - 2.0, uCut), 0.0);
   float open = uPower * (uSize.y * 0.5 + 8.0);
   float lit = smoothstep(open + 1.0, open - 5.0, abs(p.y));
-  float line = exp(-pow((abs(p.y) - open) / 2.5, 2.0)) * step(0.001, uPower) * (1.0 - smoothstep(0.8, 1.0, uPower));
-  vec3 glass = vec3(0.010, 0.004, 0.006);
-  vec3 c = glass + uColor * exp(-edge / 22.0) * 0.22 * uLevel;
-  vec2 q = abs(fract(p / 24.0) - 0.5) * 24.0;
-  c += uColor * smoothstep(11.2, 12.0, max(q.x, q.y)) * 0.035 * uLevel;
-  c *= 0.9 + 0.1 * step(0.5, fract(p.y / 3.0));
+  float dl = (abs(p.y) - open) / 2.5;
+  float line = exp(-dl * dl) * step(0.001, uPower) * (1.0 - smoothstep(0.8, 1.0, uPower));
+
+  vec3 glass = mix(vec3(0.006, 0.003, 0.004), vec3(0.018, 0.008, 0.010), vUv.y);
+  vec3 c = glass + uColor * exp(-inner / 24.0) * 0.05 * uLevel;
+
+  float rim = exp(-inner / 1.2);
+  float frameLine = smoothstep(0.9, 0.0, abs(inner - 7.0));
+  vec2 corner = abs(p) - (uSize * 0.5 - uCut - 26.0);
+  float hardware = step(0.0, corner.x) * step(0.0, corner.y);
+  float hot = smoothstep(0.35, 1.0, rim);
+  vec3 edgeColor = mix(uColor, uHot, hot * 0.35);
+  c += edgeColor * rim * (0.28 + 0.42 * uLevel + 3.0 * uFlare);
+  c += uColor * frameLine * hardware * (0.5 * uLevel + 1.5 * uFlare);
+
+  // While checking, a light runs around the rim and a scan line sweeps the glass.
+  float around = fract(atan(p.y, p.x) / 6.2831853 + 1.0);
+  float lead = fract(around - uTime * 0.9);
+  c += uHot * exp(-lead * 26.0) * (rim + 0.6 * frameLine) * 3.0 * uScan;
   float sy = (0.5 - fract(uTime * 0.6)) * (uSize.y + 160.0);
-  c += uColor * (exp(-pow((p.y - sy) / 30.0, 2.0)) + 0.8 * exp(-pow((p.y - sy) / 2.0, 2.0))) * 0.18 * uScan;
+  float ds = (p.y - sy) * (p.y - sy);
+  c += uColor * (exp(-ds / 900.0) + 0.8 * exp(-ds / 4.0)) * 0.18 * uScan;
   c += vec3(0.9, 0.85, 0.86) * hash2(floor(p / 2.0) + floor(uTime * 8.0) * 7.31) * 0.06 * uNoise;
-  c += mix(uColor, vec3(1.0), 0.5) * uFlash * 0.16;
+  c += mix(uColor, vec3(1.0), 0.5) * (uFlash * 0.16 + uFlare * exp(-inner / 60.0) * 0.12);
   float sheen = dot(p / uSize, vec2(0.83, 0.55)) - uSheen.x * 0.5 - uSheen.y * 0.3 + 0.15;
-  c += vec3(1.0, 0.86, 0.9) * exp(-sheen * sheen / 0.012) * 0.03;
+  c += uHot * exp(-sheen * sheen / 0.008) * 0.035 + uHot * exp(-sheen * sheen / 0.08) * 0.012;
   gl_FragColor = vec4(mix(glass, c, lit) + uColor * line * 0.9, 1.0);
   ${OUTPUT}
 }`;
@@ -719,8 +754,88 @@ varying float vEdge;
 void main() {
   float around = vUv.x * 6.2831853;
   float streak = pow(0.5 + 0.5 * sin(around * 7.0 + uTime * 0.35) * sin(around * 3.0 - uTime * 0.22 + 1.3), 2.0);
-  float fall = pow(1.0 - vAlong, 1.6) * smoothstep(0.0, 0.08, vAlong);
+  float fall = pow(max(1.0 - vAlong, 0.0), 1.6) * smoothstep(0.0, 0.08, vAlong);
   float a = uLevel * fall * (0.2 + 0.8 * streak) * (0.25 + 0.75 * vEdge);
   gl_FragColor = vec4(uColor * a, 1.0);
   ${OUTPUT}
+}`;
+
+/** The chamber behind everything: a crimson haze around the vault, a warmer heart and a faint glow on the ground. */
+export const BACKDROP_FRAGMENT = /* glsl */ `
+uniform vec2 uCenter;
+uniform float uAspect;
+uniform float uLevel;
+uniform float uHeat;
+uniform vec3 uColor;
+uniform vec3 uHot;
+varying vec2 vUv;
+void main() {
+  vec2 p = (vUv - uCenter) * vec2(uAspect, 1.0);
+  float d2 = dot(p, p);
+  float haze = exp(-d2 * 7.0);
+  float heart = exp(-d2 * 38.0);
+  float gx = (vUv.x - uCenter.x) * uAspect * 1.8;
+  float ground = smoothstep(0.45, 0.05, vUv.y) * exp(-gx * gx);
+  vec3 c = uColor * (haze * 0.15 + ground * 0.06) + uHot * heart * uHeat * 0.12;
+  vec2 m = smoothstep(0.0, 0.1, vUv) * smoothstep(1.0, 0.9, vUv);
+  gl_FragColor = vec4(c * uLevel * m.x * m.y, 1.0);
+  ${OUTPUT}
+}`;
+
+/**
+ * The Vault's lens, after tone mapping: shafts of light from the core (RAYS samples), the unlock's flash and
+ * shockwave, a torn signal on a rejection, slight colour fringing, vignette and film grain.
+ */
+export const FINISH_FRAGMENT = /* glsl */ `
+uniform sampler2D tDiffuse;
+uniform vec2 uResolution;
+uniform vec2 uLight;
+uniform float uTime;
+uniform float uRays;
+uniform float uFlash;
+uniform float uShock;
+uniform float uAberration;
+uniform float uGlitch;
+uniform float uGrain;
+uniform float uVignette;
+uniform vec3 uHot;
+varying vec2 vUv;
+float noise(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void main() {
+  vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
+  vec2 uv = vUv;
+  if (uGlitch > 0.001) {
+    float row = floor(uv.y * 54.0);
+    float tick = floor(uTime * 20.0);
+    uv.x += (noise(vec2(row * 1.7, tick + 3.1)) - 0.5) * 0.035 * step(0.88, noise(vec2(row, tick))) * uGlitch;
+  }
+  vec2 fromLight = (uv - uLight) * aspect;
+  float dist = length(fromLight);
+  float lens = 0.0;
+  if (uShock >= 0.0) {
+    float ring = (dist - uShock * 0.95) / 0.05;
+    lens = exp(-ring * ring) * (1.0 - uShock);
+    uv -= fromLight / max(dist, 1e-4) / aspect * lens * 0.012;
+  }
+  vec2 shift = (uv - 0.5) * (uAberration + lens * 0.012 + uGlitch * 0.006);
+  vec3 color = vec3(texture2D(tDiffuse, uv + shift).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - shift).b);
+#if RAYS > 0
+  if (uRays > 0.001) {
+    vec2 stride = (uv - uLight) * (0.85 / float(RAYS));
+    vec2 s = uv - stride * noise(gl_FragCoord.xy + fract(uTime) * 61.0);
+    float decay = 1.0;
+    vec3 shafts = vec3(0.0);
+    for (int i = 0; i < RAYS; i++) {
+      s -= stride;
+      shafts += max(texture2D(tDiffuse, s).rgb - 0.32, 0.0) * decay;
+      decay *= 0.94;
+    }
+    color += shafts * (uRays * 2.6 / float(RAYS)) * mix(vec3(1.0), uHot, 0.5);
+  }
+#endif
+  color += uHot * uFlash * (0.06 + 0.4 * exp(-dist * 2.4));
+  color = mix(vec3(dot(color, vec3(0.299, 0.587, 0.114))), color, 0.86);
+  color *= 1.0 - uVignette * smoothstep(0.5, 1.45, length((vUv - 0.5) * 2.0));
+  color += (noise(gl_FragCoord.xy + fract(uTime * 7.0) * 113.0) - 0.5) * uGrain;
+  gl_FragColor = vec4(color, 1.0);
 }`;

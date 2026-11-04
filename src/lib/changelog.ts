@@ -49,6 +49,49 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-04-vault-transmission",
+    date: "2026-11-04",
+    title: "The Vault - Transmission",
+    intro: "Speaking a code to the Vault now plays out as a transmission into the seal, the Vault's console and Access Log got a calmer glass finish, and the Admin Panel's red is a little softer.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Code transmission", text: "Your code lifts off the field, races down a lit link into the seal and charges the core while the Vault checks it." },
+      { kind: "improved", feature: "Distinct answers", text: "Wrong, dormant, already claimed, locked and lost codes each end the transmission in their own way." },
+      { kind: "improved", feature: "Vault console", text: "Thinner, quieter rims, a glass Access Log and a more even chamber, with the Break the Seal button as the brightest thing on the panel." },
+      { kind: "improved", feature: "Admin Panel", text: "A slightly deeper red and lighter glows, with full-bright red kept for active and primary controls." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Codes travel into the seal",
+          body: "While the Vault checks a code, its characters stream out of the field to the console's port, run down the link as a bright packet and strike the seal, which spins up and charges until the answer arrives.",
+          points: [
+            "A wrong code is thrown back down the link and lands in the field with a jolt.",
+            "An already claimed code is handed back gently in pale light; a dormant code gutters out in grey; a locked vault cuts the link; a lost connection breaks it halfway.",
+            "The answer shows as soon as it arrives, after a short minimum so the transmission can land.",
+            "Subtle motion plays a shorter version and Motion off skips the travelling effects; a matching sound plays if sound is on.",
+          ],
+          where: "The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+      ],
+      improved: [
+        {
+          title: "A calmer Vault console",
+          body: "The console's frame glows less, the field, buttons and status chip have a layered glass look, and the Access Log now sits on a glass panel with a lit rim, so the Break the Seal button stands out as the main action.",
+          where: "The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Softer red in the Admin Panel",
+          body: "The Admin Panel uses a slightly deeper red with lighter glows on headings, tabs, meters and selected options, and a gentler bloom in the 3D scene. Layout and behaviour are unchanged.",
+          where: "Admin panel (administrators only)",
+          link: { href: "/admin", label: "Open the admin panel" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-04-tour-transitions",
     date: "2026-11-04",
     title: "The Tour - Scenes in Motion",

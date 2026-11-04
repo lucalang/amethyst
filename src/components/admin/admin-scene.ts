@@ -137,7 +137,7 @@ const FLOOR_Y = -4.6;
 const STATION_ANGLE: Record<StationId, number> = { overview: 0, codes: -0.95, detail: -1.9, forge: 0.95 };
 
 const hex = (value: number) => new Color(value);
-const RED = hex(0xff1f3d);
+const RED = hex(0xeb2d48);
 const DEEP = hex(0x9e0a1e);
 const PALE = hex(0xffd9df);
 
@@ -714,7 +714,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   const target = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: tierIndex === 0 ? 4 : 0 });
   const composer = new EffectComposer(renderer, target);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new Vector2(W, H), 0.9, 0.6, 0.14);
+  const bloom = new UnrealBloomPass(new Vector2(W, H), 0.8, 0.6, 0.14);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
   const finish = new ShaderPass({ ...FINISH_SHADER, defines: { RAYS: tier.rays } });
@@ -1721,7 +1721,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       post.uShock.value[2] = age * 0.95;
       post.uShockStrength.value = (1 - age / 1.1) * amount;
     } else post.uShockStrength.value = 0;
-    bloom.strength = (0.85 * tier.bloom + 0.15 + charge * 0.4 + implode * 0.8 + boom * 2.2 + flash * 1.5) * Math.max(0.2, light);
+    bloom.strength = (0.74 * tier.bloom + 0.12 + charge * 0.4 + implode * 0.8 + boom * 2.2 + flash * 1.5) * Math.max(0.2, light);
 
     composer.render(dt);
     css.render(scene, camera);

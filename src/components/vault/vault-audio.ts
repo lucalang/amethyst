@@ -1,4 +1,4 @@
-import { CARD_STAGGER, SUMMON, UNLOCK, type SummonKind } from "./timing";
+import { CARD_STAGGER, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
 
 /**
  * Vault sound: a small synth with a quiet master level and a compressor (like the Coin Slots one),
@@ -79,7 +79,8 @@ function clank(start: number, weight: number, into?: AudioNode) {
   noise(start, 0.16, 3200, 1400, 0.2 * weight, "bandpass", into, 0.05);
 }
 
-export function playVaultSound(name: VaultSound) {
+/** `pace` shortens the timed sequences (the transmission) for subtle motion, in step with the scene. */
+export function playVaultSound(name: VaultSound, pace = 1) {
   switch (name) {
     case "key": {
       const now = performance.now();
@@ -88,12 +89,18 @@ export function playVaultSound(name: VaultSound) {
       tone(1900 + Math.random() * 300, 0, 0.03, "square", 0.025);
       break;
     }
-    case "verify":
-      noise(0, 0.9, 300, 3200, 0.22);
-      tone(55, 0, 1.1, "sine", 0.35, 82);
-      tone(880, 0.05, 0.08, "square", 0.03);
-      tone(1320, 0.18, 0.08, "square", 0.025);
+    case "verify": {
+      // In step with the transmission: the glyphs lift off, the packet launches, runs the link and strikes the seal.
+      const at = (ms: number) => (ms * pace) / 1000;
+      const travel = at(TRANSMIT.impact - TRANSMIT.depart);
+      [0, 0.04, 0.08].forEach((offset, i) => tone(1500 + i * 260, offset, 0.05, "square", 0.02));
+      noise(at(TRANSMIT.depart) - 0.05, travel + 0.05, 500, 4200, 0.18, "bandpass", undefined, 0.85);
+      tone(220, at(TRANSMIT.depart), travel, "sine", 0.06, 880);
+      tone(64, at(TRANSMIT.impact), 0.55, "sine", 0.55, 38);
+      noise(at(TRANSMIT.impact), 0.18, 2600, 900, 0.16, "bandpass", undefined, 0.05);
+      tone(110, at(TRANSMIT.impact) + 0.05, 1.1, "sine", 0.12, 165);
       break;
+    }
     case "grant": {
       // In step with the scene: rings lock, teeth retract, the doors part and the light breaks out.
       const at = (ms: number) => ms / 1000;

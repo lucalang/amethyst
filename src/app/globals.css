@@ -6341,9 +6341,12 @@ a.arcade-counter:hover {
 .vx-stage {
   --vx-black: #030203;
   --vx-red: #ff1f3d;
+  --vx-rose: #ff5a72;
+  --vx-pale: #ffd6dd;
   --vx-text: #f3e9eb;
   --vx-ash: #8c7f82;
   --vx-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --vx-display: var(--font-cinzel), Georgia, "Times New Roman", serif;
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -6378,27 +6381,30 @@ a.arcade-counter:hover {
 }
 .vx-fog {
   background:
-    radial-gradient(42% 34% at 50% 30%, rgb(161 10 31 / 0.34), transparent 72%),
-    radial-gradient(30% 26% at 10% 6%, rgb(255 31 61 / 0.07), transparent 70%),
-    radial-gradient(36% 30% at 92% 92%, rgb(161 10 31 / 0.14), transparent 70%);
+    radial-gradient(42% 34% at 50% 30%, rgb(161 10 31 / 0.26), transparent 72%),
+    radial-gradient(30% 26% at 10% 6%, rgb(255 31 61 / 0.06), transparent 70%),
+    radial-gradient(60% 26% at 50% 100%, rgb(120 8 26 / 0.16), transparent 72%),
+    radial-gradient(36% 30% at 92% 92%, rgb(161 10 31 / 0.1), transparent 70%);
   opacity: calc(0.7 + var(--vx-charge, 0) * 0.3);
   transition: opacity 700ms ease;
 }
 @media (min-width: 64rem) {
   .vx-fog {
     background:
-      radial-gradient(30% 42% at 30% 50%, rgb(161 10 31 / 0.36), transparent 72%),
-      radial-gradient(30% 26% at 8% 6%, rgb(255 31 61 / 0.07), transparent 70%),
-      radial-gradient(36% 30% at 92% 92%, rgb(161 10 31 / 0.14), transparent 70%);
+      radial-gradient(30% 42% at 30% 50%, rgb(161 10 31 / 0.28), transparent 72%),
+      radial-gradient(30% 26% at 8% 6%, rgb(255 31 61 / 0.06), transparent 70%),
+      radial-gradient(60% 26% at 50% 100%, rgb(120 8 26 / 0.16), transparent 72%),
+      radial-gradient(36% 30% at 92% 92%, rgb(161 10 31 / 0.1), transparent 70%);
   }
 }
 .vx-floor {
   top: auto;
   height: 50%;
-  opacity: 0.5;
+  opacity: 0.6;
   background:
-    repeating-linear-gradient(90deg, rgb(255 31 61 / 0.16) 0 1px, transparent 1px 72px),
-    repeating-linear-gradient(0deg, rgb(255 31 61 / 0.16) 0 1px, transparent 1px 72px);
+    repeating-linear-gradient(90deg, rgb(140 127 130 / 0.1) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgb(140 127 130 / 0.1) 0 1px, transparent 1px 72px),
+    radial-gradient(50% 60% at 50% 0%, rgb(255 31 61 / 0.1), transparent 70%);
   transform: perspective(28rem) rotateX(64deg);
   transform-origin: 50% 100%;
   mask-image: linear-gradient(to top, #000 10%, transparent 80%);
@@ -6620,26 +6626,39 @@ a.arcade-counter:hover {
   align-items: flex-end;
   justify-content: space-between;
   gap: 0.75rem 1rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 1px solid rgb(255 31 61 / 0.2);
+  padding-bottom: 0.95rem;
+  background: linear-gradient(90deg, rgb(255 90 114 / 0.5), rgb(255 31 61 / 0.14) 38%, rgb(255 31 61 / 0.04) 80%, transparent) 0 100% / 100% 1px no-repeat;
 }
 .vx-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
   font-family: var(--vx-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.32em;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.36em;
   text-transform: uppercase;
-  color: var(--vx-red);
+  color: var(--vx-rose);
+}
+.vx-eyebrow::before {
+  content: "";
+  width: 1.6rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--vx-rose));
 }
 .vx-stage h1.vx-title {
-  margin-top: 0.35rem;
-  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(1.9rem, 1.3rem + 2.4vw, 3rem);
-  font-weight: 800;
+  margin-top: 0.45rem;
+  font-family: var(--vx-display);
+  font-size: clamp(2rem, 1.35rem + 2.6vw, 3.35rem);
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #fff;
-  text-shadow: 0 0 28px rgb(255 31 61 / 0.5);
+  background: linear-gradient(180deg, #fff 30%, var(--vx-pale) 62%, #e0566c);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 22px rgb(255 31 61 / 0.4));
 }
 .vx-hud-side {
   display: flex;
@@ -6651,15 +6670,20 @@ a.arcade-counter:hover {
   align-items: center;
   gap: 0.5rem;
   height: 2.25rem;
-  padding: 0 0.75rem;
-  border: 1px solid rgb(255 31 61 / 0.45);
+  padding: 0 0.85rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
   font-family: var(--vx-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: var(--vx-red);
-  background: rgb(255 31 61 / 0.07);
+  color: var(--vx-rose);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015)),
+    rgb(8 4 6 / 0.55);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 6px 18px -10px rgb(0 0 0 / 0.9);
   transition:
     color 300ms ease,
     border-color 300ms ease,
@@ -6670,7 +6694,7 @@ a.arcade-counter:hover {
   width: 6px;
   height: 6px;
   background: currentColor;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 6px currentColor;
   animation: vx-breathe 2.4s ease-in-out infinite;
 }
 @keyframes vx-breathe {
@@ -6693,9 +6717,10 @@ a.arcade-counter:hover {
   place-items: center;
   width: 2.25rem;
   height: 2.25rem;
-  border: 1px solid rgb(255 255 255 / 0.14);
+  border: 1px solid rgb(255 255 255 / 0.12);
   color: var(--vx-ash);
-  background: rgb(255 255 255 / 0.02);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.01));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
   transition:
     color 150ms ease,
     border-color 150ms ease;
@@ -6711,7 +6736,7 @@ a.arcade-counter:hover {
   color: var(--vx-text);
 }
 .vx-icon-button[aria-pressed="true"] {
-  color: var(--vx-red);
+  color: var(--vx-rose);
 }
 .vx-icon-button:focus-visible,
 .vx-button:focus-visible,
@@ -7008,19 +7033,45 @@ a.arcade-counter:hover {
     inset 0 0 32px rgb(255 255 255 / 0.02);
 }
 /* On the 3D console the panel is its screen: glass, frame and glow are geometry, so the page keeps
-   only a dark veil for legible text. */
+   only a light veil for legible text, cut to the plate's eight-sided opening. */
 .vx-stage[data-scene="ready"][data-phase] .vx-window {
+  --vx-cut: 14px;
   border-color: transparent;
   background:
-    linear-gradient(180deg, rgb(255 31 61 / 0.05), transparent 8rem),
-    rgb(5 2 3 / 0.5);
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 5rem),
+    radial-gradient(120% 60% at 50% 0%, rgb(255 31 61 / 0.03), transparent 70%),
+    rgb(6 4 5 / 0.52);
   box-shadow: none;
+  clip-path: polygon(var(--vx-cut) 0, calc(100% - var(--vx-cut)) 0, 100% var(--vx-cut), 100% calc(100% - var(--vx-cut)), calc(100% - var(--vx-cut)) 100%, var(--vx-cut) 100%, 0 calc(100% - var(--vx-cut)), 0 var(--vx-cut));
+}
+.vx-stage[data-scene="ready"][data-intro="summon"] .vx-window {
+  animation-name: vx-activate-plate;
+}
+@keyframes vx-activate-plate {
+  0% {
+    opacity: 0;
+    clip-path: polygon(var(--vx-cut) 50%, calc(100% - var(--vx-cut)) 50%, 100% 50%, 100% 50%, calc(100% - var(--vx-cut)) 50%, var(--vx-cut) 50%, 0 50%, 0 50%);
+    filter: brightness(3);
+  }
+  40% {
+    opacity: 1;
+    clip-path: polygon(var(--vx-cut) 49%, calc(100% - var(--vx-cut)) 49%, 100% 49%, 100% 51%, calc(100% - var(--vx-cut)) 51%, var(--vx-cut) 51%, 0 51%, 0 49%);
+  }
+  100% {
+    filter: none;
+  }
 }
 .vx-stage[data-scene="ready"] .vx-corners {
   display: none;
 }
 .vx-stage[data-scene="ready"] .vx-input {
-  background: rgb(3 1 2 / 0.6);
+  background: linear-gradient(180deg, rgb(2 1 1 / 0.82), rgb(10 4 6 / 0.7));
+}
+/* Room for the console's 3D frame on narrow screens. */
+@media (max-width: 39.99rem) {
+  .vx-stage[data-scene="ready"] .vx-window {
+    width: calc(100% - 2.5rem);
+  }
 }
 .vx-corners {
   position: absolute;
@@ -7051,7 +7102,8 @@ a.arcade-counter:hover {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.75rem 1.1rem;
-  background: linear-gradient(90deg, color-mix(in oklab, var(--c) 15%, transparent), transparent 75%);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--c) 6%, transparent), transparent 70%);
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.06);
 }
 .vx-window-bar::after {
   content: "";
@@ -7059,18 +7111,18 @@ a.arcade-counter:hover {
   width: 2.25rem;
   height: 5px;
   background: repeating-linear-gradient(90deg, var(--c) 0 5px, transparent 5px 9px);
-  opacity: 0.7;
+  opacity: 0.45;
 }
 .vx-window-title {
   display: flex;
   align-items: center;
   gap: 0.65rem;
   font-family: var(--vx-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.28em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--vx-pale);
   animation: vx-type 450ms steps(12, end) backwards;
 }
 @keyframes vx-type {
@@ -7083,11 +7135,11 @@ a.arcade-counter:hover {
   height: 0.55rem;
   rotate: 45deg;
   background: var(--c);
-  box-shadow: 0 0 10px var(--c);
+  box-shadow: 0 0 6px var(--c);
 }
 .vx-rule {
   height: 1px;
-  background: linear-gradient(90deg, var(--c), rgb(255 31 61 / 0.15) 60%, transparent);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--c) 60%, transparent), rgb(255 31 61 / 0.12) 60%, transparent);
   transform-origin: 0 50%;
   animation: vx-rule 800ms var(--ease-out-soft) 900ms backwards;
 }
@@ -7114,11 +7166,11 @@ a.arcade-counter:hover {
   gap: 0.65rem;
 }
 .vx-stage h2.vx-headline {
-  font-family: var(--vx-mono);
-  font-size: clamp(1.5rem, 1.15rem + 1.6vw, 2.1rem);
-  font-weight: 800;
+  font-family: var(--vx-display);
+  font-size: clamp(1.55rem, 1.15rem + 1.6vw, 2.15rem);
+  font-weight: 700;
   line-height: 1.1;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--vx-red);
   text-shadow: 0 0 22px rgb(255 31 61 / 0.45);
@@ -7231,46 +7283,52 @@ a.arcade-counter:hover {
 }
 .vx-label {
   font-family: var(--vx-mono);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
-  letter-spacing: 0.3em;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: var(--vx-ash);
+  color: #a8989b;
 }
 .vx-input {
   width: 100%;
   height: 3.4rem;
-  border: 1px solid rgb(255 31 61 / 0.4);
+  border: 1px solid color-mix(in oklab, rgb(255 90 114 / 0.75) calc(var(--vx-charge, 0) * 100%), rgb(255 255 255 / 0.13));
   border-radius: 0;
-  padding: 0 1rem;
+  padding: 0 1.1rem;
   font-family: var(--vx-mono);
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #fff;
-  caret-color: var(--vx-red);
-  background: linear-gradient(180deg, #050203, #0d0508);
-  text-shadow: 0 0 calc(4px + var(--vx-charge, 0) * 10px) rgb(255 31 61 / 0.6);
+  caret-color: var(--vx-rose);
+  background: linear-gradient(180deg, #020101, #0b0507);
+  text-shadow: 0 0 calc(3px + var(--vx-charge, 0) * 8px) rgb(255 31 61 / 0.5);
+  /* Recessed into the glass: a dark inner well and a faint lit lip below. */
   box-shadow:
-    inset 0 0 0 1px rgb(0 0 0 / 0.6),
-    inset 0 0 calc(var(--vx-charge, 0) * 26px) rgb(255 31 61 / 0.2);
+    inset 0 2px 10px rgb(0 0 0 / 0.7),
+    inset 0 0 calc(var(--vx-charge, 0) * 22px) rgb(255 31 61 / 0.16),
+    0 1px 0 rgb(255 255 255 / 0.06);
   outline: none;
   transition:
     border-color 150ms ease,
     box-shadow 200ms ease;
 }
 .vx-input::placeholder {
-  letter-spacing: 0.12em;
-  color: rgb(243 233 235 / 0.3);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: rgb(243 233 235 / 0.32);
   text-shadow: none;
 }
 .vx-input:focus-visible {
-  border-color: var(--vx-red);
+  border-color: rgb(255 90 114 / 0.85);
   box-shadow:
-    inset 0 0 calc(var(--vx-charge, 0) * 26px) rgb(255 31 61 / 0.2),
-    0 0 0 1px var(--vx-red),
-    0 0 22px -4px rgb(255 31 61 / 0.6);
+    inset 0 2px 10px rgb(0 0 0 / 0.7),
+    inset 0 0 calc(var(--vx-charge, 0) * 22px) rgb(255 31 61 / 0.16),
+    0 0 0 3px rgb(255 31 61 / 0.16),
+    0 0 18px -6px rgb(255 31 61 / 0.5);
 }
 .vx-input[readonly] {
   color: rgb(255 255 255 / 0.65);
@@ -7292,14 +7350,15 @@ a.arcade-counter:hover {
 .vx-pips > span {
   flex: 1;
   height: 4px;
-  background: rgb(255 31 61 / 0.15);
+  border-radius: 1px;
+  background: rgb(255 255 255 / 0.08);
   transition:
     background-color 150ms ease,
     box-shadow 150ms ease;
 }
 .vx-pips > span[data-on] {
   background: var(--vx-red);
-  box-shadow: 0 0 6px rgb(255 31 61 / 0.7);
+  box-shadow: 0 0 5px rgb(255 31 61 / 0.5);
 }
 .vx-signal-count {
   margin-left: auto;
@@ -7327,27 +7386,38 @@ a.arcade-counter:hover {
   gap: 0.55rem;
   min-height: 3rem;
   padding: 0 1.4rem;
-  border: 1px solid var(--vx-red);
-  font-family: var(--vx-mono);
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
+  border: 1px solid rgb(255 90 114 / 0.6);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #fff;
-  background: linear-gradient(180deg, #d4132f, #8a0819);
+  color: #fff6f7;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.45);
+  /* A forged plate: top light, a sheen that crosses on hover, deep crimson body. */
+  background:
+    linear-gradient(105deg, transparent 40%, rgb(255 236 239 / 0.2) 50%, transparent 60%) 160% 0 / 250% 100% no-repeat,
+    linear-gradient(180deg, rgb(255 255 255 / 0.16), transparent 46%),
+    linear-gradient(180deg, #b8112c, #730716 70%, #52040f);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.2),
-    0 0 24px -6px rgb(255 31 61 / 0.6);
+    inset 0 1px 0 rgb(255 220 226 / 0.4),
+    inset 0 -2px 0 rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(0 0 0 / 0.55),
+    0 12px 30px -14px rgb(255 31 61 / 0.85);
   transition:
     filter 150ms ease,
     box-shadow 150ms ease,
+    background-position 650ms var(--ease-out-soft),
     scale 100ms ease;
 }
 .vx-button:hover:not(:disabled) {
-  filter: brightness(1.12);
+  filter: brightness(1.1);
+  background-position: -60% 0, 0 0, 0 0;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.25),
-    0 0 32px -4px rgb(255 31 61 / 0.75);
+    inset 0 1px 0 rgb(255 220 226 / 0.5),
+    inset 0 -2px 0 rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(0 0 0 / 0.55),
+    0 14px 36px -12px rgb(255 31 61 / 0.95);
 }
 .vx-button:active:not(:disabled) {
   scale: 0.98;
@@ -7357,15 +7427,16 @@ a.arcade-counter:hover {
   filter: saturate(0.6) brightness(0.8);
 }
 .vx-button-quiet {
-  border-color: rgb(255 255 255 / 0.25);
+  border-color: rgb(255 255 255 / 0.16);
   color: var(--vx-text);
-  background: transparent;
-  box-shadow: none;
+  text-shadow: none;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.01));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
 }
 .vx-button-quiet:hover:not(:disabled) {
-  border-color: rgb(255 255 255 / 0.55);
+  border-color: rgb(255 255 255 / 0.42);
   filter: none;
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
 }
 
 /* Rewards, exactly as the server granted them. */
@@ -7685,29 +7756,78 @@ a.arcade-counter:hover {
   max-height: 7.25rem;
 }
 
-/* Access log. */
+/* Access log: a glass ledger with the console's lit rim and corner ticks. */
 .vx-log {
+  position: relative;
   width: 100%;
   max-width: 52rem;
   margin: 0 auto;
-  padding-top: 1rem;
-  border-top: 1px solid rgb(255 31 61 / 0.2);
+  padding: 0.95rem 1.1rem 1.1rem;
+  border: 1px solid rgb(255 255 255 / 0.07);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 3.25rem),
+    linear-gradient(180deg, rgb(18 7 10 / 0.8), rgb(6 3 4 / 0.88));
+  box-shadow:
+    inset 0 1px 0 rgb(255 226 231 / 0.08),
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 24px 48px -24px rgb(0 0 0 / 0.9),
+    0 0 40px -18px rgb(255 31 61 / 0.22);
+  backdrop-filter: blur(8px);
+}
+.vx-log::before {
+  content: "";
+  position: absolute;
+  inset: -1px 14% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(255 31 61 / 0.65), transparent);
+  box-shadow: 0 0 6px rgb(255 31 61 / 0.3);
+}
+.vx-log::after {
+  --t: rgb(255 90 114 / 0.4);
+  content: "";
+  position: absolute;
+  inset: -4px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--t), var(--t)) 0 0 / 10px 1px,
+    linear-gradient(var(--t), var(--t)) 0 0 / 1px 10px,
+    linear-gradient(var(--t), var(--t)) 100% 0 / 10px 1px,
+    linear-gradient(var(--t), var(--t)) 100% 0 / 1px 10px,
+    linear-gradient(var(--t), var(--t)) 0 100% / 10px 1px,
+    linear-gradient(var(--t), var(--t)) 0 100% / 1px 10px,
+    linear-gradient(var(--t), var(--t)) 100% 100% / 10px 1px,
+    linear-gradient(var(--t), var(--t)) 100% 100% / 1px 10px;
+  background-repeat: no-repeat;
 }
 .vx-log-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  padding-bottom: 0.75rem;
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.06);
 }
 .vx-stage h2.vx-log-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   font-family: var(--vx-mono);
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.6875rem;
+  font-weight: 600;
   line-height: 1.4;
   letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--vx-pale);
   text-shadow: none;
+}
+.vx-stage h2.vx-log-title::before {
+  content: "";
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  rotate: 45deg;
+  background: var(--vx-red);
+  box-shadow: 0 0 5px rgb(255 31 61 / 0.7);
 }
 .vx-log-count,
 .vx-log-time {
@@ -7717,22 +7837,42 @@ a.arcade-counter:hover {
   text-transform: uppercase;
   color: var(--vx-ash);
 }
+.vx-log-count {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.03);
+}
 .vx-log-list {
   display: grid;
-  gap: 1px;
-  margin-top: 0.75rem;
-  border: 1px solid rgb(255 31 61 / 0.14);
-  background: rgb(255 31 61 / 0.14);
+  margin-top: 0.25rem;
 }
 .vx-log-list > li {
+  position: relative;
   display: grid;
   grid-template-columns: 7.5rem minmax(0, 1fr);
   align-items: baseline;
   gap: 1rem;
-  padding: 0.55rem 0.8rem;
+  padding: 0.65rem 0.5rem 0.65rem 1rem;
   font-size: 0.875rem;
-  color: rgb(243 233 235 / 0.85);
-  background: #070304;
+  color: rgb(243 233 235 / 0.88);
+}
+.vx-log-list > li + li {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+.vx-log-list > li::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0.2rem;
+  width: 4px;
+  height: 4px;
+  translate: 0 -50%;
+  rotate: 45deg;
+  background: rgb(140 127 130 / 0.6);
+}
+.vx-log-list > li:first-child::before {
+  background: var(--vx-red);
+  box-shadow: 0 0 5px rgb(255 31 61 / 0.6);
 }
 .vx-log-note {
   margin-top: 0.75rem;
@@ -7753,6 +7893,125 @@ a.arcade-counter:hover {
   border-radius: 0;
   outline: 2px solid var(--vx-red);
   outline-offset: 2px;
+}
+
+/* Sending a code: its glyphs lift off the field and stream to the console's edge, where the link takes them. */
+.vx-stream {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  padding: 0 calc(1.1rem + 1px);
+  font-family: var(--vx-mono);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: pre;
+  color: #fff;
+  pointer-events: none;
+}
+.vx-stream > span {
+  display: block;
+  animation: vx-glyph var(--vx-glyph) linear calc(min(var(--i, 0), 12) * var(--vx-glyph-step)) both;
+}
+@keyframes vx-glyph {
+  0% {
+    text-shadow: 0 0 6px rgb(255 31 61 / 0.6);
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  24% {
+    translate: 0 -6px;
+    scale: 1.12;
+    text-shadow:
+      0 0 6px #fff,
+      0 0 14px rgb(255 31 61 / 0.85);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.45);
+  }
+  100% {
+    translate: var(--dx) var(--dy);
+    scale: 0.15;
+    opacity: 0;
+    color: var(--vx-pale);
+    text-shadow:
+      0 0 8px #fff,
+      0 0 18px var(--vx-red);
+  }
+}
+.vx-input[data-sending] {
+  color: transparent;
+  text-shadow: none;
+  caret-color: transparent;
+}
+/* A rejected code flies back down the link and lands in the field, torn red for a moment. */
+.vx-stage[data-phase="invalid"] .vx-input {
+  animation: vx-recoil 650ms ease-out var(--vx-recoil-at) backwards;
+}
+@keyframes vx-recoil {
+  0% {
+    color: transparent;
+    text-shadow: none;
+  }
+  1% {
+    color: #fff;
+    text-shadow:
+      3px 0 rgb(255 31 61 / 0.9),
+      -3px 0 rgb(255 214 221 / 0.5),
+      0 0 14px var(--vx-red);
+  }
+  35% {
+    color: #ffc2cc;
+    text-shadow:
+      -2px 0 rgb(255 31 61 / 0.7),
+      0 0 8px rgb(255 31 61 / 0.5);
+  }
+}
+/* Dormant: the code gutters back in ash. Locked: it is clamped back hard. Lost: it returns through static. */
+.vx-stage[data-phase="unavailable"] .vx-input {
+  animation: vx-fizzle 900ms ease-out backwards;
+}
+@keyframes vx-fizzle {
+  0% {
+    color: transparent;
+  }
+  45% {
+    color: rgb(140 127 130 / 0.75);
+  }
+  65% {
+    color: rgb(140 127 130 / 0.35);
+  }
+}
+.vx-stage[data-phase="locked"] .vx-input {
+  animation: vx-clamp 600ms ease-out backwards;
+}
+@keyframes vx-clamp {
+  0% {
+    color: transparent;
+  }
+  8% {
+    color: #fff;
+    border-color: var(--vx-red);
+    text-shadow: 0 0 10px rgb(255 31 61 / 0.8);
+  }
+}
+.vx-stage[data-phase="lost"] .vx-input {
+  animation: vx-static 800ms steps(6, end) backwards;
+}
+@keyframes vx-static {
+  0% {
+    color: transparent;
+  }
+  20% {
+    color: rgb(200 190 192 / 0.7);
+    text-shadow:
+      2px 0 rgb(140 127 130 / 0.6),
+      -2px 0 rgb(255 31 61 / 0.3);
+  }
+  60% {
+    text-shadow:
+      -1px 0 rgb(140 127 130 / 0.5),
+      1px 0 rgb(255 31 61 / 0.2);
+  }
 }
 
 /* Verifying: the sweep turns, a scan passes, the segments chase and the core pulses. */

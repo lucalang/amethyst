@@ -8,6 +8,7 @@ import {
   Suspense,
   useEffect,
   useEffectEvent,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -21,7 +22,7 @@ import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
 import { webglAvailable } from "@/components/showcase/motion";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { MotionLevel } from "@/lib/preferences";
-import { SUMMON, UNLOCK, type SummonKind } from "./timing";
+import { PACE, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
 import { closeVaultAudio, hushVault, playVaultReveal, playVaultSound, playVaultSummon, setVaultAmbience, type VaultSound } from "./vault-audio";
 import { DecodeText, RewardReveal, RewardSlots, rewardSummary, type RevealOrigin, type VaultLooks, type VaultProfile, type VaultSamples } from "./vault-reveal";
 import type { VaultSceneHandle } from "./vault-scene";
@@ -82,8 +83,8 @@ const SOUND: Record<Outcome["phase"], VaultSound> = {
   locked: "locked",
   lost: "lost",
 };
-/** The shortest verifying sequence. The request goes out at once; only showing its answer waits. */
-const MIN_VERIFY: Record<MotionLevel, number> = { full: 900, subtle: 350, off: 0 };
+/** The shortest verifying sequence: the packet reaches the seal and charges it. The request goes out at once; only showing its answer waits. */
+const MIN_VERIFY: Record<MotionLevel, number> = { full: TRANSMIT.charged, subtle: Math.round(TRANSMIT.charged * PACE.subtle), off: 0 };
 /** When the headline decodes and the reward slots land, timed to the seal opening. */
 const DECODE_AT: Record<MotionLevel, number> = { full: 350, subtle: 0, off: 0 };
 const REVEAL_AT: Record<MotionLevel, number> = { full: 1350, subtle: 250, off: 0 };
@@ -228,9 +229,12 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   /** The vault is opening: the panel holds its headline until the cards take over. */
   const [opening, setOpening] = useState(false);
   const [present, setPresent] = useState(true);
+  /** The code as it was sent, streamed off the field while the vault checks it. */
+  const [sent, setSent] = useState<{ id: number; text: string } | null>(null);
   const stageRef = useRef<HTMLElement>(null);
   const artifactRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const streamRef = useRef<HTMLSpanElement>(null);
   const sceneRef = useRef<VaultSceneHandle>(null);
   const introTimer = useRef(0);
   const openTimer = useRef(0);
@@ -244,6 +248,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const attempt = useRef<{ code: string; request: string } | null>(null);
   const soundRef = useRef(sound);
   const busy = phase === "verifying";
+  const streaming = busy && sent !== null && motion !== "off";
   const signal = Math.min(PIPS.length, code.replace(/\s+/g, "").length);
   const canWebgl = useSyncExternalStore(noSubscribe, webglAvailable, () => false);
   const scene: SceneStatus = canWebgl ? sceneStatus : "failed";
@@ -343,8 +348,36 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   }, [outcome]);
 
   const play = (name: VaultSound) => {
-    if (soundRef.current) playVaultSound(name);
+    if (soundRef.current) playVaultSound(name, motion === "subtle" ? PACE.subtle : 1);
   };
+
+  // The glyphs start exactly over the field's text, then stream to the console's edge facing the vault, where the link starts.
+  useLayoutEffect(() => {
+    const stream = streamRef.current;
+    const input = inputRef.current;
+    const panel = panelRef.current;
+    if (!stream || !input || !panel) return;
+    let x = -input.scrollLeft;
+    let y = 0;
+    for (let node: HTMLElement | null = input; node && node !== panel; node = node.offsetParent as HTMLElement | null) {
+      x += node.offsetLeft;
+      y += node.offsetTop;
+    }
+    Object.assign(stream.style, { left: `${x}px`, top: `${y}px`, height: `${input.offsetHeight}px` });
+    const a = artifactRef.current?.getBoundingClientRect();
+    const p = panel.getBoundingClientRect();
+    const dx = a ? a.left + a.width / 2 - (p.left + p.width / 2) : -1;
+    const dy = a ? a.top + a.height / 2 - (p.top + p.height / 2) : 0;
+    const sideways = Math.abs(dx) > Math.abs(dy);
+    const tx = sideways ? (dx < 0 ? -10 : panel.offsetWidth + 10) : panel.offsetWidth / 2;
+    const ty = sideways ? panel.offsetHeight / 2 : dy < 0 ? -10 : panel.offsetHeight + 10;
+    const glyphs = Array.from(stream.children) as HTMLElement[];
+    glyphs.forEach((glyph, index) => {
+      glyph.style.setProperty("--i", String(sideways && dx > 0 ? glyphs.length - 1 - index : index));
+      glyph.style.setProperty("--dx", `${(tx - x - glyph.offsetLeft - glyph.offsetWidth / 2).toFixed(1)}px`);
+      glyph.style.setProperty("--dy", `${(ty - y - glyph.offsetTop - glyph.offsetHeight / 2).toFixed(1)}px`);
+    });
+  }, [sent, streaming]);
 
   function show(next: Outcome, audible = true) {
     setOutcome(next);
@@ -411,6 +444,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     const since = lostSince.current === undefined ? (finds[0]?.redeemedAt ?? null) : lostSince.current;
     markPending(since);
     setOutcome(null);
+    setSent((last) => ({ id: (last?.id ?? 0) + 1, text: code }));
     setPhase("verifying");
     setAnnouncement("Verifying the code.");
     play("verify");
@@ -518,6 +552,9 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
       style={
         {
           "--vx-charge": (signal / PIPS.length).toFixed(3),
+          "--vx-glyph": `${Math.round(TRANSMIT.glyph * PACE[motion])}ms`,
+          "--vx-glyph-step": `${Math.round(TRANSMIT.glyphStep * PACE[motion])}ms`,
+          "--vx-recoil-at": `${Math.round(TRANSMIT.recoil * PACE[motion])}ms`,
           "--vx-hud-at": `${timeline.hud}ms`,
           "--vx-panel-at": `${timeline.panel}ms`,
           "--vx-settle-at": `${timeline.settle}ms`,
@@ -685,6 +722,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
                     enterKeyHint="go"
                     data-1p-ignore
                     data-lpignore="true"
+                    data-sending={streaming ? "" : undefined}
                     placeholder="Speak the code"
                     aria-describedby="vx-code-help"
                     className="vx-input"
@@ -715,6 +753,13 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
                 </form>
               )}
             </div>
+            {streaming ? (
+              <span key={sent.id} ref={streamRef} aria-hidden className="vx-stream">
+                {Array.from(sent.text, (glyph, index) => (
+                  <span key={index}>{glyph === " " ? "\u00a0" : glyph}</span>
+                ))}
+              </span>
+            ) : null}
           </div>
         </div>
 

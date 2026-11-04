@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bungee, Caveat, Fredoka, JetBrains_Mono, Literata, Manrope, Patrick_Hand, Permanent_Marker, Playfair_Display, Press_Start_2P, Special_Elite, VT323 } from "next/font/google";
+import { Bungee, Caveat, Cinzel, Fredoka, JetBrains_Mono, Literata, Manrope, Patrick_Hand, Permanent_Marker, Playfair_Display, Press_Start_2P, Special_Elite, VT323 } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
 import "./globals.css";
 
@@ -23,8 +23,10 @@ const permanentMarker = Permanent_Marker({ variable: "--font-permanent-marker", 
 const bungee = Bungee({ variable: "--font-bungee", weight: "400", subsets: ["latin"], display: "swap", preload: false });
 const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], display: "swap", preload: false });
 const patrickHand = Patrick_Hand({ variable: "--font-patrick-hand", weight: "400", subsets: ["latin"], display: "swap", preload: false });
+// The Vault's engraved display face, only downloaded on the Vault.
+const cinzel = Cinzel({ variable: "--font-cinzel", subsets: ["latin"], display: "swap", preload: false });
 
-const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart, fredoka, specialElite, permanentMarker, bungee, caveat, patrickHand]
+const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart, fredoka, specialElite, permanentMarker, bungee, caveat, patrickHand, cinzel]
   .map((font) => font.variable)
   .join(" ");
 

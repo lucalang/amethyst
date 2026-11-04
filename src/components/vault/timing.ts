@@ -1,3 +1,5 @@
+import type { MotionLevel } from "@/lib/preferences";
+
 /**
  * The Vault's timeline in milliseconds, shared by the 3D scene, the page and the sound so all three tell one story.
  */
@@ -38,3 +40,13 @@ export const UNLOCK = { retract: 300, open: 560, burst: 650, settle: 1500, hando
 
 /** Gap between reward cards as they leave the vault. */
 export const CARD_STAGGER = 110;
+
+/**
+ * Sending a code: the typed glyphs stream off the console, a packet leaves the link port at `depart`, runs
+ * the link and hits the seal at `impact`; the vault is fully charged at `charged`, then breathes once per
+ * `breath` until the answer arrives. A rejected packet takes `recoil` to fly back and hit the console.
+ */
+export const TRANSMIT = { glyph: 340, glyphStep: 18, depart: 420, impact: 840, charged: 1000, breath: 1100, recoil: 420 } as const;
+
+/** Subtle motion plays every one-shot sequence at this share of its full length. */
+export const PACE: Record<MotionLevel, number> = { full: 1, subtle: 0.45, off: 0 };
