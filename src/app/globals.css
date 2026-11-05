@@ -8078,6 +8078,21 @@ a.arcade-counter:hover {
     0 24px 50px -24px rgb(0 0 0 / 0.95),
     0 0 48px -10px rgb(255 31 61 / 0.5);
 }
+/* Without the 3D console: the Admin panels' CSS tilt, lift and glare (useCardTilt). */
+.vx-stage[data-scene="failed"] .vx-window[data-tilt] {
+  transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--lift, 0px));
+}
+.vx-stage[data-scene="failed"] .vx-window[data-tilt]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), rgb(255 70 100 / 0.16), transparent 60%);
+  opacity: var(--glare, 0);
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
 .vx-stage:is([data-phase="granted"], [data-phase="already"]) .vx-window {
   --c: #fff;
   border-color: rgb(255 255 255 / 0.4);

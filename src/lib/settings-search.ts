@@ -47,6 +47,7 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
       { label: "Animation intensity", target: "motion-label-setting", keywords: "motion animate reduced movement" },
       { label: "Opening animation", target: "intro-frequency-label-setting", keywords: "intro logo frequency replay startup" },
       { label: "Card shine", target: "shine-label-setting", keywords: "hover reflection light effect" },
+      { label: "Special page designs", target: "special-pages-label-setting", keywords: "version history achievements trophy room chronometer vault admin sanctum 3d standard plain style" },
       { label: "Hover scaling", target: "hover-scale-label-setting", keywords: "zoom grow cover size" },
       { label: "Library density", target: "density-label-setting", keywords: "compact comfortable cover spacing size" },
       { label: "Cover details", target: "pin-style-label-setting", keywords: "pins progress clean artwork" },

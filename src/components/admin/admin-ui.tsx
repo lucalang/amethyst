@@ -141,6 +141,10 @@ export function Field({ id, label, hint, error, children, className }: { id: str
 /** aria-describedby for a Field's control. */
 export const describedBy = (id: string, hint: boolean, error: unknown) => [hint ? `${id}-hint` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
 
+/** The class that scopes the active look's stylesheet; dialogs portal out of it, so they carry it too. */
+const LookContext = createContext<"cs-fancy" | "cs-plain">("cs-fancy");
+export const AdminLookProvider = LookContext.Provider;
+
 export function ConfirmAction({
   trigger,
   title,
@@ -156,10 +160,11 @@ export function ConfirmAction({
   onConfirm: () => void;
   danger?: boolean;
 }) {
+  const look = useContext(LookContext);
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent className="cs-dialog">
+      <AlertDialogContent className={`cs-dialog ${look}`}>
         <AlertDialogHeader>
           <AlertDialogTitle className="cs-dialog-title">{title}</AlertDialogTitle>
           <AlertDialogDescription className="cs-dialog-text">{description}</AlertDialogDescription>

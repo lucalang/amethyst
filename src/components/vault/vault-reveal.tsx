@@ -96,7 +96,7 @@ export function DecodeText({ text, animate, delay = 0 }: { text: string; animate
   );
 }
 
-function CountUp({ value, delay, animate }: { value: number; delay: number; animate: boolean }) {
+export function CountUp({ value, delay, animate }: { value: number; delay: number; animate: boolean }) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     if (!animate) return;
@@ -174,7 +174,7 @@ export function RewardArt({ id, size, looks, motion = "off" }: { id: string; siz
   return <Sparkles className={size === "slot" ? "size-5" : "size-10"} />;
 }
 
-function CoinArt({ size }: { size: ArtSize }) {
+export function CoinArt({ size }: { size: ArtSize }) {
   return (
     <span className="vx-coin" data-size={size}>
       <Coins />
@@ -182,7 +182,7 @@ function CoinArt({ size }: { size: ArtSize }) {
   );
 }
 
-function Tag({ fresh, achievement }: { fresh: boolean; achievement: boolean }) {
+export function Tag({ fresh, achievement }: { fresh: boolean; achievement: boolean }) {
   return (
     <span className="vx-tag" data-muted={fresh ? undefined : ""}>
       {fresh ? "New" : achievement ? "Already unlocked" : "Already owned"}
@@ -252,10 +252,10 @@ export function RewardSlots({ coins, items, newItems, delay, countUp, looks }: {
   );
 }
 
-const COINS = "coins";
+export const COINS = "coins";
 
 /** Where each kind of reward is put to use. */
-function rewardLink(id: string): { href: string; label: string } {
+export function rewardLink(id: string): { href: string; label: string } {
   if (id === COINS) return { href: "/arcade/shop", label: "Spend them in the shop" };
   const info = rewardInfo(id);
   if (info.game) return { href: shopHref(info.game.game), label: `Use it in ${GAME_SHOPS[info.game.game].title}` };

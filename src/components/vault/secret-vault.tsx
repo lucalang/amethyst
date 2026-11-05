@@ -22,11 +22,13 @@ import { Eye, FastForward, KeyRound, Loader2, RotateCcw, ScrollText, Volume2, Vo
 import { decodeText } from "@/components/admin/admin-decode";
 import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
 import { useSettings } from "@/components/layout/settings-context";
+import { useCardTilt } from "@/components/showcase/card-tilt";
 import { webglAvailable } from "@/components/showcase/motion";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { MotionLevel } from "@/lib/preferences";
 import { VAULT_LOOKS, type VaultLookId } from "@/lib/vault-looks";
 import { PACE, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
+import { PlainChamber } from "./plain-vault";
 import { closeVaultAudio, hushVault, playVaultReveal, playVaultSound, playVaultSummon, setVaultAmbience, type VaultSound } from "./vault-audio";
 import { DecodeText, RewardReveal, RewardSlots, rewardSummary, type RevealOrigin, type VaultLooks, type VaultProfile, type VaultSamples } from "./vault-reveal";
 import type { VaultSceneHandle } from "./vault-scene";
@@ -210,9 +212,10 @@ function announce(outcome: Outcome) {
 
 /** The Vault: a sealed chamber that opens for secret codes. Codes are checked and rewards granted on the server only. */
 export function SecretVault({ finds, profile, samples }: { finds: VaultFind[]; profile: VaultProfile; samples: VaultSamples }) {
+  const { specialPages } = useSettings();
   return (
     <ArcadeProvider>
-      <Chamber initialFinds={finds} looks={{ profile, samples }} />
+      {specialPages ? <Chamber initialFinds={finds} looks={{ profile, samples }} /> : <PlainChamber initialFinds={finds} looks={{ profile, samples }} />}
     </ArcadeProvider>
   );
 }
@@ -269,6 +272,8 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const signal = Math.min(PIPS.length, code.replace(/\s+/g, "").length);
   const canWebgl = useSyncExternalStore(noSubscribe, webglAvailable, () => false);
   const scene: SceneStatus = canWebgl ? sceneStatus : "failed";
+  // The 3D console tilts the panel itself; without it, CSS does.
+  useCardTilt(stageRef, scene === "failed" && motion !== "off", "[data-tilt]");
   // Reduced motion goes straight to the vault at rest.
   const introShown: Intro = motion === "off" ? "done" : intro;
   const timeline = SUMMON[summon];
@@ -714,7 +719,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
           ) : null}
 
           {/* The console's screen: the 3D scene builds its body around this panel and keeps the two registered. */}
-          <div ref={panelRef} className="vx-window" hidden={revealing} data-opening={outcome && opening ? "" : undefined}>
+          <div ref={panelRef} className="vx-window" data-tilt hidden={revealing} data-opening={outcome && opening ? "" : undefined}>
             <span aria-hidden className="vx-window-flare" />
             <div className="vx-window-bar">
               <div className="min-w-0">

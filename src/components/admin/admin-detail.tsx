@@ -10,7 +10,7 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, needsRepeatConfirmation, type AdminCodeDetail, type CodeConfig } from "@/lib/vault-admin";
 import { configOf, PayoutFacts, raisesPayout, RepeatConfirm, RulesFields, updateOf, validateConfig, type ConfigErrors } from "./admin-config";
 import { RewardsEditor, type RewardContext } from "./admin-rewards";
-import { Panel, useStage } from "./admin-stage";
+import { flashPanel, Panel, useStage } from "./admin-stage";
 import { accountName, ACTION_LABEL, ConfirmAction, countdown, FIELD_LABEL, formatWhen, number, PanelHead, plural, StatusBadge, useNow } from "./admin-ui";
 
 type Load = { status: "loading" } | { status: "missing" } | { status: "error" } | { status: "ready"; code: AdminCodeDetail };
@@ -71,7 +71,8 @@ export function Detail({
 
   const alertMain = () => {
     const panel = mainRef.current?.closest<HTMLElement>(".cs-panel");
-    if (panel) engine?.alert(panel);
+    if (panel && engine) engine.alert(panel);
+    else if (panel) flashPanel(panel);
   };
 
   if (load.status !== "ready") {

@@ -20,6 +20,8 @@ import {
 import { toast } from "sonner";
 import type { LiveDemoRuntimeState } from "@/app/api/version-history/route";
 import { CatalogEmpty, CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
+import { PageContainer, PageHeader } from "@/components/layout/app-shell";
+import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { catalogMatcher } from "@/lib/catalog-search";
 import { formatChangeDate, releasePath } from "@/lib/changelog";
@@ -58,6 +60,49 @@ const STATE_LABELS: Readonly<Record<DemoAvailabilityState, string>> = {
 
 const PAGE_SIZES = [15, 30, 60] as const;
 
+/** Milestone section classes: the chronometer's brass plates, or the standard card style. */
+const MILESTONE_CLASSES = {
+  special: {
+    section: "vh-section",
+    head: "vh-section-head",
+    title: "vh-section-title",
+    grid: "vh-capsules",
+    card: "vh-capsule vh-plate",
+    cardHead: "vh-capsule-head",
+    window: "vh-capsule-window",
+    sha: "vh-capsule-sha",
+    lamp: "vh-lamp",
+    bulb: "vh-lamp-bulb",
+    milestone: "vh-capsule-milestone",
+    cardTitle: "vh-capsule-title",
+    meta: "vh-capsule-meta",
+    controls: "vh-capsule-controls",
+    launch: "vh-launch",
+    state: "vh-capsule-state",
+    confirm: "vh-confirm",
+  },
+  standard: {
+    section: "space-y-4",
+    head: "",
+    title: "text-lg font-bold tracking-tight",
+    grid: "grid gap-3 sm:grid-cols-2 xl:grid-cols-3",
+    card: "flex flex-col gap-2 rounded-xl border border-border bg-card/80 p-4",
+    cardHead: "flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground",
+    window: "flex items-center gap-2",
+    sha: "rounded bg-amethyst/15 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amethyst",
+    lamp: "group inline-flex items-center gap-1.5 text-xs font-medium data-[state=online]:text-emerald-300",
+    bulb: "size-1.5 rounded-full bg-muted-foreground group-data-[state=online]:bg-emerald-400",
+    milestone: "inline-flex items-center gap-1 text-xs font-semibold text-amethyst",
+    cardTitle: "text-base font-semibold tracking-tight text-foreground",
+    meta: "text-xs text-muted-foreground [&_a]:text-amethyst [&_a]:underline-offset-4 [&_a:hover]:underline",
+    controls: "mt-auto flex flex-wrap items-center justify-between gap-2 pt-2",
+    launch: "",
+    state: "text-xs text-muted-foreground",
+    confirm:
+      "flex flex-wrap items-center justify-between gap-2 rounded-lg border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs text-rose-200",
+  },
+} as const;
+
 function StateBadge({ state }: { state: DemoAvailabilityState }) {
   if (state === "available") {
     return (
@@ -88,6 +133,8 @@ export function VersionHistoryBrowser({
 }: {
   initialDemos: Record<string, LiveDemoRuntimeState>;
 }) {
+  const { specialPages } = useSettings();
+  const ms = MILESTONE_CLASSES[specialPages ? "special" : "standard"];
   const summary = useMemo(() => getCatalogSummary(), []);
   const [demos, setDemos] = useState<Record<string, LiveDemoRuntimeState>>(initialDemos);
   const [query, setQuery] = useState("");
@@ -213,6 +260,15 @@ export function VersionHistoryBrowser({
     { label: STATE_LABELS.unavailable, value: summary.unavailable, tone: "warn" },
   ];
 
+  const whatsNew = (
+    <Button asChild variant="outline" size="sm">
+      <Link href="/whats-new">
+        <Megaphone aria-hidden className="size-3.5 text-amethyst" />
+        What’s new
+      </Link>
+    </Button>
+  );
+
   const hero = (
     <>
       <p className="vh-kicker">Chronometric archive</p>
@@ -220,14 +276,7 @@ export function VersionHistoryBrowser({
       <p className="vh-lede">
         {"Every retained commit in Amethyst's repository, with interactive fresh-account demos for prepared milestones."}
       </p>
-      <div className="vh-hero-actions">
-        <Button asChild variant="outline" size="sm">
-          <Link href="/whats-new">
-            <Megaphone aria-hidden className="size-3.5 text-amethyst" />
-            What’s new
-          </Link>
-        </Button>
-      </div>
+      <div className="vh-hero-actions">{whatsNew}</div>
       <section aria-label="Version history overview">
         <dl className="vh-gauges">
           {gauges.map((gauge) => (
@@ -249,21 +298,23 @@ export function VersionHistoryBrowser({
     </>
   );
 
-  return (
-    <VersionHistoryStage commits={CHRONO_COMMITS} hero={hero}>
+  const content = (
+    <>
       {/* Playable Milestone Demos */}
-      <section aria-labelledby="playable-milestones-heading" className="vh-section">
-        <div className="vh-section-head">
-          <h2 id="playable-milestones-heading" className="vh-section-title">
-            <span aria-hidden className="vh-section-index">
-              I
-            </span>
+      <section aria-labelledby="playable-milestones-heading" className={ms.section}>
+        <div className={ms.head}>
+          <h2 id="playable-milestones-heading" className={ms.title}>
+            {specialPages ? (
+              <span aria-hidden className="vh-section-index">
+                I
+              </span>
+            ) : null}
             Playable historical milestones
           </h2>
-          <span aria-hidden className="vh-section-rule" />
+          {specialPages ? <span aria-hidden className="vh-section-rule" /> : null}
         </div>
 
-        <div className="vh-capsules">
+        <div className={ms.grid}>
           {availableMilestoneCommits.map((commit) => {
             const runtime = demos[commit.sha];
             const isOnline = Boolean(runtime?.online);
@@ -272,28 +323,28 @@ export function VersionHistoryBrowser({
             const isResetting = resettingSha === commit.sha;
 
             return (
-              <article key={commit.sha} className="vh-capsule vh-plate" data-online={isOnline}>
-                <div className="vh-capsule-head">
-                  <span className="vh-capsule-window">
+              <article key={commit.sha} className={ms.card} data-online={isOnline}>
+                <div className={ms.cardHead}>
+                  <span className={ms.window}>
                     <time dateTime={commit.commitDate}>{formatDay(dayNumber(commit.commitDate))}</time>
-                    <span className="vh-capsule-sha">{commit.shortSha}</span>
+                    <span className={ms.sha}>{commit.shortSha}</span>
                   </span>
-                  <span className="vh-lamp" data-state={isOnline ? "online" : "offline"}>
-                    <span aria-hidden className="vh-lamp-bulb" />
+                  <span className={ms.lamp} data-state={isOnline ? "online" : "offline"}>
+                    <span aria-hidden className={ms.bulb} />
                     {isOnline ? "Online" : "Offline"}
                   </span>
                 </div>
 
                 {commit.milestone ? (
-                  <p className="vh-capsule-milestone">
+                  <p className={ms.milestone}>
                     <Sparkles aria-hidden className="size-3.5" />
                     {commit.milestone}
                   </p>
                 ) : null}
-                <h3 className="vh-capsule-title">{commit.title}</h3>
+                <h3 className={ms.cardTitle}>{commit.title}</h3>
 
                 {commit.releaseDate ? (
-                  <p className="vh-capsule-meta">
+                  <p className={ms.meta}>
                     Release: <time dateTime={commit.releaseDate}>{formatChangeDate(commit.releaseDate)}</time>
                     {commit.releaseId ? (
                       <>
@@ -304,10 +355,10 @@ export function VersionHistoryBrowser({
                   </p>
                 ) : null}
 
-                <div className="vh-capsule-controls">
+                <div className={ms.controls}>
                   <div className="flex flex-wrap items-center gap-2">
                     {isOnline ? (
-                      <Button asChild size="sm" className="vh-launch">
+                      <Button asChild size="sm" className={ms.launch}>
                         <LaunchDemoLink commit={chronoOf(commit)} href={demoUrl}>
                           <Play aria-hidden className="size-3.5" />
                           Launch Demo
@@ -330,11 +381,11 @@ export function VersionHistoryBrowser({
                       Reset Demo
                     </Button>
                   </div>
-                  <span className="vh-capsule-state">{runtime?.hasWorkspace ? "Workspace active" : "Fresh workspace"}</span>
+                  <span className={ms.state}>{runtime?.hasWorkspace ? "Workspace active" : "Fresh workspace"}</span>
                 </div>
 
                 {isConfirming ? (
-                  <div role="alertdialog" aria-label={`Confirm reset for demo ${commit.shortSha}`} className="vh-confirm">
+                  <div role="alertdialog" aria-label={`Confirm reset for demo ${commit.shortSha}`} className={ms.confirm}>
                     <span>
                       Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to fresh-account
                       defaults?
@@ -698,7 +749,36 @@ export function VersionHistoryBrowser({
           </div>
         ) : null}
       </section>
-    </VersionHistoryStage>
+    </>
+  );
+
+  if (specialPages) {
+    return (
+      <VersionHistoryStage commits={CHRONO_COMMITS} hero={hero}>
+        {content}
+      </VersionHistoryStage>
+    );
+  }
+
+  return (
+    <PageContainer>
+      <PageHeader
+        title="Version history"
+        description="Every retained commit in Amethyst's repository, with interactive fresh-account demos for prepared milestones."
+        actions={whatsNew}
+      />
+      <section aria-label="Version history overview" className="mb-8">
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {gauges.map((gauge) => (
+            <div key={gauge.label} className="rounded-xl border border-border bg-card/70 px-4 py-3">
+              <dt className="text-xs text-muted-foreground">{gauge.label}</dt>
+              <dd className="mt-1 text-2xl font-semibold tabular-nums">{gauge.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <div className="space-y-10">{content}</div>
+    </PageContainer>
   );
 }
 

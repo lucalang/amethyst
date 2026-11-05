@@ -47,6 +47,20 @@ export default async function AppearancePage() {
             <SwitchSetting settingKey="cardShine" value={preferences.cardShine} labelId="shine-label" onLabel="Shine on" offLabel="Shine off" />
           </SettingRow>
           <SettingRow
+            labelId="special-pages-label"
+            label="Special page designs"
+            description="The bespoke looks of Version History (the chronometer), Achievements (the Trophy Room), the Vault and the Admin panel. Turn off to show them in the standard page style."
+            reset={resetFor(preferences, ["specialPages"], "On")}
+          >
+            <SwitchSetting
+              settingKey="specialPages"
+              value={preferences.specialPages}
+              labelId="special-pages-label"
+              onLabel="Special designs on"
+              offLabel="Standard pages"
+            />
+          </SettingRow>
+          <SettingRow
             labelId="hover-scale-label"
             label="Hover scaling"
             description="How much a cover grows when you point at it."

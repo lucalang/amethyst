@@ -64,6 +64,7 @@ function untilt(event: PointerEvent<HTMLElement>) {
 export type CabinetOwner = { name: string; avatarUrl: string | null };
 
 export function AchievementsPage({ items, owner }: { items: AchievementCardData[]; owner: CabinetOwner }) {
+  const { specialPages } = useSettings();
   const [filter, setFilter] = useState<Filter>("all");
   const [groupFilter, setGroupFilter] = useState("all");
   const [rewardFilter, setRewardFilter] = useState<RewardFilter>("all");
@@ -124,7 +125,7 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
 
   return (
     <PageContainer>
-      <CabinetHeader byId={byId} earnedCount={earnedCount} owner={owner} />
+      <CabinetHeader byId={byId} earnedCount={earnedCount} owner={owner} special={specialPages} />
 
       <div className="enter mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CatalogSearch value={query} onChange={setQuery} label="Search achievements" placeholder="Search medals or rewards" className="sm:w-80" />
@@ -183,9 +184,10 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
           const earnedInGroup = all.filter((definition) => byId.get(definition.id)?.earnedAt).length;
           const { emblem: Emblem, label } = BADGE_STYLES[group];
           const headingId = `achievements-${group.toLowerCase()}`;
+          const showcase = specialPages && group === "Arcade";
           return (
-            <section key={group} aria-labelledby={headingId} className={cn("enter mb-10", group === "Arcade" && "ach-case")} style={badgeVars(group)}>
-              {group === "Arcade" ? (
+            <section key={group} aria-labelledby={headingId} className={cn("enter mb-10", showcase && "ach-case")} style={badgeVars(group)}>
+              {showcase ? (
                 <div className="ach-case-head">
                   <span aria-hidden className="ach-case-roundel">
                     <Emblem className="size-4" />
@@ -210,10 +212,10 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
                 <span aria-hidden className="h-px min-w-6 flex-1 bg-gradient-to-r from-[rgb(var(--ach-glow)/0.45)] to-transparent" />
               </div>
               )}
-              <ul className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6", group === "Arcade" && "ach-case-shelf")}>
+              <ul className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6", showcase && "ach-case-shelf")}>
                 {groupItems.map((definition) => (
                   <li key={definition.id} id={definition.id} className="min-w-0 scroll-mt-28">
-                    <AchievementTile definition={definition} item={byId.get(definition.id)!} onOpen={() => openDetail(definition.id)} room={group === "Arcade"} />
+                    <AchievementTile definition={definition} item={byId.get(definition.id)!} onOpen={() => openDetail(definition.id)} room={showcase} special={specialPages} />
                   </li>
                 ))}
               </ul>
@@ -238,6 +240,7 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
             definition={detail}
             item={byId.get(detail.id)}
             owner={owner}
+            special={specialPages}
             onReplay={() => {
               setDetailOpen(false);
               replayAchievementCelebration(detail.id);
@@ -249,7 +252,7 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
   );
 }
 
-function CabinetHeader({ byId, earnedCount, owner }: { byId: Map<string, AchievementCardData>; earnedCount: number; owner: CabinetOwner }) {
+function CabinetHeader({ byId, earnedCount, owner, special }: { byId: Map<string, AchievementCardData>; earnedCount: number; owner: CabinetOwner; special: boolean }) {
   const total = ACHIEVEMENTS.length;
   const ratio = total ? earnedCount / total : 0;
   const radius = 30;
@@ -263,6 +266,34 @@ function CabinetHeader({ byId, earnedCount, owner }: { byId: Map<string, Achieve
     return sum + (card?.earnedAt ? def.reward.items.length : 0);
   }, 0);
   const totalItemsAvailable = ACHIEVEMENTS.reduce((sum, def) => sum + def.reward.items.length, 0);
+
+  if (!special) {
+    return (
+      <header className="enter mb-6">
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Achievements</h1>
+        <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground tabular-nums">
+            {earnedCount} of {total} earned · {Math.round(ratio * 100)}% complete.
+          </span>{" "}
+          Medals for play, archive milestones and discoveries — each with a one-time reward of coins or exclusive cosmetics.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card/70 px-2.5 py-1">
+            <Coins aria-hidden className="coin-ink size-3.5" />
+            <span className="coin-ink font-semibold">+{totalCoinsEarned.toLocaleString("en")}</span>
+            <span className="text-muted-foreground">milestone coins</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card/70 px-2.5 py-1">
+            <Gift aria-hidden className="size-3.5 text-amethyst" />
+            <span className="font-semibold text-foreground">
+              {totalItemsEarned}/{totalItemsAvailable}
+            </span>
+            <span className="text-muted-foreground">exclusive items</span>
+          </span>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="ach-room enter">
@@ -405,7 +436,19 @@ function TileRewardPill({ definition, revealed, rewardGranted }: { definition: D
   );
 }
 
-function AchievementTile({ definition, item, onOpen, room = false }: { definition: Definition; item: AchievementCardData; onOpen: () => void; room?: boolean }) {
+function AchievementTile({
+  definition,
+  item,
+  onOpen,
+  room = false,
+  special,
+}: {
+  definition: Definition;
+  item: AchievementCardData;
+  onOpen: () => void;
+  room?: boolean;
+  special: boolean;
+}) {
   const earned = Boolean(item.earnedAt);
   const rewardGranted = Boolean(item.rewardGrantedAt);
   const revealed = isAchievementRevealed(definition, item);
@@ -418,13 +461,17 @@ function AchievementTile({ definition, item, onOpen, room = false }: { definitio
     <button
       type="button"
       aria-haspopup="dialog"
-      className="ach-tile"
+      className={
+        special
+          ? "ach-tile"
+          : "flex h-full w-full cursor-pointer flex-col items-center gap-3 rounded-lg border border-border bg-card/70 px-3.5 pt-5 pb-4 text-center transition-colors outline-none hover:border-[rgb(var(--ach-glow)/0.45)] hover:bg-card focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+      }
       data-state={earned ? "earned" : "locked"}
       data-progress={inProgress || undefined}
       style={badgeVars(definition.group)}
       onClick={onOpen}
-      onPointerMove={tilt}
-      onPointerLeave={untilt}
+      onPointerMove={special ? tilt : undefined}
+      onPointerLeave={special ? untilt : undefined}
     >
       {room ? (
         <span className="ach-niche">
@@ -478,11 +525,13 @@ function AchievementDetails({
   definition,
   item,
   owner,
+  special,
   onReplay,
 }: {
   definition: Definition;
   item: AchievementCardData | undefined;
   owner: CabinetOwner;
+  special: boolean;
   onReplay: () => void;
 }) {
   const router = useRouter();
@@ -530,6 +579,7 @@ function AchievementDetails({
 
   return (
     <DialogContent className="max-h-[90dvh] gap-0 overflow-y-auto p-0 sm:max-w-md" style={badgeVars(definition.group) as CSSProperties}>
+      {special ? (
       <div className="ach-stage" data-state={earned ? "earned" : "locked"} onPointerMove={tilt} onPointerLeave={untilt}>
         <span aria-hidden className="ach-stage-rays" />
         {!earned ? (
@@ -550,6 +600,11 @@ function AchievementDetails({
         ) : null}
         <AchievementBadge key={definition.id} achievement={badgeDef} earned={earned} size={148} motion="reveal" />
       </div>
+      ) : (
+        <div className="flex justify-center border-b border-border bg-muted/20 py-6">
+          <AchievementBadge key={definition.id} achievement={badgeDef} earned={earned} size={120} />
+        </div>
+      )}
       <div className="px-5 pt-5 pb-4">
         <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-muted-foreground">
           <Emblem aria-hidden className="size-3.5 text-[rgb(var(--ach-glow))]" />

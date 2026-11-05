@@ -49,6 +49,28 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-special-page-designs",
+    date: "2026-11-05",
+    title: "Special page designs toggle",
+    intro: "Choose whether Version History, Achievements, the Vault and the Admin panel use their bespoke designs or the standard page layout.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Special page designs", text: "A new Appearance setting switches Version History, Achievements, the Vault and the Admin panel between their bespoke designs and the standard page layout." },
+      { kind: "improved", feature: "The Vault", text: "The code panel tilts toward your mouse and catches a glare on hover, in the standard look and whenever the 3D chamber can't run." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Special page designs",
+          body: "Version History (the chronometer), Achievements (the Trophy Room), the Vault (the 3D chamber) and the Admin panel (the Crimson Sanctum) keep their bespoke designs by default. Turn Special page designs off to show them in Amethyst's standard page layout instead; content, links and actions stay the same, and you can switch back at any time.",
+          where: "Customization → Appearance",
+          link: { href: "/customization/appearance", label: "Open Appearance" },
+          points: ["The standard Vault skips the 3D scene: enter a code, get a clear answer and see your rewards as cards.", "The standard Admin panel is a responsive dashboard with every view, draft, publish and confirmation step."],
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-05-arcade-leaderboards",
     date: "2026-11-05",
     title: "Arcade Leaderboards",

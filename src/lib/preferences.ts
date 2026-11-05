@@ -84,6 +84,8 @@ export const DEFAULT_SETTINGS = {
   motion: "full" as MotionLevel,
   introFrequency: "daily" as IntroFrequency,
   cardShine: true,
+  /** Bespoke designs for Version History, Achievements, the Vault and Admin; off uses the standard page layout. */
+  specialPages: true,
   hoverScale: 5,
   editorFont: "sans" as EditorFont,
   editorFontSize: 16,
@@ -152,6 +154,7 @@ const settingFields = {
   motion: z.enum(MOTION_LEVELS),
   introFrequency: z.enum(INTRO_FREQUENCIES),
   cardShine: z.boolean(),
+  specialPages: z.boolean(),
   hoverScale: z.number().int().min(HOVER_SCALE_RANGE.min).max(HOVER_SCALE_RANGE.max),
   editorFont: z.enum(EDITOR_FONTS),
   editorFontSize: z.number().int().min(FONT_SIZE_RANGE.min).max(FONT_SIZE_RANGE.max),

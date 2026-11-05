@@ -1,6 +1,6 @@
 /* ---------------------------------------------------------------------------
- * Crimson Sanctum (/admin). Everything is scoped to .cs-root, plus .cs-dialog
- * (dialogs portal to <body>). In 3D (.cs-layer) the WebGL scene draws every
+ * Crimson Sanctum (/admin), the Special page designs look. Everything is scoped
+ * to .cs-fancy, then .cs-root, plus .cs-dialog (dialogs portal to <body>). In 3D (.cs-layer) the WebGL scene draws every
  * panel's glass, frame, glow and shadow, so panels stay transparent here and
  * only carry the sharp, accessible content, layered in depth. In 2D (.cs-flat)
  * the same panels get CSS glass, tilt and glare instead.
@@ -16,8 +16,10 @@
   initial-value: 0;
 }
 
+/* Only the decorated look (Special page designs on) gets these rules. */
+:where(.cs-fancy) {
 .cs-root,
-.cs-dialog {
+&.cs-dialog {
   --vx-black: #030203;
   --vx-red: #ff1f3d;
   --vx-text: #f3e9eb;
@@ -41,13 +43,13 @@
 }
 
 .cs-root ::selection,
-.cs-dialog ::selection {
+&.cs-dialog ::selection {
   background: rgb(255 31 61 / 0.45);
   color: #fff;
 }
 
 .cs-root :focus-visible,
-.cs-dialog :focus-visible {
+&.cs-dialog :focus-visible {
   outline: 2px solid #ff8a9c;
   outline-offset: 2px;
 }
@@ -1183,7 +1185,7 @@ legend.cs-label {
 /* Status registry: one tone per status, used by badges, chips and tablets. ---- */
 
 .cs-root [data-status],
-.cs-dialog [data-status] {
+&.cs-dialog [data-status] {
   --tone: var(--cs-red);
 }
 
@@ -2226,7 +2228,7 @@ a.cs-list-row:active {
 
 /* Dialogs ---------------------------------------------------------------------- */
 
-.cs-dialog {
+&.cs-dialog {
   border: 1px solid rgb(255 90 114 / 0.45);
   border-radius: 16px;
   background: linear-gradient(180deg, #1c050d, #0a0205);
@@ -2247,6 +2249,8 @@ a.cs-list-row:active {
 }
 
 /* Motion ----------------------------------------------------------------------- */
+
+}
 
 @keyframes cs-step-in {
   from {
@@ -2348,6 +2352,8 @@ a.cs-list-row:active {
   }
 }
 
+/* Only the decorated look (Special page designs on) gets these rules. */
+:where(.cs-fancy) {
 .cs-root[data-motion="off"] *,
 .cs-root[data-motion="off"] *::before,
 .cs-root[data-motion="off"] *::after {
@@ -2359,8 +2365,8 @@ a.cs-list-row:active {
   .cs-root *,
   .cs-root *::before,
   .cs-root *::after,
-  .cs-dialog,
-  .cs-dialog * {
+  &.cs-dialog,
+  &.cs-dialog * {
     animation: none !important;
     transition: none !important;
   }
@@ -2399,4 +2405,6 @@ a.cs-list-row:active {
     grid-template-columns: 1fr;
     gap: 0.1rem;
   }
+}
+
 }

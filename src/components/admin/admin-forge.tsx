@@ -9,7 +9,7 @@ import type { MotionLevel } from "@/lib/preferences";
 import { configFrom, EMPTY_CONFIG, needsRepeatConfirmation, type AdminCodeDetail, type AdminDraft, type CodeConfig } from "@/lib/vault-admin";
 import { cloneConfig, draftable, effectiveConfig, NameFields, PayoutFacts, RepeatConfirm, SealFields, validateConfig, type ConfigErrors } from "./admin-config";
 import { describeRewards, RewardsEditor, RewardTokens, type RewardContext } from "./admin-rewards";
-import { Panel, useStage } from "./admin-stage";
+import { flashPanel, Panel, useStage } from "./admin-stage";
 import { PUBLISH } from "./admin-timing";
 import { ConfirmAction, formatWhen, NavLink, PanelHead, plural, useNow } from "./admin-ui";
 
@@ -163,7 +163,8 @@ export function Forge({
 
   const alertPanel = () => {
     const panel = stepRef.current?.closest<HTMLElement>(".cs-panel");
-    if (panel) engine?.alert(panel);
+    if (panel && engine) engine.alert(panel);
+    else if (panel) flashPanel(panel);
   };
 
   const go = (index: number) => {

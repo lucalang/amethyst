@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 import { AdminApp } from "@/components/admin/admin-app";
+import { AdminSkeleton } from "@/components/admin/admin-skeleton";
 import { requireAdminPage } from "@/lib/admin";
 import { loadAdminCatalog, loadAdminLooks, loadAdminSnapshot } from "@/lib/data/vault-admin";
 import type { AuthContext } from "@/lib/supabase/auth";
@@ -7,14 +8,6 @@ import type { AuthContext } from "@/lib/supabase/auth";
 async function AdminLoader({ ctx }: { ctx: AuthContext }) {
   const [snapshot, catalog, looks] = await Promise.all([loadAdminSnapshot(ctx), loadAdminCatalog(ctx), loadAdminLooks(ctx)]);
   return <AdminApp initial={{ snapshot, catalog, looks }} />;
-}
-
-function AdminSkeleton() {
-  return (
-    <div aria-busy aria-label="Opening the admin panel" className="-mb-24 grid h-[calc(100dvh-3.5rem-1px)] place-items-center bg-[#030203] md:-mb-10">
-      <span className="size-16 animate-pulse rounded-full border border-[#ff1f3d]/40 shadow-[0_0_40px_#ff1f3d55]" />
-    </div>
-  );
 }
 
 /**
