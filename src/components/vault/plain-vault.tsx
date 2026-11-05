@@ -17,6 +17,7 @@ import { CARD_STAGGER, PACE } from "./timing";
 import { closeVaultAudio, playVaultReveal, playVaultSound, type VaultSound } from "./vault-audio";
 import { ACHIEVEMENT_PREFIX, CoinArt, COINS, CountUp, DecodeText, kindLabel, RewardArt, rewardInfo, rewardLink, rewardSummary, Tag, type VaultLooks } from "./vault-reveal";
 import "./plain-vault.css";
+import { createVaultRequestId } from "./vault-request";
 
 type Redemption =
   | { status: "unlocked"; coins: number; items: string[]; newItems: string[]; balance: number }
@@ -249,9 +250,9 @@ export function PlainChamber({ initialFinds, looks }: { initialFinds: VaultFind[
 
     let next: Outcome;
     let balance: number | null = null;
-    const request = attempt.current?.code === code ? attempt.current.request : crypto.randomUUID();
-    attempt.current = { code, request };
     try {
+      const request = attempt.current?.code === code ? attempt.current.request : createVaultRequestId();
+      attempt.current = { code, request };
       const result = await apiFetch<Redemption>("/api/vault/redeem", { method: "POST", json: { code, request } });
       if (result.status === "unlocked") {
         next = { phase: "granted", coins: result.coins, items: result.items, newItems: result.newItems };

@@ -33,6 +33,7 @@ import { closeVaultAudio, hushVault, playVaultReveal, playVaultSound, playVaultS
 import { DecodeText, RewardReveal, RewardSlots, rewardSummary, type RevealOrigin, type VaultLooks, type VaultProfile, type VaultSamples } from "./vault-reveal";
 import type { VaultSceneHandle } from "./vault-scene";
 import { noise, VaultSeal, type SealMode } from "./vault-seal";
+import { createVaultRequestId } from "./vault-request";
 
 // The 3D vault (and three.js with it) loads only here, after the page is already usable.
 const VaultScene = lazy(() => import("./vault-scene"));
@@ -494,9 +495,9 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
 
     let next: Outcome;
     let balance: number | null = null;
-    const request = attempt.current?.code === code ? attempt.current.request : crypto.randomUUID();
-    attempt.current = { code, request };
     try {
+      const request = attempt.current?.code === code ? attempt.current.request : createVaultRequestId();
+      attempt.current = { code, request };
       const result = await apiFetch<Redemption>("/api/vault/redeem", { method: "POST", json: { code, request } });
       if (result.status === "unlocked") {
         next = { phase: "granted", coins: result.coins, items: result.items, newItems: result.newItems };

@@ -49,6 +49,21 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-vault-redemption-fix",
+    date: "2026-11-05",
+    title: "Vault redemption compatibility",
+    intro: "Vault codes can be submitted on HTTP connections without getting stuck on verification.",
+    icon: "box",
+    highlights: [
+      { kind: "fixed", feature: "Code redemption", text: "Fixed request-ID generation on browsers where randomUUID is unavailable, preserving safe retries in both Vault views." },
+    ],
+    details: { fixed: [{
+      title: "Redemption without a stuck verification state",
+      body: "Both Vault views now generate secure request IDs even when the browser does not expose randomUUID. Request setup failures are handled instead of leaving verification stuck. The Vault interface is unchanged.",
+      link: { href: "/vault", label: "Open the Vault" },
+    }] },
+  },
+  {
     id: "2026-11-05-early-history-previews",
     date: "2026-11-05",
     title: "Five more early Archives snapshots",
