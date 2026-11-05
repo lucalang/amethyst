@@ -6,14 +6,12 @@ import { EntranceScope } from "@/components/layout/entrance-scope";
 import { MarkUpdatesSeen } from "@/components/layout/whats-new";
 import { VersionHistoryLinkButton } from "@/components/version-history/version-history-browser";
 import { CHANGELOG, formatChangeDate, releasePath } from "@/lib/changelog";
-import { requireUser } from "@/lib/supabase/auth";
 import { cn } from "@/lib/utils";
 import { HighlightList, KindLegend, ReleaseGlyph, ReleaseNotice, kindCounts } from "./release-ui";
 
 export const metadata: Metadata = { title: "What’s new" };
 
 export default async function WhatsNewPage() {
-  await requireUser();
   return (
     <EntranceScope>
       <PageContainer className="max-w-5xl">

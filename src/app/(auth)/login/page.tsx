@@ -33,6 +33,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               Take the tour
             </Link>
           </span>
+          <span className="mt-2 block">
+            <Link href="/version-history" className="font-medium text-amethyst underline-offset-4 hover:underline">
+              Browse Version History
+            </Link>
+          </span>
         </>
       }
     >

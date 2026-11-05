@@ -1,4 +1,4 @@
-import { createHmac, createPrivateKey, randomUUID, sign as cryptoSign } from "node:crypto";
+import { createHmac, createPrivateKey, createPublicKey, randomUUID, sign as cryptoSign, timingSafeEqual, verify as cryptoVerify } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -17,6 +17,7 @@ type DemoGatewayConfig = {
   retentionHours: number;
   defaultPath: string;
   mainAppOrigin: string;
+  publicOrigin?: string;
   demoRoot: string;
   privateJwk: JsonWebKey;
   publicJwk: JsonWebKey & { kid: string; alg: string; use: string };
@@ -63,6 +64,12 @@ if (!configPath) {
 
 const config: DemoGatewayConfig = JSON.parse(readFileSync(configPath, "utf8"));
 const privateKey = createPrivateKey({ key: config.privateJwk as never, format: "jwk" });
+const publicKey = createPublicKey(privateKey);
+const demoOrigin = new URL(config.publicOrigin ?? `http://localhost:${config.port}`).origin;
+const secureCookies = demoOrigin.startsWith("https:");
+if (!/^[0-9a-f]{40}$/.test(config.sha) || config.shortSha !== config.sha.slice(0, 7)) {
+  throw new Error("Invalid demo commit configuration.");
+}
 
 const VISITOR_COOKIE = `amethyst_demo_vid_${config.shortSha}`;
 const AUTH_COOKIE = `sb-demo-${config.shortSha}-auth-token`;
@@ -76,6 +83,8 @@ mkdirSync(storageRoot, { recursive: true });
 const visitorsFile = path.join(stateDir, `${config.shortSha}-visitors.json`);
 const visitors = new Map<string, VisitorRecord>();
 const provisionBuckets = new Map<string, { count: number; resetAt: number }>();
+const statusBuckets = new Map<string, { count: number; resetAt: number }>();
+const resettingVisitors = new Set<string>();
 
 function loadVisitors() {
   if (!existsSync(visitorsFile)) return;
@@ -132,7 +141,7 @@ function verifyVisitorCookieValue(raw: string | undefined): string | null {
   const sig = raw.slice(dot + 1);
   if (!/^[0-9a-f-]{36}$/.test(visitorId)) return null;
   const expected = createHmac("sha256", config.cookieSecret).update(`${config.shortSha}:${visitorId}`).digest("hex").slice(0, 32);
-  return sig === expected ? visitorId : null;
+  return /^[0-9a-f]{32}$/.test(sig) && timingSafeEqual(Buffer.from(sig), Buffer.from(expected)) ? visitorId : null;
 }
 
 function buildSupabaseUser(record: VisitorRecord) {
@@ -166,7 +175,7 @@ function buildSupabaseSession(record: VisitorRecord) {
     aud: "authenticated",
     exp: expSec,
     iat: nowSec,
-    iss: `http://localhost:${config.port}/__demo/supabase/auth/v1`,
+    iss: `${demoOrigin}/__demo/supabase/auth/v1`,
     sub: record.userId,
     email: record.email,
     phone: "",
@@ -226,6 +235,7 @@ async function callDemoRpc<T = unknown>(fnName: string, args: Record<string, unk
         });
       },
     );
+    req.setTimeout(3000, () => req.destroy(new Error("Demo database request timed out.")));
     req.on("error", reject);
     req.write(body);
     req.end();
@@ -258,32 +268,32 @@ async function pruneExpiredWorkspaces() {
       await deleteVisitorWorkspace(record);
     }
   }
-  if (visitors.size > MAX_ACTIVE_WORKSPACES_PER_COMMIT) {
-    const oldest = [...visitors.values()].sort((a, b) => a.lastActiveAt - b.lastActiveAt);
-    while (visitors.size > MAX_ACTIVE_WORKSPACES_PER_COMMIT && oldest.length > 0) {
-      const victim = oldest.shift()!;
-      visitors.delete(victim.visitorId);
-      changed = true;
-      await deleteVisitorWorkspace(victim);
-    }
-  }
   if (changed) saveVisitors();
 }
 
-function checkProvisionRateLimit(ip: string): boolean {
+function checkRequestRateLimit(buckets: Map<string, { count: number; resetAt: number }>, ip: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
-  const bucket = provisionBuckets.get(ip);
+  for (const [key, entry] of buckets) if (entry.resetAt <= now) buckets.delete(key);
+  const bucket = buckets.get(ip);
   if (!bucket || bucket.resetAt <= now) {
-    provisionBuckets.set(ip, { count: 1, resetAt: now + PROVISION_WINDOW_MS });
+    if (buckets.size >= 5000) return false;
+    buckets.set(ip, { count: 1, resetAt: now + windowMs });
     return true;
   }
-  if (bucket.count >= MAX_PROVISIONS_PER_IP_WINDOW) return false;
+  if (bucket.count >= limit) return false;
   bucket.count += 1;
   return true;
 }
 
+function checkProvisionRateLimit(ip: string): boolean {
+  return checkRequestRateLimit(provisionBuckets, ip, MAX_PROVISIONS_PER_IP_WINDOW, PROVISION_WINDOW_MS);
+}
+
 async function provisionFreshVisitor(existingVisitorId?: string): Promise<VisitorRecord> {
   await pruneExpiredWorkspaces();
+  if (visitors.size >= MAX_ACTIVE_WORKSPACES_PER_COMMIT) {
+    throw Object.assign(new Error("Demo workspace capacity reached. Please try again later."), { statusCode: 503 });
+  }
   const visitorId = existingVisitorId ?? randomUUID();
   const userId = randomUUID();
   const email = `demo-${config.shortSha}-${userId.slice(0, 8)}@demo.amethyst.local`;
@@ -330,6 +340,7 @@ function parseCookies(header: string | undefined): Record<string, string> {
 
 function serializeCookie(name: string, value: string, opts: { httpOnly?: boolean; maxAge?: number; path?: string } = {}): string {
   const parts = [`${name}=${encodeURIComponent(value)}`, `Path=${opts.path ?? "/"}`, "SameSite=Lax"];
+  if (secureCookies) parts.push("Secure");
   if (opts.httpOnly) parts.push("HttpOnly");
   if (typeof opts.maxAge === "number") parts.push(`Max-Age=${opts.maxAge}`);
   return parts.join("; ");
@@ -341,9 +352,13 @@ function decodeSubFromBearer(authHeader: string | undefined): string | null {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   try {
-    const payload = JSON.parse(base64UrlDecodeToString(parts[1])) as { sub?: string; exp?: number };
-    if (payload.exp && payload.exp * 1000 < Date.now()) return null;
-    return typeof payload.sub === "string" ? payload.sub : null;
+    const header = JSON.parse(base64UrlDecodeToString(parts[0])) as { alg?: string; kid?: string };
+    if (header.alg !== "ES256" || header.kid !== config.publicJwk.kid) return null;
+    if (!cryptoVerify("SHA256", Buffer.from(`${parts[0]}.${parts[1]}`), { key: publicKey, dsaEncoding: "ieee-p1363" }, Buffer.from(parts[2], "base64url"))) return null;
+    const payload = JSON.parse(base64UrlDecodeToString(parts[1])) as { sub?: string; exp?: number; role?: string; aud?: string };
+    if (typeof payload.exp !== "number" || payload.exp * 1000 <= Date.now() || payload.role !== "authenticated" || payload.aud !== "authenticated") return null;
+    const record = [...visitors.values()].find((visitor) => visitor.userId === payload.sub && visitor.expiresAt > Date.now());
+    return record?.userId ?? null;
   } catch {
     return null;
   }
@@ -418,13 +433,8 @@ function isPrivateOrInvalidRemoteUrl(rawUrl: string): { ok: false; code: string;
 function isAllowedControlOrigin(origin: string | undefined): string | null {
   if (!origin) return null;
   const allowed = new Set([
-    `http://localhost:${config.port}`,
-    `http://127.0.0.1:${config.port}`,
+    demoOrigin,
     config.mainAppOrigin,
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3100",
-    "http://127.0.0.1:3100",
   ]);
   return allowed.has(origin) ? origin : null;
 }
@@ -643,6 +653,7 @@ function buildDemoClientScript(userId: string | null): string {
             headers: { "Content-Type": "application/json" }
           });
           const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Could not reset demo.");
           try { window.localStorage.clear(); } catch {}
           try { window.sessionStorage.clear(); } catch {}
           window.location.href = data.redirectTo || META.defaultPath || "/";
@@ -981,7 +992,7 @@ const server = http.createServer(async (req, res) => {
 
     // Canonicalize 127.0.0.1 -> localhost on document navigations so origin & cookies stay consistent
     if (
-      hostHeader.startsWith("127.0.0.1:") &&
+      !secureCookies && hostHeader.startsWith("127.0.0.1:") &&
       (req.method === "GET" || req.method === "HEAD") &&
       !pathname.startsWith("/__demo/")
     ) {
@@ -991,6 +1002,25 @@ const server = http.createServer(async (req, res) => {
     }
 
     const cookies = parseCookies(req.headers.cookie);
+
+    if (pathname === "/__demo/reset-workspace" && req.method === "GET") {
+      const body = Buffer.from(`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reset demo workspace</title>
+<style>body{margin:0;background:#111114;color:#f4f4f5;font-family:ui-sans-serif,sans-serif;line-height:1.6}main{max-width:34rem;margin:12vh auto;padding:24px}h1{font-size:1.75rem}button,a{font:inherit}button{padding:10px 16px;background:#e4e4e7;color:#18181b;border:0;border-radius:6px;cursor:pointer}a{color:#f4f4f5;margin-left:16px}button:focus-visible,a:focus-visible{outline:3px solid #fbbf24;outline-offset:4px}button:disabled{opacity:.5}#error{color:#fda4af}</style></head>
+<body><main><h1>Reset demo ${config.shortSha}</h1><p>Reset only your temporary demo workspace to fresh-account defaults? If you do not have a workspace here, a new isolated visitor workspace will be created.</p>
+<form id="reset"><button type="submit" id="confirm">Confirm Reset</button><a id="cancel" href="/">Cancel</a></form><p id="error" role="alert"></p></main>
+<script>const destination=${JSON.stringify(config.defaultPath)};document.getElementById('cancel').href=destination;document.getElementById('reset').addEventListener('submit',async(event)=>{event.preventDefault();const button=document.getElementById('confirm');button.disabled=true;try{const response=await fetch('/__demo/reset',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(10000)});const data=await response.json();if(!response.ok)throw new Error(data.error||'Could not reset demo.');try{localStorage.clear();sessionStorage.clear()}catch{}location.assign(destination)}catch(error){document.getElementById('error').textContent=error.message||'Could not reach demo service.';button.disabled=false}});</script></body></html>`, "utf8");
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Length": String(body.length),
+        "Cache-Control": "private, no-store",
+        "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "no-referrer",
+      });
+      res.end(body);
+      return;
+    }
 
     // CORS preflight for /__demo/status and /__demo/reset from main app
     if (req.method === "OPTIONS" && (pathname === "/__demo/status" || pathname === "/__demo/reset")) {
@@ -1010,9 +1040,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === "/__demo/status" && req.method === "GET") {
+      if (!checkRequestRateLimit(statusBuckets, req.socket.remoteAddress ?? "unknown", 120, 60_000)) {
+        return sendJson(res, 429, { error: "Too many demo requests. Please wait a minute." }, { "Retry-After": "60" });
+      }
       const allowedOrigin = isAllowedControlOrigin(req.headers.origin);
-      const vid = verifyVisitorCookieValue(cookies[VISITOR_COOKIE]);
-      const record = vid ? (visitors.get(vid) ?? null) : null;
       return sendJson(
         res,
         200,
@@ -1020,14 +1051,6 @@ const server = http.createServer(async (req, res) => {
           ok: true,
           sha: config.sha,
           shortSha: config.shortSha,
-          milestone: config.milestone,
-          commitDate: config.commitDate,
-          releaseDate: config.releaseDate,
-          port: config.port,
-          retentionHours: config.retentionHours,
-          defaultPath: config.defaultPath,
-          hasWorkspace: Boolean(record && record.expiresAt > Date.now()),
-          expiresAt: record ? new Date(record.expiresAt).toISOString() : null,
         },
         allowedOrigin
           ? {
@@ -1040,45 +1063,56 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === "/__demo/reset" && req.method === "POST") {
       const allowedOrigin = isAllowedControlOrigin(req.headers.origin);
-      if (!allowedOrigin) {
+      if (!allowedOrigin || allowedOrigin !== demoOrigin) {
         return sendJson(res, 403, { error: "Forbidden origin" });
       }
-      await readRequestBody(req).catch(() => Buffer.alloc(0));
+      if (!checkProvisionRateLimit(req.socket.remoteAddress ?? "unknown")) {
+        return sendJson(res, 429, { error: "Too many demo workspaces provisioned from this address. Please wait a few minutes." }, { "Retry-After": "600" });
+      }
+      await readRequestBody(req);
       const vid = verifyVisitorCookieValue(cookies[VISITOR_COOKIE]);
       const existing = vid ? (visitors.get(vid) ?? null) : null;
-      if (existing) {
-        visitors.delete(existing.visitorId);
-        await deleteVisitorWorkspace(existing);
+      if (vid && resettingVisitors.has(vid)) return sendJson(res, 409, { error: "This workspace is already being reset." });
+      if (vid) resettingVisitors.add(vid);
+      try {
+        if (existing) {
+          visitors.delete(existing.visitorId);
+          await deleteVisitorWorkspace(existing);
+        }
+        const fresh = await provisionFreshVisitor();
+        const maxAge = config.retentionHours * 3600;
+        const setCookies = [
+          serializeCookie(VISITOR_COOKIE, signVisitorCookieValue(fresh.visitorId), { httpOnly: true, maxAge }),
+          serializeCookie(AUTH_COOKIE, encodeSsrSessionCookie(fresh), { httpOnly: false, maxAge }),
+          serializeCookie(STARTUP_COOKIE, "", { httpOnly: true, maxAge: 0 }),
+        ];
+        return sendJson(
+          res,
+          200,
+          {
+            ok: true,
+            reset: true,
+            shortSha: config.shortSha,
+            redirectTo: config.defaultPath,
+            expiresAt: new Date(fresh.expiresAt).toISOString(),
+          },
+          {
+            "Set-Cookie": setCookies,
+            "Access-Control-Allow-Origin": allowedOrigin,
+            "Access-Control-Allow-Credentials": "true",
+          },
+        );
+      } finally {
+        if (vid) resettingVisitors.delete(vid);
       }
-      const fresh = await provisionFreshVisitor();
-      const maxAge = config.retentionHours * 3600;
-      const setCookies = [
-        serializeCookie(VISITOR_COOKIE, signVisitorCookieValue(fresh.visitorId), { httpOnly: true, maxAge }),
-        serializeCookie(AUTH_COOKIE, encodeSsrSessionCookie(fresh), { httpOnly: false, maxAge }),
-        serializeCookie(STARTUP_COOKIE, "", { httpOnly: true, maxAge: 0 }),
-      ];
-      return sendJson(
-        res,
-        200,
-        {
-          ok: true,
-          reset: true,
-          shortSha: config.shortSha,
-          redirectTo: config.defaultPath,
-          expiresAt: new Date(fresh.expiresAt).toISOString(),
-        },
-        {
-          "Set-Cookie": setCookies,
-          "Access-Control-Allow-Origin": allowedOrigin,
-          "Access-Control-Allow-Credentials": "true",
-        },
-      );
     }
 
     if (pathname === "/__demo/resume" && req.method === "POST") {
+      if (req.headers.origin !== demoOrigin) return sendJson(res, 403, { error: "Forbidden origin" });
       const vid = verifyVisitorCookieValue(cookies[VISITOR_COOKIE]);
       let record = vid ? (visitors.get(vid) ?? null) : null;
       if (!record || record.expiresAt <= Date.now()) {
+        if (!checkProvisionRateLimit(req.socket.remoteAddress ?? "unknown")) return sendJson(res, 429, { error: "Too many demo sessions created recently." });
         record = await provisionFreshVisitor();
       } else {
         record.signedOut = false;
@@ -1268,7 +1302,8 @@ const server = http.createServer(async (req, res) => {
     req.pipe(proxyReq);
   } catch (err) {
     if (!res.headersSent) {
-      sendJson(res, 500, { error: "Internal demo gateway error", detail: err instanceof Error ? err.message : String(err) });
+      const status = typeof err === "object" && err && "statusCode" in err && (err.statusCode === 413 || err.statusCode === 503) ? err.statusCode : 500;
+      sendJson(res, status, { error: status === 413 ? "Demo request payload is too large." : "Demo service is currently unavailable. Please try again later." });
     }
   }
 });
@@ -1279,6 +1314,8 @@ setInterval(() => {
   void pruneExpiredWorkspaces();
 }, 10 * 60 * 1000).unref();
 
+server.requestTimeout = 10_000;
+server.headersTimeout = 10_000;
 server.listen(config.port, "0.0.0.0", () => {
   console.log(
     `[demo-gateway] ${config.shortSha} (${config.milestone}) listening on http://localhost:${config.port} -> next:${config.nextPort}, postgrest:${config.postgrestPort} (${config.dbName})`,

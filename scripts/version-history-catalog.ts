@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { CHANGELOG } from "../src/lib/changelog";
+import { findBrowserDemoSpec } from "../src/lib/browser-version-demos";
 import {
   ENABLED_DEMO_SPECS,
   UNAVAILABLE_COMMIT_REASONS,
@@ -193,6 +194,7 @@ function generateCatalog(): VersionCommitEntry[] {
     const release = releaseId ? (releaseById.get(releaseId) ?? null) : null;
 
     const enabledSpec = enabledBySha.get(sha) ?? null;
+    const browserSpec = findBrowserDemoSpec(sha);
     const unavailableSpec = UNAVAILABLE_COMMIT_REASONS[sha] ?? null;
     const milestone =
       enabledSpec?.milestone ?? unavailableSpec?.milestone ?? MILESTONE_LABELS[sha] ?? null;
@@ -201,7 +203,10 @@ function generateCatalog(): VersionCommitEntry[] {
     let stateReason: string;
     let demo: VersionCommitEntry["demo"] = null;
 
-    if (enabledSpec) {
+    if (browserSpec) {
+      state = "available";
+      stateReason = `Available: Public browser-only preview with fixed samples and commit-local edits. ${browserSpec.summary}`;
+    } else if (enabledSpec) {
       state = "available";
       stateReason = `Available Demo: Prepared in an isolated environment with its matching schema (${migrationCount} migrations through ${schemaVersion ?? "base"}) and fresh-account provisioning.`;
       demo = {

@@ -1,0 +1,6 @@
+{
+  "sha": "896927604d34e756a3f663e3ba796e43e9ea2bfe",
+  "mode": "static-fixture",
+  "libraryPage": "src/app/(vault)/[collection]/page.tsx",
+  "entry": "src/components/version-history/launch-preview/preview.tsx"
+}

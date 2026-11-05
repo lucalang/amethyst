@@ -1,4 +1,5 @@
 import catalogData from "./version-history-catalog.json";
+import { findBrowserDemoSpec } from "./browser-version-demos";
 
 export type DemoAvailabilityState = "available" | "not_prepared" | "unavailable";
 
@@ -50,7 +51,7 @@ export type VersionCommitEntry = {
   state: DemoAvailabilityState;
   /** Concise, truthful explanation of the commit's demo availability state. */
   stateReason: string;
-  /** Demo configuration when state === "available". */
+  /** Gateway configuration, or null for a browser-only preview. */
   demo: {
     port: number;
     eraSummary: string;
@@ -62,6 +63,21 @@ export type VersionCommitEntry = {
 };
 
 export const DEMO_RETENTION_HOURS = 24;
+
+export function configuredDemoOrigin(spec: EnabledDemoSpec): URL | null {
+  const configured = process.env[`VERSION_DEMO_URL_${spec.shortSha.toUpperCase()}`];
+  const raw = configured ?? (process.env.NODE_ENV !== "production" ? `http://localhost:${spec.port}` : "");
+  try {
+    const url = new URL(raw);
+    if (url.username || url.password || url.search || url.hash || url.pathname !== "/") return null;
+    const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    if (process.env.NODE_ENV === "production" && (url.protocol !== "https:" || local)) return null;
+    if (!["http:", "https:"].includes(url.protocol)) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Operator-curated registry of enabled milestone demos.
@@ -251,7 +267,15 @@ export function redactSensitiveText(input: string): string {
     .replace(/(--code\s+["'])([^"']+)(["'])/gi, "$1[REDACTED_CODE]$3");
 }
 
-export const VERSION_HISTORY_CATALOG: readonly VersionCommitEntry[] = catalogData as readonly VersionCommitEntry[];
+export const VERSION_HISTORY_CATALOG: readonly VersionCommitEntry[] = (catalogData as readonly VersionCommitEntry[]).map((entry) => {
+  const preview = findBrowserDemoSpec(entry.sha);
+  return preview ? {
+    ...entry,
+    state: "available",
+    stateReason: `Available: Public browser-only preview with fixed samples and commit-local edits. ${preview.summary}`,
+    demo: null,
+  } : entry;
+});
 
 export function findCommitBySha(sha: string): VersionCommitEntry | null {
   const normalized = sha.trim().toLowerCase();

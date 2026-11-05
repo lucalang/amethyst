@@ -5,6 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["src/components/version-history/launch-preview/**/*.{ts,tsx}"],
+    rules: {
+      "@next/next/no-img-element": "off",
+      "@next/next/no-html-link-for-pages": "off",
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
@@ -15,6 +22,7 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "out/**",
     "build/**",
+    "public/demos/3c27ef5/preview.js",
     "next-env.d.ts",
   ]),
 ]);

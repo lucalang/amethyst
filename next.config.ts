@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { BROWSER_DEMO_SPECS } from "./src/lib/browser-version-demos";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -54,6 +55,14 @@ const nextConfig: NextConfig = {
       {
         source: "/:path((?!api/image$).*)",
         headers: [{ key: "Content-Security-Policy", value: contentSecurityPolicy }, ...shared],
+      },
+      {
+        source: `/demos/:sha(${BROWSER_DEMO_SPECS.map((spec) => spec.sha.slice(0, 7)).join("|")})/:path+`,
+        headers: [
+          { key: "Content-Security-Policy", value: "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'; object-src 'none'" },
+          ...shared.filter((header) => header.key !== "X-Frame-Options"),
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        ],
       },
       {
         // Proxied artwork (possibly SVG) opened directly must never run script on this origin.

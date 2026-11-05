@@ -18,16 +18,16 @@ import {
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { LiveDemoRuntimeState } from "@/app/api/version-history/route";
+import type { LiveDemoRuntimeState } from "@/lib/version-demo-runtime";
 import { CatalogEmpty, CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { catalogMatcher } from "@/lib/catalog-search";
+import { findBrowserDemoSpec } from "@/lib/browser-version-demos";
 import { formatChangeDate, releasePath } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
 import {
-  ENABLED_DEMO_SPECS,
   VERSION_HISTORY_CATALOG,
   getCatalogSummary,
   type DemoAvailabilityState,
@@ -189,31 +189,29 @@ export function VersionHistoryBrowser({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sha: commit.sha }),
+          signal: AbortSignal.timeout(5000),
         });
         const payload = (await res.json().catch(() => null)) as
-          | { ok?: boolean; error?: { message?: string } }
+          | { ok?: boolean; resetUrl?: string; error?: { message?: string } }
           | null;
-        if (!res.ok || !payload?.ok) {
+        if (!res.ok || !payload?.ok || !payload.resetUrl) {
           toast.error(payload?.error?.message ?? `Could not reset demo for ${commit.shortSha}.`);
           return;
         }
-        toast.success(`Reset your demo workspace for ${commit.shortSha} to fresh-account defaults.`);
         setConfirmingResetSha(null);
-        await refreshDemoStatuses();
+        window.location.assign(payload.resetUrl);
       } catch {
         toast.error(`Could not reach demo service for ${commit.shortSha}.`);
       } finally {
         setResettingSha(null);
       }
     },
-    [refreshDemoStatuses],
+    [],
   );
 
   const availableMilestoneCommits = useMemo(
-    () =>
-      ENABLED_DEMO_SPECS.map((spec) => VERSION_HISTORY_CATALOG.find((c) => c.sha === spec.sha)).filter(
-        (c): c is VersionCommitEntry => Boolean(c),
-      ),
+    () => VERSION_HISTORY_CATALOG.filter((commit) => commit.state === "available")
+      .sort((left, right) => left.commitTimestamp.localeCompare(right.commitTimestamp)),
     [],
   );
 
@@ -274,7 +272,7 @@ export function VersionHistoryBrowser({
       <p className="vh-kicker">Chronometric archive</p>
       <h1 className="vh-title">Version history</h1>
       <p className="vh-lede">
-        {"Every retained commit in Amethyst's repository, with interactive fresh-account demos for prepared milestones."}
+        {"Every retained commit in Amethyst's repository, with interactive demos for prepared snapshots."}
       </p>
       <div className="vh-hero-actions">{whatsNew}</div>
       <section aria-label="Version history overview">
@@ -317,8 +315,8 @@ export function VersionHistoryBrowser({
         <div className={ms.grid}>
           {availableMilestoneCommits.map((commit) => {
             const runtime = demos[commit.sha];
-            const isOnline = Boolean(runtime?.online);
-            const demoUrl = runtime?.demoUrl ?? `http://localhost:${commit.demo?.port ?? 4101}${commit.demo?.defaultPath ?? "/"}`;
+            const demoUrl = runtime?.demoUrl;
+            const isOnline = Boolean(runtime?.online && demoUrl);
             const isConfirming = confirmingResetSha === commit.sha;
             const isResetting = resettingSha === commit.sha;
 
@@ -357,7 +355,7 @@ export function VersionHistoryBrowser({
 
                 <div className={ms.controls}>
                   <div className="flex flex-wrap items-center gap-2">
-                    {isOnline ? (
+                    {isOnline && demoUrl ? (
                       <Button asChild size="sm" className={ms.launch}>
                         <LaunchDemoLink commit={chronoOf(commit)} href={demoUrl}>
                           <Play aria-hidden className="size-3.5" />
@@ -381,14 +379,14 @@ export function VersionHistoryBrowser({
                       Reset Demo
                     </Button>
                   </div>
-                  <span className={ms.state}>{runtime?.hasWorkspace ? "Workspace active" : "Fresh workspace"}</span>
+                  <span className={ms.state}>{findBrowserDemoSpec(commit.sha) ? "Browser-local sample workspace" : "Isolated visitor workspace"}</span>
                 </div>
 
                 {isConfirming ? (
                   <div role="alertdialog" aria-label={`Confirm reset for demo ${commit.shortSha}`} className={ms.confirm}>
                     <span>
-                      Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to fresh-account
-                      defaults?
+                      Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to its starting
+                      state?
                     </span>
                     <div className="flex items-center gap-2">
                       <Button type="button" size="xs" variant="ghost" onClick={() => setConfirmingResetSha(null)}>
@@ -515,10 +513,8 @@ export function VersionHistoryBrowser({
           <ol aria-label="Cataloged repository commits" className="space-y-3">
             {visibleCommits.map((commit) => {
               const runtime = demos[commit.sha];
-              const isOnline = Boolean(runtime?.online);
-              const demoUrl =
-                runtime?.demoUrl ??
-                `http://localhost:${commit.demo?.port ?? 4101}${commit.demo?.defaultPath ?? "/"}`;
+              const demoUrl = runtime?.demoUrl;
+              const isOnline = Boolean(runtime?.online && demoUrl);
               const isConfirming = confirmingResetSha === commit.sha;
               const isResetting = resettingSha === commit.sha;
 
@@ -643,7 +639,7 @@ export function VersionHistoryBrowser({
 
                       {commit.state === "available" ? (
                         <div className="flex shrink-0 items-center gap-2">
-                          {isOnline ? (
+                          {isOnline && demoUrl ? (
                             <Button asChild size="xs">
                               <LaunchDemoLink commit={chronoOf(commit)} href={demoUrl}>
                                 <Play aria-hidden className="size-3" />
@@ -653,7 +649,7 @@ export function VersionHistoryBrowser({
                             </Button>
                           ) : (
                             <span className="text-xs text-warning">
-                              Local server stopped (<code>npm run demos -- start {commit.shortSha}</code>)
+                              Demo is currently offline.
                             </span>
                           )}
                           <Button
@@ -679,8 +675,8 @@ export function VersionHistoryBrowser({
                         className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs text-rose-200"
                       >
                         <span>
-                          Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to fresh-account
-                          defaults?
+                          Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to its starting
+                          state?
                         </span>
                         <div className="flex items-center gap-2">
                           <Button

@@ -6,7 +6,6 @@ import { PageContainer } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { MarkUpdatesSeen } from "@/components/layout/whats-new";
 import { CHANGE_KINDS, LATEST_CHANGE_ID, findRelease, formatChangeDate, releasePath } from "@/lib/changelog";
-import { requireUser } from "@/lib/supabase/auth";
 import { HighlightList, KIND_META, NoteTopic, ReleaseGlyph, ReleaseNotice } from "../release-ui";
 
 type Props = { params: Promise<{ release: string }> };
@@ -19,7 +18,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const navLink = "inline-flex items-center gap-1.5 rounded text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring";
 
 export default async function ReleasePage({ params }: Props) {
-  await requireUser();
   const found = findRelease((await params).release);
   if (!found) notFound();
   const { release, newer, older } = found;

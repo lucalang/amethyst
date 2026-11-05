@@ -15,6 +15,7 @@ import {
   DEMO_RETENTION_HOURS,
   ENABLED_DEMO_SPECS,
   VERSION_HISTORY_CATALOG,
+  configuredDemoOrigin,
   type EnabledDemoSpec,
 } from "../src/lib/version-history";
 
@@ -558,10 +559,10 @@ function prepareWorktreeAndBuild(spec: EnabledDemoSpec, keys: DemoKeyMaterial, f
     NODE_ENV: "production",
     NEXT_TELEMETRY_DISABLED: "1",
     NEXT_DIST_DIR: ".next-demo",
-    NEXT_PUBLIC_SUPABASE_URL: `http://localhost:${spec.port}/__demo/supabase`,
+    NEXT_PUBLIC_SUPABASE_URL: `${configuredDemoOrigin(spec)?.origin ?? `http://localhost:${spec.port}`}/__demo/supabase`,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: keys.anonToken,
     SUPABASE_SERVICE_ROLE_KEY: keys.serviceRoleToken,
-    APP_URL: `http://localhost:${spec.port}`,
+    APP_URL: configuredDemoOrigin(spec)?.origin ?? `http://localhost:${spec.port}`,
     ATTACHMENT_STORAGE: "supabase",
   };
 
@@ -692,10 +693,10 @@ async function startDemo(spec: EnabledDemoSpec, keys: DemoKeyMaterial) {
       NODE_ENV: "production",
       NEXT_TELEMETRY_DISABLED: "1",
       NEXT_DIST_DIR: ".next-demo",
-      NEXT_PUBLIC_SUPABASE_URL: `http://localhost:${spec.port}/__demo/supabase`,
+      NEXT_PUBLIC_SUPABASE_URL: `${configuredDemoOrigin(spec)?.origin ?? `http://localhost:${spec.port}`}/__demo/supabase`,
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: keys.anonToken,
       SUPABASE_SERVICE_ROLE_KEY: keys.serviceRoleToken,
-      APP_URL: `http://localhost:${spec.port}`,
+      APP_URL: configuredDemoOrigin(spec)?.origin ?? `http://localhost:${spec.port}`,
       ATTACHMENT_STORAGE: "supabase",
     },
   });
@@ -720,6 +721,7 @@ async function startDemo(spec: EnabledDemoSpec, keys: DemoKeyMaterial) {
         retentionHours: spec.retentionHours,
         defaultPath: spec.defaultPath,
         mainAppOrigin: process.env.MAIN_APP_ORIGIN || "http://localhost:3000",
+        publicOrigin: configuredDemoOrigin(spec)?.origin ?? `http://localhost:${spec.port}`,
         demoRoot: DEMO_ROOT,
         privateJwk: keys.privateJwk,
         publicJwk: keys.publicJwk,

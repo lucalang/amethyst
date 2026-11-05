@@ -1101,8 +1101,8 @@
     "migrationCount": 10,
     "schemaVersion": "20260930001000_amethyst.sql",
     "milestone": null,
-    "state": "not_prepared",
-    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "state": "available",
+    "stateReason": "Available: Public browser-only preview with fixed samples and commit-local edits. Other becomes always visible in navigation and joins the New-entry menu.",
     "demo": null
   },
   {
@@ -1122,8 +1122,8 @@
     "migrationCount": 10,
     "schemaVersion": "20260930001000_amethyst.sql",
     "milestone": null,
-    "state": "not_prepared",
-    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "state": "available",
+    "stateReason": "Available: Public browser-only preview with fixed samples and commit-local edits. The package-registry configuration snapshot; its interface is unchanged from a33650c.",
     "demo": null
   },
   {
@@ -1143,8 +1143,8 @@
     "migrationCount": 10,
     "schemaVersion": "20260930001000_amethyst.sql",
     "milestone": null,
-    "state": "not_prepared",
-    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "state": "available",
+    "stateReason": "Available: Public browser-only preview with fixed samples and commit-local edits. The initial deployment snapshot; its interface is unchanged from a33650c.",
     "demo": null
   },
   {
@@ -1164,8 +1164,8 @@
     "migrationCount": 10,
     "schemaVersion": "20260930001000_amethyst.sql",
     "milestone": null,
-    "state": "not_prepared",
-    "stateReason": "Not Prepared: Cataloged from Git history (10 migrations through 20260930001000_amethyst.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "state": "available",
+    "stateReason": "Available: Public browser-only preview with fixed samples and commit-local edits. Polished entrances and controls, To Do-style checklists and square game artwork.",
     "demo": null
   },
   {
@@ -1186,22 +1186,8 @@
     "schemaVersion": "20260930001000_amethyst.sql",
     "milestone": "Amethyst Archives Launch",
     "state": "available",
-    "stateReason": "Available Demo: Prepared in an isolated environment with its matching schema (10 migrations through 20260930001000_amethyst.sql) and fresh-account provisioning.",
-    "demo": {
-      "port": 4101,
-      "eraSummary": "The original Amethyst Archives launch: fixed Anime, Games and Other libraries (/anime, /games, /other), automatic starter workspace files on new entries, nested folders, live CodeMirror 6 Markdown notes and To Do-style checklists.",
-      "retentionHours": 24,
-      "defaultPath": "/anime",
-      "features": [
-        "Fixed Anime, Games and Other libraries",
-        "Starter workspace files (Overview.md & Progress) created with each entry",
-        "Nested folders, live Markdown editor and checklists with task steps"
-      ],
-      "containedIntegrations": [
-        "Remote cover URLs are rendered via an isolated local SVG artwork generator with no outbound internet requests",
-        "Account emails (sign-up, OTP, password reset) are simulated locally without sending real email"
-      ]
-    }
+    "stateReason": "Available: Public browser-only preview with fixed samples and commit-local edits. Fixed libraries, live Markdown notes and checklists with task details.",
+    "demo": null
   },
   {
     "sha": "4cd98fceef80408437788fe99a203bf3a079a218",
@@ -1220,8 +1206,8 @@
     "migrationCount": 9,
     "schemaVersion": "20260930000900_workspaces.sql",
     "milestone": "Personal Entry Workspaces",
-    "state": "not_prepared",
-    "stateReason": "Not Prepared: Cataloged from Git history (9 migrations through 20260930000900_workspaces.sql), but not currently built as an active demo instance. Can be prepared via the operator CLI.",
+    "state": "available",
+    "stateReason": "Available: Public browser-only preview with fixed samples and commit-local edits. The first personal library, with type filters, note write/preview modes and workspace checklists.",
     "demo": null
   },
   {

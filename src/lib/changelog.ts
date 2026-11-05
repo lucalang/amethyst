@@ -49,6 +49,65 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-early-history-previews",
+    date: "2026-11-05",
+    title: "Five more early Archives snapshots",
+    intro: "Explore five more snapshots from the oldest usable Archives history, without signing in.",
+    icon: "notebook",
+    highlights: [
+      { kind: "new", feature: "Five public previews", text: "Open 4cd98fc, a33650c, 41c0112, bb14398 and 8969276 directly from Version History." },
+      { kind: "new", feature: "The earliest workspace", text: "Try the original unified library and Markdown write/preview editor, before the launch-era live editor." },
+      { kind: "improved", feature: "Historical fidelity", text: "Each snapshot uses its own library markup, navigation, checklist controls and CSS, including square game covers and always-visible Other navigation in the later snapshot." },
+      { kind: "improved", feature: "Separate local samples", text: "Edits and resets stay isolated to each commit in your browser; no account or demo server is required." },
+    ],
+    details: { new: [{
+      title: "The next five usable snapshots, oldest first",
+      body: "The retired catalog-sync prototypes are skipped. The earliest personal-workspace commit 4cd98fc is now playable, followed by a33650c's interaction polish and square game covers, the deployment snapshot 41c0112, the package-registry snapshot bb14398, and 8969276's always-visible Other navigation and New-entry menu option. Previously, Other appeared in navigation only when it contained entries. The two configuration-only commits intentionally share the preceding UI. Each preview has fixed sample content, editable notes and checklist progress, and its own local reset. Creation, deletion, uploads and account actions remain disabled.",
+      link: { href: "/version-history", label: "Explore the early snapshots" },
+    }] },
+  },
+  {
+    id: "2026-11-05-launch-preview",
+    date: "2026-11-05",
+    title: "Try the original Archives",
+    intro: "Explore the launch-era Amethyst Archives in a public browser-only demo with a sample workspace.",
+    icon: "notebook",
+    highlights: [
+      { kind: "new", feature: "Launch preview", text: "Try the original fixed libraries, early navigation, poster cards, explorer and Markdown/checklist editors from commit 3c27ef5." },
+      { kind: "new", feature: "Local sandbox", text: "Edit the sample note and checklist in your browser, then reset the demo without an account or demo server." },
+      { kind: "improved", feature: "Safe sample workspace", text: "Creation, deletion, uploads and account actions are unavailable; the demo never reads or changes your real workspace." },
+      { kind: "fixed", feature: "Historical effects", text: "Restored the original staggered library entrances and unclipped poster hover glow, keeping image zoom, title highlights and scroll-linked fades. Fixed missing artwork styles and hover effects suppressed by touch-capable browser detection." },
+    ],
+    details: { new: [{
+      title: "The launch-era preview",
+      body: "This limited sandbox uses the launch commit's original interface with a fixed sample entry. Its library filters, file explorer, live Markdown editor and checklist run in the browser. Temporary edits are stored locally for this preview only, and Reset Demo restores the sample. Account management, artwork uploads and structural creation/deletion are unavailable. Other historical milestones retain their existing demo availability.",
+      link: { href: "/demos/3c27ef5", label: "Try the original Archives" },
+    }], fixed: [{
+      title: "The original motion and hover effects",
+      body: "The launch preview keeps the original library's staggered entrances, poster zoom and amethyst hover glow, title and border highlights, and scroll-linked exits. A conflicting modern CSS utility no longer clips the poster glow. Reduced-motion preferences are respected.",
+      link: { href: "/demos/3c27ef5", label: "Open the launch preview" },
+    }] },
+  },
+  {
+    id: "2026-11-05-public-version-history",
+    date: "2026-11-05",
+    title: "Version History for everyone",
+    intro: "Explore Amethyst's full commit catalog, release notes and available historical demos without an account.",
+    icon: "link",
+    highlights: [
+      { kind: "improved", feature: "Public catalog", text: "Browse Version History, search and filter commits, and read linked release notes without signing in." },
+      { kind: "new", feature: "Sign-in page link", text: "Open Version History directly from the sign-in page." },
+      { kind: "improved", feature: "Isolated demos", text: "Available demos use temporary visitor workspaces, with reset confirmation on the demo itself." },
+    ],
+    details: {
+      improved: [{
+        title: "Public Version History",
+        body: "Version History and its release notes are open to everyone. Launch available historical demos without an Amethyst account; each visitor gets an isolated temporary workspace. Reset confirmation takes place on the demo's own page and affects only that visitor's workspace. Your normal Archive, To Do, Arcade and account pages remain private.",
+        link: { href: "/version-history", label: "Explore Version History" },
+      }],
+    },
+  },
+  {
     id: "2026-11-05-multiple-badges",
     date: "2026-11-05",
     title: "Wear up to five badges",

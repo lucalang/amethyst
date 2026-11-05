@@ -306,6 +306,35 @@ Rules the panel adds (also visible in `npm run codes -- list`):
 
 `/version-history` catalogs all retained commits reachable from the repository's branches and tags (`main` and `backup/pre-squash`), deduplicated by full 40-character SHA, and lets visitors explore enabled historical milestones as isolated, fresh-account demos.
 
+Version History and `/whats-new` release notes are public; all normal private pages still require sign-in. The sign-in page and signed-in account menu both link to Version History. The anonymous status API returns only catalog counts and aggregate demo availability, never visitor identity, workspace state, cookies or expiration. Status probes are coalesced and cached for 10 seconds with a 750 ms timeout. Anonymous API limits are 60 status and 10 reset handoffs per minute per address, with bounded, expiring in-process buckets (not a distributed quota); the trusted hosting proxy must overwrite client-supplied IP headers.
+
+### Browser-only historical previews
+
+The browser-preview registry in `src/lib/browser-version-demos.ts` contains these public snapshots, oldest first. The first five retired catalog-sync prototypes are skipped; `3c27ef5` was already available, and five additional snapshots follow the oldest usable history.
+
+| Preview | Historical interface |
+| --- | --- |
+| `/demos/4cd98fc` | First unified library, type filters, Markdown write/preview modes and checklists |
+| `/demos/3c27ef5` | Archives launch, fixed libraries, live Markdown and task details |
+| `/demos/a33650c` | Interaction polish, To Do-style checklist controls and square game covers |
+| `/demos/41c0112` | Initial deployment; the same UI as `a33650c` |
+| `/demos/bb14398` | Package registry change; the same UI as `a33650c` |
+| `/demos/8969276` | Other always visible in navigation and included in the New-entry menu |
+
+Each sandbox bundles its commit's actual library render, navigation, cards, explorer, note/checklist components and CSS into an isolated HTML document. Sample entries replace account data. The earliest snapshot uses its original unified library and textarea/Markdown renderer; later snapshots use fixed libraries and the live editor. Notes, checkmarks, existing task details and progress changes are saved only in this browser under `amethyst:preview:<short-sha>:*`; Reset Demo clears only that commit's namespace. New entries/files/tasks, deletion, uploads and account management are disabled. No Supabase connection, visitor account, production API or separately running demo server is used. Other milestones still use the existing isolated gateway setup.
+
+Regenerate the committed static artifacts after editing the adapters:
+
+```bash
+npm run demos:preview
+# Rebuild only one registered snapshot:
+npm run demos:preview -- --sha 4cd98fc
+```
+
+The builder extracts each exact Git source into a disposable temporary directory and rejects server-only dependencies. A TypeScript syntax-tree extraction keeps the original library JSX and client component imports while replacing server data loading with samples. Static output is in `public/demos/<short-sha>`; it ships with the normal site deployment and can also be served directly as static files. Production hosting need not contain the historical Git commits because the generated files are already included. Each preview has its own styles/document, no network API access (`connect-src 'none'`), no form submissions, and an exact public asset allowlist. Historical UI and CSS come from the pinned commit; sample content, local persistence, routing, disabled controls and the demo bar are adaptations, while dependencies come from the current pinned toolchain rather than the historical lockfile. These are UI sandboxes, not full historical servers or claims of pixel-identical reproduction. Hover utilities respond to actual hover even on touch-capable browsers; reduced-motion overrides remain intact.
+
+Sample forest artwork: [Unsplash photograph](https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=85&fit=crop). Manrope font files come from Google Fonts and are distributed with their OFL license in `public/demos/3c27ef5/OFL.txt`.
+
 ### Refreshing the commit catalog
 
 ```bash
@@ -366,7 +395,7 @@ All extracted historical source trees, `.next-demo` build outputs, ephemeral dem
 - **Origin & cookie isolation:** Each demo runs on its own origin (`http://localhost:4101`..`4105`), isolating `localStorage` and `sessionStorage`. Cookies are scoped per commit (`amethyst_demo_vid_<shortSha>`, `sb-demo-<shortSha>-auth-token`, `archive-started-demo-<shortSha>`), and the Demo Isolation Gateway strips all other cookies before forwarding requests to the historical Next.js server.
 - **Fresh-account provisioning & 24-hour retention:** Each visitor is provisioned a dedicated `auth.users` + `public.users` identity per commit using that commit's own `ensure_profile()` and triggers. Workspaces persist across navigation and refresh for 24 hours (`DEMO_RETENTION_HOURS`) and are automatically pruned when expired.
 - **Quotas & contained integrations:** Each visitor workspace is capped at 50 entries, 250 workspace nodes, 500 tasks, 256 KB per write request, and 5 uploaded raster images (≤ 2 MB each, ≤ 5 MB total). Outbound requests from `/api/image` are intercepted locally and served deterministic safe SVG artwork; all account email endpoints (`/recover`, `/otp`, `/resend`, `/verify`) are simulated locally without sending email.
-- **Reset Demo:** Available both inside every running demo (via the corner Shadow DOM demo bar) and on `/version-history`, with confirmation. Resetting deletes only that visitor's `auth.users` row (cascading all rows in `demo_<shortSha>`) and uploaded files, provisions a fresh account and clears demo `localStorage`/`sessionStorage`.
+- **Reset Demo:** Available both inside every running demo (via the corner Shadow DOM demo bar) and on `/version-history`, with confirmation. The main-app endpoint only returns the configured gateway confirmation URL: it never forwards visitor cookies, deletes a workspace or relays demo auth cookies. On the gateway's own origin, the visitor confirms a POST guarded by an exact origin check. Only a verified signed visitor cookie can identify the workspace to delete; a missing, invalid or unknown cookie creates a fresh isolated visitor instead. Resetting clears only that visitor's demo rows and uploads, then clears demo `localStorage`/`sessionStorage`. Reset/provisioning is limited to 25 requests per 10 minutes per socket address; status to 120 per minute. Behind a reverse proxy this is a conservative shared gateway limit. Active capacity rejects new visitors rather than evicting another active workspace; expired workspaces are still pruned. Demo JWTs are signature-verified and hosted demo cookies use `Secure`.
 
 ### Hosted deployment steps for live demos
 
@@ -374,6 +403,7 @@ To expose historical milestone demos on a hosted environment alongside productio
 
 1. Provision an isolated multi-database Postgres instance (never the production Supabase project) and run `scripts/version-demos.ts` on an isolated container/VM host.
 2. Route distinct demo subdomains (e.g. `demo-3c27ef5.<domain>`) to each Demo Isolation Gateway port (`4101`–`4105`) with `MAIN_APP_ORIGIN` set to the main app origin, and keep all demo processes without production Supabase or R2 credentials.
+3. Set `VERSION_DEMO_URL_<UPPERCASE_SHORT_SHA>` (for example `VERSION_DEMO_URL_3C27EF5=https://demo-3c27ef5.<domain>`) to each existing public demo origin in both the main app and the isolated demo build/start environment. URLs must be bare origins without credentials, paths, queries or fragments. Production requires HTTPS and rejects localhost; missing/invalid configuration leaves the demo offline, never links production visitors to their own localhost. Development defaults to the existing local gateway ports. Build historical bundles with their public origins so browser auth requests use the gateway instead of localhost; rebuild already-prepared bundles when changing an origin. No public demo origins are configured in this checkout, and these changes do not provision or deploy hosting.
 
 ## Commands
 

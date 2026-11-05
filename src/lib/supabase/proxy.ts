@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { STARTUP_COOKIE, STARTUP_PATH, startupCookieOptions } from "@/lib/startup";
+import { isBrowserDemoPath } from "@/lib/browser-version-demos";
 import type { Database } from "./database.types";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/signout", "/auth/session-expired", "/tour"];
@@ -8,7 +9,10 @@ const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm"
 const GUEST_ONLY_PATHS = new Set(["/login", "/register", "/forgot-password"]);
 
 function isPublic(pathname: string) {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  return pathname === "/version-history" || pathname === "/whats-new" ||
+    isBrowserDemoPath(pathname) ||
+    /^\/whats-new\/[^/]+$/.test(pathname) ||
+    PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 /**
