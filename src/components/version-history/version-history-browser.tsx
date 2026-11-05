@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
   GitBranch,
   History,
   Info,
+  Megaphone,
   Play,
   RotateCcw,
   Sparkles,
@@ -30,8 +31,24 @@ import {
   type DemoAvailabilityState,
   type VersionCommitEntry,
 } from "@/lib/version-history";
+import { dayNumber, formatDay, type ChronoCommit } from "./chrono-timing";
+import { LaunchDemoLink, VersionHistoryStage } from "./version-history-stage";
 
 type StateFilter = "all" | DemoAvailabilityState;
+
+function chronoOf(commit: VersionCommitEntry): ChronoCommit {
+  return {
+    shortSha: commit.shortSha,
+    day: dayNumber(commit.commitDate),
+    time: Date.parse(commit.commitTimestamp) / 86_400_000,
+    milestone: commit.milestone,
+    title: commit.title,
+    available: commit.state === "available",
+  };
+}
+
+/** Oldest first: the order of the chronometer's index ring. */
+const CHRONO_COMMITS: ChronoCommit[] = [...VERSION_HISTORY_CATALOG].reverse().map(chronoOf);
 
 const STATE_LABELS: Readonly<Record<DemoAvailabilityState, string>> = {
   available: "Available Demo",
@@ -189,41 +206,64 @@ export function VersionHistoryBrowser({
     setPage(1);
   };
 
-  return (
-    <div className="space-y-10">
-      {/* Summary & Honest Disclosure Banner */}
+  const gauges = [
+    { label: "Cataloged commits", value: summary.total, tone: "brass" },
+    { label: STATE_LABELS.available, value: summary.available, tone: "ok" },
+    { label: STATE_LABELS.not_prepared, value: summary.notPrepared, tone: "off" },
+    { label: STATE_LABELS.unavailable, value: summary.unavailable, tone: "warn" },
+  ];
+
+  const hero = (
+    <>
+      <p className="vh-kicker">Chronometric archive</p>
+      <h1 className="vh-title">Version history</h1>
+      <p className="vh-lede">
+        {"Every retained commit in Amethyst's repository, with interactive fresh-account demos for prepared milestones."}
+      </p>
+      <div className="vh-hero-actions">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/whats-new">
+            <Megaphone aria-hidden className="size-3.5 text-amethyst" />
+            What’s new
+          </Link>
+        </Button>
+      </div>
       <section aria-label="Version history overview">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-border bg-card/70 p-4">
-            <p className="text-xs font-medium text-muted-foreground">Cataloged commits</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums">{summary.total}</p>
-          </div>
-          <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/[0.05] p-4">
-            <p className="text-xs font-medium text-emerald-300">Available Demo</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-200 tabular-nums">{summary.available}</p>
-          </div>
-          <div className="rounded-xl border border-border bg-card/70 p-4">
-            <p className="text-xs font-medium text-muted-foreground">Not Prepared</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums">{summary.notPrepared}</p>
-          </div>
-          <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.04] p-4">
-            <p className="text-xs font-medium text-warning">Unavailable</p>
-            <p className="mt-1 text-2xl font-bold text-warning tabular-nums">{summary.unavailable}</p>
-          </div>
-        </div>
+        <dl className="vh-gauges">
+          {gauges.map((gauge) => (
+            <div
+              key={gauge.label}
+              className="vh-gauge"
+              data-tone={gauge.tone}
+              style={{ "--vh-level": summary.total ? gauge.value / summary.total : 0 } as CSSProperties}
+            >
+              <span aria-hidden className="vh-dial">
+                <span className="vh-needle" />
+              </span>
+              <dt>{gauge.label}</dt>
+              <dd>{gauge.value}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
+    </>
+  );
 
+  return (
+    <VersionHistoryStage commits={CHRONO_COMMITS} hero={hero}>
       {/* Playable Milestone Demos */}
-      <section aria-labelledby="playable-milestones-heading" className="space-y-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <h2 id="playable-milestones-heading" className="text-lg font-bold tracking-tight">
-              Playable historical milestones
-            </h2>
-          </div>
+      <section aria-labelledby="playable-milestones-heading" className="vh-section">
+        <div className="vh-section-head">
+          <h2 id="playable-milestones-heading" className="vh-section-title">
+            <span aria-hidden className="vh-section-index">
+              I
+            </span>
+            Playable historical milestones
+          </h2>
+          <span aria-hidden className="vh-section-rule" />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="vh-capsules">
           {availableMilestoneCommits.map((commit) => {
             const runtime = demos[commit.sha];
             const isOnline = Boolean(runtime?.online);
@@ -232,132 +272,89 @@ export function VersionHistoryBrowser({
             const isResetting = resettingSha === commit.sha;
 
             return (
-              <article
-                key={commit.sha}
-                className="flex flex-col justify-between rounded-xl border border-amethyst/30 bg-card/80 p-5 shadow-sm transition-colors hover:border-amethyst/50"
-              >
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {commit.milestone ? (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-amethyst/35 bg-amethyst/15 px-2 py-0.5 text-xs font-semibold text-amethyst">
-                          <Sparkles aria-hidden className="size-3" />
-                          {commit.milestone}
-                        </span>
-                      ) : null}
-                    </div>
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                        isOnline
-                          ? "bg-emerald-500/10 text-emerald-300"
-                          : "bg-amber-500/10 text-warning",
-                      )}
-                    >
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "size-1.5 rounded-full",
-                          isOnline ? "bg-emerald-400" : "bg-amber-400",
-                        )}
-                      />
-                      {isOnline ? "Online" : "Offline"}
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="text-base font-semibold tracking-tight text-foreground">{commit.title}</h3>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    {commit.releaseDate ? (
-                      <span>
-                        Release:{" "}
-                        <time dateTime={commit.releaseDate} className="font-medium text-foreground/85">
-                          {formatChangeDate(commit.releaseDate)}
-                        </time>
-                        {commit.releaseId ? (
-                          <>
-                            {" · "}
-                            <Link
-                              href={releasePath(commit.releaseId)}
-                              className="text-amethyst underline-offset-4 hover:underline"
-                            >
-                              Release
-                            </Link>
-                          </>
-                        ) : null}
-                      </span>
-                    ) : null}
-                  </div>
+              <article key={commit.sha} className="vh-capsule vh-plate" data-online={isOnline}>
+                <div className="vh-capsule-head">
+                  <span className="vh-capsule-window">
+                    <time dateTime={commit.commitDate}>{formatDay(dayNumber(commit.commitDate))}</time>
+                    <span className="vh-capsule-sha">{commit.shortSha}</span>
+                  </span>
+                  <span className="vh-lamp" data-state={isOnline ? "online" : "offline"}>
+                    <span aria-hidden className="vh-lamp-bulb" />
+                    {isOnline ? "Online" : "Offline"}
+                  </span>
                 </div>
 
-                <div className="mt-4 space-y-2 border-t border-white/[0.07] pt-3.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {isOnline ? (
-                        <Button asChild size="sm">
-                          <a href={demoUrl}>
-                            <Play aria-hidden className="size-3.5" />
-                            Launch Demo
-                            <ArrowUpRight aria-hidden className="size-3.5" />
-                          </a>
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" disabled>
+                {commit.milestone ? (
+                  <p className="vh-capsule-milestone">
+                    <Sparkles aria-hidden className="size-3.5" />
+                    {commit.milestone}
+                  </p>
+                ) : null}
+                <h3 className="vh-capsule-title">{commit.title}</h3>
+
+                {commit.releaseDate ? (
+                  <p className="vh-capsule-meta">
+                    Release: <time dateTime={commit.releaseDate}>{formatChangeDate(commit.releaseDate)}</time>
+                    {commit.releaseId ? (
+                      <>
+                        {" · "}
+                        <Link href={releasePath(commit.releaseId)}>Release</Link>
+                      </>
+                    ) : null}
+                  </p>
+                ) : null}
+
+                <div className="vh-capsule-controls">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {isOnline ? (
+                      <Button asChild size="sm" className="vh-launch">
+                        <LaunchDemoLink commit={chronoOf(commit)} href={demoUrl}>
+                          <Play aria-hidden className="size-3.5" />
                           Launch Demo
-                        </Button>
-                      )}
+                          <ArrowUpRight aria-hidden className="size-3.5" />
+                        </LaunchDemoLink>
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline" disabled>
+                        Launch Demo
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={!isOnline || isResetting}
+                      onClick={() => setConfirmingResetSha((prev) => (prev === commit.sha ? null : commit.sha))}
+                    >
+                      <RotateCcw aria-hidden className="size-3.5" />
+                      Reset Demo
+                    </Button>
+                  </div>
+                  <span className="vh-capsule-state">{runtime?.hasWorkspace ? "Workspace active" : "Fresh workspace"}</span>
+                </div>
+
+                {isConfirming ? (
+                  <div role="alertdialog" aria-label={`Confirm reset for demo ${commit.shortSha}`} className="vh-confirm">
+                    <span>
+                      Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to fresh-account
+                      defaults?
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button type="button" size="xs" variant="ghost" onClick={() => setConfirmingResetSha(null)}>
+                        Cancel
+                      </Button>
                       <Button
                         type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={!isOnline || isResetting}
-                        onClick={() =>
-                          setConfirmingResetSha((prev) => (prev === commit.sha ? null : commit.sha))
-                        }
+                        size="xs"
+                        variant="destructive"
+                        disabled={isResetting}
+                        onClick={() => void handleResetDemo(commit)}
                       >
-                        <RotateCcw aria-hidden className="size-3.5" />
-                        Reset Demo
+                        {isResetting ? "Resetting…" : "Confirm Reset"}
                       </Button>
                     </div>
-                    <span className="text-[11px] text-muted-foreground">
-                      {runtime?.hasWorkspace ? "Workspace active" : "Fresh workspace"}
-                    </span>
                   </div>
-
-                  {isConfirming ? (
-                    <div
-                      role="alertdialog"
-                      aria-label={`Confirm reset for demo ${commit.shortSha}`}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs text-rose-200"
-                    >
-                      <span>
-                        Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to fresh-account
-                        defaults?
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          size="xs"
-                          variant="ghost"
-                          onClick={() => setConfirmingResetSha(null)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          size="xs"
-                          variant="destructive"
-                          disabled={isResetting}
-                          onClick={() => void handleResetDemo(commit)}
-                        >
-                          {isResetting ? "Resetting…" : "Confirm Reset"}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                ) : null}
               </article>
             );
           })}
@@ -597,11 +594,11 @@ export function VersionHistoryBrowser({
                         <div className="flex shrink-0 items-center gap-2">
                           {isOnline ? (
                             <Button asChild size="xs">
-                              <a href={demoUrl}>
+                              <LaunchDemoLink commit={chronoOf(commit)} href={demoUrl}>
                                 <Play aria-hidden className="size-3" />
                                 Launch Demo
                                 <ArrowUpRight aria-hidden className="size-3" />
-                              </a>
+                              </LaunchDemoLink>
                             </Button>
                           ) : (
                             <span className="text-xs text-warning">
@@ -701,7 +698,7 @@ export function VersionHistoryBrowser({
           </div>
         ) : null}
       </section>
-    </div>
+    </VersionHistoryStage>
   );
 }
 

@@ -1,0 +1,966 @@
+/* ---------------------------------------------------------------------------
+ * Version History: the Chronometric Archive.
+ * Blackened iron carries the room, engraved brass the structure. Status keeps
+ * its own signals: lit patina = playable, amber hazard = attention, unlit
+ * steel = not prepared. App tokens are re-pointed inside the stage (and the
+ * portalled travel overlay) so shared controls pick up brass and iron.
+ * ------------------------------------------------------------------------- */
+@property --vh-band {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+.vh-stage,
+.vh-travel {
+  --vh-iron-0: #060708;
+  --vh-iron-1: #0b0e10;
+  --vh-iron-2: #12161a;
+  --vh-line: rgb(222 200 152 / 0.14);
+  --vh-line-hi: rgb(240 215 154 / 0.4);
+  --vh-brass: #c9a25a;
+  --vh-brass-hi: #f0d79a;
+  --vh-brass-lo: #7a5a26;
+  --vh-ink: #ece6da;
+  --vh-muted: #a8a297;
+  --vh-ok: #6ee7c4;
+  --vh-warn: #ffb347;
+  --vh-off: #8b9196;
+  --vh-danger: #ff7a66;
+  --vh-rivet: #f1dba4 0 0.8px, #a17b3b 1.6px, rgb(0 0 0 / 0.7) 2.6px, transparent 3.2px;
+  --vh-rivet-dim: #9c8352 0 0.8px, #54442a 1.6px, rgb(0 0 0 / 0.6) 2.6px, transparent 3.2px;
+  --vh-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --vh-display: var(--font-cinzel), Georgia, "Times New Roman", serif;
+  --vh-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --vh-ui: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --ink-rgb: 236 230 218;
+  --paper-rgb: 7 9 10;
+  --accent-rgb: 214 172 96;
+  --accent-soft-rgb: 240 215 154;
+  --shadow-rgb: 0 0 0;
+  --background: #07090a;
+  --foreground: #ece6da;
+  --surface: #0e1214;
+  --surface-raised: #161b1f;
+  --card: #0f1316;
+  --card-foreground: #ece6da;
+  --popover: #111518;
+  --popover-foreground: #ece6da;
+  --primary: #c9a25a;
+  --primary-hi: #f3dca2;
+  --primary-lo: #85612a;
+  --primary-foreground: #1a1208;
+  --secondary: #1b2125;
+  --secondary-foreground: #ece6da;
+  --muted: #161b1f;
+  --muted-foreground: #a8a297;
+  --accent: #1b2125;
+  --accent-foreground: #ece6da;
+  --amethyst: #e0bd74;
+  --amethyst-foreground: #1a1208;
+  --border: rgb(222 200 152 / 0.16);
+  --input: rgb(222 200 152 / 0.24);
+  --ring: #f0d79a;
+  --warning-rgb: 255 179 71;
+  --warning: #ffb347;
+  color-scheme: dark;
+}
+
+/* ---- Stage --------------------------------------------------------------- */
+.vh-stage {
+  --vh-scene-h: clamp(36rem, 100svh - 3.5rem, 54rem);
+  --vh-slot: min(40vw, 31rem);
+  position: relative;
+  overflow: clip;
+  min-height: calc(100dvh - 3.5rem - 1px);
+  /* Reaches under the mobile tab bar; the padding keeps the content clear of it. */
+  margin-bottom: -6rem;
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+  font-family: var(--vh-ui);
+  color: var(--vh-ink);
+  background: var(--vh-iron-0);
+}
+@media (min-width: 48rem) {
+  .vh-stage {
+    margin-bottom: -2.5rem;
+    padding-bottom: 4.5rem;
+  }
+}
+@media (max-width: 47.99rem) {
+  .vh-stage {
+    --vh-scene-h: clamp(30rem, 100svh - 8rem, 44rem);
+    --vh-slot: min(84vw, 21rem);
+  }
+}
+.vh-stage ::selection {
+  color: #1a1208;
+  background: rgb(240 215 154 / 0.85);
+}
+
+/* Riveted iron plates, brushed, with a furnace glow behind the machine. */
+.vh-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(52rem 30rem at 74% 6%, rgb(255 168 72 / 0.09), transparent 70%),
+    radial-gradient(40rem 36rem at 4% 52%, rgb(95 179 164 / 0.05), transparent 70%),
+    radial-gradient(circle at 10px 10px, var(--vh-rivet-dim)) 0 0 / 24rem 20rem,
+    radial-gradient(circle at calc(100% - 10px) 10px, var(--vh-rivet-dim)) 0 0 / 24rem 20rem,
+    radial-gradient(circle at 10px calc(100% - 10px), var(--vh-rivet-dim)) 0 0 / 24rem 20rem,
+    radial-gradient(circle at calc(100% - 10px) calc(100% - 10px), var(--vh-rivet-dim)) 0 0 / 24rem 20rem,
+    linear-gradient(90deg, rgb(0 0 0 / 0.6) 0 1px, rgb(255 236 200 / 0.07) 1px 2px, transparent 2px) 0 0 / 24rem 100%,
+    linear-gradient(180deg, rgb(0 0 0 / 0.6) 0 1px, rgb(255 236 200 / 0.07) 1px 2px, transparent 2px) 0 0 / 100% 20rem,
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.012) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #0c0f11 0%, #08090b 50%, #060708 100%);
+}
+
+.vh-scene {
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 auto;
+  height: var(--vh-scene-h);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  mask-image: linear-gradient(180deg, #000 0 74%, transparent 100%);
+}
+.vh-stage[data-scene="ready"] .vh-scene {
+  opacity: 1;
+}
+.vh-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Opening ------------------------------------------------------------- */
+.vh-veil {
+  position: absolute;
+  z-index: 4;
+  inset: 0 0 auto;
+  height: var(--vh-scene-h);
+  pointer-events: none;
+}
+.vh-veil-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 2.4rem;
+  translate: -50% 0;
+  margin: 0;
+  font: 500 0.68rem/1 var(--vh-mono);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgb(240 215 154 / 0.75);
+  animation: vh-caption 1.4s ease-in-out infinite alternate;
+}
+.vh-skip {
+  pointer-events: auto;
+  position: absolute;
+  right: 1rem;
+  bottom: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  padding: 0 1rem;
+  font: 600 0.7rem/1 var(--vh-mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vh-brass-hi);
+  background: rgb(8 10 12 / 0.78);
+  border: 1px solid rgb(240 215 154 / 0.5);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 rgb(255 240 210 / 0.12), 0 8px 22px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.vh-skip:hover {
+  color: #fff6dc;
+  border-color: var(--vh-brass-hi);
+  background: rgb(40 30 14 / 0.86);
+}
+.vh-skip:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+@media (min-width: 48rem) {
+  .vh-skip {
+    right: 2rem;
+    bottom: 2rem;
+  }
+}
+@keyframes vh-caption {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 0.95;
+  }
+}
+
+/* Content wakes after the machine; a failsafe reveals it if scripts never run. */
+.vh-hero-copy > *,
+.vh-body {
+  transition:
+    opacity 0.8s var(--vh-ease),
+    translate 0.9s var(--vh-ease);
+}
+.vh-hero-copy > :nth-child(2) {
+  transition-delay: 70ms;
+}
+.vh-hero-copy > :nth-child(3) {
+  transition-delay: 140ms;
+}
+.vh-hero-copy > :nth-child(4) {
+  transition-delay: 210ms;
+}
+.vh-hero-copy > :nth-child(5) {
+  transition-delay: 280ms;
+}
+.vh-body {
+  transition-delay: 320ms;
+}
+.vh-stage:is([data-intro="pending"], [data-intro="play"]) :is(.vh-hero-copy > *, .vh-body) {
+  opacity: 0;
+  translate: 0 1.1rem;
+  animation: vh-failsafe 0.01s 5s forwards;
+}
+.vh-stage:is([data-intro="pending"], [data-intro="play"]) .vh-gauge {
+  --vh-band: 0;
+}
+@keyframes vh-failsafe {
+  to {
+    opacity: 1;
+    translate: none;
+  }
+}
+
+/* ---- Frame and hero ------------------------------------------------------ */
+.vh-frame {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 78rem);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+@media (min-width: 48rem) {
+  .vh-frame {
+    padding-inline: 2rem;
+  }
+}
+.vh-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--vh-slot);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 4.5rem);
+  min-height: calc(var(--vh-scene-h) - 7rem);
+  padding-block: 2.5rem 1.5rem;
+}
+.vh-machine-slot {
+  width: var(--vh-slot);
+  aspect-ratio: 1;
+  justify-self: end;
+}
+@media (max-width: 47.99rem) {
+  .vh-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+    min-height: 0;
+    padding-block: 1rem 1.5rem;
+  }
+  .vh-machine-slot {
+    order: -1;
+    justify-self: center;
+  }
+}
+.vh-hero-copy {
+  display: grid;
+  gap: 1.1rem;
+  max-width: 38rem;
+}
+.vh-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font: 500 0.68rem/1 var(--vh-mono);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--vh-brass);
+}
+.vh-kicker::before {
+  content: "";
+  width: 0.55rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #eafff8, var(--vh-ok) 45%, #1f7d63);
+  box-shadow:
+    0 0 0 2px #050607,
+    0 0 0 3px var(--vh-brass-lo),
+    0 0 10px rgb(110 231 196 / 0.8);
+}
+.vh-kicker::after {
+  content: "";
+  flex: 1;
+  max-width: 8rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--vh-brass), transparent);
+}
+.vh-title {
+  margin: 0;
+  font: 600 clamp(2.6rem, 6vw, 4.75rem)/0.98 var(--vh-display);
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+  color: transparent;
+  background: linear-gradient(180deg, #fff4d6 0%, #e8c681 36%, #a8803c 58%, #f1d899 82%, #c49a52 100%);
+  background-clip: text;
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.85)) drop-shadow(0 0 22px rgb(255 168 72 / 0.16));
+}
+.vh-lede {
+  margin: 0;
+  max-width: 34rem;
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: var(--vh-muted);
+}
+.vh-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+/* Pressure dials: the needle and band share --vh-band, which sweeps up on reveal. */
+.vh-gauges {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0.4rem 0 0;
+}
+@media (max-width: 30rem) {
+  .vh-gauges {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.vh-gauge {
+  --vh-tone: var(--vh-brass-hi);
+  --vh-band: var(--vh-level, 0);
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 0.85rem 0.4rem 0.75rem;
+  text-align: center;
+  background: linear-gradient(180deg, rgb(24 29 33 / 0.88), rgb(9 11 13 / 0.92));
+  border: 1px solid var(--vh-line);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 240 210 / 0.06),
+    0 10px 24px rgb(0 0 0 / 0.35);
+  transition: --vh-band 1.3s cubic-bezier(0.3, 1.3, 0.5, 1) 0.45s;
+}
+.vh-gauge[data-tone="ok"] {
+  --vh-tone: var(--vh-ok);
+}
+.vh-gauge[data-tone="warn"] {
+  --vh-tone: var(--vh-warn);
+}
+.vh-gauge[data-tone="off"] {
+  --vh-tone: var(--vh-off);
+}
+.vh-gauge dt {
+  order: 2;
+  font: 500 0.6rem/1.25 var(--vh-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vh-muted);
+}
+.vh-gauge dd {
+  order: 1;
+  margin: 0;
+  font: 600 1.3rem/1 var(--vh-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--vh-tone);
+}
+.vh-dial {
+  position: relative;
+  width: 3.5rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(60% 40% at 36% 24%, rgb(255 255 255 / 0.1), transparent 70%),
+    radial-gradient(circle at 50% 30%, #2b3236, #0b0d0f 72%);
+  box-shadow:
+    0 0 0 1px #050607,
+    0 0 0 3px #8f672b,
+    0 0 0 4px rgb(240 215 154 / 0.35),
+    inset 0 4px 10px rgb(0 0 0 / 0.7);
+}
+.vh-dial::before,
+.vh-dial::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+}
+.vh-dial::before {
+  background: repeating-conic-gradient(from -120deg, rgb(240 215 154 / 0.75) 0 1.6deg, transparent 1.6deg 24deg);
+  mask:
+    radial-gradient(closest-side, transparent 70%, #000 72% 86%, transparent 88%),
+    conic-gradient(from -121deg, #000 0 242deg, transparent 0);
+  mask-composite: intersect;
+}
+.vh-dial::after {
+  background: conic-gradient(from -120deg, var(--vh-tone) 0 calc(var(--vh-band) * 240deg), transparent 0);
+  opacity: 0.85;
+  mask: radial-gradient(closest-side, transparent 89%, #000 91% 98%, transparent 100%);
+}
+.vh-needle {
+  position: absolute;
+  z-index: 1;
+  left: calc(50% - 1px);
+  bottom: 50%;
+  width: 2px;
+  height: 40%;
+  transform-origin: 50% 100%;
+  rotate: calc(-120deg + var(--vh-band) * 240deg);
+  border-radius: 1px;
+  background: linear-gradient(180deg, var(--vh-tone), #fff4dc);
+  box-shadow: 0 0 6px var(--vh-tone);
+}
+.vh-needle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -3.5px;
+  width: 7px;
+  height: 7px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff1c9, #b88a3e 60%, #4d3613);
+}
+
+/* ---- Sections ------------------------------------------------------------ */
+.vh-body > * + * {
+  margin-top: 2.75rem;
+}
+.vh-section {
+  display: grid;
+  gap: 1.1rem;
+}
+.vh-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.vh-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font: 600 clamp(1.1rem, 2.2vw, 1.4rem)/1.2 var(--vh-display);
+  letter-spacing: 0.04em;
+  color: var(--vh-brass-hi);
+}
+.vh-section-index {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  font: 600 0.66rem/1 var(--vh-mono);
+  letter-spacing: 0.08em;
+  color: var(--vh-brass-hi);
+  border: 1px solid var(--vh-line-hi);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, #2a2418, #0b0d0f 75%);
+  box-shadow: inset 0 0 0 2px #050607;
+}
+.vh-section-rule {
+  flex: 1;
+  height: 7px;
+  background:
+    radial-gradient(circle at 3.5px 50%, var(--vh-rivet)) 0 0 / 3.5rem 100% repeat-x,
+    linear-gradient(180deg, transparent 3px, rgb(201 162 90 / 0.5) 3px 4px, transparent 4px);
+  mask-image: linear-gradient(90deg, #000 40%, transparent);
+}
+
+/* ---- Chamfered brass-edged plates ---------------------------------------- */
+.vh-plate {
+  --vh-cut: 14px;
+  --vh-cut-in: calc(var(--vh-cut) - 0.6px);
+  position: relative;
+  isolation: isolate;
+  clip-path: polygon(
+    var(--vh-cut) 0,
+    calc(100% - var(--vh-cut)) 0,
+    100% var(--vh-cut),
+    100% calc(100% - var(--vh-cut)),
+    calc(100% - var(--vh-cut)) 100%,
+    var(--vh-cut) 100%,
+    0 calc(100% - var(--vh-cut)),
+    0 var(--vh-cut)
+  );
+  background: linear-gradient(155deg, rgb(243 220 162 / 0.6), rgb(122 90 38 / 0.4) 32%, rgb(240 215 154 / 0.14) 64%, rgb(201 162 90 / 0.5));
+}
+.vh-plate::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 1px;
+  clip-path: polygon(
+    var(--vh-cut-in) 0,
+    calc(100% - var(--vh-cut-in)) 0,
+    100% var(--vh-cut-in),
+    100% calc(100% - var(--vh-cut-in)),
+    calc(100% - var(--vh-cut-in)) 100%,
+    var(--vh-cut-in) 100%,
+    0 calc(100% - var(--vh-cut-in)),
+    0 var(--vh-cut-in)
+  );
+  background:
+    radial-gradient(circle at 20px 9px, var(--vh-rivet)),
+    radial-gradient(circle at calc(100% - 20px) 9px, var(--vh-rivet)),
+    radial-gradient(circle at 20px calc(100% - 9px), var(--vh-rivet)),
+    radial-gradient(circle at calc(100% - 20px) calc(100% - 9px), var(--vh-rivet)),
+    var(--vh-plate-fill, linear-gradient(180deg, #161b1f 0%, #0d1013 100%));
+  transition: filter 0.25s;
+}
+
+/* ---- Milestone capsules -------------------------------------------------- */
+.vh-capsules {
+  display: grid;
+  gap: 1rem;
+}
+@media (min-width: 64rem) {
+  .vh-capsules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.vh-capsule {
+  --vh-plate-fill:
+    radial-gradient(90% 70% at 100% 0%, rgb(255 168 72 / 0.07), transparent 70%),
+    linear-gradient(180deg, #171c20 0%, #0d1013 100%);
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+  padding: 1.2rem 1.3rem 1.15rem;
+}
+.vh-capsule[data-online="true"] {
+  background: linear-gradient(155deg, rgb(250 230 175 / 0.8), rgb(140 104 44 / 0.5) 32%, rgb(110 231 196 / 0.28) 64%, rgb(214 172 96 / 0.7));
+}
+.vh-capsule:hover::before {
+  filter: brightness(1.12);
+}
+.vh-capsule-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.vh-capsule-window {
+  display: inline-flex;
+  align-items: stretch;
+  font: 600 0.7rem/1 var(--vh-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--vh-line-hi);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #050607;
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.85);
+}
+.vh-capsule-window time {
+  padding: 0.42rem 0.6rem;
+  color: var(--vh-brass-hi);
+  text-shadow: 0 0 8px rgb(255 181 74 / 0.35);
+}
+.vh-capsule-sha {
+  padding: 0.42rem 0.55rem;
+  color: var(--vh-ok);
+  border-left: 1px solid var(--vh-line);
+}
+.vh-capsule-milestone {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0;
+  font: 600 0.74rem/1.3 var(--vh-display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vh-brass-hi);
+}
+.vh-capsule-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--vh-ink);
+}
+.vh-capsule-meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--vh-muted);
+}
+.vh-capsule-meta time {
+  font-weight: 500;
+  color: rgb(236 230 218 / 0.88);
+}
+.vh-capsule-meta a {
+  color: var(--vh-brass-hi);
+  text-underline-offset: 4px;
+}
+.vh-capsule-meta a:hover {
+  text-decoration: underline;
+}
+.vh-capsule-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--vh-line);
+}
+.vh-capsule-state {
+  font: 500 0.64rem/1 var(--vh-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vh-muted);
+}
+.vh-launch {
+  font-family: var(--vh-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 rgb(255 248 225 / 0.65),
+    inset 0 -2px 0 rgb(80 55 20 / 0.55),
+    0 0 0 1px #3a2a10,
+    0 6px 16px rgb(0 0 0 / 0.45);
+}
+
+/* Status lamps: lit patina, hazard amber, never colour alone. */
+.vh-lamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.6rem 0.32rem 0.42rem;
+  font: 600 0.62rem/1 var(--vh-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 4px;
+}
+.vh-lamp-bulb {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+}
+.vh-lamp[data-state="online"] {
+  color: var(--vh-ok);
+  border: 1px solid rgb(110 231 196 / 0.32);
+  background: rgb(110 231 196 / 0.07);
+}
+.vh-lamp[data-state="online"] .vh-lamp-bulb {
+  background: radial-gradient(circle at 40% 35%, #eafff8, var(--vh-ok) 45%, #1f7d63);
+  box-shadow:
+    0 0 0 2px #050607,
+    0 0 0 3px var(--vh-brass-lo),
+    0 0 12px rgb(110 231 196 / 0.8);
+  animation: vh-lamp 2.6s ease-in-out infinite;
+}
+.vh-lamp[data-state="offline"] {
+  color: var(--vh-warn);
+  border: 1px solid rgb(255 179 71 / 0.38);
+  background: repeating-linear-gradient(135deg, rgb(255 179 71 / 0.1) 0 6px, transparent 6px 12px);
+}
+.vh-lamp[data-state="offline"] .vh-lamp-bulb {
+  background: #2a2016;
+  box-shadow:
+    inset 0 0 0 1.5px var(--vh-warn),
+    0 0 0 2px #050607,
+    0 0 0 3px var(--vh-brass-lo);
+}
+@keyframes vh-lamp {
+  50% {
+    filter: brightness(1.25);
+  }
+}
+
+/* Reset confirmation: a pressure-release plate with a hazard edge. */
+.vh-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem 0.6rem 1.15rem;
+  font-size: 0.75rem;
+  color: #ffd9cf;
+  border: 1px solid rgb(255 122 102 / 0.4);
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, transparent 0 6px, rgb(40 12 8 / 0.92) 6px),
+    repeating-linear-gradient(135deg, var(--vh-warn) 0 5px, #1a0f06 5px 10px);
+}
+
+/* ---- Time travel --------------------------------------------------------- */
+.vh-travel {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  font-family: var(--vh-ui);
+  color: var(--vh-ink);
+}
+.vh-travel-veil {
+  position: absolute;
+  inset: 0;
+  background: #050607;
+  animation: vh-fade-in 0.3s ease-out both;
+}
+.vh-travel-canvas {
+  position: absolute;
+  inset: 0;
+}
+.vh-travel-hud {
+  position: absolute;
+  inset: auto 0 0;
+  display: grid;
+  justify-items: center;
+  gap: 1.1rem;
+  padding: 3rem 1.25rem calc(1.75rem + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, rgb(5 6 7 / 0.82) 42%);
+  animation: vh-hud-in 0.5s var(--vh-ease) 0.3s both;
+}
+.vh-readout {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  text-align: center;
+}
+.vh-readout-label {
+  font: 500 0.66rem/1 var(--vh-mono);
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: rgb(240 215 154 / 0.75);
+}
+.vh-readout-date {
+  font: 600 clamp(2rem, 7vw, 3.6rem)/1 var(--vh-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff3d6;
+  text-shadow:
+    0 0 2px #fff,
+    0 0 22px rgb(255 181 74 / 0.55);
+}
+.vh-readout-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+}
+.vh-readout-sha {
+  padding: 0.2rem 0.5rem;
+  font: 600 0.72rem/1.2 var(--vh-mono);
+  letter-spacing: 0.1em;
+  color: var(--vh-ok);
+  border: 1px solid rgb(110 231 196 / 0.45);
+  border-radius: 3px;
+  background: rgb(95 179 164 / 0.12);
+}
+.vh-readout-milestone {
+  font: 600 0.82rem/1.2 var(--vh-display);
+  letter-spacing: 0.08em;
+  color: var(--vh-brass-hi);
+}
+.vh-readout-title {
+  max-width: 36rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--vh-muted);
+}
+.vh-travel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.vh-lever {
+  display: inline-flex;
+  align-items: center;
+  height: 2.5rem;
+  padding: 0 1.2rem;
+  font: 600 0.72rem/1 var(--vh-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1a1208;
+  background: linear-gradient(180deg, #f6e3ad 0%, #d3ad62 45%, #9c7330 100%);
+  border: 1px solid #3a2a10;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 1px 0 rgb(255 248 225 / 0.7),
+    inset 0 -2px 0 rgb(80 55 20 / 0.55),
+    0 8px 22px rgb(0 0 0 / 0.5);
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.vh-lever[data-tone="quiet"] {
+  color: var(--vh-brass-hi);
+  background: rgb(10 12 14 / 0.8);
+  border-color: rgb(240 215 154 / 0.45);
+  box-shadow: inset 0 1px 0 rgb(255 240 210 / 0.1);
+}
+.vh-lever:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+.vh-lever:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.vh-lever:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+/* Without WebGL: a CSS iris and spinning index stand in for the tunnel. */
+.vh-travel[data-kind="fallback"] .vh-travel-canvas {
+  background:
+    radial-gradient(circle, rgb(255 236 196 / 0.95) 0, rgb(255 168 72 / 0.4) 9%, transparent 42%),
+    repeating-conic-gradient(rgb(240 215 154 / 0.14) 0 1.5deg, transparent 1.5deg 9deg);
+  animation: vh-iris 1.05s cubic-bezier(0.6, 0, 0.4, 1) both;
+}
+@keyframes vh-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vh-hud-in {
+  from {
+    opacity: 0;
+    translate: 0 1rem;
+  }
+}
+@keyframes vh-iris {
+  from {
+    opacity: 0;
+    scale: 0.35;
+    rotate: 0deg;
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    scale: 2.6;
+    rotate: 50deg;
+  }
+}
+
+/* ---- Fallback machine ---------------------------------------------------- */
+.vh-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.vh-fb-case {
+  fill: #12161a;
+  stroke: rgb(201 162 90 / 0.6);
+  stroke-width: 1.5;
+}
+.vh-fb-bezel {
+  fill: #0b0e10;
+  stroke: #6e5225;
+  stroke-width: 6;
+}
+.vh-fb-month {
+  fill: none;
+  stroke: #c9a25a;
+  stroke-width: 16;
+}
+.vh-fb-ticks line {
+  stroke: #2a1d0a;
+  stroke-width: 2;
+}
+.vh-fb-fine line {
+  stroke: #d8dde0;
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.vh-fb-day {
+  fill: none;
+  stroke: #4f575c;
+  stroke-width: 12;
+}
+.vh-fb-index {
+  fill: none;
+  stroke: #1d2a3d;
+  stroke-width: 12;
+}
+.vh-fb-beads circle {
+  fill: #8a6a33;
+}
+.vh-fb-beads .is-lit {
+  fill: var(--vh-ok);
+}
+.vh-fb-lens {
+  fill: rgb(255 181 74 / 0.28);
+  stroke: #c9a25a;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgb(255 168 72 / 0.6));
+}
+.vh-fb-gear circle {
+  fill: none;
+  stroke: #b87449;
+  stroke-width: 7;
+  stroke-dasharray: 4 3.1;
+}
+.vh-fb-gear .vh-fb-axle {
+  stroke-width: 2;
+  stroke-dasharray: none;
+  fill: #b87449;
+}
+.vh-fb-gear {
+  animation: vh-spin 14s linear infinite;
+}
+.vh-fb-cursor {
+  stroke: #ff5a3c;
+  stroke-width: 1.5;
+}
+@keyframes vh-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* ---- Reduced motion ------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .vh-stage[data-intro] :is(.vh-hero-copy > *, .vh-body) {
+    opacity: 1;
+    translate: none;
+    animation: none;
+    transition: none;
+  }
+  .vh-stage[data-intro] .vh-gauge {
+    --vh-band: var(--vh-level, 0);
+    transition: none;
+  }
+  .vh-veil {
+    display: none;
+  }
+  .vh-stage *,
+  .vh-travel * {
+    animation: none !important;
+  }
+}
+[data-motion="off"] .vh-stage[data-intro] :is(.vh-hero-copy > *, .vh-body) {
+  opacity: 1;
+  translate: none;
+  animation: none;
+}
+[data-motion="off"] .vh-stage[data-intro] .vh-gauge {
+  --vh-band: var(--vh-level, 0);
+}

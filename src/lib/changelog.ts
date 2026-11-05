@@ -49,6 +49,54 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-version-history-chronometer",
+    date: "2026-11-05",
+    title: "Version History - The Chronometer",
+    intro: "Version History now opens with a brass chronometer that winds itself up beside the heading, and launching a playable demo travels back through time to that commit's date before the old version opens.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "The chronometer", text: "A brass and iron time machine wakes up as the page opens: its lamp flickers on, its month, day and commit rings turn to today and it settles beside the heading." },
+      { kind: "new", feature: "Time travel", text: "Launching a playable demo turns the rings to the commit's date, dives through the lens and races down a tunnel of the archive's commits, counting the days back until the demo opens." },
+      { kind: "improved", feature: "Version History", text: "Riveted iron and brass throughout the top of the page: the overview counts are pressure gauges and each milestone demo is an archive panel with a status lamp." },
+    ],
+    details: {
+      new: [
+        {
+          title: "The chronometer",
+          body: "When you open Version History, the chronometer's lamp flickers on, its gears and steam start up, the month, day and commit rings sweep round and lock onto today, and the machine settles beside the heading as the page appears. Commits with a playable demo glow on its commit ring.",
+          points: [
+            "The full opening plays once per session; later visits get a shorter version.",
+            "Skip intro, any key or a click ends it at once, and it never replays when you filter, search or change pages.",
+            "Subtle motion plays the short version; Motion off and reduced motion go straight to the page.",
+            "Without 3D graphics, a drawn dial takes the machine's place.",
+          ],
+          where: "Version History",
+          link: { href: "/version-history", label: "Open Version history" },
+        },
+        {
+          title: "Time travel to a demo",
+          body: "Launch on a playable demo now plays a short journey first: the chronometer turns its rings to the commit's date, the camera dives into its lens and races down a tunnel lined with plates for the archive's commits, while a readout counts back to the destination date and shows the commit's short SHA, milestone and title. Then the demo opens exactly as before.",
+          points: [
+            "Arrive now skips ahead; Stay here or Escape cancels and keeps you on the page.",
+            "Ctrl-, Cmd-, Shift- and middle-clicks still open the demo straight away in a new tab or window.",
+            "Subtle motion plays a shorter trip; Motion off and reduced motion open the demo directly.",
+            "Demos still run in their own isolated environment with your separate demo workspace.",
+          ],
+          where: "Version History → Milestone demos → Launch",
+          link: { href: "/version-history", label: "Open Version history" },
+        },
+      ],
+      improved: [
+        {
+          title: "A steampunk Version History",
+          body: "The page now sits on riveted iron plates under a brass heading. The overview counts (cataloged commits, available demos, not prepared and unavailable) are pressure gauges, and each milestone demo is an archive panel with its date, SHA, milestone, a status lamp that is lit when the demo is online and hazard-striped when it is offline, Launch and Reset.",
+          where: "Version History",
+          link: { href: "/version-history", label: "Open Version history" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-04-vault-unlock",
     date: "2026-11-05",
     title: "The Vault - The Unlock and Crimson",

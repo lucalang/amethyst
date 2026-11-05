@@ -1,11 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import Link from "next/link";
-import { Megaphone } from "lucide-react";
 import type { LiveDemoRuntimeState } from "@/app/api/version-history/route";
-import { PageContainer, PageHeader } from "@/components/layout/app-shell";
-import { EntranceScope } from "@/components/layout/entrance-scope";
-import { Button } from "@/components/ui/button";
 import { VersionHistoryBrowser } from "@/components/version-history/version-history-browser";
 import { requireUser } from "@/lib/supabase/auth";
 import { ENABLED_DEMO_SPECS } from "@/lib/version-history";
@@ -65,23 +60,5 @@ export default async function VersionHistoryPage() {
   await requireUser();
   const initialDemos = await loadInitialDemoStates();
 
-  return (
-    <EntranceScope>
-      <PageContainer className="max-w-5xl">
-        <PageHeader
-          title="Version history"
-          description="Every retained commit in Amethyst's repository, with interactive fresh-account demos for prepared milestones."
-          actions={
-            <Button asChild variant="outline" size="sm">
-              <Link href="/whats-new">
-                <Megaphone aria-hidden className="size-3.5 text-amethyst" />
-                What’s new
-              </Link>
-            </Button>
-          }
-        />
-        <VersionHistoryBrowser initialDemos={initialDemos} />
-      </PageContainer>
-    </EntranceScope>
-  );
+  return <VersionHistoryBrowser initialDemos={initialDemos} />;
 }
