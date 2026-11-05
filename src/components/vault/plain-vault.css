@@ -120,8 +120,12 @@
   position: absolute;
   inset: 0;
   z-index: -1;
+  /* The Admin glass's light beam: a diagonal band that slides with the pointer. */
+  --beam: calc(50% + (var(--gx, 50%) - 50%) * 0.7 - (var(--gy, 50%) - 50%) * 0.3);
   border-radius: inherit;
-  background: radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), color-mix(in oklab, var(--vp-accent) 14%, transparent), transparent 60%);
+  background:
+    linear-gradient(60deg, transparent calc(var(--beam) - 10%), color-mix(in oklab, var(--vp-accent) 16%, transparent) var(--beam), transparent calc(var(--beam) + 10%)),
+    radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), color-mix(in oklab, var(--vp-accent) 14%, transparent), transparent 60%);
   opacity: var(--glare, 0);
   transition: opacity 300ms ease;
   pointer-events: none;

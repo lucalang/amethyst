@@ -83,7 +83,9 @@ export const CHANGELOG: readonly Release[] = [
     icon: "palette",
     highlights: [
       { kind: "new", feature: "Special page designs", text: "A new Appearance setting switches Version History, Achievements, the Vault and the Admin panel between their bespoke designs and the standard page layout." },
-      { kind: "improved", feature: "The Vault", text: "The code panel tilts toward your mouse and catches a glare on hover, in the standard look and whenever the 3D chamber can't run." },
+      { kind: "improved", feature: "The Vault", text: "The code panel tilts toward your mouse and catches a glare and a sliding beam of light on hover, as Admin Panels do, in the standard look and whenever the 3D chamber can't run." },
+      { kind: "fixed", feature: "The Vault", text: "In the 3D chamber, the glow behind the code panel no longer shows as a box around it, and the hover glare is a clean beam of light instead of a grey film over the text." },
+      { kind: "improved", feature: "The Vault", text: "Access Request now has a gentler hover tilt in both layouts, matching the Admin panel's restrained movement." },
     ],
     details: {
       new: [

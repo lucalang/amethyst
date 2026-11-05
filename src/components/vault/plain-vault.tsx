@@ -377,7 +377,7 @@ export function PlainChamber({ initialFinds, looks }: { initialFinds: VaultFind[
           />
         ) : null}
 
-        <div className="vp-window" data-tilt hidden={revealing}>
+        <div className="vp-window" data-tilt data-card="panel" hidden={revealing}>
           <div className="vp-window-bar">
             <p key={phase} className="vp-window-title">
               {TITLE[phase]}

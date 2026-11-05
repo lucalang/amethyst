@@ -719,7 +719,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
           ) : null}
 
           {/* The console's screen: the 3D scene builds its body around this panel and keeps the two registered. */}
-          <div ref={panelRef} className="vx-window" data-tilt hidden={revealing} data-opening={outcome && opening ? "" : undefined}>
+          <div ref={panelRef} className="vx-window" data-tilt data-card="panel" hidden={revealing} data-opening={outcome && opening ? "" : undefined}>
             <span aria-hidden className="vx-window-flare" />
             <div className="vx-window-bar">
               <div className="min-w-0">

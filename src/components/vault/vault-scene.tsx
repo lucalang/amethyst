@@ -191,7 +191,7 @@ const SHARDS = 12;
 /** The console in CSS px, as an Admin panel: corner cut, slab depth and overhang, hover lift, link port offset. */
 const CON = { cut: 18, slab: 14, grow: 8, lift: 40, port: 22 };
 /** How far the console leans toward the pointer (radians at its edge); above Admin's, as the vault's camera is narrower. */
-const MAX_TILT = 0.24;
+const MAX_TILT = 0.09;
 
 const ringProfile = (inner: number, outer: number, back: number, front: number, bevel: number): [number, number][] => [
   [inner, back],

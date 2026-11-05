@@ -327,15 +327,21 @@ export function smoke(ctx: CanvasRenderingContext2D) {
   ctx.putImageData(image, 0, 0);
 }
 
-/** A soft-edged rectangle for the glow behind the console. */
+/** A soft-edged rectangle for the glow behind the console: no hard edge anywhere, so it never reads as a box. */
 export function softRect(ctx: CanvasRenderingContext2D) {
   const { width, height } = ctx.canvas;
-  ctx.fillStyle = "#000";
-  ctx.fillRect(0, 0, width, height);
-  ctx.shadowColor = "#fff";
-  ctx.shadowBlur = width * 0.09;
-  ctx.fillStyle = "#fff";
-  ctx.fillRect(width * 0.2, height * 0.2, width * 0.6, height * 0.6);
+  const image = ctx.createImageData(width, height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const dx = Math.max(Math.abs((x + 0.5) / width - 0.5) - 0.2, 0);
+      const dy = Math.max(Math.abs((y + 0.5) / height - 0.5) - 0.2, 0);
+      const v = Math.round(255 * Math.exp(-(dx * dx + dy * dy) / 0.012) * Math.min(1, (0.5 - Math.max(dx, dy) - 0.2) / 0.1));
+      const i = (y * width + x) * 4;
+      image.data[i] = image.data[i + 1] = image.data[i + 2] = Math.max(0, v);
+      image.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(image, 0, 0);
 }
 
 /* ----------------------------------------------------------------------------
@@ -775,9 +781,10 @@ void main() {
   col += mix(uColor, vec3(1.0), 0.5) * (uFlash * 0.16 + uFlare * exp(-inner / 60.0) * 0.12);
 
   vec2 g = (vUv - uPointer) * uSize / max(uSize.x, uSize.y);
-  col += uGlare * exp(-dot(g, g) * 10.0) * 0.12 * uHover;
+  col += uGlare * exp(-dot(g, g) * 14.0) * 0.05 * uHover;
+  // The Admin light beam, kept thin and bright so the glass never reads as a grey film.
   float band = dot(vUv - 0.5, vec2(0.86, 0.5)) - (uPointer.x - 0.5) * 0.7 - (uPointer.y - 0.5) * 0.3;
-  col += uGlare * exp(-band * band * 140.0) * (0.02 + 0.06 * uHover);
+  col += mix(uGlare, uTone, 0.35) * (exp(-band * band * 900.0) * 0.1 + exp(-band * band * 160.0) * 0.025) * uHover;
   float rt = uTime - uRipple.z;
   if (rt > 0.0 && rt < 0.9) {
     float r = length((vUv - uRipple.xy) * uSize) - rt * 700.0;
