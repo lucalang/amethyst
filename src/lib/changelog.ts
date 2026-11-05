@@ -51,15 +51,16 @@ export const CHANGELOG: readonly Release[] = [
   {
     id: "2026-11-05-vault-redemption-fix",
     date: "2026-11-05",
-    title: "Vault redemption compatibility",
-    intro: "Vault codes can be submitted on HTTP connections without getting stuck on verification.",
+    title: "Vault redemption fixes",
+    intro: "Vault code submission works reliably on the 3D console and HTTP connections.",
     icon: "box",
     highlights: [
       { kind: "fixed", feature: "Code redemption", text: "Fixed request-ID generation on browsers where randomUUID is unavailable, preserving safe retries in both Vault views." },
+      { kind: "fixed", feature: "3D console clicks", text: "Fixed pressed-button hit testing in the high-quality console so redemption clicks reach the form, without changing its appearance or motion." },
     ],
     details: { fixed: [{
       title: "Redemption without a stuck verification state",
-      body: "Both Vault views now generate secure request IDs even when the browser does not expose randomUUID. Request setup failures are handled instead of leaving verification stuck. The Vault interface is unchanged.",
+      body: "The high-quality console's form now has its own stacking context inside the 3D panel. Pressing the redemption button no longer redirects hit testing to the surrounding layout, preserving its native click and submit behavior. Its layout, styling and motion are unchanged. Both Vault views also generate secure request IDs when the browser does not expose randomUUID, and handle request setup failures.",
       link: { href: "/vault", label: "Open the Vault" },
     }] },
   },

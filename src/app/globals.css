@@ -8151,6 +8151,9 @@ a.arcade-counter:hover {
 .vx-stage[data-scene="ready"] .vx-window-bar {
   transform: translateZ(16px);
 }
+.vx-stage[data-scene="ready"] .vx-window-body {
+  isolation: isolate;
+}
 .vx-stage[data-scene="ready"][data-intro="summon"] .vx-window {
   animation-name: vx-activate-plate;
 }
