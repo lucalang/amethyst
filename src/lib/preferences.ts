@@ -3,6 +3,7 @@ import { ARTWORK_FRAME_IDS, DEFAULT_ARTWORK_FRAME, type ArtworkFrameId } from "@
 import { DEFAULT_SNAKE_SETUP, snakeSetupSchema, type SnakeSetup } from "@/lib/snake";
 import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
+import { DEFAULT_VAULT_LOOK, VAULT_LOOK_IDS, type VaultLookId } from "@/lib/vault-looks";
 import { BUILTIN_VIEWER_PRESET_IDS, DEFAULT_VIEWER_PRESET, viewerLookSchema, type ViewerLook } from "@/lib/viewer-looks";
 
 /** How pinned/progress details are shown on cover artwork. */
@@ -113,6 +114,8 @@ export const DEFAULT_SETTINGS = {
   viewerPreset: DEFAULT_VIEWER_PRESET as string,
   /** Unsaved adjustments on top of the preset; null = the preset exactly. */
   viewerTweaks: null as ViewerLook | null,
+  /** The Vault's colour scheme, switched from the chamber itself. */
+  vaultLook: DEFAULT_VAULT_LOOK as VaultLookId,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -204,6 +207,7 @@ const settingFields = {
   achievementNotifications: z.boolean(),
   viewerPreset: z.union([z.enum(BUILTIN_VIEWER_PRESET_IDS), z.uuid()]),
   viewerTweaks: viewerLookSchema.nullable(),
+  vaultLook: z.enum(VAULT_LOOK_IDS),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

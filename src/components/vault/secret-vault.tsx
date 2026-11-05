@@ -17,11 +17,15 @@ import {
   type ReactNode,
 } from "react";
 import { flushSync } from "react-dom";
+import { toast } from "sonner";
 import { Eye, FastForward, KeyRound, Loader2, RotateCcw, ScrollText, Volume2, VolumeX } from "lucide-react";
+import { decodeText } from "@/components/admin/admin-decode";
 import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
+import { useSettings } from "@/components/layout/settings-context";
 import { webglAvailable } from "@/components/showcase/motion";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { MotionLevel } from "@/lib/preferences";
+import { VAULT_LOOKS, type VaultLookId } from "@/lib/vault-looks";
 import { PACE, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
 import { closeVaultAudio, hushVault, playVaultReveal, playVaultSound, playVaultSummon, setVaultAmbience, type VaultSound } from "./vault-audio";
 import { DecodeText, RewardReveal, RewardSlots, rewardSummary, type RevealOrigin, type VaultLooks, type VaultProfile, type VaultSamples } from "./vault-reveal";
@@ -85,14 +89,20 @@ const SOUND: Record<Outcome["phase"], VaultSound> = {
 };
 /** The shortest verifying sequence: the packet reaches the seal and charges it. The request goes out at once; only showing its answer waits. */
 const MIN_VERIFY: Record<MotionLevel, number> = { full: TRANSMIT.charged, subtle: Math.round(TRANSMIT.charged * PACE.subtle), off: 0 };
-/** When the headline decodes and the reward slots land, timed to the seal opening. */
-const DECODE_AT: Record<MotionLevel, number> = { full: 350, subtle: 0, off: 0 };
-const REVEAL_AT: Record<MotionLevel, number> = { full: 1350, subtle: 250, off: 0 };
+/** The unlock's beats per motion level: subtle plays them compressed, off goes straight to the cards. */
+const paced = (ms: number): Record<MotionLevel, number> => ({ full: ms, subtle: Math.round(ms * PACE.subtle), off: 0 });
+/** When the reveal's title decodes and the first card leaves the core, timed to the vault opening. */
+const DECODE_AT = paced(UNLOCK.handoff);
+const REVEAL_AT = paced(UNLOCK.reveal);
 /** How long the panel holds "Seal broken" while the vault opens, before the cards take over. */
-const HANDOFF: Record<MotionLevel, number> = { full: UNLOCK.handoff, subtle: 0, off: 0 };
+const HANDOFF = paced(UNLOCK.handoff);
 const PIPS = Array.from({ length: 12 }, (_, index) => index);
 const TRACE = ["Signal received", "Reading the seal", "Awaiting the chamber"];
-const OPENING = ["Seal accepted", "Releasing the locks"];
+const OPENING = [
+  { line: "Seal accepted", at: 0 },
+  { line: "Releasing the locks", at: UNLOCK.retract },
+];
+const BOLTS = Array.from({ length: 8 }, (_, index) => UNLOCK.retract + index * UNLOCK.retractStep + UNLOCK.retractTime);
 const EMBERS = Array.from({ length: 14 }, (_, index) => ({
   "--x": `${(3 + noise(index, 11) * 94).toFixed(1)}%`,
   "--s": `${(1.5 + noise(index, 12) * 2.5).toFixed(1)}px`,
@@ -140,6 +150,8 @@ function newestSince(finds: VaultFind[], since: string | null) {
 
 /** The full summon plays once per browsing session; later visits get the short one. */
 const SUMMONED_KEY = "archive:vault:summoned";
+/** How long the entrance waits for the 3D vault before playing without it. */
+const SCENE_WAIT = 2400;
 function summonKind(motion: MotionLevel): SummonKind {
   try {
     const seen = sessionStorage.getItem(SUMMONED_KEY) !== null;
@@ -212,6 +224,10 @@ type Intro = "dark" | "summon" | "done";
 function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: VaultLooks }) {
   const router = useRouter();
   const { sound, toggleSound, effects: motion } = useArcade();
+  const settings = useSettings();
+  const [look, setLook] = useState<VaultLookId>(settings.vaultLook);
+  /** Set once the look is changed here, so the console relights for it (and not on load). */
+  const [relit, setRelit] = useState(false);
   const [code, setCode] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -234,6 +250,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const stageRef = useRef<HTMLElement>(null);
   const artifactRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const hudRef = useRef<HTMLElement>(null);
   const streamRef = useRef<HTMLSpanElement>(null);
   const sceneRef = useRef<VaultSceneHandle>(null);
   const introTimer = useRef(0);
@@ -287,7 +304,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     setVaultAmbience(sound && present && introShown === "done");
   }, [sound, present, introShown]);
 
-  // The entrance starts on the first frame; the 3D vault joins it wherever it is once loaded.
+  // The entrance waits behind the opening seal for the 3D vault (a moment at most), then plays.
   const beginSummon = useEffectEvent(() => {
     if (motion === "off") {
       setIntro("done");
@@ -302,9 +319,29 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   });
   useEffect(() => {
     if (intro !== "dark") return;
+    if (scene === "loading" && motion !== "off") {
+      const timer = window.setTimeout(() => beginSummon(), SCENE_WAIT);
+      return () => clearTimeout(timer);
+    }
     const frame = requestAnimationFrame(() => beginSummon());
     return () => cancelAnimationFrame(frame);
-  }, [intro]);
+  }, [intro, scene, motion]);
+
+  // As on the Admin panel, the header's and the console's text decode from glyphs once they arrive.
+  useEffect(() => {
+    if (intro !== "summon") return;
+    const t = SUMMON[summon];
+    const stops: (() => void)[] = [];
+    const run = (el: HTMLElement | null, at: number, duration: number) =>
+      window.setTimeout(() => {
+        if (el) stops.push(decodeText(el, duration));
+      }, Math.max(0, at - (performance.now() - introAt)));
+    const timers = [run(hudRef.current, t.hud, 520), run(panelRef.current, t.decode[0], (t.decode[1] - t.decode[0]) * 0.5)];
+    return () => {
+      timers.forEach(clearTimeout);
+      stops.forEach((stop) => stop());
+    };
+  }, [intro, summon, introAt]);
 
   function skipIntro(focusInput: boolean) {
     clearTimeout(introTimer.current);
@@ -526,6 +563,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const sealMode: SealMode = busy ? "verifying" : phase === "granted" || phase === "already" ? "align" : phase === "unavailable" || phase === "locked" ? "still" : "idle";
   const opened = phase === "granted" || phase === "already";
   const revealing = outcome?.phase === "granted" && reveal !== null && !opening;
+  const beat = (ms: number) => ({ "--at": `${Math.round(ms * PACE[motion])}ms` }) as CSSProperties;
   // The drawn seal stands in if WebGL fails, or if the 3D vault is still loading once the entrance is over.
   const drawnSeal = scene === "failed" || (scene === "loading" && introShown === "done");
 
@@ -539,6 +577,18 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
     return { x, y, z: -1400, perspective: 1000, axisX: x, axisY: y };
   };
 
+  const chooseLook = async (next: VaultLookId) => {
+    if (next === look) return;
+    setLook(next);
+    setRelit(true);
+    try {
+      await apiFetch("/api/preferences", { method: "PATCH", json: { settings: { vaultLook: next } } });
+      router.refresh();
+    } catch {
+      toast.error("Could not save the vault colours. They apply until you leave this page.");
+    }
+  };
+
   return (
     <section
       ref={stageRef}
@@ -549,6 +599,8 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
       data-intro={introShown}
       data-summon={summon}
       data-scene={scene}
+      data-look={look}
+      data-relit={relit ? "" : undefined}
       style={
         {
           "--vx-charge": (signal / PIPS.length).toFixed(3),
@@ -556,8 +608,8 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
           "--vx-glyph-step": `${Math.round(TRANSMIT.glyphStep * PACE[motion])}ms`,
           "--vx-recoil-at": `${Math.round(TRANSMIT.recoil * PACE[motion])}ms`,
           "--vx-hud-at": `${timeline.hud}ms`,
-          "--vx-panel-at": `${timeline.panel}ms`,
-          "--vx-settle-at": `${timeline.settle}ms`,
+          "--vx-panel-at": `${Math.round(timeline.assemble[0] + 0.45 * (timeline.assemble[1] - timeline.assemble[0]))}ms`,
+          "--vx-settle-at": `${timeline.assemble[1]}ms`,
         } as CSSProperties
       }
     >
@@ -586,6 +638,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
               pulse={pulse}
               motion={motion}
               revealing={revealing}
+              look={look}
               introKind={summon}
               introAt={introAt}
               introDone={introShown === "done"}
@@ -596,16 +649,42 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
         </SceneBoundary>
       ) : null}
 
+      {introShown === "done" ? null : (
+        <div aria-hidden className="vx-opening">
+          <div className="vx-opening-seal">
+            <span className="vx-opening-runes" />
+            <span className="vx-opening-sweep" />
+            <span className="vx-opening-inner" />
+            <span className="vx-opening-mark" />
+            <span className="vx-opening-core" />
+          </div>
+          <p className="vx-opening-text">Opening the vault</p>
+        </div>
+      )}
+
       <div className="vx-inner">
-        <header className="vx-hud">
-          <div className="min-w-0">
-            <p className="vx-eyebrow">System · Sealed chamber</p>
-            <h1 id="vx-title" className="vx-title">
-              The Vault
-            </h1>
+        <header ref={hudRef} className="vx-hud">
+          <div className="vx-brand">
+            <span aria-hidden className="vx-sigil" />
+            <div className="min-w-0">
+              <p className="vx-eyebrow">System · Sealed chamber</p>
+              <h1 id="vx-title" className="vx-title">
+                The Vault
+              </h1>
+            </div>
           </div>
           <div className="vx-hud-side">
             <span className="vx-chip">{STATUS[phase]}</span>
+            <fieldset className="vx-look">
+              <legend className="sr-only">Vault colours</legend>
+              {VAULT_LOOKS.map((option) => (
+                <label key={option.id} className="vx-look-option">
+                  <input type="radio" name="vx-look" value={option.id} checked={look === option.id} onChange={() => void chooseLook(option.id)} className="sr-only" />
+                  <span aria-hidden className="vx-look-swatch" data-swatch={option.id} />
+                  {option.label}
+                </label>
+              ))}
+            </fieldset>
             <button type="button" onClick={toggleSound} aria-pressed={sound} aria-label="Sound effects" title={sound ? "Sound on" : "Sound off"} className="vx-icon-button">
               {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}
             </button>
@@ -635,14 +714,22 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
           ) : null}
 
           {/* The console's screen: the 3D scene builds its body around this panel and keeps the two registered. */}
-          <div ref={panelRef} className="vx-window" hidden={revealing}>
-            <span aria-hidden className="vx-corners" />
+          <div ref={panelRef} className="vx-window" hidden={revealing} data-opening={outcome && opening ? "" : undefined}>
             <span aria-hidden className="vx-window-flare" />
             <div className="vx-window-bar">
-              <p key={phase} className="vx-window-title">
-                <span aria-hidden className="vx-glyph" />
-                {TITLE[phase]}
-              </p>
+              <div className="min-w-0">
+                <p aria-hidden className="vx-window-kicker">
+                  Vault console
+                </p>
+                <p key={phase} className="vx-window-title">
+                  {TITLE[phase]}
+                </p>
+              </div>
+              <span aria-hidden className="vx-leds">
+                <i />
+                <i />
+                <i />
+              </span>
             </div>
             <div aria-hidden className="vx-rule" />
             <div className="vx-window-body">
@@ -651,12 +738,23 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
                   <h2 ref={headingRef} tabIndex={-1} className="vx-headline">
                     {HEADLINE.granted}
                   </h2>
+                  {/* The lock register lights each ring and bolt on the scene's beat. */}
+                  <div aria-hidden className="vx-locks">
+                    {UNLOCK.locks.map((start) => (
+                      <i key={start} data-kind="ring" style={beat(start + UNLOCK.lockTime * 0.6)} />
+                    ))}
+                    {BOLTS.map((at) => (
+                      <i key={at} data-kind="bolt" style={beat(at)} />
+                    ))}
+                  </div>
                   <ol aria-hidden className="vx-trace" data-done="">
-                    {OPENING.map((line) => (
-                      <li key={line}>{line}</li>
+                    {OPENING.map(({ line, at }) => (
+                      <li key={line} style={beat(at)}>
+                        {line}
+                      </li>
                     ))}
                   </ol>
-                  <div aria-hidden className="vx-progress" data-done="" />
+                  <div aria-hidden className="vx-progress" data-done="" style={beat(UNLOCK.handoff)} />
                 </div>
               ) : outcome ? (
                 <div key={round} className="vx-result">
@@ -701,39 +799,45 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
                   <label htmlFor="vx-code" className="vx-label">
                     Code
                   </label>
-                  <input
-                    ref={inputRef}
-                    id="vx-code"
-                    name="vx-code"
-                    value={code}
-                    onChange={(event) => {
-                      if (event.target.value.length > code.length) {
-                        play("key");
-                        setPulse((value) => value + 1);
-                      }
-                      setCode(event.target.value);
-                    }}
-                    readOnly={busy}
-                    maxLength={80}
-                    autoComplete="off"
-                    autoCapitalize="characters"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    enterKeyHint="go"
-                    data-1p-ignore
-                    data-lpignore="true"
-                    data-sending={streaming ? "" : undefined}
-                    placeholder="Speak the code"
-                    aria-describedby="vx-code-help"
-                    className="vx-input"
-                  />
+                  <div className="vx-field">
+                    <input
+                      ref={inputRef}
+                      id="vx-code"
+                      name="vx-code"
+                      value={code}
+                      onChange={(event) => {
+                        if (event.target.value.length > code.length) {
+                          play("key");
+                          setPulse((value) => value + 1);
+                        }
+                        setCode(event.target.value);
+                      }}
+                      readOnly={busy}
+                      maxLength={80}
+                      autoComplete="off"
+                      autoCapitalize="characters"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="go"
+                      data-1p-ignore
+                      data-lpignore="true"
+                      data-sending={streaming ? "" : undefined}
+                      placeholder="Speak the code"
+                      aria-describedby="vx-code-help"
+                      className="vx-input"
+                    />
+                  </div>
                   <div aria-hidden className="vx-signal">
+                    <span className="vx-signal-label">Signal</span>
                     <span className="vx-pips">
                       {PIPS.map((index) => (
                         <span key={index} data-on={index < signal ? "" : undefined} style={{ "--i": index } as CSSProperties} />
                       ))}
                     </span>
-                    <span className="vx-signal-count">{String(signal).padStart(2, "0")}</span>
+                    <span className="vx-signal-count">
+                      {String(signal).padStart(2, "0")}
+                      <small>/{PIPS.length}</small>
+                    </span>
                   </div>
                   <p id="vx-code-help" className="vx-help">
                     Words, letters or numbers. Case and spacing don’t matter.
@@ -765,15 +869,23 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
 
         <section aria-labelledby="vx-log-title" className="vx-log">
           <div className="vx-log-head">
-            <h2 id="vx-log-title" className="vx-log-title">
-              Access log
-            </h2>
+            <div className="min-w-0">
+              <p aria-hidden className="vx-log-kicker">
+                Ledger
+              </p>
+              <h2 id="vx-log-title" className="vx-log-title">
+                Access log
+              </h2>
+            </div>
             <span className="vx-log-count">{finds.length ? `${finds.length} ${finds.length === 1 ? "seal" : "seals"} broken` : "No entries"}</span>
           </div>
           {finds.length ? (
             <ol className="vx-log-list">
               {finds.map((find, index) => (
                 <li key={`${find.redeemedAt}-${index}`}>
+                  <span aria-hidden className="vx-log-index">
+                    {String(finds.length - index).padStart(2, "0")}
+                  </span>
                   <span suppressHydrationWarning className="vx-log-time">
                     {formatDate(find.redeemedAt)}
                   </span>

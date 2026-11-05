@@ -79,7 +79,7 @@ function clank(start: number, weight: number, into?: AudioNode) {
   noise(start, 0.16, 3200, 1400, 0.2 * weight, "bandpass", into, 0.05);
 }
 
-/** `pace` shortens the timed sequences (the transmission) for subtle motion, in step with the scene. */
+/** `pace` shortens the timed sequences (the transmission and the unlock) for subtle motion, in step with the scene. */
 export function playVaultSound(name: VaultSound, pace = 1) {
   switch (name) {
     case "key": {
@@ -102,14 +102,22 @@ export function playVaultSound(name: VaultSound, pace = 1) {
       break;
     }
     case "grant": {
-      // In step with the scene: rings lock, teeth retract, the doors part and the light breaks out.
-      const at = (ms: number) => ms / 1000;
-      clank(0, 0.7);
-      [0, 0.05, 0.1, 0.15].forEach((offset) => tone(1400, at(UNLOCK.retract) + offset, 0.05, "square", 0.02));
-      noise(at(UNLOCK.open), 0.7, 2600, 180, 0.32, "lowpass");
-      tone(62, at(UNLOCK.open), 1, "sine", 0.6, 36);
-      [440, 523.25, 659.25, 880].forEach((freq, i) => tone(freq, at(UNLOCK.burst) + i * 0.07, 1, "triangle", 0.14));
-      [1760, 2093, 2637].forEach((freq, i) => tone(freq, at(UNLOCK.burst) + 0.35 + i * 0.12, 1.2, "sine", 0.045));
+      // In step with the scene: the core answers, the rings and the dial lock one by one, the bolts retract,
+      // pressure hisses out, the door groans open and the light breaks out.
+      const at = (ms: number) => (ms * pace) / 1000;
+      tone(64, 0, 0.5, "sine", 0.45, 40);
+      tone(1318.5, 0.02, 0.6, "sine", 0.05);
+      tone(1975.5, 0.08, 0.7, "sine", 0.035);
+      UNLOCK.locks.forEach((start, i) => clank(at(start + UNLOCK.lockTime * 0.6), 0.4 + i * 0.12));
+      for (let i = 0; i < 8; i++) tone(1300 + i * 45, at(UNLOCK.retract + i * UNLOCK.retractStep + UNLOCK.retractTime * 0.8), 0.04, "square", 0.018);
+      noise(at(UNLOCK.vent), 0.9, 7000, 2200, 0.16, "highpass", undefined, 0.05);
+      noise(at(UNLOCK.open), at(UNLOCK.openTime) + 0.3, 1400, 120, 0.26, "lowpass", undefined, 0.4);
+      tone(48, at(UNLOCK.open), at(UNLOCK.openTime) + 0.4, "sine", 0.45, 30);
+      tone(92, at(UNLOCK.open), at(UNLOCK.openTime), "sawtooth", 0.025, 68);
+      tone(40, at(UNLOCK.burst), 1.6, "sine", 0.6, 26);
+      noise(at(UNLOCK.burst), 1.1, 2400, 90, 0.3, "lowpass", undefined, 0.03);
+      [440, 554.37, 659.25, 880].forEach((freq, i) => tone(freq, at(UNLOCK.burst) + i * 0.06, 1.4, "triangle", 0.1));
+      [1760, 2217.46, 2637].forEach((freq, i) => tone(freq, at(UNLOCK.burst) + 0.3 + i * 0.1, 1.2, "sine", 0.04));
       break;
     }
     case "already":
@@ -142,30 +150,11 @@ function seat(start: number, into: AudioNode) {
 }
 
 /**
- * The summon, in step with the scene: a drone and air while the vault rises, a whoosh as the console
- * arrives, one seat per frame piece, then the lock-in. Silent before any gesture.
+ * The summon: the Admin panel's ignition, played to the vault's opening (same timeline shape). Silent
+ * before any gesture.
  */
 export function playVaultSummon(kind: SummonKind) {
-  if (!allowed()) return;
-  hushVault();
-  const { ctx, master } = out();
-  const bus = ctx.createGain();
-  bus.connect(master);
-  sequence = bus;
-  const s = (ms: number) => ms / 1000;
-  const t = SUMMON[kind];
-  if (kind === "full") {
-    tone(36, 0, s(t.lock) + 0.3, "sine", 0.45, 52, bus);
-    noise(0.2, s(t.lock) - 0.2, 120, 420, 0.22, "lowpass", bus, 0.7);
-    noise(s(t.rise), s(t.lock - t.rise), 300, 2600, 0.12, "bandpass", bus, 0.85);
-    noise(s(t.console), 0.7, 500, 1800, 0.09, "bandpass", bus, 0.6);
-    for (let i = 0; i < 5; i++) seat(s(t.assemble + 300 + i * 95), bus);
-    tone(1318.5, s(t.panel) - 0.05, 0.6, "sine", 0.03, 1760, bus);
-  } else {
-    noise(0, s(t.lock), 400, 2200, 0.1, "bandpass", bus, 0.8);
-    for (let i = 0; i < 3; i++) seat(s(t.assemble + 120 + i * 80), bus);
-  }
-  clank(s(t.lock), kind === "full" ? 1 : 0.6, bus);
+  playSanctumIntro(SUMMON[kind], kind === "full");
 }
 
 /** One soft chime per reward as it leaves the vault, starting `at` seconds from now. */

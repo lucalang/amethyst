@@ -49,6 +49,76 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-04-vault-unlock",
+    date: "2026-11-05",
+    title: "The Vault - The Unlock and Crimson",
+    intro: "Breaking a seal now plays out as a full unlock, the Vault opens with the Admin Panel's ignition, its console is now a floating Admin Panel that tilts toward your pointer, and a new Crimson option gives the whole chamber the Admin Panel's red.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "The unlock", text: "The rings and dial lock one by one, the bolts draw back, pressure vents from the seams and the door swings open before your rewards fly out of the core." },
+      { kind: "new", feature: "The opening", text: "The Admin Panel's seal holds the dark, then the vault ignites: its sigil traces, the rings spin up, the core flashes and the camera pulls back as the console's glass flies together." },
+      { kind: "new", feature: "Dark or Crimson", text: "Switch the Vault between its dark steel colours and the Admin Panel's deep red. Your choice is saved to your account." },
+      { kind: "improved", feature: "Vault console", text: "Now a floating Admin Panel: glass over a dark slab that tilts and lifts toward your pointer, catches a glare and ripples when pressed." },
+      { kind: "improved", feature: "Access Log", text: "An Admin-style panel whose entries read as an activity feed, each marked with a lit diamond." },
+    ],
+    details: {
+      new: [
+        {
+          title: "A cinematic unlock",
+          body: "When a code is accepted, the core flashes and the console answers, then the two outer rings and the dial lock into place one after another, each with a click, the eight bolts retract in turn, vapour and light escape from the door's seams and the door opens with a heavy swing, a shockwave and sparks, before the reward cards leave the core.",
+          points: [
+            "The console's lock register lights each ring and bolt in step with the vault, and its bar fills until the cards appear.",
+            "A matching sound follows every stage if sound is on.",
+            "Subtle motion plays a shorter version; Motion off and reduced motion go straight to the open vault and the cards, with no flashes or shaking.",
+          ],
+          where: "The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "The Admin Panel's opening",
+          body: "The Vault now opens like the Admin Panel. Its spinning seal holds the dark while the chamber loads, then the vault's sigil traces itself, the rings spin up faster and faster, the core flashes with a shockwave and the camera pulls back from the door as the console's glass flies together from shards. The header and the console's text then decode from glyphs.",
+          points: [
+            "The full opening plays once per visit; coming back plays a shorter one.",
+            "Any key or press skips it, and typing goes straight into the code field.",
+            "Subtle motion plays the short version; Motion off and reduced motion skip it.",
+          ],
+          where: "The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Dark or Crimson colours",
+          body: "A Dark / Crimson switch next to the Vault's status lets you choose its colours. Dark keeps the obsidian and steel; Crimson gives the chamber, the vault's metal and light, the console and the Access Log the Admin Panel's crimson-black and red. The choice is saved to your account.",
+          points: [
+            "Switching breaks the console's glass away and rebuilds it in the new colours while a wave of light runs across the vault's engravings.",
+            "Subtle motion blends the colours without breaking the glass; Motion off and reduced motion switch instantly.",
+          ],
+          where: "The Vault, top right",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+      ],
+      improved: [
+        {
+          title: "An Admin Panel console",
+          body: "The Access Request console is now a floating Admin Panel: tinted glass over a dark slab, with a glowing rim, an inner frame line and lit corners, a small kicker over a Cinzel title, an Admin-style code field and Admin red buttons.",
+          points: [
+            "With a mouse, the console tilts toward your pointer, lifts toward you and catches a glare that follows it; it levels out while you type.",
+            "Pressing on it sends a ring of light across the glass.",
+            "The code field keeps its charge line that fills as you type, with the Admin Panel's red focus ring.",
+            "The header carries the Admin sigil, and the status chip, colour switch and sound toggle are Admin-style pills.",
+          ],
+          where: "The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Access Log and chamber",
+          body: "The Access Log is an Admin-style panel with a Cinzel title, a status pill and entries that read as an activity feed, each with a lit diamond and a thread to the next. The chamber's haze and light follow the colours you choose.",
+          where: "The Vault",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-04-vault-transmission",
     date: "2026-11-04",
     title: "The Vault - Transmission",

@@ -6,7 +6,6 @@ import {
   LatheGeometry,
   Path,
   Shape,
-  ShapeGeometry,
   SRGBColorSpace,
   Vector2,
 } from "three";
@@ -449,46 +448,54 @@ export function plate(shape: Shape, depth: number, bevel: number) {
   return geometry;
 }
 
-/** The console slab: a thick chamfered frame around an opening for the screen. */
-export function frame(hw: number, hh: number, cut: number, holeW: number, holeH: number, holeCut: number, depth: number, bevel: number) {
-  const shape = chamfer(new Shape(), hw, hh, cut);
-  shape.holes.push(chamfer(new Path(), holeW, holeH, holeCut));
-  return plate(shape, depth, bevel);
-}
-
-/** A unit box, open at the front (z = 0) and one deep, with its faces turned inward. Group 0: walls, 1: floor. */
-export function recess() {
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const quad = (corners: number[][], normal: [number, number, number]) => {
-    const [a, b, c, d] = corners;
-    const ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-    const ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-    const facing = (ab[1] * ac[2] - ab[2] * ac[1]) * normal[0] + (ab[2] * ac[0] - ab[0] * ac[2]) * normal[1] + (ab[0] * ac[1] - ab[1] * ac[0]) * normal[2];
-    for (const p of facing < 0 ? [a, d, c, a, c, b] : [a, b, c, a, c, d]) {
-      positions.push(p[0], p[1], p[2]);
-      normals.push(...normal);
-    }
+/**
+ * The Admin panels' glass: a jittered unit grid ([0, 1], y up) cut into triangles, each its own shard with
+ * `aCenter` (its centre), `aRand` (three seeds) and `aBary` (barycentrics, for lit seams while it flies in).
+ */
+export function shardPlane(cols: number, rows: number) {
+  const corner = (i: number, j: number): [number, number] => {
+    const inside = i > 0 && i < cols && j > 0 && j < rows;
+    const jx = inside ? (hash(i * 7.1 + j * 13.3) - 0.5) * 0.7 : 0;
+    const jy = inside ? (hash(i * 3.7 + j * 5.9 + 1.3) - 0.5) * 0.7 : 0;
+    return [(i + jx) / cols, (j + jy) / rows];
   };
-  quad([[-0.5, -0.5, 0], [-0.5, -0.5, -1], [-0.5, 0.5, -1], [-0.5, 0.5, 0]], [1, 0, 0]);
-  quad([[0.5, -0.5, 0], [0.5, -0.5, -1], [0.5, 0.5, -1], [0.5, 0.5, 0]], [-1, 0, 0]);
-  quad([[-0.5, -0.5, 0], [0.5, -0.5, 0], [0.5, -0.5, -1], [-0.5, -0.5, -1]], [0, 1, 0]);
-  quad([[-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, 0.5, -1], [-0.5, 0.5, -1]], [0, -1, 0]);
-  const walls = positions.length / 3;
-  quad([[-0.5, -0.5, -1], [0.5, -0.5, -1], [0.5, 0.5, -1], [-0.5, 0.5, -1]], [0, 0, 1]);
+  const positions: number[] = [];
+  const centers: number[] = [];
+  const rands: number[] = [];
+  const barys: number[] = [];
+  let n = 0;
+  const shard = (a: [number, number], b: [number, number], c: [number, number]) => {
+    const cx = (a[0] + b[0] + c[0]) / 3;
+    const cy = (a[1] + b[1] + c[1]) / 3;
+    const seed = [hash(n * 1.37 + 0.5), hash(n * 2.71 + 4.1), hash(n * 4.13 + 9.7)];
+    n += 1;
+    [a, b, c].forEach((p, v) => {
+      positions.push(p[0], p[1], 0);
+      centers.push(cx, cy, 0);
+      rands.push(...seed);
+      barys.push(v === 0 ? 1 : 0, v === 1 ? 1 : 0, v === 2 ? 1 : 0);
+    });
+  };
+  for (let j = 0; j < rows; j++)
+    for (let i = 0; i < cols; i++) {
+      const p00 = corner(i, j);
+      const p10 = corner(i + 1, j);
+      const p01 = corner(i, j + 1);
+      const p11 = corner(i + 1, j + 1);
+      if ((i + j) % 2) {
+        shard(p00, p10, p11);
+        shard(p00, p11, p01);
+      } else {
+        shard(p00, p10, p01);
+        shard(p10, p11, p01);
+      }
+    }
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("normal", new Float32BufferAttribute(normals, 3));
-  geometry.addGroup(0, walls, 0);
-  geometry.addGroup(walls, 6, 1);
+  geometry.setAttribute("aCenter", new Float32BufferAttribute(centers, 3));
+  geometry.setAttribute("aRand", new Float32BufferAttribute(rands, 3));
+  geometry.setAttribute("aBary", new Float32BufferAttribute(barys, 3));
   return geometry;
-}
-
-/** A flat chamfered outline `width` wide, centred on the given rectangle. */
-export function outline(hw: number, hh: number, cut: number, width: number) {
-  const shape = chamfer(new Shape(), hw + width / 2, hh + width / 2, cut + width * 0.2);
-  shape.holes.push(chamfer(new Path(), hw - width / 2, hh - width / 2, Math.max(0, cut - width * 0.2)));
-  return new ShapeGeometry(shape, 1);
 }
 
 /* ----------------------------------------------------------------------------
@@ -606,6 +613,47 @@ void main() {
   gl_PointSize = (0.5 + aSeed.z * 1.4) * uSize * uPixel / -mv.z;
 }`;
 
+/**
+ * Pressure venting from the door as the bolts let go: puffs leave the seams and the rim (`aDir`: outward
+ * direction and start radius), billow forward and swell as they fade. `uAge` is in seconds.
+ */
+export const VAPOR_VERTEX = /* glsl */ `
+uniform float uAge;
+uniform float uPixel;
+uniform float uSize;
+uniform float uAlpha;
+attribute vec3 aDir;
+attribute vec4 aSeed;
+varying float vAlpha;
+varying float vHeat;
+void main() {
+  float t = max(uAge - aSeed.w * 0.4, 0.0);
+  float k = clamp(t / (0.8 + aSeed.y * 0.9), 0.0, 1.0);
+  vec2 away = aDir.xy;
+  vec2 across = vec2(-away.y, away.x) * (aSeed.x - 0.5) * 0.3;
+  float travel = 1.0 - exp(-2.6 * t);
+  vec3 p = vec3(away * aDir.z, 0.0) + vec3(away * (0.12 + aSeed.z * 0.4) + across, 0.35 + aSeed.x * 0.55) * travel;
+  p.y += 0.1 * t * t;
+  vec4 mv = modelViewMatrix * vec4(p, 1.0);
+  gl_Position = projectionMatrix * mv;
+  vAlpha = uAlpha * step(0.0001, t) * smoothstep(0.0, 0.06, k) * (1.0 - smoothstep(0.3, 1.0, k));
+  vHeat = 1.0 - k;
+  gl_PointSize = (1.0 + aSeed.z * 1.5 + 3.5 * k) * uSize * uPixel / -mv.z;
+}`;
+
+export const VAPOR_FRAGMENT = /* glsl */ `
+uniform vec3 uColor;
+uniform vec3 uHot;
+varying float vAlpha;
+varying float vHeat;
+void main() {
+  vec2 q = gl_PointCoord - 0.5;
+  float a = exp(-dot(q, q) * 14.0) * (1.0 - smoothstep(0.35, 0.5, length(q)));
+  vec3 color = mix(uColor, uHot, vHeat * vHeat * 0.8);
+  gl_FragColor = vec4(color * a * vAlpha * 0.22, 1.0);
+  ${OUTPUT}
+}`;
+
 export const BEAM_VERTEX = /* glsl */ `
 varying vec2 vUv;
 varying float vFacing;
@@ -649,28 +697,37 @@ void main() {
 }`;
 
 /**
- * The console's glass: smoked and nearly black, with one hot rim, lit corners and a moving sheen. It powers on
- * from a line, scans while checking (a light runs the rim), flares on an unlock (`uFlare`) and has holes for the
- * sockets. `uSize` is the quad; the visible opening is 2 px smaller with corners cut by `uCut`.
+ * The console, drawn exactly like an Admin panel (for `SHARD_VERTEX` from the Admin shaders): `uLayer` 0 is the
+ * dark slab behind, 1 the glass, with its lit rim, inner frame line, corner accents, scanlines, pointer glare
+ * (`uHover`, `uPointer`), press ripple and glowing seams while the shards fly in. On top, the vault's own
+ * signals: a light that runs the rim while checking (`uScan`), static (`uNoise`), and a red-hot rim when
+ * the vault answers (`uFlare`, `uFlash`). `uTone` is the panel's light, `uColor`/`uHot` the answer's.
  */
 export const SCREEN_FRAGMENT = /* glsl */ `
 uniform vec2 uSize;
 uniform float uCut;
-uniform float uPower;
+uniform float uTime;
+uniform float uLayer;
+uniform float uHover;
+uniform vec2 uPointer;
+uniform float uPress;
+uniform vec4 uRipple;
+uniform vec3 uTone;
+uniform float uFocus;
 uniform float uLevel;
 uniform float uScan;
 uniform float uNoise;
 uniform float uFlash;
 uniform float uFlare;
-uniform float uTime;
 uniform vec3 uColor;
 uniform vec3 uHot;
-uniform vec2 uSheen;
-uniform vec4 uHoleA;
-uniform vec4 uHoleB;
+uniform vec3 uGlare;
+uniform vec3 uGlassLo;
+uniform vec3 uGlassHi;
 varying vec2 vUv;
+varying float vShard;
+varying vec3 vBary;
 float hash2(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
-float outside(vec2 p, vec4 hole) { vec2 d = abs(p - hole.xy) - hole.zw; return max(d.x, d.y); }
 float chamfered(vec2 p, vec2 b, float c) {
   vec2 q = abs(p) - b;
   float box = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
@@ -678,37 +735,58 @@ float chamfered(vec2 p, vec2 b, float c) {
 }
 void main() {
   vec2 p = (vUv - 0.5) * uSize;
-  if (outside(p, uHoleA) < 0.0 || outside(p, uHoleB) < 0.0) discard;
-  float inner = max(-chamfered(p, uSize * 0.5 - 2.0, uCut), 0.0);
-  float open = uPower * (uSize.y * 0.5 + 8.0);
-  float lit = smoothstep(open + 1.0, open - 5.0, abs(p.y));
-  float dl = (abs(p.y) - open) / 2.5;
-  float line = exp(-dl * dl) * step(0.001, uPower) * (1.0 - smoothstep(0.8, 1.0, uPower));
+  float d = chamfered(p, uSize * 0.5, uCut);
+  if (d > 0.75) discard;
+  float aa = clamp(0.5 - d, 0.0, 1.0);
+  float inner = max(-d, 0.0);
+  float shown = smoothstep(0.0, 0.55, vShard);
+  float seam = (1.0 - smoothstep(0.0, 0.05, min(vBary.x, min(vBary.y, vBary.z)))) * step(0.001, vShard) * (1.0 - vShard);
+  vec3 tone = uTone * uLevel;
 
-  vec3 glass = mix(vec3(0.006, 0.003, 0.004), vec3(0.018, 0.008, 0.010), vUv.y);
-  vec3 c = glass + uColor * exp(-inner / 24.0) * 0.05 * uLevel;
+  if (uLayer < 0.5) {
+    gl_FragColor = vec4(uGlassLo * 0.6 + tone * exp(-inner / 5.0) * 0.35 + uTone * seam * 2.0, 0.97 * aa * shown);
+    ${OUTPUT}
+    return;
+  }
 
-  float rim = exp(-inner / 1.2);
-  float frameLine = smoothstep(0.9, 0.0, abs(inner - 7.0));
-  vec2 corner = abs(p) - (uSize * 0.5 - uCut - 26.0);
-  float hardware = step(0.0, corner.x) * step(0.0, corner.y);
-  float hot = smoothstep(0.35, 1.0, rim);
-  vec3 edgeColor = mix(uColor, uHot, hot * 0.35);
-  c += edgeColor * rim * (0.28 + 0.42 * uLevel + 3.0 * uFlare);
-  c += uColor * frameLine * hardware * (0.5 * uLevel + 1.5 * uFlare);
+  vec3 col = mix(uGlassLo, uGlassHi, vUv.y);
+  col += tone * exp(-inner / 34.0) * 0.07;
+  col *= 0.93 + 0.07 * step(0.5, fract(p.y / 3.0));
+
+  float lit = 0.3 + 0.7 * uHover + 0.5 * uFocus;
+  float rim = exp(-inner / 1.3);
+  float frame = smoothstep(1.1, 0.0, abs(inner - 7.0));
+  vec2 corner = abs(p) - (uSize * 0.5 - 30.0);
+  float accent = step(0.0, corner.x) * step(0.0, corner.y);
+  float calm = 1.0 - 0.5 * min(uFlare, 1.0);
+  col += tone * rim * (0.5 + 1.8 * lit) * calm;
+  col += tone * frame * (0.1 + 0.45 * lit + 0.5 * accent);
+  col += mix(uColor, uHot, smoothstep(0.35, 1.0, rim) * 0.35) * rim * 3.0 * uFlare;
+  col += uColor * frame * accent * 1.5 * uFlare;
 
   // While checking, a light runs around the rim and a scan line sweeps the glass.
   float around = fract(atan(p.y, p.x) / 6.2831853 + 1.0);
   float lead = fract(around - uTime * 0.9);
-  c += uHot * exp(-lead * 26.0) * (rim + 0.6 * frameLine) * 3.0 * uScan;
+  col += uHot * exp(-lead * 26.0) * (rim + 0.6 * frame) * 3.0 * uScan;
   float sy = (0.5 - fract(uTime * 0.6)) * (uSize.y + 160.0);
   float ds = (p.y - sy) * (p.y - sy);
-  c += uColor * (exp(-ds / 900.0) + 0.8 * exp(-ds / 4.0)) * 0.18 * uScan;
-  c += vec3(0.9, 0.85, 0.86) * hash2(floor(p / 2.0) + floor(uTime * 8.0) * 7.31) * 0.06 * uNoise;
-  c += mix(uColor, vec3(1.0), 0.5) * (uFlash * 0.16 + uFlare * exp(-inner / 60.0) * 0.12);
-  float sheen = dot(p / uSize, vec2(0.83, 0.55)) - uSheen.x * 0.5 - uSheen.y * 0.3 + 0.15;
-  c += uHot * exp(-sheen * sheen / 0.008) * 0.035 + uHot * exp(-sheen * sheen / 0.08) * 0.012;
-  gl_FragColor = vec4(mix(glass, c, lit) + uColor * line * 0.9, 1.0);
+  col += uColor * (exp(-ds / 900.0) + 0.8 * exp(-ds / 4.0)) * 0.18 * uScan;
+  col += vec3(0.9, 0.88, 0.9) * hash2(floor(p / 2.0) + floor(uTime * 8.0) * 7.31) * 0.06 * uNoise;
+  col += mix(uColor, vec3(1.0), 0.5) * (uFlash * 0.16 + uFlare * exp(-inner / 60.0) * 0.12);
+
+  vec2 g = (vUv - uPointer) * uSize / max(uSize.x, uSize.y);
+  col += uGlare * exp(-dot(g, g) * 10.0) * 0.12 * uHover;
+  float band = dot(vUv - 0.5, vec2(0.86, 0.5)) - (uPointer.x - 0.5) * 0.7 - (uPointer.y - 0.5) * 0.3;
+  col += uGlare * exp(-band * band * 140.0) * (0.02 + 0.06 * uHover);
+  float rt = uTime - uRipple.z;
+  if (rt > 0.0 && rt < 0.9) {
+    float r = length((vUv - uRipple.xy) * uSize) - rt * 700.0;
+    col += uTone * exp(-r * r / 260.0) * (1.0 - rt / 0.9) * 0.9;
+  }
+  col += uTone * uPress * 0.12;
+  col += uTone * seam * 3.0;
+
+  gl_FragColor = vec4(col, (0.84 + 0.16 * rim) * aa * shown);
   ${OUTPUT}
 }`;
 
@@ -760,7 +838,10 @@ void main() {
   ${OUTPUT}
 }`;
 
-/** The chamber behind everything: a crimson haze around the vault, a warmer heart and a faint glow on the ground. */
+/**
+ * The chamber behind everything: a haze around the vault in the look's colour, a wash of light from above, a faint floor
+ * line it floats over, and the core's heat (`uHot`, `uHeat`) only close to the vault and on the ground below it.
+ */
 export const BACKDROP_FRAGMENT = /* glsl */ `
 uniform vec2 uCenter;
 uniform float uAspect;
@@ -772,12 +853,16 @@ varying vec2 vUv;
 void main() {
   vec2 p = (vUv - uCenter) * vec2(uAspect, 1.0);
   float d2 = dot(p, p);
-  float haze = exp(-d2 * 7.0);
+  float haze = exp(-d2 * 5.0);
   float heart = exp(-d2 * 38.0);
-  float gx = (vUv.x - uCenter.x) * uAspect * 1.8;
-  float ground = smoothstep(0.45, 0.05, vUv.y) * exp(-gx * gx);
-  vec3 c = uColor * (haze * 0.15 + ground * 0.06) + uHot * heart * uHeat * 0.12;
-  vec2 m = smoothstep(0.0, 0.1, vUv) * smoothstep(1.0, 0.9, vUv);
+  float top = smoothstep(0.3, 1.0, vUv.y) * exp(-p.x * p.x * 2.5);
+  float floorY = uCenter.y - 0.2;
+  float dh = (vUv.y - floorY) / 0.008;
+  float horizon = exp(-dh * dh) * exp(-p.x * p.x * 1.2);
+  float gx = p.x * 1.8;
+  float ground = (1.0 - smoothstep(floorY - 0.35, floorY, vUv.y)) * exp(-gx * gx);
+  vec3 c = uColor * (haze * 0.16 + top * 0.07 + horizon * 0.09 + ground * 0.05) + uHot * uHeat * (heart * 0.12 + ground * 0.035);
+  vec2 m = smoothstep(0.0, 0.1, vUv) * (1.0 - smoothstep(0.9, 1.0, vUv));
   gl_FragColor = vec4(c * uLevel * m.x * m.y, 1.0);
   ${OUTPUT}
 }`;
@@ -834,7 +919,10 @@ void main() {
   }
 #endif
   color += uHot * uFlash * (0.06 + 0.4 * exp(-dist * 2.4));
-  color = mix(vec3(dot(color, vec3(0.299, 0.587, 0.114))), color, 0.86);
+  float luma = dot(color, vec3(0.299, 0.587, 0.114));
+  color = mix(vec3(luma), color, 0.86);
+  // Shadows lean cool, toward steel; highlights keep their colour.
+  color *= mix(vec3(0.9, 0.95, 1.06), vec3(1.0), smoothstep(0.0, 0.35, luma));
   color *= 1.0 - uVignette * smoothstep(0.5, 1.45, length((vUv - 0.5) * 2.0));
   color += (noise(gl_FragCoord.xy + fract(uTime * 7.0) * 113.0) - 0.5) * uGrain;
   gl_FragColor = vec4(color, 1.0);
