@@ -49,9 +49,7 @@ export function FrameSettings({
     const info = ARTWORK_FRAMES[id];
     const shop = isShopFrameId(id);
     const achievement = isAchievementFrameId(id);
-    const isOwned = !isUnlockableFrameId(id) || owned.includes(id);
     const ach = achievement ? achievementForItem(id) : undefined;
-    const maskedAch = Boolean(ach?.hidden && !isOwned);
     if (source === "free" && (shop || achievement)) return false;
     if (source === "shop" && !shop) return false;
     if (source === "achievement" && !achievement) return false;
@@ -60,7 +58,7 @@ export function FrameSettings({
       info.description,
       info.animated ? "animated" : "static",
       shop ? "arcade shop" : achievement ? "achievement" : "free",
-      maskedAch ? "hidden achievement" : ach?.name,
+      ach?.name,
     );
   });
 
@@ -91,7 +89,7 @@ export function FrameSettings({
           const checked = frame === id;
           const isOwned = !isUnlockableFrameId(id) || owned.includes(id);
           const ach = isAchievementFrameId(id) ? achievementForItem(id) : undefined;
-          const achLabel = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : "Achievement";
+          const achLabel = ach?.name ?? "Achievement";
           return (
             <label
               key={id}
@@ -139,7 +137,7 @@ export function FrameSettings({
                   </span>
                   <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{info.description}</span>
                   {!isOwned && ach ? (
-                    <Link href={ach.hidden ? "/achievements" : `/achievements#${ach.id}`} className="mt-1 inline-block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                    <Link href={`/achievements#${ach.id}`} className="mt-1 inline-block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
                       Unlock in Achievements
                     </Link>
                   ) : null}

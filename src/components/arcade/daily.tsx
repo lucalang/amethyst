@@ -20,7 +20,7 @@ export function formatDailyDate(date: string) {
 }
 
 /** Time left until the next daily challenge (00:00 UTC), ticking each second. */
-export function DailyCountdown() {
+export function DailyCountdown({ label = "Next challenge in", title = "A new challenge starts every day at 00:00 UTC" }: { label?: string; title?: string }) {
   const second = useSyncExternalStore(subscribeSecond, nowSecond, () => 0);
   const left = Math.ceil(msUntilDailyReset(second * 1000) / 1000);
   const h = Math.floor(left / 3600);
@@ -28,8 +28,8 @@ export function DailyCountdown() {
   const s = left % 60;
   const pad = (value: number) => String(value).padStart(2, "0");
   return (
-    <span className="tabular-nums" title="A new challenge starts every day at 00:00 UTC">
-      Next challenge in {h}:{pad(m)}:{pad(s)}
+    <span className="tabular-nums" title={title}>
+      {label} {h}:{pad(m)}:{pad(s)}
     </span>
   );
 }

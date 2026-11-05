@@ -9,7 +9,12 @@ export async function POST(request: Request) {
   if (ctx instanceof Response) return ctx;
   const parsed = await parseJson(request, sudokuHintSchema);
   if ("response" in parsed) return parsed.response;
-  const { id, cell, entries, notes, elapsedMs } = parsed.data;
+  const { id, size, cell, entries, notes, elapsedMs } = parsed.data;
+  const { data: current, error: readError } = await ctx.supabase.from("sudoku_games")
+    .select("size").eq("user_id", ctx.userId).eq("id", id).is("completed_at", null).maybeSingle();
+  if (readError) return dbError(readError);
+  if (!current) return apiError(409, "replaced", "This puzzle was finished or replaced in another window.");
+  if (current.size !== size) return apiError(422, "invalid_size", "Progress must match the saved puzzle size.");
 
   const { data: saved, error: saveError } = await ctx.supabase
     .from("sudoku_games")

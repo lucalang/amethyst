@@ -1,7 +1,8 @@
 "use client";
 
 import type { MotionLevel } from "@/lib/preferences";
-import { SALAD_FRUITS, SNAKE_SIZES, SNAKE_SPEEDS, SPEED_RAMP, TIMED_SECONDS, activeModes, type BlendMode, type SnakeFruit, type SnakeSetup } from "@/lib/snake";
+import { dailyDate, dailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
+import { SALAD_FRUITS, SNAKE_SIZES, SNAKE_SPEEDS, SPEED_RAMP, TIMED_SECONDS, activeModes, dailySnakeSetup, snakeVariant, type BlendMode, type SnakeFruit, type SnakeSetup } from "@/lib/snake";
 import { mix, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
 import {
   FRUIT_COLORS,
@@ -85,9 +86,8 @@ const easeOutBack = (t: number) => {
   const k = Math.min(1, Math.max(0, t));
   return 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
 };
-const rand = (n: number) => Math.floor(Math.random() * n);
-function takeRandom<T>(list: T[]): T {
-  const i = rand(list.length);
+function takeRandom<T>(list: T[], random: () => number): T {
+  const i = Math.floor(random() * list.length);
   const [item] = list.splice(i, 1);
   return item;
 }
@@ -101,9 +101,14 @@ export const sameSetup = (a: SnakeSetup, b: SnakeSetup) =>
   a.blend.join() === b.blend.join();
 
 /** A scrambled control map: every arrow steers somewhere new, and the map stays fixed for the effect. */
-function scrambledMap(): Record<Direction, Direction> {
+function scrambledMap(random: () => number): Record<Direction, Direction> {
   for (;;) {
-    const order = [...DIRS].sort(() => Math.random() - 0.5);
+    const order = [...DIRS];
+    if (random === Math.random) order.sort(() => random() - 0.5);
+    else for (let index = order.length - 1; index > 0; index -= 1) {
+      const other = Math.floor(random() * (index + 1));
+      [order[index], order[other]] = [order[other], order[index]];
+    }
     if (order.every((d, i) => d !== DIRS[i])) return Object.fromEntries(DIRS.map((d, i) => [d, order[i]])) as Record<Direction, Direction>;
   }
 }
@@ -130,7 +135,8 @@ function connected(blocked: Set<number>, grid: number) {
  * Short straight walls (or single crystals) kept off the outer ring, out of the starting lanes and
  * apart from each other and from `avoid`, so the open board always stays one connected space.
  */
-function scatter(grid: number, lanes: number[], density: number, maxLength: number, avoid: Set<number>): Set<number> {
+function scatter(grid: number, lanes: number[], density: number, maxLength: number, avoid: Set<number>, random: () => number): Set<number> {
+  const rand = (count: number) => Math.floor(random() * count);
   const target = Math.round(grid * grid * density);
   const near = (blocked: Set<number>, x: number, y: number) => {
     for (let dy = -1; dy <= 1; dy += 1) for (let dx = -1; dx <= 1; dx += 1) if (blocked.has((y + dy) * grid + x + dx) || avoid.has((y + dy) * grid + x + dx)) return true;
@@ -140,7 +146,7 @@ function scatter(grid: number, lanes: number[], density: number, maxLength: numb
     const blocked = new Set<number>();
     for (let tries = 0; tries < 500 && blocked.size < target; tries += 1) {
       const length = maxLength > 1 ? 2 + rand(maxLength - 1) : 1;
-      const horizontal = Math.random() < 0.5;
+      const horizontal = random() < 0.5;
       const x0 = 1 + rand(grid - 2);
       const y0 = 1 + rand(grid - 2);
       const cells = Array.from({ length }, (_, i) => (horizontal ? { x: x0 + i, y: y0 } : { x: x0, y: y0 + i }));
@@ -156,7 +162,7 @@ type Hooks = {
   onPhase: (phase: Phase) => void;
   onScore: (score: number) => void;
   onTime: (seconds: number | null) => void;
-  onRound: (setup: SnakeSetup) => void;
+  onRound: (setup: SnakeSetup, date: string | null) => void;
   onOver: (score: number, reason: OverReason) => void;
   onStatus: (status: SnakeStatus) => void;
   /** Sound, motion level and the equipped cosmetics; read every frame so changes apply mid-round. */
@@ -188,6 +194,10 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   let phase: Phase = "ready";
   let setup = initial;
   let upcoming = initial;
+  let date: string | null = null;
+  let upcomingDate: string | null = null;
+  let random = Math.random;
+  const rand = (count: number) => Math.floor(random() * count);
   let modes = new Set<BlendMode>();
   let grid = SNAKE_SIZES[setup.size].grid;
   let wrap = false;
@@ -397,7 +407,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     const before = flood(blocked);
     const pool = [...candidates];
     for (let tries = 0; tries < 30 && pool.length; tries += 1) {
-      const c = takeRandom(pool);
+      const c = takeRandom(pool, random);
       if (nearHead(c)) continue;
       blocked.add(c);
       const after = flood(blocked).size;
@@ -428,11 +438,11 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   function chooseLayer(): 0 | 1 {
     if (layer === null) return 0;
     if (!fruits.some((f) => f.layer === layer)) return layer;
-    return Math.random() < 0.5 ? 0 : 1;
+    return random() < 0.5 ? 0 : 1;
   }
 
   function addFruit(p: Point, kind: SnakeFruit, now: number, lock: number | null, fruitLayer: 0 | 1) {
-    fruits.push({ ...p, kind, born: now, layer: fruitLayer, lock, vx: Math.random() < 0.5 ? -1 : 1, vy: Math.random() < 0.5 ? -1 : 1, from: { ...p }, movedAt: clock });
+    fruits.push({ ...p, kind, born: now, layer: fruitLayer, lock, vx: random() < 0.5 ? -1 : 1, vy: random() < 0.5 ? -1 : 1, from: { ...p }, movedAt: clock });
   }
 
   function spawnFruit(now: number) {
@@ -650,7 +660,9 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   }
 
   function reset() {
-    setup = upcoming;
+    date = upcomingDate === null ? null : dailyDate();
+    setup = date === null ? upcoming : dailySnakeSetup(date);
+    random = date === null ? Math.random : seededRandom(seedFrom(`snake:${date}`));
     modes = new Set(activeModes(setup));
     grid = SNAKE_SIZES[setup.size].grid;
     peace = modes.has("peace");
@@ -661,10 +673,10 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     snakes = [makeSnake(x, y, "right", false)];
     if (twin) snakes.push(makeSnake(grid - 1 - x, grid - 1 - y, "left", true));
     const lanes = snakes.map((s) => s.cells[0].y);
-    stones = modes.has("obstacles") ? scatter(grid, lanes, 0.05, 4, new Set()) : new Set();
+    stones = modes.has("obstacles") ? scatter(grid, lanes, 0.05, 4, new Set(), random) : new Set();
     if (modes.has("dimension")) {
-      const first = scatter(grid, lanes, 0.035, 1, stones);
-      crystals = [first, scatter(grid, lanes, 0.035, 1, new Set([...stones, ...first]))];
+      const first = scatter(grid, lanes, 0.035, 1, stones, random);
+      crystals = [first, scatter(grid, lanes, 0.035, 1, new Set([...stones, ...first]), random)];
       layer = 0;
     } else {
       crystals = [new Set(), new Set()];
@@ -697,7 +709,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     emitTime();
     emitStatus();
     hooks.onScore(0);
-    hooks.onRound(setup);
+    hooks.onRound(setup, date);
     setPhase("ready");
   }
 
@@ -886,7 +898,7 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
       const poison = poisons.find((p) => cellOf(p) === c);
       if (poison) {
         poisons = poisons.filter((p) => p !== poison);
-        scramble = scrambledMap();
+        scramble = scrambledMap(random);
         scrambleLeft = SCRAMBLE_MS;
         for (const other of snakes) other.queue = [];
         bursts.push({ x, y, color: "#8e8a96", born: now });
@@ -1468,6 +1480,12 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
   reset();
   const stopLoop = startLoop(step, draw);
 
+  function start() {
+    if (phase !== "ready" && phase !== "paused") return;
+    if (phase === "ready" && date !== null && date !== dailyDate()) reset();
+    setPhase("playing");
+  }
+
   return {
     get score() {
       return score;
@@ -1478,9 +1496,15 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
     get setup() {
       return setup;
     },
+    get variant() {
+      return date === null ? snakeVariant(setup) : dailyVariant(date);
+    },
+    get date() {
+      return date;
+    },
     turn(input: Direction) {
       if (phase === "over") return;
-      if (phase === "ready" || phase === "paused") setPhase("playing");
+      start();
       const mapped = scramble ? scramble[input] : input;
       for (const s of snakes) {
         const want = s.flip ? OPPOSITE[mapped] : mapped;
@@ -1489,16 +1513,15 @@ export function createSnake(canvas: HTMLCanvasElement, initial: SnakeSetup, hook
         s.queue.push(want);
       }
     },
-    start() {
-      if (phase === "ready" || phase === "paused") setPhase("playing");
-    },
+    start,
     pause() {
       if (phase === "playing") setPhase("paused");
     },
     /** Takes effect right away before a round starts, otherwise with the next round. */
-    configure(next: SnakeSetup) {
-      if (sameSetup(next, upcoming)) return;
+    configure(next: SnakeSetup, nextDate: string | null = null) {
+      if (sameSetup(next, upcoming) && nextDate === upcomingDate) return;
       upcoming = next;
+      upcomingDate = nextDate;
       if (phase === "ready") reset();
     },
     restart() {

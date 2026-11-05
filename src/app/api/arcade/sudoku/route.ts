@@ -1,4 +1,5 @@
-import { sudokuSaveSchema, sudokuStartSchema, SUDOKU_CELLS, SUDOKU_DAILY_DIFFICULTY, toRunReward, type SudokuDailyResult, type SudokuDifficulty } from "@/lib/arcade";
+import { sudokuSaveSchema, sudokuStartSchema, SUDOKU_DAILY_DIFFICULTY, toRunReward, type SudokuDailyResult, type SudokuDifficulty } from "@/lib/arcade";
+import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant, type SudokuSize } from "@/lib/sudoku";
 import { dailyDate } from "@/lib/arcade-daily";
 import { loadSudoku, loadSudokuDailyResult, SUDOKU_COLUMNS, toSudokuSave } from "@/lib/data/arcade";
 import { recordVerifiedSudokuCompletion } from "@/lib/data/achievements";
@@ -10,8 +11,10 @@ export async function GET(request: Request) {
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;
   const slot = new URL(request.url).searchParams.get("slot") === "daily" ? "daily" : "regular";
+  const requestedSize = new URL(request.url).searchParams.get("size") ?? "normal";
+  if (!SUDOKU_SIZES.includes(requestedSize as SudokuSize)) return apiError(422, "invalid_size", "Unknown Sudoku size.");
   try {
-    return jsonResponse({ game: await loadSudoku(ctx, slot) });
+    return jsonResponse({ game: await loadSudoku(ctx, slot, requestedSize as SudokuSize) });
   } catch {
     return apiError(500, "load_failed", "Could not load your puzzle.");
   }
@@ -30,6 +33,7 @@ export async function POST(request: Request) {
   if ("response" in parsed) return parsed.response;
 
   let slot: "regular" | "daily" = "regular";
+  let size: SudokuSize = "normal";
   let date: string | null = null;
   let difficulty: SudokuDifficulty;
   let generated: { puzzle: string; solution: string } | null;
@@ -50,7 +54,8 @@ export async function POST(request: Request) {
     generated = dailyPuzzle(date);
   } else {
     difficulty = parsed.data.difficulty;
-    generated = newPuzzle(difficulty);
+    size = parsed.data.size;
+    generated = newPuzzle(difficulty, size);
   }
   if (!generated) return apiError(503, "busy", "Could not create a puzzle right now. Try again.");
 
@@ -60,17 +65,18 @@ export async function POST(request: Request) {
       {
         id: crypto.randomUUID(),
         slot,
+        size,
         puzzle_date: date,
         difficulty,
         puzzle: generated.puzzle,
         solution: generated.solution,
-        entries: "0".repeat(SUDOKU_CELLS),
-        notes: Array<number>(SUDOKU_CELLS).fill(0),
+        entries: "0".repeat(SUDOKU_CONFIG[size].cells),
+        notes: Array<number>(SUDOKU_CONFIG[size].cells).fill(0),
         elapsed_ms: 0,
         completed_at: null,
         started_at: new Date().toISOString(),
       },
-      { onConflict: "user_id,slot" },
+      { onConflict: "user_id,slot,size" },
     )
     .select(SUDOKU_COLUMNS)
     .single();
@@ -89,17 +95,18 @@ export async function PATCH(request: Request) {
   if (ctx instanceof Response) return ctx;
   const parsed = await parseJson(request, sudokuSaveSchema);
   if ("response" in parsed) return parsed.response;
-  const { id, entries, notes, elapsedMs, complete } = parsed.data;
+  const { id, size, entries, notes, elapsedMs, complete } = parsed.data;
 
   const { data: current, error: readError } = await ctx.supabase
     .from("sudoku_games")
-    .select("difficulty, puzzle, solution, slot, puzzle_date, hints")
+    .select("size, difficulty, puzzle, solution, slot, puzzle_date, hints")
     .eq("user_id", ctx.userId)
     .eq("id", id)
     .is("completed_at", null)
     .maybeSingle();
   if (readError) return dbError(readError);
   if (!current) return apiError(409, "replaced", "This puzzle was finished or replaced in another window.");
+  if (current.size !== size) return apiError(422, "invalid_size", "Progress must match the saved puzzle size.");
 
   let solved = false;
   if (complete) {
@@ -132,7 +139,7 @@ export async function PATCH(request: Request) {
   if (current.slot === "regular" && !assisted) {
     const { data: record, error: recordError } = await ctx.supabase.rpc("record_arcade_score", {
       p_game: "sudoku",
-      p_variant: current.difficulty,
+      p_variant: sudokuVariant(current.size, current.difficulty),
       p_score: seconds,
     });
     if (recordError) return dbError(recordError, "Puzzle saved, but the time could not be recorded.");

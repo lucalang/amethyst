@@ -29,6 +29,7 @@ import { leaderboardHref } from "@/lib/leaderboards";
 import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { closeAudio, playSound, type SoundName } from "./sound";
+import { GameStreak } from "./streaks";
 
 /** Shop opened from inside a game: loaded only when first opened. */
 const GameShopDialog = dynamic(() => import("./shop/game-shop-dialog"), { ssr: false });
@@ -172,6 +173,7 @@ export function GameShell({
           <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
           <div className="ml-auto flex items-center gap-1.5">
             {actions}
+            <GameStreak game={game} />
             <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
               <Link href={leaderboardHref(game, leaderboard)} prefetch={false} aria-label={`${title} leaderboard`} title={`${title} leaderboard`}>
                 <Trophy aria-hidden />

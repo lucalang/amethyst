@@ -179,7 +179,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
               const checked = decoration === id;
               const isOwned = id === null || cosmetics.owned.includes(id);
               const ach = id ? achievementForItem(id) : undefined;
-              const achLabel = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : null;
+              const achLabel = ach?.name;
               return (
                 <label
                   key={id ?? "none"}
@@ -212,6 +212,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                         {isOwned ? <Award aria-hidden className="size-3" /> : <Lock aria-hidden className="size-3" />}
                         {isOwned ? "Achievement" : achLabel}
                       </span>
+                    ) : null}
+                    {!isOwned && ach ? (
+                      <Link href={`/achievements#${ach.id}`} className="mt-1 block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                        View achievement
+                      </Link>
                     ) : null}
                   </span>
                 </label>
@@ -295,7 +300,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                   const position = badges.indexOf(id);
                   const selected = position >= 0;
                   const ach = achievementForItem(id);
-                  const lockedHint = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : "Vault";
+                  const lockedHint = ach?.name ?? "Vault";
                   const hint = !isOwned ? `Locked (${lockedHint})` : !selected && badgesFull ? "Remove a badge to wear this one" : PROFILE_BADGES[id].description;
                   return (
                     <label
@@ -320,6 +325,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                         </span>
                       ) : null}
                       {!isOwned ? <Lock aria-hidden className="size-3 text-muted-foreground" /> : null}
+                      {!isOwned && ach ? (
+                        <Link href={`/achievements#${ach.id}`} className="text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                          {ach.name}
+                        </Link>
+                      ) : null}
                     </label>
                   );
                 })}
@@ -338,7 +348,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                 .map((id) => {
                   const isOwned = id === null || cosmetics.owned.includes(id);
                   const ach = id ? achievementForItem(id) : undefined;
-                  const lockedHint = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : "Vault";
+                  const lockedHint = ach?.name ?? "Vault";
                   return (
                     <label
                       key={id ?? "none"}
@@ -356,6 +366,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                       />
                       <span>{id ? PROFILE_TITLES[id].name : "None"}</span>
                       {!isOwned ? <Lock aria-hidden className="size-3 text-muted-foreground" /> : null}
+                      {!isOwned && ach ? (
+                        <Link href={`/achievements#${ach.id}`} className="text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                          {ach.name}
+                        </Link>
+                      ) : null}
                     </label>
                   );
                 })}

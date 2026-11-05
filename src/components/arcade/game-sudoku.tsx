@@ -16,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import {
-  SUDOKU_CELLS,
   SUDOKU_DAILY_DIFFICULTY,
   SUDOKU_DIFFICULTIES,
   SUDOKU_LABELS,
@@ -26,6 +25,8 @@ import {
   type SudokuDifficulty,
   type SudokuSave,
 } from "@/lib/arcade";
+import { announcePlayed } from "@/lib/arcade-streaks";
+import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuDigit, sudokuSymbol, sudokuPeers, sudokuProgressValid, sudokuSlotKey, sudokuVariant, type SudokuSize } from "@/lib/sudoku";
 import { cn } from "@/lib/utils";
 import { CoinReward, type CoinState } from "./coin-reward";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
@@ -34,24 +35,11 @@ import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway,
 type Slot = SudokuSave["slot"];
 type Snapshot = { entries: string; notes: number[] };
 type Result = { seconds: number; best: number | null; improved: boolean; hints: number };
-type Records = Partial<Record<SudokuDifficulty, number>>;
+type Records = Partial<Record<string, number>>;
 type Confirm = { kind: "replace"; difficulty: SudokuDifficulty } | { kind: "daily" } | { kind: "hint" };
 
-const EMPTY_ENTRIES = "0".repeat(SUDOKU_CELLS);
-const EMPTY_NOTES: number[] = Array<number>(SUDOKU_CELLS).fill(0);
-const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const HISTORY_LIMIT = 200;
-
-const rowOf = (cell: number) => Math.floor(cell / 9);
-const colOf = (cell: number) => cell % 9;
-const boxOf = (cell: number) => Math.floor(rowOf(cell) / 3) * 3 + Math.floor(colOf(cell) / 3);
-
-/** The 20 cells sharing a row, column or box with each cell. */
-const PEERS: number[][] = Array.from({ length: SUDOKU_CELLS }, (_, cell) =>
-  Array.from({ length: SUDOKU_CELLS }, (_, other) => other).filter(
-    (other) => other !== cell && (rowOf(other) === rowOf(cell) || colOf(other) === colOf(cell) || boxOf(other) === boxOf(cell)),
-  ),
-);
+const PEERS_BY_SIZE = Object.fromEntries(SUDOKU_SIZES.map(size => [size, sudokuPeers(size)])) as Record<SudokuSize, number[][]>;
 
 /** Pause-aware stopwatch kept outside React state so ticking doesn't re-render more than needed. */
 function createClock(initial: number) {
@@ -77,15 +65,14 @@ function createClock(initial: number) {
 
 // A local copy of each slot's latest board, in case the last save never reached the server
 // (closed tab, lost connection). It only wins when it has more play time than the server's copy.
-const backupKey = (slot: Slot) => `archive:sudoku:${slot}`;
+const backupKey = (slot: Slot, size: SudokuSize) => `archive:sudoku:${slot}${slot === "regular" && size !== "normal" ? `:${size}` : ""}`;
 
 function readBackup(save: SudokuSave) {
   try {
-    const raw = JSON.parse(window.localStorage.getItem(backupKey(save.slot)) ?? "null") as Record<string, unknown> | null;
+    const raw = JSON.parse(window.localStorage.getItem(backupKey(save.slot, save.size)) ?? "null") as Record<string, unknown> | null;
     if (!raw || raw.id !== save.id) return null;
     const { entries, notes, elapsedMs } = raw;
-    if (typeof entries !== "string" || !/^[0-9]{81}$/.test(entries)) return null;
-    if (!Array.isArray(notes) || notes.length !== SUDOKU_CELLS || !notes.every((n) => Number.isInteger(n) && n >= 0 && n <= 511)) return null;
+    if (typeof entries !== "string" || !Array.isArray(notes) || !sudokuProgressValid(save.size, entries, notes)) return null;
     if (typeof elapsedMs !== "number" || !Number.isFinite(elapsedMs) || elapsedMs < 0 || elapsedMs > 2_000_000_000) return null;
     return { entries, notes: notes as number[], elapsedMs: Math.round(elapsedMs) };
   } catch {
@@ -95,15 +82,15 @@ function readBackup(save: SudokuSave) {
 
 function writeBackup(save: SudokuSave, entries: string, notes: number[], elapsedMs: number) {
   try {
-    window.localStorage.setItem(backupKey(save.slot), JSON.stringify({ id: save.id, entries, notes, elapsedMs: Math.round(elapsedMs) }));
+    window.localStorage.setItem(backupKey(save.slot, save.size), JSON.stringify({ id: save.id, entries, notes, elapsedMs: Math.round(elapsedMs) }));
   } catch {
     // Storage full or blocked: the server copy is still saved.
   }
 }
 
-function clearBackup(slot: Slot) {
+function clearBackup(slot: Slot, size: SudokuSize) {
   try {
-    window.localStorage.removeItem(backupKey(slot));
+    window.localStorage.removeItem(backupKey(slot, size));
   } catch {
     // Nothing to clear.
   }
@@ -124,7 +111,7 @@ const firstEmpty = (save: SudokuSave | null) => {
   return index === -1 ? 0 : index;
 };
 
-const digitAt = (puzzle: string, entries: string, cell: number) => Number(puzzle[cell] !== "0" ? puzzle[cell] : entries[cell]);
+const digitAt = (puzzle: string, entries: string, cell: number) => sudokuDigit(puzzle[cell] !== "0" ? puzzle[cell] : entries[cell]);
 
 const assistLabel = (hints: number) => (hints > 0 ? `Assisted · ${hints} hint${hints === 1 ? "" : "s"}` : "Unassisted");
 
@@ -134,7 +121,7 @@ export default function GameSudoku({
   dailyResult: initialDailyResult,
   records: initialRecords,
 }: {
-  regular: SudokuSave | null;
+  regular: Partial<Record<SudokuSize, SudokuSave | null>>;
   daily: SudokuSave | null;
   dailyResult: SudokuDailyResult | null;
   records: Records;
@@ -143,17 +130,27 @@ export default function GameSudoku({
   const today = useDailyDate();
   // Opens on an unfinished puzzle when there is one (regular first), otherwise on the puzzle list.
   const [start] = useState(() => {
-    const pick = regular && !regular.completed ? regular : daily && !daily.completed ? daily : regular;
+    const pick = SUDOKU_SIZES.map(size => regular[size]).find(save => save && !save.completed)
+      ?? (daily && !daily.completed ? daily : regular.normal) ?? null;
     return withBackup(pick);
   });
   const initial = start.save;
-  const [stored, setStored] = useState<Record<Slot, SudokuSave | null>>(() => ({
-    regular: initial?.slot === "regular" ? initial : regular,
+  const [stored, setStored] = useState<Partial<Record<SudokuSize | "daily", SudokuSave | null>>>(() => ({
+    ...regular,
+    ...(initial?.slot === "regular" ? { [initial.size]: initial } : {}),
     daily: initial?.slot === "daily" ? initial : daily,
   }));
+  const [size, setSize] = useState<SudokuSize>(initial?.size ?? "normal");
   const [game, setGame] = useState<SudokuSave | null>(initial);
-  const [entries, setEntries] = useState(initial?.entries ?? EMPTY_ENTRIES);
-  const [notes, setNotes] = useState<number[]>(initial?.notes ?? EMPTY_NOTES);
+  const config = SUDOKU_CONFIG[game?.size ?? size];
+  const { side, region, cells } = config;
+  const DIGITS = Array.from({ length: side }, (_, index) => index + 1);
+  const PEERS = PEERS_BY_SIZE[game?.size ?? size];
+  const rowOf = (cell: number) => Math.floor(cell / side);
+  const colOf = (cell: number) => cell % side;
+  const boxOf = (cell: number) => Math.floor(rowOf(cell) / region) * region + Math.floor(colOf(cell) / region);
+  const [entries, setEntries] = useState(initial?.entries ?? "0".repeat(config.cells));
+  const [notes, setNotes] = useState<number[]>(initial?.notes ?? Array<number>(config.cells).fill(0));
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [selected, setSelected] = useState(() => firstEmpty(initial));
   const [noteMode, setNoteMode] = useState(false);
@@ -206,12 +203,13 @@ export default function GameSudoku({
   }, [game, entries, notes, clock]);
 
   const load = useCallback(
-    (incoming: SudokuSave | null, slot: Slot) => {
+    (incoming: SudokuSave | null, slot: Slot, size: SudokuSize = incoming?.size ?? "normal") => {
       const { save, restored } = withBackup(incoming);
-      setStored((current) => ({ ...current, [slot]: save }));
+      setStored((current) => ({ ...current, [sudokuSlotKey(slot, size)]: save }));
       setGame(save);
-      setEntries(save?.entries ?? EMPTY_ENTRIES);
-      setNotes(save?.notes ?? EMPTY_NOTES);
+      if (save?.slot === "regular") setSize(save.size);
+      setEntries(save?.entries ?? "0".repeat(SUDOKU_CONFIG[size].cells));
+      setNotes(save?.notes ?? Array<number>(SUDOKU_CONFIG[size].cells).fill(0));
       setHistory([]);
       setSelected(firstEmpty(save));
       setResult(null);
@@ -236,17 +234,18 @@ export default function GameSudoku({
     try {
       await apiFetch("/api/arcade/sudoku", {
         method: "PATCH",
-        json: { id: current.id, entries: values, notes: marks, elapsedMs },
+        json: { id: current.id, size: current.size, entries: values, notes: marks, elapsedMs },
         keepalive: true,
       });
       warned.current = false;
+      announcePlayed();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         // Only reload if the board on screen is still the one that went stale.
         if (latest.current.game?.id !== current.id) return;
         toast.message("This puzzle was finished or replaced in another window. Showing the latest one.");
         try {
-          load((await apiFetch<{ game: SudokuSave | null }>(`/api/arcade/sudoku?slot=${current.slot}`)).game, current.slot);
+          load((await apiFetch<{ game: SudokuSave | null }>(`/api/arcade/sudoku?slot=${current.slot}&size=${current.size}`)).game, current.slot, current.size);
         } catch {
           // Keep the local board; the next save tries again.
         }
@@ -300,7 +299,7 @@ export default function GameSudoku({
       void persist();
     }
     const snapshot = { ...game, entries, notes, elapsedMs: Math.round(clock.read()) };
-    setStored((current) => ({ ...current, [game.slot]: snapshot }));
+    setStored((current) => ({ ...current, [sudokuSlotKey(game.slot, game.size)]: snapshot }));
     setElapsed(clock.read());
   }
 
@@ -325,18 +324,18 @@ export default function GameSudoku({
   const conflicts = useMemo(() => {
     const set = new Set<number>();
     if (!game) return set;
-    for (let cell = 0; cell < SUDOKU_CELLS; cell += 1) {
+    for (let cell = 0; cell < cells; cell += 1) {
       const digit = digitAt(game.puzzle, entries, cell);
       if (digit && PEERS[cell].some((peer) => digitAt(game.puzzle, entries, peer) === digit)) set.add(cell);
     }
     return set;
-  }, [game, entries]);
+  }, [game, entries, cells, PEERS]);
 
   const counts = useMemo(() => {
-    const placed = Array<number>(10).fill(0);
-    if (game) for (let cell = 0; cell < SUDOKU_CELLS; cell += 1) placed[digitAt(game.puzzle, entries, cell)] += 1;
+    const placed = Array<number>(side + 1).fill(0);
+    if (game) for (let cell = 0; cell < cells; cell += 1) placed[digitAt(game.puzzle, entries, cell)] += 1;
     return placed;
-  }, [game, entries]);
+  }, [game, entries, cells, side]);
 
   const editable = running && game !== null && !hinting;
 
@@ -347,14 +346,14 @@ export default function GameSudoku({
     dirty.current = true;
     if (game && [...game.puzzle].every((clue, cell) => clue !== "0" || nextEntries[cell] !== "0")) {
       const filled = (cell: number) => digitAt(game.puzzle, nextEntries, cell);
-      const valid = Array.from({ length: SUDOKU_CELLS }, (_, cell) => cell).every((cell) => PEERS[cell].every((peer) => filled(peer) !== filled(cell)));
+      const valid = Array.from({ length: cells }, (_, cell) => cell).every((cell) => PEERS[cell].every((peer) => filled(peer) !== filled(cell)));
       if (valid) void finish(nextEntries, nextNotes);
     }
   }
 
   /** Writes a digit into a cell and clears it from the notes of the cell and its peers. */
   function place(cell: number, digit: number) {
-    const nextEntries = entries.slice(0, cell) + String(digit) + entries.slice(cell + 1);
+    const nextEntries = entries.slice(0, cell) + sudokuSymbol(digit) + entries.slice(cell + 1);
     const nextNotes = [...notes];
     nextNotes[cell] = 0;
     for (const peer of PEERS[cell]) nextNotes[peer] &= ~(1 << (digit - 1));
@@ -362,7 +361,7 @@ export default function GameSudoku({
   }
 
   function input(digit: number, asNote = noteMode) {
-    if (!editable || !game || game.puzzle[selected] !== "0") return;
+    if (!editable || !game || digit < 1 || digit > side || game.puzzle[selected] !== "0") return;
     const cell = selected;
     if (asNote) {
       if (entries[cell] !== "0") return;
@@ -372,7 +371,7 @@ export default function GameSudoku({
       commit(entries, nextNotes);
       return;
     }
-    if (entries[cell] === String(digit)) {
+    if (entries[cell] === sudokuSymbol(digit)) {
       play("erase", 0.9 + digit / 30);
       commit(entries.slice(0, cell) + "0" + entries.slice(cell + 1), notes);
       return;
@@ -417,11 +416,11 @@ export default function GameSudoku({
     try {
       const response = await apiFetch<{ digit: number; hints: number | null }>("/api/arcade/sudoku/hint", {
         method: "POST",
-        json: { id: game.id, cell, entries, notes, elapsedMs: Math.round(clock.read()) },
+        json: { id: game.id, size: game.size, cell, entries, notes, elapsedMs: Math.round(clock.read()) },
       });
       const hints = response.hints ?? game.hints + 1;
       setGame((current) => (current && current.id === game.id ? { ...current, hints } : current));
-      setStored((current) => ({ ...current, [game.slot]: { ...game, hints } }));
+      setStored((current) => ({ ...current, [sudokuSlotKey(game.slot, game.size)]: { ...game, hints } }));
       const { nextEntries, nextNotes } = place(cell, response.digit);
       play("chip", 1.2);
       commit(nextEntries, nextNotes);
@@ -430,7 +429,7 @@ export default function GameSudoku({
       if (error instanceof ApiError && error.status === 409) {
         toast.message("This puzzle was finished or replaced in another window.");
         try {
-          load((await apiFetch<{ game: SudokuSave | null }>(`/api/arcade/sudoku?slot=${game.slot}`)).game, game.slot);
+          load((await apiFetch<{ game: SudokuSave | null }>(`/api/arcade/sudoku?slot=${game.slot}&size=${game.size}`)).game, game.slot, game.size);
         } catch {
           // Keep the local board.
         }
@@ -462,13 +461,14 @@ export default function GameSudoku({
         reward: RunReward | null;
       }>("/api/arcade/sudoku", {
         method: "PATCH",
-        json: { id: game.id, entries: finalEntries, notes: finalNotes, elapsedMs: ms, complete: true },
+        json: { id: game.id, size: game.size, entries: finalEntries, notes: finalNotes, elapsedMs: ms, complete: true },
       });
       hints = response.hints;
-      if (response.best !== null) setRecords((current) => ({ ...current, [game.difficulty]: response.best! }));
+      announcePlayed();
+      if (response.best !== null) setRecords((current) => ({ ...current, [sudokuVariant(game.size, game.difficulty)]: response.best! }));
       if (response.daily) setDailyResult(response.daily);
-      setResult({ seconds, best: response.best ?? (game.slot === "regular" ? (records[game.difficulty] ?? null) : null), improved: response.improved, hints });
-      clearBackup(game.slot);
+      setResult({ seconds, best: response.best ?? (game.slot === "regular" ? (records[sudokuVariant(game.size, game.difficulty)] ?? null) : null), improved: response.improved, hints });
+      clearBackup(game.slot, game.size);
       // The solve is saved; if counting its coins hiccuped, ask once more (it can only pay once).
       const reward =
         response.reward ??
@@ -479,13 +479,16 @@ export default function GameSudoku({
       setCoins(reward ? { status: "done", reward } : { status: "error" });
       if (reward?.status === "paid") window.dispatchEvent(new CustomEvent("archive:coins", { detail: reward.balance }));
     } catch {
-      toast.error("Solved! But the time could not be saved.");
-      setResult({ seconds, best: game.slot === "regular" ? (records[game.difficulty] ?? null) : null, improved: false, hints });
+      toast.error("Could not verify and save the solve. Check your connection and retry the final cell.");
+      dirty.current = true;
+      writeBackup(game, finalEntries, finalNotes, ms);
       setCoins({ status: "error" });
+      setFinishing(false);
+      return;
     }
     const done = { ...game, entries: finalEntries, notes: finalNotes, elapsedMs: ms, completed: true, hints };
     setGame(done);
-    setStored((current) => ({ ...current, [game.slot]: done }));
+    setStored((current) => ({ ...current, [sudokuSlotKey(game.slot, game.size)]: done }));
     setFinishing(false);
   }
 
@@ -493,7 +496,7 @@ export default function GameSudoku({
     setConfirming(null);
     setCreating(difficulty);
     try {
-      const response = await apiFetch<{ game: SudokuSave }>("/api/arcade/sudoku", { method: "POST", json: { difficulty } });
+      const response = await apiFetch<{ game: SudokuSave }>("/api/arcade/sudoku", { method: "POST", json: { difficulty, size } });
       load(response.game, "regular");
       play("place");
     } catch (error) {
@@ -504,7 +507,7 @@ export default function GameSudoku({
   }
 
   function choose(difficulty: SudokuDifficulty) {
-    if (stored.regular && !stored.regular.completed) setConfirming({ kind: "replace", difficulty });
+    if (stored[size] && !stored[size]?.completed) setConfirming({ kind: "replace", difficulty });
     else void create(difficulty);
   }
 
@@ -540,7 +543,9 @@ export default function GameSudoku({
 
   function select(cell: number) {
     setSelected(cell);
-    cellRefs.current[cell]?.focus({ preventScroll: true });
+    const button = cellRefs.current[cell];
+    button?.focus({ preventScroll: true });
+    if (game?.size === "xxl") button?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   useGameKeys((event) => {
@@ -561,6 +566,11 @@ export default function GameSudoku({
       input(Number(digit), noteMode !== event.shiftKey);
       return true;
     }
+    const letter = /^Key([A-G])$/.exec(event.code)?.[1] ?? (/^[a-g]$/i.test(event.key) ? event.key.toUpperCase() : null);
+    if (side === 16 && letter) {
+      input(sudokuDigit(letter), noteMode !== event.shiftKey);
+      return true;
+    }
     if (event.key === "0" || event.key === "Backspace" || event.key === "Delete") {
       erase();
       return true;
@@ -573,22 +583,22 @@ export default function GameSudoku({
       askHint();
       return true;
     }
-    const move = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 }[event.key];
+    const move = { ArrowUp: -side, ArrowDown: side, ArrowLeft: -1, ArrowRight: 1 }[event.key];
     if (move === undefined) return false;
     const row = rowOf(selected);
     const col = colOf(selected);
-    if (move === -1) select(row * 9 + ((col + 8) % 9));
-    else if (move === 1) select(row * 9 + ((col + 1) % 9));
-    else select((selected + move + SUDOKU_CELLS) % SUDOKU_CELLS);
+    if (move === -1) select(row * side + ((col + side - 1) % side));
+    else if (move === 1) select(row * side + ((col + 1) % side));
+    else select((selected + move + cells) % cells);
     return true;
   });
 
   const selectedDigit = game ? digitAt(game.puzzle, entries, selected) : 0;
-  const best = game && !isDaily ? records[game.difficulty] : undefined;
+  const best = game && !isDaily ? records[sudokuVariant(game.size, game.difficulty)] : undefined;
   const hidden = paused && unfinished;
   const todayResult = dailyResult?.date === today ? dailyResult : null;
   const savedDaily = stored.daily && !stored.daily.completed ? stored.daily : null;
-  const savedRegular = stored.regular && !stored.regular.completed ? stored.regular : null;
+  const savedRegular = stored[size] && !stored[size]?.completed ? stored[size] : null;
   const lastSolved = game?.completed && result ? game : null;
 
   const picker = (
@@ -650,6 +660,15 @@ export default function GameSudoku({
         <h2 id="sudoku-new" className="text-base font-semibold">
           New puzzle
         </h2>
+        <div className="mt-3 grid grid-cols-3 gap-1" role="group" aria-label="Puzzle size">
+          {SUDOKU_SIZES.map(option => (
+            <Button key={option} variant={size === option ? "default" : "outline"} aria-pressed={size === option}
+              disabled={creating !== null} onClick={() => setSize(option)} className="h-12 flex-col gap-0.5 px-1">
+              <span>{SUDOKU_CONFIG[option].label}</span>
+              <span className="text-xs">{SUDOKU_CONFIG[option].side} × {SUDOKU_CONFIG[option].side}</span>
+            </Button>
+          ))}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">Every puzzle has exactly one solution. Your progress is saved as you play.</p>
         <div className="mt-4 grid gap-2">
           {SUDOKU_DIFFICULTIES.map((difficulty) => (
@@ -665,14 +684,14 @@ export default function GameSudoku({
                 {SUDOKU_LABELS[difficulty]}
               </span>
               <span className="text-xs font-normal text-muted-foreground">
-                {creating === difficulty ? "Generating…" : records[difficulty] ? `Best ${formatDuration(records[difficulty])}` : "No time yet"}
+                {creating === difficulty ? "Generating…" : records[sudokuVariant(size, difficulty)] ? `Best ${formatDuration(records[sudokuVariant(size, difficulty)]!)}` : "No time yet"}
               </span>
             </Button>
           ))}
         </div>
         {savedRegular ? (
           <Button variant="ghost" className="mt-3 w-full" onClick={() => open(savedRegular)} disabled={creating !== null}>
-            Back to your {SUDOKU_LABELS[savedRegular.difficulty].toLowerCase()} puzzle
+            Continue {SUDOKU_CONFIG[size].label} · {SUDOKU_LABELS[savedRegular.difficulty]}
           </Button>
         ) : null}
       </section>
@@ -698,7 +717,7 @@ export default function GameSudoku({
           }
         : {
             title: "Replace your unfinished puzzle?",
-            body: `Starting a new ${confirming?.kind === "replace" ? SUDOKU_LABELS[confirming.difficulty].toLowerCase() : ""} puzzle discards your current${savedRegular ? ` ${SUDOKU_LABELS[savedRegular.difficulty].toLowerCase()}` : ""} puzzle and its progress. Your daily puzzle is not affected.`,
+            body: `Starting a new ${SUDOKU_CONFIG[size].label} puzzle discards your unfinished puzzle at this size. Other sizes and your daily puzzle are not affected.`,
             cancel: "Keep playing it",
             action: "Start new puzzle",
           };
@@ -707,12 +726,13 @@ export default function GameSudoku({
     <GameShell
       game="sudoku"
       title="Sudoku"
-      leaderboard={isDaily ? `daily-${game.puzzleDate ?? today}` : (game?.difficulty ?? "easy")}
+      leaderboard={isDaily ? `daily-${game.puzzleDate ?? today}` : sudokuVariant(game?.size ?? size, game?.difficulty ?? "easy")}
       active={view === "board" && unfinished}
       stats={
         view === "board" && game ? (
           <>
             <Stat label={isDaily ? "Daily" : "Level"} value={isDaily ? formatDailyDate(game.puzzleDate ?? today) : SUDOKU_LABELS[game.difficulty]} />
+            <Stat label="Size" value={SUDOKU_CONFIG[game.size].label} />
             <Stat label="Time" value={formatDuration(elapsed / 1000)} />
             {isDaily ? null : <Stat label="Best" value={best ? formatDuration(best) : "—"} highlight={Boolean(result?.improved)} />}
             {game.hints > 0 ? <Stat label="Hints" value={String(game.hints)} /> : null}
@@ -723,14 +743,14 @@ export default function GameSudoku({
         view === "board" ? (
           <>
             {unfinished ? (
-              <Button variant="outline" size="sm" className="h-8" onClick={paused ? resume : pause} disabled={finishing}>
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3" aria-label={paused ? "Resume" : "Pause"} title={paused ? "Resume" : "Pause"} onClick={paused ? resume : pause} disabled={finishing}>
                 {paused ? <Play aria-hidden /> : <Pause aria-hidden />}
-                {paused ? "Resume" : "Pause"}
+                <span className="hidden sm:inline">{paused ? "Resume" : "Pause"}</span>
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" className="h-8" onClick={openPicker} disabled={finishing}>
+            <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3" aria-label="Puzzles" title="Puzzles" onClick={openPicker} disabled={finishing}>
               <LayoutGrid aria-hidden />
-              Puzzles
+              <span className="hidden sm:inline">Puzzles</span>
             </Button>
           </>
         ) : null
@@ -753,18 +773,22 @@ export default function GameSudoku({
             </p>
           ) : null}
           <div className="flex w-full flex-col items-center gap-4 md:flex-row md:items-start md:justify-center">
-            <div className="arcade-stage [--stage-h:min(64dvh,36rem)] [--stage-ratio:1] md:mx-0">
+            <div className={cn("relative w-full min-w-0", game.size === "xxl" ? "md:max-w-[48rem]" : "md:max-w-[36rem]")}>
+            <div className={cn("sdk-viewport w-full min-w-0", game.size === "xxl" && "sdk-viewport-xxl")}>
+            <div className={cn("arcade-stage [--stage-h:min(64dvh,36rem)] [--stage-ratio:1] md:mx-0", game.size === "xxl" && "sdk-stage-xxl")}>
               <div
                 role="group"
-                aria-label={isDaily ? "Daily Sudoku" : `${SUDOKU_LABELS[game.difficulty]} Sudoku`}
-                className="sdk absolute inset-0 grid touch-manipulation grid-cols-9 grid-rows-9 overflow-hidden select-none"
+                aria-label={isDaily ? "Daily Sudoku" : `${SUDOKU_CONFIG[game.size].label} ${SUDOKU_LABELS[game.difficulty]} Sudoku`}
+                className="sdk absolute inset-0 grid touch-manipulation overflow-hidden select-none"
+                style={{ gridTemplateColumns: `repeat(${side}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${side}, minmax(0, 1fr))` }}
+                data-size={game.size}
                 data-effects={effects}
                 data-theme={look.theme}
                 data-font={look.font}
                 data-grid={look.grid}
                 data-highlight={look.highlight}
               >
-                {Array.from({ length: SUDOKU_CELLS }, (_, cell) => {
+                {Array.from({ length: cells }, (_, cell) => {
                   const clue = game.puzzle[cell] !== "0";
                   const digit = digitAt(game.puzzle, entries, cell);
                   const row = rowOf(cell);
@@ -784,16 +808,16 @@ export default function GameSudoku({
                       type="button"
                       tabIndex={isSelected ? 0 : -1}
                       aria-current={isSelected || undefined}
-                      aria-label={`Row ${row + 1}, column ${col + 1}: ${hidden ? "hidden" : digit ? `${digit}${clue ? ", given" : ""}${conflict ? ", conflicts" : ""}` : markList.length ? `notes ${markList.join(" ")}` : "empty"}`}
+                      aria-label={`Row ${row + 1}, column ${col + 1}: ${hidden ? "hidden" : digit ? `${sudokuSymbol(digit)}${clue ? ", given" : ""}${conflict ? ", conflicts" : ""}` : markList.length ? `notes ${markList.map(sudokuSymbol).join(" ")}` : "empty"}`}
                       onClick={() => select(cell)}
                       className="sdk-cell relative grid place-items-center leading-none tabular-nums outline-none"
-                      data-r={col < 8 ? (col % 3 === 2 ? "box" : "cell") : undefined}
-                      data-b={row < 8 ? (row % 3 === 2 ? "box" : "cell") : undefined}
-                      data-l={col > 0 && col % 3 === 0 ? "box" : undefined}
-                      data-t={row > 0 && row % 3 === 0 ? "box" : undefined}
-                      data-bc={col % 3}
-                      data-br={row % 3}
-                      data-alt={(Math.floor(row / 3) + Math.floor(col / 3)) % 2 || undefined}
+                      data-r={col < side - 1 ? (col % region === region - 1 ? "box" : "cell") : undefined}
+                      data-b={row < side - 1 ? (row % region === region - 1 ? "box" : "cell") : undefined}
+                      data-l={col > 0 && col % region === 0 ? "box" : undefined}
+                      data-t={row > 0 && row % region === 0 ? "box" : undefined}
+                      data-bc={col % region}
+                      data-br={row % region}
+                      data-alt={(Math.floor(row / region) + Math.floor(col / region)) % 2 || undefined}
                       data-given={clue || undefined}
                       data-peer={peer || undefined}
                       data-same={same || undefined}
@@ -801,12 +825,12 @@ export default function GameSudoku({
                       data-sel={isSelected || undefined}
                     >
                       {hidden ? null : digit ? (
-                        digit
+                        sudokuSymbol(digit)
                       ) : markList.length ? (
-                        <span aria-hidden className="sdk-notes grid size-full grid-cols-3 grid-rows-3 p-[0.4cqi]">
+                        <span aria-hidden className="sdk-notes grid size-full p-[0.4cqi]" style={{ gridTemplateColumns: `repeat(${region}, 1fr)`, gridTemplateRows: `repeat(${region}, 1fr)` }}>
                           {DIGITS.map((d) => (
                             <span key={d} className="grid place-items-center" data-hit={d === selectedDigit || undefined}>
-                              {marks & (1 << (d - 1)) ? d : ""}
+                              {marks & (1 << (d - 1)) ? sudokuSymbol(d) : ""}
                             </span>
                           ))}
                         </span>
@@ -815,6 +839,8 @@ export default function GameSudoku({
                   );
                 })}
               </div>
+            </div>
+            </div>
               {hidden ? (
                 <GameOverlay title="Paused" actions={<Button size="sm" onClick={resume} autoFocus>Resume</Button>}>
                   The timer is stopped at {formatDuration(elapsed / 1000)}.
@@ -842,29 +868,29 @@ export default function GameSudoku({
             </div>
 
             <div className="flex w-full max-w-md flex-col gap-2 md:w-56">
-              <div className="grid grid-cols-9 gap-1 md:grid-cols-3 md:gap-2" role="group" aria-label="Numbers">
+              <div className={cn("grid gap-1 md:gap-2", side === 16 ? "grid-cols-8 md:grid-cols-4" : side === 4 ? "grid-cols-4 md:grid-cols-2" : "grid-cols-9 md:grid-cols-3")} role="group" aria-label="Symbols">
                 {DIGITS.map((digit) => {
-                  const left = 9 - counts[digit];
+                  const left = side - counts[digit];
                   return (
                     <button
                       key={digit}
                       type="button"
                       disabled={!editable}
                       onClick={() => input(digit)}
-                      aria-label={`${noteMode ? "Note" : "Enter"} ${digit}, ${Math.max(0, left)} left`}
+                      aria-label={`${noteMode ? "Note" : "Enter"} ${sudokuSymbol(digit)}, ${Math.max(0, left)} left`}
                       className={cn(
                         "flex aspect-[3/4] flex-col items-center justify-center rounded-lg border border-border bg-surface/80 shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.05)] transition-[background-color,border-color,box-shadow,translate,scale] duration-150 ease-out select-none hover:-translate-y-px hover:border-amethyst/55 hover:bg-amethyst/15 hover:shadow-[0_6px_16px_-10px_rgb(var(--accent-rgb)/0.65)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:translate-y-0 active:scale-93 disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 md:aspect-square",
                         left <= 0 && "opacity-45",
                         digit === selectedDigit && "border-amethyst/65 bg-amethyst/12 shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35)]",
                       )}
                     >
-                      <span className={cn("text-lg leading-none font-semibold md:text-2xl", noteMode && "text-base text-muted-foreground md:text-lg")}>{digit}</span>
+                      <span className={cn("text-lg leading-none font-semibold md:text-2xl", noteMode && "text-base text-muted-foreground md:text-lg")}>{sudokuSymbol(digit)}</span>
                       <span className="mt-0.5 text-[0.6rem] leading-none text-muted-foreground tabular-nums">{Math.max(0, left)}</span>
                     </button>
                   );
                 })}
               </div>
-              <div className="grid grid-cols-4 gap-1 md:grid-cols-2 md:gap-2">
+              <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 md:grid-cols-2 md:gap-2">
                 <Button variant="outline" size="sm" onClick={undo} disabled={!editable || !history.length}>
                   <Undo2 aria-hidden />
                   Undo

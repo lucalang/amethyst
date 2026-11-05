@@ -28,7 +28,6 @@ export type AchievementDefinition = {
   target: number;
   unit: string;
   game?: ArcadeGameId;
-  hidden?: boolean;
   reward: AchievementReward;
 };
 
@@ -59,8 +58,8 @@ export const ACHIEVEMENTS = [
   { id: "personal-best", name: "Personal Best", description: "Improve an established record in three different games. First records set a baseline.", icon: "Medal", group: "Discovery", metric: "personal_best", target: 3, unit: "improved games", reward: { coins: 0, items: ["champion-halo"] } },
   { id: "gallery-visitor", name: "Gallery Visitor", description: "Open a collection in Showcase.", icon: "Images", group: "Discovery", metric: "gallery_visitor", target: 1, unit: "gallery", reward: { coins: 30, items: [] } },
   { id: "closer-look", name: "Closer Look", description: "Manually rotate artwork in the 3D viewer.", icon: "Rotate3D", group: "Discovery", metric: "closer_look", target: 1, unit: "manual rotation", reward: { coins: 30, items: [] } },
-  { id: "light-sculptor", name: "Light Sculptor", description: "Save a custom 3D viewer preset in Showcase.", icon: "Sparkles", group: "Discovery", metric: "light_sculptor", target: 1, unit: "preset", hidden: true, reward: { coins: 0, items: ["celestial-prism"] } },
-  { id: "seal-breaker", name: "Seal Breaker", description: "Break a seal in the Vault with a valid secret code.", icon: "KeyRound", group: "Discovery", metric: "seal_breaker", target: 1, unit: "seal", hidden: true, reward: { coins: 0, items: ["badge-aegis"] } },
+  { id: "light-sculptor", name: "Light Sculptor", description: "Save a custom 3D viewer preset in Showcase.", icon: "Sparkles", group: "Discovery", metric: "light_sculptor", target: 1, unit: "preset", reward: { coins: 0, items: ["celestial-prism"] } },
+  { id: "seal-breaker", name: "Seal Breaker", description: "Break a seal in the Vault with a valid secret code.", icon: "KeyRound", group: "Discovery", metric: "seal_breaker", target: 1, unit: "seal", reward: { coins: 0, items: ["badge-aegis"] } },
 ] as const satisfies readonly AchievementDefinition[];
 
 export type RewardFilter = "all" | "coins" | "cosmetics" | "flair";
@@ -71,18 +70,8 @@ export const REWARD_FILTERS: readonly { id: RewardFilter; label: string }[] = [
   { id: "flair", label: "Badges & titles" },
 ];
 
-/** Hidden achievements stay masked until unlocked or progressed. */
-export function isAchievementRevealed(
-  definition: { readonly id: string; readonly hidden?: boolean },
-  state?: { earnedAt?: string | null; progress?: number },
-): boolean {
-  if (!definition.hidden) return true;
-  return Boolean(state?.earnedAt) || (state?.progress ?? 0) > 0;
-}
-
-export function matchesRewardFilter(definition: AchievementDefinition, filter: RewardFilter, revealed = true): boolean {
+export function matchesRewardFilter(definition: AchievementDefinition, filter: RewardFilter): boolean {
   if (filter === "all") return true;
-  if (!revealed) return false;
   if (filter === "coins") return definition.reward.coins > 0;
   if (filter === "cosmetics") return definition.reward.items.some((id) => isCosmeticId(id));
   if (filter === "flair") return definition.reward.items.some((id) => isProfileBadgeId(id) || isProfileTitleId(id));

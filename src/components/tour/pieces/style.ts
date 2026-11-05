@@ -165,22 +165,16 @@ const MEDAL_ICONS: ((ctx: CanvasRenderingContext2D) => void)[] = [
   },
 ];
 
-function medalFace(icon: ((ctx: CanvasRenderingContext2D) => void) | null) {
+function medalFace(icon: (ctx: CanvasRenderingContext2D) => void) {
   return paint(256, 256, (ctx) => {
     const fade = ctx.createRadialGradient(100, 90, 10, 128, 128, 128);
-    fade.addColorStop(0, icon ? "#fff1c2" : "#3a3346");
-    fade.addColorStop(1, icon ? "#d98f1a" : "#14101c");
+    fade.addColorStop(0, "#fff1c2");
+    fade.addColorStop(1, "#d98f1a");
     ctx.fillStyle = fade;
     ctx.fillRect(0, 0, 256, 256);
     ctx.translate(128, 128);
-    ctx.fillStyle = icon ? "#7a4a00" : "#8f86a3";
-    if (icon) icon(ctx);
-    else {
-      ctx.font = "800 120px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("?", 0, 8);
-    }
+    ctx.fillStyle = "#7a4a00";
+    icon(ctx);
   });
 }
 
@@ -197,12 +191,10 @@ export const achievements: PieceBuilder = (kit) => {
   const gold = keep(new MeshStandardMaterial({ color: GOLD, metalness: 1, roughness: 0.22, envMapIntensity: 1.3 }));
   const ribbonGeometry = keep(slab(0.2, 0.7, 0.02, 0.02));
   const ribbonColors = [AMETHYST, ROSE, 0x4fd6ec, 0x8f86a3];
-  const medals = [0, 1, 2, -1].map((icon, i) => {
+  const medals = [0, 1, 2, 0].map((icon, i) => {
     const medal = new Group();
-    const hidden = icon < 0;
-    const front = keep(new MeshStandardMaterial({ map: kit.texture(medalFace(hidden ? null : MEDAL_ICONS[icon])), roughness: 0.35, metalness: hidden ? 0.2 : 0.6 }));
-    const reverse = hidden ? keep(new MeshStandardMaterial({ map: kit.texture(medalFace(MEDAL_ICONS[0])), roughness: 0.35, metalness: 0.6 })) : front;
-    const disc = new Mesh(discGeometry, [gold, front, reverse]);
+    const front = keep(new MeshStandardMaterial({ map: kit.texture(medalFace(MEDAL_ICONS[icon])), roughness: 0.35, metalness: 0.6 }));
+    const disc = new Mesh(discGeometry, [gold, front, front]);
     disc.rotation.x = Math.PI / 2;
     const spinner = new Group();
     spinner.add(disc, new Mesh(rimGeometry, gold));
@@ -216,7 +208,7 @@ export const achievements: PieceBuilder = (kit) => {
     }
     medal.position.set((i - 1.5) * 1.12, -0.15 + (i % 2) * 0.12, 0);
     cabinet.add(medal);
-    return { medal, spinner, hidden, i };
+    return { medal, spinner, i };
   });
   const burst = glowSprite(kit, "rgba(255,195,90,0.9)", 3);
   burst.position.copy(medals[3].medal.position);
@@ -239,12 +231,11 @@ export const achievements: PieceBuilder = (kit) => {
       cabinet.rotation.y = layout === "tall" ? 0 : -0.22;
     },
     update({ t, hold, clock, idle }) {
-      for (const { medal, spinner, hidden, i } of medals) {
+      for (const { medal, spinner, i } of medals) {
         const enter = easeBack(smooth(-0.7 + i * 0.08, -0.2 + i * 0.08, t));
         medal.scale.setScalar(Math.max(0.001, enter));
         const sway = idle ? Math.sin(clock * 0.9 + i) * 0.12 : 0;
-        // Rotating by π shows the reverse face, where the hidden medal keeps its prize.
-        spinner.rotation.y = hidden ? easeInOut(smooth(0.45, 0.65, hold)) * Math.PI + sway * 0.3 : sway + hold * 0.4 * (i % 2 ? -1 : 1);
+        spinner.rotation.y = i === 3 ? easeInOut(smooth(0.45, 0.65, hold)) * Math.PI + sway * 0.3 : sway + hold * 0.4 * (i % 2 ? -1 : 1);
       }
       const reveal = smooth(0.55, 0.75, hold);
       burst.material.opacity = reveal * (idle ? 0.8 + Math.sin(clock * 3) * 0.2 : 1);

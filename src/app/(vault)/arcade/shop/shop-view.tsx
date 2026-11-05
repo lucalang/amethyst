@@ -141,7 +141,7 @@ export function ShopView({
   const match = catalogMatcher(query);
   const searched = items.filter((item) => {
     const ach = item.source === "achievement" ? achievementForItem(item.id) : undefined;
-    const achTerm = ach ? (ach.hidden && !item.owned ? "hidden achievement" : ach.name) : null;
+    const achTerm = ach?.name;
     return (
       ownershipMatches(ownership, item.owned) &&
       (!match || match(COSMETICS[item.id].name, COSMETICS[item.id].description, COSMETIC_KIND_LABELS[item.kind], item.source === "achievement" ? "achievement" : "shop", achTerm))
@@ -234,12 +234,12 @@ export function ShopView({
     }
     if (item.source === "achievement") {
       const ach = achievementForItem(item.id);
-      const href = ach && !ach.hidden ? `/achievements#${ach.id}` : "/achievements";
+      const href = ach ? `/achievements#${ach.id}` : "/achievements";
       return (
         <Button asChild size="sm" variant="outline" className={cn(wide && "w-full sm:w-auto")}>
           <Link href={href}>
             <Award aria-hidden />
-            {ach ? (ach.hidden ? "Hidden achievement" : ach.name) : "View achievement"}
+            {ach?.name ?? "View achievement"}
           </Link>
         </Button>
       );

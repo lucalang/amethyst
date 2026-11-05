@@ -206,8 +206,8 @@ export const TOUR_CHAPTERS: TourChapter[] = [
     eyebrow: "09 · Achievements",
     title: "Milestones",
     accent: "that pay out.",
-    body: "Achievements grant coins, and the big milestones unlock exclusive frames, decorations, badges and titles. Some stay hidden until you discover them.",
-    tags: ["Coin rewards", "Exclusive cosmetics", "Hidden achievements"],
+    body: "Achievements grant coins, and the big milestones unlock exclusive frames, decorations, badges and titles. Every milestone and its reward is visible from the start.",
+    tags: ["Coin rewards", "Exclusive cosmetics", "Visible milestones"],
     link: { href: "/achievements", label: "See achievements" },
   },
   {

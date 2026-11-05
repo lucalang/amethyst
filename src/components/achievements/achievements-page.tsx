@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
-import { Check, Coins, EyeOff, Gift, Loader2, Lock, Sparkles } from "lucide-react";
+import { Check, Coins, Gift, Loader2, Lock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { CatalogEmpty, CatalogSearch } from "@/components/catalog/catalog-search";
 import { PageContainer } from "@/components/layout/app-shell";
@@ -19,7 +19,6 @@ import {
   ACHIEVEMENTS,
   ARCADE_GAME_FILTERS,
   REWARD_FILTERS,
-  isAchievementRevealed,
   matchesRewardFilter,
   type AchievementDefinition,
   type AchievementGroup,
@@ -78,16 +77,12 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
   const visible = ACHIEVEMENTS.filter((definition) => {
     const item = byId.get(definition.id);
     if (!item) return false;
-    const revealed = isAchievementRevealed(definition, item);
     if (filter === "earned" && !item.earnedAt) return false;
     if (filter === "locked" && item.earnedAt) return false;
-    if (filter === "in-progress" && (item.earnedAt || item.progress >= definition.target || !revealed)) return false;
+    if (filter === "in-progress" && (item.earnedAt || item.progress >= definition.target)) return false;
     if (groupFilter !== "all" && groupFilter !== definition.group && groupFilter !== gameOf(definition)) return false;
-    if (!matchesRewardFilter(definition, rewardFilter, revealed)) return false;
+    if (!matchesRewardFilter(definition, rewardFilter)) return false;
     if (match) {
-      if (!revealed) {
-        return match("Hidden achievement", "Secret milestone", BADGE_STYLES[definition.group].label, definition.group);
-      }
       const game = ARCADE_GAME_FILTERS.find((entry) => entry.id === gameOf(definition));
       const rewardTerms = [
         definition.reward.coins > 0 ? `${definition.reward.coins} coins` : null,
@@ -400,15 +395,7 @@ function Chip({
   );
 }
 
-function TileRewardPill({ definition, revealed, rewardGranted }: { definition: Definition; revealed: boolean; rewardGranted: boolean }) {
-  if (!revealed) {
-    return (
-      <span className="mt-2 inline-flex max-w-full items-center gap-1 rounded-md border border-white/[0.07] bg-white/[0.025] px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-        <EyeOff aria-hidden className="size-3 shrink-0" />
-        <span className="truncate">Hidden reward</span>
-      </span>
-    );
-  }
+function TileRewardPill({ definition, rewardGranted }: { definition: Definition; rewardGranted: boolean }) {
   const { coins, items } = definition.reward;
   const firstItem = items[0] ? rewardItemInfo(items[0]) : null;
   const extraCount = items.length > 1 ? items.length - 1 : 0;
@@ -451,12 +438,10 @@ function AchievementTile({
 }) {
   const earned = Boolean(item.earnedAt);
   const rewardGranted = Boolean(item.rewardGrantedAt);
-  const revealed = isAchievementRevealed(definition, item);
   const progress = Math.min(item.progress, definition.target);
   const percent = Math.min(100, (progress / definition.target) * 100);
-  const inProgress = !earned && revealed && progress > 0;
-  const badgeDef = revealed ? definition : { icon: "HelpCircle", group: definition.group };
-  const badge = <AchievementBadge achievement={badgeDef} earned={earned} size={84} />;
+  const inProgress = !earned && progress > 0;
+  const badge = <AchievementBadge achievement={definition} earned={earned} size={84} />;
   return (
     <button
       type="button"
@@ -483,13 +468,13 @@ function AchievementTile({
       ) : badge}
       <span className="mt-1.5 block w-full min-w-0">
         <span className={cn("block text-[13px] leading-snug font-semibold text-balance sm:text-sm", !earned && "text-foreground/85")}>
-          {revealed ? definition.name : "Hidden achievement"}
+          {definition.name}
         </span>
         <span className="mt-1 line-clamp-3 block text-xs leading-[1.45] text-muted-foreground">
-          {revealed ? definition.description : "Keep exploring Amethyst to reveal this milestone."}
+          {definition.description}
         </span>
       </span>
-      <TileRewardPill definition={definition} revealed={revealed} rewardGranted={rewardGranted} />
+      <TileRewardPill definition={definition} rewardGranted={rewardGranted} />
       <span className="mt-auto block w-full pt-2">
         {earned ? (
           <span className="flex flex-col items-center gap-0.5 text-[11px] font-medium text-muted-foreground">
@@ -502,7 +487,7 @@ function AchievementTile({
               {rewardGranted ? "Reward granted" : "Unlocked"}
             </span>
           </span>
-        ) : revealed ? (
+        ) : (
           <>
             <span className="sr-only">Locked. </span>
             <span className="ach-meter block" aria-hidden>
@@ -510,11 +495,6 @@ function AchievementTile({
             </span>
             <span className="mt-1.5 block text-[11px] font-medium text-muted-foreground tabular-nums">{formatProgress(progress, definition.target, definition.unit)}</span>
           </>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-            <Lock aria-hidden className="size-3" />
-            Locked · Hidden goal
-          </span>
         )}
       </span>
     </button>
@@ -541,7 +521,6 @@ function AchievementDetails({
   const [equippedLocal, setEquippedLocal] = useState<Record<string, boolean>>({});
   const earned = Boolean(item?.earnedAt);
   const rewardGranted = Boolean(item?.rewardGrantedAt);
-  const revealed = isAchievementRevealed(definition, item);
   const progress = earned ? definition.target : Math.min(item?.progress ?? 0, definition.target);
   const ratio = progress / definition.target;
   const { emblem: Emblem, label } = BADGE_STYLES[definition.group];
@@ -549,7 +528,6 @@ function AchievementDetails({
   const ringSize = 196;
   const radius = ringSize / 2 - 4;
   const circumference = 2 * Math.PI * radius;
-  const badgeDef = revealed ? definition : { icon: "HelpCircle", group: definition.group };
 
   function isItemEquipped(id: string) {
     if (id in equippedLocal) return equippedLocal[id];
@@ -593,42 +571,36 @@ function AchievementDetails({
               strokeWidth="3"
               strokeLinecap="round"
               strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - (revealed ? ratio : 0))}
+              strokeDashoffset={circumference * (1 - ratio)}
               style={{ stroke: "rgb(var(--ach-glow))", filter: "drop-shadow(0 0 4px rgb(var(--ach-glow) / 0.6))" }}
             />
           </svg>
         ) : null}
-        <AchievementBadge key={definition.id} achievement={badgeDef} earned={earned} size={148} motion="reveal" />
+        <AchievementBadge key={definition.id} achievement={definition} earned={earned} size={148} motion="reveal" />
       </div>
       ) : (
         <div className="flex justify-center border-b border-border bg-muted/20 py-6">
-          <AchievementBadge key={definition.id} achievement={badgeDef} earned={earned} size={120} />
+          <AchievementBadge key={definition.id} achievement={definition} earned={earned} size={120} />
         </div>
       )}
       <div className="px-5 pt-5 pb-4">
         <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-muted-foreground">
           <Emblem aria-hidden className="size-3.5 text-[rgb(var(--ach-glow))]" />
           {label}
-          {revealed && game ? <span className="font-normal">· {game.title}</span> : null}
-          {definition.hidden ? (
-            <span className="rounded-full border border-white/[0.12] bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {revealed ? "Secret milestone" : "Hidden"}
-            </span>
-          ) : null}
+          {game ? <span className="font-normal">· {game.title}</span> : null}
         </p>
         <DialogTitle className="mt-2 text-xl leading-tight font-bold">
-          {revealed ? definition.name : "Hidden achievement"}
+          {definition.name}
         </DialogTitle>
         <DialogDescription className="mt-1.5 text-sm leading-6">
-          {revealed ? definition.description : "Keep exploring Amethyst to reveal this hidden milestone and its exclusive reward."}
+          {definition.description}
         </DialogDescription>
 
         <dl className="mt-4 grid gap-3 rounded-md border border-white/[0.08] bg-white/[0.02] p-3.5 text-sm">
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-muted-foreground">Goal</dt>
-            <dd className="text-right font-medium">{revealed ? formatGoal(definition.target, definition.unit) : "Hidden until discovered"}</dd>
+            <dd className="text-right font-medium">{formatGoal(definition.target, definition.unit)}</dd>
           </div>
-          {revealed ? (
             <div>
               <div className="flex items-baseline justify-between gap-4">
                 <dt className="text-muted-foreground">Progress</dt>
@@ -645,7 +617,6 @@ function AchievementDetails({
                 <span style={{ width: `${ratio * 100}%` }} />
               </div>
             </div>
-          ) : null}
           <div className="flex items-baseline justify-between gap-4">
             <dt className="text-muted-foreground">Status</dt>
             <dd className="text-right font-medium" suppressHydrationWarning>
@@ -682,12 +653,6 @@ function AchievementDetails({
             )}
           </div>
 
-          {!revealed ? (
-            <p className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
-              <EyeOff aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-              Unlock this hidden achievement to reveal its exclusive reward.
-            </p>
-          ) : (
             <ul className="mt-3 space-y-2.5">
               {definition.reward.coins > 0 ? (
                 <li className="flex items-center gap-3 rounded-md border border-white/[0.07] bg-white/[0.02] p-2.5">
@@ -750,11 +715,10 @@ function AchievementDetails({
                 );
               })}
             </ul>
-          )}
         </div>
       </div>
       <div className="flex flex-col-reverse gap-2 border-t border-white/[0.08] px-5 py-4 sm:flex-row sm:justify-end">
-        {earned && revealed ? (
+        {earned ? (
           <Button type="button" variant="outline" onClick={onReplay}>
             <Sparkles aria-hidden /> Replay celebration
           </Button>

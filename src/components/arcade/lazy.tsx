@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
-import type { SudokuDailyResult, SudokuDifficulty, SudokuSave } from "@/lib/arcade";
+import type { SudokuDailyResult, SudokuSave } from "@/lib/arcade";
+import type { SudokuSize } from "@/lib/sudoku";
 import type { GameLook } from "@/lib/game-cosmetics";
 import { ArcadeProvider } from "./game-shell";
 
@@ -37,10 +38,10 @@ export const LazyFruit = wrap(dynamic<RecordProps>(() => import("./game-fruit"),
 export const LazyStacker = wrap(dynamic<RecordProps>(() => import("./game-stacker"), { ssr: false, loading: Loading }));
 export const LazySudoku = wrap(
   dynamic<{
-    regular: SudokuSave | null;
+    regular: Partial<Record<SudokuSize, SudokuSave | null>>;
     daily: SudokuSave | null;
     dailyResult: SudokuDailyResult | null;
-    records: Partial<Record<SudokuDifficulty, number>>;
+    records: Partial<Record<string, number>>;
   }>(() => import("./game-sudoku"), {
     ssr: false,
     loading: Loading,

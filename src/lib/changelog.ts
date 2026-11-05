@@ -49,6 +49,75 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-arcade-streaks",
+    date: "2026-11-05",
+    title: "Daily Arcade streaks",
+    intro: "Every minigame now counts the UTC days in a row you play it.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Play streaks", text: "Each game keeps one current and best streak, whatever mode, size or daily challenge you play." },
+      { kind: "new", feature: "Streak overview", text: "Arcade cabinets and every game's header show your streak, today's status and the next 00:00 UTC reset." },
+      { kind: "new", feature: "Streak recovery", text: "Missed a single day? Play that game the next day, then spend coins to bring the streak back." },
+    ],
+    details: { new: [{
+      title: "Keep the flame going",
+      body: "A day counts when a game round actually starts, or when a Sudoku move or note is saved. Opening a page does not count. Playing again on a later UTC day extends the streak, and missing a day ends it, while your best streak is kept. If you missed exactly one day, play that game the following day and you can recover it once. The price is 25 coins plus 5 per streak day, up to 300 coins, and it is shown before you confirm. Streaks pay no coins and don't change rewards, records or leaderboards. Streak days are rebuilt from the runs and Sudoku solves already on record, so a streak can't be longer than you really played.",
+      where: "Arcade → a cabinet's streak line, or the flame button in any game",
+      link: { href: "/arcade", label: "Open the Arcade" },
+    }] },
+  },
+  {
+    id: "2026-11-05-sudoku-sizes",
+    date: "2026-11-05",
+    title: "Sudoku in three sizes",
+    intro: "Choose Mini 4×4, Normal 9×9 or XXL 16×16 in the Arcade.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Puzzle sizes", text: "Mini and XXL join Normal, with Easy, Medium and Hard puzzles at every size." },
+      { kind: "improved", feature: "Separate progress", text: "Each size keeps its own unfinished puzzle, pencil notes and fastest times." },
+      { kind: "improved", feature: "Size-aware rankings", text: "Leaderboards separate each size and difficulty. Daily puzzles remain Normal." },
+    ],
+    details: { new: [{
+      title: "From Mini to XXL",
+      body: "Choose a size before starting a regular puzzle. Mini uses 1–4 and 2×2 regions; Normal keeps 1–9 and 3×3 regions; XXL uses 1–9 plus A–G and 4×4 regions. XXL supports letter keys, full pencil notes and a scrollable board on narrow screens. Every generated puzzle has one solution. Mini and XXL difficulty tiers increase the number of blanks; Normal retains its existing difficulty ratings. Existing saves and records stay with Normal, and daily puzzle identities and results are unchanged. Hints, server-verified completion, coins and achievements work at every size.",
+      link: { href: "/arcade/sudoku", label: "Play Sudoku" },
+    }] },
+  },
+  {
+    id: "2026-11-05-snake-daily",
+    date: "2026-11-05",
+    title: "Snake Daily Challenge",
+    intro: "A shared Snake challenge every UTC day, alongside your regular setup.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Daily Snake", text: "Play the same daily rules, board and seeded fruit sequence as everyone else." },
+      { kind: "new", feature: "Daily records", text: "Keep a separate daily best and compete on daily leaderboards." },
+      { kind: "improved", feature: "Midnight continuity", text: "Finish a run for its original date after midnight; regular setup, records and coin rules are unchanged." },
+    ],
+    details: { new: [{
+      title: "One challenge, every day",
+      body: "Choose Daily in Snake to see the challenge date, fixed rules, daily best and countdown to the next 00:00 UTC reset. Daily rounds use the same seeded board and spawned items for everyone. A run started before midnight keeps its original challenge date, while the next run uses the new day. Regular play retains your saved setup and separate records. Daily runs use the existing verification, achievements and coin eligibility without extra rewards.",
+      link: { href: "/arcade/snake", label: "Play Snake Daily" },
+    }] },
+  },
+  {
+    id: "2026-11-05-visible-achievements",
+    date: "2026-11-05",
+    title: "Every achievement in view",
+    intro: "All achievements are visible in the Trophy Room before you earn them.",
+    icon: "trophy",
+    highlights: [
+      { kind: "improved", feature: "Trophy Room", text: "See every achievement's real name, description, icon, goal, progress and reward from the start." },
+      { kind: "improved", feature: "Reward discovery", text: "Search all achievements and rewards, filter by reward type, and follow reward links directly to their achievement." },
+      { kind: "improved", feature: "Same milestones", text: "Earning requirements and one-time rewards are unchanged; Vault codes and secret cosmetics remain secret." },
+    ],
+    details: { improved: [{
+      title: "No concealed milestones",
+      body: "Light Sculptor and Seal Breaker now show their full details even at zero progress, just like every other achievement. Their rewards appear in search and reward filters, and reward links open the corresponding achievement. Progress, earning conditions, earned history, reward grants and celebrations are unchanged.",
+      link: { href: "/achievements", label: "Open the Trophy Room" },
+    }] },
+  },
+  {
     id: "2026-11-05-vault-redemption-fix",
     date: "2026-11-05",
     title: "Vault redemption fixes",

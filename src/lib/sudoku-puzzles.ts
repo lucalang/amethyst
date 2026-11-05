@@ -2,6 +2,8 @@ import "server-only";
 import { generate, getUniqueSolution, type Board, type Difficulty } from "sudoku-core";
 import { SUDOKU_CELLS, SUDOKU_DAILY_DIFFICULTY, type SudokuDifficulty } from "@/lib/arcade";
 import { seedFrom } from "@/lib/arcade-daily";
+import { Sudoku } from "nmx.sudokugen.library";
+import { SUDOKU_CONFIG, sudokuSymbol, type SudokuSize } from "@/lib/sudoku";
 
 /** sudoku-core levels to try, first choice first (a lower level is the fallback if generation runs out of time). */
 const LEVELS: Record<SudokuDifficulty, Difficulty[]> = {
@@ -13,7 +15,22 @@ const LEVELS: Record<SudokuDifficulty, Difficulty[]> = {
 const toDigits = (board: Board | number[]) => board.map((cell) => cell ?? 0).join("");
 
 /** A fresh puzzle with exactly one solution, rated at the requested difficulty by sudoku-core. */
-export function newPuzzle(difficulty: SudokuDifficulty) {
+export function newPuzzle(difficulty: SudokuDifficulty, size: SudokuSize = "normal") {
+  if (size !== "normal") {
+    const config = SUDOKU_CONFIG[size];
+    const blanks = size === "mini" ? { easy: 6, medium: 8, hard: 10 } : { easy: 96, medium: 128, hard: 160 };
+    try {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const generated = Sudoku.create(config.region, blanks[difficulty]);
+        if (generated.removed !== blanks[difficulty]) continue;
+        const verified = Sudoku.solve(generated.puzzle);
+        return { puzzle: generated.puzzle.map(sudokuSymbol).join(""), solution: verified.solution.map(sudokuSymbol).join("") };
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
   for (const level of LEVELS[difficulty]) {
     try {
       const puzzle = generate(level, { timeoutMs: 8_000 });

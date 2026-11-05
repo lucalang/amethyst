@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isRecentDailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
 
 /** Snake setup registries. Ids are stored in settings and record keys: never rename them. */
 
@@ -175,6 +176,18 @@ export type SnakeSetup = z.infer<typeof snakeSetupSchema>;
 
 export const DEFAULT_SNAKE_SETUP: SnakeSetup = { mode: "classic", fruit: "apple", fruitCount: 1, size: "medium", speed: "normal", blend: [] };
 
+export function dailySnakeSetup(date: string): SnakeSetup {
+  const random = seededRandom(seedFrom(`snake:setup:${date}`));
+  const modes = ["classic", "obstacles", "portal", "twin", "cheese", "ghost", "wall"] as const;
+  return {
+    ...DEFAULT_SNAKE_SETUP,
+    mode: modes[Math.floor(random() * modes.length)],
+    size: random() < 0.5 ? "small" : "medium",
+    fruitCount: 1 + Math.floor(random() * 3),
+    fruit: SALAD_FRUITS[Math.floor(random() * SALAD_FRUITS.length)],
+  };
+}
+
 /** The rule set a setup plays with, in registry order (empty = Classic). */
 export function activeModes(setup: Pick<SnakeSetup, "mode" | "blend">): BlendMode[] {
   if (setup.mode === "classic") return [];
@@ -201,6 +214,7 @@ export function snakeVariant(setup: SnakeSetup): string {
 
 export function isSnakeVariant(value: string): boolean {
   if (value === "") return true;
+  if (value.startsWith("daily-")) return isRecentDailyVariant(value);
   const parts = value.split("-");
   if ((parts.length !== 3 && parts.length !== 4) || !/^\d{1,2}$/.test(parts[2])) return false;
   const [key, size, count, speed = "normal"] = parts;

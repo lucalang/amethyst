@@ -160,9 +160,9 @@ export type Database = {
               Relationships: [{ foreignKeyName: "coin_wallets_user_id_fkey"; columns: ["user_id"]; isOneToOne: true; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "coin_transactions": {
-              Row: { id: number; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots" | "achievement"; reference: string; details: NonNullable<Json>; created_at: string }
-              Insert: { id?: never; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots" | "achievement"; reference: string; details?: NonNullable<Json>; created_at?: string }
-              Update: { id?: never; user_id?: string; amount?: number; balance_after?: number; kind?: "reward" | "purchase" | "code" | "slots" | "achievement"; reference?: string; details?: NonNullable<Json>; created_at?: string }
+              Row: { id: number; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots" | "achievement" | "streak"; reference: string; details: NonNullable<Json>; created_at: string }
+              Insert: { id?: never; user_id: string; amount: number; balance_after: number; kind: "reward" | "purchase" | "code" | "slots" | "achievement" | "streak"; reference: string; details?: NonNullable<Json>; created_at?: string }
+              Update: { id?: never; user_id?: string; amount?: number; balance_after?: number; kind?: "reward" | "purchase" | "code" | "slots" | "achievement" | "streak"; reference?: string; details?: NonNullable<Json>; created_at?: string }
               Relationships: [{ foreignKeyName: "coin_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "cosmetic_items": {
@@ -223,9 +223,9 @@ export type Database = {
               Relationships: []
             },
             "sudoku_games": {
-              Row: { user_id: string; id: string; slot: "regular" | "daily"; puzzle_date: string | null; hints: number; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries: string; notes: number[]; elapsed_ms: number; completed_at: string | null; started_at: string; updated_at: string; reward_eligible: boolean }
-              Insert: { user_id?: string; id?: string; slot?: "regular" | "daily"; puzzle_date?: string | null; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
-              Update: { user_id?: string; id?: string; slot?: "regular" | "daily"; puzzle_date?: string | null; difficulty?: "easy" | "medium" | "hard"; puzzle?: string; solution?: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
+              Row: { user_id: string; id: string; size: "mini" | "normal" | "xxl"; slot: "regular" | "daily"; puzzle_date: string | null; hints: number; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries: string; notes: number[]; elapsed_ms: number; completed_at: string | null; started_at: string; updated_at: string; reward_eligible: boolean }
+              Insert: { user_id?: string; id?: string; size?: "mini" | "normal" | "xxl"; slot?: "regular" | "daily"; puzzle_date?: string | null; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
+              Update: { user_id?: string; id?: string; size?: "mini" | "normal" | "xxl"; slot?: "regular" | "daily"; puzzle_date?: string | null; difficulty?: "easy" | "medium" | "hard"; puzzle?: string; solution?: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
               Relationships: [{ foreignKeyName: "sudoku_games_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "sudoku_daily_results": {
@@ -600,6 +600,12 @@ isOneToOne: false
                            },
 "purchase_cosmetic":
 { Args: { "p_item": string,"p_expected_price": number }; Returns: Json
+                           },
+"arcade_streaks":
+{ Args: Record<PropertyKey, never>; Returns: { game: string; current_streak: number; best_streak: number; played_today: boolean; last_played: string; recover_date: string | null; recover_streak: number | null; recover_cost: number | null; recover_ready: boolean }[]
+                           },
+"recover_arcade_streak":
+{ Args: { "p_game": string,"p_expected_cost": number }; Returns: Json
                            },
 "redeem_secret_code":
 { Args: { "p_code_hash": string }; Returns: Json

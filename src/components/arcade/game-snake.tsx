@@ -8,10 +8,12 @@ import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
 import { formatDuration } from "@/lib/arcade";
-import { SNAKE_SIZES, snakeVariant, type SnakeSetup } from "@/lib/snake";
+import { dailyVariant } from "@/lib/arcade-daily";
+import { SNAKE_MODES, SNAKE_SIZES, dailySnakeSetup, snakeVariant, type SnakeSetup } from "@/lib/snake";
 import { swipeDirection } from "./engine";
 import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import { CoinReward, useArcadeRun } from "./coin-reward";
+import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { LAYER_HUES, START_LENGTH, createSnake, sameSetup, type Direction, type OverReason, type Phase, type SnakeGame, type SnakeStatus } from "./snake-engine";
 import { ModeIcon, SnakeSetupPanel, describeSetup, setupTitle } from "./snake-setup";
 import { snakeTheme } from "./snake-look";
@@ -35,6 +37,9 @@ export default function GameSnake({ records: initialRecords }: { records: Record
   const initialSetup = useRef(setup);
   const pendingSave = useRef<{ timer: number; setup: SnakeSetup } | null>(null);
   const [round, setRound] = useState<SnakeSetup>(setup);
+  const [mode, setMode] = useState<"regular" | "daily">("regular");
+  const [roundDate, setRoundDate] = useState<string | null>(null);
+  const today = useDailyDate();
   const [phase, setPhase] = useState<Phase>("ready");
   const [score, setScore] = useState(0);
   const [seconds, setSeconds] = useState<number | null>(null);
@@ -44,9 +49,10 @@ export default function GameSnake({ records: initialRecords }: { records: Record
 
   useGameAchievementTracking("snake", phase);
 
-  useEffect(() => {
-    if (phase === "playing") beginRun(snakeVariant(gameRef.current?.setup ?? round));
-  }, [phase, beginRun, round]);
+  const changePhase = useEffectEvent((next: Phase) => {
+    setPhase(next);
+    if (next === "playing" && gameRef.current) beginRun(gameRef.current.variant);
+  });
 
   useEffect(() => {
     live.current = { play, effects, theme };
@@ -54,7 +60,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
 
   const finish = useEffectEvent((final: number, why: OverReason) => {
     setReason(why);
-    submit(final, { variant: snakeVariant(round) });
+    submit(final, { variant: gameRef.current?.variant ?? (roundDate ? dailyVariant(roundDate) : snakeVariant(round)) });
     finishRun(final, { length: final + START_LENGTH });
     sendAchievementEvent({ type: "run_finished", game: "snake", length: final + START_LENGTH });
   });
@@ -63,17 +69,20 @@ export default function GameSnake({ records: initialRecords }: { records: Record
     const canvas = canvasRef.current;
     if (!canvas) return;
     const game = createSnake(canvas, initialSetup.current, {
-      onPhase: setPhase,
+      onPhase: (next) => changePhase(next),
       onScore: setScore,
       onTime: setSeconds,
-      onRound: setRound,
+      onRound: (next, date) => {
+        setRound(next);
+        setRoundDate(date);
+      },
       onStatus: setStatus,
       onOver: (final, why) => finish(final, why),
       live: () => live.current,
     });
     gameRef.current = game;
     return () => {
-      submit(game.score, { keepalive: true, variant: snakeVariant(game.setup) });
+      submit(game.score, { keepalive: true, variant: game.variant });
       finishRun(game.score, { length: game.score + START_LENGTH }, { keepalive: true });
       if (game.score > 0) sendAchievementEvent({ type: "run_progress", game: "snake", length: game.score + START_LENGTH });
       game.destroy();
@@ -82,8 +91,8 @@ export default function GameSnake({ records: initialRecords }: { records: Record
   }, [submit, finishRun]);
 
   useEffect(() => {
-    gameRef.current?.configure(setup);
-  }, [setup]);
+    gameRef.current?.configure(mode === "daily" ? dailySnakeSetup(today) : setup, mode === "daily" ? today : null);
+  }, [setup, mode, today]);
 
   // A setup change made just before leaving is still saved.
   useEffect(() => {
@@ -119,7 +128,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
     if (game.phase === "playing" || game.phase === "paused") {
       // A round abandoned by restarting still counts toward records and coins.
       const final = game.score;
-      submit(final, { variant: snakeVariant(game.setup) });
+      submit(final, { variant: game.variant });
       finishRun(final, { length: final + START_LENGTH }, { announce: true });
       if (final > 0) sendAchievementEvent({ type: "run_progress", game: "snake", length: final + START_LENGTH });
     }
@@ -133,6 +142,14 @@ export default function GameSnake({ records: initialRecords }: { records: Record
     if (game.phase === "playing") game.pause();
     else game.start();
     canvasRef.current?.focus({ preventScroll: true });
+  }
+
+  function switchMode(next: "regular" | "daily") {
+    const game = gameRef.current;
+    if (!game || next === mode || game.phase === "playing" || game.phase === "paused") return;
+    setMode(next);
+    game.configure(next === "daily" ? dailySnakeSetup(today) : setup, next === "daily" ? today : null);
+    game.restart();
   }
 
   useGameKeys((event) => {
@@ -203,10 +220,11 @@ export default function GameSnake({ records: initialRecords }: { records: Record
   };
 
   const title = setupTitle(round);
-  const best = records[snakeVariant(round)] ?? 0;
+  const variant = roundDate ? dailyVariant(roundDate) : snakeVariant(round);
+  const best = records[variant] ?? 0;
   const shownBest = Math.max(best, score);
   const inRound = phase === "playing" || phase === "paused";
-  const changed = !sameSetup(setup, round);
+  const changed = !roundDate && !sameSetup(setup, round);
   // The result card waits for the crash animation before appearing.
   const overlayMotion = effects === "off" ? undefined : { animationDelay: phase === "over" ? "260ms" : "0ms", animationFillMode: "both" as const };
   const chip = "inline-flex h-7 items-center gap-1.5 rounded-full border-2 px-2.5 text-xs font-semibold tabular-nums";
@@ -215,12 +233,12 @@ export default function GameSnake({ records: initialRecords }: { records: Record
     <GameShell
       game="snake"
       title="Snake"
-      leaderboard={snakeVariant(round)}
+      leaderboard={variant}
       active={inRound}
       stats={
         <>
           <Stat label="Score" value={score} />
-          <Stat label="Best" value={shownBest} highlight={score > 0 && score >= best} />
+          <Stat label={roundDate ? "Daily best" : "Regular best"} value={shownBest} highlight={score > 0 && score >= best} />
           {seconds !== null ? <Stat label="Time" value={formatDuration(seconds)} highlight={inRound && seconds <= 10} /> : null}
           <Stat
             label="Mode"
@@ -243,6 +261,21 @@ export default function GameSnake({ records: initialRecords }: { records: Record
         ) : null
       }
     >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div role="group" aria-label="Snake play mode" className="lb-boards [--cab:#ffd54a]">
+          {(["regular", "daily"] as const).map((option) => (
+            <button key={option} type="button" className="lb-board-pick disabled:opacity-50" aria-pressed={mode === option} disabled={inRound} onClick={() => switchMode(option)}>
+              {option === "daily" ? "Daily" : "Regular"}
+            </button>
+          ))}
+        </div>
+        {roundDate ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>Daily · {formatDailyDate(roundDate)} <span className="tabular-nums">({roundDate} UTC)</span></span>
+            <span>Reset 00:00 UTC · <DailyCountdown /></span>
+          </div>
+        ) : null}
+      </div>
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
         <div className="flex min-w-0 flex-col items-center gap-3">
           {status.layer !== null || status.scrambled || status.ghost ? (
@@ -309,7 +342,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
                         </Button>
                         <Button size="sm" variant="outline" className="lg:hidden" onClick={() => panelRef.current?.scrollIntoView({ behavior: effects === "off" ? "auto" : "smooth", block: "start" })}>
                           <Settings2 aria-hidden />
-                          Setup
+                          {roundDate ? "Rules" : "Setup"}
                         </Button>
                       </>
                     }
@@ -360,7 +393,24 @@ export default function GameSnake({ records: initialRecords }: { records: Record
           </div>
         </div>
         <div ref={panelRef} className="scroll-mt-4">
-          <SnakeSetupPanel setup={setup} onChange={changeSetup} locked={inRound} waiting={phase === "over"} records={records} />
+          {roundDate ? (
+            <section aria-labelledby="snake-daily-title" className="flex flex-col gap-3 border-t-2 border-border py-3.5">
+              <h2 id="snake-daily-title" className="text-base font-semibold">Daily challenge · {formatDailyDate(roundDate)}</h2>
+              <p className="text-sm text-pretty">{describeSetup(round)}</p>
+              <p className="text-sm text-muted-foreground">{SNAKE_MODES[round.mode].tip}. Each fruit scores one point and increases your speed.</p>
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span>Daily best · {roundDate}</span>
+                <span className="font-semibold tabular-nums">{shownBest}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>Regular best · {setupTitle(setup)}</span>
+                <span className="tabular-nums">{records[snakeVariant(setup)] ?? 0}</span>
+              </div>
+              {roundDate !== today ? <p className="text-xs text-muted-foreground">This run counts for {roundDate}. Your next run uses today&apos;s challenge.</p> : null}
+            </section>
+          ) : (
+            <SnakeSetupPanel setup={setup} onChange={changeSetup} locked={inRound} waiting={phase === "over"} records={records} />
+          )}
         </div>
       </div>
     </GameShell>

@@ -55,7 +55,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
   const fast = config.order === "fast";
   const daily = board.startsWith("daily-");
   const days = config.daily ? dailyBoards() : [];
-  const snakeParts = config.setups ? parseSnakeBoard(board) : null;
+  const snakeParts = config.setups && !daily ? parseSnakeBoard(board) : null;
   const pickSnake = (change: Partial<SnakeBoardParts>) => snakeParts && setBoard(snakeBoardOf({ ...snakeParts, ...change }));
 
   useEffect(() => {
@@ -149,6 +149,9 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
               Your setup
             </Button>
           ) : null}
+          <button type="button" className="lb-board-pick" aria-pressed={false} onClick={() => setBoard(days[0].id)}>
+            Daily
+          </button>
           {snakeBoards.length > 0 ? (
             <label className="flex flex-col gap-1">
               Ranked setups
@@ -168,7 +171,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
       ) : (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div role="group" aria-label="Board" className="lb-boards">
-            {config.boards.map((option) => (
+            {(config.setups ? [{ id: snakeBoard, label: "Your setup" }] : config.boards).map((option) => (
               <button key={option.id || "main"} type="button" className="lb-board-pick" aria-pressed={board === option.id} onClick={() => setBoard(option.id)}>
                 {option.label}
               </button>

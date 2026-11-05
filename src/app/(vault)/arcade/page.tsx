@@ -6,7 +6,8 @@ import { ArcadeGames } from "@/components/arcade/arcade-games";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { Button } from "@/components/ui/button";
-import { loadArcadeRecords } from "@/lib/data/arcade";
+import { dailyDate } from "@/lib/arcade-daily";
+import { loadArcadeRecords, loadArcadeStreaks } from "@/lib/data/arcade";
 import { loadCoinBalance } from "@/lib/data/shop";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -14,7 +15,11 @@ export const metadata: Metadata = { title: "Arcade" };
 
 export default async function ArcadePage() {
   const ctx = await requireUser();
-  const [records, balance] = await Promise.all([loadArcadeRecords(ctx), loadCoinBalance(ctx).catch(() => null)]);
+  const [records, balance, streaks] = await Promise.all([
+    loadArcadeRecords(ctx),
+    loadCoinBalance(ctx).catch(() => null),
+    loadArcadeStreaks(ctx).catch(() => null),
+  ]);
 
   return (
     <EntranceScope>
@@ -82,7 +87,7 @@ export default async function ArcadePage() {
             <ArrowRight aria-hidden className="size-3.5" />
           </span>
         </Link>
-        <ArcadeGames records={records} />
+        <ArcadeGames records={records} streaks={streaks ? { date: dailyDate(), streaks } : null} />
       </PageContainer>
     </EntranceScope>
   );

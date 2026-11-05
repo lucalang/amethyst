@@ -5,6 +5,7 @@ import { Coins, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { RunReward, ScoreGame } from "@/lib/arcade";
+import { announcePlayed } from "@/lib/arcade-streaks";
 import { cn } from "@/lib/utils";
 
 export type CoinState =
@@ -35,7 +36,10 @@ export function useArcadeRun(game: ScoreGame) {
     latest.current += 1;
     setCoins({ status: "idle" });
     run.current = apiFetch<{ runId: string }>("/api/arcade/runs", { method: "POST", json: { game, board } })
-      .then((body) => body.runId)
+      .then((body) => {
+        announcePlayed();
+        return body.runId;
+      })
       .catch((error: unknown) => {
         if (error instanceof ApiError && error.status === 429) limited.current = true;
         return null;

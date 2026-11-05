@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
 import { isSnakeVariant } from "@/lib/snake";
+import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
 export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker"] as const;
@@ -24,7 +25,7 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "2048", title: "2048", href: "/arcade/2048", blurb: "Slide matching tiles together and build up to 2048.", recordLabel: "Best score" },
   { id: "flutter", title: "Flutter", href: "/arcade/flutter", blurb: "Tap to keep a little gem-bird aloft through the crystal pillars.", recordLabel: "Best score" },
   { id: "snake", title: "Snake", href: "/arcade/snake", blurb: "Eat, grow longer and never bite your own tail.", recordLabel: "Best score" },
-  { id: "sudoku", title: "Sudoku", href: "/arcade/sudoku", blurb: "Classic 9×9 logic puzzles in three difficulties. Pick up where you left off.", recordLabel: "Fastest times" },
+  { id: "sudoku", title: "Sudoku", href: "/arcade/sudoku", blurb: "Mini 4×4, Normal 9×9 and XXL 16×16 logic puzzles. Pick up where you left off.", recordLabel: "Fastest times" },
   { id: "fruit-slice", title: "Fruit Slice", href: "/arcade/fruit-slice", blurb: "Swipe through flying fruit, chain combos and steer clear of bombs.", recordLabel: "Best score" },
   { id: "stacker", title: "Tower Stacker", href: "/arcade/stacker", blurb: "Drop each sliding block right on top. Only the overlap stays.", recordLabel: "Highest tower" },
 ];
@@ -33,7 +34,7 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
  * Records keyed by game id (the main record), by `sudoku:<difficulty>` for Sudoku times (seconds) and
  * by `<game>:<variant>` for other variants (Snake setups, 2048 board sizes, daily challenges).
  */
-export type ArcadeRecords = Partial<Record<ScoreGame | `sudoku:${SudokuDifficulty}` | `${ScoreGame}:${string}`, number>>;
+export type ArcadeRecords = Partial<Record<ScoreGame | `sudoku:${string}` | `${ScoreGame}:${string}`, number>>;
 
 /** 2048 board sizes with their own records; the classic 4×4 keeps the main record (""). */
 export const G2048_SIZE_VARIANTS = ["3x3", "5x5"] as const;
@@ -119,10 +120,10 @@ export function toRunReward(value: unknown): RunReward {
     minSeconds: number("minSeconds"),
   };
 }
-const board = z.string().regex(/^[0-9]{81}$/, "Boards have 81 digits.");
+const board = z.string().regex(/^[0-9A-G]+$/).min(16).max(256);
 
 export const sudokuStartSchema = z.union([
-  z.object({ difficulty: z.enum(SUDOKU_DIFFICULTIES) }).strict(),
+  z.object({ difficulty: z.enum(SUDOKU_DIFFICULTIES), size: z.enum(SUDOKU_SIZES).default("normal") }).strict(),
   /** Today's daily puzzle; `replace` confirms dropping an unfinished puzzle from an earlier day. */
   z.object({ daily: z.literal(true), replace: z.boolean().optional() }).strict(),
 ]);
@@ -130,12 +131,14 @@ export const sudokuStartSchema = z.union([
 export const sudokuHintSchema = z
   .object({
     id: z.uuid(),
-    cell: z.number().int().min(0).max(SUDOKU_CELLS - 1),
+    size: z.enum(SUDOKU_SIZES).default("normal"),
+    cell: z.number().int().min(0).max(255),
     entries: board,
-    notes: z.array(z.number().int().min(0).max(511)).length(SUDOKU_CELLS),
+    notes: z.array(z.number().int().min(0).max(65535)).min(16).max(256),
     elapsedMs: z.number().int().min(0).max(2_000_000_000),
   })
-  .strict();
+  .strict()
+  .refine(value => sudokuProgressValid(value.size, value.entries, value.notes) && value.cell < value.entries.length, "Invalid board or hint cell for this size.");
 
 /** The daily puzzle's fixed difficulty. */
 export const SUDOKU_DAILY_DIFFICULTY: SudokuDifficulty = "medium";
@@ -143,16 +146,19 @@ export const SUDOKU_DAILY_DIFFICULTY: SudokuDifficulty = "medium";
 export const sudokuSaveSchema = z
   .object({
     id: z.uuid(),
+    size: z.enum(SUDOKU_SIZES).default("normal"),
     entries: board,
-    notes: z.array(z.number().int().min(0).max(511)).length(SUDOKU_CELLS),
+    notes: z.array(z.number().int().min(0).max(65535)).min(16).max(256),
     elapsedMs: z.number().int().min(0).max(2_000_000_000),
     complete: z.boolean().optional(),
   })
-  .strict();
+  .strict()
+  .refine(value => sudokuProgressValid(value.size, value.entries, value.notes), "Invalid board or notes for this size.");
 
 /** A saved puzzle as the client sees it (the solution stays on the server). */
 export type SudokuSave = {
   id: string;
+  size: SudokuSize;
   difficulty: SudokuDifficulty;
   puzzle: string;
   entries: string;
