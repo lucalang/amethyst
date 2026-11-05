@@ -406,7 +406,7 @@ export default function GameFlutter({ records: initialRecords }: { records: Reco
   useGameAchievementTracking("flutter", phase);
 
   useEffect(() => {
-    if (phase === "playing") beginRun();
+    if (phase === "playing") beginRun(gameRef.current?.runDate ? dailyVariant(gameRef.current.runDate) : "");
   }, [phase, beginRun]);
 
   useEffect(() => {
@@ -499,6 +499,7 @@ export default function GameFlutter({ records: initialRecords }: { records: Reco
     <GameShell
       game="flutter"
       title="Flutter"
+      leaderboard={daily ? dailyVariant(shownDate) : ""}
       active={active}
       stats={
         <>

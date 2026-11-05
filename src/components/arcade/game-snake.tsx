@@ -45,8 +45,8 @@ export default function GameSnake({ records: initialRecords }: { records: Record
   useGameAchievementTracking("snake", phase);
 
   useEffect(() => {
-    if (phase === "playing") beginRun();
-  }, [phase, beginRun]);
+    if (phase === "playing") beginRun(snakeVariant(gameRef.current?.setup ?? round));
+  }, [phase, beginRun, round]);
 
   useEffect(() => {
     live.current = { play, effects, theme };
@@ -215,6 +215,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
     <GameShell
       game="snake"
       title="Snake"
+      leaderboard={snakeVariant(round)}
       active={inRound}
       stats={
         <>

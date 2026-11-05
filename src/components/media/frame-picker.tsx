@@ -115,7 +115,7 @@ export function FramePicker({
           role="radiogroup"
           aria-labelledby={`${id}-label`}
           aria-describedby={`${id}-hint`}
-          className="grid max-h-[min(24rem,48dvh)] grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2 overflow-y-auto overscroll-contain rounded-md p-0.5 pr-1.5"
+          className="grid auto-rows-max max-h-[min(24rem,48dvh)] grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2 overflow-y-auto overscroll-contain rounded-md p-0.5 pr-1.5"
         >
           {listed.map((option) => {
             const checked = value === option.value;
@@ -132,7 +132,7 @@ export function FramePicker({
                 )}
               >
                 <input type="radio" name={`${id}-choice`} value={option.value} checked={checked} disabled={disabled} onChange={() => onChange(option.value)} className="sr-only" />
-                <FramedCover frame={option.frame} coverUrl={coverUrl} coverShape={coverShape} title={title} className={coverShape === "square" ? "w-16" : "w-14"} sizes="auto, 64px" />
+                <FramedCover frame={option.frame} coverUrl={coverUrl} coverShape={coverShape} title={title} className="w-20 shrink-0" sizes="auto, 80px" />
                 <span className="line-clamp-2 leading-4">{option.label}</span>
                 {checked ? (
                   <span aria-hidden className="absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-amethyst text-amethyst-foreground">

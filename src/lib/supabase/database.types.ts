@@ -556,7 +556,13 @@ isOneToOne: false
 { Args: { "p_event": string,"p_payload"?: Json }; Returns: Json
                            },
 "start_arcade_run":
-{ Args: { "p_game": string }; Returns: string
+{ Args: { "p_game": string,"p_board"?: string | null }; Returns: string
+                           },
+"arcade_leaderboard":
+{ Args: { "p_game": string,"p_board": string,"p_limit"?: number,"p_puzzle"?: string | null }; Returns: Json
+                           },
+"arcade_leaderboard_boards":
+{ Args: { "p_game": string }; Returns: { board: string; players: number }[]
                            },
 "finish_arcade_run":
 { Args: { "p_run": string,"p_score": number,"p_metrics"?: Json }; Returns: Json

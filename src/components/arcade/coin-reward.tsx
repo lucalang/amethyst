@@ -17,8 +17,8 @@ export type CoinState =
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * One coin-earning run per round of a score game. `begin` asks the server to start the clock
- * (repeat calls during a run do nothing); `finish` reports the score once and the server decides
+ * One coin-earning run per round of a score game. `begin` asks the server to start the clock on a
+ * leaderboard board (repeat calls during a run do nothing); `finish` reports the score once and the server decides
  * the payout. Finishing again, retrying or reloading never pays twice: the server answers with
  * the original result. Starting a run is quiet: if it fails, the game plays on without coins.
  */
@@ -29,12 +29,12 @@ export function useArcadeRun(game: ScoreGame) {
   const latest = useRef(0);
   const [coins, setCoins] = useState<CoinState>({ status: "idle" });
 
-  const begin = useCallback(() => {
+  const begin = useCallback((board: string) => {
     if (run.current) return;
     limited.current = false;
     latest.current += 1;
     setCoins({ status: "idle" });
-    run.current = apiFetch<{ runId: string }>("/api/arcade/runs", { method: "POST", json: { game } })
+    run.current = apiFetch<{ runId: string }>("/api/arcade/runs", { method: "POST", json: { game, board } })
       .then((body) => body.runId)
       .catch((error: unknown) => {
         if (error instanceof ApiError && error.status === 429) limited.current = true;

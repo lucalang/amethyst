@@ -87,7 +87,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
           placeholder="What should Home call you?"
           className="max-w-sm"
         />
-        <p className="text-xs text-muted-foreground">Used in Home’s welcome and your achievement cabinet. Leave it empty to stay unnamed.</p>
+        <p className="text-xs text-muted-foreground">Used in Home’s welcome, your achievement cabinet and on Arcade leaderboards, so it must be unique. Leave it empty to appear under an anonymous arcade name.</p>
       </div>
       <div id="settings-avatar-picture" className="space-y-1.5">
         <ImageUrlField

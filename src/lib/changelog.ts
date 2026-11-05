@@ -49,6 +49,62 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-arcade-leaderboards",
+    date: "2026-11-05",
+    title: "Arcade Leaderboards",
+    intro: "See how your best runs rank against other players in every Arcade game. Display names are now unique and appear on the boards.",
+    icon: "medal",
+    highlights: [
+      { kind: "new", feature: "Arcade → Leaderboards", text: "Top 25 players for each game and mode, with your own placement even when you're outside the list." },
+      { kind: "new", feature: "Ranks button", text: "Every game's header opens the leaderboard for the mode you're playing." },
+      { kind: "new", feature: "Unique display names", text: "Leaderboards show your display name (never your email). Names are unique, so no two players share one; without a name you appear as an arcade name like \"Velvet Otter 42\"." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Leaderboards for every Arcade game",
+          body: "2048, Flutter, Snake, Sudoku, Fruit Slice and Tower Stacker each have ranked boards. Each mode ranks separately, so different board sizes, modes, Snake setups, Sudoku difficulties and each day's daily challenge are never mixed. Highest score ranks first; Sudoku ranks the fastest solve first, with fewer hints breaking a tie. Only runs the server timed and checked count, one best per player, and boards start fresh with runs played from now on. Viewing leaderboards earns no coins or achievements.",
+          points: [
+            "Pick a game, then a mode or a daily challenge from the last seven days.",
+            "Snake lets you pick any mode, size, fruit count and speed, jump back to your own setup, or choose from setups someone has ranked on.",
+            "Your own row is highlighted, and shown below the list when you're outside the top 25.",
+            "Players appear under their display name; emails are never shown. Display names are now unique (ignoring upper/lower case), and players without one appear under an anonymous arcade name.",
+          ],
+          where: "Arcade → Leaderboards, or Ranks in any game's header",
+          link: { href: "/arcade/leaderboards", label: "Open Leaderboards" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-05-arcade-trophy-door",
+    date: "2026-11-05",
+    title: "Trophy Room entrances",
+    intro: "The Achievements links on Home and in the Arcade are now gold-framed doorways into your trophy cabinet, and Home drops its separate Earned achievements list.",
+    icon: "trophy",
+    highlights: [
+      { kind: "improved", feature: "Home → Achievements", text: "The Achievements card at the bottom of Home is a lit trophy alcove with your medal count and a gold sill that fills as you earn medals." },
+      { kind: "improved", feature: "Arcade → Achievements", text: "The header link has a gold frame, a trophy medal and a soft light sweep on hover." },
+      { kind: "improved", feature: "Home sections", text: "The Earned achievements section is gone from Home and Customize Home; your medals live on the Achievements page." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Trophy Room entrances",
+          body: "The Achievements card at the bottom of Home and the Achievements link beside Home in the Arcade header have a gold-framed, lit look. On Home, the medal sits in an arched alcove, the card shows how many medals you've earned, and the gold line along its bottom fills to match. Hovering or focusing either one sends a light across the frame; the glow and the sweep follow your motion setting.",
+          where: "Home (bottom of the page) and Arcade → Achievements",
+          link: { href: "/achievements", label: "Open Achievements" },
+        },
+        {
+          title: "Earned achievements removed from Home",
+          body: "The optional Earned achievements section and its Customize Home toggle were removed. Every medal you've earned is on the Achievements page, reachable from the card at the bottom of Home.",
+          where: "Home",
+          link: { href: "/achievements", label: "View your medals" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-05-quick-notes-and-stats",
     date: "2026-11-05",
     title: "Quick Notes, Favorited Tasks & Stats",

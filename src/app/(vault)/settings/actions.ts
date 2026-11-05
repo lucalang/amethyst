@@ -53,6 +53,7 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
     })
     .eq("id", ctx.userId);
   if (error?.hint === "cosmetic_not_owned") return { status: "error", message: "One of those isn't in your collection yet. Decorations come from the Arcade shop; badges and titles from the Vault." };
+  if (error?.code === "23505") return { status: "error", message: "That display name is already taken. Try another one." };
   if (error) return { status: "error", message: "Could not save your profile." };
   revalidatePath("/", "layout");
   return { status: "success", message: "Profile saved." };

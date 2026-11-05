@@ -707,6 +707,7 @@ export default function GameSudoku({
     <GameShell
       game="sudoku"
       title="Sudoku"
+      leaderboard={isDaily ? `daily-${game.puzzleDate ?? today}` : (game?.difficulty ?? "easy")}
       active={view === "board" && unfinished}
       stats={
         view === "board" && game ? (

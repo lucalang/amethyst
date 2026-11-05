@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, Award, CalendarClock, Check, Gem, History, LibraryBig, NotebookPen, Pin, Sparkles, Sun, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarClock, Check, Gem, History, LibraryBig, NotebookPen, Pin, Sparkles, Sun, type LucideIcon } from "lucide-react";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionIcon } from "@/components/categories/collection-icon";
@@ -287,15 +287,14 @@ export default async function HomePage() {
   const [preferences, home, achievementCards, coinBalance, myDay, quickNotes] = await Promise.all([
     preferenceRead,
     measureServer("home.archive", () => loadHome(ctx, preferenceRead.then((value) => value.homeFeatured?.kind === "entry" ? value.homeFeatured.entryId : null))),
-    preferenceRead.then((value) => value.homeSections.some((section) => section.id === "achievements" && !section.hidden)
-      ? measureServer("home.achievements", () => loadAchievementCards(ctx)) : []),
+    measureServer("home.achievements", () => loadAchievementCards(ctx)),
     measureServer("home.wallet", () => loadCoinBalance(ctx).catch(() => null)),
     measureServer("home.my-day", () => loadMyDayPreview(ctx)),
     preferenceRead.then((value) => value.homeSections.some((section) => section.id === "quickNotes" && !section.hidden)
       ? measureServer("home.quick-notes", () => loadRecentQuickNotes(ctx, 5)) : []),
   ]);
   const chosen = preferences.homeFeatured;
-  const showAchievements = preferences.homeSections.some((section) => section.id === "achievements" && !section.hidden);
+  const earnedCount = achievementCards.filter((item) => item.earnedAt).length;
   const { pinStyle } = preferences;
   const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const hasEntries = home.counts.entries > 0;
@@ -378,37 +377,6 @@ export default async function HomePage() {
         <QuickNotesPanel notes={quickNotes} />
       </Section>
     ),
-    achievements: (position) => {
-      const earnedIds = new Set(achievementCards.filter((item) => item.earnedAt).map((item) => item.id));
-      const earned = ACHIEVEMENTS.filter((item) => earnedIds.has(item.id)).slice(0, 6);
-      return showAchievements ? (
-        <Section
-          id="achievements"
-          title="Earned achievements"
-          icon={Award}
-          index={position}
-          action={
-          <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 px-3">
-            <Link href="/achievements">
-              View all
-              <ArrowRight aria-hidden className="size-3.5" />
-            </Link>
-          </Button>
-        }
-        >
-          {earned.length ? (
-            <ul className="grid gap-x-6 gap-y-3 border-y border-white/[0.08] py-3 sm:grid-cols-2 lg:grid-cols-3">
-              {earned.map((item) => (
-                <li key={item.id} className="flex min-w-0 items-center gap-2.5 text-sm">
-                  <AchievementBadge achievement={item} earned size={26} />
-                  <span className="min-w-0 truncate font-medium">{item.name}</span>
-                </li>
-              ))}
-            </ul>
-          ) : <Hint>No achievements earned yet. Your milestones will appear here.</Hint>}
-        </Section>
-      ) : null;
-    },
     myDay: (position) => (
       <Section
         id="my-day"
@@ -462,22 +430,29 @@ export default async function HomePage() {
           }))}
         />
 
-        <div className={cn(INNER, "max-w-md pt-2 pb-10 md:pb-12")}>
+        <div className={cn(INNER, "max-w-2xl pt-2 pb-10 md:pb-12")}>
           <Link
             href="/achievements"
             prefetch={false}
-            className="group/achievements flex w-full items-center gap-3 rounded-xl border border-white/[0.08] bg-surface/40 px-4 py-3 transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out outline-none hover:-translate-y-0.5 hover:border-amethyst/45 hover:bg-amethyst/[0.06] hover:shadow-[0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] focus-visible:border-amethyst focus-visible:ring-2 focus-visible:ring-amethyst/50 active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
+            className="trophy-door"
+            style={{ "--fill": `${Math.round((earnedCount / ACHIEVEMENTS.length) * 100)}%` } as CSSProperties}
           >
-            <span aria-hidden className="grid size-9 shrink-0 place-items-center">
-              <AchievementBadge achievement={{ icon: "Medal", group: "Discovery" }} earned={achievementCards.some((item) => item.earnedAt)} size={36} />
+            <span aria-hidden className="trophy-door-sweep" />
+            <span aria-hidden className="trophy-door-niche">
+              <AchievementBadge achievement={{ icon: "Medal", group: "Discovery" }} earned={earnedCount > 0} size={52} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold">Achievements</span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {achievementCards.filter((item) => item.earnedAt).length} of {ACHIEVEMENTS.length} medals in your cabinet
+              <span className="trophy-door-kicker">Trophy Room</span>
+              <span className="block text-lg font-semibold tracking-tight">Achievements</span>
+              <span className="trophy-door-sub">
+                {earnedCount} of {ACHIEVEMENTS.length} medals in your cabinet
               </span>
             </span>
-            <ArrowRight aria-hidden className="size-4 shrink-0 text-amethyst transition-transform group-hover/achievements:translate-x-0.5" />
+            <span aria-hidden className="trophy-door-cta">
+              Enter
+              <ArrowRight className="size-4" />
+            </span>
+            <span aria-hidden className="trophy-door-sill" />
           </Link>
         </div>
       </HomeCustomizeProvider>

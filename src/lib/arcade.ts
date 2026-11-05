@@ -73,7 +73,14 @@ export const SUDOKU_CELLS = 81;
 /** Most coins rewards pay in any 24 hours; the database (`daily_limit` in _credit_coins) enforces it. */
 export const DAILY_COIN_LIMIT = 600;
 
-export const startRunSchema = z.object({ game: z.enum(SCORE_GAMES) }).strict();
+/** `board` tags the run for a leaderboard (a record variant, "" = the main board). */
+export const startRunSchema = z
+  .object({ game: z.enum(SCORE_GAMES), board: z.string().max(40).optional() })
+  .strict()
+  .refine((value) => value.board === undefined || value.board === "" || isKnownVariant(value.game, value.board), {
+    message: "Unknown board.",
+    path: ["board"],
+  });
 
 /** A finished run: the score plus the few numbers the server cross-checks it against. */
 export const finishRunSchema = z

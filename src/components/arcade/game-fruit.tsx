@@ -656,7 +656,7 @@ export default function GameFruit({ records: initialRecords }: { records: Record
   useGameAchievementTracking("fruit-slice", phase);
 
   useEffect(() => {
-    if (phase === "playing") beginRun();
+    if (phase === "playing") beginRun(gameRef.current?.variant ?? "");
   }, [phase, beginRun]);
 
   useEffect(() => {
@@ -782,6 +782,7 @@ export default function GameFruit({ records: initialRecords }: { records: Record
     <GameShell
       game="fruit-slice"
       title="Fruit Slice"
+      leaderboard={variant}
       active={active}
       stats={
         <>

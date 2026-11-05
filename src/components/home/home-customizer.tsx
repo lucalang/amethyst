@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  Award,
   ArrowDown,
   ArrowUp,
   CalendarClock,
@@ -64,7 +63,6 @@ const SECTION_META: Record<HomeSectionId, { title: string; icon: LucideIcon }> =
   collections: { title: "Your collections", icon: LibraryBig },
   tasks: { title: "Upcoming tasks", icon: CalendarClock },
   quickNotes: { title: "Quick Notes", icon: NotebookPen },
-  achievements: { title: "Earned achievements", icon: Award },
   myDay: { title: "My Day", icon: Sun },
 };
 

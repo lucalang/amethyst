@@ -184,7 +184,21 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
           const { emblem: Emblem, label } = BADGE_STYLES[group];
           const headingId = `achievements-${group.toLowerCase()}`;
           return (
-            <section key={group} aria-labelledby={headingId} className="enter mb-10" style={badgeVars(group)}>
+            <section key={group} aria-labelledby={headingId} className={cn("enter mb-10", group === "Arcade" && "ach-case")} style={badgeVars(group)}>
+              {group === "Arcade" ? (
+                <div className="ach-case-head">
+                  <span aria-hidden className="ach-case-roundel">
+                    <Emblem className="size-4" />
+                  </span>
+                  <h2 id={headingId} className="text-base font-semibold sm:text-lg">{label}</h2>
+                  <span className="text-xs tabular-nums text-muted-foreground">
+                    {earnedInGroup} of {all.length} earned
+                  </span>
+                  <span aria-hidden className="ach-case-strip">
+                    <span style={{ width: `${(earnedInGroup / all.length) * 100}%` }} />
+                  </span>
+                </div>
+              ) : (
               <div className="mb-4 flex items-center gap-3">
                 <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-md bg-[rgb(var(--ach-glow)/0.13)] text-[rgb(var(--ach-glow))] ring-1 ring-[rgb(var(--ach-glow)/0.3)]">
                   <Emblem className="size-4" />
@@ -195,10 +209,11 @@ export function AchievementsPage({ items, owner }: { items: AchievementCardData[
                 </span>
                 <span aria-hidden className="h-px min-w-6 flex-1 bg-gradient-to-r from-[rgb(var(--ach-glow)/0.45)] to-transparent" />
               </div>
-              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6">
+              )}
+              <ul className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6", group === "Arcade" && "ach-case-shelf")}>
                 {groupItems.map((definition) => (
                   <li key={definition.id} id={definition.id} className="min-w-0 scroll-mt-28">
-                    <AchievementTile definition={definition} item={byId.get(definition.id)!} onOpen={() => openDetail(definition.id)} />
+                    <AchievementTile definition={definition} item={byId.get(definition.id)!} onOpen={() => openDetail(definition.id)} room={group === "Arcade"} />
                   </li>
                 ))}
               </ul>
@@ -250,60 +265,64 @@ function CabinetHeader({ byId, earnedCount, owner }: { byId: Map<string, Achieve
   const totalItemsAvailable = ACHIEVEMENTS.reduce((sum, def) => sum + def.reward.items.length, 0);
 
   return (
-    <header className="enter relative mb-6 overflow-hidden rounded-lg border border-white/[0.08] bg-[radial-gradient(70%_120%_at_0%_0%,rgb(var(--accent-rgb)/0.14),transparent_60%)] bg-surface/50">
-      <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-4 pb-3.5 sm:gap-5 sm:px-5 sm:pt-5">
-        <div className="flex min-w-0 items-center gap-4 sm:gap-5">
-          <div className="relative grid size-[72px] shrink-0 place-items-center">
-            <svg aria-hidden viewBox="0 0 72 72" className="absolute inset-0 -rotate-90">
-              <defs>
-                <linearGradient id="ach-gold" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stopColor="#fff1b8" />
-                  <stop offset="0.5" stopColor="#e7b546" />
-                  <stop offset="1" stopColor="#a8701a" />
-                </linearGradient>
-              </defs>
-              <circle cx="36" cy="36" r={radius} fill="none" strokeWidth="5" style={{ stroke: "rgb(var(--ink-rgb) / 0.09)" }} />
-              <circle cx="36" cy="36" r={radius} fill="none" stroke="url(#ach-gold)" strokeWidth="5" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - ratio)} />
-            </svg>
-            <span className="text-center leading-none">
-              <span className="block text-xl font-extrabold tabular-nums">{earnedCount}</span>
-              <span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">of {total}</span>
+    <header className="ach-room enter">
+      <span aria-hidden className="ach-room-lights">
+        {GROUPS.map((group) => <span key={group} style={badgeVars(group)} />)}
+      </span>
+      <div className="ach-room-inner">
+        <div className="ach-room-medallion">
+          <svg aria-hidden viewBox="0 0 72 72" className="absolute inset-0 -rotate-90">
+            <defs>
+              <linearGradient id="ach-gold" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#fff1b8" />
+                <stop offset="0.5" stopColor="#e7b546" />
+                <stop offset="1" stopColor="#a8701a" />
+              </linearGradient>
+            </defs>
+            <circle cx="36" cy="36" r={radius} fill="none" strokeWidth="4" style={{ stroke: "rgb(0 0 0 / 0.45)" }} />
+            <circle cx="36" cy="36" r={radius} fill="none" stroke="url(#ach-gold)" strokeWidth="4" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - ratio)} />
+          </svg>
+          <span className="relative text-center leading-none">
+            <span className="block text-2xl font-extrabold tabular-nums sm:text-3xl">{earnedCount}</span>
+            <span className="coin-ink mt-1 block text-[10px] font-semibold tracking-[0.14em] uppercase">of {total}</span>
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="ach-room-kicker">
+            {owner.name || owner.avatarUrl ? <ProfileAvatar name={owner.name} src={owner.avatarUrl} className="size-5 shrink-0 text-[9px]" /> : null}
+            <span className="coin-ink truncate">Trophy Room · {owner.name ? `${owner.name}’s cabinet` : "Your cabinet"}</span>
+          </p>
+          <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">Achievements</h1>
+          <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground tabular-nums">{Math.round(ratio * 100)}% complete.</span> Medals for play, archive milestones and discoveries — each with a one-time reward of coins or exclusive cosmetics.
+          </p>
+          <div className="mt-3.5 flex flex-wrap items-center gap-2 text-xs">
+            <span className="ach-nameplate">
+              <Coins aria-hidden className="coin-ink size-3.5" />
+              <span className="coin-ink font-semibold">+{totalCoinsEarned.toLocaleString("en")}</span>
+              <span className="text-muted-foreground">milestone coins</span>
+            </span>
+            <span className="ach-nameplate">
+              <Gift aria-hidden className="size-3.5 text-amethyst" />
+              <span className="font-semibold text-foreground">{totalItemsEarned}/{totalItemsAvailable}</span>
+              <span className="text-muted-foreground">exclusive items</span>
             </span>
           </div>
-          <div className="min-w-0">
-            <p className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
-              {owner.name || owner.avatarUrl ? <ProfileAvatar name={owner.name} src={owner.avatarUrl} className="size-5 shrink-0 text-[9px]" /> : null}
-              <span className="truncate">{owner.name ? `${owner.name}’s cabinet` : "Your cabinet"}</span>
-            </p>
-            <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight md:text-3xl">Achievements</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground tabular-nums">{Math.round(ratio * 100)}% complete.</span> Medals for play, archive milestones and discoveries — each with a one-time reward of coins or exclusive cosmetics.
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 font-medium tabular-nums">
-            <Coins aria-hidden className="coin-ink size-3.5" />
-            <span className="coin-ink font-semibold">+{totalCoinsEarned.toLocaleString("en")}</span>
-            <span className="text-muted-foreground">milestone coins</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 font-medium tabular-nums">
-            <Gift aria-hidden className="size-3.5 text-amethyst" />
-            <span className="font-semibold text-foreground">{totalItemsEarned}/{totalItemsAvailable}</span>
-            <span className="text-muted-foreground">exclusive items</span>
-          </span>
         </div>
       </div>
-      <div className="flex flex-wrap gap-x-6 gap-y-2.5 border-t border-white/[0.06] px-4 py-3 sm:px-5">
+      <div className="ach-room-cases">
         {GROUPS.map((group) => {
           const all = ACHIEVEMENTS.filter((definition) => definition.group === group);
           const earned = all.filter((definition) => byId.get(definition.id)?.earnedAt).length;
+          const { emblem: Emblem, label } = BADGE_STYLES[group];
           return (
-            <div key={group} className="flex min-w-0 items-center gap-2.5" style={badgeVars(group)}>
-              <span className="text-xs text-muted-foreground">
-                {BADGE_STYLES[group].label} <span className="font-semibold text-foreground tabular-nums">{earned}/{all.length}</span>
+            <div key={group} className="ach-room-case" style={badgeVars(group)}>
+              <span className="flex items-center gap-2 text-xs">
+                <Emblem aria-hidden className="size-3.5 text-[rgb(var(--ach-glow))]" />
+                <span className="font-medium text-foreground/85">{label}</span>
+                <span className="ml-auto font-semibold tabular-nums">{earned}/{all.length}</span>
               </span>
-              <span aria-hidden className="flex flex-wrap gap-1.5 py-1" title={`${earned} of ${all.length} ${group} achievements earned`}>
+              <span aria-hidden className="ach-room-case-shelf" title={`${earned} of ${all.length} ${group} achievements earned`}>
                 {all.map((definition) => (
                   <span key={definition.id} className="ach-pip" data-earned={Boolean(byId.get(definition.id)?.earnedAt)} />
                 ))}
@@ -386,25 +405,35 @@ function TileRewardPill({ definition, revealed, rewardGranted }: { definition: D
   );
 }
 
-function AchievementTile({ definition, item, onOpen }: { definition: Definition; item: AchievementCardData; onOpen: () => void }) {
+function AchievementTile({ definition, item, onOpen, room = false }: { definition: Definition; item: AchievementCardData; onOpen: () => void; room?: boolean }) {
   const earned = Boolean(item.earnedAt);
   const rewardGranted = Boolean(item.rewardGrantedAt);
   const revealed = isAchievementRevealed(definition, item);
   const progress = Math.min(item.progress, definition.target);
   const percent = Math.min(100, (progress / definition.target) * 100);
+  const inProgress = !earned && revealed && progress > 0;
   const badgeDef = revealed ? definition : { icon: "HelpCircle", group: definition.group };
+  const badge = <AchievementBadge achievement={badgeDef} earned={earned} size={84} />;
   return (
     <button
       type="button"
       aria-haspopup="dialog"
       className="ach-tile"
       data-state={earned ? "earned" : "locked"}
+      data-progress={inProgress || undefined}
       style={badgeVars(definition.group)}
       onClick={onOpen}
       onPointerMove={tilt}
       onPointerLeave={untilt}
     >
-      <AchievementBadge achievement={badgeDef} earned={earned} size={84} />
+      {room ? (
+        <span className="ach-niche">
+          <span aria-hidden className="ach-niche-beam" />
+          {inProgress ? <span className="ach-niche-tag">In progress</span> : null}
+          {badge}
+          <span aria-hidden className="ach-niche-plinth" />
+        </span>
+      ) : badge}
       <span className="mt-1.5 block w-full min-w-0">
         <span className={cn("block text-[13px] leading-snug font-semibold text-balance sm:text-sm", !earned && "text-foreground/85")}>
           {revealed ? definition.name : "Hidden achievement"}

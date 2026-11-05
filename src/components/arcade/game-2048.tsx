@@ -182,7 +182,7 @@ export default function Game2048({ records: initialRecords, userId }: { records:
     if (current.phase !== "playing") return false;
     const result = slide(current.board, direction);
     if (!result.moved) return false;
-    beginRun();
+    beginRun(variantOf(current));
     const maxTile = Math.max(current.maxTile, result.largestMerge);
     let phase: RoundPhase = "playing";
     let celebrated = current.celebrated;
@@ -325,6 +325,7 @@ export default function Game2048({ records: initialRecords, userId }: { records:
     <GameShell
       game="2048"
       title="2048"
+      leaderboard={variantOf(round)}
       active={phase === "playing"}
       stats={
         <>

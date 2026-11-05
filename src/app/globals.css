@@ -3072,6 +3072,10 @@
   transform: perspective(70em) rotateX(calc(var(--py, 0) * -6deg)) rotateY(calc(var(--px, 0) * 6deg));
   transition: transform 260ms var(--ease-out-soft);
 }
+.frame-option .art-frame[data-depth] {
+  transform: none;
+  transition: none;
+}
 /* Glowing motif layers breathe slowly. */
 .art-frame-motif [data-glow] {
   filter: drop-shadow(0 0 0.8px currentColor);
@@ -4847,6 +4851,266 @@
     0 0 8px rgb(var(--ach-glow) / 0.6);
 }
 
+/* Trophy Room: arched gold-moulded wall, group spotlights, display cases with lit niches. */
+.ach-room {
+  --ach-gilt: linear-gradient(160deg, #fff1b8, #d79a1e 25%, #7a4c0c 50%, #f3cd72 75%, #a26c17);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  border: 1px solid transparent;
+  border-radius: 2.75rem 2.75rem var(--radius-lg) var(--radius-lg);
+  background:
+    linear-gradient(180deg, transparent 72%, rgb(var(--ink-rgb) / 0.025) 72%) padding-box,
+    repeating-linear-gradient(90deg, transparent 0 7.5rem, rgb(var(--ink-rgb) / 0.04) 7.5rem calc(7.5rem + 1px)) padding-box,
+    linear-gradient(180deg, color-mix(in oklab, var(--surface) 92%, rgb(var(--accent-rgb))), var(--surface)) padding-box,
+    var(--ach-gilt) border-box;
+  box-shadow:
+    inset 0 0 0 6px rgb(var(--ink-rgb) / 0.02),
+    inset 0 0 0 7px rgb(231 181 70 / 0.16),
+    0 30px 60px -40px rgb(215 154 30 / 0.45);
+}
+.ach-room-lights {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  pointer-events: none;
+}
+.ach-room-lights > span {
+  background:
+    radial-gradient(40% 18% at 50% 0%, rgb(255 244 214 / 0.18), transparent 100%),
+    linear-gradient(180deg, rgb(var(--ach-glow) / 0.16), transparent 75%);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+}
+.ach-room-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1.75rem 1.25rem 1.25rem;
+}
+.ach-room-medallion {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 999px;
+  background: radial-gradient(circle at 50% 35%, var(--surface-raised), var(--surface) 75%);
+  box-shadow:
+    0 0 0 1px rgb(231 181 70 / 0.45),
+    0 0 0 6px rgb(var(--ink-rgb) / 0.03),
+    0 0 0 7px rgb(231 181 70 / 0.2),
+    0 18px 32px -16px rgb(215 154 30 / 0.6);
+}
+.ach-room-medallion svg {
+  inset: 0.45rem;
+  width: calc(100% - 0.9rem);
+  height: calc(100% - 0.9rem);
+}
+.ach-room-kicker {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.ach-nameplate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid color-mix(in oklab, #e7b546 35%, var(--border));
+  border-radius: calc(0.4rem * var(--radius-unit, 1));
+  padding: 0.35rem 0.65rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, rgb(var(--ink-rgb) / 0.06), rgb(var(--ink-rgb) / 0.015));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+.ach-room-cases {
+  display: grid;
+  gap: 0.625rem;
+  padding: 0 1.25rem 1.25rem;
+}
+.ach-room-case {
+  border: 1px solid rgb(var(--ach-glow) / 0.25);
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.6rem 0.75rem 0;
+  background:
+    linear-gradient(180deg, rgb(var(--ach-glow) / 0.1), transparent 75%),
+    rgb(var(--ink-rgb) / 0.02);
+  box-shadow: inset 0 1px 0 rgb(var(--ach-glow) / 0.25);
+}
+.ach-room-case-shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.2rem 0.15rem 0.45rem;
+  border-bottom: 2px solid rgb(231 181 70 / 0.45);
+}
+@media (min-width: 640px) {
+  .ach-room-inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.75rem;
+    padding: 2.25rem 2rem 1.5rem;
+  }
+  .ach-room-medallion {
+    width: 7.5rem;
+    height: 7.5rem;
+  }
+  .ach-room-cases {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.875rem;
+    padding: 0 2rem 1.75rem;
+  }
+}
+
+.ach-case {
+  position: relative;
+  padding: 0.75rem;
+  border: 1px solid rgb(var(--ach-glow) / 0.22);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(80% 40% at 50% 0%, rgb(var(--ach-glow) / 0.09), transparent 75%),
+    linear-gradient(180deg, rgb(var(--ink-rgb) / 0.03), rgb(var(--ink-rgb) / 0.01));
+  box-shadow:
+    inset 0 1px 0 rgb(var(--ach-glow) / 0.3),
+    0 30px 60px -44px rgb(var(--ach-glow) / 0.55);
+}
+.ach-case-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: -0.75rem -0.75rem 0.875rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgb(var(--ach-glow) / 0.2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: linear-gradient(180deg, rgb(var(--ach-glow) / 0.13), transparent);
+}
+.ach-case-roundel {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  color: rgb(var(--ach-glow));
+  background: radial-gradient(circle at 50% 35%, rgb(var(--ach-glow) / 0.28), rgb(var(--ach-glow) / 0.06));
+  box-shadow:
+    0 0 0 1px rgb(231 181 70 / 0.5),
+    0 0 14px -2px rgb(var(--ach-glow) / 0.6);
+}
+.ach-case-strip {
+  flex: 1 1 4rem;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / 0.08);
+}
+.ach-case-strip > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgb(var(--ach-glow) / 0.5), rgb(var(--ach-glow)), #fff1b8);
+  box-shadow: 0 0 8px rgb(var(--ach-glow) / 0.6);
+}
+.ach-case .ach-tile {
+  gap: 0.5rem;
+  padding: 0 0.75rem 0.9rem;
+  overflow: hidden;
+  border-radius: 5rem 5rem var(--radius-lg) var(--radius-lg) / 4.5rem 4.5rem var(--radius-lg) var(--radius-lg);
+}
+.ach-niche {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  width: calc(100% + 1.5rem);
+  margin: 0 -0.75rem;
+  place-items: center;
+  padding: 1.6rem 0 1.15rem;
+  background: radial-gradient(55% 75% at 50% 0%, rgb(var(--ach-glow) / 0.26), transparent 75%);
+  border-bottom: 1px solid rgb(231 181 70 / 0.22);
+}
+.ach-tile[data-state="locked"] .ach-niche {
+  background: radial-gradient(70% 70% at 50% 100%, rgb(var(--shadow-rgb) / calc(0.25 * var(--shadow-alpha))), transparent 75%);
+  border-bottom-color: rgb(var(--ink-rgb) / 0.08);
+}
+.ach-tile[data-progress] .ach-niche {
+  background: radial-gradient(55% 75% at 50% 0%, rgb(var(--ach-glow) / 0.1), transparent 75%);
+}
+/* Frosted case glass in front of medals still out of reach. */
+.ach-tile[data-state="locked"] .ach-niche::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 28%, rgb(255 255 255 / 0.06) 36%, transparent 44%, transparent 58%, rgb(255 255 255 / 0.035) 62%, transparent 66%);
+  pointer-events: none;
+}
+.ach-niche-beam {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(40% 0, 60% 0, 92% 100%, 8% 100%);
+  background: linear-gradient(180deg, rgb(255 244 214 / 0.2), rgb(var(--ach-glow) / 0.05) 70%, transparent);
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+.ach-tile[data-state="locked"] .ach-niche-beam {
+  opacity: 0;
+}
+.ach-tile[data-progress] .ach-niche-beam {
+  opacity: 0.45;
+}
+.ach-tile:is(:hover, :focus-visible) .ach-niche-beam {
+  opacity: 1;
+}
+.ach-tile[data-state="locked"]:not([data-progress]):is(:hover, :focus-visible) .ach-niche-beam {
+  opacity: 0.35;
+}
+.ach-niche-plinth {
+  position: absolute;
+  bottom: 0.55rem;
+  left: 50%;
+  z-index: -1;
+  width: 62px;
+  height: 9px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff1b8, #c99434 40%, #6b4300);
+  box-shadow: 0 6px 12px -3px rgb(0 0 0 / 0.55);
+}
+.ach-niche > .ach-badge {
+  z-index: 1;
+}
+.ach-tile[data-state="locked"] .ach-niche-plinth {
+  background: linear-gradient(180deg, #6b6f78, #33363d 45%, #1a1c20);
+}
+.ach-niche-tag {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  z-index: 2;
+  translate: -50% 0;
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgb(var(--ach-glow));
+  background: color-mix(in oklab, var(--surface) 80%, rgb(var(--ach-glow)));
+  box-shadow: inset 0 0 0 1px rgb(var(--ach-glow) / 0.4);
+}
+
 /* Details: a lit stage for the large badge. */
 .ach-stage {
   position: relative;
@@ -5374,6 +5638,285 @@ a.arcade-counter:hover {
   filter: brightness(0.94);
 }
 
+/* Arcade header entrance to the Trophy Room: a lit, gold-framed cabinet doorway (self-lit on every theme). */
+.arcade-trophy-door {
+  position: relative;
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid transparent;
+  border-radius: calc(0.95rem * var(--radius-unit, 1)) calc(0.95rem * var(--radius-unit, 1)) calc(0.4rem * var(--radius-unit, 1)) calc(0.4rem * var(--radius-unit, 1));
+  padding: 0 0.6rem 0 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #fbeccb;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+  background:
+    radial-gradient(80% 120% at 50% -10%, color-mix(in oklab, #ffd36b 22%, transparent), transparent 70%) padding-box,
+    linear-gradient(180deg, color-mix(in oklab, var(--amethyst) 26%, #1a1029), #0b0714) padding-box,
+    linear-gradient(160deg, #fff1b8, #d79a1e 30%, #7a4c0c 55%, #f3cd72 80%, #a26c17) border-box;
+  box-shadow:
+    inset 0 1px 0 rgb(255 241 184 / 0.18),
+    inset 0 0 0 1px rgb(0 0 0 / 0.35),
+    0 6px 16px -10px rgb(215 154 30 / 0.7);
+  outline: none;
+  transition:
+    translate 200ms var(--ease-out-soft),
+    box-shadow 220ms ease,
+    filter 180ms ease,
+    scale 100ms ease;
+}
+/* Gold sill along the threshold. */
+.arcade-trophy-door::after {
+  content: "";
+  position: absolute;
+  inset: auto 0.5rem 0;
+  z-index: -1;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(90deg, transparent, #ffd36b 30%, #fff1b8 50%, #ffd36b 70%, transparent);
+  opacity: 0.55;
+  transition: opacity 220ms ease;
+}
+.arcade-trophy-door-medal {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  color: #6b4300;
+  background: radial-gradient(circle at 35% 30%, #fff1b8, #ffd36b 45%, #d79a1e);
+  box-shadow:
+    inset 0 -1.5px 0 rgb(120 70 0 / 0.4),
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.3),
+    0 0 10px -2px rgb(255 211 107 / 0.7);
+  animation: trophy-door-glow 4.8s ease-in-out infinite;
+}
+.arcade-trophy-door-medal svg {
+  stroke-width: 2.4;
+}
+.arcade-trophy-door-arrow {
+  margin-left: -0.15rem;
+  color: #f3cd72;
+  transition: translate 220ms var(--ease-out-soft);
+}
+.arcade-trophy-door-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 38%, rgb(255 236 180 / 0.22) 50%, transparent 62%);
+  translate: -120% 0;
+}
+.arcade-trophy-door:hover {
+  translate: 0 -1px;
+  filter: brightness(1.08);
+  box-shadow:
+    inset 0 1px 0 rgb(255 241 184 / 0.28),
+    inset 0 0 0 1px rgb(0 0 0 / 0.35),
+    0 10px 22px -10px rgb(215 154 30 / 0.85);
+}
+.arcade-trophy-door:is(:hover, :focus-visible)::after {
+  opacity: 1;
+}
+.arcade-trophy-door:is(:hover, :focus-visible) .arcade-trophy-door-sweep {
+  animation: mq-sweep-wide 900ms var(--ease-out-soft) 1 forwards;
+}
+.arcade-trophy-door:is(:hover, :focus-visible) .arcade-trophy-door-arrow {
+  translate: 2px 0;
+}
+.arcade-trophy-door:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.arcade-trophy-door:active {
+  translate: 0 0;
+  scale: 0.97;
+  filter: brightness(0.95);
+}
+@keyframes trophy-door-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 -1.5px 0 rgb(120 70 0 / 0.4),
+      inset 0 0 0 1.5px rgb(255 255 255 / 0.3),
+      0 0 8px -3px rgb(255 211 107 / 0.55);
+  }
+  50% {
+    box-shadow:
+      inset 0 -1.5px 0 rgb(120 70 0 / 0.4),
+      inset 0 0 0 1.5px rgb(255 255 255 / 0.3),
+      0 0 14px -1px rgb(255 211 107 / 0.85);
+  }
+}
+
+/* Home entrance to the Trophy Room: a gold-framed cabinet doorway with a lit medal alcove (self-lit on every theme). */
+.trophy-door {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 1.25rem;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid transparent;
+  border-radius: calc(2.25rem * var(--radius-unit, 1)) calc(2.25rem * var(--radius-unit, 1)) calc(0.75rem * var(--radius-unit, 1)) calc(0.75rem * var(--radius-unit, 1));
+  padding: 1.25rem 1.5rem 1.5rem 1.25rem;
+  color: #fbeccb;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+  background:
+    radial-gradient(60% 140% at 50% -30%, color-mix(in oklab, #ffd36b 18%, transparent), transparent 70%) padding-box,
+    radial-gradient(45% 120% at 0% 50%, color-mix(in oklab, var(--amethyst) 30%, transparent), transparent 75%) padding-box,
+    linear-gradient(180deg, color-mix(in oklab, var(--amethyst) 22%, #1a1029), #0a0612) padding-box,
+    linear-gradient(160deg, #fff1b8, #d79a1e 25%, #7a4c0c 50%, #f3cd72 75%, #a26c17) border-box;
+  box-shadow:
+    inset 0 1px 0 rgb(255 241 184 / 0.2),
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    inset 0 0 0 4px rgb(255 211 107 / 0.05),
+    0 18px 36px -24px rgb(215 154 30 / 0.75);
+  outline: none;
+  transition:
+    translate 240ms var(--ease-out-soft),
+    box-shadow 240ms ease,
+    filter 200ms ease,
+    scale 100ms ease;
+}
+.trophy-door-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 40%, rgb(255 236 180 / 0.16) 50%, transparent 60%);
+  translate: -120% 0;
+}
+/* Arched display alcove holding the medal. */
+.trophy-door-niche {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 4.5rem;
+  height: 5rem;
+  border-radius: 999px 999px 0.5rem 0.5rem;
+  background: radial-gradient(70% 60% at 50% 35%, rgb(255 211 107 / 0.22), transparent 75%), linear-gradient(180deg, #0a0612, #160d22);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 211 107 / 0.35),
+    inset 0 6px 12px -4px rgb(0 0 0 / 0.8),
+    0 1px 0 rgb(255 241 184 / 0.12);
+}
+.trophy-door-niche .ach-badge-halo {
+  animation: trophy-door-breathe 4.8s ease-in-out infinite;
+}
+.trophy-door-kicker {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f3cd72;
+}
+.trophy-door-sub {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  color: rgb(251 236 203 / 0.62);
+}
+.trophy-door-cta {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #4a2e00;
+  text-shadow: none;
+  background: linear-gradient(180deg, #fff1b8, #ffd36b 45%, #d79a1e);
+  box-shadow:
+    inset 0 -1.5px 0 rgb(120 70 0 / 0.35),
+    inset 0 0 0 1px rgb(255 255 255 / 0.3),
+    0 4px 12px -4px rgb(215 154 30 / 0.7);
+}
+.trophy-door-cta svg {
+  transition: translate 220ms var(--ease-out-soft);
+}
+/* Threshold sill, filled to the share of medals earned. */
+.trophy-door-sill {
+  position: absolute;
+  inset: auto 1.5rem 0.45rem;
+  height: 4px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, #d79a1e, #fff1b8) 0 0 / var(--fill, 0%) 100% no-repeat,
+    rgb(255 211 107 / 0.14);
+  box-shadow: 0 0 8px -1px rgb(255 211 107 / 0.35);
+}
+.trophy-door:hover {
+  translate: 0 -2px;
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgb(255 241 184 / 0.3),
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    inset 0 0 0 4px rgb(255 211 107 / 0.08),
+    0 24px 44px -22px rgb(215 154 30 / 0.9);
+}
+.trophy-door:is(:hover, :focus-visible) .trophy-door-sweep {
+  animation: mq-sweep-wide 1000ms var(--ease-out-soft) 1 forwards;
+}
+.trophy-door:is(:hover, :focus-visible) .ach-badge {
+  --ach-scale: 1.08;
+}
+.trophy-door:is(:hover, :focus-visible) .ach-badge-sweep::before {
+  animation: ach-sweep 750ms cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+.trophy-door:is(:hover, :focus-visible) .trophy-door-cta svg {
+  translate: 2px 0;
+}
+.trophy-door:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.trophy-door:active {
+  translate: 0 0;
+  scale: 0.985;
+  filter: brightness(0.96);
+}
+@media (max-width: 639px) {
+  .trophy-door {
+    gap: 0.875rem;
+    padding: 1rem 1rem 1.25rem 0.9rem;
+  }
+  .trophy-door-niche {
+    width: 3.9rem;
+    height: 4.4rem;
+  }
+  .trophy-door-cta {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}
+@keyframes trophy-door-breathe {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .arcade-cab {
   --cab-neon: color-mix(in oklab, var(--cab) 72%, #fff);
   --cab-tint: color-mix(in oklab, var(--cab) 55%, var(--amethyst));
@@ -5538,34 +6081,243 @@ a.arcade-counter:hover {
   color: var(--cab-tint);
 }
 
+/* Leaderboards: a cabinet scoreboard tinted by the selected game's --cab hue. */
+.lb-games {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding: 0.25rem;
+  margin: -0.25rem;
+  scrollbar-width: none;
+}
+.lb-game {
+  flex: none;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--cab) 25%, var(--border));
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  outline: none;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+.lb-game:hover {
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--cab) 55%, var(--border));
+}
+.lb-game[aria-current="page"] {
+  color: color-mix(in oklab, var(--cab) 70%, #fff);
+  border-color: color-mix(in oklab, var(--cab) 70%, transparent);
+  background: linear-gradient(180deg, #180f2a, #0a0613);
+  box-shadow: inset 0 -8px 14px -12px var(--cab);
+}
+.lb-boards {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-radius: calc(0.7rem * var(--radius-unit, 1));
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  padding: 0.25rem;
+}
+.lb-board-pick {
+  border-radius: calc(0.5rem * var(--radius-unit, 1));
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  outline: none;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+.lb-board-pick:hover {
+  color: var(--foreground);
+}
+.lb-board-pick[aria-pressed="true"] {
+  color: #1a0f05;
+  background: color-mix(in oklab, var(--cab) 85%, #fff);
+}
+.lb-select {
+  height: 2rem;
+  border-radius: calc(0.5rem * var(--radius-unit, 1));
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0 0.5rem;
+  color: var(--foreground);
+  outline: none;
+}
+:is(.lb-game, .lb-board-pick, .lb-select):focus-visible {
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px var(--ring);
+}
+.lb-panel {
+  overflow: hidden;
+  border-radius: calc(1rem * var(--radius-unit, 1));
+  border: 1px solid color-mix(in oklab, var(--cab) 22%, var(--border));
+  background: linear-gradient(180deg, color-mix(in oklab, var(--cab) 7%, var(--surface)), var(--surface) 40%);
+}
+.lb-marquee {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.5rem 0.5rem 0;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.75rem 0.9rem;
+  background:
+    radial-gradient(120% 170% at 50% 0%, color-mix(in oklab, var(--cab) 30%, transparent), transparent 68%),
+    linear-gradient(180deg, #180f2a, #0a0613);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    inset 0 -10px 18px -14px var(--cab);
+}
+.lb-title {
+  min-width: 0;
+  font-family: var(--font-press-start), ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5 !important;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--cab) 72%, #fff);
+  text-shadow:
+    0 0 6px color-mix(in oklab, var(--cab) 65%, transparent),
+    2px 2px 0 rgb(0 0 0 / 0.55) !important;
+}
+.lb-variant {
+  color: rgb(255 255 255 / 0.7);
+  text-shadow: none;
+}
+.lb-meta {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.6);
+}
+.lb-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+}
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.55rem 0.75rem;
+}
+.lb-row:nth-child(even) {
+  background: color-mix(in oklab, var(--foreground) 3%, transparent);
+}
+.lb-row[data-you] {
+  background: color-mix(in oklab, var(--cab) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--cab) 45%, transparent);
+}
+.lb-rank {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-width: 2.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  font-family: var(--font-press-start), ui-monospace, monospace;
+  font-size: 0.65rem;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.lb-row[data-podium] .lb-rank {
+  color: #2b1a02;
+  box-shadow: inset 0 -1.5px 0 rgb(0 0 0 / 0.25), inset 0 0 0 1.5px rgb(255 255 255 / 0.3);
+}
+.lb-row[data-podium="1"] .lb-rank {
+  background: radial-gradient(circle at 35% 30%, #fff1b8, #ffd36b 45%, #d79a1e);
+}
+.lb-row[data-podium="2"] .lb-rank {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #d6dbe6 45%, #8f97a8);
+}
+.lb-row[data-podium="3"] .lb-rank {
+  background: radial-gradient(circle at 35% 30%, #ffe0c2, #e3a370 45%, #9c5a2a);
+}
+.lb-score {
+  flex: none;
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.lb-you {
+  flex: none;
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1a0f05;
+  background: color-mix(in oklab, var(--cab) 85%, #fff);
+}
+.lb-footer {
+  border-top: 1px dashed color-mix(in oklab, var(--cab) 25%, var(--border));
+  padding: 0.25rem 0.5rem 0.5rem;
+}
+.lb-footer:empty {
+  display: none;
+}
+.lb-footer > p {
+  padding: 0.5rem 0.25rem 0;
+}
+.lb-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
 /* Subtle: keep the glow, drop the travelling light. Off or reduced: everything holds still. */
 [data-motion="subtle"] .arcade-marquee-title > span,
-[data-motion="subtle"] .arcade-cab-glass::after {
+[data-motion="subtle"] .arcade-cab-glass::after,
+[data-motion="subtle"] .arcade-trophy-door-medal,
+[data-motion="subtle"] .trophy-door-niche .ach-badge-halo {
   animation: none !important;
 }
 [data-motion="subtle"] .arcade-cab:is(:hover, :focus-within) {
   translate: 0 -1px;
 }
 :root[data-motion="off"] .arcade-marquee-sweep,
-:root[data-motion="off"] .arcade-cab-glass::after {
+:root[data-motion="off"] .arcade-cab-glass::after,
+:root[data-motion="off"] .arcade-trophy-door-sweep,
+:root[data-motion="off"] .trophy-door-sweep {
   display: none;
 }
-:root[data-motion="off"] .arcade-marquee-title > span {
+:root[data-motion="off"] :is(.arcade-marquee-title > span, .arcade-trophy-door-medal, .trophy-door-niche .ach-badge-halo) {
   animation: none !important;
 }
-:root[data-motion="off"] :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow, .arcade-counter-cta, .arcade-counter-cta svg:last-child) {
+:root[data-motion="off"] :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow, .arcade-counter-cta, .arcade-counter-cta svg:last-child, .arcade-trophy-door, .arcade-trophy-door-arrow, .trophy-door, .trophy-door-cta svg) {
   translate: none !important;
   scale: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .arcade-marquee-sweep,
-  .arcade-cab-glass::after {
+  .arcade-cab-glass::after,
+  .arcade-trophy-door-sweep,
+  .trophy-door-sweep {
     display: none;
   }
-  .arcade-marquee-title > span {
+  :is(.arcade-marquee-title > span, .arcade-trophy-door-medal, .trophy-door-niche .ach-badge-halo) {
     animation: none !important;
   }
-  :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow, .arcade-counter-cta, .arcade-counter-cta svg:last-child) {
+  :is(.arcade-marquee, .arcade-cab, .arcade-cab-art, .arcade-marquee-arrow, .arcade-counter-cta, .arcade-counter-cta svg:last-child, .arcade-trophy-door, .arcade-trophy-door-arrow, .trophy-door, .trophy-door-cta svg) {
     translate: none !important;
     scale: none !important;
   }

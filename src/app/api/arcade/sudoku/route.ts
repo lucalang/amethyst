@@ -1,32 +1,9 @@
-import { generate, getUniqueSolution, type Board, type Difficulty } from "sudoku-core";
 import { sudokuSaveSchema, sudokuStartSchema, SUDOKU_CELLS, SUDOKU_DAILY_DIFFICULTY, toRunReward, type SudokuDailyResult, type SudokuDifficulty } from "@/lib/arcade";
-import { dailyDate, seedFrom } from "@/lib/arcade-daily";
+import { dailyDate } from "@/lib/arcade-daily";
 import { loadSudoku, loadSudokuDailyResult, SUDOKU_COLUMNS, toSudokuSave } from "@/lib/data/arcade";
 import { recordVerifiedSudokuCompletion } from "@/lib/data/achievements";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
-
-/** sudoku-core levels to try, first choice first (a lower level is the fallback if generation runs out of time). */
-const LEVELS: Record<SudokuDifficulty, Difficulty[]> = {
-  easy: ["L2", "L1"],
-  medium: ["L4", "L3"],
-  hard: ["L6", "L5"],
-};
-
-const toDigits = (board: Board | number[]) => board.map((cell) => cell ?? 0).join("");
-
-/** A fresh puzzle with exactly one solution, rated at the requested difficulty by sudoku-core. */
-function newPuzzle(difficulty: SudokuDifficulty) {
-  for (const level of LEVELS[difficulty]) {
-    try {
-      const puzzle = generate(level, { timeoutMs: 8_000 });
-      const solution = getUniqueSolution(puzzle);
-      if (puzzle.length === SUDOKU_CELLS && solution) return { puzzle: toDigits(puzzle), solution: toDigits(solution) };
-    } catch {
-      // Out of time for this level; try the next one.
-    }
-  }
-  return null;
-}
+import { dailyPuzzle, newPuzzle } from "@/lib/sudoku-puzzles";
 
 /** The current puzzle (used to catch up after another window replaced or finished it). */
 export async function GET(request: Request) {
@@ -38,30 +15,6 @@ export async function GET(request: Request) {
   } catch {
     return apiError(500, "load_failed", "Could not load your puzzle.");
   }
-}
-
-/** Daily puzzles are the same for everyone: generated from the date, cached per server instance. */
-const dailyCache = new Map<string, { puzzle: string; solution: string }>();
-
-function dailyPuzzle(date: string) {
-  const cached = dailyCache.get(date);
-  if (cached) return cached;
-  const seed = seedFrom(`sudoku:${date}`);
-  for (const level of LEVELS[SUDOKU_DAILY_DIFFICULTY]) {
-    try {
-      const puzzle = generate(level, { seed });
-      const solution = getUniqueSolution(puzzle);
-      if (puzzle.length === SUDOKU_CELLS && solution) {
-        const generated = { puzzle: toDigits(puzzle), solution: toDigits(solution) };
-        dailyCache.set(date, generated);
-        if (dailyCache.size > 4) dailyCache.delete(dailyCache.keys().next().value!);
-        return generated;
-      }
-    } catch {
-      // No puzzle at this level for this seed; the next level is just as deterministic.
-    }
-  }
-  return null;
 }
 
 /**

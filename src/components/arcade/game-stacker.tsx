@@ -450,7 +450,7 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
   useGameAchievementTracking("stacker", phase);
 
   useEffect(() => {
-    if (phase === "playing") beginRun();
+    if (phase === "playing") beginRun(gameRef.current?.variant ?? "");
   }, [phase, beginRun]);
 
   useEffect(() => {
@@ -547,6 +547,7 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
     <GameShell
       game="stacker"
       title="Tower Stacker"
+      leaderboard={variant}
       active={active}
       stats={
         <>

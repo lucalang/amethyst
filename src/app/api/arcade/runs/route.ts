@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const parsed = await parseJson(request, startRunSchema);
   if ("response" in parsed) return parsed.response;
 
-  const { data, error } = await ctx.supabase.rpc("start_arcade_run", { p_game: parsed.data.game });
+  const { data, error } = await ctx.supabase.rpc("start_arcade_run", { p_game: parsed.data.game, p_board: parsed.data.board ?? null });
   if (error) return dbError(error, "Could not start the run.");
   return jsonResponse({ runId: data });
 }

@@ -16,7 +16,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { ArrowLeft, House, Maximize, Minimize, Store, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, House, Maximize, Minimize, Store, Trophy, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
@@ -25,6 +25,7 @@ import { apiFetch } from "@/lib/api-client";
 import type { AchievementEvent } from "@/lib/achievements";
 import type { ArcadeGameId, ScoreGame } from "@/lib/arcade";
 import type { GameLook } from "@/lib/game-cosmetics";
+import { leaderboardHref } from "@/lib/leaderboards";
 import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { closeAudio, playSound, type SoundName } from "./sound";
@@ -113,6 +114,7 @@ export function GameShell({
   active = false,
   stats,
   actions,
+  leaderboard = "",
   children,
 }: {
   game: ArcadeGameId;
@@ -120,6 +122,8 @@ export function GameShell({
   active?: boolean;
   stats?: ReactNode;
   actions?: ReactNode;
+  /** The board the leaderboard link opens (the mode currently picked). */
+  leaderboard?: string;
   children: ReactNode;
 }) {
   const { rootRef, sound, toggleSound, look, setLook } = useArcade();
@@ -168,6 +172,12 @@ export function GameShell({
           <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
           <div className="ml-auto flex items-center gap-1.5">
             {actions}
+            <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
+              <Link href={leaderboardHref(game, leaderboard)} prefetch={false} aria-label={`${title} leaderboard`} title={`${title} leaderboard`}>
+                <Trophy aria-hidden />
+                <span aria-hidden className="hidden sm:inline">Ranks</span>
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
               <Store aria-hidden />
               Shop
