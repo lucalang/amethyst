@@ -6,13 +6,13 @@ import { describeDue, useToday } from "@/components/workspace/due-date";
 import type { HomeTask } from "@/lib/data/home";
 import { cn } from "@/lib/utils";
 
-/** Incomplete tasks with due dates (earliest first, so overdue ones lead). */
-export function UpcomingTasks({ tasks }: { tasks: HomeTask[] }) {
+/** Open checklist tasks in the order given (Upcoming: earliest due first, so overdue ones lead). */
+export function UpcomingTasks({ tasks, label = "Upcoming tasks" }: { tasks: HomeTask[]; label?: string }) {
   const today = useToday();
   return (
-    <ul aria-label="Upcoming tasks" className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
+    <ul aria-label={label} className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
       {tasks.map((task) => {
-        const due = describeDue(task.dueDate, today);
+        const due = task.dueDate ? describeDue(task.dueDate, today) : { text: "No due date", overdue: false };
         return (
           <li key={task.id}>
             <Link

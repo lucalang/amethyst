@@ -7,9 +7,10 @@ import { EditorToolbar } from "@/components/editor/editor-toolbar";
 import { LiveMarkdownEditor, type EditorStatus, type LiveMarkdownEditorHandle } from "@/components/editor/live-markdown-editor";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 import { MAX_NOTE_LENGTH } from "@/lib/validation/workspace";
 import { createMarkdownTaskCounter } from "@/lib/progress/markdown";
-import type { NodeDetail, WorkspaceNode } from "@/lib/workspace/tree";
+import type { WorkspaceNode } from "@/lib/workspace/tree";
 import { errorMessage, nodeQueryKey, readLocal, useHydrated, writeLocal } from "./client-utils";
 import { SaveStatus, type SaveState } from "./save-status";
 
@@ -37,19 +38,31 @@ export const clearDraftBackup = (fileId: string) => writeLocal(backupKey(fileId)
 const TOOLBAR_ROW = "sticky top-[6.25rem] z-10 flex min-h-11 items-center justify-between gap-3 border-b border-border bg-black/90 px-3 backdrop-blur md:px-6";
 const PAGE = "px-5 md:px-10 lg:px-14";
 
+type VersionedNote = { id: string; name: string; version: number };
+type NoteEditorProps<N extends VersionedNote> = {
+  detail: { node: N & { content: string } };
+  /** Versioned GET/PATCH address of the note; defaults to the workspace file API. */
+  endpoint?: string;
+  autoFocus?: boolean;
+  /** Offset of the sticky toolbar below the page chrome. */
+  toolbarClassName?: string;
+  onSaved: (node: N) => void;
+  onTaskCountsChange?: (counts: { total: number; checked: number }) => void;
+};
+
 /**
  * Markdown note with Obsidian-style live preview and autosave. Drafts are
  * mirrored to localStorage until the server confirms them, saves are
  * serialized, and version conflicts are surfaced instead of overwriting
  * another tab's changes.
  */
-export function NoteEditor(props: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void; onTaskCountsChange: (counts: { total: number; checked: number }) => void }) {
+export function NoteEditor<N extends VersionedNote = WorkspaceNode>(props: NoteEditorProps<N>) {
   // The editor and local drafts only exist in the browser.
   const hydrated = useHydrated();
   if (!hydrated) {
     return (
       <div className="flex flex-1 flex-col">
-        <div className={TOOLBAR_ROW} />
+        <div className={cn(TOOLBAR_ROW, props.toolbarClassName)} />
         <div className={`${PAGE} flex-1 py-6 text-base leading-[1.75] whitespace-pre-wrap text-foreground/90`} aria-busy="true">
           {props.detail.node.content}
         </div>
@@ -59,8 +72,9 @@ export function NoteEditor(props: { detail: NodeDetail; autoFocus?: boolean; onS
   return <LiveNoteEditor {...props} />;
 }
 
-function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { detail: NodeDetail; autoFocus?: boolean; onSaved: (node: WorkspaceNode) => void; onTaskCountsChange: (counts: { total: number; checked: number }) => void }) {
+function LiveNoteEditor<N extends VersionedNote>({ detail, endpoint, autoFocus, toolbarClassName, onSaved, onTaskCountsChange }: NoteEditorProps<N>) {
   const fileId = detail.node.id;
+  const url = endpoint ?? `/api/nodes/${fileId}`;
   const name = detail.node.name;
   const queryClient = useQueryClient();
   const editorRef = useRef<LiveMarkdownEditorHandle>(null);
@@ -86,15 +100,15 @@ function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { de
   const chainRef = useRef<Promise<void>>(Promise.resolve());
   const mountedRef = useRef(true);
 
-  function remember(content: string, node: WorkspaceNode) {
+  function remember(content: string, node: N) {
     savedRef.current = { content, version: node.version };
-    queryClient.setQueryData<NodeDetail>(nodeQueryKey(fileId), (old) =>
+    queryClient.setQueryData<{ node: N & { content: string } }>(nodeQueryKey(fileId), (old) =>
       old ? { ...old, node: { ...old.node, ...node, content } } : old,
     );
   }
 
   async function handleConflict() {
-    const latest = await apiFetch<NodeDetail>(`/api/nodes/${fileId}`);
+    const latest = await apiFetch<{ node: N & { content: string } }>(url);
     if (latest.node.content === draftRef.current) {
       // Our own earlier save (for example from before a file switch) already landed.
       remember(latest.node.content, latest.node);
@@ -113,7 +127,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { de
     if (content === base.content || conflictRef.current) return;
     setState({ kind: "saving" });
     try {
-      const { node } = await apiFetch<{ node: WorkspaceNode }>(`/api/nodes/${fileId}`, {
+      const { node } = await apiFetch<{ node: N }>(url, {
         method: "PATCH",
         json: { content, expectedVersion: base.version },
       });
@@ -191,7 +205,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { de
     return () => window.clearTimeout(timer);
   }, [draft]);
 
-  const reportTasks = useEffectEvent(() => onTaskCountsChange(countTasks(draft)));
+  const reportTasks = useEffectEvent(() => onTaskCountsChange?.(countTasks(draft)));
   useEffect(() => reportTasks(), [draft]);
 
   const flushOnUnmount = useEffectEvent(() => {
@@ -216,7 +230,7 @@ function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { de
       if (draftRef.current === savedRef.current.content || conflictRef.current) return;
       const body = JSON.stringify({ content: draftRef.current, expectedVersion: savedRef.current.version });
       if (body.length > 60_000) return; // keepalive requests are capped at 64 KiB
-      void fetch(`/api/nodes/${fileId}`, {
+      void fetch(url, {
         method: "PATCH",
         keepalive: true,
         credentials: "same-origin",
@@ -230,11 +244,11 @@ function LiveNoteEditor({ detail, autoFocus, onSaved, onTaskCountsChange }: { de
       window.removeEventListener("beforeunload", warn);
       window.removeEventListener("pagehide", sendBeacon);
     };
-  }, [unsaved, fileId]);
+  }, [unsaved, url]);
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className={TOOLBAR_ROW}>
+      <div className={cn(TOOLBAR_ROW, toolbarClassName)}>
         <EditorToolbar
           getView={() => editorRef.current?.view() ?? null}
           status={editorStatus}

@@ -80,6 +80,12 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
     area: "Settings", section: "Labels", path: "/settings/labels", keywords: "tags categories rename merge delete create", settings: [],
   },
   {
+    area: "Settings", section: "Stats", path: "/settings/stats", keywords: "my statistics totals progress entries completed tasks coins games achievements", settings: [],
+  },
+  {
+    area: "Settings", section: "Amethyst Stats", path: "/settings/amethyst-stats", keywords: "statistics totals platform coins redemptions cosmetics lines of code commits codebase", settings: [],
+  },
+  {
     area: "Settings", section: "Version history", path: "/version-history", keywords: "commits catalog historical demos milestones releases sha reset", settings: [],
   },
 ];

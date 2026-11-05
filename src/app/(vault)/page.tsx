@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { ArrowRight, Award, CalendarClock, Check, Gem, History, Layers, LibraryBig, Pin, Sparkles, Sun, type LucideIcon } from "lucide-react";
+import { ArrowRight, Award, CalendarClock, Check, Gem, History, LibraryBig, NotebookPen, Pin, Sparkles, Sun, type LucideIcon } from "lucide-react";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { CollectionIcon } from "@/components/categories/collection-icon";
@@ -11,7 +11,8 @@ import { CoverFan } from "@/components/home/cover-fan";
 import { DestinationHub, type HubData } from "@/components/home/destination-hub";
 import { CustomizeHomeButton, HomeCustomizeProvider, HomeSections } from "@/components/home/home-customizer";
 import { NewEntryButton } from "@/components/home/new-entry-button";
-import { UpcomingTasks } from "@/components/home/upcoming-tasks";
+import { HomeTasks } from "@/components/home/home-tasks";
+import { QuickNotesPanel } from "@/components/home/quick-notes-panel";
 import { HomeMyDay } from "@/components/tasks/home-my-day";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
@@ -22,6 +23,7 @@ import { ProgressMeter } from "@/components/media/progress-meter";
 import { Button } from "@/components/ui/button";
 import { loadHome, type HomeData, type HomeFeaturedEntry } from "@/lib/data/home";
 import { loadAchievementCards } from "@/lib/data/achievements";
+import { loadRecentQuickNotes } from "@/lib/data/quick-notes";
 import { loadMyDayPreview } from "@/lib/data/tasks";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { loadPreferences } from "@/lib/data/preferences";
@@ -282,13 +284,15 @@ function FeaturedImage({ url, caption }: { url: string; caption: string }) {
 export default async function HomePage() {
   const ctx = await measureServer("home.auth", requireUser);
   const preferenceRead = measureServer("home.preferences", () => loadPreferences(ctx));
-  const [preferences, home, achievementCards, coinBalance, myDay] = await Promise.all([
+  const [preferences, home, achievementCards, coinBalance, myDay, quickNotes] = await Promise.all([
     preferenceRead,
     measureServer("home.archive", () => loadHome(ctx, preferenceRead.then((value) => value.homeFeatured?.kind === "entry" ? value.homeFeatured.entryId : null))),
     preferenceRead.then((value) => value.homeSections.some((section) => section.id === "achievements" && !section.hidden)
       ? measureServer("home.achievements", () => loadAchievementCards(ctx)) : []),
     measureServer("home.wallet", () => loadCoinBalance(ctx).catch(() => null)),
     measureServer("home.my-day", () => loadMyDayPreview(ctx)),
+    preferenceRead.then((value) => value.homeSections.some((section) => section.id === "quickNotes" && !section.hidden)
+      ? measureServer("home.quick-notes", () => loadRecentQuickNotes(ctx, 5)) : []),
   ]);
   const chosen = preferences.homeFeatured;
   const showAchievements = preferences.homeSections.some((section) => section.id === "achievements" && !section.hidden);
@@ -366,26 +370,14 @@ export default async function HomePage() {
     tasks: (position) =>
       hasEntries ? (
         <Section id="tasks" title="Upcoming tasks" icon={CalendarClock} index={position}>
-          {home.tasks.length ? <UpcomingTasks tasks={home.tasks} /> : <Hint>No open tasks with due dates. Add a due date to a checklist task to see it here.</Hint>}
+          <HomeTasks upcoming={home.tasks} favorited={home.favoriteTasks} />
         </Section>
       ) : null,
-    glance: (position) =>
-      hasEntries ? (
-        <Section id="glance" title="At a glance" icon={Layers} index={position}>
-          <dl className="grid grid-cols-3 rounded-xl border border-white/[0.07] bg-surface/30 px-4 py-5 md:px-6">
-            {[
-              { label: home.counts.collections === 1 ? "Collection" : "Collections", value: home.counts.collections },
-              { label: home.counts.entries === 1 ? "Entry" : "Entries", value: home.counts.entries },
-              { label: home.counts.files === 1 ? "Workspace file" : "Workspace files", value: home.counts.files },
-            ].map((stat, slot) => (
-              <div key={stat.label} className={cn("min-w-0", slot > 0 && "border-l border-white/[0.06] pl-4 md:pl-8")}>
-                <dt className="truncate text-xs text-muted-foreground">{stat.label}</dt>
-                <dd className="mt-1 text-2xl font-semibold tabular-nums md:text-3xl">{stat.value.toLocaleString("en")}</dd>
-              </div>
-            ))}
-          </dl>
-        </Section>
-      ) : null,
+    quickNotes: (position) => (
+      <Section id="quick-notes" title="Quick Notes" icon={NotebookPen} index={position}>
+        <QuickNotesPanel notes={quickNotes} />
+      </Section>
+    ),
     achievements: (position) => {
       const earnedIds = new Set(achievementCards.filter((item) => item.earnedAt).map((item) => item.id));
       const earned = ACHIEVEMENTS.filter((item) => earnedIds.has(item.id)).slice(0, 6);

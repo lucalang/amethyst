@@ -49,6 +49,68 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-quick-notes-and-stats",
+    date: "2026-11-05",
+    title: "Quick Notes, Favorited Tasks & Stats",
+    intro: "Jot things down from Home into Quick Notes, keep starred tasks one tab away, see your own numbers in Stats and browse platform-wide totals in Amethyst Stats.",
+    icon: "notebook",
+    highlights: [
+      { kind: "new", feature: "Quick Notes", text: "A notes space that isn't tied to any entry: capture a thought from Home, then open, edit, rename or delete it under Quick Notes." },
+      { kind: "new", feature: "Favorited Tasks", text: "Home's Upcoming tasks has a Favorited tab listing open checklist tasks you've starred, with or without a due date." },
+      { kind: "new", feature: "Stats", text: "A Settings page with your own totals: entries and progress, notes, checklist and To Do tasks, coins, games, achievements and cosmetics." },
+      { kind: "new", feature: "Amethyst Stats", text: "A Settings page with live totals across all accounts and a snapshot of the codebase, each with a plain definition." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Quick Notes",
+          body: "Quick Notes are standalone Markdown notes that belong to you rather than to an entry. Capture one from Home: the first line becomes its name. The full Quick Notes page lists every note, newest first, and opens each one in the same editor as entry notes.",
+          points: [
+            "Ctrl + Enter (Cmd + Enter on Mac) saves a capture without leaving the keyboard.",
+            "Notes save automatically as you type; if the note changed in another tab, you're asked which version to keep.",
+            "Rename a note by editing its title, or delete it from the note page.",
+            "Up to 1,000 quick notes per account.",
+          ],
+          where: "Home → Quick Notes, or the Quick Notes page",
+          link: { href: "/notes", label: "Open Quick Notes" },
+        },
+        {
+          title: "Favorited Tasks",
+          body: "The Upcoming tasks section on Home now has two tabs. Upcoming lists open tasks by due date as before; Favorited lists open checklist tasks you've starred in any entry, soonest due first and undated ones last.",
+          where: "Home → Upcoming tasks → Favorited",
+          link: { href: "/", label: "Open Home" },
+        },
+        {
+          title: "Stats",
+          body: "A new Settings page shows numbers about your own account: entries split into completed, in progress and not started, overall progress, collections and pinned entries, notes and checklists. It also covers checklist and To Do tasks (including the last 7 days), your coin balance with coins received and spent, Arcade games played and your most played game, personal records, daily Sudokus, Slot spins, achievements, cosmetics and Vault codes.",
+          points: [
+            "Only you can see your stats.",
+            "Figures come from what's saved now, so there is no history or trend over time.",
+          ],
+          where: "Settings → Stats",
+          link: { href: "/settings/stats", label: "Open Stats" },
+        },
+        {
+          title: "Amethyst Stats",
+          body: "A new Settings page shows totals across everyone using Amethyst: collections, entries, archive checklist tasks, To Do tasks, coins awarded by source, successful code redemptions and cosmetics granted. A codebase section shows lines and characters of source code and the number of commits, from a snapshot with its commit and date.",
+          points: [
+            "Only aggregate totals are shown, never accounts, emails, codes or individual activity.",
+            "Every figure explains exactly what it counts and what it leaves out.",
+          ],
+          where: "Settings → Amethyst Stats",
+          link: { href: "/settings/amethyst-stats", label: "Open Amethyst Stats" },
+        },
+      ],
+      improved: [
+        {
+          title: "Customize Home",
+          body: "Quick Notes is a Home section you can move or hide like the others. It starts directly below Upcoming tasks, including on layouts you've already arranged. The At a glance section is gone; your totals now live in Settings → Stats.",
+          where: "Home → Customize",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-05-version-history-chronometer",
     date: "2026-11-05",
     title: "Version History - The Chronometer",

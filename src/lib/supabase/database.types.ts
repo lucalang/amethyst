@@ -23,6 +23,12 @@ export type Database = {
           }
         },"public": {
           Tables: {
+            "quick_notes": {
+              Row: { id: string; user_id: string; name: string; content: string; version: number; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; content?: string; version?: number; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; content?: string; version?: number; created_at?: string; updated_at?: string }
+              Relationships: []
+            },
             "app_admins": {
               Row: { user_id: string; role: "owner" | "admin"; granted_at: string; granted_by: string | null }
               Insert: { user_id: string; role?: "owner" | "admin"; granted_at?: string; granted_by?: string | null }
@@ -492,6 +498,8 @@ isOneToOne: false
                 }
           }
           Functions: {
+            "amethyst_stats": { Args: Record<PropertyKey, never>; Returns: Json }
+            "my_stats": { Args: Record<PropertyKey, never>; Returns: Json }
             "add_checklist_items":
 { Args: { "p_file_id": string,"p_labels": (string)[] }; Returns: {
               "checked": boolean,

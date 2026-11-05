@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Frame, Keyboard, LayoutTemplate, LibraryBig, Palette, PenLine, SlidersHorizontal, Sparkles, Tags, UserRound, type LucideIcon } from "lucide-react";
+import { BarChart3, Frame, Keyboard, LayoutTemplate, LibraryBig, Palette, PenLine, PieChart, SlidersHorizontal, Sparkles, Tags, UserRound, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Item = { href: string; label: string; icon: LucideIcon; active: (pathname: string) => boolean };
@@ -67,6 +67,18 @@ const ITEMS: Item[] = [
     label: "Labels",
     icon: Tags,
     active: (pathname) => pathname.startsWith("/settings/labels"),
+  },
+  {
+    href: "/settings/stats",
+    label: "Stats",
+    icon: PieChart,
+    active: (pathname) => pathname.startsWith("/settings/stats"),
+  },
+  {
+    href: "/settings/amethyst-stats",
+    label: "Amethyst Stats",
+    icon: BarChart3,
+    active: (pathname) => pathname.startsWith("/settings/amethyst-stats"),
   },
 ];
 

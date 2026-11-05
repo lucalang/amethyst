@@ -30,7 +30,7 @@ export type HomeCollection = {
   /** True when the previews are artwork the user chose rather than automatic picks. */
   customCovers: boolean;
 };
-export type HomeTask = { id: string; label: string; dueDate: string; starred: boolean; href: string; entryTitle: string; fileName: string };
+export type HomeTask = { id: string; label: string; dueDate: string | null; starred: boolean; href: string; entryTitle: string; fileName: string };
 export type HomeContinue = {
   entry: LibraryEntry;
   collectionName: string;
@@ -44,11 +44,13 @@ export type HomeData = {
   avatarUrl: string | null;
   motto: string | null;
   collections: HomeCollection[];
-  counts: { collections: number; entries: number; files: number };
+  counts: { collections: number; entries: number };
   continueEntry: HomeContinue | null;
   recent: LibraryEntry[];
   pinned: LibraryEntry[];
   tasks: HomeTask[];
+  /** Open starred checklist tasks: dated ones by due date first, then undated in checklist order. */
+  favoriteTasks: HomeTask[];
   /** The artwork the user picked for the cover fan, in order. Never derived from visits. */
   fan: FanItem[];
   /** The entry featured on Home; null when none is set or it was deleted. */
@@ -65,7 +67,7 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
  */
 export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string | null> | string | null = null): Promise<HomeData> {
   const { supabase } = ctx;
-  const [collections, entries, visits, pins, files, tasks, profile, fanRows, coverRows, featuredRequest] = await Promise.all([
+  const [collections, entries, visits, pins, tasks, favorites, profile, fanRows, coverRows, featuredRequest] = await Promise.all([
     loadCollections(ctx),
     fetchAll(
       (from, to) =>
@@ -79,7 +81,6 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
     ),
     supabase.from("entry_visits").select("entry_id, last_file_id, visited_at").order("visited_at", { ascending: false }).limit(VISIT_LIMIT).then(check),
     supabase.from("entry_pins").select("entry_id, pinned_at").order("pinned_at", { ascending: false }).limit(PIN_LIMIT).then(check),
-    supabase.from("workspace_nodes").select("id", { count: "exact", head: true }).neq("kind", "folder"),
     supabase
       .from("workspace_checklist_items")
       .select("id, file_id, label, due_date, starred")
@@ -90,19 +91,28 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
       .order("id")
       .limit(TASK_LIMIT)
       .then(check),
+    supabase
+      .from("workspace_checklist_items")
+      .select("id, file_id, label, due_date, starred")
+      .eq("checked", false)
+      .eq("starred", true)
+      .order("due_date", { nullsFirst: false })
+      .order("position")
+      .order("id")
+      .limit(TASK_LIMIT)
+      .then(check),
     loadProfile(ctx),
     supabase.from("home_fan_items").select("id, entry_id, image_url, image_shape").order("position").then(check),
     supabase.from("collection_cover_items").select("id, collection_id, entry_id, image_url, image_shape").order("position").then(check),
     featuredEntryId,
   ]);
-  if (files.error) throw new Error(`Query failed (${files.error.code ?? "unknown"})`);
 
   const entryById = new Map(entries.map((entry) => [entry.id, entry]));
   const visitRows = (visits ?? []).filter((visit) => entryById.has(visit.entry_id));
   const pinRows = (pins ?? []).filter((pin) => entryById.has(pin.entry_id));
   const pinnedIds = new Set(pinRows.map((pin) => pin.entry_id));
   const last = visitRows[0];
-  const fileIds = [...new Set([...(tasks ?? []).map((task) => task.file_id), ...(last?.last_file_id ? [last.last_file_id] : [])])];
+  const fileIds = [...new Set([...[...(tasks ?? []), ...(favorites ?? [])].map((task) => task.file_id), ...(last?.last_file_id ? [last.last_file_id] : [])])];
   const featuredId = featuredRequest && entryById.has(featuredRequest) ? featuredRequest : null;
   const shownIds = [...new Set([...visitRows.map((visit) => visit.entry_id), ...pinRows.map((pin) => pin.entry_id), ...(featuredId ? [featuredId] : [])])];
 
@@ -205,7 +215,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
         customCovers: chosen !== null,
       };
     }),
-    counts: { collections: collections.length, entries: entries.length, files: files.count ?? 0 },
+    counts: { collections: collections.length, entries: entries.length },
     continueEntry,
     recent: visitRows.slice(1).map((visit) => toLibraryEntry(visit.entry_id)),
     pinned: pinRows.map((pin) => toLibraryEntry(pin.entry_id)),
@@ -216,19 +226,22 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
           return { entry, collectionName: collectionNames.get(row.collection_id) ?? "", bannerUrl: row.banner_url, href: entryPath(entry) };
         })()
       : null,
-    tasks: (tasks ?? []).flatMap((task) => {
-      const node = nodeById.get(task.file_id);
-      const entry = node ? entryById.get(node.entry_id) : undefined;
-      if (!node || !entry || !task.due_date) return [];
-      return [{
-        id: task.id,
-        label: task.label,
-        dueDate: task.due_date,
-        starred: task.starred,
-        href: `${entryPath(entry)}?file=${node.id}`,
-        entryTitle: entry.title,
-        fileName: node.name,
-      }];
-    }),
+    tasks: (tasks ?? []).flatMap((task) => (task.due_date ? toHomeTask(task) : [])),
+    favoriteTasks: (favorites ?? []).flatMap(toHomeTask),
   };
+
+  function toHomeTask(task: { id: string; file_id: string; label: string; due_date: string | null; starred: boolean }): HomeTask[] {
+    const node = nodeById.get(task.file_id);
+    const entry = node ? entryById.get(node.entry_id) : undefined;
+    if (!node || !entry) return [];
+    return [{
+      id: task.id,
+      label: task.label,
+      dueDate: task.due_date,
+      starred: task.starred,
+      href: `${entryPath(entry)}?file=${node.id}`,
+      entryTitle: entry.title,
+      fileName: node.name,
+    }];
+  }
 }

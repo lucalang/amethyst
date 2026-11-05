@@ -21,6 +21,7 @@
     "images:migrate": "tsx --env-file=.env.local scripts/migrate-images-to-r2.ts",
     "versions:catalog": "tsx scripts/version-history-catalog.ts",
     "demos": "tsx scripts/version-demos.ts",
+    "stats:code": "tsx scripts/code-stats.ts",
     "verify": "npm run typecheck && npm run lint && npm test && npm run build"
   },
   "dependencies": {

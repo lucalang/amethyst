@@ -47,7 +47,7 @@ const shortcut = z.string().max(40).refine((value) => value === "" || SHORTCUT_P
 const hasControls = (value: string) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
 
 /** Home sections below the welcome header, in their default order. */
-export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "glance", "achievements", "myDay"] as const;
+export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "quickNotes", "achievements", "myDay"] as const;
 /** Sections that start hidden (opt-in) for accounts that never arranged Home. */
 export const HIDDEN_BY_DEFAULT: readonly string[] = ["achievements", "myDay"];
 export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
@@ -57,7 +57,10 @@ export const MAX_FEATURED_CAPTION_LENGTH = 120;
 
 export type HomeFeatured = { kind: "entry"; entryId: string } | { kind: "image"; url: string; caption: string } | null;
 
-/** Known sections once each, in the saved order; sections added later are appended. */
+/** Sections added later land after this neighbour in saved layouts instead of at the end. */
+const INSERT_AFTER: Partial<Record<HomeSectionId, HomeSectionId>> = { quickNotes: "tasks" };
+
+/** Known sections once each, in the saved order; sections added later are inserted or appended. */
 function normalizeHomeSections(list: { id: string; hidden: boolean }[]): HomeSection[] {
   const seen = new Set<string>();
   const sections: HomeSection[] = [];
@@ -66,7 +69,13 @@ function normalizeHomeSections(list: { id: string; hidden: boolean }[]): HomeSec
     seen.add(item.id);
     sections.push({ id: item.id as HomeSectionId, hidden: item.hidden });
   }
-  for (const id of HOME_SECTION_IDS) if (!seen.has(id)) sections.push({ id, hidden: HIDDEN_BY_DEFAULT.includes(id) });
+  for (const id of HOME_SECTION_IDS) {
+    if (seen.has(id)) continue;
+    const section = { id, hidden: HIDDEN_BY_DEFAULT.includes(id) };
+    const anchor = sections.findIndex((item) => item.id === INSERT_AFTER[id]);
+    if (anchor >= 0) sections.splice(anchor + 1, 0, section);
+    else sections.push(section);
+  }
   return sections;
 }
 
