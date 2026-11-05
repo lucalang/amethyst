@@ -7017,6 +7017,20 @@ a.arcade-counter:hover {
   font-size: var(--flair-size, 0.75rem);
   line-height: 1.2;
 }
+.profile-badges {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.2em;
+}
+.profile-badges-more {
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--amethyst) 40%, var(--border));
+  padding: 0.1em 0.45em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+}
 .profile-title {
   overflow: hidden;
   text-overflow: ellipsis;

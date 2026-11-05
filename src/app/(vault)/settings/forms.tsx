@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
-import { Award, Loader2, Lock, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Award, Check, Loader2, Lock, X } from "lucide-react";
 import { CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
@@ -15,6 +16,7 @@ import { achievementForItem } from "@/lib/achievements";
 import {
   AVATAR_DECORATION_IDS,
   AVATAR_DECORATIONS,
+  MAX_PROFILE_BADGES,
   PROFILE_BADGE_IDS,
   PROFILE_BADGES,
   PROFILE_TITLE_IDS,
@@ -54,7 +56,9 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
     (id) => cosmetics.owned.includes(id) || PROFILE_TITLES[id].source === "achievement",
   );
   const [flairSource, setFlairSource] = useState<"all" | "achievement" | "vault">("all");
-  const [badge, setBadge] = useState<ProfileBadgeId | null>(cosmetics.badge);
+  const [badges, setBadges] = useState<ProfileBadgeId[]>(() => [...cosmetics.badges]);
+  const [badgeNote, setBadgeNote] = useState("");
+  const badgesFull = badges.length >= MAX_PROFILE_BADGES;
   const [title, setTitle] = useState<ProfileTitleId | null>(cosmetics.title);
   const [decorationQuery, setDecorationQuery] = useState("");
   const decorationMatch = visibleDecorations.length + 1 >= PICKER_SEARCH_MIN ? catalogMatcher(decorationQuery) : null;
@@ -64,15 +68,45 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
   // Remounts the image field so "Remove picture" clears links and uploads alike.
   const [fieldKey, setFieldKey] = useState(0);
   const [fieldDefault, setFieldDefault] = useState(avatarUrl);
+
+  // Reordering moves DOM nodes, so focus is restored to the matching control after each change.
+  function updateBadges(next: ProfileBadgeId[], note: string, focus?: string) {
+    flushSync(() => {
+      setBadges(next);
+      setBadgeNote(note);
+    });
+    if (focus) document.querySelector<HTMLElement>(`[data-badge-focus="${focus}"]`)?.focus();
+  }
+  function toggleBadge(id: ProfileBadgeId) {
+    const name = PROFILE_BADGES[id].name;
+    if (badges.includes(id)) updateBadges(badges.filter((item) => item !== id), `${name} removed.`);
+    else if (!badgesFull) updateBadges([...badges, id], `${name} added in position ${badges.length + 1}.`);
+  }
+  function moveBadge(id: ProfileBadgeId, delta: -1 | 1) {
+    const from = badges.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= badges.length) return;
+    const next = [...badges];
+    [next[from], next[to]] = [next[to], next[from]];
+    const edge = delta < 0 ? to === 0 : to === badges.length - 1;
+    const focus = `${id}:${(delta < 0) !== edge ? "up" : "down"}`;
+    updateBadges(next, `${PROFILE_BADGES[id].name} moved to position ${to + 1} of ${badges.length}.`, focus);
+  }
+  function removeBadge(id: ProfileBadgeId) {
+    const index = badges.indexOf(id);
+    const next = badges.filter((item) => item !== id);
+    const neighbour = next[index] ?? next[index - 1];
+    updateBadges(next, `${PROFILE_BADGES[id].name} removed.`, neighbour ? `${neighbour}:remove` : `${id}:pick`);
+  }
   return (
     <form action={action} className="space-y-5">
       <div className="flex flex-wrap items-center gap-4 rounded-lg border border-white/[0.07] bg-white/[0.02] p-4">
         <ProfileAvatar name={name} src={avatar} decoration={decoration} className="size-16 text-xl" />
         <div className="min-w-0">
           <p className="truncate text-base font-semibold">{name.trim() || "Your account"}</p>
-          <ProfileFlair badge={badge} title={title} className="my-0.5" />
+          <ProfileFlair badges={badges} title={title} className="my-0.5" />
           <p className="line-clamp-2 text-sm break-words text-muted-foreground">{line.trim() || "No motto yet"}</p>
-          <p className="mt-1 text-[11px] text-muted-foreground/75">Preview · only you can see your profile</p>
+          <p className="mt-1 text-[11px] text-muted-foreground/75">Preview · signed-in members can view your profile page</p>
         </div>
       </div>
       <div className="space-y-1.5">
@@ -211,40 +245,90 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
             ))}
           </div>
         </div>
-        <input type="hidden" name="profileBadge" value={badge ?? ""} />
+        {badges.map((id) => (
+          <input key={id} type="hidden" name="profileBadges" value={id} />
+        ))}
         <input type="hidden" name="profileTitle" value={title ?? ""} />
         <div className="grid gap-5 sm:grid-cols-2">
-          <fieldset id="settings-profile-badge" className="space-y-2">
-            <legend className="text-xs font-medium text-muted-foreground">Badge</legend>
-            <div className="flex flex-wrap gap-2">
-              {[null, ...visibleBadges]
-                .filter((id) => id === null || id === badge || flairSource === "all" || PROFILE_BADGES[id].source === flairSource)
+          <fieldset id="settings-profile-badge" className="space-y-2.5 sm:col-span-2">
+            <legend className="text-xs font-medium text-muted-foreground">
+              Badges{" "}
+              <span className="tabular-nums">
+                ({badges.length}/{MAX_PROFILE_BADGES} selected)
+              </span>
+            </legend>
+            {badges.length ? (
+              <ol aria-label="Worn badges, in display order" className="flex max-w-md flex-col gap-1.5">
+                {badges.map((id, index) => {
+                  const name = PROFILE_BADGES[id].name;
+                  return (
+                    <li key={id} className="flex items-center gap-2 rounded-lg border border-amethyst/30 bg-amethyst/[0.06] py-1 pr-1 pl-2.5 text-sm">
+                      <span aria-hidden className="w-3 text-center text-xs text-muted-foreground tabular-nums">
+                        {index + 1}
+                      </span>
+                      <BadgeEmblem badge={id} className="size-6" />
+                      <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
+                      <Button type="button" variant="ghost" size="icon" className="size-8" aria-label={`Move ${name} earlier`} disabled={index === 0} data-badge-focus={`${id}:up`} onClick={() => moveBadge(id, -1)}>
+                        <ArrowUp aria-hidden />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="size-8" aria-label={`Move ${name} later`} disabled={index === badges.length - 1} data-badge-focus={`${id}:down`} onClick={() => moveBadge(id, 1)}>
+                        <ArrowDown aria-hidden />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="size-8 hover:text-rose" aria-label={`Remove ${name}`} data-badge-focus={`${id}:remove`} onClick={() => removeBadge(id)}>
+                        <X aria-hidden />
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p className="text-xs text-muted-foreground">No badges worn. Choose up to {MAX_PROFILE_BADGES} below.</p>
+            )}
+            <p role="status" aria-live="polite" className="sr-only">
+              {badgeNote}
+            </p>
+            <div role="group" aria-label={`Choose badges, up to ${MAX_PROFILE_BADGES}`} className="flex flex-wrap gap-2">
+              {visibleBadges
+                .filter((id) => badges.includes(id) || flairSource === "all" || PROFILE_BADGES[id].source === flairSource)
                 .map((id) => {
-                  const isOwned = id === null || cosmetics.owned.includes(id);
-                  const ach = id ? achievementForItem(id) : undefined;
+                  const isOwned = cosmetics.owned.includes(id);
+                  const position = badges.indexOf(id);
+                  const selected = position >= 0;
+                  const ach = achievementForItem(id);
                   const lockedHint = ach ? (ach.hidden && !isOwned ? "Hidden achievement" : ach.name) : "Vault";
+                  const hint = !isOwned ? `Locked (${lockedHint})` : !selected && badgesFull ? "Remove a badge to wear this one" : PROFILE_BADGES[id].description;
                   return (
                     <label
-                      key={id ?? "none"}
-                      title={id ? `${PROFILE_BADGES[id].name} — ${isOwned ? PROFILE_BADGES[id].description : `Locked (${lockedHint})`}` : "No badge"}
-                      className={cn("flair-option", badge === id && "flair-option-on", !isOwned && "opacity-70")}
+                      key={id}
+                      title={`${PROFILE_BADGES[id].name} — ${hint}`}
+                      className={cn("flair-option", selected && "flair-option-on", (!isOwned || (!selected && badgesFull)) && "opacity-70")}
                     >
                       <input
-                        type="radio"
-                        name="profileBadgeChoice"
-                        value={id ?? ""}
-                        checked={badge === id}
-                        disabled={!isOwned}
-                        onChange={() => isOwned && setBadge(id)}
+                        type="checkbox"
+                        checked={selected}
+                        disabled={!isOwned || (!selected && badgesFull)}
+                        onChange={() => toggleBadge(id)}
+                        data-badge-focus={`${id}:pick`}
                         className="sr-only"
                       />
-                      {id ? <BadgeEmblem badge={id} className="size-6" /> : null}
-                      <span>{id ? PROFILE_BADGES[id].name : "None"}</span>
+                      <BadgeEmblem badge={id} className="size-6" />
+                      <span>{PROFILE_BADGES[id].name}</span>
+                      {selected ? (
+                        <span aria-hidden className="inline-flex items-center gap-0.5 text-[11px] text-amethyst tabular-nums">
+                          <Check className="size-3" />
+                          {position + 1}
+                        </span>
+                      ) : null}
                       {!isOwned ? <Lock aria-hidden className="size-3 text-muted-foreground" /> : null}
                     </label>
                   );
                 })}
             </div>
+            {badges.length ? (
+              <Button type="button" variant="ghost" size="sm" className="text-muted-foreground" onClick={() => updateBadges([], "All badges removed.")}>
+                Remove all badges
+              </Button>
+            ) : null}
           </fieldset>
           <fieldset id="settings-profile-title" className="space-y-2">
             <legend className="text-xs font-medium text-muted-foreground">Title</legend>
@@ -278,7 +362,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
             </div>
           </fieldset>
           <p className="text-xs text-muted-foreground sm:col-span-2">
-            Shown with your name on Home and in the account menu. Earn milestone badges and titles in{" "}
+            Shown with your name on Home, in the account menu and on your profile page; the first badge leads. Earn milestone badges and titles in{" "}
             <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
               Achievements
             </Link>{" "}

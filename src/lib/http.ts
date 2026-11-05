@@ -58,6 +58,7 @@ const collectionWording = (message: string) =>
 /** Errors raised by database functions with a `hint` naming the case, and their HTTP status. */
 const HINTED: Record<string, number> = {
   cosmetic_not_owned: 403,
+  badge_limit: 409,
   insufficient_funds: 409,
   price_changed: 409,
   item_unavailable: 404,

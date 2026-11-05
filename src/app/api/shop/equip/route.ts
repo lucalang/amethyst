@@ -12,7 +12,8 @@ const equipSchema = z
 
 /**
  * Equip an owned cosmetic, badge or title: a frame becomes the account's default frame (entries with
- * their own frame keep it), while decorations, badges and titles go on the profile. Ownership is
+ * their own frame keep it), a badge joins the worn badges (up to five), while decorations and titles
+ * replace the current one. `{ item: null, slot: "badge" }` takes every badge off. Ownership is
  * enforced by database triggers.
  */
 export async function POST(request: Request) {
@@ -29,8 +30,13 @@ export async function POST(request: Request) {
     const { data, error } = await ctx.supabase.rpc("update_user_settings", { patch: { artworkFrame: item ?? "none" } });
     if (error) return dbError(error, "Could not equip that frame.");
     if (data === null) return apiError(404, "not_found", "Account not found.");
+  } else if (kind === "badge") {
+    const { error } = item
+      ? await ctx.supabase.rpc("wear_profile_badge", { p_badge: item })
+      : await ctx.supabase.rpc("set_profile_badges", { p_badges: [] });
+    if (error) return dbError(error, "Could not equip that badge.");
   } else {
-    const patch = kind === "badge" ? { profile_badge: item } : kind === "title" ? { profile_title: item } : { avatar_decoration: item };
+    const patch = kind === "title" ? { profile_title: item } : { avatar_decoration: item };
     const { data, error } = await ctx.supabase
       .from("users")
       .update(patch)

@@ -155,7 +155,7 @@ export function RewardArt({ id, size, looks, motion = "off" }: { id: string; siz
         <ProfileAvatar name={profile.name} src={profile.avatarUrl} className={size === "large" ? "size-12 text-base" : "size-8 text-xs"} />
         <span className="min-w-0">
           <span className="vx-nameplate-name">{profile.name ?? "You"}</span>
-          <ProfileFlair badge={null} title={id} />
+          <ProfileFlair badges={[]} title={id} />
         </span>
       </span>
     );

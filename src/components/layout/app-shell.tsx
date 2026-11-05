@@ -31,8 +31,8 @@ export function AppShell({
   userId: string;
   introSeenOn: string | null;
   preferences: Preferences;
-  /** Arcade shop items the account owns, its avatar decoration and its profile badge and title. */
-  cosmetics: { owned: string[]; avatarDecoration: AvatarDecorationId | null; badge: ProfileBadgeId | null; title: ProfileTitleId | null };
+  /** Arcade shop items the account owns, its avatar decoration and its profile badges and title. */
+  cosmetics: { owned: string[]; avatarDecoration: AvatarDecorationId | null; badges: ProfileBadgeId[]; title: ProfileTitleId | null };
   /** Server-rendered collection icons keyed by collection id. */
   collectionIcons?: Record<string, ReactNode>;
 }) {

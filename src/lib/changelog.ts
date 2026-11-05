@@ -49,6 +49,33 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-multiple-badges",
+    date: "2026-11-05",
+    title: "Wear up to five badges",
+    intro: "Show off more of your collection: equip up to five profile badges at once and choose their order.",
+    icon: "medal",
+    highlights: [
+      { kind: "new", feature: "Multiple badges", text: "Pick up to five owned badges in Customization → Profile and arrange them with Move earlier, Move later and Remove." },
+      { kind: "improved", feature: "Member profiles", text: "Your profile page shows every badge you wear in its banner; hover or focus one to see its name." },
+      { kind: "improved", feature: "Equipping rewards", text: "Equipping a badge from Achievements adds it next to the ones you already wear instead of replacing them." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Multiple badges",
+          body: "Choose up to five badges you own and put them in the order you like; the first one leads wherever your name appears. Your title stays a single choice. Badges you already wore are kept as your first badge.",
+          where: "Customization → Profile",
+          link: { href: "/customization/profile", label: "Choose badges" },
+          points: [
+            "The picker shows how many of the five slots you're using, and each badge can only be worn once.",
+            "Home and your profile page show all your badges; the compact account menu shows three and a +N count for the rest.",
+            "When all five slots are full, equipping another badge from Achievements asks you to remove one first.",
+          ],
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-05-special-page-designs",
     date: "2026-11-05",
     title: "Special page designs toggle",
@@ -66,6 +93,33 @@ export const CHANGELOG: readonly Release[] = [
           where: "Customization → Appearance",
           link: { href: "/customization/appearance", label: "Open Appearance" },
           points: ["The standard Vault skips the 3D scene: enter a code, get a clear answer and see your rewards as cards.", "The standard Admin panel is a responsive dashboard with every view, draft, publish and confirmation step."],
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-05-member-profiles",
+    date: "2026-11-05",
+    title: "Profile pages",
+    intro: "Every member now has a profile page showing their name, avatar, motto and equipped flair. Open yours from the account menu.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "My Profile", text: "A profile page with your avatar and decoration, display name, motto, equipped badge and title, and the month you joined." },
+      { kind: "new", feature: "Member profiles", text: "Other signed-in members can open your profile page by its link; it's never visible to visitors who aren't signed in." },
+      { kind: "improved", feature: "Customization → Profile", text: "A View my profile button, and Edit profile on your own profile page, link the two." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Profile pages",
+          body: "Your profile page shows how you appear to other Amethyst members: your avatar with its decoration, display name, motto, the badge and title you have equipped, and when you became a member. Each member's page has a permanent address based on their account, so renaming yourself never breaks a link.",
+          points: [
+            "Only signed-in Amethyst members can open profile pages.",
+            "Profiles never show your email, coins, collections, notes, tasks or settings.",
+            "Change what's shown with Edit profile, which opens Customization → Profile.",
+          ],
+          where: "Account menu → My Profile",
+          link: { href: "/profile", label: "Open My Profile" },
         },
       ],
     },

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck } from "lucide-react";
+import { Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -123,11 +123,16 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
                 <ProfileAvatar name={account.name} src={account.avatarUrl} decoration={account.decoration} className="size-8 text-xs" />
                 <span className="min-w-0">
                   <span className="block truncate">{account.name ?? "Your account"}</span>
-                  <ProfileFlair className="my-0.5 [--flair-size:11px]" />
+                  <ProfileFlair maxVisible={3} className="my-0.5 [--flair-size:11px]" />
                   {account.email ? <span className="block truncate text-xs font-normal text-muted-foreground">{account.email}</span> : null}
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <UserRound aria-hidden /> My Profile
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/customization">
                   <Palette aria-hidden /> Customization

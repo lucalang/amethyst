@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AchievementBadge, BADGE_STYLES, badgeVars } from "@/components/achievements/achievement-badge";
 import { RewardItemVisual, rewardCustomizeHref, rewardKindLabel } from "@/components/achievements/reward-visual";
 import { achievementDefinition, type AchievementNotice } from "@/lib/achievements";
-import { apiFetch } from "@/lib/api-client";
+import { ApiError, apiFetch } from "@/lib/api-client";
 import { rewardItemInfo } from "@/lib/cosmetics";
 
 type SingleCelebration = {
@@ -230,8 +230,8 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
       setEquippedIds((current) => [...current, itemId]);
       toast.success(`${info.name} equipped`);
       router.refresh();
-    } catch {
-      toast.error("Could not equip that item right now.");
+    } catch (error) {
+      toast.error(error instanceof ApiError && error.code === "badge_limit" ? error.message : "Could not equip that item right now.");
     } finally {
       setEquipping(null);
     }

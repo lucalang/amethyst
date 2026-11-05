@@ -189,6 +189,15 @@ export type Database = {
                 { foreignKeyName: "user_cosmetics_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "cosmetic_items"; referencedColumns: ["id"] },
               ]
             },
+            "user_profile_badges": {
+              Row: { user_id: string; position: number; badge_id: string }
+              Insert: { user_id: string; position: number; badge_id: string }
+              Update: { user_id?: string; position?: number; badge_id?: string }
+              Relationships: [
+                { foreignKeyName: "user_profile_badges_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] },
+                { foreignKeyName: "user_profile_badges_badge_id_fkey"; columns: ["badge_id"]; isOneToOne: false; referencedRelation: "cosmetic_items"; referencedColumns: ["id"] },
+              ]
+            },
             "secret_code_redemptions": {
               Row: { id: number; code_id: string; user_id: string; redeemed_at: string; coins: number; items: string[]; achievements: string[]; achievements_new: string[]; request_id: string | null }
               Insert: { code_id: string; user_id: string; redeemed_at?: string; coins?: number; items?: string[]; achievements?: string[]; achievements_new?: string[]; request_id?: string | null }
@@ -500,6 +509,22 @@ isOneToOne: false
           Functions: {
             "amethyst_stats": { Args: Record<PropertyKey, never>; Returns: Json }
             "my_stats": { Args: Record<PropertyKey, never>; Returns: Json }
+            "member_profile": {
+              Args: { p_user: string }
+              Returns: {
+                id: string
+                display_name: string | null
+                has_avatar: boolean
+                motto: string | null
+                avatar_decoration: string | null
+                profile_badges: string[]
+                profile_title: string | null
+                member_since: string
+              }[]
+            }
+            "member_avatar": { Args: { p_user: string }; Returns: { remote_url: string | null; object_name: string | null }[] }
+            "set_profile_badges": { Args: { p_badges: string[] }; Returns: string[] }
+            "wear_profile_badge": { Args: { p_badge: string }; Returns: string[] }
             "add_checklist_items":
 { Args: { "p_file_id": string,"p_labels": (string)[] }; Returns: {
               "checked": boolean,

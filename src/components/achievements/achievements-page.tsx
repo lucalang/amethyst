@@ -25,9 +25,9 @@ import {
   type AchievementGroup,
   type RewardFilter,
 } from "@/lib/achievements";
-import { apiFetch } from "@/lib/api-client";
+import { ApiError, apiFetch } from "@/lib/api-client";
 import { catalogMatcher } from "@/lib/catalog-search";
-import { rewardItemInfo } from "@/lib/cosmetics";
+import { rewardItemInfo, type ProfileBadgeId } from "@/lib/cosmetics";
 import type { AchievementCardData } from "@/lib/data/achievements";
 import { cn } from "@/lib/utils";
 
@@ -556,7 +556,7 @@ function AchievementDetails({
     const { kind } = rewardItemInfo(id);
     if (kind === "frame") return preferences.artworkFrame === id;
     if (kind === "avatar_decoration") return cosmetics.avatarDecoration === id;
-    if (kind === "badge") return cosmetics.badge === id;
+    if (kind === "badge") return cosmetics.badges.includes(id as ProfileBadgeId);
     if (kind === "title") return cosmetics.title === id;
     return false;
   }
@@ -570,8 +570,8 @@ function AchievementDetails({
       setEquippedLocal((current) => ({ ...current, [id]: true }));
       toast.success(`${info.name} equipped`);
       router.refresh();
-    } catch {
-      toast.error("Could not equip that reward right now.");
+    } catch (error) {
+      toast.error(error instanceof ApiError && error.code === "badge_limit" ? error.message : "Could not equip that reward right now.");
     } finally {
       setEquipping(null);
     }

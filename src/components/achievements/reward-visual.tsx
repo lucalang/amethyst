@@ -65,7 +65,7 @@ export function RewardItemVisual({
   if (isProfileTitleId(id)) {
     return (
       <span className={cn("inline-flex shrink-0 items-center", className)}>
-        <ProfileFlair badge={null} title={id} className={size === "sm" ? "[--flair-size:10px]" : "[--flair-size:11px]"} />
+        <ProfileFlair badges={[]} title={id} className={size === "sm" ? "[--flair-size:10px]" : "[--flair-size:11px]"} />
       </span>
     );
   }

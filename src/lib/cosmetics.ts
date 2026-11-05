@@ -28,7 +28,7 @@ export const AVATAR_DECORATIONS: Record<AvatarDecorationId, { name: string; desc
 };
 
 /**
- * Profile flair: one badge and one title shown with your name. They're never sold; Vault codes and
+ * Profile flair: up to five badges and one title shown with your name. They're never sold; Vault codes and
  * milestone achievements grant them. Ids match `cosmetic_items` rows of kind 'badge' and 'title'.
  */
 export const PROFILE_BADGE_IDS = [
@@ -42,6 +42,11 @@ export const PROFILE_BADGE_IDS = [
 ] as const;
 export type ProfileBadgeId = (typeof PROFILE_BADGE_IDS)[number];
 export const isProfileBadgeId = (value: unknown): value is ProfileBadgeId => PROFILE_BADGE_IDS.includes(value as ProfileBadgeId);
+/** How many badges a member can wear at once (enforced by the database too). */
+export const MAX_PROFILE_BADGES = 5;
+/** Known, unique badge ids in order, capped at MAX_PROFILE_BADGES. */
+export const toProfileBadges = (values: readonly unknown[] | null | undefined): ProfileBadgeId[] =>
+  [...new Set((values ?? []).filter(isProfileBadgeId))].slice(0, MAX_PROFILE_BADGES);
 export const PROFILE_BADGES: Record<ProfileBadgeId, { name: string; description: string; source: "vault" | "achievement" }> = {
   "badge-keyhole": { name: "Keyhole", description: "A brass keyhole with violet light behind it.", source: "vault" },
   "badge-comet": { name: "Comet", description: "A comet with a long amethyst tail.", source: "vault" },

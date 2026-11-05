@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { UserRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/supabase/auth";
 import { ProfileForm } from "../forms";
 import { SettingsGroup, SettingsHeader } from "../settings-ui";
@@ -14,7 +16,14 @@ export default async function ProfileSettingsPage() {
     <>
       <SettingsHeader
         title="Profile"
-        description="How the archive greets you on Home and in your achievement cabinet. Your profile is private to your account — nobody else can see it."
+        description="How the archive greets you on Home, in your achievement cabinet and on your profile page. Other signed-in Amethyst members can view your profile page: name, avatar, decoration, motto, badge, title and when you joined — never your email or private data."
+        actions={
+          <Button asChild variant="outline" size="sm">
+            <Link href="/profile">
+              <UserRound aria-hidden /> View my profile
+            </Link>
+          </Button>
+        }
       />
       <SettingsGroup id="profile" title="Your profile">
         <ProfileForm displayName={profile?.display_name ?? ""} motto={profile?.motto ?? ""} avatarUrl={profile?.avatar_url ?? ""} />

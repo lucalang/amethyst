@@ -88,20 +88,42 @@ export function BadgeEmblem({ badge, className }: { badge: ProfileBadgeId; class
 }
 
 /**
- * The badge and title shown with a name. Defaults to the signed-in account's equipped ones; pass
- * them explicitly to preview. Renders nothing when neither is set.
+ * The badges and title shown with a name. Defaults to the signed-in account's equipped ones; pass
+ * them explicitly to preview. `maxVisible` caps the emblems drawn on compact surfaces; the rest
+ * collapse into a "+N" chip and stay readable to assistive technology. Renders nothing when empty.
  */
-export function ProfileFlair({ badge, title, className }: { badge?: ProfileBadgeId | null; title?: ProfileTitleId | null; className?: string }) {
+export function ProfileFlair({
+  badges,
+  title,
+  maxVisible,
+  className,
+}: {
+  badges?: readonly ProfileBadgeId[];
+  title?: ProfileTitleId | null;
+  maxVisible?: number;
+  className?: string;
+}) {
   const equipped = useCosmetics();
-  const shownBadge = badge === undefined ? equipped.badge : badge;
+  const shownBadges = badges ?? equipped.badges;
   const shownTitle = title === undefined ? equipped.title : title;
-  if (!shownBadge && !shownTitle) return null;
+  if (!shownBadges.length && !shownTitle) return null;
+  const visible = maxVisible === undefined ? shownBadges.length : maxVisible;
+  const hidden = shownBadges.slice(visible);
   return (
     <span className={cn("profile-flair", className)}>
-      {shownBadge ? (
-        <span className="inline-flex items-center" title={PROFILE_BADGES[shownBadge].name}>
-          <BadgeEmblem badge={shownBadge} />
-          <span className="sr-only">Badge: {PROFILE_BADGES[shownBadge].name}</span>
+      {shownBadges.length ? (
+        <span role="list" aria-label={shownBadges.length === 1 ? "Badge" : "Badges"} className="profile-badges">
+          {shownBadges.map((id, index) => (
+            <span key={id} role="listitem" className={index < visible ? "inline-flex items-center" : "sr-only"} title={PROFILE_BADGES[id].name}>
+              <BadgeEmblem badge={id} />
+              <span className="sr-only">{PROFILE_BADGES[id].name}</span>
+            </span>
+          ))}
+          {hidden.length ? (
+            <span aria-hidden className="profile-badges-more" title={hidden.map((id) => PROFILE_BADGES[id].name).join(", ")}>
+              +{hidden.length}
+            </span>
+          ) : null}
         </span>
       ) : null}
       {shownTitle ? <span className="profile-title">{PROFILE_TITLES[shownTitle].name}</span> : null}
