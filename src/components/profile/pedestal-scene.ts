@@ -176,7 +176,16 @@ export function createPedestal(
   const top = new Vector3();
   const edge = new Vector3();
   let lastAnchor = "";
+  let anchorY = Number.NaN;
+  let anchorAspect = Number.NaN;
+  let anchorFov = Number.NaN;
+  const anchorCamera = new Vector3(Number.NaN, Number.NaN, Number.NaN);
   function anchor() {
+    if (anchorY === pedestal.position.y && anchorAspect === camera.aspect && anchorFov === camera.fov && anchorCamera.equals(camera.position)) return;
+    anchorY = pedestal.position.y;
+    anchorAspect = camera.aspect;
+    anchorFov = camera.fov;
+    anchorCamera.copy(camera.position);
     top.set(0, TOP + pedestal.position.y, 0).project(camera);
     edge.set(0.86, TOP + pedestal.position.y, 0).project(camera);
     const next = { top: (1 - top.y) / 2, width: Math.abs(edge.x - top.x) };
@@ -203,8 +212,12 @@ export function createPedestal(
     beamMaterial.opacity = (0.04 + 0.05 * h) * lift;
     inlay.material.opacity = (0.45 + 0.4 * h + pulse) * lift;
     pool.material.opacity = (0.32 + 0.3 * h) * lift;
-    camera.position.set(px.value * 0.35, 2 + py.value * 0.12, 6.4);
-    camera.lookAt(look);
+    const cameraX = px.value * 0.35;
+    const cameraY = 2 + py.value * 0.12;
+    if (camera.position.x !== cameraX || camera.position.y !== cameraY || camera.position.z !== 6.4) {
+      camera.position.set(cameraX, cameraY, 6.4);
+      camera.lookAt(look);
+    }
     renderer.render(scene, camera);
     anchor();
   }
@@ -212,8 +225,11 @@ export function createPedestal(
   let width = 0;
   let height = 0;
   function resize() {
-    width = host.clientWidth;
-    height = host.clientHeight;
+    const nextWidth = host.clientWidth;
+    const nextHeight = host.clientHeight;
+    if (width === nextWidth && height === nextHeight) return;
+    width = nextWidth;
+    height = nextHeight;
     if (!width || !height) return;
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
@@ -226,9 +242,14 @@ export function createPedestal(
   let frame = 0;
   let last = 0;
   let visible = true;
+  let disposed = false;
   const settled = () => Math.abs(hover.value - hover.target) < 1e-3 && Math.abs(px.value - px.target) < 1e-3 && Math.abs(py.value - py.target) < 1e-3 && Math.abs(rise.value - 1) < 1e-3;
   function tick(now: number) {
     frame = 0;
+    if (disposed || !visible || document.hidden) {
+      last = 0;
+      return;
+    }
     const dt = last ? Math.min((now - last) / 1000, 0.05) : 1 / 60;
     last = now;
     draw(dt);
@@ -237,7 +258,7 @@ export function createPedestal(
     else last = 0;
   }
   function wake() {
-    if (!frame && width && height) frame = requestAnimationFrame(tick);
+    if (!disposed && visible && !document.hidden && !frame && width && height) frame = requestAnimationFrame(tick);
   }
 
   const resizeObserver = new ResizeObserver(resize);
@@ -277,6 +298,7 @@ export function createPedestal(
       wake();
     },
     dispose() {
+      disposed = true;
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
       intersection.disconnect();

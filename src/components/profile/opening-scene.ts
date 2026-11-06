@@ -110,17 +110,35 @@ export function playOpening(host: HTMLElement, options: { style: string; origin:
   let frame = 0;
   let start = 0;
   let stopped = false;
+  let visible = true;
+  function wake() {
+    if (!stopped && visible && !document.hidden && !frame) frame = requestAnimationFrame(tick);
+  }
   function tick(now: number) {
+    frame = 0;
+    if (stopped || !visible || document.hidden) return;
     start ||= now;
     const time = (now - start) / 1000;
+    if (time >= total) {
+      stop();
+      return;
+    }
     pose(time);
-    if (time >= total) stop();
-    else frame = requestAnimationFrame(tick);
+    wake();
   }
+  const intersection = new IntersectionObserver(([entry]) => {
+    visible = entry?.isIntersecting ?? true;
+    wake();
+  });
+  intersection.observe(host);
+  document.addEventListener("visibilitychange", wake);
   function stop() {
     if (stopped) return;
     stopped = true;
     cancelAnimationFrame(frame);
+    intersection.disconnect();
+    document.removeEventListener("visibilitychange", wake);
+    canvas.removeEventListener("webglcontextlost", stop);
     geometry.dispose();
     material.dispose();
     shards.dispose();
@@ -131,6 +149,6 @@ export function playOpening(host: HTMLElement, options: { style: string; origin:
     options.onDone();
   }
   canvas.addEventListener("webglcontextlost", stop);
-  frame = requestAnimationFrame(tick);
+  wake();
   return stop;
 }

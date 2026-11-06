@@ -49,6 +49,25 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-scene-performance",
+    date: "2026-11-06",
+    title: "Less work, the same scenes",
+    intro: "Focused performance improvements for Version History, Flashy Home, Admin, Vault and Profile, without simplifying their visuals.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "Rendering", text: "Avoid redundant GPU resizing, timeline color uploads and repeated animation allocations. Vault measures layout only when it changes." },
+      { kind: "improved", feature: "Hidden scenes", text: "Vault and Profile avoid hidden draws, Flashy Home pauses offscreen hero effects, and reflection resources are released on exit." },
+      { kind: "improved", feature: "Visual quality", text: "Slow frames no longer automatically lower scene resolution or effects, and window width no longer selects rendering quality." },
+    ],
+    details: {
+      improved: [{
+        title: "Focused scene optimizations",
+        body: "Version History, Admin and Vault avoid redundant rendering-buffer resizes. Vault caches layout measurements until resize, scroll, content or font changes. Version History uploads timeline colors only when they change; Admin reuses token data and Profile skips unchanged viewpoint calculations. Flashy Home batches pointer measurements and pauses looping hero effects while offscreen. Vault and Profile avoid hidden draws, and reflection render targets and Admin postprocessing passes are cleaned up on exit. Existing scene details, effects, animation cadence and reduced-motion behavior are retained, with automatic slow-frame quality reductions removed.",
+        link: { href: "/version-history", label: "Open Version History" },
+      }],
+    },
+  },
+  {
     id: "2026-11-06-home-default-order",
     date: "2026-11-06",
     title: "A tidier Home order",

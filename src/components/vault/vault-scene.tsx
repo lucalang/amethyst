@@ -520,10 +520,9 @@ const soft = (v: number) => v / Math.sqrt(1 + v * v);
 function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb: { ready: () => void; fail: () => void }) {
   const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   const compact = !fine || window.innerWidth < 720;
-  const lowEnd = (navigator.hardwareConcurrency ?? 8) <= 4;
-  const maxDpr = Math.min(window.devicePixelRatio || 1, compact ? (lowEnd ? 1.25 : 1.5) : lowEnd ? 1.5 : 1.75);
-  let dpr = maxDpr;
-  const tier = compact ? (lowEnd ? 2 : 1) : lowEnd ? 1 : 0;
+  const cores = navigator.hardwareConcurrency || 8;
+  const tier = cores <= 4 ? 1 : 0;
+  const dpr = Math.min(window.devicePixelRatio || 1, [1.75, 1.5][tier]);
 
   // Opaque: the chamber, its haze and the bloom are all drawn here, then finished like a lens.
   const renderer = new WebGLRenderer({ antialias: false, stencil: false, powerPreference: "high-performance" });
@@ -1024,6 +1023,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   let beamKey = "";
   let beamCurve: QuadraticBezierCurve3 | null = null;
   const artBox = { x: 0, y: 0, r: 1 };
+  let layoutDirty = true;
   /** Port of the link on the console, in console space. */
   const portAt = new Vector3();
   let laidOut = false;
@@ -1066,9 +1066,8 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   }
 
   function resize() {
-    renderer.setPixelRatio(dpr);
+    if (renderer.getPixelRatio() !== dpr) renderer.setPixelRatio(dpr);
     renderer.setSize(W, H, false);
-    composer.setPixelRatio(dpr);
     composer.setSize(W, H);
     fx.uResolution.value.set(W * dpr, H * dpr);
     camera.aspect = W / H;
@@ -1144,6 +1143,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       buildBeam();
     }
     laidOut = true;
+    layoutDirty = false;
   }
 
   /* ------------------------------------------------------------------ state */
@@ -1224,16 +1224,13 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   let lastTransform = "";
   let lastOpacity = "";
   let last = 0;
-  let slowFrames = 0;
-  let frames = 0;
-  let windowStart = 0;
 
   function frame(now: number) {
     const dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60;
     last = now;
     const still = motion === "off";
     const time = now / 1000;
-    measure();
+    if (layoutDirty) measure();
     if (!laidOut || !W || !H) return;
 
     const ie = introElapsed(now);
@@ -1668,17 +1665,6 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       amount.bloom;
     composer.render(dt);
 
-    // Adapt resolution if frames are slow.
-    frames += 1;
-    if (dt > 0.022) slowFrames += 1;
-    if (now - windowStart > 2000) {
-      if (frames >= 6 && slowFrames / frames > 0.3 && dpr > 0.75) {
-        dpr = Math.max(0.75, dpr - 0.25);
-        resize();
-      }
-      windowStart = now;
-      frames = slowFrames = 0;
-    }
   }
 
   /** Writes the console's pose onto the page's panel so the real controls sit on the 3D screen. */
@@ -1724,20 +1710,25 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   let ready = false;
   let disposed = false;
   let visible = true;
-  const running = () => ready && visible && !document.hidden && motion !== "off";
+  const drawable = () => !disposed && ready && visible && !document.hidden;
+  const running = () => drawable() && motion !== "off";
   const loop = (now: number) => {
     raf = 0;
+    if (!drawable()) {
+      last = 0;
+      return;
+    }
     frame(now);
     if (running()) raf = requestAnimationFrame(loop);
   };
   /** Restarts the loop, or draws one still frame when motion is off. */
   const wake = () => {
-    if (disposed || !ready || raf) return;
+    if (!drawable() || raf) return;
     if (running()) raf = requestAnimationFrame(loop);
     else if (motion === "off" && visible)
       raf = requestAnimationFrame((now) => {
         raf = 0;
-        frame(now);
+        if (drawable()) frame(now);
       });
   };
 
@@ -1783,11 +1774,34 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   renderer.domElement.addEventListener("webglcontextlost", onLost);
   const sight = new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
+    layoutDirty = true;
     wake();
   });
   sight.observe(host);
-  const resizes = new ResizeObserver(() => wake());
-  for (const el of [host.parentElement, refs.artifact.current, panelEl]) if (el) resizes.observe(el);
+  const invalidateLayout = () => {
+    layoutDirty = true;
+    wake();
+  };
+  const resizes = new ResizeObserver(invalidateLayout);
+  for (const el of [refs.artifact.current, panelEl]) if (el) resizes.observe(el);
+  for (let el = host.parentElement; el; el = el.parentElement) resizes.observe(el);
+  const stageEl = host.parentElement;
+  if (stageEl) {
+    for (const el of stageEl.querySelectorAll(".vx-inner, .vx-hud, .vx-main")) resizes.observe(el);
+  }
+  const mutations = new MutationObserver(invalidateLayout);
+  if (stageEl) mutations.observe(stageEl, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ["class", "hidden", "data-phase", "data-intro", "data-scene", "data-motion", "data-look"],
+  });
+  window.addEventListener("resize", invalidateLayout, { passive: true });
+  window.addEventListener("scroll", invalidateLayout, { capture: true, passive: true });
+  window.visualViewport?.addEventListener("resize", invalidateLayout);
+  window.visualViewport?.addEventListener("scroll", invalidateLayout);
+  document.fonts.addEventListener("loadingdone", invalidateLayout);
 
   measure();
   renderer
@@ -1863,6 +1877,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     /** Where the core is, in viewport px with CSS depth, so the reward cards can fly out of it. */
     origin(): RevealOrigin | null {
       if (!ready || !W) return null;
+      measure();
       core.getWorldPosition(corePos).applyMatrix4(camera.matrixWorldInverse);
       const axisX = hostLeft + W / 2;
       const axisY = hostTop + H / 2;
@@ -1873,6 +1888,12 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       cancelAnimationFrame(raf);
       sight.disconnect();
       resizes.disconnect();
+      mutations.disconnect();
+      window.removeEventListener("resize", invalidateLayout);
+      window.removeEventListener("scroll", invalidateLayout, { capture: true });
+      window.visualViewport?.removeEventListener("resize", invalidateLayout);
+      window.visualViewport?.removeEventListener("scroll", invalidateLayout);
+      document.fonts.removeEventListener("loadingdone", invalidateLayout);
       window.removeEventListener("pointermove", onPointerMove);
       document.documentElement.removeEventListener("mouseleave", onLeave);
       panelEl?.removeEventListener("keydown", onKey);

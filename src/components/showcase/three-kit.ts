@@ -39,7 +39,9 @@ export function studioEnvironment(renderer: WebGLRenderer, accent: Color, second
   light(secondary, 3, [-6, -0.8, -0.6], [0.15, 5, 0.8]);
   light(white, 1.4, [0.4, -5.2, 1.2], [6, 0.15, 1.6]);
   const pmrem = new PMREMGenerator(renderer);
-  const texture = pmrem.fromScene(scene, 0.035).texture;
+  const target = pmrem.fromScene(scene, 0.035);
+  const texture = target.texture;
+  texture.addEventListener("dispose", () => target.dispose());
   pmrem.dispose();
   box.dispose();
   for (const material of materials) material.dispose();

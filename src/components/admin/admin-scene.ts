@@ -177,11 +177,11 @@ const TOKEN_PX = 48;
 /** How far outside the Forge's code plate the tokens' track runs, in CSS px (the layout leaves room). */
 const TRACK_GAP = 34;
 
-function initialTier(width: number) {
+function initialTier() {
   const cores = navigator.hardwareConcurrency || 8;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
   if (memory <= 2 || cores <= 2) return 2;
-  if (width < 760 || cores <= 4 || memory <= 4) return 1;
+  if (cores <= 4 || memory <= 4) return 1;
   return 0;
 }
 
@@ -422,8 +422,8 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   let station = options.station;
   let W = Math.max(1, viewport.clientWidth);
   let H = Math.max(1, viewport.clientHeight);
-  let tierIndex = initialTier(W);
-  let tier = TIERS[tierIndex];
+  const tierIndex = initialTier();
+  const tier = TIERS[tierIndex];
   let disposed = false;
 
   /* Renderers ---------------------------------------------------------------- */
@@ -781,13 +781,25 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   /* Sizing and quality -------------------------------------------------------- */
 
   let s = 1;
+  let sizeKey = "";
+  let composerDpr = renderer.getPixelRatio();
   function resize() {
     W = Math.max(1, viewport.clientWidth);
     H = Math.max(1, viewport.clientHeight);
     const dpr = Math.min(window.devicePixelRatio || 1, tier.dpr);
-    renderer.setPixelRatio(dpr);
+    const nextSize = `${W}|${H}|${dpr}`;
+    if (sizeKey === nextSize) {
+      layoutDirty = true;
+      invalidate();
+      return;
+    }
+    sizeKey = nextSize;
+    if (renderer.getPixelRatio() !== dpr) renderer.setPixelRatio(dpr);
     renderer.setSize(W, H, false);
-    composer.setPixelRatio(dpr);
+    if (composerDpr !== dpr) {
+      composer.setPixelRatio(dpr);
+      composerDpr = dpr;
+    }
     composer.setSize(W, H);
     bloom.setSize(Math.round(W * dpr * tier.bloom), Math.round(H * dpr * tier.bloom));
     css.setSize(W, H);
@@ -800,19 +812,6 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     mirror?.getRenderTarget().setSize(Math.round(W * dpr * tier.reflect), Math.round(H * dpr * tier.reflect));
     layoutDirty = true;
     invalidate();
-  }
-
-  function setTier(index: number) {
-    tierIndex = index;
-    tier = TIERS[index];
-    dustGeometry.setDrawRange(0, tier.dust);
-    finish.material.defines.RAYS = tier.rays;
-    finish.material.needsUpdate = true;
-    if (mirror && tier.reflect === 0) {
-      mirror.visible = false;
-      plainFloor.visible = true;
-    }
-    resize();
   }
 
   /* Panels -------------------------------------------------------------------- */
@@ -1283,6 +1282,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   let plateFrame: Matrix4 | null = null;
   let plateW = 0;
   let plateH = 0;
+  const activeTokens: Token[] = [];
   /** The code plate's frame, and the sink just behind it where the seal is forged. */
   function trackPlate() {
     const codePlate = forgeEntry("plate");
@@ -1293,7 +1293,9 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     sink.copy(plateCenter).addScaledVector(forgeNormal, -0.6);
   }
   function updateTokens(now: number, dt: number) {
-    const active = [...tokens.values()].filter((token) => token.leaving === null);
+    const active = activeTokens;
+    active.length = 0;
+    for (const token of tokens.values()) if (token.leaving === null) active.push(token);
     const still = motion === "off";
     if (!still) orbit += dt * (0.025 + charge * 0.3 + fx.build * 0.45);
     // The tokens float along a loop just outside the code plate, in its plane (so they never hide behind it).
@@ -1389,9 +1391,6 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   let coreYaw = STATION_ANGLE[station] * 0.6;
   let lastInput = performance.now();
   let frames = 0;
-  let slowFor = 0;
-  let averageFrame = 16;
-  let warmup = 0;
 
   const restPose = (id: StationId, scroll: number): Pose => ({
     theta: STATION_ANGLE[id],
@@ -1563,9 +1562,19 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   function loop() {
     raf = requestAnimationFrame((now) => {
       raf = 0;
-      if (!active()) return;
+      if (!active()) {
+        last = 0;
+        return;
+      }
       const idle = now - lastInput;
-      const busy = intro || flight || seq || now - Math.max(impactAt, crackAt) < 3000 || charge > 0.001 || leaving.size > 0 || [...entries.values()].some((entry) => entry.anim);
+      let animatingPanel = false;
+      for (const entry of entries.values()) {
+        if (entry.anim) {
+          animatingPanel = true;
+          break;
+        }
+      }
+      const busy = intro || flight || seq || now - Math.max(impactAt, crackAt) < 3000 || charge > 0.001 || leaving.size > 0 || animatingPanel;
       const animated = motion !== "off" && (busy || idle < 120_000);
       if (!animated && dirty <= 0) {
         last = 0;
@@ -1680,18 +1689,9 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     }
   }
 
+  const floorUniforms = [plainFloorU as Record<string, { value: unknown }>, mirrorU].filter(Boolean) as Record<string, { value: unknown }>[];
   function frame(now: number) {
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
-    if (last && !intro && !flight && !seq) {
-      averageFrame = lerp(averageFrame, now - last, 0.05);
-      warmup += dt;
-      slowFor = averageFrame > 24 && warmup > 3 ? slowFor + dt : 0;
-      if (slowFor > 2 && tierIndex < TIERS.length - 1) {
-        slowFor = 0;
-        warmup = 0;
-        setTier(tierIndex + 1);
-      }
-    }
     last = now;
     const still = motion === "off";
     const amount = motion === "subtle" ? 0.5 : still ? 0 : 1;
@@ -1797,7 +1797,6 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     dustU.uAlpha.value = light;
     dustU.uPull.value = Math.max(charge * 0.3, build * 0.9);
     dustU.uCore.value.copy(seq ? sink : forgeCore);
-    const floorUniforms = [plainFloorU as Record<string, { value: unknown }>, mirrorU].filter(Boolean) as Record<string, { value: unknown }>[];
     for (const u of floorUniforms) {
       u.uLevel.value = light;
       u.uCharge.value = charge + build + boom;
@@ -1881,8 +1880,12 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     for (const mesh of smokes) mesh.quaternion.copy(camera.quaternion);
 
     /* Panels */
-    const forgeVisible = station === "forge" || flight?.to === "forge" || [...entries.values()].some((entry) => entry.spec.station === "forge" && entry.reveal > 0.01);
-    for (const entry of [...entries.values(), ...leaving]) updatePanel3d(entry, now, dt, still, amount, isSteady, compact, scroll);
+    let forgeVisible = station === "forge" || flight?.to === "forge";
+    for (const entry of entries.values()) {
+      if (entry.spec.station === "forge" && entry.reveal > 0.01) forgeVisible = true;
+      updatePanel3d(entry, now, dt, still, amount, isSteady, compact, scroll);
+    }
+    for (const entry of leaving) updatePanel3d(entry, now, dt, still, amount, isSteady, compact, scroll);
     if (hovered && pointer.inside && hovered.root.visible) {
       const at = pointerOn(hovered, pointer.x, pointer.y, pressPoint);
       if (at) hovered.u.uPointer.value.set(clamp01(at.x), clamp01(at.y));
@@ -2183,10 +2186,8 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     entries.clear();
     for (const token of [...tokens.values()]) dropToken(token);
     for (const item of owned) item.dispose();
-    target.dispose();
+    for (const pass of composer.passes) pass.dispose();
     composer.dispose();
-    bloom.dispose();
-    finish.dispose();
     mirror?.dispose();
     renderer.dispose();
     renderer.forceContextLoss();

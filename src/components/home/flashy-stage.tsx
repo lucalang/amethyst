@@ -10,24 +10,48 @@ export function FlashyStage({ className, children }: { className?: string; child
 
   useEffect(() => {
     const stage = ref.current;
+    if (!stage) return;
+    let visible = true;
+    const update = () => {
+      stage.toggleAttribute("data-fh-paused", !visible || document.hidden);
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = entry?.isIntersecting ?? true;
+      update();
+    });
+    observer.observe(stage);
+    document.addEventListener("visibilitychange", update);
+    update();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", update);
+      stage.removeAttribute("data-fh-paused");
+    };
+  }, []);
+
+  useEffect(() => {
+    const stage = ref.current;
     if (!stage || motion !== "full" || !window.matchMedia("(pointer: fine)").matches) return;
     let frame = 0;
     let x = 0;
     let y = 0;
+    let inside = false;
     const apply = () => {
       frame = 0;
-      stage.style.setProperty("--mx", x.toFixed(3));
-      stage.style.setProperty("--my", y.toFixed(3));
+      const rect = inside ? stage.getBoundingClientRect() : null;
+      const mx = rect?.width ? Math.max(-1, Math.min(1, ((x - rect.left) / rect.width) * 2 - 1)) : 0;
+      const my = rect?.height ? Math.max(-1, Math.min(1, ((y - rect.top) / rect.height) * 2 - 1)) : 0;
+      stage.style.setProperty("--mx", mx.toFixed(3));
+      stage.style.setProperty("--my", my.toFixed(3));
     };
     const onMove = (event: PointerEvent) => {
-      const rect = stage.getBoundingClientRect();
-      x = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / rect.width) * 2 - 1));
-      y = Math.max(-1, Math.min(1, ((event.clientY - rect.top) / rect.height) * 2 - 1));
+      inside = true;
+      x = event.clientX;
+      y = event.clientY;
       if (!frame) frame = requestAnimationFrame(apply);
     };
     const onLeave = () => {
-      x = 0;
-      y = 0;
+      inside = false;
       if (!frame) frame = requestAnimationFrame(apply);
     };
     stage.addEventListener("pointermove", onMove);

@@ -153,11 +153,11 @@ const FLICKER = [0, 0.85, 0.08, 0, 1, 0.25, 0.9, 0.55, 1];
 const AMBER = new Color(0xffa64a);
 const PATINA = new Color(0x58d4b9);
 
-function initialTier(width: number) {
+function initialTier() {
   const cores = navigator.hardwareConcurrency || 8;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
   if (memory <= 2 || cores <= 2) return 2;
-  if (width < 760 || cores <= 4 || memory <= 4) return 1;
+  if (cores <= 4 || memory <= 4) return 1;
   return 0;
 }
 
@@ -192,8 +192,8 @@ export function createChrono(options: ChronoOptions): Chrono {
   let motion = options.motion;
   let W = Math.max(1, host.clientWidth);
   let H = Math.max(1, host.clientHeight);
-  let tierIndex = initialTier(W);
-  let tier = TIERS[tierIndex];
+  const tierIndex = initialTier();
+  const tier = TIERS[tierIndex];
   let disposed = false;
   const owned: { dispose(): void }[] = [];
   function keep<T extends { dispose(): void }>(item: T): T {
@@ -587,26 +587,30 @@ export function createChrono(options: ChronoOptions): Chrono {
     center.r = Math.min(W * 0.44, visible * 0.38);
   }
 
+  let sizeKey = "";
+  let composerDpr = renderer.getPixelRatio();
   function resize() {
     W = Math.max(1, host.clientWidth);
     H = Math.max(1, host.clientHeight);
     dpr = Math.min(window.devicePixelRatio || 1, tier.dpr);
-    renderer.setPixelRatio(dpr);
+    measure();
+    const nextSize = `${W}|${H}|${dpr}`;
+    if (sizeKey === nextSize) {
+      invalidate();
+      return;
+    }
+    sizeKey = nextSize;
+    if (renderer.getPixelRatio() !== dpr) renderer.setPixelRatio(dpr);
     renderer.setSize(W, H, false);
-    composer.setPixelRatio(dpr);
+    if (composerDpr !== dpr) {
+      composer.setPixelRatio(dpr);
+      composerDpr = dpr;
+    }
     composer.setSize(W, H);
     bloom.setSize(Math.round(W * dpr * tier.bloom), Math.round(H * dpr * tier.bloom));
     post.uResolution.value = [W * dpr, H * dpr];
     measure();
     invalidate();
-  }
-
-  function setTier(index: number) {
-    tierIndex = index;
-    tier = TIERS[index];
-    steamGeometry.setDrawRange(0, tier.steam);
-    dustGeometry.setDrawRange(0, tier.dust);
-    resize();
   }
 
   const shakeOffset = new Vector3();
@@ -689,6 +693,9 @@ export function createChrono(options: ChronoOptions): Chrono {
   let valveAngle = 0;
 
   const beadColor = new Color();
+  let beadSweep = -1;
+  let beadTarget = -2;
+  let beadPulse = -1;
   const plateMatrix = new Matrix4();
   const platePosition = new Vector3();
   const plateScale = new Vector3(1, 1, 1);
@@ -698,16 +705,6 @@ export function createChrono(options: ChronoOptions): Chrono {
 
   function frame(nowMs: number) {
     const dt = last ? Math.min(0.05, (nowMs - last) / 1000) : 1 / 60;
-    if (last && !intro && !trip) {
-      averageFrame = lerp(averageFrame, nowMs - last, 0.05);
-      warmup += dt;
-      slowFor = averageFrame > 26 && warmup > 3 ? slowFor + dt : 0;
-      if (slowFor > 2 && tierIndex < TIERS.length - 1) {
-        slowFor = 0;
-        warmup = 0;
-        setTier(tierIndex + 1);
-      }
-    }
     last = nowMs;
     const still = motion === "off";
     const amount = motion === "subtle" ? 0.5 : still ? 0 : 1;
@@ -843,44 +840,51 @@ export function createChrono(options: ChronoOptions): Chrono {
     settleTo(s.light, light);
 
     /* Machine */
-    const L = s.light.value;
-    key.intensity = 2.4 * L;
-    rim.intensity = 1.5 * L;
-    hemi.intensity = 0.45 * L;
-    chamber.environmentIntensity = 0.2 + 0.8 * L;
-    haloMaterial.opacity = 0.4 * L;
-    core.intensity = 7 * filamentLevel;
-    cupMaterial.emissiveIntensity = 0.05 * filamentLevel;
-    filamentMaterial.color.setRGB(lerp(4.2, 7, whiteHot) * filamentLevel, lerp(2, 6.4, whiteHot) * filamentLevel, lerp(0.75, 5.6, whiteHot) * filamentLevel);
-    glowMaterial.opacity = Math.min(1, 0.55 * filamentLevel);
-    glow.scale.setScalar(1.9 + whiteHot * 2.4);
-    glassUniforms.uGlow.value = filamentLevel;
     gearPhase += dt * 0.32 * s.gears.value * amount;
-    for (const wheel of wheels) wheel.mesh.rotation.z = wheel.offset + gearPhase * wheel.ratio;
     valveAngle += dt * s.gears.value * 0.5 * amount;
-    valve.rotation.z = valveAngle;
-    balance.rotation.z = Math.sin(clock * (TAU / 1.25) * (1 + Math.abs(s.gears.value - 1) * 0.25)) * 2.1 * amount;
-    hairspring.scale.setScalar(1 + Math.sin(clock * (TAU / 1.25)) * 0.04 * amount);
-    hoopA.rotation.x = 1.15 * swing + Math.sin(clock * 0.37) * 0.16 * amount;
-    hoopB.rotation.y = -1.25 * swing + Math.sin(clock * 0.29 + 1.3) * 0.2 * amount;
-    monthRing.rotation.z = s.month.value;
-    dayRing.rotation.z = s.day.value;
-    indexRing.rotation.z = s.index.value;
-    needle.rotation.z = -(-0.75 * Math.PI + 1.5 * Math.PI * clamp01(s.gauge.value));
-    hairlineMaterial.color.setRGB(2.4 * hair, 0.55 * hair, 0.3 * hair);
-    steamUniforms.uLevel.value = clamp01(s.steam.value);
-    const targetIndex = trip?.targetIndex ?? -1;
-    commits.forEach((commit, i) => {
-      const lit = clamp01(sweep * (N + 5) - i);
-      const burst = lit > 0 && sweep < 1 ? Math.exp(-(sweep * (N + 5) - i) * 0.5) * 1.6 : 0;
-      if (i === targetIndex) {
-        const beat = 2.4 + 2.4 * (0.5 + 0.5 * Math.sin(clock * 14)) * targetPulse;
-        beadColor.setRGB(0.6 * beat, 1.6 * beat, 1.4 * beat);
-      } else if (commit.available) beadColor.setRGB(0.35 * (lit * 1.6 + burst), 1 * (lit * 1.6 + burst), 0.85 * (lit * 1.6 + burst));
-      else beadColor.setRGB(1 * (lit * 0.4 + burst * 0.6), 0.62 * (lit * 0.4 + burst * 0.6), 0.26 * (lit * 0.4 + burst * 0.6));
-      beads.setColorAt(i, beadColor);
-    });
-    if (beads.instanceColor) beads.instanceColor.needsUpdate = true;
+    if (!inTunnel) {
+      const L = s.light.value;
+      key.intensity = 2.4 * L;
+      rim.intensity = 1.5 * L;
+      hemi.intensity = 0.45 * L;
+      chamber.environmentIntensity = 0.2 + 0.8 * L;
+      haloMaterial.opacity = 0.4 * L;
+      core.intensity = 7 * filamentLevel;
+      cupMaterial.emissiveIntensity = 0.05 * filamentLevel;
+      filamentMaterial.color.setRGB(lerp(4.2, 7, whiteHot) * filamentLevel, lerp(2, 6.4, whiteHot) * filamentLevel, lerp(0.75, 5.6, whiteHot) * filamentLevel);
+      glowMaterial.opacity = Math.min(1, 0.55 * filamentLevel);
+      glow.scale.setScalar(1.9 + whiteHot * 2.4);
+      glassUniforms.uGlow.value = filamentLevel;
+      for (const wheel of wheels) wheel.mesh.rotation.z = wheel.offset + gearPhase * wheel.ratio;
+      valve.rotation.z = valveAngle;
+      balance.rotation.z = Math.sin(clock * (TAU / 1.25) * (1 + Math.abs(s.gears.value - 1) * 0.25)) * 2.1 * amount;
+      hairspring.scale.setScalar(1 + Math.sin(clock * (TAU / 1.25)) * 0.04 * amount);
+      hoopA.rotation.x = 1.15 * swing + Math.sin(clock * 0.37) * 0.16 * amount;
+      hoopB.rotation.y = -1.25 * swing + Math.sin(clock * 0.29 + 1.3) * 0.2 * amount;
+      monthRing.rotation.z = s.month.value;
+      dayRing.rotation.z = s.day.value;
+      indexRing.rotation.z = s.index.value;
+      needle.rotation.z = -(-0.75 * Math.PI + 1.5 * Math.PI * clamp01(s.gauge.value));
+      hairlineMaterial.color.setRGB(2.4 * hair, 0.55 * hair, 0.3 * hair);
+      steamUniforms.uLevel.value = clamp01(s.steam.value);
+      const targetIndex = trip?.targetIndex ?? -1;
+      if (sweep !== beadSweep || targetIndex !== beadTarget || targetPulse !== beadPulse || (targetIndex >= 0 && targetPulse > 0)) {
+        beadSweep = sweep;
+        beadTarget = targetIndex;
+        beadPulse = targetPulse;
+        commits.forEach((commit, i) => {
+          const lit = clamp01(sweep * (N + 5) - i);
+          const burst = lit > 0 && sweep < 1 ? Math.exp(-(sweep * (N + 5) - i) * 0.5) * 1.6 : 0;
+          if (i === targetIndex) {
+            const beat = 2.4 + 2.4 * (0.5 + 0.5 * Math.sin(clock * 14)) * targetPulse;
+            beadColor.setRGB(0.6 * beat, 1.6 * beat, 1.4 * beat);
+          } else if (commit.available) beadColor.setRGB(0.35 * (lit * 1.6 + burst), 1 * (lit * 1.6 + burst), 0.85 * (lit * 1.6 + burst));
+          else beadColor.setRGB(1 * (lit * 0.4 + burst * 0.6), 0.62 * (lit * 0.4 + burst * 0.6), 0.26 * (lit * 0.4 + burst * 0.6));
+          beads.setColorAt(i, beadColor);
+        });
+        if (beads.instanceColor) beads.instanceColor.needsUpdate = true;
+      }
+    }
 
     /* Tunnel */
     if (inTunnel && trip) {
@@ -937,9 +941,6 @@ export function createChrono(options: ChronoOptions): Chrono {
   let last = 0;
   let dirty = 2;
   let frames = 0;
-  let averageFrame = 16;
-  let warmup = 0;
-  let slowFor = 0;
   let onscreen = true;
   const active = () => started && !disposed && !document.hidden && onscreen;
   function invalidate() {

@@ -22,6 +22,10 @@
   position: relative;
   isolation: isolate;
 }
+.fh-stage[data-fh-paused] :is(.fh-aurora, .fh-row, .fh-sparks, .fh-avatar, .fh-title, .fh-fan-halo),
+.fh-stage[data-fh-paused] .fh-fan::before {
+  animation-play-state: paused;
+}
 .fh-stage {
   --mx: 0;
   --my: 0;
