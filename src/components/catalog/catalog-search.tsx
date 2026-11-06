@@ -23,7 +23,7 @@ export function CatalogSearch({
 }) {
   const input = useRef<HTMLInputElement>(null);
   return (
-    <div role="search" className={cn("relative w-full sm:w-64", className)}>
+    <div role="search" aria-label={label} className={cn("relative min-w-0 w-full sm:w-64", className)}>
       <Search aria-hidden className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         ref={input}
@@ -107,7 +107,7 @@ export function OwnershipFilter({ value, onChange, counts }: { value: Ownership;
 export function CatalogEmpty({ query, onReset, children }: { query: string; onReset: () => void; children?: ReactNode }) {
   return (
     <div role="status" className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-      <p>{query.trim() ? <>Nothing matches “{query.trim()}” here.</> : "Nothing matches these filters."}</p>
+      <p className="[overflow-wrap:anywhere]">{query.trim() ? <>Nothing matches “{query.trim()}” here.</> : "Nothing matches these filters."}</p>
       {children}
       <Button type="button" variant="outline" size="sm" onClick={onReset} className="mt-3.5">
         <RotateCcw aria-hidden />

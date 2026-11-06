@@ -49,6 +49,58 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-home-default-order",
+    date: "2026-11-06",
+    title: "A tidier Home order",
+    intro: "Home's default layout puts Upcoming tasks and Quick Notes ahead of Your collections.",
+    icon: "home",
+    highlights: [
+      { kind: "improved", feature: "Home order", text: "After Welcome and Your spaces: Featured, Pinned favorites, Upcoming tasks, Quick Notes, then Your collections." },
+      { kind: "improved", feature: "Existing sections", text: "Recently opened follows Your collections, My Day stays opt-in, and Achievements stays at the bottom." },
+      { kind: "improved", feature: "Saved layouts", text: "Existing section orders and visibility preferences are unchanged. Reset layout uses the new default." },
+    ],
+    details: {
+      improved: [{
+        title: "The new default, not a reset",
+        body: "Home starts with Welcome and Your spaces, followed by Featured, Pinned favorites, Upcoming tasks, Quick Notes and Your collections. Recently opened remains visible after Your collections, My Day remains opt-in, and Achievements stays last. The default applies to both Normal and Flashy Home and to Reset layout in Customize Home. Your saved arrangement, hidden sections and other preferences are preserved.",
+        link: { href: "/", label: "Open Home" },
+      }],
+    },
+  },
+  {
+    id: "2026-11-06-everyday-polish",
+    date: "2026-11-06",
+    title: "Small everyday fixes",
+    intro: "A few refinements to search, keyboard navigation and Quick Notes, with Amethyst's existing design intact.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "fixed", feature: "Settings search", text: "Opening results with Arrow Down selects the first match; Arrow Up selects the last. Touch and pen selections keep search focused until you choose a result." },
+      { kind: "improved", feature: "Quick Notes", text: "Dates sit below note titles on small screens, and list borders follow your theme." },
+      { kind: "fixed", feature: "Catalog search", text: "Long unmatched searches wrap instead of overflowing, and search regions have screen-reader labels." },
+      { kind: "fixed", feature: "To Do search", text: "Clearing search keeps the field focused. Escape clears only the search and respects text composition." },
+      { kind: "improved", feature: "Keyboard navigation", text: "Skip to content has a focusable main-content target without adding an extra tab stop." },
+    ],
+    details: {
+      fixed: [{
+        title: "Search refinements",
+        body: "Settings search no longer skips the first match when you reopen results with Arrow Down. Arrow Up starts at the last match. Touch and pen input now preserve focus when choosing a result, just like mouse input. Catalog search fields can shrink in tight layouts, long empty-state queries wrap, and each search region is labelled for assistive technology.",
+        link: { href: "/settings", label: "Open Settings" },
+      }, {
+        title: "Keep typing after clearing To Do search",
+        body: "The clear button returns focus to the search field. Escape clears the query without bubbling to other keyboard handlers, and is ignored during text composition.",
+        link: { href: "/tasks", label: "Open To Do" },
+      }],
+      improved: [{
+        title: "More room for note titles",
+        body: "Quick Notes places the updated date on a second line on small screens while keeping the existing single-row layout on larger screens. List dividers and empty-state borders now use the theme's border color.",
+        link: { href: "/notes", label: "Open Quick Notes" },
+      }, {
+        title: "Skip straight to content",
+        body: "The main-content target can now receive keyboard focus through Skip to content, while staying out of the regular tab order.",
+      }],
+    },
+  },
+  {
     id: "2026-11-06-streak-flame",
     date: "2026-11-06",
     title: "A livelier streak flame",

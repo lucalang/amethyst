@@ -58,7 +58,7 @@ export function AppShell({
           Skip to content
         </a>
         <TopNav account={account} collections={collections} icons={icons} />
-        <main id="main" className="flex-1 overflow-x-clip pb-24 md:pb-10">
+        <main id="main" tabIndex={-1} className="flex-1 overflow-x-clip pb-24 md:pb-10">
           {children}
         </main>
         <AchievementNotifications enabled={preferences.achievementNotifications} />

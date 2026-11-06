@@ -90,7 +90,11 @@ export function SettingsSearch({ area }: { area: SettingsArea }) {
     } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       setOpen(true);
-      if (results.length) setActive((current) => (current + (event.key === "ArrowDown" ? 1 : -1) + results.length) % results.length);
+      if (results.length) {
+        setActive((current) => expanded
+          ? (current + (event.key === "ArrowDown" ? 1 : -1) + results.length) % results.length
+          : event.key === "ArrowDown" ? 0 : results.length - 1);
+      }
     } else if (event.key === "Enter" && expanded && results[active]) {
       event.preventDefault();
       select(results[active]);
@@ -160,7 +164,7 @@ export function SettingsSearch({ area }: { area: SettingsArea }) {
                 id={`${listId}-${index}`}
                 role="option"
                 aria-selected={active === index}
-                onMouseDown={(event) => event.preventDefault()}
+                onPointerDown={(event) => event.preventDefault()}
                 onMouseMove={() => setActive(index)}
                 onClick={() => select(item)}
                 className={cn("cursor-pointer rounded px-3 py-2 text-sm break-words", active === index && "bg-amethyst/10 text-amethyst")}

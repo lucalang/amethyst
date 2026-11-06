@@ -47,7 +47,7 @@ const shortcut = z.string().max(40).refine((value) => value === "" || SHORTCUT_P
 const hasControls = (value: string) => [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127);
 
 /** Home sections below the welcome header, in their default order. */
-export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", "tasks", "quickNotes", "myDay"] as const;
+export const HOME_SECTION_IDS = ["featured", "pinned", "tasks", "quickNotes", "collections", "recent", "myDay"] as const;
 /** Sections that start hidden (opt-in) for accounts that never arranged Home. */
 export const HIDDEN_BY_DEFAULT: readonly string[] = ["myDay"];
 export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];

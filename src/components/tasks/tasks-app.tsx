@@ -36,6 +36,7 @@ function TasksShell() {
   const [query, setQueryState] = useState(() => searchParams.get("q") ?? "");
   const wide = useSyncExternalStore(subscribeWide, () => window.matchMedia(XL).matches, () => true);
   const returnPathRef = useRef("/tasks");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   // Retired pages (Inbox, All tasks, Completed): the former Inbox list if it still exists, else My Day.
   const slug = pathname.replace(/^\/tasks\/?/, "").replace(/\/$/, "");
   const retired = RETIRED_TASK_SLUGS.includes(slug);
@@ -120,6 +121,7 @@ function TasksShell() {
                 Search tasks
               </label>
               <input
+                ref={searchInputRef}
                 id="tasks-search"
                 type="search"
                 value={query}
@@ -128,8 +130,10 @@ function TasksShell() {
                 autoComplete="off"
                 onChange={(event) => nav.setQuery(event.target.value)}
                 onKeyDown={(event) => {
+                  if (event.nativeEvent.isComposing) return;
                   if (event.key === "Escape" && query) {
                     event.preventDefault();
+                    event.stopPropagation();
                     nav.setQuery("");
                   }
                 }}
@@ -139,7 +143,11 @@ function TasksShell() {
                 <button
                   type="button"
                   aria-label="Clear search"
-                  onClick={() => nav.setQuery("")}
+                  title="Clear search"
+                  onClick={() => {
+                    nav.setQuery("");
+                    searchInputRef.current?.focus();
+                  }}
                   className="absolute top-1/2 right-2 grid size-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-[color,background-color,scale] duration-150 hover:bg-foreground/10 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100"
                 >
                   <X aria-hidden className="size-3.5" />
