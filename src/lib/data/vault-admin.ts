@@ -3,7 +3,7 @@ import type { FrameSample } from "@/app/(vault)/settings/frame-settings";
 import type { VaultLooks } from "@/components/vault/vault-reveal";
 import { artworkSrc } from "@/lib/attachments";
 import type { AuthContext } from "@/lib/supabase/auth";
-import type { AdminAccount, AdminCode, AdminCodeDetail, AdminDraft, AdminSnapshot, AdminStats, CatalogAchievement, CatalogItem } from "@/lib/vault-admin";
+import type { AdminAccount, AdminCode, AdminCodeDetail, AdminDraft, AdminSnapshot, AdminStats, CatalogAchievement, CatalogBooster, CatalogCase, CatalogItem } from "@/lib/vault-admin";
 
 /** Admin reads; each database function checks the administrator list itself. */
 async function call<T>(promise: PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T> {
@@ -35,7 +35,7 @@ export async function loadAdminSnapshot(ctx: AuthContext, timeZone?: string): Pr
 }
 
 export const loadAdminCatalog = (ctx: AuthContext) =>
-  call<{ items: CatalogItem[]; achievements: CatalogAchievement[] }>(ctx.supabase.rpc("admin_vault_catalog"));
+  call<{ items: CatalogItem[]; achievements: CatalogAchievement[]; cases?: CatalogCase[]; boosters?: CatalogBooster[] }>(ctx.supabase.rpc("admin_vault_catalog"));
 
 export const loadAdminAccounts = async (ctx: AuthContext, ids: string[]) =>
   ids.length ? call<AdminAccount[]>(ctx.supabase.rpc("admin_vault_accounts", { p_ids: ids })) : [];

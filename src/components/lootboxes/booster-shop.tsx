@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition, type CSSProperties } from "react";
+import { useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Backpack, Clover, Coins, Info, Loader2, Minus, Plus, RotateCcw, TriangleAlert } from "lucide-react";
@@ -15,27 +15,50 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { MAX_BOOSTER_PURCHASE, activeBoosters, boostedOpenings, boosterLook, type Boost, type Booster } from "@/lib/boosters";
 import { caseOdds, formatChance, lootCaseInfo, type LootState } from "@/lib/lootboxes";
+import { RARITIES } from "@/lib/rarities";
 import { cn } from "@/lib/utils";
 import { LuckBadge, tierStyle } from "./booster-parts";
 import { RarityTag } from "./parts";
 
 const coinsText = (value: number) => `${value.toLocaleString("en")} coin${value === 1 ? "" : "s"}`;
 const openingsText = (value: number) => `${value.toLocaleString("en")} boosted case opening${value === 1 ? "" : "s"}`;
+const boostersText = (value: number) => `${value.toLocaleString("en")} booster${value === 1 ? "" : "s"}`;
 
 export const LUCK_RULE =
-  "For each case, the Common chance weight stays the same and every other rarity’s weight is multiplied by your total luck. Chances are then recalculated so they add up to 100%, and each rarity’s chance is split evenly between its items.";
+  "At luck L, each rarity’s chance weight is multiplied by L raised to that rarity’s luck power: Common stays the same and the rarer the rarity, the bigger the boost. Chances are then recalculated so they add up to 100%, and each rarity’s chance is split evenly between its items.";
 export const LUCK_NO_GUARANTEE = "Luck improves rarity chances but never guarantees a specific reward or rarity.";
+
+/** A small "i" button that opens details in a popover, so cards stay uncluttered. */
+export function InfoTip({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          className={cn("grid size-7 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-foreground/5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring", className)}
+        >
+          <Info aria-hidden className="size-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 text-xs leading-5 text-muted-foreground">
+        {children}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function readQuantity(text: string): { value: number } | { error: string } {
   const trimmed = text.trim();
-  if (!trimmed) return { error: "Enter how many charges to buy." };
+  if (!trimmed) return { error: "Enter how many boosters to buy." };
   if (!/^\d+$/.test(trimmed)) return { error: "Use a whole number, like 1 or 5." };
   const value = Number(trimmed);
-  if (value < 1) return { error: "Buy at least one charge." };
-  if (value > MAX_BOOSTER_PURCHASE) return { error: `Buy up to ${MAX_BOOSTER_PURCHASE} charges at a time.` };
+  if (value < 1) return { error: "Buy at least one booster." };
+  if (value > MAX_BOOSTER_PURCHASE) return { error: `Buy up to ${MAX_BOOSTER_PURCHASE} boosters at a time.` };
   return { value };
 }
 
@@ -43,7 +66,7 @@ function purchaseError(error: unknown) {
   if (error instanceof ApiError) {
     switch (error.code) {
       case "insufficient_funds":
-        return "You don’t have enough coins for that many charges, so nothing was bought and no coins were taken.";
+        return "You don’t have enough coins for that many boosters, so nothing was bought and no coins were taken.";
       case "price_changed":
         return "The booster price just changed, so nothing was bought and no coins were taken. Check the new price and try again.";
       case "item_unavailable":
@@ -68,8 +91,8 @@ function BoosterCard({ booster, balance, busy, onBuy }: { booster: Booster; bala
   const step = (delta: number) => setText(String(Math.min(MAX_BOOSTER_PURCHASE, Math.max(1, (quantity ?? 0) + delta))));
 
   return (
-    <li className="bx-tier grid gap-4 rounded-2xl border p-5" style={tierStyle(booster)}>
-      <div className="flex items-start gap-3">
+    <li className="bx-tier grid content-start gap-4 rounded-2xl border p-5" style={tierStyle(booster)}>
+      <div className="flex items-center gap-3">
         <span aria-hidden className="bx-ink grid size-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_oklab,var(--luck)_15%,transparent)]">
           <Clover className="size-6" />
         </span>
@@ -77,19 +100,28 @@ function BoosterCard({ booster, balance, busy, onBuy }: { booster: Booster; bala
           <h3 id={`${fieldId}-name`} className="bx-ink text-lg font-semibold">
             {look.name}
           </h3>
-          <p className="text-xs text-muted-foreground">
-            Non-Common rarity weights ×{booster.multiplier} for one case opening per charge.
-          </p>
+          <p className="text-xs text-muted-foreground">{booster.charges} cases per booster</p>
         </div>
+        <InfoTip label={`About ${look.name}`}>
+          <p>
+            One {look.name} booster boosts your next <strong className="text-foreground">{booster.charges} case openings</strong> of any case once activated in your Inventory.
+          </p>
+          <p className="mt-2">Each boosted opening uses {booster.multiplier}x luck. Active tiers add up (capped), so rarer rarities gain the most.</p>
+          <p className="mt-2">
+            You own {booster.quantity.toLocaleString("en")} unactivated and {booster.active.toLocaleString("en")} active boosted openings of this tier.
+          </p>
+          <p className="mt-2">{LUCK_NO_GUARANTEE}</p>
+        </InfoTip>
       </div>
-      <p className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-foreground/[0.03] px-3 py-1 text-sm font-semibold tabular-nums">
-        <Coins aria-hidden className="coin-ink size-4" />
-        <span className="coin-ink">{booster.price.toLocaleString("en")}</span>
-        <span className="font-normal text-muted-foreground">per charge</span>
-      </p>
-      <p className="text-xs text-muted-foreground tabular-nums">
-        {booster.quantity.toLocaleString("en")} owned · {booster.active.toLocaleString("en")} active
-      </p>
+      <div className="flex items-end justify-between gap-2">
+        <p className="inline-flex items-center gap-1.5 text-xl font-semibold tabular-nums">
+          <Coins aria-hidden className="coin-ink size-5" />
+          <span className="coin-ink">{booster.price.toLocaleString("en")}</span>
+        </p>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {booster.quantity + booster.active ? `${(booster.quantity + booster.active).toLocaleString("en")} openings owned` : null}
+        </p>
+      </div>
       {booster.available ? (
         <form
           className="grid gap-2"
@@ -99,8 +131,8 @@ function BoosterCard({ booster, balance, busy, onBuy }: { booster: Booster; bala
             if (quantity !== null && !short) onBuy(quantity);
           }}
         >
-          <label htmlFor={fieldId} className="text-sm font-medium">
-            Charges
+          <label htmlFor={fieldId} className="sr-only">
+            Boosters
           </label>
           <div className="flex items-center gap-2">
             <Button type="button" variant="outline" size="icon" aria-label="One fewer" disabled={quantity === null || quantity <= 1} onClick={() => step(-1)}>
@@ -121,58 +153,63 @@ function BoosterCard({ booster, balance, busy, onBuy }: { booster: Booster; bala
             </Button>
           </div>
           <p id={`${fieldId}-hint`} aria-live="polite" className={cn("text-xs", "error" in parsed || short ? "text-rose" : "text-muted-foreground")}>
-            {"error" in parsed ? parsed.error : short ? `You need ${coinsText(short)} more.` : `Total ${coinsText(total ?? 0)}.`}
+            {"error" in parsed ? parsed.error : short ? `You need ${coinsText(short)} more.` : `Total ${coinsText(total ?? 0)} · ${openingsText((quantity ?? 0) * booster.charges)}.`}
           </p>
           <Button type="submit" disabled={busy || total === null || short > 0}>
             <Coins aria-hidden />
-            {quantity === null ? "Buy" : `Buy ${quantity} charge${quantity === 1 ? "" : "s"}`}
+            {quantity === null ? "Buy" : `Buy ${boostersText(quantity)}`}
           </Button>
         </form>
       ) : (
-        <p className="text-sm text-muted-foreground">No longer on sale. Owned charges still work.</p>
+        <p className="text-sm text-muted-foreground">No longer on sale. Owned boosters still work.</p>
       )}
     </li>
   );
 }
 
-/** Per-rarity chances of a case without luck and at each tier, plus the maximum stack. */
-function OddsEffect({ state, boost }: { state: LootState; boost: Boost }) {
+/** Per-rarity chances of a case at a chosen luck, as bars (log scale) with the change against no booster. */
+function OddsChart({ state, boost }: { state: LootState; boost: Boost }) {
   const lootCase = state.cases.find((entry) => entry.available) ?? state.cases[0];
+  const levels = [1, ...boost.boosters.map((booster) => booster.multiplier), ...(boost.cap > 1 ? [boost.cap] : [])].filter((value, index, all) => all.indexOf(value) === index);
+  const [picked, setPicked] = useState<number | null>(null);
+  const luck = picked ?? (boost.luck > 1 ? boost.luck : levels.at(-1) ?? 1);
   if (!lootCase) return null;
-  const columns = [1, ...boost.boosters.map((booster) => booster.multiplier), ...(boost.cap > 1 ? [boost.cap] : [])].filter((value, index, all) => all.indexOf(value) === index);
   const base = caseOdds(lootCase.tiers);
-  const boosted = columns.map((luck) => caseOdds(lootCase.tiers, luck));
+  const odds = caseOdds(lootCase.tiers, luck);
+  const label = (value: number) => (value === 1 ? "None" : value === boost.cap && !boost.boosters.some((booster) => booster.multiplier === value) ? `${value}x max` : `${value}x`);
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full min-w-[28rem] text-sm">
-        <caption className="px-3 pt-3 text-left text-xs text-muted-foreground">Rarity chances per case for the {lootCaseInfo(lootCase.id).name}</caption>
-        <thead>
-          <tr className="text-xs text-muted-foreground">
-            <th scope="col" className="px-3 py-2 text-left font-medium">
-              Rarity
-            </th>
-            {columns.map((luck) => (
-              <th key={luck} scope="col" className="px-3 py-2 text-right font-medium">
-                {luck === 1 ? "No booster" : luck === boost.cap && !boost.boosters.some((booster) => booster.multiplier === luck) ? `${luck}x (max)` : `${luck}x`}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {base.map((tier, row) => (
-            <tr key={tier.rarity} className="border-t border-border">
-              <th scope="row" className="px-3 py-1.5 text-left font-normal">
-                <RarityTag rarity={tier.rarity} />
-              </th>
-              {boosted.map((odds, column) => (
-                <td key={column} className="px-3 py-1.5 text-right tabular-nums">
-                  {formatChance(odds[row].chance)}
-                </td>
-              ))}
-            </tr>
+    <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div role="group" aria-label="Luck to preview" className="bx-seg">
+          {[...new Set([...levels, ...(boost.luck > 1 ? [boost.luck] : [])])].sort((a, b) => a - b).map((value) => (
+            <button key={value} type="button" aria-pressed={value === luck} onClick={() => setPicked(value)}>
+              {label(value)}
+            </button>
           ))}
-        </tbody>
-      </table>
+        </div>
+        <p className="text-xs text-muted-foreground">{lootCaseInfo(lootCase.id).name}</p>
+      </div>
+      <ul aria-label={`Rarity chances per case at ${luck}x luck`} className="grid gap-1.5">
+        {odds.map((tier, row) => {
+          const gain = tier.chance / base[row].chance;
+          return (
+            <li key={tier.rarity} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 text-sm sm:grid-cols-[7.5rem_1fr_9rem]">
+              <RarityTag rarity={tier.rarity} />
+              <span aria-hidden className="bx-bar" data-rarity={tier.rarity} style={{ "--bar": RARITIES[tier.rarity].color } as CSSProperties}>
+                <span style={{ width: `${Math.max(2, ((Math.log10(tier.chance) + 7) / 7) * 100)}%` }} />
+              </span>
+              <span className="text-right tabular-nums">
+                {formatChance(tier.chance)}
+                {luck > 1 ? (
+                  <span className={cn("ml-1.5 text-xs", gain >= 1 ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                    {gain >= 1 ? `×${gain.toLocaleString("en", { maximumFractionDigits: gain < 10 ? 1 : 0 })}` : `−${Math.round((1 - gain) * 100)}%`}
+                  </span>
+                ) : null}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -262,22 +299,7 @@ export function BoosterShop({ state }: { state: LootState | null }) {
         </p>
       ) : null}
 
-      <section aria-labelledby="luck-rule" className="enter grid gap-3" style={{ "--enter-index": 2 } as CSSProperties}>
-        <h2 id="luck-rule" className="text-base font-semibold">
-          How luck works
-        </h2>
-        <ul className="grid list-disc gap-1.5 pl-5 text-sm leading-6 text-pretty text-muted-foreground">
-          <li>One charge boosts one case opening, of any case. Activate charges in your Inventory; they apply to your next openings and stay active until used.</li>
-          <li>{LUCK_RULE}</li>
-          <li>Active tiers add up on the same openings: 2x and 5x together give 7x luck. A tier with fewer charges stops after those openings while the others continue. Total luck is capped at {boost.cap}x.</li>
-          <li>
-            <strong className="font-medium text-foreground">{LUCK_NO_GUARANTEE}</strong> Duplicate refunds work exactly as without a booster.
-          </li>
-        </ul>
-        <OddsEffect state={state} boost={boost} />
-      </section>
-
-      <ul aria-label="Luck Boosters" className="enter grid gap-4 md:grid-cols-3" style={{ "--enter-index": 3 } as CSSProperties}>
+      <ul aria-label="Luck Boosters" className="enter grid gap-4 md:grid-cols-3" style={{ "--enter-index": 2 } as CSSProperties}>
         {boost.boosters.map((booster) => (
           <BoosterCard
             key={booster.id}
@@ -289,10 +311,25 @@ export function BoosterShop({ state }: { state: LootState | null }) {
         ))}
       </ul>
 
-      <p className="flex gap-2 rounded-lg border border-border bg-foreground/[0.02] p-3 text-xs leading-5 text-muted-foreground">
-        <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-        Boosters are bought with Coins only and can’t be exchanged for money or refunded.
-      </p>
+      <section aria-labelledby="luck-odds" className="enter grid gap-3" style={{ "--enter-index": 3 } as CSSProperties}>
+        <div className="flex items-center justify-between gap-2">
+          <h2 id="luck-odds" className="text-base font-semibold">
+            Odds per case
+          </h2>
+          <InfoTip label="How luck works">
+            <ul className="grid list-disc gap-1.5 pl-4">
+              <li>One booster boosts {boost.boosters[0]?.charges ?? 10} case openings of any case. Activate boosters in your Inventory; they apply to your next openings and stay active until used.</li>
+              <li>{LUCK_RULE}</li>
+              <li>Active tiers add up on the same openings: 2x and 5x together give 7x luck. A tier with fewer openings left stops while the others continue. Total luck is capped at {boost.cap}x.</li>
+              <li>Bars use a log scale so the rarest tiers stay visible. The × figure compares with opening without a booster.</li>
+              <li>
+                <strong className="font-medium text-foreground">{LUCK_NO_GUARANTEE}</strong> Duplicate refunds work exactly as without a booster. Boosters are bought with Coins only and can’t be exchanged for money or refunded.
+              </li>
+            </ul>
+          </InfoTip>
+        </div>
+        <OddsChart state={state} boost={boost} />
+      </section>
 
       <AlertDialog open={purchase !== null} onOpenChange={(open) => !open && !busy && setPurchase(null)}>
         <AlertDialogContent style={purchase ? tierStyle(purchase.booster) : undefined}>
@@ -303,7 +340,7 @@ export function BoosterShop({ state }: { state: LootState | null }) {
                   {purchase.quantity} × {name} added
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  {coinsText(total)} spent. Your balance is now {(purchase.balanceAfter ?? balance).toLocaleString("en")}. Activate the charges in your Inventory to boost your next {openingsText(purchase.quantity)}.
+                  {coinsText(total)} spent. Your balance is now {(purchase.balanceAfter ?? balance).toLocaleString("en")}. Activate them in your Inventory to boost your next {openingsText(purchase.quantity * purchase.booster.charges)}.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -323,7 +360,7 @@ export function BoosterShop({ state }: { state: LootState | null }) {
                   Buy {purchase.quantity} × {name}?
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Coins are taken once and the charges go to your Inventory, inactive until you activate them. {LUCK_NO_GUARANTEE}
+                  Coins are taken once and the boosters go to your Inventory, inactive until you activate them. {LUCK_NO_GUARANTEE}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-lg border border-border bg-foreground/[0.02] px-3 py-2.5 text-sm">
@@ -338,7 +375,7 @@ export function BoosterShop({ state }: { state: LootState | null }) {
                 <dt className="text-muted-foreground">Balance after</dt>
                 <dd className="text-right font-semibold tabular-nums">{Math.max(0, purchase.balance - total).toLocaleString("en")}</dd>
                 <dt className="border-t border-border pt-1.5 font-medium text-foreground">Grants</dt>
-                <dd className="bx-ink border-t border-border pt-1.5 text-right font-semibold">{openingsText(purchase.quantity)}</dd>
+                <dd className="bx-ink border-t border-border pt-1.5 text-right font-semibold">{openingsText(purchase.quantity * purchase.booster.charges)}</dd>
               </dl>
               {purchase.error ? (
                 <p role="alert" className="text-sm text-rose">

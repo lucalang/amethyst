@@ -7,9 +7,12 @@ import { z } from "zod";
 
 export const LIMITS = {
   label: 120,
-  coins: 100_000,
+  coins: 10_000_000,
   items: 100,
   achievements: 50,
+  loot: 20,
+  cases: 1000,
+  boosters: 100,
   allowlist: 500,
   maxRedemptions: 1_000_000,
   perAccount: 100,
@@ -21,11 +24,24 @@ export const DAILY_EARNING_LIMIT = 600;
 const isoDate = z.iso.datetime({ offset: true }).nullable();
 const id = z.string().trim().min(1).max(80);
 
+/** Cases (quantity = cases) and Luck Boosters (quantity = boosters, each worth its tier's openings) a code grants. */
+export const lootGrantSchema = z.strictObject({
+  kind: z.enum(["case", "booster"]),
+  id,
+  quantity: z.number().int().min(1),
+});
+export type LootGrant = z.infer<typeof lootGrantSchema>;
+export const lootLimit = (kind: LootGrant["kind"]) => (kind === "case" ? LIMITS.cases : LIMITS.boosters);
+
 const configShape = {
   label: z.string().trim().min(1, "Give the code a label.").max(LIMITS.label),
   coins: z.number().int("Coins are whole numbers.").min(0).max(LIMITS.coins, `At most ${LIMITS.coins.toLocaleString("en")} coins.`),
   items: z.array(id).max(LIMITS.items),
   achievements: z.array(id).max(LIMITS.achievements),
+  loot: z
+    .array(lootGrantSchema)
+    .max(LIMITS.loot)
+    .refine((loot) => loot.every((grant) => grant.quantity <= lootLimit(grant.kind)), `Give up to ${LIMITS.cases.toLocaleString("en")} of each case and ${LIMITS.boosters} of each booster.`),
   audience: z.enum(["everyone", "allowlist"]),
   allowlist: z.array(z.uuid()).max(LIMITS.allowlist),
   startsAt: isoDate,
@@ -50,6 +66,7 @@ export const EMPTY_CONFIG: CodeConfig = {
   coins: 0,
   items: [],
   achievements: [],
+  loot: [],
   audience: "everyone",
   allowlist: [],
   startsAt: null,
@@ -76,6 +93,7 @@ export type AdminCode = {
   coins: number;
   items: string[];
   achievements: string[];
+  loot: LootGrant[];
   audience: "everyone" | "allowlist";
   allowlistCount: number;
   startsAt: string | null;
@@ -99,6 +117,7 @@ export type AdminCodeDetail = AdminCode & {
     items: string[];
     achievements: string[];
     achievementsNew: string[];
+    loot?: LootGrant[];
   }[];
   audit: AdminAuditEntry[];
 };
@@ -141,7 +160,7 @@ export type AdminDraft = { id: string; label: string; config: unknown; updatedAt
 export type CatalogItem = {
   id: string;
   kind: "frame" | "avatar_decoration" | "game" | "badge" | "title";
-  source: "shop" | "vault" | "achievement";
+  source: "shop" | "vault" | "achievement" | "case";
   secret: boolean;
   available: boolean;
   price: number;
@@ -150,6 +169,8 @@ export type CatalogItem = {
 };
 
 export type CatalogAchievement = { id: string; coins: number; hidden: boolean; items: string[] };
+export type CatalogCase = { id: string; price: number; available: boolean };
+export type CatalogBooster = { id: string; multiplier: number; price: number; charges: number; available: boolean };
 
 export type CodeStatus = "active" | "scheduled" | "expired" | "used-up" | "disabled";
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { lazy, Suspense, useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
-import { ArrowLeft, ArrowRight, Coins, Gamepad2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clover, Coins, Gamepad2, Package, Sparkles } from "lucide-react";
 import { SampleArt, type FrameSample } from "@/app/(vault)/settings/frame-settings";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
@@ -13,6 +13,8 @@ import { isAvatarDecorationId, isProfileBadgeId, isProfileTitleId, rewardItemInf
 import { isShopFrameId } from "@/lib/frames";
 import { GAME_SHOPS, gameCosmetic, shopHref, type GameCosmetic } from "@/lib/game-cosmetics";
 import type { MotionLevel } from "@/lib/preferences";
+import { boosterLook } from "@/lib/boosters";
+import { lootCaseInfo } from "@/lib/lootboxes";
 import { CARD_STAGGER } from "./timing";
 
 // Game looks are drawn by the shop's live preview, loaded only when a code grants one.
@@ -28,7 +30,7 @@ export type VaultLooks = { profile: VaultProfile; samples: VaultSamples };
  */
 export type RevealOrigin = { x: number; y: number; z: number; perspective: number; axisX: number; axisY: number };
 
-type RewardKind = "frame" | "avatar_decoration" | "profile_banner" | "profile_frame" | "badge" | "title" | "game" | "achievement" | "other";
+type RewardKind = "frame" | "avatar_decoration" | "profile_banner" | "profile_frame" | "badge" | "title" | "game" | "achievement" | "case" | "booster" | "other";
 const KIND_LABEL: Record<RewardKind, string> = {
   frame: "Artwork frame",
   avatar_decoration: "Avatar decoration",
@@ -38,6 +40,8 @@ const KIND_LABEL: Record<RewardKind, string> = {
   title: "Profile title",
   game: "Game look",
   achievement: "Achievement",
+  case: "Cases",
+  booster: "Luck Boosters",
   other: "Item",
 };
 const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&*+<>/";
@@ -46,10 +50,24 @@ const GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&*+<>/";
 export const ACHIEVEMENT_PREFIX = "achievement:";
 const rewardAchievement = (id: string) => (id.startsWith(ACHIEVEMENT_PREFIX) ? achievementDefinition(id.slice(ACHIEVEMENT_PREFIX.length)) : undefined);
 
+/** Cases and boosters travel with the rewards as "loot:<case|booster>:<id>:<quantity>". */
+function rewardLoot(id: string) {
+  const [prefix, kind, ref, quantity] = id.split(":");
+  if (prefix !== "loot" || (kind !== "case" && kind !== "booster")) return null;
+  const count = Number(quantity) || 1;
+  const name = kind === "case" ? lootCaseInfo(ref).name : boosterLook(ref, 0).name;
+  return { kind, ref, count, name: `${count.toLocaleString("en")} × ${name}` } as const;
+}
+
 /** Profile cosmetics, game looks and achievements alike. */
 export function rewardInfo(id: string): { kind: RewardKind; name: string; description: string; game?: GameCosmetic; achievement?: AchievementDefinition } {
   const achievement = rewardAchievement(id);
   if (achievement) return { kind: "achievement", name: achievement.name, description: achievement.description, achievement };
+  const loot = rewardLoot(id);
+  if (loot) {
+    const description = loot.kind === "case" ? "Unopened, waiting in your inventory." : "Boosted openings added to your stock.";
+    return { kind: loot.kind, name: loot.name, description };
+  }
   const game = gameCosmetic(id);
   if (game) return { kind: "game", name: game.name, description: game.description, game };
   return rewardItemInfo(id);
@@ -134,6 +152,12 @@ export function RewardArt({ id, size, looks, motion = "off" }: { id: string; siz
   const { profile, samples } = looks;
   const achievement = rewardAchievement(id);
   if (achievement) return <AchievementBadge achievement={achievement} earned size={MEDAL[size]} motion={size === "large" && motion !== "off" ? "reveal" : undefined} />;
+  const loot = rewardLoot(id);
+  if (loot) {
+    const Icon = loot.kind === "case" ? Package : Clover;
+    const color = loot.kind === "case" ? lootCaseInfo(loot.ref).glow : boosterLook(loot.ref, 0).color;
+    return <Icon aria-hidden style={{ color }} className={size === "slot" ? "size-6" : size === "large" ? "size-24" : "size-12"} />;
+  }
   if (isAvatarDecorationId(id)) return <ProfileAvatar name={profile.name} src={profile.avatarUrl} decoration={id} className={AVATAR[size]} />;
   if (isShopFrameId(id)) {
     return (
@@ -262,6 +286,8 @@ export function rewardLink(id: string): { href: string; label: string } {
   const info = rewardInfo(id);
   if (info.game) return { href: shopHref(info.game.game), label: `Use it in ${GAME_SHOPS[info.game.game].title}` };
   if (info.kind === "achievement") return { href: "/achievements", label: "See your achievements" };
+  if (info.kind === "case") return { href: "/inventory", label: "Open them in your inventory" };
+  if (info.kind === "booster") return { href: "/shop/boosters", label: "See your boosters" };
   if (info.kind === "frame") return { href: "/settings/frames", label: "Use this frame" };
   if (info.kind === "profile_banner" || info.kind === "profile_frame") return { href: "/profile", label: "Use it in your showcase" };
   return { href: "/customization/profile", label: "Wear it in your profile" };

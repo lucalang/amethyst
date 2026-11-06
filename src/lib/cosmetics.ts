@@ -17,7 +17,7 @@ export const AVATAR_DECORATION_IDS = ["laurel-wreath", "orbit-ring", "gem-crown"
 export type AvatarDecorationId = (typeof AVATAR_DECORATION_IDS)[number];
 export const isAvatarDecorationId = (value: unknown): value is AvatarDecorationId => AVATAR_DECORATION_IDS.includes(value as AvatarDecorationId);
 
-export type CosmeticSource = "shop" | "achievement" | "vault";
+export type CosmeticSource = "shop" | "achievement" | "vault" | "case";
 export type CosmeticKind = "frame" | "avatar_decoration" | "profile_banner" | "profile_frame";
 export type CosmeticId = UnlockableFrameId | AvatarDecorationId | ProfileBannerItemId | ProfileFrameId;
 export const COSMETIC_IDS: readonly CosmeticId[] = [...UNLOCKABLE_FRAME_IDS, ...AVATAR_DECORATION_IDS, ...PROFILE_BANNER_ITEM_IDS, ...PROFILE_FRAME_IDS];
@@ -74,10 +74,13 @@ export const PROFILE_TITLE_IDS = [
   "title-master-builder",
   "title-cabinet-curator",
   "title-grand-archivist",
+  "title-prism-walker",
+  "title-exalted",
+  "title-amethyst-sovereign",
 ] as const;
 export type ProfileTitleId = (typeof PROFILE_TITLE_IDS)[number];
 export const isProfileTitleId = (value: unknown): value is ProfileTitleId => PROFILE_TITLE_IDS.includes(value as ProfileTitleId);
-export const PROFILE_TITLES: Record<ProfileTitleId, { name: string; description: string; source: "vault" | "achievement" }> = {
+export const PROFILE_TITLES: Record<ProfileTitleId, { name: string; description: string; source: "vault" | "achievement" | "case" }> = {
   "title-vault-keeper": { name: "Vault Keeper", description: "A title from the Vault, shown under your name.", source: "vault" },
   "title-code-breaker": { name: "Code Breaker", description: "A title from the Vault, shown under your name.", source: "vault" },
   "title-night-archivist": { name: "Night Archivist", description: "A title from the Vault, shown under your name.", source: "vault" },
@@ -86,6 +89,9 @@ export const PROFILE_TITLES: Record<ProfileTitleId, { name: string; description:
   "title-master-builder": { name: "Master Builder", description: "Earned by placing five blocks perfectly in a row in Tower Stacker.", source: "achievement" },
   "title-cabinet-curator": { name: "Curator", description: "Earned by completing every task in a checklist of 10 or more.", source: "achievement" },
   "title-grand-archivist": { name: "Grand Archivist", description: "Earned by reaching 100% progress on an entry with at least 20 tasks.", source: "achievement" },
+  "title-prism-walker": { name: "Prism Walker", description: "A Prismatic title from cases, shown under your name.", source: "case" },
+  "title-exalted": { name: "Exalted", description: "An Exalted title from cases, shown under your name.", source: "case" },
+  "title-amethyst-sovereign": { name: "Amethyst Sovereign", description: "The Amethyst title, the rarest case reward, shown under your name.", source: "case" },
 };
 
 export type EquipItemId = CosmeticId | ProfileBadgeId | ProfileTitleId;

@@ -1,0 +1,255 @@
+/* Rare pull cutscenes. --pc is the rarity colour, --pc-time the scene length, --pc-build the build-up before the burst. */
+.pc-root {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  color: white;
+  isolation: isolate;
+  animation: pc-out 400ms ease-in calc(var(--pc-time) - 400ms) forwards;
+}
+.pc-root[data-level="3"],
+.pc-root[data-level="4"] {
+  animation:
+    pc-shake 500ms ease-out var(--pc-build),
+    pc-out 400ms ease-in calc(var(--pc-time) - 400ms) forwards;
+}
+.pc-root[data-level="4"] {
+  animation:
+    pc-rumble 120ms linear 20,
+    pc-shake 900ms ease-out var(--pc-build),
+    pc-out 400ms ease-in calc(var(--pc-time) - 400ms) forwards;
+}
+
+.pc-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, color-mix(in oklab, var(--pc) 22%, #05010a) 0%, #05010a 70%);
+  animation: pc-fade 300ms ease-out both;
+}
+.pc-root[data-level="4"] .pc-veil {
+  background: radial-gradient(circle at center, color-mix(in oklab, var(--pc) 40%, #000) 0%, #000 75%);
+}
+
+.pc-rays {
+  position: absolute;
+  width: 220vmax;
+  aspect-ratio: 1;
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--pc) 55%, transparent) 0deg 6deg, transparent 6deg 18deg);
+  mask: radial-gradient(circle, black 0%, transparent 55%);
+  opacity: 0;
+  animation:
+    pc-burst 700ms cubic-bezier(0.2, 0.9, 0.2, 1) var(--pc-build) forwards,
+    pc-spin 14s linear infinite;
+}
+
+.pc-prism {
+  position: absolute;
+  width: 200vmax;
+  aspect-ratio: 1;
+  background: conic-gradient(#f0abfc, #93c5fd, #6ee7b7, #fde68a, #fca5a5, #f0abfc);
+  mask: radial-gradient(circle, black 0%, transparent 45%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation:
+    pc-burst 900ms ease-out var(--pc-build) forwards,
+    pc-spin 6s linear infinite reverse,
+    pc-hue 2.4s linear infinite;
+}
+
+.pc-rings {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.pc-rings span {
+  grid-area: 1 / 1;
+  width: 20vmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid var(--pc);
+  box-shadow: 0 0 40px var(--pc), inset 0 0 40px var(--pc);
+  opacity: 0;
+  animation: pc-ring 1400ms cubic-bezier(0.1, 0.8, 0.3, 1) var(--pc-build) forwards;
+}
+.pc-rings span:nth-child(2) {
+  animation-delay: calc(var(--pc-build) + 220ms);
+}
+.pc-rings span:nth-child(3) {
+  animation-delay: calc(var(--pc-build) + 440ms);
+}
+
+.pc-vortex {
+  position: absolute;
+  width: 160vmax;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, #9d4edd 0deg 10deg, #2a0845 10deg 24deg, #e0aaff 24deg 28deg, #12001f 28deg 40deg);
+  mask: radial-gradient(circle, transparent 4%, black 12%, transparent 60%);
+  animation:
+    pc-vortex var(--pc-build) cubic-bezier(0.6, 0, 0.9, 0.4) forwards,
+    pc-spin 1.6s linear infinite;
+}
+
+.pc-sparks {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.pc-sparks span {
+  grid-area: 1 / 1;
+  width: 0.6rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  background: linear-gradient(white, var(--pc));
+  box-shadow: 0 0 12px var(--pc);
+  opacity: 0;
+  animation: pc-spark 1300ms cubic-bezier(0.1, 0.7, 0.3, 1) calc(var(--pc-build) + var(--d)) forwards;
+}
+
+.pc-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, white 0%, color-mix(in oklab, var(--pc) 70%, white) 40%, transparent 80%);
+  opacity: 0;
+  animation: pc-flash 650ms ease-out var(--pc-build) forwards;
+}
+
+.pc-text {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  padding: 1rem;
+  text-align: center;
+  pointer-events: none;
+}
+.pc-line,
+.pc-rarity,
+.pc-name {
+  opacity: 0;
+  animation: pc-rise 700ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+.pc-line {
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--pc) 60%, white);
+  animation-delay: 100ms;
+}
+.pc-rarity {
+  font-size: clamp(3rem, 12vw, 8rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: white;
+  text-shadow: 0 0 24px var(--pc), 0 0 64px var(--pc);
+  animation:
+    pc-slam 800ms cubic-bezier(0.2, 1.4, 0.4, 1) var(--pc-build) forwards,
+    pc-glow 1.6s ease-in-out calc(var(--pc-build) + 800ms) infinite;
+}
+.pc-root[data-rarity="prismatic"] .pc-rarity {
+  background: linear-gradient(90deg, #f0abfc, #93c5fd, #6ee7b7, #fde68a, #fca5a5, #f0abfc) 0 0 / 200% 100%;
+  background-clip: text;
+  color: transparent;
+  animation:
+    pc-slam 800ms cubic-bezier(0.2, 1.4, 0.4, 1) var(--pc-build) forwards,
+    pc-pan 2s linear infinite;
+}
+.pc-root[data-rarity="amethyst"] .pc-rarity {
+  font-size: clamp(3rem, 14vw, 10rem);
+  text-shadow: 0 0 16px #e0aaff, 0 0 48px #9d4edd, 0 0 120px #7b2cbf;
+}
+.pc-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  animation-delay: calc(var(--pc-build) + 500ms);
+}
+
+.pc-skip {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.45);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  color: white;
+  cursor: pointer;
+}
+.pc-skip:hover,
+.pc-skip:focus-visible {
+  background: rgb(255 255 255 / 0.15);
+}
+
+@keyframes pc-fade {
+  from { opacity: 0; }
+}
+@keyframes pc-out {
+  to { opacity: 0; }
+}
+@keyframes pc-spin {
+  to { rotate: 360deg; }
+}
+@keyframes pc-hue {
+  to { filter: hue-rotate(360deg); }
+}
+@keyframes pc-burst {
+  from { opacity: 0; scale: 0.1; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes pc-ring {
+  from { opacity: 1; scale: 0.2; }
+  to { opacity: 0; scale: 9; }
+}
+@keyframes pc-vortex {
+  from { opacity: 0; scale: 1.4; }
+  85% { opacity: 1; scale: 0.15; }
+  to { opacity: 0; scale: 0.05; }
+}
+@keyframes pc-spark {
+  from { opacity: 1; transform: rotate(var(--a)) translateY(0) scaleY(0.4); }
+  to { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--r) * -1)) scaleY(1); }
+}
+@keyframes pc-flash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes pc-rise {
+  from { opacity: 0; translate: 0 1rem; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes pc-slam {
+  from { opacity: 0; scale: 2.6; filter: blur(12px); }
+  to { opacity: 1; scale: 1; filter: blur(0); }
+}
+@keyframes pc-glow {
+  50% { filter: brightness(1.35); }
+}
+@keyframes pc-pan {
+  to { background-position: 200% 0; }
+}
+@keyframes pc-shake {
+  0%, 100% { translate: 0 0; }
+  15% { translate: -14px 8px; }
+  30% { translate: 12px -10px; }
+  45% { translate: -8px 6px; }
+  60% { translate: 6px -4px; }
+  80% { translate: -2px 2px; }
+}
+@keyframes pc-rumble {
+  0%, 100% { translate: 0 0; }
+  25% { translate: 2px -1px; }
+  75% { translate: -2px 1px; }
+}

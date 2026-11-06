@@ -166,9 +166,9 @@ export type Database = {
               Relationships: [{ foreignKeyName: "coin_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "cosmetic_items": {
-              Row: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available: boolean; secret: boolean; source: "shop" | "vault" | "achievement"; created_at: string; game: string | null; category: string | null; rarity: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" }
-              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null; rarity?: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" }
-              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price?: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null; rarity?: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" }
+              Row: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available: boolean; secret: boolean; source: "shop" | "vault" | "achievement" | "case"; created_at: string; game: string | null; category: string | null; rarity: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" | "prismatic" | "exalted" | "amethyst" }
+              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement" | "case"; created_at?: string; game?: string | null; category?: string | null; rarity?: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" | "prismatic" | "exalted" | "amethyst" }
+              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price?: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement" | "case"; created_at?: string; game?: string | null; category?: string | null; rarity?: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" | "prismatic" | "exalted" | "amethyst" }
               Relationships: []
             },
             "game_loadouts": {
@@ -223,7 +223,7 @@ export type Database = {
               ]
             },
             "secret_code_redemptions": {
-              Row: { id: number; code_id: string; user_id: string; redeemed_at: string; coins: number; items: string[]; achievements: string[]; achievements_new: string[]; request_id: string | null }
+              Row: { id: number; code_id: string; user_id: string; redeemed_at: string; coins: number; items: string[]; achievements: string[]; achievements_new: string[]; request_id: string | null; loot: Json }
               Insert: { code_id: string; user_id: string; redeemed_at?: string; coins?: number; items?: string[]; achievements?: string[]; achievements_new?: string[]; request_id?: string | null }
               Update: { code_id?: string; user_id?: string; redeemed_at?: string; coins?: number; items?: string[]; achievements?: string[]; achievements_new?: string[]; request_id?: string | null }
               Relationships: [{ foreignKeyName: "secret_code_redemptions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
@@ -701,7 +701,7 @@ isOneToOne: false
 { Args: { "p_query"?: string | null,"p_ids"?: string[] | null }; Returns: Json
                            },
 "admin_vault_publish":
-{ Args: { "p_code_hash": string,"p_loose_hash": string,"p_format": "compact" | "phrase","p_label": string,"p_coins": number,"p_items": string[],"p_achievements": string[],"p_starts_at": string | null,"p_expires_at": string | null,"p_max_redemptions": number | null,"p_per_account_limit": number,"p_audience": "everyone" | "allowlist","p_allowlist": string[],"p_confirm_repeat": boolean,"p_draft"?: string | null }; Returns: string
+{ Args: { "p_code_hash": string,"p_loose_hash": string,"p_format": "compact" | "phrase","p_label": string,"p_coins": number,"p_items": string[],"p_achievements": string[],"p_starts_at": string | null,"p_expires_at": string | null,"p_max_redemptions": number | null,"p_per_account_limit": number,"p_audience": "everyone" | "allowlist","p_allowlist": string[],"p_confirm_repeat": boolean,"p_draft"?: string | null,"p_loot"?: Json }; Returns: string
                            },
 "admin_vault_disable":
 { Args: { "p_id": string }; Returns: boolean
@@ -710,7 +710,7 @@ isOneToOne: false
 { Args: { "p_id": string }; Returns: boolean
                            },
 "admin_vault_update":
-{ Args: { "p_id": string,"p_label": string,"p_coins": number,"p_items": string[],"p_achievements": string[],"p_starts_at": string | null,"p_expires_at": string | null,"p_max_redemptions": number | null,"p_per_account_limit": number,"p_audience": "everyone" | "allowlist","p_allowlist": string[],"p_confirm_repeat": boolean }; Returns: Json
+{ Args: { "p_id": string,"p_label": string,"p_coins": number,"p_items": string[],"p_achievements": string[],"p_starts_at": string | null,"p_expires_at": string | null,"p_max_redemptions": number | null,"p_per_account_limit": number,"p_audience": "everyone" | "allowlist","p_allowlist": string[],"p_confirm_repeat": boolean,"p_loot"?: Json }; Returns: Json
                            },
 "admin_vault_stats":
 { Args: { "p_tz"?: string }; Returns: Json

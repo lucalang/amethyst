@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ARTWORK_FRAME_IDS, DEFAULT_ARTWORK_FRAME, type ArtworkFrameId } from "@/lib/frames";
+import { CUTSCENE_RARITIES, type CutsceneRarity } from "@/lib/rarities";
 import { DEFAULT_SNAKE_SETUP, snakeSetupSchema, type SnakeSetup } from "@/lib/snake";
 import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
@@ -132,6 +133,8 @@ export const DEFAULT_SETTINGS = {
   /** Snake's last chosen mode, fruit, fruit amount and board size. */
   arcadeSnake: DEFAULT_SNAKE_SETUP as SnakeSetup,
   achievementNotifications: true,
+  /** Case pulls of these rarities play their cutscene. */
+  pullCutscenes: [...CUTSCENE_RARITIES] as CutsceneRarity[],
   /** The 3D Showcase preset: a built-in id or the id of one of the account's saved presets. */
   viewerPreset: DEFAULT_VIEWER_PRESET as string,
   /** Unsaved adjustments on top of the preset; null = the preset exactly. */
@@ -239,6 +242,7 @@ const settingFields = {
   arcadeSound: z.boolean(),
   arcadeSnake: snakeSetupSchema,
   achievementNotifications: z.boolean(),
+  pullCutscenes: z.array(z.enum(CUTSCENE_RARITIES)).max(CUTSCENE_RARITIES.length).transform((ids) => [...new Set(ids)]),
   viewerPreset: z.union([z.enum(BUILTIN_VIEWER_PRESET_IDS), z.uuid()]),
   viewerTweaks: viewerLookSchema.nullable(),
   vaultLook: z.enum(VAULT_LOOK_IDS),

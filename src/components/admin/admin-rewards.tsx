@@ -6,13 +6,18 @@ import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { kindLabel, RewardArt, rewardInfo, rewardSummary, type VaultLooks } from "@/components/vault/vault-reveal";
 import { achievementDefinition, type AchievementGroup } from "@/lib/achievements";
 import { GAME_SHOPS, SHOP_GAMES } from "@/lib/game-cosmetics";
-import { DAILY_EARNING_LIMIT, LIMITS, type CatalogAchievement, type CatalogItem, type CodeConfig } from "@/lib/vault-admin";
+import { DAILY_EARNING_LIMIT, LIMITS, lootLimit, type CatalogAchievement, type CatalogBooster, type CatalogCase, type CatalogItem, type CodeConfig, type LootGrant } from "@/lib/vault-admin";
+import { boosterLook } from "@/lib/boosters";
+import { lootCaseInfo } from "@/lib/lootboxes";
 import type { TokenShape, TokenSpec } from "./admin-scene";
 import { useStage } from "./admin-stage";
 import { number, plural, wholeNumber } from "./admin-ui";
 
-export type Rewards = Pick<CodeConfig, "coins" | "items" | "achievements">;
-export type RewardContext = { catalog: { items: CatalogItem[]; achievements: CatalogAchievement[] }; looks: VaultLooks };
+export type Rewards = Pick<CodeConfig, "coins" | "items" | "achievements" | "loot">;
+export type RewardContext = {
+  catalog: { items: CatalogItem[]; achievements: CatalogAchievement[]; cases?: CatalogCase[]; boosters?: CatalogBooster[] };
+  looks: VaultLooks;
+};
 type EditorProps = { value: Rewards; onChange: (patch: Partial<Rewards>) => void; context: RewardContext; idPrefix: string };
 type RewardToken = { key: string; shape: TokenShape; label: string; face: ReactNode | null; remove: Partial<Rewards> | ((value: Rewards) => Partial<Rewards>) };
 
@@ -67,14 +72,43 @@ export const REWARD_KINDS: RewardKind[] = [
       }),
     Editor: AchievementPicker,
   },
+  lootKind("case", "Cases", CaseEditor),
+  lootKind("booster", "Boosters", BoosterEditor),
 ];
+
+/** "3 × Release Case" / "2 × 10x Luck (20 openings)" */
+export function lootLabel(grant: LootGrant, boosters?: CatalogBooster[]) {
+  if (grant.kind === "case") return `${number(grant.quantity)} × ${lootCaseInfo(grant.id).name}`;
+  const tier = boosters?.find((entry) => entry.id === grant.id);
+  const name = boosterLook(grant.id, tier?.multiplier ?? 0).name;
+  return `${number(grant.quantity)} × ${name}${tier ? ` (${number(grant.quantity * tier.charges)} openings)` : ""}`;
+}
+
+function lootKind(kind: LootGrant["kind"], label: string, Editor: ComponentType<EditorProps>): RewardKind {
+  return {
+    id: kind === "case" ? "cases" : "boosters",
+    label,
+    count: (value) => value.loot.filter((grant) => grant.kind === kind).length,
+    tokens: (value, context) =>
+      value.loot
+        .filter((grant) => grant.kind === kind)
+        .map((grant) => ({
+          key: `${kind}:${grant.id}`,
+          shape: "medallion",
+          label: lootLabel(grant, context.catalog.boosters),
+          face: null,
+          remove: (current: Rewards) => ({ loot: current.loot.filter((entry) => !(entry.kind === kind && entry.id === grant.id)) }),
+        })),
+    Editor,
+  };
+}
 
 export const hasRewards = (value: Rewards) => REWARD_KINDS.some((kind) => kind.count(value) > 0);
 
 /** "500 coins · Vault sigil · Achievement: Night owl" */
 export function describeRewards(value: Rewards) {
   const achievements = value.achievements.map((id) => `Achievement: ${achievementDefinition(id)?.name ?? id}`);
-  return [rewardSummary(value.coins, value.items), ...achievements].filter(Boolean).join(" · ") || "No rewards";
+  return [rewardSummary(value.coins, value.items), ...value.loot.map((grant) => lootLabel(grant)), ...achievements].filter(Boolean).join(" · ") || "No rewards";
 }
 
 /** The rewards editor: kind tabs with counts, the chosen rewards as removable chips, then the kind's picker. */
@@ -118,7 +152,7 @@ export function RewardsEditor({ value, onChange, context, error, idPrefix }: Edi
           ))}
         </ul>
       ) : (
-        <p className="cs-hint">Nothing chosen yet. Pick coins, cosmetics or achievements; each becomes a token that circles the code.</p>
+        <p className="cs-hint">Nothing chosen yet. Pick coins, cosmetics, achievements, cases or boosters; each becomes a token that circles the code.</p>
       )}
       {error ? (
         <p className="cs-error" role="alert">
@@ -132,7 +166,7 @@ export function RewardsEditor({ value, onChange, context, error, idPrefix }: Edi
   );
 }
 
-const QUICK_COINS = [50, 100, 250, 500, 1000, 5000];
+const QUICK_COINS = [100, 500, 1000, 5000, 25_000, 100_000, 1_000_000];
 
 function CoinEditor({ value, onChange, idPrefix }: EditorProps) {
   const id = `${idPrefix}-coins`;
@@ -167,6 +201,61 @@ function CoinEditor({ value, onChange, idPrefix }: EditorProps) {
   );
 }
 
+function CaseEditor(props: EditorProps) {
+  const rows = (props.context.catalog.cases ?? []).map((entry) => ({
+    id: entry.id,
+    name: lootCaseInfo(entry.id).name,
+    detail: `${number(entry.price)} coins each${entry.available ? "" : " · not in shop"}`,
+  }));
+  return <LootEditor {...props} kind="case" rows={rows} hint={`Cases land unopened in the inventory. Up to ${number(LIMITS.cases)} of each.`} />;
+}
+
+function BoosterEditor(props: EditorProps) {
+  const rows = (props.context.catalog.boosters ?? []).map((entry) => ({
+    id: entry.id,
+    name: boosterLook(entry.id, entry.multiplier).name,
+    detail: `${number(entry.charges)} boosted openings each · ${number(entry.price)} coins${entry.available ? "" : " · not in shop"}`,
+  }));
+  return <LootEditor {...props} kind="booster" rows={rows} hint={`Each booster adds its openings to the account's stock. Up to ${number(LIMITS.boosters)} of each.`} />;
+}
+
+function LootEditor({ value, onChange, idPrefix, kind, rows, hint }: EditorProps & { kind: LootGrant["kind"]; rows: { id: string; name: string; detail: string }[]; hint: string }) {
+  const quantity = (id: string) => value.loot.find((grant) => grant.kind === kind && grant.id === id)?.quantity ?? 0;
+  const set = (id: string, next: number) => {
+    const rest = value.loot.filter((grant) => !(grant.kind === kind && grant.id === id));
+    const amount = Math.min(lootLimit(kind), next);
+    onChange({ loot: amount > 0 ? [...rest, { kind, id, quantity: amount }] : rest });
+  };
+  if (!rows.length) return <p className="cs-hint">Nothing to give yet.</p>;
+  return (
+    <div className="cs-field">
+      <ul className="grid gap-2">
+        {rows.map((row) => {
+          const id = `${idPrefix}-${kind}-${row.id}`;
+          return (
+            <li key={row.id} className="flex items-center justify-between gap-3">
+              <label htmlFor={id} className="min-w-0">
+                <span className="cs-label block">{row.name}</span>
+                <span className="cs-hint">{row.detail}</span>
+              </label>
+              <input
+                id={id}
+                className="cs-input cs-input-number w-24"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="0"
+                value={quantity(row.id) ? String(quantity(row.id)) : ""}
+                onChange={(event) => set(row.id, wholeNumber(event.target.value) ?? 0)}
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <p className="cs-hint">{hint}</p>
+    </div>
+  );
+}
+
 const KINDS: [CatalogItem["kind"] | "all", string][] = [
   ["all", "All"],
   ["frame", "Frames"],
@@ -180,6 +269,7 @@ const SOURCES: [CatalogItem["source"] | "all", string][] = [
   ["shop", "Shop"],
   ["vault", "Vault"],
   ["achievement", "Achievement"],
+  ["case", "Case"],
 ];
 const PAGE = 30;
 
@@ -292,6 +382,7 @@ function CosmeticPicker({ value, onChange, context, idPrefix }: EditorProps) {
                     {item.secret ? <span className="cs-flag">Hidden</span> : null}
                     {item.source === "vault" ? <span className="cs-flag">Vault exclusive</span> : null}
                     {item.source === "achievement" ? <span className="cs-flag">Achievement</span> : null}
+                    {item.source === "case" ? <span className="cs-flag">Case exclusive</span> : null}
                     {item.source === "shop" && !item.available ? <span className="cs-flag">Not in shop</span> : null}
                   </span>
                 </span>

@@ -44,7 +44,28 @@ export const PROFILE_BANNERS = {
     palette: { accent: "200 150 52", soft: "228 196 120", detail: "150 110 220" },
     pattern: "dots",
   },
-} as const satisfies Record<string, { name: string; description: string; palette: BannerPalette | null; pattern: BannerPattern }>;
+  "banner-prismatic": {
+    name: "Prismatic",
+    description: "Opal pink and sky blue split by rays of refracted light. Found only in cases.",
+    palette: { accent: "232 121 249", soft: "125 211 252", detail: "253 230 138" },
+    pattern: "rays",
+    source: "case",
+  },
+  "banner-exalted": {
+    name: "Exalted",
+    description: "Pale gold radiance under a field of white stars. Found only in cases.",
+    palette: { accent: "234 179 8", soft: "254 240 138", detail: "255 255 255" },
+    pattern: "stars",
+    source: "case",
+  },
+  "banner-amethyst": {
+    name: "Amethyst Crown",
+    description: "Deep royal violet with a faceted crystal lattice, the rarest case reward.",
+    palette: { accent: "157 78 221", soft: "199 160 255", detail: "240 171 252" },
+    pattern: "lattice",
+    source: "case",
+  },
+} as const satisfies Record<string, { name: string; description: string; palette: BannerPalette | null; pattern: BannerPattern; source?: "case" }>;
 
 export type ProfileBannerId = keyof typeof PROFILE_BANNERS;
 /** The banner themes sold as cosmetics (everything except the free default). */
@@ -120,10 +141,13 @@ export const PROFILE_FRAME_IDS = Object.keys(PROFILE_FRAMES) as ProfileFrameId[]
 export const isProfileFrameId = (value: unknown): value is ProfileFrameId => typeof value === "string" && Object.hasOwn(PROFILE_FRAMES, value);
 export const toProfileFrame = (value: unknown): ProfileFrameId | null => (isProfileFrameId(value) ? value : null);
 
-/** Shop sources for the catalogue (all of these are sold for coins). */
+/** Catalogue sources: sold for coins unless the banner says otherwise. */
 export const PROFILE_BANNER_ITEMS = Object.fromEntries(
-  PROFILE_BANNER_ITEM_IDS.map((id) => [id, { name: PROFILE_BANNERS[id].name, description: PROFILE_BANNERS[id].description, source: "shop" as const }]),
-) as Record<ProfileBannerItemId, { name: string; description: string; source: "shop" }>;
+  PROFILE_BANNER_ITEM_IDS.map((id) => {
+    const banner = PROFILE_BANNERS[id];
+    return [id, { name: banner.name, description: banner.description, source: "source" in banner ? banner.source : ("shop" as const) }];
+  }),
+) as Record<ProfileBannerItemId, { name: string; description: string; source: "shop" | "case" }>;
 export const PROFILE_FRAME_ITEMS = Object.fromEntries(
   PROFILE_FRAME_IDS.map((id) => [id, { name: PROFILE_FRAMES[id].name, description: PROFILE_FRAMES[id].description, source: "shop" as const }]),
 ) as Record<ProfileFrameId, { name: string; description: string; source: "shop" }>;

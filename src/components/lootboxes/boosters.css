@@ -66,3 +66,62 @@
 :root[data-motion="off"] .bx-clovers svg {
   animation: none !important;
 }
+
+/* Segmented luck picker above the odds chart. */
+.bx-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--foreground) 3%, transparent);
+  padding: 0.2rem;
+}
+.bx-seg button {
+  border-radius: 0.55rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  transition:
+    background 150ms,
+    color 150ms;
+}
+.bx-seg button:hover {
+  color: var(--foreground);
+}
+.bx-seg button[aria-pressed="true"] {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+}
+.bx-seg button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.bx-bar {
+  --bar: #9ca3af;
+  display: block;
+  height: 0.6rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--foreground) 6%, transparent);
+}
+.bx-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bar);
+  transition: width 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.bx-bar[data-rarity="prismatic"] > span {
+  background: linear-gradient(90deg, #f0abfc, #7dd3fc, #86efac, #fde68a);
+}
+.bx-bar[data-rarity="exalted"] > span {
+  background: linear-gradient(90deg, #fde68a, #fff, #fbbf24);
+}
+.bx-bar[data-rarity="amethyst"] > span {
+  background: linear-gradient(90deg, #5b21b6, #9d4edd, #f0abfc);
+}

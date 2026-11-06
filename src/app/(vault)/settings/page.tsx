@@ -9,6 +9,7 @@ import { DEFAULT_SETTINGS } from "@/lib/preferences";
 import { requireUser } from "@/lib/supabase/auth";
 import { SwitchSetting } from "./setting-controls";
 import { SettingRow, SettingsGroup, SettingsHeader, resetFor } from "./settings-ui";
+import { PullCutscenesSetting } from "./pull-cutscenes-setting";
 import { StartupSetting } from "./startup-setting";
 import { TimeZoneSetting } from "./time-zone-setting";
 
@@ -67,6 +68,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             onLabel="Celebrations on"
             offLabel="Celebrations off"
           />
+        </SettingRow>
+        <SettingRow
+          labelId="pull-cutscenes-label"
+          label="Rare pull cutscenes"
+          description="Which rarities play a cutscene when you pull them from a case. Higher rarities get bigger scenes; every scene can be skipped. Reduced motion turns them all off."
+          reset={resetFor(preferences, ["pullCutscenes"], "All on")}
+        >
+          <PullCutscenesSetting value={preferences.pullCutscenes} labelId="pull-cutscenes-label" />
         </SettingRow>
       </SettingsGroup>
 

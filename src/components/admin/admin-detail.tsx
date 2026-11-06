@@ -9,7 +9,7 @@ import { achievementDefinition } from "@/lib/achievements";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { codeStatus, needsRepeatConfirmation, type AdminCodeDetail, type CodeConfig } from "@/lib/vault-admin";
 import { configOf, PayoutFacts, raisesPayout, RepeatConfirm, RulesFields, updateOf, validateConfig, type ConfigErrors } from "./admin-config";
-import { RewardsEditor, type RewardContext } from "./admin-rewards";
+import { lootLabel, RewardsEditor, type RewardContext } from "./admin-rewards";
 import { flashPanel, Panel, useStage } from "./admin-stage";
 import { accountName, ACTION_LABEL, ConfirmAction, countdown, FIELD_LABEL, formatWhen, number, PanelHead, plural, StatusBadge, useNow } from "./admin-ui";
 
@@ -297,6 +297,20 @@ export function Detail({
                     </li>
                   );
                 })}
+                {(shown.loot ?? []).map((grant) => {
+                  const id = `loot:${grant.kind}:${grant.id}:${grant.quantity}`;
+                  return (
+                    <li key={id} className="cs-reward">
+                      <span className="cs-option-art" aria-hidden>
+                        <RewardArt id={id} size="slot" looks={context.looks} />
+                      </span>
+                      <span>
+                        <span className="cs-option-name">{lootLabel(grant, context.catalog.boosters)}</span>
+                        <span className="cs-option-meta">{grant.kind === "case" ? "Cases" : "Luck Boosters"}</span>
+                      </span>
+                    </li>
+                  );
+                })}
                 {shown.achievements.map((item) => {
                   const definition = achievementDefinition(item);
                   return (
@@ -361,7 +375,7 @@ export function Detail({
                   <span className="cs-list-main">
                     <span className="cs-list-title">{accountName(redemption.account)}</span>
                     <span className="cs-option-meta">
-                      {[rewardSummary(redemption.coins, redemption.items), redemption.achievementsNew.length ? plural(redemption.achievementsNew.length, "new achievement") : null].filter(Boolean).join(" · ") || "Nothing new"}
+                      {[rewardSummary(redemption.coins, redemption.items), ...(redemption.loot ?? []).map((grant) => lootLabel(grant, context.catalog.boosters)), redemption.achievementsNew.length ? plural(redemption.achievementsNew.length, "new achievement") : null].filter(Boolean).join(" · ") || "Nothing new"}
                     </span>
                   </span>
                   <span className="cs-list-side">{formatWhen(redemption.redeemedAt)}</span>

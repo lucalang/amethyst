@@ -18,7 +18,7 @@ export default async function BoostersPage() {
       <PageContainer>
         <PageHeader
           title="Luck Boosters"
-          description="Premium charges that raise the chance of rarer rewards in your next case openings."
+          description="Each booster improves the odds of your next 10 case openings."
           actions={
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm" className="h-9 px-3">

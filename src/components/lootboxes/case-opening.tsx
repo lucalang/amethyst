@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type KeyboardEvent } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, FastForward, Gift, Loader2, Lock, PackageOpen, RotateCcw, Square, TriangleAlert } from "lucide-react";
@@ -14,7 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { InventoryType } from "@/lib/inventory";
 import { OPEN_BATCH, OPEN_PRESETS, caseOdds, lootCaseInfo, typeLabel, type LootCase, type LootClaim, type LootOpening, type LootResult, type RefundRates } from "@/lib/lootboxes";
-import { RARITIES, rarityRank, type RarityId } from "@/lib/rarities";
+import { RARITIES, isCutsceneRarity, rarityRank, type CutsceneRarity, type RarityId } from "@/lib/rarities";
+import { useSettings } from "@/components/layout/settings-context";
+import { PullCutscene } from "./pull-cutscene";
 import { cn } from "@/lib/utils";
 import { CaseArt, DUPLICATE_NOTE, OddsList, RarityTag, RefundRateList, TypeIcon, caseStyle, rarityStyle, rewardItem } from "./parts";
 import { CloverField, LuckBadge } from "./booster-parts";
@@ -143,6 +145,8 @@ export function CaseOpening({
   const [error, setError] = useState<{ message: string; retry: "open" | "claim" | null } | null>(null);
   const [stopped, setStopped] = useState(false);
   const [boost, setBoost] = useState(initialBoost);
+  const [cutscene, setCutscene] = useState<{ rarity: CutsceneRarity; name: string } | null>(null);
+  const { pullCutscenes } = useSettings();
   const stoppedRef = useRef(false);
   const pendingOpen = useRef<{ id: string; quantity: number } | null>(null);
   const busy = useRef(false);
@@ -150,6 +154,19 @@ export function CaseOpening({
 
   const caseId = opening?.case ?? (plan.kind === "new" ? plan.caseId : (plan.openings[0]?.case ?? "release"));
   const info = lootCaseInfo(caseId);
+
+  // The best enabled Secret-or-higher pull of the batch gets a scene, then the showcase opens on it.
+  function finishRoll() {
+    const best = lanes
+      .map((lane, at) => ({ tile: lane.tiles[lane.win], at }))
+      .filter(({ tile }) => isCutsceneRarity(tile.rarity) && pullCutscenes.includes(tile.rarity))
+      .sort((a, b) => rarityRank(b.tile.rarity) - rarityRank(a.tile.rarity))[0];
+    if (best && isCutsceneRarity(best.tile.rarity)) {
+      setIndex(best.at);
+      setCutscene({ rarity: best.tile.rarity, name: best.tile.name });
+    } else setPhase("showcase");
+  }
+  const afterLanding = useEffectEvent(finishRoll);
 
   useEffect(() => {
     if (phase !== "rolling" || !reels.current) return;
@@ -168,7 +185,7 @@ export function CaseOpening({
     Promise.all(animations.map((animation) => animation.finished)).then(
       () => {
         setLanded(true);
-        timer = window.setTimeout(() => setPhase("showcase"), 950);
+        timer = window.setTimeout(afterLanding, 950);
       },
       () => undefined,
     );
@@ -177,6 +194,11 @@ export function CaseOpening({
       animations.forEach((animation) => animation.cancel());
     };
   }, [phase, lanes]);
+
+  function endCutscene() {
+    setCutscene(null);
+    setPhase("showcase");
+  }
 
   function reveal(next: LootOpening) {
     setOpening(next);
@@ -297,7 +319,14 @@ export function CaseOpening({
 
   return (
     <Dialog open onOpenChange={close}>
-      <DialogContent className="max-h-[94dvh] overflow-y-auto sm:max-w-3xl" style={caseStyle(caseId)} onKeyDown={onKey}>
+      <DialogContent
+        className="max-h-[94dvh] overflow-y-auto sm:max-w-3xl"
+        style={caseStyle(caseId)}
+        onKeyDown={onKey}
+        onEscapeKeyDown={(event) => cutscene && event.preventDefault()}
+        onInteractOutside={(event) => cutscene && event.preventDefault()}
+      >
+        {cutscene ? <PullCutscene rarity={cutscene.rarity} name={cutscene.name} onDone={endCutscene} /> : null}
         <div className="flex flex-wrap items-start gap-3 pr-8">
           <CaseArt id={caseId} size="2.75rem" />
           <div className="min-w-0 flex-1">
@@ -436,7 +465,7 @@ export function CaseOpening({
             <p className="sr-only" role="status">
               Rolling {plural(lanes.length, "case")}.
             </p>
-            <Button variant="outline" className="justify-self-center" onClick={() => setPhase("showcase")}>
+            <Button variant="outline" className="justify-self-center" onClick={finishRoll}>
               <FastForward aria-hidden />
               Skip to rewards
             </Button>

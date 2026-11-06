@@ -44,6 +44,8 @@ export const openingSchema = z.object({
 const tierSchema = z.object({
   rarity,
   weight: z.number().int().positive(),
+  /** Weight multiplier at luck L is L ^ luckPower (0 for Common). */
+  luckPower: z.coerce.number().min(0).default(1),
   items: z.array(z.object({ id: z.string().nullable(), kind, owned: z.boolean() })),
 });
 const caseSchema = z.object({ id: z.string(), price: z.number().int(), available: z.boolean(), quantity: z.number().int(), tiers: z.array(tierSchema) });
@@ -62,7 +64,13 @@ export const claimSchema = z.object({
   refund: z.number().int(),
   balance: z.number().int(),
 });
-export const bulkStepSchema = claimSchema.omit({ claimed: true }).extend({ opened: z.number().int(), remaining: z.number().int() });
+export const bulkStepSchema = claimSchema.omit({ claimed: true }).extend({
+  opened: z.number().int(),
+  remaining: z.number().int(),
+  // Pull count by rarity, plus every Secret-or-higher pull of the step, best first.
+  rarities: z.record(z.string(), z.number().int()).default({}),
+  pulls: z.array(resultSchema.omit({ refund: true })).default([]),
+});
 
 export type LootResult = z.infer<typeof resultSchema>;
 export type LootOpening = z.infer<typeof openingSchema>;
@@ -77,13 +85,13 @@ export type RefundRates = LootState["refundRates"];
 export const refundFor = (rates: RefundRates, rarity: string, unitPrice: number) => Math.floor((unitPrice * (rates[rarity] ?? 0)) / 100);
 
 /**
- * Exact chances from the drop table, by the database's rule (`_loot_weights`): at a luck multiplier, Common
- * keeps its weight and every other rarity's weight is multiplied by it; a rarity's chance is its weight over
- * the total of rarities that have items, split equally between its items.
+ * Exact chances from the drop table, by the database's rule (`_loot_weights`): at luck L each rarity's weight
+ * is multiplied by L ^ luckPower (rounded, at least 1); a rarity's chance is its weight over the total of
+ * rarities that have items, split equally between its items.
  */
 export function caseOdds(tiers: readonly LootTier[], luck = 1) {
   const live = tiers.filter((tier) => tier.items.length > 0);
-  const weightOf = (tier: LootTier) => (tier.rarity === "common" ? tier.weight : tier.weight * Math.max(1, luck));
+  const weightOf = (tier: LootTier) => Math.max(1, Math.round(tier.weight * Math.max(1, luck) ** tier.luckPower));
   const total = live.reduce((sum, tier) => sum + weightOf(tier), 0);
   return live.map((tier) => ({ ...tier, chance: weightOf(tier) / total, itemChance: weightOf(tier) / total / tier.items.length }));
 }

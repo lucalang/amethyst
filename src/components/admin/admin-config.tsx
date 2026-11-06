@@ -57,6 +57,7 @@ export const configOf = (code: AdminCodeDetail): CodeConfig => ({
   coins: code.coins,
   items: code.items,
   achievements: code.achievements,
+  loot: code.loot ?? [],
   audience: code.audience,
   allowlist: code.allowlist.map((account) => account.id),
   startsAt: code.startsAt,
@@ -74,8 +75,8 @@ export function cloneConfig(code: AdminCodeDetail, now: number): CodeConfig {
 
 /** An edit as the update API takes it (the code text and its type never change). */
 export function updateOf(config: CodeConfig): CodeUpdate {
-  const { label, coins, items, achievements, audience, allowlist, startsAt, expiresAt, maxRedemptions, perAccountLimit } = effectiveConfig(config);
-  return { label: label.trim(), coins, items, achievements, audience, allowlist, startsAt, expiresAt, maxRedemptions, perAccountLimit };
+  const { label, coins, items, achievements, loot, audience, allowlist, startsAt, expiresAt, maxRedemptions, perAccountLimit } = effectiveConfig(config);
+  return { label: label.trim(), coins, items, achievements, loot, audience, allowlist, startsAt, expiresAt, maxRedemptions, perAccountLimit };
 }
 
 const DAY = 86_400_000;

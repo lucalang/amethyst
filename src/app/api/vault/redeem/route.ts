@@ -5,27 +5,29 @@ import { CODE_RULES, typedCodeHashes } from "@/lib/secret-codes";
 
 const redeemSchema = z.object({ code: z.string().max(200), request: z.uuid().optional() }).strict();
 
+type Loot = { kind: string; id: string; quantity: number }[] | null | undefined;
 type Redemption =
-  | { status: "unlocked"; coins: number; items: string[]; newItems: string[]; achievements: string[]; newAchievements: string[]; balance: number }
-  | { status: "already"; coins: number; items: string[]; achievements: string[]; redeemedAt: string; balance: number }
+  | { status: "unlocked"; coins: number; items: string[]; newItems: string[]; achievements: string[]; newAchievements: string[]; loot?: Loot; balance: number }
+  | { status: "already"; coins: number; items: string[]; achievements: string[]; loot?: Loot; redeemedAt: string; balance: number }
   | { status: "unavailable" | "unknown"; triesLeft: number };
 
 const STATUSES: readonly string[] = ["unlocked", "already", "unavailable", "unknown"];
 
-/** Achievements a code unlocks are shown among its rewards as "achievement:<id>". */
-const withAchievements = (items: string[], achievements: string[] | undefined) => [
+/** Achievements travel among the rewards as "achievement:<id>", cases and boosters as "loot:<kind>:<id>:<quantity>". */
+const withAchievements = (items: string[], achievements: string[] | undefined, loot?: Loot) => [
   ...items,
   ...(achievements ?? []).map((id) => `achievement:${id}`),
+  ...(loot ?? []).map((grant) => `loot:${grant.kind}:${grant.id}:${grant.quantity}`),
 ];
 
 function present(result: Redemption) {
   if (result.status === "unlocked") {
-    const { achievements, newAchievements, ...rest } = result;
-    return { ...rest, items: withAchievements(result.items, achievements), newItems: withAchievements(result.newItems, newAchievements) };
+    const { achievements, newAchievements, loot, ...rest } = result;
+    return { ...rest, items: withAchievements(result.items, achievements, loot), newItems: withAchievements(result.newItems, newAchievements, loot) };
   }
   if (result.status === "already") {
-    const { achievements, ...rest } = result;
-    return { ...rest, items: withAchievements(result.items, achievements) };
+    const { achievements, loot, ...rest } = result;
+    return { ...rest, items: withAchievements(result.items, achievements, loot) };
   }
   return result;
 }
@@ -63,12 +65,12 @@ export async function GET() {
   if (ctx instanceof Response) return ctx;
   const { data, error } = await ctx.supabase
     .from("secret_code_redemptions")
-    .select("redeemed_at, coins, items, achievements")
+    .select("redeemed_at, coins, items, achievements, loot")
     .eq("user_id", ctx.userId)
     .order("redeemed_at", { ascending: false })
     .limit(50);
   if (error) return dbError(error, "The vault’s log couldn’t be read. Try again.");
   return jsonResponse({
-    finds: data.map((row) => ({ redeemedAt: row.redeemed_at, coins: row.coins, items: withAchievements(row.items, row.achievements) })),
+    finds: data.map((row) => ({ redeemedAt: row.redeemed_at, coins: row.coins, items: withAchievements(row.items, row.achievements, row.loot as Loot) })),
   });
 }

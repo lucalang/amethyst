@@ -7,13 +7,17 @@ import { EntranceScope } from "@/components/layout/entrance-scope";
 import { CaseArt } from "@/components/lootboxes/parts";
 import { Button } from "@/components/ui/button";
 import { loadLootState } from "@/lib/data/inventory";
+import { lootCaseInfo } from "@/lib/lootboxes";
+import { boostedOpenings } from "@/lib/boosters";
 import { loadCoinBalance } from "@/lib/data/shop";
 import { requireUser } from "@/lib/supabase/auth";
 
 export const metadata: Metadata = { title: "Shop" };
 
 const CARD =
-  "group flex h-full flex-col gap-4 rounded-2xl border border-border bg-surface/40 p-5 transition-[border-color,background-color,translate] duration-200 outline-none hover:-translate-y-0.5 hover:border-amethyst/50 hover:bg-surface/65 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+  "group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface/40 transition-[border-color,background-color,translate,box-shadow] duration-200 outline-none hover:-translate-y-1 hover:border-(--accent)/60 hover:bg-surface/65 hover:shadow-[0_18px_40px_-24px_var(--accent)] focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+const STAGE =
+  "relative grid h-40 place-items-center overflow-hidden border-b border-border bg-[radial-gradient(circle_at_50%_60%,color-mix(in_oklab,var(--accent)_30%,transparent),transparent_70%)] [&>*]:transition-transform [&>*]:duration-300 group-hover:[&>*]:scale-110 motion-reduce:group-hover:[&>*]:scale-100";
 
 /** Shop home: where Coins are spent, split into Cosmetics, Cases and Boosters. */
 export default async function ShopPage() {
@@ -21,13 +25,40 @@ export default async function ShopPage() {
   const [balance, loot] = await Promise.all([loadCoinBalance(ctx).catch(() => null), loadLootState(ctx).catch(() => null)]);
   const owned = loot ? loot.cases.reduce((sum, lootCase) => sum + lootCase.quantity, 0) : 0;
   const onSale = loot?.cases.filter((lootCase) => lootCase.available) ?? [];
+  const boosted = loot ? boostedOpenings(loot.boost) : 0;
+  const departments = [
+    {
+      href: "/shop/cosmetics",
+      title: "Cosmetics",
+      tagline: "Profile, artwork and game looks.",
+      accent: "#a855f7",
+      art: <Palette className="size-16 text-(--accent) drop-shadow-[0_0_18px_var(--accent)]" strokeWidth={1.5} />,
+      meta: null,
+    },
+    {
+      href: "/shop/cases",
+      title: "Cases",
+      tagline: "A random cosmetic in every case.",
+      accent: lootCaseInfo(onSale[0]?.id ?? "release").glow,
+      art: <CaseArt id={onSale[0]?.id ?? "release"} size="6rem" />,
+      meta: `${onSale.length} on sale${owned ? ` · ${owned.toLocaleString("en")} owned` : ""}`,
+    },
+    {
+      href: "/shop/boosters",
+      title: "Luck Boosters",
+      tagline: "Better odds for your next 10 cases.",
+      accent: "#22c55e",
+      art: <Clover className="size-16 text-(--accent) drop-shadow-[0_0_18px_var(--accent)]" strokeWidth={1.5} />,
+      meta: boosted > 0 ? `Next ${boosted.toLocaleString("en")} openings boosted` : null,
+    },
+  ];
 
   return (
     <EntranceScope>
       <PageContainer>
         <PageHeader
           title="Shop"
-          description="Spend the Coins you earn in the Arcade on cosmetics and cases."
+          description="Spend the Coins you earn in the Arcade on cosmetics, cases and Luck Boosters."
           actions={
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
@@ -60,64 +91,22 @@ export default async function ShopPage() {
           </span>
         </section>
 
-        <ul className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <li className="enter" style={{ "--enter-index": 2 } as CSSProperties}>
-            <Link href="/shop/cosmetics" className={CARD}>
-              <span className="flex items-center gap-3">
-                <span aria-hidden className="grid size-11 place-items-center rounded-xl bg-amethyst/15 text-amethyst">
-                  <Palette className="size-5" />
+        <ul className="grid gap-4 md:grid-cols-3">
+          {departments.map((department, index) => (
+            <li key={department.href} className="enter" style={{ "--enter-index": index + 2, "--accent": department.accent } as CSSProperties}>
+              <Link href={department.href} className={CARD}>
+                <span aria-hidden className={STAGE}>
+                  {department.art}
                 </span>
-                <span className="text-lg font-semibold">Cosmetics</span>
-              </span>
-              <span className="text-sm leading-6 text-pretty text-muted-foreground">
-                Profile and artwork cosmetics, plus each game’s own shop of looks. Preview items before you buy.
-              </span>
-              <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-amethyst">
-                Browse cosmetics
-                <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
-              </span>
-            </Link>
-          </li>
-          <li className="enter" style={{ "--enter-index": 3 } as CSSProperties}>
-            <Link href="/shop/cases" className={CARD}>
-              <span className="flex items-center gap-3">
-                <CaseArt id={onSale[0]?.id ?? "release"} size="2.75rem" />
-                <span className="text-lg font-semibold">Cases</span>
-              </span>
-              <span className="text-sm leading-6 text-pretty text-muted-foreground">
-                Buy cases and open them in your Inventory for a random cosmetic. Exact odds and duplicate refunds are listed for every case.
-              </span>
-              <span className="mt-auto flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="inline-flex items-center gap-1 font-medium text-amethyst">
-                  Browse cases
-                  <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                <span className="flex items-center justify-between gap-3 px-5 pt-4">
+                  <span className="text-lg font-semibold">{department.title}</span>
+                  <ArrowRight aria-hidden className="size-4 text-(--accent) transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {onSale.length} on sale{owned ? ` · ${owned.toLocaleString("en")} owned` : ""}
-                </span>
-              </span>
-            </Link>
-          </li>
-          <li className="enter" style={{ "--enter-index": 4 } as CSSProperties}>
-            <Link href="/shop/boosters" className={CARD}>
-              <span className="flex items-center gap-3">
-                <span aria-hidden className="grid size-11 place-items-center rounded-xl bg-emerald-500/15 text-emerald-500">
-                  <Clover className="size-5" />
-                </span>
-                <span className="text-lg font-semibold">Boosters</span>
-              </span>
-              <span className="text-sm leading-6 text-pretty text-muted-foreground">
-                Premium 2x, 5x and 10x Luck charges that raise the chance of rarer rarities in your next case openings. They never guarantee a reward.
-              </span>
-              <span className="mt-auto flex flex-wrap items-center justify-between gap-2 text-sm">
-                <span className="inline-flex items-center gap-1 font-medium text-amethyst">
-                  Browse boosters
-                  <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
-                </span>
-                {loot && loot.boost.luck > 1 ? <span className="text-xs text-muted-foreground">{loot.boost.luck}x luck active</span> : null}
-              </span>
-            </Link>
-          </li>
+                <span className="px-5 pt-1 text-sm text-pretty text-muted-foreground">{department.tagline}</span>
+                <span className="min-h-5 px-5 pt-3 pb-4 text-xs font-medium text-(--accent)">{department.meta}</span>
+              </Link>
+            </li>
+          ))}
         </ul>
       </PageContainer>
     </EntranceScope>

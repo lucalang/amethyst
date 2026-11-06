@@ -16,7 +16,7 @@ const plural = (count: number, word: string) => `${count.toLocaleString("en")} $
 
 function activateError(error: unknown) {
   if (error instanceof ApiError) {
-    if (error.code === "not_enough_boosters") return "You don’t have that many charges of this booster. Nothing was activated.";
+    if (error.code === "not_enough_boosters") return "You don’t have that many boosted openings of this tier. Nothing was activated.";
     if (error.code === "luck_cap") return "That would go over the luck limit. Nothing was activated.";
     if (error.status > 0 && error.status < 500) return error.message;
   }
@@ -36,9 +36,9 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
   const problem = !booster.quantity
     ? null
     : !Number.isInteger(value) || value < 1
-      ? "Enter a whole number of charges."
+      ? "Enter a whole number of openings."
       : value > booster.quantity
-        ? `You have ${plural(booster.quantity, "charge")}.`
+        ? `You have ${plural(booster.quantity, "opening")}.`
         : overCap
           ? `Total luck is capped at ${boost.cap}x.`
           : null;
@@ -54,7 +54,7 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
       request.current = null;
       onBoost(result.boost);
       setText("1");
-      setMessage({ error: false, text: `${plural(value, "charge")} activated.` });
+      setMessage({ error: false, text: `${plural(value, "boosted opening")} activated.` });
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.status >= 400 && error.status < 500) request.current = null;
@@ -73,7 +73,7 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
             {look.name}
           </p>
           <p className="text-xs text-muted-foreground tabular-nums">
-            {plural(booster.quantity, "charge")} owned · {booster.active ? `active for ${plural(booster.active, "more opening")}` : "not active"}
+            {plural(booster.quantity, "boosted opening")} owned · {booster.active ? `active for ${plural(booster.active, "more opening")}` : "not active"}
           </p>
         </div>
       </div>
@@ -87,7 +87,7 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
           }}
         >
           <label htmlFor={fieldId} className="text-xs font-medium">
-            Charges to activate
+            Openings to activate (each booster bought adds {booster.charges})
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <Input
@@ -109,11 +109,11 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
             </Button>
           </div>
           <p id={`${fieldId}-hint`} aria-live="polite" className={cn("text-xs", problem || message?.error ? "text-rose" : "text-muted-foreground")}>
-            {problem ?? message?.text ?? `Boosts your next ${plural(Number.isInteger(value) ? value : 1, "case opening")}${booster.active ? ", added to the charges already active" : ""}.`}
+            {problem ?? message?.text ?? `Boosts your next ${plural(Number.isInteger(value) ? value : 1, "case opening")}${booster.active ? ", added to the openings already active" : ""}.`}
           </p>
         </form>
       ) : (
-        <p className="text-xs text-muted-foreground">{message?.text ?? "No charges to activate."}</p>
+        <p className="text-xs text-muted-foreground">{message?.text ?? "Nothing to activate."}</p>
       )}
     </li>
   );
@@ -163,7 +163,7 @@ export function BoosterShelf({ boost: initial }: { boost: Boost | null }) {
               ))}
             </ul>
             <p className="text-xs text-muted-foreground">
-              Active tiers add up on the same openings and each uses one charge per case opened, of any case. {LUCK_NO_GUARANTEE}
+              Active tiers add up on the same openings and each case opened, of any case, uses one opening from every active tier. {LUCK_NO_GUARANTEE}
             </p>
           </>
         ) : (

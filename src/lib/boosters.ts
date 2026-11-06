@@ -12,13 +12,15 @@ export const BOOSTER_LOOKS: Record<string, { name: string; color: string }> = {
 };
 export const boosterLook = (id: string, multiplier: number) => BOOSTER_LOOKS[id] ?? { name: `${multiplier}x Luck`, color: "#a78bfa" };
 
-/** Charges bought per purchase (enforced by the database too). */
+/** Boosters bought per purchase (enforced by the database too). */
 export const MAX_BOOSTER_PURCHASE = 100;
 
 export const boosterSchema = z.object({
   id: z.string(),
   multiplier: z.number().int(),
   price: z.number().int(),
+  /** Boosted case openings one booster adds. */
+  charges: z.number().int().positive().default(10),
   available: z.boolean(),
   /** Owned charges not yet activated. */
   quantity: z.number().int(),

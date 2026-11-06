@@ -51,6 +51,51 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-06-rarities-and-rare-pulls",
+    date: "2026-11-06",
+    title: "New rarities and rare pull cutscenes",
+    intro: "Three rarities above Secret, much stronger luck for the rarest tiers, cheaper 10-case Luck Boosters, and a full-screen cutscene when you pull something Secret or rarer.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Prismatic, Exalted and Amethyst", text: "Three new rarities above Secret, each with a case-exclusive banner and title in the Release Case. Amethyst is extremely rare." },
+      { kind: "new", feature: "Rare pull cutscenes", text: "Secret and higher pulls play a skippable scene that gets bigger with every rarity; pick which rarities play it in Settings." },
+      { kind: "improved", feature: "Luck Boosters", text: "Each booster now covers 10 case openings at about a tenth of the old price, and luck matters most for the rarest tiers." },
+      { kind: "improved", feature: "Shop and Inventory", text: "A cleaner Shop landing with three big sections and new Inventory tabs." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Three rarities above Secret",
+          body: "Prismatic, Exalted and Amethyst sit above Secret. The Release Case now holds a case-exclusive banner theme and profile title for each; they can't be bought in the Shop. Duplicates refund 85%, 95% and 100% of the case price.",
+          where: "Shop → Cases",
+          link: { href: "/shop/cases", label: "Open Cases" },
+        },
+        {
+          title: "Rare pull cutscenes",
+          body: "When an opening lands on a Secret or rarer item, a full-screen scene plays before the reward: Secret gets a burst of light, Prismatic adds rainbow light, Exalted adds shockwaves and a screen shake, and Amethyst builds up with a vortex. Skip any scene with the Skip button, a click, or Esc. Scenes don't play with reduced motion.",
+          where: "Settings → General → Notifications",
+          link: { href: "/settings", label: "Choose rarities" },
+        },
+      ],
+      improved: [
+        {
+          title: "Luck Boosters",
+          body: "A booster now boosts 10 case openings and costs 1,000 (2x), 5,000 (5x) or 20,000 (10x) Coins. Luck now grows with rarity: Uncommon gains the least, Secret and above gain the most, so a 10x booster makes Secret about 30 times and Amethyst about 180 times as likely. Boosters never guarantee a reward.",
+          points: [
+            "The Boosters page shows the boosters first, then an odds chart for each luck level; details sit in info tooltips instead of on the cards.",
+          ],
+          where: "Shop → Luck Boosters",
+          link: { href: "/shop/boosters", label: "Open Luck Boosters" },
+        },
+        {
+          title: "Shop and Inventory",
+          body: "The Shop landing shows Cosmetics, Cases and Luck Boosters as three large tiles with less text, and the Inventory tabs became a full-width switch with a sliding highlight.",
+          link: { href: "/shop", label: "Open the Shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-season-pass-and-quests",
     date: "2026-11-06",
     title: "Season Pass and Quests",

@@ -17,6 +17,7 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
       { label: "Startup destination", target: "startup-label-setting", keywords: "opening home first page collection" },
       { label: "Time zone", target: "time-zone-label-setting", keywords: "timezone date day my day tasks midnight clock region" },
       { label: "Achievement celebrations", target: "achievement-notifications-label-setting", keywords: "notification popup confetti" },
+      { label: "Rare pull cutscenes", target: "pull-cutscenes-label-setting", keywords: "case lootbox animation effect secret prismatic exalted amethyst rarity skip" },
       { label: "New password", target: "password", path: "/settings/password", keywords: "change password security login sign in" },
       { label: "Confirm password", target: "confirm", path: "/settings/password", keywords: "change password repeat confirmation security" },
       { label: "Sign out", target: "security", keywords: "logout account device" },

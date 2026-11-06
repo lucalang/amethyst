@@ -1,14 +1,14 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Backpack, Clover, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "items", label: "Items", icon: Backpack },
-  { id: "cases", label: "Cases", icon: Package },
-  { id: "boosters", label: "Boosters", icon: Clover },
+  { id: "items", label: "Items", icon: Backpack, accent: "#a855f7" },
+  { id: "cases", label: "Cases", icon: Package, accent: "#f59e0b" },
+  { id: "boosters", label: "Boosters", icon: Clover, accent: "#22c55e" },
 ] as const;
 export type InventoryTab = (typeof TABS)[number]["id"];
 
@@ -37,9 +37,19 @@ export function InventoryTabs({ counts, items, cases, boosters }: { counts: Reco
     buttons.current[target]?.focus();
   }
 
+  const activeIndex = TABS.findIndex((tab) => tab.id === active);
   return (
     <div className="grid gap-5">
-      <div role="tablist" aria-label="Inventory" className="enter inline-flex w-fit gap-1 rounded-xl border border-border bg-foreground/[0.03] p-1">
+      <div
+        role="tablist"
+        aria-label="Inventory"
+        className="enter relative grid w-full max-w-xl grid-cols-3 rounded-2xl border border-border bg-surface/40 p-1.5"
+        style={{ "--tab": activeIndex, "--accent": TABS[activeIndex].accent } as CSSProperties}
+      >
+        <span
+          aria-hidden
+          className="absolute inset-y-1.5 left-1.5 w-[calc((100%-0.75rem)/3)] translate-x-[calc(var(--tab)*100%)] rounded-xl border border-(--accent)/40 bg-(--accent)/15 shadow-[0_8px_24px_-12px_var(--accent)] transition-[translate,background-color,border-color] duration-300 ease-out motion-reduce:transition-none"
+        />
         {TABS.map((tab, index) => {
           const selected = tab.id === active;
           const count = counts[tab.id];
@@ -58,17 +68,13 @@ export function InventoryTabs({ counts, items, cases, boosters }: { counts: Reco
               onClick={() => select(tab.id)}
               onKeyDown={(event) => onKey(event, index)}
               className={cn(
-                "inline-flex h-9 items-center gap-2 rounded-lg px-3.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none",
-                selected ? "bg-amethyst/15 text-foreground shadow-[inset_0_0_0_1px_rgb(167_139_250/0.35)]" : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground",
+                "relative inline-flex h-11 items-center justify-center gap-2 rounded-xl px-2 text-sm font-semibold transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none",
+                selected ? "text-foreground" : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <tab.icon aria-hidden className={cn("size-4", selected && "text-amethyst")} />
+              <tab.icon aria-hidden className="size-4 transition-colors" style={selected ? { color: tab.accent } : undefined} />
               {tab.label}
-              {count !== null ? (
-                <span className="rounded-full bg-foreground/[0.07] px-1.5 text-xs tabular-nums text-muted-foreground">
-                  {count.toLocaleString("en")}
-                </span>
-              ) : null}
+              {count !== null ? <span className="text-xs font-medium tabular-nums opacity-60">{count.toLocaleString("en")}</span> : null}
             </button>
           );
         })}

@@ -54,6 +54,7 @@ export async function POST(request: Request) {
       p_allowlist: config.audience === "allowlist" ? config.allowlist : [],
       p_confirm_repeat: confirmRepeat,
       p_draft: draftId ?? null,
+      p_loot: config.loot,
     });
     if (!error) return jsonResponse({ id: data, code, format }, { status: 201 });
     if (error.hint === "duplicate_code") {

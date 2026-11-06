@@ -63,6 +63,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     p_audience: config.audience,
     p_allowlist: config.audience === "allowlist" ? config.allowlist : [],
     p_confirm_repeat: confirmRepeat,
+    p_loot: config.loot,
   });
   if (error?.hint === "confirm_repeat") return apiError(422, "confirm_repeat", error.message);
   if (error?.hint === "not_found") return apiError(404, "not_found", error.message);
