@@ -2,6 +2,7 @@ import "server-only";
 import { entryPath } from "@/lib/collections";
 import type { CoverShape } from "@/lib/cover-shape";
 import { fanKey, type FanItem } from "@/lib/home-fan";
+import { MAX_WALL_ENTRIES, type HomeWall } from "@/lib/preferences";
 import { EMPTY_SUMMARY, type LibraryEntry } from "@/lib/progress/library";
 import type { AuthContext } from "@/lib/supabase/auth";
 import { automaticPreviews, chosenPreviews } from "./collection-covers";
@@ -39,6 +40,7 @@ export type HomeContinue = {
   href: string;
 };
 export type HomeFeaturedEntry = { entry: LibraryEntry; collectionName: string; bannerUrl: string | null; href: string };
+export type WallTile = { src: string; shape: CoverShape };
 export type HomeData = {
   displayName: string;
   avatarUrl: string | null;
@@ -55,6 +57,10 @@ export type HomeData = {
   fan: FanItem[];
   /** The entry featured on Home; null when none is set or it was deleted. */
   featured: HomeFeaturedEntry | null;
+  /** Covers for the Flashy artwork wall from the member's choice; null = automatic. */
+  wallTiles: WallTile[] | null;
+  /** The hand-picked wall entries that still exist, in order (for Customize Home). */
+  wallPicks: FanItem[];
 };
 
 function check<T>(result: { data: T; error: { code?: string } | null }): T {
@@ -65,9 +71,13 @@ function check<T>(result: { data: T; error: { code?: string } | null }): T {
 /**
  * Everything the Home dashboard shows, scoped to the signed-in user by RLS.
  */
-export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string | null> | string | null = null): Promise<HomeData> {
+export async function loadHome(
+  ctx: AuthContext,
+  featuredEntryId: Promise<string | null> | string | null = null,
+  wallSetting: Promise<HomeWall | null> | HomeWall | null = null,
+): Promise<HomeData> {
   const { supabase } = ctx;
-  const [collections, entries, visits, pins, tasks, favorites, profile, fanRows, coverRows, featuredRequest] = await Promise.all([
+  const [collections, entries, visits, pins, tasks, favorites, profile, fanRows, coverRows, featuredRequest, wall] = await Promise.all([
     loadCollections(ctx),
     fetchAll(
       (from, to) =>
@@ -105,6 +115,7 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
     supabase.from("home_fan_items").select("id, entry_id, image_url, image_shape").order("position").then(check),
     supabase.from("collection_cover_items").select("id, collection_id, entry_id, image_url, image_shape").order("position").then(check),
     featuredEntryId,
+    wallSetting,
   ]);
 
   const entryById = new Map(entries.map((entry) => [entry.id, entry]));
@@ -175,22 +186,37 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
     else coversByCollection.set(row.collection_id, [row]);
   }
 
+  const toFanEntry = (entry: (typeof entries)[number]): FanItem => ({
+    key: fanKey({ entryId: entry.id }),
+    kind: "entry",
+    entryId: entry.id,
+    title: entry.title,
+    collectionName: collectionNames.get(entry.collection_id) ?? "",
+    coverUrl: entry.cover_url,
+    coverShape: entry.cover_shape,
+    frame: entry.frame,
+  });
+
   // Exactly what the user picked; an entry that is gone is skipped, never replaced.
   const fan: FanItem[] = (fanRows ?? []).flatMap((row): FanItem[] => {
     if (row.image_url) return [{ key: fanKey({ imageUrl: row.image_url }), kind: "image", url: row.image_url, shape: row.image_shape }];
     const entry = row.entry_id ? entryById.get(row.entry_id) : undefined;
-    if (!entry) return [];
-    return [{
-      key: fanKey({ entryId: entry.id }),
-      kind: "entry",
-      entryId: entry.id,
-      title: entry.title,
-      collectionName: collectionNames.get(entry.collection_id) ?? "",
-      coverUrl: entry.cover_url,
-      coverShape: entry.cover_shape,
-      frame: entry.frame,
-    }];
+    return entry ? [toFanEntry(entry)] : [];
   });
+
+  const wallPicks = (wall?.entries ?? []).flatMap((id) => {
+    const entry = entryById.get(id);
+    return entry ? [toFanEntry(entry)] : [];
+  });
+  let wallSource: { cover_url: string | null; cover_shape: CoverShape }[] = [];
+  if (wall?.source === "entries") wallSource = wallPicks.flatMap((item) => (item.kind === "entry" ? [entryById.get(item.entryId)!] : []));
+  else if (wall?.source === "collections") {
+    const chosen = new Set(wall.collections);
+    wallSource = entries.filter((entry) => chosen.has(entry.collection_id));
+  }
+  const wallArt = wallSource.flatMap((entry) => (entry.cover_url ? [{ src: entry.cover_url, shape: entry.cover_shape }] : [])).slice(0, MAX_WALL_ENTRIES);
+  // Nothing usable falls back to the automatic wall rather than an empty stage.
+  const wallTiles = wallArt.length ? wallArt : null;
 
   return {
     // Only the chosen profile name; the sign-in email is never turned into a name.
@@ -198,6 +224,8 @@ export async function loadHome(ctx: AuthContext, featuredEntryId: Promise<string
     avatarUrl: profile?.avatar_url ?? null,
     motto: profile?.motto?.trim() || null,
     fan,
+    wallTiles,
+    wallPicks,
     collections: collections.map((collection) => {
       const list = byCollection.get(collection.id) ?? [];
       const chosen = chosenPreviews(coversByCollection.get(collection.id) ?? [], entryById, collection);

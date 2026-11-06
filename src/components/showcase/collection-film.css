@@ -1,0 +1,518 @@
+/* Collection showcase film (collection-film-player.tsx). Overlay levels (--cf-intro, --cf-caption,
+   --cf-finale, --cf-progress) are written every frame from the film's timeline. */
+
+.cf {
+  --cf-a: var(--cf-accent, rgb(var(--accent-rgb)));
+  --cf-intro: 0;
+  --cf-caption: 0;
+  --cf-finale: 0;
+  --cf-progress: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  overflow: hidden;
+  background: #050409;
+  color: #f6f3fb;
+  color-scheme: dark;
+  outline: none;
+  animation: cf-open 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.cf-loading {
+  display: grid;
+  place-items: center;
+  font-size: 0.8125rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.6);
+}
+@keyframes cf-open {
+  from {
+    opacity: 0;
+  }
+}
+
+.cf-stage {
+  position: absolute;
+  inset: 0;
+  touch-action: pan-y;
+}
+.cf[data-idle] .cf-stage {
+  cursor: none;
+}
+.cf-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.cf-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.55), transparent 20%, transparent 55%, rgb(0 0 0 / 0.78)),
+    radial-gradient(70% 60% at 0% 100%, rgb(0 0 0 / calc(0.5 * var(--cf-caption))), transparent 70%);
+}
+
+/* Chrome */
+.cf-chrome {
+  transition: opacity 500ms ease;
+}
+.cf[data-idle] .cf-chrome:not(:focus-within) {
+  opacity: 0;
+}
+.cf-top {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) clamp(1rem, 3vw, 2rem) 1rem;
+}
+.cf-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+.cf-brand-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid color-mix(in srgb, var(--cf-a) 45%, transparent);
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--cf-a) 16%, rgb(0 0 0 / 0.4));
+  color: var(--cf-a);
+  box-shadow: 0 0 24px -6px var(--cf-a);
+}
+.cf-brand-icon svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.cf-brand-kicker {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cf-a);
+}
+.cf-brand-name {
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cf-btn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+  color: #fff;
+  backdrop-filter: blur(12px);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+.cf-btn svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.cf-btn:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 0.32);
+  background: rgb(255 255 255 / 0.14);
+}
+.cf-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.cf-btn:disabled {
+  opacity: 0.35;
+}
+.cf-btn-main {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-color: transparent;
+  background: var(--cf-a);
+  color: #0b0612;
+  box-shadow: 0 10px 34px -8px var(--cf-a);
+}
+.cf-btn-main:hover:not(:disabled) {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--cf-a) 82%, white);
+}
+.cf :is(.cf-btn, .cf-track, .cf-pill, .cf-open):focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.cf-bar {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem clamp(1rem, 3vw, 2rem) max(1rem, env(safe-area-inset-bottom));
+}
+.cf-track {
+  position: relative;
+  flex: 1;
+  height: 2.75rem;
+  margin-inline: 0.5rem;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.cf-track::before,
+.cf-fill {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 4px;
+  border-radius: 999px;
+  translate: 0 -50%;
+}
+.cf-track::before {
+  right: 0;
+  background: rgb(255 255 255 / 0.16);
+}
+.cf-fill {
+  width: calc(var(--cf-progress) * 100%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--cf-a) 55%, transparent), var(--cf-a));
+  box-shadow: 0 0 14px var(--cf-a);
+}
+.cf-fill::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--cf-a) 40%, transparent);
+  translate: 0 -50%;
+}
+.cf-count {
+  min-width: 4.75rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: rgb(255 255 255 / 0.75);
+}
+
+/* Opening title */
+.cf-intro {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.25rem;
+  padding: 6rem 1.5rem;
+  text-align: center;
+  pointer-events: none;
+  opacity: var(--cf-intro);
+  filter: blur(calc((1 - var(--cf-intro)) * 10px));
+  transform: scale(calc(1.06 - var(--cf-intro) * 0.06));
+}
+.cf-intro[hidden] {
+  display: none;
+}
+.cf-kicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--cf-a);
+}
+.cf-name {
+  max-width: 18ch;
+  margin-top: 0.5rem;
+  font-size: clamp(2.6rem, 1.4rem + 5.5vw, 6.75rem);
+  font-weight: 760;
+  line-height: 0.95;
+  letter-spacing: calc(0.12em - var(--cf-intro) * 0.155em);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-shadow:
+    0 6px 30px rgb(0 0 0 / 0.6),
+    0 0 80px color-mix(in srgb, var(--cf-a) 70%, transparent);
+}
+.cf-description {
+  display: -webkit-box;
+  max-width: 52ch;
+  margin-top: 1rem;
+  overflow: hidden;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: rgb(255 255 255 / 0.78);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.cf-intro-count {
+  margin-top: 1.25rem;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.3);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(8px);
+}
+
+/* Entry caption: lower left on wide screens (the card sits right of centre), full width below. */
+.cf-caption {
+  position: absolute;
+  inset: auto 1.25rem calc(5.75rem + env(safe-area-inset-bottom));
+  opacity: var(--cf-caption);
+  transform: translateY(calc((1 - var(--cf-caption)) * 22px));
+  pointer-events: none;
+}
+.cf-caption > * {
+  pointer-events: auto;
+}
+@media (min-aspect-ratio: 6/5) {
+  .cf-caption {
+    right: auto;
+    left: clamp(1.5rem, 6vw, 6rem);
+    bottom: calc(7rem + env(safe-area-inset-bottom));
+    max-width: min(34rem, 40vw);
+  }
+}
+.cf-index {
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  color: rgb(255 255 255 / 0.6);
+}
+.cf-index span {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--cf-a);
+  text-shadow: 0 0 20px color-mix(in srgb, var(--cf-a) 60%, transparent);
+}
+.cf-title {
+  display: -webkit-box;
+  margin-top: 0.35rem;
+  padding-bottom: 0.12em;
+  overflow: hidden;
+  font-size: clamp(1.75rem, 1.1rem + 2.4vw, 3.5rem);
+  font-weight: 720;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-shadow: 0 4px 30px rgb(0 0 0 / 0.85);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.cf-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+.cf-meta li {
+  padding: 0.25rem 0.65rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.35);
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(8px);
+}
+.cf-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--cf-a) 70%, transparent);
+  text-underline-offset: 4px;
+}
+.cf-open svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Finale */
+.cf-finale {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 6rem 1.5rem;
+  text-align: center;
+  pointer-events: none;
+  opacity: var(--cf-finale);
+  transform: scale(calc(0.94 + var(--cf-finale) * 0.06));
+}
+.cf-finale-card {
+  pointer-events: auto;
+}
+.cf-finale-name {
+  max-width: 18ch;
+  margin: 0.5rem auto 0;
+  font-size: clamp(2.2rem, 1.3rem + 4.2vw, 5.25rem);
+  font-weight: 760;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+  text-shadow:
+    0 6px 30px rgb(0 0 0 / 0.6),
+    0 0 70px color-mix(in srgb, var(--cf-a) 70%, transparent);
+}
+.cf-finale-count {
+  margin-top: 0.85rem;
+  color: rgb(255 255 255 / 0.78);
+}
+.cf-finale-count strong {
+  color: var(--cf-a);
+}
+.cf-finale-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 1.5rem;
+}
+.cf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.75rem;
+  padding: 0 1.15rem;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  font-size: 0.875rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+.cf-pill svg {
+  width: 1rem;
+  height: 1rem;
+}
+.cf-pill-main {
+  border-color: transparent;
+  background: var(--cf-a);
+  color: #0b0612;
+}
+
+/* Still presentation (no WebGL, or reduced motion) */
+.cf[data-mode="still"] {
+  background:
+    radial-gradient(90% 70% at 15% 0%, color-mix(in srgb, var(--cf-a) 26%, transparent), transparent 65%),
+    radial-gradient(70% 60% at 100% 100%, rgb(244 114 168 / 0.14), transparent 65%),
+    #07060b;
+}
+.cf-cover {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 2 / 3;
+  border-radius: 0.9rem;
+  background: rgb(255 255 255 / 0.05);
+}
+.cf-cover[data-square] {
+  aspect-ratio: 1;
+}
+.cf-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cf-title-card {
+  display: grid;
+  height: 100%;
+  place-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background:
+    radial-gradient(80% 60% at 30% 20%, color-mix(in srgb, var(--cf-a) 45%, transparent), transparent 70%),
+    linear-gradient(160deg, #1d1530, #0b0812);
+  text-align: center;
+}
+.cf-title-card span {
+  font-size: 3.5rem;
+  font-weight: 760;
+  line-height: 1;
+  color: var(--cf-a);
+}
+.cf-title-card p {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+.cf-mosaic {
+  position: absolute;
+  inset: -2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(6rem, 12vw, 9rem), 1fr));
+  align-content: center;
+  gap: 1rem;
+  opacity: 0.32;
+  transform: rotate(-6deg) scale(1.1);
+  mask-image: radial-gradient(70% 70% at 50% 50%, #000, transparent);
+}
+.cf-mosaic .cf-cover[data-square] {
+  aspect-ratio: 2 / 3;
+}
+.cf-still {
+  position: absolute;
+  inset: 5.5rem 1.25rem 15rem;
+  display: grid;
+  place-items: center;
+  animation: cf-still-in 420ms ease-out both;
+  container-type: size;
+}
+/* The frame is a size container, so its width comes from the stage box. */
+.cf-still-frame {
+  width: min(84cqw, 84cqh * var(--cf-ratio));
+  box-shadow: 0 40px 90px -30px rgb(0 0 0 / 0.9);
+}
+@media (min-aspect-ratio: 6/5) {
+  .cf-still {
+    inset: 6rem 6vw 7rem 46vw;
+  }
+}
+.cf-still-art {
+  height: 100%;
+  max-width: 100%;
+  box-shadow:
+    0 40px 90px -30px rgb(0 0 0 / 0.9),
+    0 0 70px -20px var(--cf-a);
+}
+@keyframes cf-still-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+.cf[data-calm],
+.cf[data-calm] .cf-still {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf,
+  .cf .cf-still {
+    animation: none;
+  }
+  .cf-chrome {
+    transition: none;
+  }
+}

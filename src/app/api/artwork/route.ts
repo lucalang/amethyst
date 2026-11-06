@@ -23,7 +23,13 @@ export async function GET(request: Request) {
   const width = Number(params.get("width"));
   const original = src.length <= 4096 ? artworkSrc(src) : null;
   if (!original || !ARTWORK_WIDTHS.some((value) => value === width)) return apiError(400, "invalid_image", "Invalid artwork request.");
-  const redirectOriginal = () => NextResponse.redirect(new URL(original, request.url), { status: 302, headers: { "Cache-Control": "private, max-age=1800", Vary: "Cookie" } });
+  // CORS-mode loads (WebGL textures) need their own signed URL, like /api/attachments?cors.
+  const cors = params.has("cors");
+  const redirectOriginal = () =>
+    NextResponse.redirect(new URL(cors && isUploadedImagePath(original) ? `${original}?cors` : original, request.url), {
+      status: 302,
+      headers: { "Cache-Control": "private, max-age=1800", Vary: "Cookie" },
+    });
 
   const name = isUploadedImagePath(src) ? uploadedImageName(src) : null;
   const { data: row, error } = name
@@ -53,7 +59,7 @@ export async function GET(request: Request) {
       return result;
     });
     if (!cached) return redirectOriginal();
-    const { url, maxAge } = await presignDownload(cached, false);
+    const { url, maxAge } = await presignDownload(cached, cors);
     return NextResponse.redirect(url, { status: 302, headers: { "Cache-Control": `private, max-age=${maxAge}`, Vary: "Cookie" } });
   } catch {
     return apiError(503, "artwork_unavailable", "Artwork is temporarily unavailable.");

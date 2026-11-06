@@ -49,6 +49,46 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-flashy-update",
+    date: "2026-11-06",
+    title: "The Flashy update",
+    intro: "A bolder way to see your Home, and a cinematic showcase that plays through a whole collection.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Flashy Home", text: "Switch Home to a bold presentation with a drifting wall of your artwork, depth and motion." },
+      { kind: "new", feature: "Collection showcase", text: "Play a full-screen 3D film of every entry in a collection, with an opening and a finale." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Flashy Home",
+          body: "Customize Home now has a Presentation choice: Normal (the default) or Flashy. Flashy shows the same greeting, featured art, cover fan, sections, tasks, Quick Notes, My Day and collection links, with a moving wall of your covers, a jump bar to your collections and livelier sections.",
+          points: [
+            "Your section order and visibility apply in both presentations.",
+            "Choose what drifts on the artwork wall: automatic, whole collections, or up to 36 hand-picked entries.",
+            "Below the stage, cards rise into view as you scroll, posters tilt toward your pointer and collection cards catch a soft light.",
+            "With reduced motion, or animations off, Flashy stays still.",
+          ],
+          where: "Home → Customize Home → Presentation → Artwork wall",
+          link: { href: "/", label: "Go to Home" },
+        },
+        {
+          title: "Collection showcase",
+          body: "Press Play next to Showcase on a collection to watch every entry, in order and regardless of search or filters, fly past in a 3D film. Entries without artwork get a title card. It never starts on its own.",
+          points: [
+            "Pause, previous, next and a progress bar you can click or use with the keyboard.",
+            "Entries keep their artwork frame on stage, ornaments included, lit like in the 3D viewer.",
+            "Each entry lands, holds for a moment and glides off smoothly as the next one arrives.",
+            "Keyboard: Space or K pauses, arrow keys or J and L step, Home and End jump, Esc closes. Swipe on touch screens.",
+            "With reduced motion, animations off or no 3D support, a still slideshow you step through yourself.",
+          ],
+          where: "Any collection → Play",
+          link: { href: "/collections", label: "Open your collections" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-profile-banners-frames",
     date: "2026-11-06",
     title: "Banner themes and profile frames",

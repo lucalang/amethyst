@@ -34,6 +34,10 @@ const FanEditor = dynamic(() => import("@/components/home/fan-editor").then((mod
   ssr: false,
   loading: () => <div aria-hidden className="h-40 animate-pulse rounded-lg bg-foreground/[0.04] motion-reduce:animate-none" />,
 });
+const WallEditor = dynamic(() => import("@/components/home/wall-editor").then((module) => module.WallEditor), {
+  ssr: false,
+  loading: () => <div aria-hidden className="h-24 animate-pulse rounded-lg bg-foreground/[0.04] motion-reduce:animate-none" />,
+});
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";
@@ -51,10 +55,13 @@ import {
   type HomeFeatured,
   type HomeSection,
   type HomeSectionId,
+  type HomeStyle,
+  type HomeWall,
   type Settings,
   type SettingsPatch,
 } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
+import "./flashy-home.css";
 
 const SECTION_META: Record<HomeSectionId, { title: string; icon: LucideIcon }> = {
   featured: { title: "Featured", icon: Sparkles },
@@ -141,6 +148,9 @@ export function HomeSections({
   featuredMissing,
   fan,
   collections,
+  homeStyle,
+  wall,
+  wallPicks,
 }: {
   layout: HomeSection[];
   /** Rendered sections; missing ids have nothing to show right now. */
@@ -152,8 +162,12 @@ export function HomeSections({
   featuredMissing: boolean;
   fan: FanItem[];
   collections: FanCollection[];
+  homeStyle: HomeStyle;
+  wall: HomeWall;
+  wallPicks: FanItem[];
 }) {
   const { customizing, setCustomizing } = useContext(CustomizeContext);
+  const [style, , commitStyle] = useLocalSetting("homeStyle", homeStyle);
   const [sections, setSections, commitSections] = useLocalSetting("homeSections", layout);
   const isDefault = JSON.stringify(sections) === JSON.stringify(DEFAULT_LAYOUT);
 
@@ -183,6 +197,12 @@ export function HomeSections({
             </DialogClose>
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 md:px-7 md:py-6">
+            <div className="mb-5 lg:mb-6">
+              <Group title="Presentation" description="How Home looks. Both show the same sections, greeting and artwork.">
+                <StylePicker current={style} onChange={commitStyle} />
+                {style === "flashy" ? <WallEditor wall={wall} picks={wallPicks} collections={collections} /> : null}
+              </Group>
+            </div>
             <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-6">
               <Group title="Layout" description="Choose which sections appear on Home and in what order.">
                 <SectionArranger
@@ -220,6 +240,49 @@ export function HomeSections({
       </Dialog>
       {sections.map((section) => (section.hidden || !nodes[section.id] ? null : <Fragment key={section.id}>{nodes[section.id]}</Fragment>))}
     </>
+  );
+}
+
+const STYLE_OPTIONS: Record<HomeStyle, { title: string; text: string }> = {
+  normal: { title: "Normal", text: "The calm, classic layout." },
+  flashy: { title: "Flashy", text: "A bold stage: drifting artwork walls, depth and glow. Calmer when motion is reduced." },
+};
+
+function StylePicker({ current, onChange }: { current: HomeStyle; onChange: (style: HomeStyle) => void }) {
+  const name = useId();
+  return (
+    <div role="radiogroup" aria-label="Home presentation" className="grid gap-3 sm:grid-cols-2">
+      {(Object.keys(STYLE_OPTIONS) as HomeStyle[]).map((option) => {
+        const selected = current === option;
+        return (
+          <label
+            key={option}
+            data-style={option}
+            className={cn(
+              "home-style-option group/style flex cursor-pointer items-center gap-3.5 rounded-lg border p-2.5 pr-3.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+              selected ? "border-amethyst/60 bg-amethyst/[0.1]" : "border-white/[0.08] bg-black/25 hover:border-amethyst/35",
+            )}
+          >
+            <input type="radio" name={name} value={option} checked={selected} onChange={() => onChange(option)} className="sr-only" />
+            <span aria-hidden className="home-style-thumb">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2 text-sm font-medium">
+                {STYLE_OPTIONS[option].title}
+                {option === "normal" ? <span className="text-xs font-normal text-muted-foreground">Default</span> : null}
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">{STYLE_OPTIONS[option].text}</span>
+            </span>
+            <span aria-hidden className={cn("grid size-5 shrink-0 place-items-center rounded-full border", selected ? "border-amethyst bg-amethyst text-amethyst-foreground" : "border-white/20")}>
+              {selected ? <Check className="size-3" /> : null}
+            </span>
+          </label>
+        );
+      })}
+    </div>
   );
 }
 

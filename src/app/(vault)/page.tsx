@@ -10,6 +10,8 @@ import { CollectionCard, ContinueCard } from "@/components/home/archive-cards";
 import { CoverFan } from "@/components/home/cover-fan";
 import { DestinationHub, type HubData } from "@/components/home/destination-hub";
 import { CustomizeHomeButton, HomeCustomizeProvider, HomeSections } from "@/components/home/home-customizer";
+import { FlashyHero } from "@/components/home/flashy-hero";
+import { FlashyScope } from "@/components/home/flashy-stage";
 import { NewEntryButton } from "@/components/home/new-entry-button";
 import { HomeTasks } from "@/components/home/home-tasks";
 import { QuickNotesPanel } from "@/components/home/quick-notes-panel";
@@ -65,12 +67,12 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section aria-labelledby={`${id}-heading`}>
+    <section aria-labelledby={`${id}-heading`} className="home-section">
       <div className={cn(INNER, "enter py-6 md:py-8")} style={enterIndex(index)}>
         <div className="mb-4 flex min-h-9 flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
-            <h2 id={`${id}-heading`} className="flex items-center gap-2.5 text-lg font-semibold tracking-tight md:text-xl">
-              <span aria-hidden className="grid size-7 place-items-center rounded-md bg-amethyst/[0.12] ring-1 ring-amethyst/25">
+            <h2 id={`${id}-heading`} className="home-section-title flex items-center gap-2.5 text-lg font-semibold tracking-tight md:text-xl">
+              <span aria-hidden className="home-section-icon grid size-7 place-items-center rounded-md bg-amethyst/[0.12] ring-1 ring-amethyst/25">
                 <Icon className="size-3.5 text-amethyst" />
               </span>
               {title}
@@ -94,13 +96,17 @@ function defaultGreeting(home: HomeData) {
   return `${home.counts.entries === 0 ? "Welcome" : "Welcome back"}${firstName ? `, ${firstName}` : ""}`;
 }
 
-function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: HubData }) {
+/** The welcome line and the sentence under it, shared by both Home presentations. */
+function heroCopy(home: HomeData, greeting: string) {
   const firstName = home.displayName.split(/\s+/)[0] ?? "";
   const fresh = home.counts.entries === 0;
-  const fanArt = home.fan.flatMap((item) => (item.kind === "image" ? [item.url] : item.coverUrl ? [item.coverUrl] : []));
-  const heroBanner = home.continueEntry?.bannerUrl ?? home.featured?.bannerUrl ?? null;
-  const backdrop = heroBanner ?? home.continueEntry?.entry.coverUrl ?? fanArt[0] ?? null;
-  const showFan = fanArt.length > 0;
+  const heading = greeting ? greeting : <>
+    {fresh ? "Welcome" : "Welcome back"}
+    {firstName ? <>
+      ,{" "}
+      <span className="bg-linear-to-r from-(--primary-hi) via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
+    </> : null}
+  </>;
   const subline = !home.collections.length
     ? "Your archive is ready. Start with a collection, a shelf for anything you want to keep track of."
     : fresh
@@ -108,6 +114,15 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
       : home.continueEntry
         ? "Pick up where you left off, or wander through what you've been collecting."
         : "Everything you're collecting, gathered in one place.";
+  return { heading, subline };
+}
+
+function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: HubData }) {
+  const fanArt = home.fan.flatMap((item) => (item.kind === "image" ? [item.url] : item.coverUrl ? [item.coverUrl] : []));
+  const heroBanner = home.continueEntry?.bannerUrl ?? home.featured?.bannerUrl ?? null;
+  const backdrop = heroBanner ?? home.continueEntry?.entry.coverUrl ?? fanArt[0] ?? null;
+  const showFan = fanArt.length > 0;
+  const { heading, subline } = heroCopy(home, greeting);
 
   return (
     <section aria-labelledby="home-heading" className="relative isolate overflow-hidden border-b border-white/[0.06]">
@@ -135,13 +150,7 @@ function Hero({ home, greeting, hub }: { home: HomeData; greeting: string; hub: 
               <ProfileAvatar name={home.displayName} src={home.avatarUrl} className="size-11 shrink-0 text-base ring-2 ring-white/10 md:size-14 md:text-lg" />
             ) : null}
             <h1 id="home-heading" className="min-w-0 text-3xl leading-tight font-semibold tracking-tight text-balance break-words md:text-4xl">
-              {greeting ? greeting : <>
-                {fresh ? "Welcome" : "Welcome back"}
-                {firstName ? <>
-                  ,{" "}
-                  <span className="bg-linear-to-r from-(--primary-hi) via-amethyst to-rose bg-clip-text text-transparent">{firstName}</span>
-                </> : null}
-              </>}
+              {heading}
             </h1>
           </div>
           <ProfileFlair className="mt-2 [--flair-size:0.8125rem]" />
@@ -286,7 +295,13 @@ export default async function HomePage() {
   const preferenceRead = measureServer("home.preferences", () => loadPreferences(ctx));
   const [preferences, home, achievementCards, coinBalance, myDay, quickNotes] = await Promise.all([
     preferenceRead,
-    measureServer("home.archive", () => loadHome(ctx, preferenceRead.then((value) => value.homeFeatured?.kind === "entry" ? value.homeFeatured.entryId : null))),
+    measureServer("home.archive", () =>
+      loadHome(
+        ctx,
+        preferenceRead.then((value) => value.homeFeatured?.kind === "entry" ? value.homeFeatured.entryId : null),
+        preferenceRead.then((value) => (value.homeStyle === "flashy" ? value.homeWall : null)),
+      ),
+    ),
     measureServer("home.achievements", () => loadAchievementCards(ctx)),
     measureServer("home.wallet", () => loadCoinBalance(ctx).catch(() => null)),
     measureServer("home.my-day", () => loadMyDayPreview(ctx)),
@@ -299,6 +314,7 @@ export default async function HomePage() {
   const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const hasEntries = home.counts.entries > 0;
   const featuredMissing = chosen?.kind === "entry" && !home.featured;
+  const flashy = preferences.homeStyle === "flashy";
   const hub: HubData = {
     archive: {
       collections: home.counts.collections,
@@ -409,7 +425,12 @@ export default async function HomePage() {
   return (
     <EntranceScope>
       <HomeCustomizeProvider>
-        <Hero home={home} greeting={preferences.homeGreeting} hub={hub} />
+        <FlashyScope flashy={flashy} style={preferences.homeStyle}>
+        {flashy ? (
+          <FlashyHero home={home} hub={hub} {...heroCopy(home, preferences.homeGreeting)} />
+        ) : (
+          <Hero home={home} greeting={preferences.homeGreeting} hub={hub} />
+        )}
 
         {gettingStarted}
 
@@ -428,6 +449,9 @@ export default async function HomePage() {
             icon: <CollectionIcon icon={icon} className="size-3.5" />,
             coverCount,
           }))}
+          homeStyle={preferences.homeStyle}
+          wall={preferences.homeWall}
+          wallPicks={home.wallPicks}
         />
 
         <div className={cn(INNER, "max-w-2xl pt-2 pb-10 md:pb-12")}>
@@ -455,6 +479,7 @@ export default async function HomePage() {
             <span aria-hidden className="trophy-door-sill" />
           </Link>
         </div>
+        </FlashyScope>
       </HomeCustomizeProvider>
     </EntranceScope>
   );

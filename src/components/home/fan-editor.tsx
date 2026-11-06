@@ -321,6 +321,7 @@ export function ArtworkPicker({
   addImageLabel,
   saveLabel,
   reorderable = false,
+  allowImages = true,
   preview,
   footerAction,
   onCancel,
@@ -340,6 +341,8 @@ export function ArtworkPicker({
   saveLabel: string;
   /** Show move buttons on the selected artwork. */
   reorderable?: boolean;
+  /** Offer the "Your own image" tab next to entry covers. */
+  allowImages?: boolean;
   /** Live preview of the current selection. */
   preview?: (draft: FanItem[]) => ReactNode;
   /** Extra footer control, e.g. a reset; receives a setter for the draft. */
@@ -481,21 +484,23 @@ export function ArtworkPicker({
         <p className="rounded-md border border-dashed border-white/[0.14] px-3 py-2 text-xs text-muted-foreground">{emptyText}</p>
       )}
 
-      <div role="radiogroup" aria-label="Add from" className="inline-flex self-start rounded-md border border-white/[0.1] p-0.5">
-        {(["entries", "image"] as const).map((option) => (
-          <label
-            key={option}
-            className={cn(
-              "flex cursor-pointer items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-              tab === option ? "bg-amethyst/15 text-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <input type="radio" name={tabName} value={option} checked={tab === option} onChange={() => setTab(option)} className="sr-only" />
-            {option === "entries" ? <Sparkles aria-hidden className="size-3.5" /> : <ImageIcon aria-hidden className="size-3.5" />}
-            {option === "entries" ? "Entry covers" : "Your own image"}
-          </label>
-        ))}
-      </div>
+      {allowImages ? (
+        <div role="radiogroup" aria-label="Add from" className="inline-flex self-start rounded-md border border-white/[0.1] p-0.5">
+          {(["entries", "image"] as const).map((option) => (
+            <label
+              key={option}
+              className={cn(
+                "flex cursor-pointer items-center gap-1.5 rounded px-3 py-1.5 text-xs font-medium transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                tab === option ? "bg-amethyst/15 text-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <input type="radio" name={tabName} value={option} checked={tab === option} onChange={() => setTab(option)} className="sr-only" />
+              {option === "entries" ? <Sparkles aria-hidden className="size-3.5" /> : <ImageIcon aria-hidden className="size-3.5" />}
+              {option === "entries" ? "Entry covers" : "Your own image"}
+            </label>
+          ))}
+        </div>
+      ) : null}
 
       {tab === "entries" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-3">

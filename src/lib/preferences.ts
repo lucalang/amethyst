@@ -52,6 +52,15 @@ export const HOME_SECTION_IDS = ["featured", "pinned", "recent", "collections", 
 export const HIDDEN_BY_DEFAULT: readonly string[] = ["myDay"];
 export type HomeSectionId = (typeof HOME_SECTION_IDS)[number];
 export type HomeSection = { id: HomeSectionId; hidden: boolean };
+/** Home presentations: the classic layout or the bold, animated "Flashy" one. Same content in both. */
+export const HOME_STYLES = ["normal", "flashy"] as const;
+export type HomeStyle = (typeof HOME_STYLES)[number];
+/** Where the Flashy artwork wall takes its covers from. */
+export const HOME_WALL_SOURCES = ["auto", "collections", "entries"] as const;
+export type HomeWallSource = (typeof HOME_WALL_SOURCES)[number];
+export const MAX_WALL_ENTRIES = 36;
+/** Both lists are kept while switching source, so changing your mind loses nothing. */
+export type HomeWall = { source: HomeWallSource; collections: string[]; entries: string[] };
 export const MAX_GREETING_LENGTH = 80;
 export const MAX_FEATURED_CAPTION_LENGTH = 120;
 
@@ -114,6 +123,8 @@ export const DEFAULT_SETTINGS = {
   /** "" keeps the built-in welcome. */
   homeGreeting: "",
   homeFeatured: null as HomeFeatured,
+  homeStyle: "normal" as HomeStyle,
+  homeWall: { source: "auto", collections: [], entries: [] } as HomeWall,
   /** Decoration around artwork in Showcase and the artwork viewer (independent of the theme). */
   artworkFrame: DEFAULT_ARTWORK_FRAME as ArtworkFrameId,
   /** Sound effects in Arcade games (audio only starts after the player interacts). */
@@ -213,6 +224,17 @@ const settingFields = {
         .strict(),
     ])
     .nullable(),
+  homeStyle: z.enum(HOME_STYLES),
+  homeWall: z
+    .object({
+      source: z.enum(HOME_WALL_SOURCES),
+      collections: z.array(z.uuid()).max(200).transform((ids) => [...new Set(ids)]),
+      entries: z
+        .array(z.uuid())
+        .max(MAX_WALL_ENTRIES, `The wall holds at most ${MAX_WALL_ENTRIES} entries.`)
+        .transform((ids) => [...new Set(ids)]),
+    })
+    .strict(),
   artworkFrame: z.enum(ARTWORK_FRAME_IDS),
   arcadeSound: z.boolean(),
   arcadeSnake: snakeSetupSchema,

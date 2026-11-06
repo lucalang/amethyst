@@ -11,6 +11,7 @@ import { CollectionLayoutProvider } from "@/components/media/collection-layout";
 import { LibraryCount, LibraryResults, LibrarySearchProvider, LibraryTitle } from "@/components/media/library-view";
 import { MediaImage } from "@/components/media/media-image";
 import { ShowcaseButton, ShowcaseProvider } from "@/components/showcase/showcase-provider";
+import { CollectionFilmButton } from "@/components/showcase/collection-film";
 import { Button } from "@/components/ui/button";
 import { accentStyle } from "@/lib/collection-identity";
 import { cn } from "@/lib/utils";
@@ -114,6 +115,15 @@ export default async function LibraryPage({ params, searchParams }: Props) {
       </Button>
       <CollectionActions collection={collection} entryCount={library.length} className={cn("size-10", overlay && "border-white/15 bg-background/70 backdrop-blur-md hover:bg-background/85")} />
       <ShowcaseButton className={cn("h-10 gap-2 px-3.5", overlay && "border-white/15 bg-background/70 backdrop-blur-md hover:bg-background/85")} />
+      <CollectionFilmButton
+        key={collection.id}
+        name={collection.name}
+        description={collection.description}
+        accent={collection.accent_color}
+        icon={<CollectionIcon icon={collection.icon} strokeWidth={1.75} />}
+        labelNames={labelNames}
+        className={cn("h-10 gap-2 px-3.5", overlay && "border-white/15 bg-background/70 backdrop-blur-md hover:bg-background/85")}
+      />
     </>
   );
 

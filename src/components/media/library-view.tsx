@@ -34,6 +34,8 @@ type LibraryState = {
   /** Trimmed query the results currently reflect. */
   appliedQuery: string;
   total: number;
+  /** Every entry in the collection, regardless of search and filters. */
+  all: LibraryEntry[];
   baseVisible: LibraryEntry[];
   visible: LibraryEntry[];
   categoryCounts: Record<string, number>;
@@ -148,12 +150,13 @@ export function LibrarySearchProvider({ library, search, children }: { library: 
   const value = useMemo<LibraryState>(() => ({
     appliedQuery: deferredQuery,
     total: mergedLibrary.length,
+    all: mergedLibrary,
     baseVisible,
     visible,
     categoryCounts,
     searched,
     setEntryFrame: (entryId, frame) => setFrameOverrides((prev) => ({ ...prev, [entryId]: frame })),
-  }), [deferredQuery, mergedLibrary.length, baseVisible, visible, categoryCounts, searched]);
+  }), [deferredQuery, mergedLibrary, baseVisible, visible, categoryCounts, searched]);
   return (
     <LibrarySearchContext value={{ query, setQuery, flushQuery: () => commit(clean(query)) }}>
       <LibraryContext value={value}>{children}</LibraryContext>

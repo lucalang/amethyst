@@ -15,6 +15,7 @@ import {
   MeshBasicMaterial,
   MeshPhysicalMaterial,
   NeutralToneMapping,
+  OrthographicCamera,
   Path,
   PCFShadowMap,
   PerspectiveCamera,
@@ -973,6 +974,195 @@ function paintBand(frame: FrameLookId, { cw, ch, m, r, ra }: Layout): HTMLCanvas
   return canvas;
 }
 
+function sharedUniforms() {
+  return {
+    uTilt: { value: new Vector2() },
+    uLight: { value: 0.5 },
+    uCard: { value: new Vector2(1, 1) },
+    uSweep: { value: 0 },
+    uSweepStrength: { value: 0 },
+  };
+}
+
+function fxUniformsFor(shared: ReturnType<typeof sharedUniforms>) {
+  return {
+    ...shared,
+    uKind: { value: 0 },
+    uTime: { value: 0 },
+    uHole: { value: new Vector2() },
+    uMargin: { value: 0.02 },
+    uFxA: { value: new Vector3() },
+    uFxB: { value: new Vector3() },
+    uGlints: { value: Array.from({ length: 5 }, () => new Vector3()) },
+    uGlintCount: { value: 0 },
+    uGlintStrength: { value: 1 },
+    uFxStrength: { value: 1 },
+  };
+}
+
+type Track = <T extends BufferGeometry | Material | Texture>(item: T) => T;
+
+/**
+ * The frame around art of aw × ah: body, raised band, light overlay and ornaments. `open` cuts the
+ * art area out of the body as well. cw/ch is the extent including ornaments.
+ */
+function frameGroup(frame: FrameLookId, aw: number, ah: number, fxUniforms: ReturnType<typeof fxUniformsFor>, anisotropy: number, track: Track, open = false) {
+  const spec = SPECS[frame];
+  const framed = spec.margin > 0;
+  const m = spec.margin * Math.min(aw, ah);
+  // The face (band or art) covers the body's front cap; the body's bevel forms the card's rim.
+  const bw = aw + m * 2;
+  const bh = ah + m * 2;
+  let cw = bw + BEVEL * 2;
+  let ch = bh + BEVEL * 2;
+  const r = 0.045 * Math.min(cw, ch);
+  const rb = Math.max(0.002, r - BEVEL);
+  const ra = framed ? Math.min(rb, Math.max(0.006, rb - m * 0.6)) : rb;
+
+  const group = new Group();
+  const front = DEPTH / 2 + BEVEL;
+
+  const bodyShape = roundedRect(new Shape(), bw, bh, rb);
+  if (open) bodyShape.holes.push(roundedRect(new Path(), aw, ah, ra));
+  const body = track(new ExtrudeGeometry(bodyShape, { depth: DEPTH, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: BEVEL, bevelSegments: 5, curveSegments: 16 }));
+  body.translate(0, 0, -DEPTH / 2);
+  const bodyMesh = new Mesh(body, track(new MeshPhysicalMaterial(spec.edge)));
+  bodyMesh.receiveShadow = true;
+  group.add(bodyMesh);
+  fxUniforms.uCard.value.set(bw, bh);
+
+  if (framed && spec.fx) {
+    // A raised band with bevelled inner and outer edges, so the art sits recessed inside it.
+    const shape = roundedRect(new Shape(), bw, bh, rb);
+    shape.holes.push(roundedRect(new Path(), aw, ah, ra));
+    const lip = LIP;
+    const bandGeometry = track(
+      spanUv(new ExtrudeGeometry(shape, { depth: spec.relief, bevelEnabled: true, bevelThickness: lip, bevelSize: Math.min(0.002, m * 0.1), bevelSegments: 3, curveSegments: 14 }), bw, bh),
+    );
+    bandGeometry.translate(0, 0, front + lip);
+    const map = paintBand(frame, { cw: bw, ch: bh, aw, ah, m, r: rb, ra });
+    const bandMap = map ? track(new CanvasTexture(map)) : null;
+    if (bandMap) {
+      bandMap.colorSpace = SRGBColorSpace;
+      bandMap.anisotropy = anisotropy;
+    }
+    const bandMesh = new Mesh(bandGeometry, track(new MeshPhysicalMaterial({ ...spec.band, map: bandMap })));
+    bandMesh.receiveShadow = true;
+    group.add(bandMesh);
+
+    fxUniforms.uKind.value = spec.fx.kind;
+    fxUniforms.uHole.value.set(aw, ah);
+    fxUniforms.uMargin.value = m;
+    display(new Color(spec.fx.a), fxUniforms.uFxA.value);
+    display(new Color(spec.fx.b), fxUniforms.uFxB.value);
+    const glints = spec.glints({ width: bw, height: bh, margin: m }).slice(0, 5);
+    glints.forEach(([x, y, phase], i) => fxUniforms.uGlints.value[i].set(x, y, phase));
+    fxUniforms.uGlintCount.value = glints.length;
+    const fx = new Mesh(
+      track(panel(bw, bh, rb, { width: aw, height: ah, radius: ra })),
+      track(new ShaderMaterial({ uniforms: fxUniforms, vertexShader: PLANE_VERTEX, fragmentShader: FX_FRAGMENT, blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false })),
+    );
+    fx.position.z = front + spec.relief + lip * 2 + 0.0004;
+    group.add(fx);
+  }
+
+  const ornament = ORNAMENTS[frame]?.({ bw, bh, m, r: rb, s: Math.min(aw, ah), z: front + spec.relief + LIP * 2, floor: front }, track) ?? null;
+  if (ornament) {
+    ornament.traverse((part) => {
+      part.castShadow = true;
+      part.receiveShadow = true;
+    });
+    group.add(ornament);
+    // Fit the camera to the ornaments too, so crests and wings stay on screen.
+    const bounds = new Box3().setFromObject(ornament);
+    cw = Math.max(cw, 2 * Math.max(-bounds.min.x, bounds.max.x));
+    ch = Math.max(ch, 2 * Math.max(-bounds.min.y, bounds.max.y));
+  }
+  return { group, ornament, framed, front, ra, cw, ch };
+}
+
+/**
+ * Renders frames (with their ornaments, art area left clear) under the viewer's studio light, for
+ * scenes that show them flat. Sizes are relative to the art. Dispose once everything is baked.
+ */
+export function createFrameBaker(accent: Color, secondary: Color) {
+  let renderer: WebGLRenderer | null = null;
+  let environment: Texture | null = null;
+  return {
+    bake(frame: FrameLookId, aspect: number, resolution = 1024): { canvas: HTMLCanvasElement; width: number; height: number } | null {
+      const spec = SPECS[frame];
+      if (spec.margin <= 0) return null;
+      if (!renderer) {
+        renderer = new WebGLRenderer({ antialias: true, alpha: true });
+        renderer.outputColorSpace = SRGBColorSpace;
+        renderer.toneMapping = NeutralToneMapping;
+        renderer.setClearColor(0x000000, 0);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = PCFShadowMap;
+      }
+      environment ??= studioEnvironment(renderer, accent, secondary, true);
+
+      const disposables: { dispose: () => void }[] = [];
+      const track: Track = (item) => {
+        disposables.push(item);
+        return item;
+      };
+      const ah = aspect >= 1 ? 1 / aspect : 1;
+      const aw = ah * aspect;
+      const fx = fxUniformsFor(sharedUniforms());
+      const { group, cw, ch } = frameGroup(frame, aw, ah, fx, renderer.capabilities.getMaxAnisotropy(), track, true);
+
+      const rig = LIGHTING.studio;
+      const tintA = accent.clone();
+      const tintB = secondary.clone();
+      if (spec.light) {
+        tintA.lerp(new Color(spec.light.a), spec.light.mix);
+        tintB.lerp(new Color(spec.light.b), spec.light.mix);
+      }
+      const key = new DirectionalLight(0xfff6ec, rig.key);
+      key.position.set(...rig.keyAt);
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024);
+      key.shadow.bias = -0.0004;
+      key.shadow.normalBias = 0.0015;
+      const reach = Math.hypot(cw, ch) * 0.6;
+      Object.assign(key.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 0.5, far: 12 });
+      key.shadow.camera.updateProjectionMatrix();
+      const rimA = new DirectionalLight(tintA, rig.rimA);
+      rimA.position.set(3.2, 0.6, -1.6);
+      const rimB = new DirectionalLight(tintB, rig.rimB);
+      rimB.position.set(-3.2, -0.8, -1.4);
+      const scene = new Scene();
+      scene.environment = environment;
+      scene.add(key, rimA, rimB, new AmbientLight(0xffffff, rig.ambient), group);
+
+      const camera = new OrthographicCamera(-cw / 2, cw / 2, ch / 2, -ch / 2, 0.1, 10);
+      camera.position.set(0, 0, 4);
+      const scale = resolution / Math.max(cw, ch);
+      const width = Math.max(1, Math.round(cw * scale));
+      const height = Math.max(1, Math.round(ch * scale));
+      renderer.setPixelRatio(1);
+      renderer.setSize(width, height, false);
+      renderer.render(scene, camera);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d")?.drawImage(renderer.domElement, 0, 0);
+      key.dispose();
+      for (const item of disposables) item.dispose();
+      return { canvas, width: cw / aw, height: ch / ah };
+    },
+    dispose() {
+      environment?.dispose();
+      renderer?.dispose();
+      renderer?.forceContextLoss();
+      environment = null;
+      renderer = null;
+    },
+  };
+}
+
 /** A theme colour channel triple (e.g. `--accent-rgb: 165 124 255`) as a three.js colour. */
 function cssColor(styles: CSSStyleDeclaration, name: string, fallback: string): Color {
   const parts = styles.getPropertyValue(name).trim().split(/[\s,]+/).map(Number);
@@ -1068,13 +1258,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
   const pivot = new Group();
   scene.add(pivot);
 
-  const shared = {
-    uTilt: { value: new Vector2() },
-    uLight: { value: 0.5 },
-    uCard: { value: new Vector2(1, 1) },
-    uSweep: { value: 0 },
-    uSweepStrength: { value: 0 },
-  };
+  const shared = sharedUniforms();
   const artUniforms = {
     ...shared,
     uMap: { value: null as Texture | null },
@@ -1084,19 +1268,7 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
     uInset: { value: 0 },
     uTint: { value: new Vector3(1, 1, 1) },
   };
-  const fxUniforms = {
-    ...shared,
-    uKind: { value: 0 },
-    uTime: { value: 0 },
-    uHole: { value: new Vector2() },
-    uMargin: { value: 0.02 },
-    uFxA: { value: new Vector3() },
-    uFxB: { value: new Vector3() },
-    uGlints: { value: Array.from({ length: 5 }, () => new Vector3()) },
-    uGlintCount: { value: 0 },
-    uGlintStrength: { value: 1 },
-    uFxStrength: { value: 1 },
-  };
+  const fxUniforms = fxUniformsFor(shared);
 
   const turn = { yaw: spring(), pitch: spring() };
   const hover = { yaw: spring(), pitch: spring() };
@@ -1175,86 +1347,15 @@ function createEngine(host: HTMLElement, cb: Callbacks) {
       return item;
     };
 
-    const spec = SPECS[frame];
-    const framed = spec.margin > 0;
     const aspect = image.naturalWidth / image.naturalHeight || 2 / 3;
     const ah = aspect >= 1 ? 1 / aspect : 1;
     const aw = ah * aspect;
-    const m = spec.margin * Math.min(aw, ah);
-    // The face (band or art) covers the body's front cap; the body's bevel forms the card's rim.
-    const bw = aw + m * 2;
-    const bh = ah + m * 2;
-    const cw = bw + BEVEL * 2;
-    const ch = bh + BEVEL * 2;
-    const r = 0.045 * Math.min(cw, ch);
-    const rb = Math.max(0.002, r - BEVEL);
-    const ra = framed ? Math.min(rb, Math.max(0.006, rb - m * 0.6)) : rb;
-    state.cw = cw;
-    state.ch = ch;
-
-    const group = new Group();
-    const front = DEPTH / 2 + BEVEL;
-
-    const body = track(
-      new ExtrudeGeometry(roundedRect(new Shape(), bw, bh, rb), { depth: DEPTH, bevelEnabled: true, bevelThickness: BEVEL, bevelSize: BEVEL, bevelSegments: 5, curveSegments: 16 }),
-    );
-    body.translate(0, 0, -DEPTH / 2);
-    const bodyMesh = new Mesh(body, track(new MeshPhysicalMaterial(spec.edge)));
-    bodyMesh.receiveShadow = true;
-    group.add(bodyMesh);
-
     // Theme light, tinted by the frame.
     applyLighting();
-    shared.uCard.value.set(bw, bh);
-
-    if (framed && spec.fx) {
-      // A raised band with bevelled inner and outer edges, so the art sits recessed inside it.
-      const shape = roundedRect(new Shape(), bw, bh, rb);
-      shape.holes.push(roundedRect(new Path(), aw, ah, ra));
-      const lip = LIP;
-      const bandGeometry = track(
-        spanUv(new ExtrudeGeometry(shape, { depth: spec.relief, bevelEnabled: true, bevelThickness: lip, bevelSize: Math.min(0.002, m * 0.1), bevelSegments: 3, curveSegments: 14 }), bw, bh),
-      );
-      bandGeometry.translate(0, 0, front + lip);
-      const map = paintBand(frame, { cw: bw, ch: bh, aw, ah, m, r: rb, ra });
-      const bandMap = map ? track(new CanvasTexture(map)) : null;
-      if (bandMap) {
-        bandMap.colorSpace = SRGBColorSpace;
-        bandMap.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      }
-      const bandMesh = new Mesh(bandGeometry, track(new MeshPhysicalMaterial({ ...spec.band, map: bandMap })));
-      bandMesh.receiveShadow = true;
-      group.add(bandMesh);
-
-      fxUniforms.uKind.value = spec.fx.kind;
-      fxUniforms.uHole.value.set(aw, ah);
-      fxUniforms.uMargin.value = m;
-      display(new Color(spec.fx.a), fxUniforms.uFxA.value);
-      display(new Color(spec.fx.b), fxUniforms.uFxB.value);
-      const glints = spec.glints({ width: bw, height: bh, margin: m }).slice(0, 5);
-      glints.forEach(([x, y, phase], i) => fxUniforms.uGlints.value[i].set(x, y, phase));
-      fxUniforms.uGlintCount.value = glints.length;
-      const fx = new Mesh(
-        track(panel(bw, bh, rb, { width: aw, height: ah, radius: ra })),
-        track(new ShaderMaterial({ uniforms: fxUniforms, vertexShader: PLANE_VERTEX, fragmentShader: FX_FRAGMENT, blending: AdditiveBlending, transparent: true, depthWrite: false, toneMapped: false })),
-      );
-      fx.position.z = front + spec.relief + lip * 2 + 0.0004;
-      group.add(fx);
-    }
-    state.animated = spec.fx?.kind === FX.aurora;
-
-    const ornament = ORNAMENTS[frame]?.({ bw, bh, m, r: rb, s: Math.min(aw, ah), z: front + spec.relief + LIP * 2, floor: front }, track);
-    if (ornament) {
-      ornament.traverse((part) => {
-        part.castShadow = true;
-        part.receiveShadow = true;
-      });
-      group.add(ornament);
-      // Fit the camera to the ornaments too, so crests and wings stay on screen.
-      const bounds = new Box3().setFromObject(ornament);
-      state.cw = Math.max(cw, 2 * Math.max(-bounds.min.x, bounds.max.x));
-      state.ch = Math.max(ch, 2 * Math.max(-bounds.min.y, bounds.max.y));
-    }
+    const { group, ornament, framed, front, ra, cw, ch } = frameGroup(frame, aw, ah, fxUniforms, renderer.capabilities.getMaxAnisotropy(), track);
+    state.cw = cw;
+    state.ch = ch;
+    state.animated = SPECS[frame].fx?.kind === FX.aurora;
 
     const texture = track(new Texture(image));
     texture.colorSpace = SRGBColorSpace;
