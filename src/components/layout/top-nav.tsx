@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Backpack, BookMarked, ChevronLeft, ChevronRight, Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Settings, ShieldCheck, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Backpack, BookMarked, ChevronLeft, ChevronRight, Clapperboard, Crown, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Settings, ShieldCheck, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -100,7 +100,9 @@ function ToolsPanel({ admin, onBack }: { admin: boolean; onBack: () => void }) {
 
 export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const currentId = useCurrentCollectionId(collections);
-  const area = destinationFor(usePathname());
+  const pathname = usePathname();
+  const area = destinationFor(pathname);
+  const seasonActive = isActive(pathname, "/arcade/season");
   const inArchive = area?.id === "archive";
   const [menuView, setMenuView] = useState<"main" | "tools">("main");
   const toolsRef = useRef<HTMLDivElement>(null);
@@ -157,6 +159,18 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
         <div className="ml-auto flex items-center gap-2">
           {collections.length > 1 && inArchive ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
           {inArchive ? <NewCategoryButton /> : null}
+          <Link
+            href="/arcade/season"
+            aria-label="Season Pass"
+            aria-current={seasonActive ? "page" : undefined}
+            className={cn(
+              "group flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-amber-300/25 bg-gradient-to-r from-amethyst/15 to-amber-300/10 px-2.5 text-sm font-semibold text-amber-100/90 transition-[color,border-color,background-color,scale] duration-150 outline-none select-none hover:border-amber-300/50 hover:text-amber-50 focus-visible:ring-2 focus-visible:ring-ring/60 active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100 sm:px-3",
+              seasonActive && "border-amber-300/60 from-amethyst/30 to-amber-300/20 text-amber-50",
+            )}
+          >
+            <Crown aria-hidden className="size-4 text-amber-300 transition-transform duration-200 group-hover:-rotate-12 motion-reduce:transition-none" />
+            <span aria-hidden className="hidden sm:inline">Season Pass</span>
+          </Link>
           <WhatsNewButton />
 
           <DropdownMenu onOpenChange={(open) => open && setMenuView("main")}>

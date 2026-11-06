@@ -9,15 +9,19 @@ import { RARITY_IDS } from "@/lib/rarities";
  * file describes how seasons look and how quests read. A new season needs rows there and an entry
  * in SEASONS.
  */
-export const SEASONS: Record<string, { name: string; tagline: string; hue: string; glow: string }> = {
+export const SEASONS: Record<string, { label: string; title: string; tagline: string; hue: string; glow: string }> = {
   "season-1": {
-    name: "Season 1 · First Light",
-    tagline: "The first Arcade season: quests every day and week, and thirty tiers of cosmetics to earn.",
+    label: "Season 1",
+    title: "First Light",
+    tagline: "The first Arcade season. Complete quests for Season XP, climb thirty tiers and unlock cosmetics on the way.",
     hue: "#8b5cf6",
     glow: "#f0abfc",
   },
 };
-export const seasonInfo = (id: string) => SEASONS[id] ?? { name: "Season", tagline: "", hue: "#8b5cf6", glow: "#f0abfc" };
+export const seasonInfo = (id: string) => {
+  const look = SEASONS[id] ?? { label: "Season", title: id, tagline: "", hue: "#8b5cf6", glow: "#f0abfc" };
+  return { ...look, name: `${look.label}: ${look.title}` };
+};
 
 export const QUEST_CADENCES = ["daily", "weekly", "season"] as const;
 export type QuestCadence = (typeof QUEST_CADENCES)[number];

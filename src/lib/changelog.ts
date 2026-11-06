@@ -58,9 +58,9 @@ const RELEASES: readonly Release[] = [
     icon: "trophy",
     highlights: [
       { kind: "new", feature: "Quests", text: "Three daily quests (reset at 00:00 UTC), three weekly quests (reset Monday 00:00 UTC) and longer season quests, all tracked from your finished Arcade runs." },
-      { kind: "new", feature: "Season 1 reward track", text: "30 tiers, each with a free reward and a Premium cosmetic; earned rewards never expire." },
-      { kind: "new", feature: "Premium and tier skips", text: "Unlock Premium for 2,500 Coins (retroactive for tiers you've reached) or skip tiers for 150 Coins each while the season runs." },
-      { kind: "new", feature: "Easy to find", text: "Open it from the Arcade or the new Quests button in every game's header." },
+      { kind: "new", feature: "Season 1: First Light", text: "A sideways reward track of 30 tiers, each with a free reward and a Premium cosmetic; claim rewards and skip tiers right on the track. Earned rewards never expire." },
+      { kind: "new", feature: "Premium and tier skips", text: "Upgrade to Premium for 2,500 Coins (retroactive for tiers you've reached, with a celebration to match) or skip tiers for 150 Coins each." },
+      { kind: "new", feature: "In the top bar", text: "Open the Season Pass from its button in the top bar; Quests are a tab inside it." },
     ],
     details: {
       new: [
@@ -72,17 +72,18 @@ const RELEASES: readonly Release[] = [
             "Runs that earn Coins count, and so do runs after you've reached the daily Coin limit.",
             "Completed quests stay claimable after they reset, and each quest can only be claimed once.",
           ],
-          where: "Arcade → Season Pass and Quests",
-          link: { href: "/arcade/season#quests", label: "Open Quests" },
+          where: "Top bar → Season Pass → Quests",
+          link: { href: "/arcade/season?tab=quests", label: "Open Quests" },
         },
         {
           title: "Season Pass",
-          body: "Season 1 runs until January 11, 2027 (UTC) with 30 tiers of 1,200 Season XP each. Every tier has a free reward (cosmetics at key tiers, Coins in between) and a Premium cosmetic. Claim everything you've reached with one button; items you already own pay half their value in Coins instead.",
+          body: "Season 1: First Light has 30 tiers of 1,200 Season XP each, laid out as one sideways track: Premium rewards above, free rewards below (cosmetics at key tiers, Coins in between). Ready rewards glow; select one, or Claim on the pass, to collect everything you've reached. Items you already own pay half their value in Coins instead.",
+          where: "Top bar → Season Pass",
           link: { href: "/arcade/season", label: "Open the Season Pass" },
         },
         {
           title: "Premium and tier skips",
-          body: "Premium costs 2,500 Coins and unlocks the Premium reward on every tier, including tiers you've already reached. Tier skips cost 150 Coins per tier. Both show the exact cost and your balance before you confirm, are only charged once, and are only on sale while the season runs. Rewards are cosmetic only.",
+          body: "Premium costs 2,500 Coins and unlocks the Premium reward on every tier, including tiers you've already reached, with a full-screen unlock celebration (calm with reduced motion). Tier skips cost 150 Coins per tier; select an upcoming tier on the track to skip straight to it. Both show the exact cost and your balance before you confirm and are only charged once. Rewards are cosmetic only.",
         },
       ],
     },

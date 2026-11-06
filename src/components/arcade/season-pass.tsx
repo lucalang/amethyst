@@ -1,10 +1,13 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, useTransition, type CSSProperties, type ReactNode } from "react";
+import "./season-pass.css";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Tabs as TabsPrimitive } from "radix-ui";
 import { toast } from "sonner";
-import { Check, ChevronsUp, Coins, Crown, Gift, Loader2, Lock, Minus, Play, Plus, RotateCcw, ScrollText, Sparkles, TriangleAlert } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronsUp, Coins, Crown, Gift, Loader2, Lock, Minus, Play, Plus, RotateCcw, ScrollText, Sparkles, TriangleAlert } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -16,14 +19,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ItemArt, type ArtProfile, type ArtSamples } from "@/components/inventory/item-art";
-import { RarityTag } from "@/components/lootboxes/parts";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { describeItem, inventoryItemLabel } from "@/lib/inventory";
+import { RARITIES } from "@/lib/rarities";
 import { CADENCE_LABELS, QUEST_CADENCES, questHref, questTitle, seasonInfo, type SeasonQuest, type SeasonReward, type SeasonState } from "@/lib/season-pass";
-import { cn } from "@/lib/utils";
+
+type Season = NonNullable<SeasonState["season"]>;
+type Progress = NonNullable<SeasonState["progress"]>;
+export type SeasonTab = "pass" | "quests";
 
 const coinsText = (value: number) => `${value.toLocaleString("en")} coin${value === 1 ? "" : "s"}`;
-const dateText = (iso: string) => new Date(iso).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+const plural = (count: number, word: string) => `${count.toLocaleString("en")} ${word}${count === 1 ? "" : "s"}`;
 
 const subscribeSecond = (onChange: () => void) => {
   const id = window.setInterval(onChange, 1000);
@@ -31,7 +37,7 @@ const subscribeSecond = (onChange: () => void) => {
 };
 const nowSecond = () => Math.floor(Date.now() / 1000);
 
-/** Time left until `to`, ticking each second ("2d 4h", "3:04:05"). */
+/** Time left until a quest reset, ticking each second. */
 function TimeLeft({ to, prefix }: { to: string; prefix: string }) {
   const second = useSyncExternalStore(subscribeSecond, nowSecond, () => 0);
   if (!second) return null;
@@ -47,15 +53,6 @@ function TimeLeft({ to, prefix }: { to: string; prefix: string }) {
   );
 }
 
-function Bar({ value, max, label, className }: { value: number; max: number; label: string; className?: string }) {
-  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
-  return (
-    <span role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={Math.min(value, max)} className={cn("block h-2 overflow-hidden rounded-full bg-foreground/10", className)}>
-      <span className="block h-full rounded-full bg-[var(--season,var(--amethyst))] transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
-    </span>
-  );
-}
-
 function actionError(error: unknown, fallback: string) {
   if (error instanceof ApiError) {
     switch (error.code) {
@@ -64,7 +61,7 @@ function actionError(error: unknown, fallback: string) {
       case "price_changed":
         return "The price just changed, so nothing was bought and no coins were taken. Check the new price and try again.";
       case "season_closed":
-        return "This season has ended, so Premium and tier skips are no longer on sale. No coins were taken.";
+        return "This season is over, so Premium and tier skips are no longer on sale. No coins were taken.";
       case "too_many_tiers":
         return "That’s more tiers than are left in this season. No coins were taken.";
       case "quest_incomplete":
@@ -75,16 +72,13 @@ function actionError(error: unknown, fallback: string) {
         return error.status >= 500 ? `${fallback} Try again in a moment.` : error.message;
     }
   }
-  return `The Season Pass couldn’t be reached, so this wasn’t confirmed. It’s safe to try again: nothing is ever granted or charged twice.`;
+  return "The Season Pass couldn’t be reached, so this wasn’t confirmed. It’s safe to try again: nothing is ever granted or charged twice.";
 }
 
-type Dialog =
-  | { mode: "premium"; error?: string | null }
-  | { mode: "skip"; tiers: number; request: string; error?: string | null }
-  | { mode: "done"; title: string; text: string };
+type Dialog = { mode: "premium"; error?: string | null } | { mode: "skip"; tiers: number; request: string; error?: string | null } | { mode: "done"; title: string; text: string };
 
-/** The Season Pass page: season progress, quests, the reward track, and Premium and tier skips bought with Coins. */
-export function SeasonPass({ state: initial, profile, samples }: { state: SeasonState | null; profile: ArtProfile; samples: ArtSamples }) {
+/** The Season Pass: the season, its reward track and its quests in one stage; claims, Premium and tier skips happen on the pass itself. */
+export function SeasonPass({ state: initial, profile, samples, tab: initialTab }: { state: SeasonState | null; profile: ArtProfile; samples: ArtSamples; tab: SeasonTab }) {
   const router = useRouter();
   const [retrying, startRetry] = useTransition();
   const [state, setState] = useState(initial);
@@ -93,9 +87,18 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
     setSeen(initial);
     setState(initial);
   }
+  const [tab, setTab] = useState<SeasonTab>(initialTab);
   const [busy, setBusy] = useState<string | null>(null);
   const inFlight = useRef(false);
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+
+  useEffect(() => {
+    if (!celebrate) return;
+    const id = window.setTimeout(() => setCelebrate(false), 2600);
+    return () => window.clearTimeout(id);
+  }, [celebrate]);
 
   if (!state) {
     return (
@@ -103,7 +106,7 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
         <span aria-hidden className="mx-auto grid size-12 place-items-center rounded-2xl border border-rose/40 bg-rose/10 text-rose">
           <TriangleAlert className="size-5" />
         </span>
-        <h2 className="mt-4 text-base font-semibold">The Season Pass couldn’t be loaded</h2>
+        <h1 className="mt-4 text-base font-semibold">The Season Pass couldn’t be loaded</h1>
         <p className="mt-2 text-sm text-muted-foreground">Your progress, quests and coins are safe. Try again in a moment.</p>
         <Button className="mt-5" disabled={retrying} onClick={() => startRetry(() => router.refresh())}>
           {retrying ? <Loader2 aria-hidden className="animate-spin" /> : <RotateCcw aria-hidden />}
@@ -114,29 +117,30 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
   }
 
   const season = state.season;
-  if (!season || !state.progress) {
+  const progress = state.progress;
+  if (!season || !progress) {
     return (
-      <div className="enter rounded-2xl border border-dashed border-border px-6 py-12 text-center">
-        <Sparkles aria-hidden className="mx-auto size-8 text-muted-foreground" />
-        <h2 className="mt-3 text-base font-semibold">No season is running right now</h2>
-        <p className="mt-1 text-sm text-muted-foreground">The next season and its quests will appear here. Arcade games still earn coins in the meantime.</p>
-        <Button asChild className="mt-5" variant="outline">
-          <Link href="/arcade">Back to the Arcade</Link>
-        </Button>
+      <div className="sp enter">
+        <div className="sp-stage px-6 py-16 text-center">
+          <Sparkles aria-hidden className="mx-auto size-9 text-[var(--season-glow)]" />
+          <h1 className="mt-4 text-xl font-semibold text-white">No season is running right now</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-white/60">The next season, its reward track and its quests will appear here. Arcade games still earn coins in the meantime.</p>
+          <Button asChild className="mt-6" variant="outline">
+            <Link href="/arcade">Go to the Arcade</Link>
+          </Button>
+        </div>
       </div>
     );
   }
 
   const info = seasonInfo(season.id);
-  const progress = state.progress;
   const balance = state.balance;
   const maxed = progress.tier >= season.tierCount;
   const intoTier = maxed ? season.xpPerTier : progress.xp % season.xpPerTier;
   const claimable = state.rewards.filter((reward) => !reward.claimed && reward.tier <= progress.tier && (reward.track === "free" || progress.premium));
   const skipLeft = Math.max(0, season.tierCount - progress.tier);
   const now = Date.parse(state.now);
-  const earlier = state.quests.filter((quest) => Date.parse(quest.periodEnd) <= now);
-  const current = state.quests.filter((quest) => Date.parse(quest.periodEnd) > now);
+  const ended = !season.active && Date.parse(season.endsAt) <= now;
   const readyQuests = state.quests.filter((quest) => !quest.claimedAt && quest.progress >= quest.target).length;
 
   async function run<T extends { balance?: number }>(key: string, json: Record<string, unknown>, fallback: string): Promise<T | string> {
@@ -159,63 +163,53 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
   }
 
   async function claimQuest(quest: SeasonQuest) {
-    const result = await run<{ status: string; xp: number; coins: number; balance: number }>(
-      `quest:${quest.id}`,
-      { action: "quest", assignment: quest.id, season: season!.id },
-      "The quest couldn’t be claimed.",
-    );
+    const result = await run<{ xp: number; coins: number; balance: number }>(`quest:${quest.id}`, { action: "quest", assignment: quest.id, season: season!.id }, "The quest couldn’t be claimed.");
     if (typeof result === "string") toast.error(result);
     else toast.success(`Quest complete: +${result.xp.toLocaleString("en")} Season XP and +${coinsText(result.coins)}`);
   }
 
   async function claimRewards() {
-    const result = await run<{ claimed: number; items: number; coins: number; balance: number }>(
-      "rewards",
-      { action: "rewards", season: season!.id },
-      "The rewards couldn’t be claimed.",
-    );
+    const result = await run<{ claimed: number; items: number; coins: number; balance: number }>("rewards", { action: "rewards", season: season!.id }, "The rewards couldn’t be claimed.");
     if (typeof result === "string") toast.error(result);
     else if (!result.claimed) toast.info("Everything you’ve reached is already claimed.");
     else
       toast.success(
-        `${result.claimed} reward${result.claimed === 1 ? "" : "s"} claimed${result.items ? `: ${result.items} item${result.items === 1 ? "" : "s"} added to your Inventory` : ""}${result.coins ? `, +${coinsText(result.coins)}` : ""}`,
+        `${plural(result.claimed, "reward")} claimed${result.items ? `: ${plural(result.items, "item")} added to your Inventory` : ""}${result.coins ? `, +${coinsText(result.coins)}` : ""}`,
       );
   }
 
   async function buyPremium() {
     const result = await run<{ status: string; balance: number }>("premium", { action: "premium", season: season!.id, price: season!.premiumPrice }, "The purchase didn’t go through, and no coins were taken.");
-    if (typeof result === "string") setDialog({ mode: "premium", error: result });
-    else
-      setDialog({
-        mode: "done",
-        title: "Premium unlocked",
-        text:
-          result.status === "owned"
-            ? "You already had Premium for this season, so no coins were taken."
-            : `${coinsText(season!.premiumPrice)} spent. Every Premium reward on tiers you’ve reached is ready to claim, and new ones unlock as you level up.`,
-      });
+    if (typeof result === "string") return setDialog({ mode: "premium", error: result });
+    setDialog(null);
+    if (result.status === "owned") toast.info("You already have Premium for this season, so no coins were taken.");
+    else setUnlocking(true);
   }
 
   async function skip(tiers: number, request: string) {
     const cost = tiers * season!.skipPrice;
-    const result = await run<{ status: string; tiers: number; tier: number; balance: number }>(
-      "skip",
-      { action: "skip", request, season: season!.id, tiers, cost },
-      "The purchase didn’t go through, and no coins were taken.",
-    );
+    const result = await run<{ status: string; tier: number; balance: number }>("skip", { action: "skip", request, season: season!.id, tiers, cost }, "The purchase didn’t go through, and no coins were taken.");
     if (typeof result === "string") setDialog({ mode: "skip", tiers, request, error: result });
     else
       setDialog({
         mode: "done",
         title: `Tier ${result.tier} reached`,
-        text: `${result.status === "repeat" ? "This skip was already applied, so no coins were taken again." : `${coinsText(cost)} spent on ${tiers} tier${tiers === 1 ? "" : "s"}.`} Claim the new rewards from the track.`,
+        text: result.status === "repeat" ? "This skip was already applied, so no coins were taken again." : `${coinsText(cost)} spent on ${plural(tiers, "tier")}.`,
       });
   }
 
-  const seasonStyle = { "--season": info.hue, "--season-glow": info.glow } as CSSProperties;
+  const openSkip = (tiers = 1) => setDialog({ mode: "skip", tiers, request: crypto.randomUUID() });
+  const changeTab = (value: string) => {
+    const next = value === "quests" ? "quests" : "pass";
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "quests") url.searchParams.set("tab", "quests");
+    else url.searchParams.delete("tab");
+    window.history.replaceState(window.history.state, "", url);
+  };
 
   return (
-    <div className="grid gap-8" style={seasonStyle}>
+    <div className="sp grid gap-5" style={{ "--season": info.hue, "--season-glow": info.glow } as CSSProperties}>
       {state.otherSeasons.some((other) => other.claimable > 0) ? (
         <div role="status" className="enter flex flex-wrap items-center gap-3 rounded-xl border border-amethyst/40 bg-amethyst/[0.08] px-4 py-3 text-sm">
           <Gift aria-hidden className="size-4 text-amethyst" />
@@ -232,141 +226,114 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
         </div>
       ) : null}
 
-      <section
-        aria-labelledby="season-title"
-        className="enter relative overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-6"
-        style={{ "--enter-index": 1, backgroundImage: "radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, var(--season) 22%, transparent), transparent 60%)" } as CSSProperties}
-      >
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              {dateText(season.startsAt)} – {dateText(season.endsAt)} ·{" "}
-              {season.active ? <TimeLeft to={season.endsAt} prefix="Ends in" /> : Date.parse(season.startsAt) > now ? "Not started yet" : "Season ended"}
+      <section aria-labelledby="season-title" className="sp-stage enter" data-premium={progress.premium || undefined} data-celebrate={celebrate || undefined}>
+        <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-center">
+          <div className="flex min-w-0 items-center gap-5">
+            <div className="sp-emblem" style={{ "--p": maxed ? 1 : intoTier / season.xpPerTier } as CSSProperties} aria-hidden>
+              <div className="sp-emblem-gem">
+                <span className="sp-emblem-label">TIER</span>
+                <span className="sp-emblem-num tabular-nums">{progress.tier}</span>
+              </div>
+            </div>
+            <div className="min-w-0">
+              <p className="sp-eyebrow">
+                {progress.premium ? <Crown aria-hidden className="size-3.5 text-[var(--gold)]" /> : <Sparkles aria-hidden className="size-3.5" />}
+                Season Pass · {info.label}
+                {ended ? " · Ended" : !season.active ? " · Coming soon" : ""}
+              </p>
+              <h1 id="season-title" className="sp-title mt-2">
+                {info.title}
+              </h1>
+              {info.tagline ? <p className="mt-3 max-w-xl text-sm leading-6 text-pretty text-white/65">{info.tagline}</p> : null}
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <div className="flex items-baseline justify-between gap-3 text-sm text-white">
+              <span className="font-semibold">
+                <span className="sr-only">Tier {progress.tier} of {season.tierCount}. </span>
+                {maxed ? "Every tier reached" : `Tier ${progress.tier} → ${progress.tier + 1}`}
+              </span>
+              <span className="text-white/60 tabular-nums">{maxed ? `${progress.xp.toLocaleString("en")} XP` : `${intoTier.toLocaleString("en")} / ${season.xpPerTier.toLocaleString("en")} XP`}</span>
+            </div>
+            <div
+              className="sp-xp"
+              role="progressbar"
+              aria-label={maxed ? "Season complete" : `Season XP toward tier ${progress.tier + 1}`}
+              aria-valuemin={0}
+              aria-valuemax={season.xpPerTier}
+              aria-valuenow={intoTier}
+            >
+              <span style={{ width: `${(intoTier / season.xpPerTier) * 100}%` }} />
+            </div>
+            <p className="text-xs text-white/50">
+              {progress.xp.toLocaleString("en")} Season XP{progress.skipped ? ` · ${plural(progress.skipped, "tier")} skipped` : ""} · {season.tierCount} tiers
             </p>
-            <h2 id="season-title" className="mt-1 text-2xl font-semibold tracking-tight">
-              {info.name}
-            </h2>
-            {info.tagline ? <p className="mt-1.5 max-w-prose text-sm leading-6 text-pretty text-muted-foreground">{info.tagline}</p> : null}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-foreground/[0.03] px-3 py-1 text-sm font-semibold tabular-nums">
-              <Coins aria-hidden className="coin-ink size-4" />
-              <span className="coin-ink" aria-live="polite">
-                {balance.toLocaleString("en")}
-              </span>
-              <span className="font-normal text-muted-foreground">coins</span>
-            </span>
-            {progress.premium ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--season-glow)]/50 bg-[var(--season)]/15 px-3 py-1 text-sm font-semibold">
-                <Crown aria-hidden className="size-4 text-[var(--season-glow)]" /> Premium
-              </span>
-            ) : season.active ? (
-              <Button size="sm" onClick={() => setDialog({ mode: "premium" })} disabled={busy !== null}>
-                <Crown aria-hidden /> Unlock Premium
-              </Button>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-            <span className="font-semibold">
-              Tier <span className="text-xl tabular-nums">{progress.tier}</span>
-              <span className="text-muted-foreground"> / {season.tierCount}</span>
-            </span>
-            <span className="text-muted-foreground tabular-nums">
-              {maxed ? "Every tier reached" : `${intoTier.toLocaleString("en")} / ${season.xpPerTier.toLocaleString("en")} XP to tier ${progress.tier + 1}`}
-            </span>
-          </div>
-          <Bar value={intoTier} max={season.xpPerTier} label={maxed ? "Season complete" : `Season XP toward tier ${progress.tier + 1}`} className="h-3" />
-          <p className="text-xs text-muted-foreground">
-            {progress.xp.toLocaleString("en")} Season XP earned{progress.skipped ? ` · ${progress.skipped} tier${progress.skipped === 1 ? "" : "s"} skipped` : ""}. Complete quests to earn XP.
-          </p>
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Button onClick={() => void claimRewards()} disabled={busy !== null || claimable.length === 0} aria-busy={busy === "rewards"}>
-            {busy === "rewards" ? <Loader2 aria-hidden className="animate-spin" /> : <Gift aria-hidden />}
-            {claimable.length ? `Claim ${claimable.length} reward${claimable.length === 1 ? "" : "s"}` : "No rewards to claim"}
-          </Button>
-          {season.active && skipLeft > 0 ? (
-            <Button variant="outline" onClick={() => setDialog({ mode: "skip", tiers: 1, request: crypto.randomUUID() })} disabled={busy !== null}>
-              <ChevronsUp aria-hidden /> Skip tiers
-            </Button>
-          ) : null}
-          <Button asChild variant="ghost">
-            <a href="#quests">
-              <ScrollText aria-hidden /> Quests{readyQuests ? ` · ${readyQuests} ready` : ""}
-            </a>
-          </Button>
-        </div>
-        {!season.active && Date.parse(season.endsAt) <= now ? (
-          <p className="mt-4 text-sm text-muted-foreground">This season has ended. Premium and tier skips are closed, but everything you reached and every completed quest can still be claimed.</p>
-        ) : null}
-      </section>
-
-      <section id="quests" aria-labelledby="quests-title" className="enter grid scroll-mt-24 gap-4" style={{ "--enter-index": 2 } as CSSProperties}>
-        <div>
-          <h2 id="quests-title" className="text-lg font-semibold">
-            Quests
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Progress counts finished Arcade runs automatically. Completed quests stay claimable even after they reset.</p>
-        </div>
-        {earlier.length ? <QuestGroup title="Ready from earlier" note="Completed before the last reset" quests={earlier} busy={busy} onClaim={claimQuest} /> : null}
-        {QUEST_CADENCES.map((cadence) => {
-          const quests = current.filter((quest) => quest.cadence === cadence);
-          const resets = quests[0]?.periodEnd;
-          return (
-            <QuestGroup
-              key={cadence}
-              title={CADENCE_LABELS[cadence].title}
-              note={resets && cadence !== "season" ? <TimeLeft to={resets} prefix="New quests in" /> : CADENCE_LABELS[cadence].reset}
-              quests={quests}
-              busy={busy}
-              onClaim={claimQuest}
-              empty={season.active ? "No quests right now. Check back after the next reset." : "This season’s quests have closed."}
-            />
-          );
-        })}
-      </section>
-
-      <section aria-labelledby="track-title" className="enter grid gap-4" style={{ "--enter-index": 3 } as CSSProperties}>
-        <div>
-          <h2 id="track-title" className="text-lg font-semibold">
-            Reward track
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every tier has a free reward and a Premium reward. Rewards are cosmetic only. If you already own an item, you get half its value in coins instead.
-          </p>
-        </div>
-        <ol className="grid gap-2">
-          <li aria-hidden className="hidden grid-cols-[3.5rem_1fr_1fr] gap-2 px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase sm:grid">
-            <span>Tier</span>
-            <span>Free</span>
-            <span className="flex items-center gap-1">
-              <Crown className="size-3.5" /> Premium
-            </span>
-          </li>
-          {Array.from({ length: season.tierCount }, (_, index) => index + 1).map((tier) => {
-            const reached = tier <= progress.tier;
-            const free = state.rewards.find((reward) => reward.tier === tier && reward.track === "free");
-            const premium = state.rewards.find((reward) => reward.tier === tier && reward.track === "premium");
-            return (
-              <li
-                key={tier}
-                className={cn("grid grid-cols-[3rem_1fr_1fr] gap-2 rounded-xl border p-2 sm:grid-cols-[3.5rem_1fr_1fr]", reached ? "border-[var(--season)]/40 bg-[var(--season)]/[0.06]" : "border-border")}
-              >
-                <span className={cn("grid place-items-center rounded-lg text-lg font-semibold tabular-nums", reached ? "text-foreground" : "text-muted-foreground")}>
-                  <span className="sr-only">Tier </span>
-                  {tier}
-                  {reached ? <span className="sr-only">, reached</span> : null}
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <button type="button" className="sp-btn sp-btn-claim" onClick={() => void claimRewards()} disabled={busy !== null || claimable.length === 0} aria-busy={busy === "rewards"}>
+                {busy === "rewards" ? <Loader2 aria-hidden className="animate-spin" /> : <Gift aria-hidden />}
+                {claimable.length ? `Claim ${plural(claimable.length, "reward")}` : "All claimed"}
+              </button>
+              {progress.premium ? (
+                <span className="sp-premium-chip">
+                  <Crown aria-hidden className="size-4" /> Premium
                 </span>
-                <RewardCell reward={free} reached={reached} unlocked profile={profile} samples={samples} />
-                <RewardCell reward={premium} reached={reached} unlocked={progress.premium} premium profile={profile} samples={samples} />
-              </li>
-            );
-          })}
-        </ol>
+              ) : season.active ? (
+                <button type="button" className="sp-btn sp-btn-gold" onClick={() => setDialog({ mode: "premium" })} disabled={busy !== null}>
+                  <Crown aria-hidden /> Premium · {season.premiumPrice.toLocaleString("en")}
+                </button>
+              ) : null}
+              {season.active && skipLeft > 0 ? (
+                <button type="button" className="sp-btn sp-btn-ghost" onClick={() => openSkip()} disabled={busy !== null}>
+                  <ChevronsUp aria-hidden /> Skip
+                </button>
+              ) : null}
+              <span className="ml-auto inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums">
+                <Coins aria-hidden className="coin-ink size-4" />
+                <span className="coin-ink" aria-live="polite">
+                  {balance.toLocaleString("en")}
+                </span>
+                <span className="sr-only">coins</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <TabsPrimitive.Root value={tab} onValueChange={changeTab}>
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-7">
+            <TabsPrimitive.List aria-label="Season Pass sections" className="sp-tabs">
+              <TabsPrimitive.Trigger value="pass" className="sp-tab">
+                <Crown aria-hidden className="size-4" /> Season Pass
+              </TabsPrimitive.Trigger>
+              <TabsPrimitive.Trigger value="quests" className="sp-tab">
+                <ScrollText aria-hidden className="size-4" /> Quests
+                {readyQuests ? (
+                  <span className="sp-tab-count" aria-label={`${readyQuests} ready to claim`}>
+                    {readyQuests}
+                  </span>
+                ) : null}
+              </TabsPrimitive.Trigger>
+            </TabsPrimitive.List>
+            {ended ? <p className="text-xs text-white/55">This season is over. Everything you reached and every completed quest can still be claimed.</p> : null}
+          </div>
+
+          <TabsPrimitive.Content value="pass" className="outline-none">
+            <Track
+              season={season}
+              progress={progress}
+              rewards={state.rewards}
+              busy={busy}
+              profile={profile}
+              samples={samples}
+              onClaim={() => void claimRewards()}
+              onPremium={season.active ? () => setDialog({ mode: "premium" }) : null}
+              onSkip={season.active ? (tier) => openSkip(tier - progress.tier) : null}
+            />
+          </TabsPrimitive.Content>
+          <TabsPrimitive.Content value="quests" className="outline-none">
+            <Quests quests={state.quests} now={now} active={season.active} busy={busy} onClaim={(quest) => void claimQuest(quest)} />
+          </TabsPrimitive.Content>
+        </TabsPrimitive.Root>
       </section>
 
       <AlertDialog open={dialog !== null} onOpenChange={(open) => !open && !busy && setDialog(null)}>
@@ -388,7 +355,7 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
                       void claimRewards();
                     }}
                   >
-                    <Gift aria-hidden /> Claim {claimable.length} reward{claimable.length === 1 ? "" : "s"}
+                    <Gift aria-hidden /> Claim {plural(claimable.length, "reward")}
                   </Button>
                 ) : null}
               </AlertDialogFooter>
@@ -396,15 +363,13 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
           ) : dialog?.mode === "premium" ? (
             <>
               <AlertDialogHeader>
-                <AlertDialogTitle>Unlock Premium for {info.name}?</AlertDialogTitle>
+                <AlertDialogTitle>Upgrade to Premium?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Premium adds a second cosmetic reward to all {season.tierCount} tiers, including tiers you’ve already reached. Coins are taken once, and Premium lasts for this season.
+                  Premium adds a second cosmetic reward to all {season.tierCount} tiers of {info.name}, including tiers you’ve already reached. Coins are taken once, and Premium lasts for this season.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <Receipt rows={[["Premium Pass", season.premiumPrice]]} balance={balance} />
-              {balance < season.premiumPrice ? (
-                <p className="text-sm text-rose">You need {coinsText(season.premiumPrice - balance)} more. Complete quests and play Arcade games to earn coins.</p>
-              ) : null}
+              <Receipt label="Premium Pass" total={season.premiumPrice} balance={balance} />
+              {balance < season.premiumPrice ? <p className="text-sm text-rose">You need {coinsText(season.premiumPrice - balance)} more. Complete quests and play Arcade games to earn coins.</p> : null}
               {dialog.error ? (
                 <p role="alert" className="text-sm text-rose">
                   {dialog.error}
@@ -414,7 +379,7 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
                 <AlertDialogCancel disabled={busy !== null}>Cancel</AlertDialogCancel>
                 <Button onClick={() => void buyPremium()} disabled={busy !== null || balance < season.premiumPrice} aria-busy={busy === "premium"}>
                   {busy === "premium" ? <Loader2 aria-hidden className="animate-spin" /> : <Crown aria-hidden />}
-                  {busy === "premium" ? "Unlocking…" : `Unlock for ${coinsText(season.premiumPrice)}`}
+                  {busy === "premium" ? "Upgrading…" : `Upgrade for ${coinsText(season.premiumPrice)}`}
                 </Button>
               </AlertDialogFooter>
             </>
@@ -428,26 +393,307 @@ export function SeasonPass({ state: initial, profile, samples }: { state: Season
               error={dialog.error ?? null}
               busy={busy === "skip"}
               disabled={busy !== null}
-              onChange={(tiers) => setDialog({ mode: "skip", tiers, request: crypto.randomUUID() })}
+              onChange={(tiers) => openSkip(tiers)}
               onConfirm={(tiers) => void skip(tiers, dialog.request)}
             />
           ) : null}
         </AlertDialogContent>
       </AlertDialog>
+
+      {unlocking ? (
+        <PremiumUnlock
+          name={info.name}
+          tiers={season.tierCount}
+          ready={claimable.filter((reward) => reward.track === "premium").length}
+          onClose={() => {
+            setUnlocking(false);
+            setTab("pass");
+            setCelebrate(true);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
 
-function Receipt({ rows, balance }: { rows: [string, number][]; balance: number }) {
-  const total = rows.reduce((sum, [, value]) => sum + value, 0);
+/** The reward track, scrolled sideways: Premium above the rail, Free below, one column per tier. */
+function Track({
+  season,
+  progress,
+  rewards,
+  busy,
+  profile,
+  samples,
+  onClaim,
+  onPremium,
+  onSkip,
+}: {
+  season: Season;
+  progress: Progress;
+  rewards: SeasonReward[];
+  busy: string | null;
+  profile: ArtProfile;
+  samples: ArtSamples;
+  onClaim: () => void;
+  onPremium: (() => void) | null;
+  onSkip: ((tier: number) => void) | null;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const maxed = progress.tier >= season.tierCount;
+  const pos = maxed ? season.tierCount - 1 : progress.tier - 1 + (progress.xp % season.xpPerTier) / season.xpPerTier;
+  const focusTier = Math.min(season.tierCount, progress.tier + 1);
+
+  const scrollToTier = (tier: number, smooth: boolean) => {
+    const box = scroller.current;
+    const column = box?.querySelector<HTMLElement>(`[data-tier="${tier}"]`);
+    if (!box || !column) return;
+    box.scrollTo({ left: Math.max(0, column.offsetLeft - box.clientWidth / 3), behavior: smooth ? "smooth" : "auto" });
+  };
+  useEffect(() => {
+    scrollToTier(focusTier, false);
+    // Only on first view of a season; later progress shouldn't yank the track.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [season.id]);
+
+  const page = (direction: 1 | -1) => scroller.current?.scrollBy({ left: direction * scroller.current.clientWidth * 0.8, behavior: "smooth" });
+
+  return (
+    <div className="pt-4 pb-5">
+      <div className="flex items-center justify-between gap-3 px-5 pb-2 sm:px-7">
+        <p className="text-xs text-white/50">Cosmetic rewards only. Items you already own pay half their value in coins.</p>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button type="button" className="sp-btn sp-btn-ghost h-9 px-3 text-xs" onClick={() => scrollToTier(focusTier, true)}>
+            {maxed ? `Tier ${season.tierCount}` : `Tier ${focusTier}`}
+          </button>
+          <button type="button" className="sp-nav-btn" aria-label="Scroll the track left" onClick={() => page(-1)}>
+            <ChevronLeft aria-hidden className="size-4" />
+          </button>
+          <button type="button" className="sp-nav-btn" aria-label="Scroll the track right" onClick={() => page(1)}>
+            <ChevronRight aria-hidden className="size-4" />
+          </button>
+        </div>
+      </div>
+      <div ref={scroller} className="sp-scroller" role="region" aria-label="Reward track" tabIndex={0}>
+        <div className="sp-lane" style={{ "--pos": pos } as CSSProperties}>
+          <div aria-hidden className="sp-legend">
+            <span className="text-[var(--gold-soft)]">
+              <Crown className="size-3" /> Premium
+            </span>
+            <span />
+            <span className="text-white/60">Free</span>
+          </div>
+          <span aria-hidden className="sp-rail" />
+          <span aria-hidden className="sp-rail-fill" />
+          {Array.from({ length: season.tierCount }, (_, index) => index + 1).map((tier) => {
+            const reached = tier <= progress.tier;
+            const current = tier === progress.tier;
+            const free = rewards.find((reward) => reward.tier === tier && reward.track === "free");
+            const premium = rewards.find((reward) => reward.tier === tier && reward.track === "premium");
+            return (
+              <div key={tier} role="group" aria-label={`Tier ${tier}${reached ? ", reached" : ""}`} className="sp-col" data-tier={tier}>
+                <RewardCard reward={premium} tier={tier} reached={reached} unlocked={progress.premium} busy={busy} index={tier} profile={profile} samples={samples} onClaim={onClaim} onPremium={onPremium} />
+                {!reached && onSkip ? (
+                  <button type="button" className="sp-node" onClick={() => onSkip(tier)} title={`Skip to tier ${tier}`} aria-label={`Skip to tier ${tier}`} disabled={busy !== null}>
+                    <span>{tier}</span>
+                  </button>
+                ) : (
+                  <span aria-hidden className="sp-node" data-reached={reached || undefined} data-current={current || undefined}>
+                    <span>{tier}</span>
+                  </span>
+                )}
+                <RewardCard reward={free} tier={tier} reached={reached} unlocked busy={busy} profile={profile} samples={samples} onClaim={onClaim} onPremium={null} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RewardCard({
+  reward,
+  tier,
+  reached,
+  unlocked,
+  busy,
+  index,
+  profile,
+  samples,
+  onClaim,
+  onPremium,
+}: {
+  reward: SeasonReward | undefined;
+  tier: number;
+  reached: boolean;
+  unlocked: boolean;
+  busy: string | null;
+  index?: number;
+  profile: ArtProfile;
+  samples: ArtSamples;
+  onClaim: () => void;
+  onPremium: (() => void) | null;
+}) {
+  if (!reward) return <span aria-hidden className="rounded-2xl border border-dashed border-white/10" />;
+  const item = reward.item ? describeItem(reward.item) : null;
+  const premium = reward.track === "premium";
+  const state = reward.claimed ? "claimed" : premium && !unlocked ? "premium-locked" : !reached ? "locked" : "ready";
+  const name = item ? item.name : coinsText(reward.coins);
+  const status =
+    state === "claimed"
+      ? reward.duplicate
+        ? `Owned · +${reward.paid.toLocaleString("en")}`
+        : "Claimed"
+      : state === "ready"
+        ? "Claim"
+        : state === "premium-locked"
+          ? "Premium"
+          : `Tier ${tier}`;
+  const StatusIcon = state === "claimed" ? Check : state === "ready" ? Gift : state === "premium-locked" ? Crown : Lock;
+  const style = { "--rarity": reward.rarity ? RARITIES[reward.rarity].color : "#f59e0b", "--i": index ?? 0 } as CSSProperties;
+
+  const body = (
+    <>
+      <span className="sp-card-art" aria-hidden>
+        {item ? (
+          <span className="pointer-events-none">
+            <ItemArt item={item} profile={profile} samples={samples} />
+          </span>
+        ) : (
+          <span className="sp-card-coins">{reward.coins}</span>
+        )}
+      </span>
+      <span className="sp-card-body">
+        {item && reward.rarity ? (
+          <span className="text-[0.6rem] font-extrabold tracking-[0.18em] uppercase" style={{ color: RARITIES[reward.rarity].color }}>
+            {RARITIES[reward.rarity].label} · {inventoryItemLabel(item)}
+          </span>
+        ) : null}
+        <span className="sp-card-name">{name}</span>
+        <span className="sp-card-status">
+          <StatusIcon aria-hidden /> {status}
+        </span>
+      </span>
+      {state === "premium-locked" ? (
+        <span aria-hidden className="sp-card-lock">
+          <Lock />
+        </span>
+      ) : null}
+    </>
+  );
+
+  const described = `${premium ? "Premium" : "Free"} reward, tier ${tier}: ${name}${item && reward.rarity ? `, ${RARITIES[reward.rarity].label}` : ""}`;
+  if (state === "ready")
+    return (
+      <button type="button" className="sp-card" data-state={state} data-track={reward.track} style={style} onClick={onClaim} disabled={busy !== null} aria-label={`${described}. Claim all ready rewards`}>
+        {body}
+      </button>
+    );
+  if (state === "premium-locked" && onPremium)
+    return (
+      <button type="button" className="sp-card" data-state={state} data-track={reward.track} style={style} onClick={onPremium} disabled={busy !== null} aria-label={`${described}. Needs Premium; upgrade`}>
+        {body}
+      </button>
+    );
+  return (
+    <div className="sp-card" data-state={state} data-track={reward.track} style={style}>
+      <span className="sr-only">
+        {described}. {state === "claimed" ? (reward.duplicate ? `Claimed; already owned, paid ${coinsText(reward.paid)}` : "Claimed") : state === "locked" ? "Locked" : "Needs Premium"}.
+      </span>
+      {body}
+    </div>
+  );
+}
+
+function Quests({ quests, now, active, busy, onClaim }: { quests: SeasonQuest[]; now: number; active: boolean; busy: string | null; onClaim: (quest: SeasonQuest) => void }) {
+  const earlier = quests.filter((quest) => Date.parse(quest.periodEnd) <= now);
+  const current = quests.filter((quest) => Date.parse(quest.periodEnd) > now);
+  return (
+    <div className="grid gap-6 px-5 pt-5 pb-7 sm:px-7">
+      <p className="text-sm text-white/60">Quests track your finished Arcade runs automatically. Claim them for Season XP and coins. Completed quests stay claimable after they reset.</p>
+      {earlier.length ? <QuestGroup title="Ready from earlier" note="Completed before the last reset" quests={earlier} busy={busy} onClaim={onClaim} /> : null}
+      {QUEST_CADENCES.map((cadence) => {
+        const group = current.filter((quest) => quest.cadence === cadence);
+        const resets = group[0]?.periodEnd;
+        return (
+          <QuestGroup
+            key={cadence}
+            title={CADENCE_LABELS[cadence].title}
+            note={resets && cadence !== "season" ? <TimeLeft to={resets} prefix="New quests in" /> : CADENCE_LABELS[cadence].reset}
+            quests={group}
+            busy={busy}
+            onClaim={onClaim}
+            empty={active ? "No quests right now. Check back after the next reset." : "This season’s quests have closed."}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function QuestGroup({ title, note, quests, busy, onClaim, empty }: { title: string; note: ReactNode; quests: SeasonQuest[]; busy: string | null; onClaim: (quest: SeasonQuest) => void; empty?: string }) {
+  return (
+    <section className="grid gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-base font-semibold text-white">{title}</h2>
+        <span className="text-xs text-white/50">{note}</span>
+      </div>
+      {quests.length ? (
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {quests.map((quest) => {
+            const done = quest.progress >= quest.target;
+            const name = questTitle(quest);
+            const key = `quest:${quest.id}`;
+            return (
+              <li key={quest.id} className="sp-quest" data-cadence={quest.cadence} data-done={(done && !quest.claimedAt) || undefined} data-claimed={quest.claimedAt ? true : undefined}>
+                <span className="sp-quest-tag">{quest.cadence === "season" ? "Season" : quest.cadence === "weekly" ? "Weekly" : "Daily"}</span>
+                <p className="text-sm font-semibold text-pretty text-white">{name}</p>
+                <div className="flex items-center gap-2">
+                  <div className="sp-quest-bar flex-1" role="progressbar" aria-label={`${name} progress`} aria-valuemin={0} aria-valuemax={quest.target} aria-valuenow={Math.min(quest.progress, quest.target)}>
+                    <span style={{ width: `${Math.min(100, (quest.progress / quest.target) * 100)}%` }} />
+                  </div>
+                  <span className="text-xs text-white/55 tabular-nums">
+                    {Math.min(quest.progress, quest.target).toLocaleString("en")}/{quest.target.toLocaleString("en")}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-3 text-xs font-bold tabular-nums">
+                    <span className="text-[var(--season-glow)]">+{quest.xp.toLocaleString("en")} XP</span>
+                    <span className="coin-ink inline-flex items-center gap-1">
+                      <Coins aria-hidden className="size-3.5" />+{quest.coins.toLocaleString("en")}
+                    </span>
+                  </span>
+                  {quest.claimedAt ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-white/55">
+                      <Check aria-hidden className="size-3.5" /> Claimed
+                    </span>
+                  ) : done ? (
+                    <button type="button" className="sp-btn sp-btn-claim h-8 px-3 text-xs" onClick={() => onClaim(quest)} disabled={busy !== null} aria-busy={busy === key} aria-label={`Claim: ${name}`}>
+                      {busy === key ? <Loader2 aria-hidden className="animate-spin" /> : <Gift aria-hidden />}
+                      Claim
+                    </button>
+                  ) : (
+                    <Link href={questHref(quest)} className="sp-btn sp-btn-ghost h-8 px-3 text-xs" aria-label={`Play for: ${name}`}>
+                      <Play aria-hidden /> Play
+                    </Link>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="text-sm text-white/50">{empty}</p>
+      )}
+    </section>
+  );
+}
+
+function Receipt({ label, total, balance }: { label: string; total: number; balance: number }) {
   return (
     <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-lg border border-border bg-foreground/[0.02] px-3 py-2.5 text-sm">
-      {rows.map(([label, value]) => (
-        <span key={label} className="contents">
-          <dt className="text-muted-foreground">{label}</dt>
-          <dd className="text-right font-medium tabular-nums">{coinsText(value)}</dd>
-        </span>
-      ))}
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="text-right font-medium tabular-nums">{coinsText(total)}</dd>
       <dt className="text-muted-foreground">Your balance</dt>
       <dd className="text-right tabular-nums">{balance.toLocaleString("en")}</dd>
       <dt className="border-t border-border pt-1.5 font-medium text-foreground">Balance after</dt>
@@ -485,9 +731,9 @@ function SkipDialog({
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>Skip tiers</AlertDialogTitle>
+        <AlertDialogTitle>Skip to tier {tier + tiers}?</AlertDialogTitle>
         <AlertDialogDescription>
-          Each tier costs {coinsText(price)} and unlocks that tier’s rewards right away. Your Season XP is kept. {left} tier{left === 1 ? "" : "s"} left this season.
+          Each tier costs {coinsText(price)} and unlocks that tier’s rewards right away. Your Season XP is kept. {plural(left, "tier")} left this season.
         </AlertDialogDescription>
       </AlertDialogHeader>
       <div className="flex flex-wrap items-center gap-2">
@@ -495,7 +741,7 @@ function SkipDialog({
           <Minus aria-hidden />
         </Button>
         <output aria-live="polite" className="min-w-24 text-center text-sm font-semibold tabular-nums">
-          {tiers} tier{tiers === 1 ? "" : "s"}
+          {plural(tiers, "tier")}
         </output>
         <Button type="button" variant="outline" size="icon" aria-label="One tier more" disabled={disabled || tiers >= left} onClick={() => onChange(tiers + 1)}>
           <Plus aria-hidden />
@@ -506,10 +752,7 @@ function SkipDialog({
           </Button>
         ) : null}
       </div>
-      <Receipt rows={[[`${tiers} × ${coinsText(price)}`, cost]]} balance={balance} />
-      <p className="text-sm text-muted-foreground">
-        Tier {tier} → <span className="font-semibold text-foreground">tier {tier + tiers}</span>
-      </p>
+      <Receipt label={`${tiers} × ${coinsText(price)}`} total={cost} balance={balance} />
       {short ? <p className="text-sm text-rose">You need {coinsText(short)} more for {tiers === 1 ? "this tier" : "these tiers"}.</p> : null}
       {error ? (
         <p role="alert" className="text-sm text-rose">
@@ -527,137 +770,43 @@ function SkipDialog({
   );
 }
 
-function QuestGroup({
-  title,
-  note,
-  quests,
-  busy,
-  onClaim,
-  empty,
-}: {
-  title: string;
-  note: ReactNode;
-  quests: SeasonQuest[];
-  busy: string | null;
-  onClaim: (quest: SeasonQuest) => void;
-  empty?: string;
-}) {
-  return (
-    <div className="grid gap-2 rounded-2xl border border-border bg-card p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        <span className="text-xs text-muted-foreground">{note}</span>
-      </div>
-      {quests.length ? (
-        <ul className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {quests.map((quest) => {
-            const done = quest.progress >= quest.target;
-            const name = questTitle(quest);
-            return (
-              <li key={quest.id} className={cn("grid gap-2 rounded-xl border p-3", quest.claimedAt ? "border-border opacity-70" : done ? "border-[var(--season)]/50 bg-[var(--season)]/[0.07]" : "border-border")}>
-                <p className="text-sm font-medium text-pretty">{name}</p>
-                <div className="flex items-center gap-2">
-                  <Bar value={quest.progress} max={quest.target} label={`${name} progress`} className="flex-1" />
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {Math.min(quest.progress, quest.target).toLocaleString("en")}/{quest.target.toLocaleString("en")}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-xs font-medium tabular-nums">
-                    <span className="text-[var(--season-glow)]">+{quest.xp.toLocaleString("en")} XP</span>
-                    <span className="coin-ink inline-flex items-center gap-1">
-                      <Coins aria-hidden className="size-3.5" />+{quest.coins.toLocaleString("en")}
-                    </span>
-                  </span>
-                  {quest.claimedAt ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <Check aria-hidden className="size-3.5" /> Claimed
-                    </span>
-                  ) : done ? (
-                    <Button size="sm" onClick={() => onClaim(quest)} disabled={busy !== null} aria-busy={busy === `quest:${quest.id}`} aria-label={`Claim: ${name}`}>
-                      {busy === `quest:${quest.id}` ? <Loader2 aria-hidden className="animate-spin" /> : <Gift aria-hidden />}
-                      Claim
-                    </Button>
-                  ) : (
-                    <Button asChild size="sm" variant="ghost">
-                      <Link href={questHref(quest)} aria-label={`Play for: ${name}`}>
-                        <Play aria-hidden /> Play
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="text-sm text-muted-foreground">{empty}</p>
-      )}
-    </div>
-  );
-}
+const SPARKS = Array.from({ length: 28 }, (_, index) => ({ a: `${index * (360 / 28)}deg`, d: `${9 + (index % 4) * 3.5}rem` }));
 
-function RewardCell({
-  reward,
-  reached,
-  unlocked,
-  premium = false,
-  profile,
-  samples,
-}: {
-  reward: SeasonReward | undefined;
-  reached: boolean;
-  unlocked: boolean;
-  premium?: boolean;
-  profile: ArtProfile;
-  samples: ArtSamples;
-}) {
-  if (!reward) return <span className="rounded-lg border border-dashed border-border" />;
-  const item = reward.item ? describeItem(reward.item) : null;
-  const status = reward.claimed
-    ? reward.duplicate
-      ? `Claimed · already owned, +${coinsText(reward.paid)}`
-      : "Claimed"
-    : !reached
-      ? "Locked"
-      : !unlocked
-        ? "Needs Premium"
-        : "Ready to claim";
-  const label = item ? item.name : coinsText(reward.coins);
-  return (
-    <div
-      className={cn(
-        "flex min-w-0 flex-col items-center gap-2 rounded-lg border p-2 text-center sm:flex-row sm:text-left",
-        reward.claimed ? "border-border bg-foreground/[0.02]" : reached && unlocked ? "border-[var(--season)]/60 bg-[var(--season)]/[0.1]" : "border-border",
-        premium && !unlocked && "bg-[var(--season)]/[0.03]",
-      )}
-    >
-      <span className="sr-only">{premium ? "Premium reward:" : "Free reward:"}</span>
-      <span className="grid h-16 w-full max-w-28 shrink-0 place-items-center overflow-hidden sm:w-28">
-        {item ? (
-          <span className="pointer-events-none origin-center scale-[0.8]">
-            <ItemArt item={item} profile={profile} samples={samples} />
-          </span>
-        ) : (
-          <span className="grid size-12 place-items-center rounded-full bg-foreground/[0.04]">
-            <Coins aria-hidden className="coin-ink size-6" />
-          </span>
-        )}
-      </span>
-      <span className="grid min-w-0 gap-1">
-        <span className={cn("truncate text-sm font-medium", item ? "" : "coin-ink")}>
-          {premium ? <Crown aria-hidden className="mr-1 inline size-3.5 text-[var(--season-glow)] sm:hidden" /> : null}
-          {label}
+/** Full-screen celebration after buying Premium. */
+function PremiumUnlock({ name, tiers, ready, onClose }: { name: string; tiers: number; ready: number; onClose: () => void }) {
+  const button = useRef<HTMLButtonElement>(null);
+  useEffect(() => button.current?.focus(), []);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return createPortal(
+    <div className="sp-unlock" role="dialog" aria-modal="true" aria-labelledby="sp-unlock-title" aria-describedby="sp-unlock-text">
+      <span aria-hidden className="sp-unlock-rays" />
+      {[0, 1, 2].map((ring) => (
+        <span key={ring} aria-hidden className="sp-unlock-ring" style={{ "--r": ring } as CSSProperties} />
+      ))}
+      {SPARKS.map((spark, index) => (
+        <span key={index} aria-hidden className="sp-unlock-spark" style={{ "--a": spark.a, "--d": spark.d, "--s": index } as CSSProperties} />
+      ))}
+      <span aria-hidden className="sp-unlock-flash" />
+      <div className="sp-unlock-content">
+        <span aria-hidden className="sp-unlock-gem">
+          <Crown strokeWidth={1.75} />
         </span>
-        <span className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
-          {item && reward.rarity ? <RarityTag rarity={reward.rarity} /> : null}
-          {item ? <span className="text-xs text-muted-foreground">{inventoryItemLabel(item)}</span> : null}
-        </span>
-        <span className={cn("inline-flex items-center justify-center gap-1 text-xs sm:justify-start", reward.claimed ? "text-muted-foreground" : reached && unlocked ? "font-medium text-foreground" : "text-muted-foreground")}>
-          {reward.claimed ? <Check aria-hidden className="size-3.5" /> : !reached || !unlocked ? <Lock aria-hidden className="size-3.5" /> : <Gift aria-hidden className="size-3.5" />}
-          {status}
-        </span>
-      </span>
-    </div>
+        <h2 id="sp-unlock-title" className="sp-unlock-title">
+          Premium unlocked
+        </h2>
+        <p id="sp-unlock-text" className="sp-unlock-rise text-sm leading-6 text-amber-50/80">
+          {name} is now Premium: {tiers} extra cosmetic rewards on your track.
+          {ready ? ` ${plural(ready, "Premium reward")} ${ready === 1 ? "is" : "are"} ready to claim right now.` : ""}
+        </p>
+        <button ref={button} type="button" className="sp-btn sp-btn-gold sp-unlock-rise mt-2 h-11 px-6" style={{ "--delay": "1.35s" } as CSSProperties} onClick={onClose}>
+          <Crown aria-hidden /> See my Premium track
+        </button>
+      </div>
+    </div>,
+    document.body,
   );
 }

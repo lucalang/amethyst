@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Cherry, ChevronRight, Coins, House, Medal, ScrollText, Store, Trophy } from "lucide-react";
+import { ArrowRight, Cherry, ChevronRight, Coins, House, Medal, Store, Trophy } from "lucide-react";
 import { ArcadeGames } from "@/components/arcade/arcade-games";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -58,19 +58,6 @@ export default async function ArcadePage() {
             <Store aria-hidden className="size-4" />
             <span className="hidden sm:inline">Visit the shop</span>
             <span className="sm:hidden">Shop</span>
-            <ArrowRight aria-hidden className="size-3.5" />
-          </span>
-        </Link>
-        <Link href="/arcade/season" prefetch={false} className="arcade-counter enter mb-6" style={{ "--enter-index": 2 } as CSSProperties}>
-          <span aria-hidden className="arcade-counter-coin">
-            <ScrollText className="size-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-foreground">Season Pass and Quests</span>
-            <span className="block text-xs text-pretty text-muted-foreground">Complete daily, weekly and season quests for Season XP and coins, and unlock cosmetic rewards tier by tier.</span>
-          </span>
-          <span className="arcade-counter-cta">
-            Open
             <ArrowRight aria-hidden className="size-3.5" />
           </span>
         </Link>
