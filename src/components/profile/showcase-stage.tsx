@@ -9,8 +9,10 @@ import { ACHIEVEMENTS } from "@/lib/achievements";
 import { artworkVariantSrc } from "@/lib/attachments";
 import { PROFILE_BADGES, PROFILE_TITLES, type AvatarDecorationId, type ProfileBadgeId, type ProfileTitleId } from "@/lib/cosmetics";
 import { PROFILE_SECTIONS, pedestalCollectible, type ProfileAmbientId, type ShowcaseArrangement, type ShowcasePiece } from "@/lib/profile-styles";
+import { PROFILE_BANNERS } from "@/lib/profile-cosmetics";
 import { ShowcaseOpening } from "./showcase-opening";
 import { ShowcasePedestal } from "./showcase-pedestal";
+import { ProfileFrameArt, bannerProps } from "./profile-cosmetic-art";
 import "./profile-showcase.css";
 
 const SINCE = new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" });
@@ -80,6 +82,11 @@ function PieceArt({ piece }: { piece: ShowcasePiece }) {
   );
 }
 
+/** The small avatar image whose blur tints the showcase backdrop. */
+export function showcaseAura(identity: ShowcaseIdentity) {
+  return identity.avatar.imageSrc ?? (identity.avatar.src ? artworkVariantSrc(identity.avatar.src, 128) : null);
+}
+
 /** The member's display case: identity, worn collectibles and the owner's sections in their chosen order. */
 export function ShowcaseStage({
   memberId,
@@ -99,7 +106,7 @@ export function ShowcaseStage({
   /** A live editing preview: entrance motion and the opening are skipped so changes appear immediately. */
   previewing?: boolean;
 }) {
-  const { style, ambient, sections } = arrangement;
+  const { style, ambient, sections, banner, frame } = arrangement;
   const title = identity.title ? PROFILE_TITLES[identity.title] : null;
   const medals = arrangement.achievements.flatMap((id) => ACHIEVEMENTS.find((item) => item.id === id) ?? []);
   const collectible = pedestalCollectible(arrangement.pedestal);
@@ -107,7 +114,7 @@ export function ShowcaseStage({
   const shown = sections.filter((id) => filled[id]);
   let order = 0;
   const reveal = () => ({ "--i": order++ }) as CSSProperties;
-  const aura = identity.avatar.imageSrc ?? (identity.avatar.src ? artworkVariantSrc(identity.avatar.src, 128) : null);
+  const aura = showcaseAura(identity);
 
   const render: Record<keyof typeof filled, () => ReactNode> = {
     gallery: () => (
@@ -146,7 +153,8 @@ export function ShowcaseStage({
     pedestal: () =>
       collectible ? (
         <div className="pf-reveal" style={reveal()}>
-          <ShowcasePedestal collectible={collectible} style={style} identity={identity} pieces={pieces} previewing={previewing} />
+          {/* Keyed so the 3D scene re-reads the banner's colours. */}
+          <ShowcasePedestal key={banner} collectible={collectible} style={style} identity={identity} pieces={pieces} previewing={previewing} />
         </div>
       ) : null,
   };
@@ -157,11 +165,14 @@ export function ShowcaseStage({
       className="pf-stage"
       data-pf-style={style}
       data-pf-ambient={ambient}
+      data-pf-frame={frame ?? undefined}
+      {...bannerProps(banner)}
       data-previewing={previewing || undefined}
       onPointerMove={stageTrack.move}
       onPointerLeave={stageTrack.leave}
     >
       <div aria-hidden className="pf-backdrop" />
+      {PROFILE_BANNERS[banner].palette ? <div aria-hidden className="pf-banner" /> : null}
       {aura ? (
         <div aria-hidden className="pf-aura">
           {/* eslint-disable-next-line @next/next/no-img-element -- decorative blur of the avatar already loaded above */}
@@ -212,6 +223,7 @@ export function ShowcaseStage({
           </div>
         ) : null}
       </div>
+      {frame ? <ProfileFrameArt id={frame} /> : null}
       {previewing ? null : <ShowcaseOpening memberId={memberId} style={style} />}
     </section>
   );

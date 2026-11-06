@@ -49,6 +49,47 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-profile-banners-frames",
+    date: "2026-11-06",
+    title: "Banner themes and profile frames",
+    intro: "Two new kinds of showcase cosmetics: colour themes for your profile’s backdrop and ornamental frames around its edge.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Banner themes", text: "Recolour your showcase’s backdrop, lighting and details with Tidepool, Verdant, Nocturne, Rosewood or Aurum." },
+      { kind: "new", feature: "Profile frames", text: "Gilded filigree, Silver deco, Bronze briar and Rune ward frame the outside of your showcase." },
+      { kind: "improved", feature: "Saved looks", text: "Each saved look remembers its banner theme and frame." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Banner themes",
+          body: "A banner theme changes the colours, light and pattern of your profile showcase. The rest of the site keeps your own theme. The Original backdrop stays free and remains the default.",
+          points: [
+            "Five themes in the Arcade shop, each with its own palette and pattern.",
+            "Names, titles and badges stay readable in light and dark site themes.",
+          ],
+          where: "Arcade → Shop → Banner themes",
+          link: { href: "/arcade/shop", label: "Open the shop" },
+        },
+        {
+          title: "Profile frames",
+          body: "Ornamental corners and a fine edge drawn around your showcase. The showcase makes room for them, so they never cover your name, badges, artwork, centerpiece or buttons.",
+          points: ["Four frames in the Arcade shop.", "Frames are separate from artwork frames and don’t change your covers."],
+          where: "Arcade → Shop → Profile frames",
+          link: { href: "/arcade/shop", label: "Open the shop" },
+        },
+      ],
+      improved: [
+        {
+          title: "Choose them while arranging your showcase",
+          body: "Arrange showcase now has Banner theme and Profile frame pickers with a live preview. Items you don’t own yet are shown locked. Each saved look keeps its own theme and frame. Equipping one in the shop adds it to the look you’re wearing.",
+          where: "Your profile → Arrange showcase",
+          link: { href: "/profile", label: "Go to your profile" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-snake-blender-unranked",
     date: "2026-11-06",
     title: "Blender stays off the rankings",

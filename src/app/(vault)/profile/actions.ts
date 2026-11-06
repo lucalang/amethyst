@@ -5,6 +5,7 @@ import { z } from "zod";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { AVATAR_DECORATION_IDS, MAX_PROFILE_BADGES, PROFILE_BADGE_IDS, PROFILE_TITLE_IDS } from "@/lib/cosmetics";
 import { MAX_SHOWCASE_ACHIEVEMENTS, MAX_SHOWCASE_ITEMS, PROFILE_AMBIENT_IDS, PROFILE_SECTION_IDS, PROFILE_STYLE_IDS, pedestalCollectible, type ProfileStyleId } from "@/lib/profile-styles";
+import { DEFAULT_PROFILE_BANNER, PROFILE_BANNER_IDS, PROFILE_FRAME_IDS } from "@/lib/profile-cosmetics";
 import { requireUser } from "@/lib/supabase/auth";
 
 export type ShowcaseSaveState = { status: "idle" | "success" | "error"; message?: string; look?: string | null };
@@ -17,6 +18,8 @@ const showcaseSchema = z.object({
   sections: z.array(z.enum(PROFILE_SECTION_IDS)).max(PROFILE_SECTION_IDS.length).refine(unique, "Each section can only appear once."),
   ambient: z.enum(PROFILE_AMBIENT_IDS),
   pedestal: z.string().max(80).refine((id) => pedestalCollectible(id) !== null, "That collectible can’t stand on the pedestal.").nullable(),
+  banner: z.enum(PROFILE_BANNER_IDS),
+  frame: z.enum(PROFILE_FRAME_IDS).nullable(),
   achievements: z
     .array(z.enum(ACHIEVEMENTS.map((item) => item.id) as [string, ...string[]]))
     .max(MAX_SHOWCASE_ACHIEVEMENTS, `Pin up to ${MAX_SHOWCASE_ACHIEVEMENTS} achievements.`)
@@ -60,6 +63,8 @@ async function persist(ctx: Ctx, input: ShowcaseInput): Promise<ShowcaseSaveStat
     p_sections: data.sections,
     p_ambient: data.ambient,
     p_pedestal: data.pedestal,
+    p_banner: data.banner === DEFAULT_PROFILE_BANNER ? null : data.banner,
+    p_frame: data.frame,
     p_achievements: data.achievements,
     p_items: data.items,
     p_look: "id" in data.look ? data.look.id : null,

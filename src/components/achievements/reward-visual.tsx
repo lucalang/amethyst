@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 const KIND_LABELS: Record<ReturnType<typeof rewardItemInfo>["kind"], string> = {
   frame: "Artwork frame",
   avatar_decoration: "Avatar decoration",
+  profile_banner: "Profile banner theme",
+  profile_frame: "Profile frame",
   badge: "Profile badge",
   title: "Profile title",
   other: "Exclusive reward",
@@ -21,6 +23,7 @@ export function rewardKindLabel(id: string): string {
 
 export function rewardCustomizeHref(id: string): string {
   const { kind } = rewardItemInfo(id);
+  if (kind === "profile_banner" || kind === "profile_frame") return "/profile";
   return kind === "frame" ? "/customization/frames" : "/customization/profile";
 }
 

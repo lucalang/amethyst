@@ -1,4 +1,12 @@
 import { ARTWORK_FRAMES, UNLOCKABLE_FRAME_IDS, isAchievementFrameId, type UnlockableFrameId } from "@/lib/frames";
+import {
+  PROFILE_BANNER_ITEM_IDS,
+  PROFILE_BANNER_ITEMS,
+  PROFILE_FRAME_IDS,
+  PROFILE_FRAME_ITEMS,
+  type ProfileBannerItemId,
+  type ProfileFrameId,
+} from "@/lib/profile-cosmetics";
 
 /**
  * The Arcade shop & reward cosmetics catalogue. Ids are stable and match `cosmetic_items` in the
@@ -10,9 +18,9 @@ export type AvatarDecorationId = (typeof AVATAR_DECORATION_IDS)[number];
 export const isAvatarDecorationId = (value: unknown): value is AvatarDecorationId => AVATAR_DECORATION_IDS.includes(value as AvatarDecorationId);
 
 export type CosmeticSource = "shop" | "achievement" | "vault";
-export type CosmeticKind = "frame" | "avatar_decoration";
-export type CosmeticId = UnlockableFrameId | AvatarDecorationId;
-export const COSMETIC_IDS: readonly CosmeticId[] = [...UNLOCKABLE_FRAME_IDS, ...AVATAR_DECORATION_IDS];
+export type CosmeticKind = "frame" | "avatar_decoration" | "profile_banner" | "profile_frame";
+export type CosmeticId = UnlockableFrameId | AvatarDecorationId | ProfileBannerItemId | ProfileFrameId;
+export const COSMETIC_IDS: readonly CosmeticId[] = [...UNLOCKABLE_FRAME_IDS, ...AVATAR_DECORATION_IDS, ...PROFILE_BANNER_ITEM_IDS, ...PROFILE_FRAME_IDS];
 export const isCosmeticId = (value: unknown): value is CosmeticId => COSMETIC_IDS.includes(value as CosmeticId);
 
 export type CosmeticInfo = { kind: CosmeticKind; name: string; description: string; source: CosmeticSource };
@@ -85,7 +93,7 @@ export const EQUIP_ITEM_IDS: readonly EquipItemId[] = [...COSMETIC_IDS, ...PROFI
 export const isEquipItemId = (value: unknown): value is EquipItemId => EQUIP_ITEM_IDS.includes(value as EquipItemId);
 
 /** How any reward item is named wherever it's shown (the Vault, achievements, profile pickers). */
-export function rewardItemInfo(id: string): { kind: "frame" | "avatar_decoration" | "badge" | "title" | "other"; name: string; description: string; source?: CosmeticSource } {
+export function rewardItemInfo(id: string): { kind: CosmeticKind | "badge" | "title" | "other"; name: string; description: string; source?: CosmeticSource } {
   if (isCosmeticId(id)) return COSMETICS[id];
   if (isProfileBadgeId(id)) return { kind: "badge", ...PROFILE_BADGES[id] };
   if (isProfileTitleId(id)) return { kind: "title", ...PROFILE_TITLES[id] };
@@ -100,9 +108,16 @@ export const COSMETICS: Record<CosmeticId, CosmeticInfo> = {
     ]),
   ) as Record<UnlockableFrameId, CosmeticInfo>),
   ...(Object.fromEntries(Object.entries(AVATAR_DECORATIONS).map(([id, info]) => [id, { kind: "avatar_decoration", ...info }])) as Record<AvatarDecorationId, CosmeticInfo>),
+  ...(Object.fromEntries(Object.entries(PROFILE_BANNER_ITEMS).map(([id, info]) => [id, { kind: "profile_banner", ...info }])) as Record<ProfileBannerItemId, CosmeticInfo>),
+  ...(Object.fromEntries(Object.entries(PROFILE_FRAME_ITEMS).map(([id, info]) => [id, { kind: "profile_frame", ...info }])) as Record<ProfileFrameId, CosmeticInfo>),
 };
 
-export const COSMETIC_KIND_LABELS: Record<CosmeticKind, string> = { frame: "Artwork frame", avatar_decoration: "Avatar decoration" };
+export const COSMETIC_KIND_LABELS: Record<CosmeticKind, string> = {
+  frame: "Artwork frame",
+  avatar_decoration: "Avatar decoration",
+  profile_banner: "Profile banner theme",
+  profile_frame: "Profile frame",
+};
 
 /** A shop or reward item with its server price and this account's state. */
 export type ShopItem = {

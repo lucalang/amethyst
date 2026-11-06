@@ -24,7 +24,9 @@ import { catalogMatcher, ownershipMatches, type Ownership } from "@/lib/catalog-
 import { COSMETICS, COSMETIC_KIND_LABELS, type AvatarDecorationId, type CosmeticId, type CosmeticKind, type ShopItem } from "@/lib/cosmetics";
 import type { ShopData } from "@/lib/data/shop";
 import { ARTWORK_FRAMES, type ArtworkFrameId } from "@/lib/frames";
+import { DEFAULT_PROFILE_BANNER, PROFILE_BANNERS, PROFILE_FRAMES, type ProfileBannerId, type ProfileFrameId } from "@/lib/profile-cosmetics";
 import { cn } from "@/lib/utils";
+import { BannerSwatch, FrameSwatch } from "@/components/profile/profile-cosmetic-art";
 import { SampleArt, type FrameSample } from "../../settings/frame-settings";
 
 type Profile = { name: string | null; avatarUrl: string | null };
@@ -37,8 +39,12 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
   { id: "frame", label: "Frames" },
   { id: "avatar_decoration", label: "Avatar decorations" },
+  { id: "profile_banner", label: "Banner themes" },
+  { id: "profile_frame", label: "Profile frames" },
   { id: "achievement", label: "Achievements" },
 ];
+/** Worn on the profile showcase rather than on artwork or the avatar. */
+const isShowcaseKind = (kind: CosmeticKind) => kind === "profile_banner" || kind === "profile_frame";
 
 const coinsText = (value: number) => `${value.toLocaleString("en")} coin${value === 1 ? "" : "s"}`;
 
@@ -65,6 +71,13 @@ function equipError(error: unknown) {
 
 function ItemPreview({ id, large, samples, profile }: { id: CosmeticId; large?: boolean; samples: Samples; profile: Profile }) {
   const info = COSMETICS[id];
+  if (info.kind === "profile_banner" || info.kind === "profile_frame") {
+    return (
+      <span className={cn("block", large ? "w-60 max-w-full" : "w-40")}>
+        {info.kind === "profile_banner" ? <BannerSwatch id={id as ProfileBannerId} /> : <FrameSwatch id={id as ProfileFrameId} className={large ? "[&_.pf-frame]:[--pf-corner:1.75rem]" : undefined} />}
+      </span>
+    );
+  }
   if (info.kind === "frame") {
     const frame = id as ArtworkFrameId;
     return (
@@ -103,12 +116,16 @@ export function ShopView({
   shop,
   frame,
   decoration,
+  banner,
+  profileFrame,
   profile,
   samples,
 }: {
   shop: ShopData;
   frame: ArtworkFrameId;
   decoration: AvatarDecorationId | null;
+  banner: ProfileBannerId;
+  profileFrame: ProfileFrameId | null;
   profile: Profile;
   samples: Samples;
 }) {
@@ -124,7 +141,14 @@ export function ShopView({
   const fittingRoom = useRef<HTMLElement>(null);
 
   // What changed here since the server last rendered; cleared when fresh server data arrives.
-  const [local, setLocal] = useState<{ balance?: number; owned: CosmeticId[]; frame?: ArtworkFrameId; decoration?: AvatarDecorationId | null }>({ owned: [] });
+  const [local, setLocal] = useState<{
+    balance?: number;
+    owned: CosmeticId[];
+    frame?: ArtworkFrameId;
+    decoration?: AvatarDecorationId | null;
+    banner?: ProfileBannerId;
+    profileFrame?: ProfileFrameId | null;
+  }>({ owned: [] });
   const [seen, setSeen] = useState(shop);
   if (seen !== shop) {
     setSeen(shop);
@@ -134,9 +158,17 @@ export function ShopView({
   const balance = local.balance ?? shop.balance;
   const equippedFrame = local.frame ?? frame;
   const equippedDecoration = local.decoration !== undefined ? local.decoration : decoration;
+  const equippedBanner = local.banner ?? banner;
+  const equippedProfileFrame = local.profileFrame !== undefined ? local.profileFrame : profileFrame;
+  const worn: Record<CosmeticKind, string | null> = {
+    frame: equippedFrame,
+    avatar_decoration: equippedDecoration,
+    profile_banner: equippedBanner,
+    profile_frame: equippedProfileFrame,
+  };
   const items = shop.items.map((item) => {
     const owned = item.owned || local.owned.includes(item.id);
-    return { ...item, owned, equipped: owned && (item.kind === "frame" ? equippedFrame === item.id : equippedDecoration === item.id) };
+    return { ...item, owned, equipped: owned && worn[item.kind] === item.id };
   });
   const match = catalogMatcher(query);
   const searched = items.filter((item) => {
@@ -152,6 +184,8 @@ export function ShopView({
     all: searched.length,
     frame: searched.filter((item) => item.kind === "frame").length,
     avatar_decoration: searched.filter((item) => item.kind === "avatar_decoration").length,
+    profile_banner: searched.filter((item) => item.kind === "profile_banner").length,
+    profile_frame: searched.filter((item) => item.kind === "profile_frame").length,
     achievement: searched.filter((item) => item.source === "achievement").length,
   };
   const focus = items.find((item) => item.id === selected) ?? items[0] ?? null;
@@ -190,9 +224,14 @@ export function ShopView({
     inFlight.current = true;
     setBusy({ action: "equip", id });
     try {
-      await apiFetch("/api/shop/equip", { method: "POST", json: { item: id } });
-      setLocal((current) => (kind === "frame" ? { ...current, frame: id as ArtworkFrameId } : { ...current, decoration: id as AvatarDecorationId | null }));
-      toast.success(id ? `${COSMETICS[id].name} equipped` : "Avatar decoration removed");
+      await apiFetch("/api/shop/equip", { method: "POST", json: { item: id, slot: kind } });
+      setLocal((current) => {
+        if (kind === "frame") return { ...current, frame: id as ArtworkFrameId };
+        if (kind === "profile_banner") return { ...current, banner: (id as ProfileBannerId | null) ?? DEFAULT_PROFILE_BANNER };
+        if (kind === "profile_frame") return { ...current, profileFrame: id as ProfileFrameId | null };
+        return { ...current, decoration: id as AvatarDecorationId | null };
+      });
+      toast.success(id ? `${COSMETICS[id].name} equipped` : `${COSMETIC_KIND_LABELS[kind]} removed`);
       setPurchase(null);
       router.refresh();
     } catch (error) {
@@ -215,7 +254,7 @@ export function ShopView({
             <Check aria-hidden className="size-3.5" />
             Equipped
           </span>
-          {item.kind === "avatar_decoration" ? (
+          {item.kind !== "frame" ? (
             <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => void equip(null, item.kind)} aria-label={`Take off ${name}`}>
               {working ? <Loader2 aria-hidden className="animate-spin" /> : null}
               Take off
@@ -320,7 +359,19 @@ export function ShopView({
             <div className="mt-4">{itemAction(focus, true)}</div>
             <p className="mt-4 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
               Previewing changes nothing. You’re using{" "}
-              {focus.kind === "frame" ? (
+              {focus.kind === "profile_banner" ? (
+                <>
+                  the <span className="text-foreground">{PROFILE_BANNERS[equippedBanner].name}</span> banner theme
+                </>
+              ) : focus.kind === "profile_frame" ? (
+                equippedProfileFrame ? (
+                  <>
+                    the <span className="text-foreground">{PROFILE_FRAMES[equippedProfileFrame].name}</span> profile frame
+                  </>
+                ) : (
+                  "no profile frame"
+                )
+              ) : focus.kind === "frame" ? (
                 <>
                   the <span className="text-foreground">{ARTWORK_FRAMES[equippedFrame].name}</span> frame by default
                 </>
@@ -330,7 +381,15 @@ export function ShopView({
                 "no avatar decoration"
               )}
               .{" "}
-              {focus.kind === "frame" ? (
+              {isShowcaseKind(focus.kind) ? (
+                <>
+                  It’s shown only on your profile showcase and joins the look you’re wearing. Switch any time from{" "}
+                  <Link href="/profile" className="text-amethyst underline-offset-4 hover:underline">
+                    your profile
+                  </Link>{" "}
+                  with Arrange showcase.
+                </>
+              ) : focus.kind === "frame" ? (
                 <>
                   Equipping a frame makes it your default; entries with their own frame keep it. Change it any time in{" "}
                   <Link href="/customization/frames" className="text-amethyst underline-offset-4 hover:underline">
@@ -356,7 +415,7 @@ export function ShopView({
             Items
           </h2>
           <div className="enter mb-4 grid gap-3" style={{ "--enter-index": 2 } as CSSProperties}>
-            <CatalogSearch value={query} onChange={setQuery} label="Search frames and decorations" placeholder="Search frames and decorations" className="sm:w-80" />
+            <CatalogSearch value={query} onChange={setQuery} label="Search the shop" placeholder="Search frames, decorations and themes" className="sm:w-80" />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <div role="group" aria-label="Kind" className="flex flex-wrap gap-2">
                 {FILTERS.map((option) => (
@@ -507,7 +566,9 @@ export function ShopView({
                     {purchase.already
                       ? "No coins were taken."
                       : `${coinsText(purchase.item.price)} spent. Your balance is now ${(purchase.balanceAfter ?? balance).toLocaleString("en")}.`}{" "}
-                    {dialogItem.kind === "frame"
+                    {isShowcaseKind(dialogItem.kind)
+                      ? "Wear it on your profile showcase now, or keep it for later and choose it when you edit your showcase."
+                      : dialogItem.kind === "frame"
                       ? "Equip it now as your default artwork frame, or keep it for later in Artwork frames."
                       : "Wear it on your profile picture now, or keep it for later in Profile settings."}
                   </AlertDialogDescription>

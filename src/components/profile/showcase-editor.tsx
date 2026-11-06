@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Check, Eye, Gem, LibraryBig, Loader2, PenLine, Plus, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, Eye, Gem, LibraryBig, Loader2, Lock, PenLine, Plus, Trash2, X } from "lucide-react";
 import { AchievementBadge } from "@/components/achievements/achievement-badge";
 import { CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
@@ -46,7 +46,17 @@ import {
   type ShowcaseShape,
 } from "@/lib/profile-styles";
 import { cn } from "@/lib/utils";
-import { ShowcaseStage, type ShowcaseIdentity } from "./showcase-stage";
+import {
+  DEFAULT_PROFILE_BANNER,
+  PROFILE_BANNER_IDS,
+  PROFILE_BANNERS,
+  PROFILE_FRAME_IDS,
+  PROFILE_FRAMES,
+  type ProfileBannerId,
+  type ProfileFrameId,
+} from "@/lib/profile-cosmetics";
+import { BannerSwatch, FrameSwatch } from "./profile-cosmetic-art";
+import { ShowcaseStage, showcaseAura, type ShowcaseIdentity } from "./showcase-stage";
 
 type DraftItem = ShowcaseChoice & { showTitle: boolean };
 type EntryResult = { id: string; title: string; collectionName: string; coverUrl: string | null; coverShape: "square" | "portrait" };
@@ -128,6 +138,17 @@ const chip =
   "flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50";
 const chipOn = "border-amethyst/60 bg-amethyst/[0.1] text-foreground";
 const chipOff = "border-border text-muted-foreground hover:border-amethyst/40 hover:text-foreground";
+const tile = "relative flex flex-col gap-1.5 rounded-lg border p-1.5 text-xs transition-[translate,box-shadow,border-color,color] duration-200 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none";
+const tileOwned = "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_10px_22px_-16px_rgb(var(--accent-rgb)/0.7)] motion-reduce:hover:translate-y-0";
+const tileLocked = "cursor-not-allowed border-dashed border-border text-muted-foreground opacity-75";
+
+function LockedMark() {
+  return (
+    <span className="absolute top-2.5 right-2.5 grid size-5 place-items-center rounded-full bg-background/85 text-muted-foreground shadow-sm">
+      <Lock aria-hidden className="size-3" />
+    </span>
+  );
+}
 
 /** The owner's showcase editor: the stage on the left is a live preview of every change. */
 export function ShowcaseEditor({
@@ -150,6 +171,10 @@ export function ShowcaseEditor({
   const [sections, setSections] = useState(initial.sections);
   const [ambient, setAmbient] = useState(initial.ambient);
   const [pedestal, setPedestal] = useState(initial.pedestal);
+  const ownsBanner = (id: ProfileBannerId) => id === DEFAULT_PROFILE_BANNER || cosmetics.owned.includes(id);
+  const ownsFrame = (id: ProfileFrameId | null) => id === null || cosmetics.owned.includes(id);
+  const [banner, setBanner] = useState<ProfileBannerId>(() => (ownsBanner(initial.banner) ? initial.banner : DEFAULT_PROFILE_BANNER));
+  const [frame, setFrame] = useState<ProfileFrameId | null>(() => (ownsFrame(initial.frame) ? initial.frame : null));
   const [achievements, setAchievements] = useState(() => initial.achievements.filter((id) => earned.has(id)));
   const [items, setItems] = useState<DraftItem[]>(data.items);
   const [looks, setLooks] = useState<SavedLook[]>(data.looks);
@@ -221,6 +246,8 @@ export function ShowcaseEditor({
       sections: arrangement.sections,
       ambient: arrangement.ambient,
       pedestal: arrangement.pedestal,
+      banner: ownsBanner(arrangement.banner) ? arrangement.banner : DEFAULT_PROFILE_BANNER,
+      frame: ownsFrame(arrangement.frame) ? arrangement.frame : null,
       achievements: arrangement.achievements,
       items: arrangement.items.map((item) => ({ kind: item.kind, id: item.id, showTitle: item.showTitle })),
       badges,
@@ -229,14 +256,23 @@ export function ShowcaseEditor({
       look,
     };
   }
-  const draft = { style, sections, ambient, pedestal, achievements, items };
-  const defaultLook = { ...draft, style: DEFAULT_PROFILE_STYLE, sections: PROFILE_SECTION_IDS, ambient: PROFILE_STYLES[DEFAULT_PROFILE_STYLE].ambient };
+  const draft = { style, sections, ambient, pedestal, banner, frame, achievements, items };
+  const defaultLook = {
+    ...draft,
+    style: DEFAULT_PROFILE_STYLE,
+    sections: PROFILE_SECTION_IDS,
+    ambient: PROFILE_STYLES[DEFAULT_PROFILE_STYLE].ambient,
+    banner: DEFAULT_PROFILE_BANNER as ProfileBannerId,
+    frame: null,
+  };
 
   function apply(look: ShowcaseArrangement & { items: DraftItem[] }, id: string | null) {
     setStyle(look.style);
     setSections(look.sections);
     setAmbient(look.ambient);
     setPedestal(look.pedestal);
+    setBanner(ownsBanner(look.banner) ? look.banner : DEFAULT_PROFILE_BANNER);
+    setFrame(ownsFrame(look.frame) ? look.frame : null);
     setAchievements(look.achievements.filter((item) => earned.has(item)));
     setItems(look.items);
     setLookId(id);
@@ -305,7 +341,7 @@ export function ShowcaseEditor({
       <div className="min-w-0 lg:sticky lg:top-20">
         <ShowcaseStage
           memberId={memberId}
-          arrangement={{ style, sections, ambient, pedestal, achievements }}
+          arrangement={{ style, sections, ambient, pedestal, banner, frame, achievements }}
           identity={{ ...identity, badges, title, decoration }}
           pieces={items.map(toPiece)}
           own
@@ -319,7 +355,7 @@ export function ShowcaseEditor({
 
       <div aria-label="Arrange your showcase" role="region" className="rounded-2xl border border-amethyst/20 bg-[var(--surface-raised)]/70 shadow-[0_24px_60px_-40px_rgb(var(--shadow-rgb)/0.9)]">
         <div className="space-y-5 p-4 md:p-5">
-          <Section title="Saved looks" hint={`Keep up to ${MAX_PROFILE_LOOKS} arrangements — style, section order, featured pieces, centerpiece and ambience — and switch between them.`}>
+          <Section title="Saved looks" hint={`Keep up to ${MAX_PROFILE_LOOKS} arrangements — style, banner theme, frame, section order, featured pieces, centerpiece and ambience — and switch between them.`}>
             <div role="radiogroup" aria-label="Saved looks" className="flex flex-wrap gap-1.5">
               {[null, ...looks].map((look) => {
                 const id = look?.id ?? null;
@@ -423,6 +459,53 @@ export function ShowcaseEditor({
               ))}
             </div>
             <p className="text-xs text-muted-foreground">{PROFILE_STYLES[style].description}</p>
+          </Section>
+
+          <Section
+            title="Banner theme"
+            hint={
+              <>
+                Recolours your showcase’s backdrop, lighting and details — only here, never the rest of the site. Find more in the{" "}
+                <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
+                  Arcade shop
+                </Link>
+                .
+              </>
+            }
+          >
+            <div role="radiogroup" aria-label="Banner theme" className="grid grid-cols-3 gap-2">
+              {PROFILE_BANNER_IDS.map((id) => {
+                const owned = ownsBanner(id);
+                return (
+                  <label key={id} title={PROFILE_BANNERS[id].description} className={cn(tile, owned ? tileOwned : tileLocked, owned && (banner === id ? chipOn : chipOff))}>
+                    <input type="radio" name="pf-banner" value={id} checked={banner === id} disabled={!owned} onChange={() => setBanner(id)} className="sr-only" />
+                    <BannerSwatch id={id} aura={PROFILE_BANNERS[id].palette ? null : showcaseAura(identity)} />
+                    {owned ? null : <LockedMark />}
+                    <span className="px-0.5 font-medium">{PROFILE_BANNERS[id].name}</span>
+                    {owned ? null : <span className="sr-only">Locked — available in the Arcade shop</span>}
+                  </label>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">{PROFILE_BANNERS[banner].description}</p>
+          </Section>
+
+          <Section title="Profile frame" hint="An ornamental border around the outside of your showcase. It never covers your name, artwork or collectibles.">
+            <div role="radiogroup" aria-label="Profile frame" className="grid grid-cols-3 gap-2">
+              {[null, ...PROFILE_FRAME_IDS].map((id) => {
+                const owned = ownsFrame(id);
+                return (
+                  <label key={id ?? "none"} title={id ? PROFILE_FRAMES[id].description : "No frame"} className={cn(tile, owned ? tileOwned : tileLocked, owned && (frame === id ? chipOn : chipOff))}>
+                    <input type="radio" name="pf-frame" value={id ?? ""} checked={frame === id} disabled={!owned} onChange={() => setFrame(id)} className="sr-only" />
+                    <FrameSwatch id={id} />
+                    {owned ? null : <LockedMark />}
+                    <span className="px-0.5 font-medium">{id ? PROFILE_FRAMES[id].name : "No frame"}</span>
+                    {owned ? null : <span className="sr-only">Locked — available in the Arcade shop</span>}
+                  </label>
+                );
+              })}
+            </div>
+            {frame ? <p className="text-xs text-muted-foreground">{PROFILE_FRAMES[frame].description}</p> : null}
           </Section>
 
           <Section title="Section order" hint="Sections appear below your nameplate in this order. Empty sections are hidden.">

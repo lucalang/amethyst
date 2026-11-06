@@ -6,14 +6,14 @@ const equipSchema = z
   .object({
     /** An owned item to wear; null takes the item off the chosen slot (defaults to avatar_decoration). */
     item: z.enum(EQUIP_ITEM_IDS as [EquipItemId, ...EquipItemId[]]).nullable(),
-    slot: z.enum(["avatar_decoration", "badge", "title", "frame"]).optional(),
+    slot: z.enum(["avatar_decoration", "badge", "title", "frame", "profile_banner", "profile_frame"]).optional(),
   })
   .strict();
 
 /**
  * Equip an owned cosmetic, badge or title: a frame becomes the account's default frame (entries with
  * their own frame keep it), a badge joins the worn badges (up to five), while decorations and titles
- * replace the current one. `{ item: null, slot: "badge" }` takes every badge off. Ownership is
+ * replace the current one. Profile banner themes and frames are worn on the showcase. `{ item: null, slot: "badge" }` takes every badge off. Ownership is
  * enforced by database triggers.
  */
 export async function POST(request: Request) {
@@ -35,6 +35,10 @@ export async function POST(request: Request) {
       ? await ctx.supabase.rpc("wear_profile_badge", { p_badge: item })
       : await ctx.supabase.rpc("set_profile_badges", { p_badges: [] });
     if (error) return dbError(error, "Could not equip that badge.");
+  } else if (kind === "profile_banner" || kind === "profile_frame") {
+    // Worn on the showcase and the saved look being worn.
+    const { error } = await ctx.supabase.rpc("wear_profile_cosmetic", { p_kind: kind, p_item: item });
+    if (error) return dbError(error, "Could not equip that item.");
   } else {
     const patch = kind === "title" ? { profile_title: item } : { avatar_decoration: item };
     const { data, error } = await ctx.supabase

@@ -26,7 +26,7 @@ export type ShopData = {
 };
 
 /** The shop balance, catalog, ownership and equipped state. */
-type EquippedCosmetics = { frame: string; decoration: string | null };
+type EquippedCosmetics = { frame: string; decoration: string | null; banner?: string | null; profileFrame?: string | null };
 
 export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | Promise<EquippedCosmetics>): Promise<ShopData> {
   const check = <T,>({ data, error }: { data: T | null; error: { code?: string } | null }) => {
@@ -57,7 +57,7 @@ export async function loadShop(ctx: AuthContext, equipped: EquippedCosmetics | P
           available: item.available,
           source,
           owned: isOwned,
-          equipped: isOwned && (kind === "frame" ? look.frame === id : look.decoration === id),
+          equipped: isOwned && { frame: look.frame, avatar_decoration: look.decoration, profile_banner: look.banner, profile_frame: look.profileFrame }[kind] === id,
         };
       })
       .filter((item) => item.available || item.owned || item.source === "achievement")

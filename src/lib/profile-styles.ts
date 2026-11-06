@@ -1,6 +1,7 @@
 import { AVATAR_DECORATIONS, COSMETICS, PROFILE_BADGES, PROFILE_TITLES, isAvatarDecorationId, isCosmeticId, isProfileBadgeId, isProfileTitleId } from "@/lib/cosmetics";
 import { GAME_SHOPS, gameCosmetic, type ShopGame } from "@/lib/game-cosmetics";
 import type { UnlockableFrameId } from "@/lib/frames";
+import type { ProfileBannerId, ProfileFrameId } from "@/lib/profile-cosmetics";
 
 /**
  * Profile showcase presentation styles. Ids are stored in users.profile_style and profile_looks and must never
@@ -72,7 +73,7 @@ export function pedestalCollectible(id: unknown): PedestalCollectible | null {
     return { kind: "game", id, name: game.name, description: game.description, label: `${shop.title} · ${category?.label ?? "Cosmetic"}`, game: game.game, category: game.category, slug: game.slug };
   }
   if (isAvatarDecorationId(id)) return { kind: "decoration", id, name: AVATAR_DECORATIONS[id].name, description: AVATAR_DECORATIONS[id].description, label: "Avatar decoration" };
-  if (isCosmeticId(id)) return { kind: "frame", id: id as UnlockableFrameId, name: COSMETICS[id].name, description: COSMETICS[id].description, label: "Artwork frame" };
+  if (isCosmeticId(id) && COSMETICS[id].kind === "frame") return { kind: "frame", id: id as UnlockableFrameId, name: COSMETICS[id].name, description: COSMETICS[id].description, label: "Artwork frame" };
   if (isProfileBadgeId(id)) return { kind: "badge", id, name: PROFILE_BADGES[id].name, description: PROFILE_BADGES[id].description, label: "Badge" };
   if (isProfileTitleId(id)) return { kind: "title", id, name: PROFILE_TITLES[id].name, description: PROFILE_TITLES[id].description, label: "Title" };
   return null;
@@ -84,6 +85,8 @@ export type ShowcaseArrangement = {
   sections: ProfileSectionId[];
   ambient: ProfileAmbientId;
   pedestal: string | null;
+  banner: ProfileBannerId;
+  frame: ProfileFrameId | null;
   achievements: string[];
 };
 

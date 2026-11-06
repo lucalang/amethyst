@@ -13,6 +13,7 @@ import {
   type ShowcasePiece,
   type ShowcaseShape,
 } from "@/lib/profile-styles";
+import { toProfileBanner, toProfileFrame } from "@/lib/profile-cosmetics";
 import type { AuthContext } from "@/lib/supabase/auth";
 
 /** The approved, member-visible profile fields. Never add private account data here. */
@@ -69,6 +70,8 @@ const showcaseSchema = z.object({
   sections: z.array(z.string()).catch([]),
   ambient: z.string().catch("motes"),
   pedestal: z.string().nullable().catch(null),
+  banner: z.string().nullable().catch(null),
+  frame: z.string().nullable().catch(null),
   achievements: z.array(z.string()),
   items: z.array(
     z.object({
@@ -86,7 +89,7 @@ export const memberShowcaseImagePath = (id: string, position: number, version: s
 
 /** What any signed-in member sees of a showcase: style, pinned achievement ids and approved artwork fields. */
 export const loadMemberShowcase = cache(async (ctx: AuthContext, id: string): Promise<MemberShowcase> => {
-  const empty: MemberShowcase = { style: toProfileStyle(null), sections: toProfileSections(null), ambient: toProfileAmbient(null), pedestal: null, achievements: [], pieces: [] };
+  const empty: MemberShowcase = { style: toProfileStyle(null), sections: toProfileSections(null), ambient: toProfileAmbient(null), pedestal: null, banner: toProfileBanner(null), frame: null, achievements: [], pieces: [] };
   if (!isMemberId(id)) return empty;
   const { data, error } = await ctx.supabase.rpc("member_showcase", { p_user: id });
   if (error) throw new Error(`Query failed (${error.code ?? "unknown"})`);
@@ -97,6 +100,8 @@ export const loadMemberShowcase = cache(async (ctx: AuthContext, id: string): Pr
     sections: toProfileSections(parsed.data.sections),
     ambient: toProfileAmbient(parsed.data.ambient),
     pedestal: pedestalCollectible(parsed.data.pedestal) ? parsed.data.pedestal : null,
+    banner: toProfileBanner(parsed.data.banner),
+    frame: toProfileFrame(parsed.data.frame),
     achievements: parsed.data.achievements.filter((item) => ACHIEVEMENT_IDS.has(item)),
     pieces: parsed.data.items.map((item) => ({
       key: String(item.position),
@@ -137,7 +142,7 @@ export async function loadShowcaseEditor(ctx: AuthContext): Promise<ShowcaseEdit
     supabase.from("collections").select("id, name, accent_color, banner_url").eq("user_id", userId).order("position"),
     supabase.from("collection_cover_items").select("collection_id, entry_id, image_url, image_shape").eq("user_id", userId).order("position"),
     supabase.from("profile_showcase_items").select("position, entry_id, collection_id, show_title").eq("user_id", userId).order("position"),
-    supabase.from("profile_looks").select("id, name, style, sections, ambient, pedestal, achievements, items").eq("user_id", userId).order("created_at"),
+    supabase.from("profile_looks").select("id, name, style, sections, ambient, pedestal, banner, frame, achievements, items").eq("user_id", userId).order("created_at"),
     supabase.from("users").select("profile_look").eq("id", userId).maybeSingle(),
   ]);
   [earned, collections, covers, saved, looks, worn].forEach(check);
@@ -200,6 +205,8 @@ export async function loadShowcaseEditor(ctx: AuthContext): Promise<ShowcaseEdit
       sections: toProfileSections(row.sections),
       ambient: toProfileAmbient(row.ambient),
       pedestal: pedestalCollectible(row.pedestal) ? row.pedestal : null,
+      banner: toProfileBanner(row.banner),
+      frame: toProfileFrame(row.frame),
       achievements: row.achievements.filter((id) => earnedSet.has(id)),
       items: row.items.flatMap((item) => resolve(item.kind, item.id, item.showTitle)),
     })),

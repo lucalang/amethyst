@@ -28,10 +28,12 @@ export type VaultLooks = { profile: VaultProfile; samples: VaultSamples };
  */
 export type RevealOrigin = { x: number; y: number; z: number; perspective: number; axisX: number; axisY: number };
 
-type RewardKind = "frame" | "avatar_decoration" | "badge" | "title" | "game" | "achievement" | "other";
+type RewardKind = "frame" | "avatar_decoration" | "profile_banner" | "profile_frame" | "badge" | "title" | "game" | "achievement" | "other";
 const KIND_LABEL: Record<RewardKind, string> = {
   frame: "Artwork frame",
   avatar_decoration: "Avatar decoration",
+  profile_banner: "Profile banner theme",
+  profile_frame: "Profile frame",
   badge: "Profile badge",
   title: "Profile title",
   game: "Game look",
@@ -261,6 +263,7 @@ export function rewardLink(id: string): { href: string; label: string } {
   if (info.game) return { href: shopHref(info.game.game), label: `Use it in ${GAME_SHOPS[info.game.game].title}` };
   if (info.kind === "achievement") return { href: "/achievements", label: "See your achievements" };
   if (info.kind === "frame") return { href: "/settings/frames", label: "Use this frame" };
+  if (info.kind === "profile_banner" || info.kind === "profile_frame") return { href: "/profile", label: "Use it in your showcase" };
   return { href: "/customization/profile", label: "Wear it in your profile" };
 }
 
