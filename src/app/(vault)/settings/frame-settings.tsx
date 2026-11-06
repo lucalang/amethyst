@@ -127,7 +127,7 @@ export function FrameSettings({
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{info.name}</span>
                     {info.animated ? <span className="text-[11px] text-muted-foreground">Animated</span> : null}
-                    {isShopFrameId(id) ? <span className="coin-ink text-[11px]">Arcade shop</span> : null}
+                    {isShopFrameId(id) ? <span className="coin-ink text-[11px]">Shop</span> : null}
                     {isAchievementFrameId(id) ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amethyst">
                         <Award aria-hidden className="size-3" />

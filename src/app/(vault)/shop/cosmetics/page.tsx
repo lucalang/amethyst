@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Gamepad2, Package, Store } from "lucide-react";
+import { ArrowRight, Package, Store } from "lucide-react";
 import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -16,9 +16,9 @@ import { requireUser } from "@/lib/supabase/auth";
 import type { FrameSample } from "../../settings/frame-settings";
 import { ShopView } from "./shop-view";
 
-export const metadata: Metadata = { title: "Arcade shop" };
+export const metadata: Metadata = { title: "Cosmetics · Shop" };
 
-export default async function ArcadeShopPage() {
+export default async function CosmeticsShopPage() {
   const ctx = await measureServer("shop.auth", requireUser);
   const preferenceRead = measureServer("shop.preferences", () => loadPreferences(ctx));
   const profileRead = measureServer("shop.profile", () => ctx.supabase.from("users").select("display_name, avatar_url, avatar_decoration, profile_banner, profile_frame").eq("id", ctx.userId).maybeSingle());
@@ -45,19 +45,19 @@ export default async function ArcadeShopPage() {
     <EntranceScope>
       <PageContainer>
         <PageHeader
-          title="Arcade shop"
+          title="Cosmetics"
           actions={
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
-                <Link href="/arcade/lootboxes">
+                <Link href="/shop/cases">
                   <Package aria-hidden />
-                  Lootboxes
+                  Cases
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
-                <Link href="/arcade">
-                  <Gamepad2 aria-hidden />
-                  Arcade
+                <Link href="/shop">
+                  <Store aria-hidden />
+                  Shop
                 </Link>
               </Button>
             </div>

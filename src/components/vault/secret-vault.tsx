@@ -904,7 +904,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
           )}
           <p className="vx-log-note">
             Badges, titles and decorations are worn from <Link href="/customization/profile">your profile</Link>; coins go to your{" "}
-            <Link href="/arcade/shop">Arcade wallet</Link>.
+            <Link href="/shop">coin wallet</Link>.
           </p>
         </section>
       </div>

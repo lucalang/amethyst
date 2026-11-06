@@ -244,7 +244,7 @@ export function RewardSlots({ coins, items, newItems, delay, countUp, looks }: {
             </Link>
           ) : null}
           {coins > 0 ? (
-            <Link href="/arcade/shop" className="vx-link">
+            <Link href="/shop" className="vx-link">
               Visit the shop <ArrowRight aria-hidden className="size-3.5" />
             </Link>
           ) : null}
@@ -258,7 +258,7 @@ export const COINS = "coins";
 
 /** Where each kind of reward is put to use. */
 export function rewardLink(id: string): { href: string; label: string } {
-  if (id === COINS) return { href: "/arcade/shop", label: "Spend them in the shop" };
+  if (id === COINS) return { href: "/shop", label: "Spend them in the shop" };
   const info = rewardInfo(id);
   if (info.game) return { href: shopHref(info.game.game), label: `Use it in ${GAME_SHOPS[info.game.game].title}` };
   if (info.kind === "achievement") return { href: "/achievements", label: "See your achievements" };

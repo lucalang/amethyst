@@ -38,11 +38,15 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   async redirects() {
-    return ["profile", "themes", "frames", "appearance"].map((section) => ({
-      source: `/settings/${section}`,
-      destination: `/customization/${section}`,
-      permanent: true,
-    }));
+    return [
+      ...["profile", "themes", "frames", "appearance"].map((section) => ({
+        source: `/settings/${section}`,
+        destination: `/customization/${section}`,
+        permanent: true,
+      })),
+      { source: "/arcade/shop", destination: "/shop/cosmetics", permanent: true },
+      { source: "/arcade/lootboxes", destination: "/shop/cases", permanent: true },
+    ];
   },
   async headers() {
     const shared = [

@@ -466,8 +466,8 @@ export function ShowcaseEditor({
             hint={
               <>
                 Recolours your showcase’s backdrop, lighting and details — only here, never the rest of the site. Find more in the{" "}
-                <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
-                  Arcade shop
+                <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
+                  Shop
                 </Link>
                 .
               </>
@@ -482,7 +482,7 @@ export function ShowcaseEditor({
                     <BannerSwatch id={id} aura={PROFILE_BANNERS[id].palette ? null : showcaseAura(identity)} />
                     {owned ? null : <LockedMark />}
                     <span className="px-0.5 font-medium">{PROFILE_BANNERS[id].name}</span>
-                    {owned ? null : <span className="sr-only">Locked — available in the Arcade shop</span>}
+                    {owned ? null : <span className="sr-only">Locked — available in the Shop</span>}
                   </label>
                 );
               })}
@@ -500,7 +500,7 @@ export function ShowcaseEditor({
                     <FrameSwatch id={id} />
                     {owned ? null : <LockedMark />}
                     <span className="px-0.5 font-medium">{id ? PROFILE_FRAMES[id].name : "No frame"}</span>
-                    {owned ? null : <span className="sr-only">Locked — available in the Arcade shop</span>}
+                    {owned ? null : <span className="sr-only">Locked — available in the Shop</span>}
                   </label>
                 );
               })}

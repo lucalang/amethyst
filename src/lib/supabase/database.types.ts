@@ -649,6 +649,15 @@ isOneToOne: false
 "claim_loot_openings":
 { Args: { "p_openings": string[] }; Returns: Json
                            },
+"admin_open_loot_cases":
+{ Args: { "p_step": string,"p_case": string,"p_quantity": number }; Returns: Json
+                           },
+"buy_loot_boosters":
+{ Args: { "p_request": string,"p_booster": string,"p_quantity": number,"p_expected_price": number }; Returns: Json
+                           },
+"activate_loot_booster":
+{ Args: { "p_request": string,"p_booster": string,"p_charges": number }; Returns: Json
+                           },
 "arcade_streaks":
 { Args: Record<PropertyKey, never>; Returns: { game: string; current_streak: number; best_streak: number; played_today: boolean; last_played: string; recover_date: string | null; recover_streak: number | null; recover_cost: number | null; recover_ready: boolean }[]
                            },
@@ -657,6 +666,21 @@ isOneToOne: false
                            },
 "claim_streak_celebration":
 { Args: { "p_game": string }; Returns: Json
+                           },
+"season_state":
+{ Args: { "p_season"?: string | null }; Returns: Json
+                           },
+"claim_season_quest":
+{ Args: { "p_assignment": string }; Returns: Json
+                           },
+"claim_season_rewards":
+{ Args: { "p_season": string }; Returns: Json
+                           },
+"buy_season_premium":
+{ Args: { "p_season": string,"p_expected_price": number }; Returns: Json
+                           },
+"skip_season_tiers":
+{ Args: { "p_request": string,"p_season": string,"p_tiers": number,"p_expected_cost": number }; Returns: Json
                            },
 "redeem_secret_code":
 { Args: { "p_code_hash": string }; Returns: Json

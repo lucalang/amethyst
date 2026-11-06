@@ -14,6 +14,12 @@ export async function POST(request: Request) {
 
   const { data, error } = await ctx.supabase.rpc("claim_loot_openings", { p_openings: parsed.data.openings });
   if (error) return dbError(error, "Your rewards couldn't be claimed yet. They're saved, so try again.");
-  const result = (data ?? {}) as { claimed?: number; newItems?: number };
-  return jsonResponse({ claimed: result.claimed ?? 0, newItems: result.newItems ?? 0 });
+  const result = (data ?? {}) as { claimed?: number; newItems?: number; duplicates?: number; refund?: number; balance?: number };
+  return jsonResponse({
+    claimed: result.claimed ?? 0,
+    newItems: result.newItems ?? 0,
+    duplicates: result.duplicates ?? 0,
+    refund: result.refund ?? 0,
+    balance: result.balance ?? 0,
+  });
 }

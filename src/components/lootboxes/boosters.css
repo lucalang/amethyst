@@ -1,0 +1,68 @@
+.bx-luck {
+  --luck: #22c55e;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--luck) 55%, var(--border));
+  background: color-mix(in oklab, var(--luck) 14%, transparent);
+  color: color-mix(in oklab, var(--luck) 62%, var(--foreground));
+  padding: 0.1rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* Stacked tiers: the highest tier's color with a second ring. */
+.bx-luck[data-stacked] {
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--luck) 22%, transparent);
+}
+
+.bx-tier {
+  --luck: #22c55e;
+  border-color: color-mix(in oklab, var(--luck) 40%, var(--border));
+  background:
+    radial-gradient(28rem 10rem at 0% 0%, color-mix(in oklab, var(--luck) 12%, transparent), transparent 70%),
+    var(--card);
+}
+.bx-ink {
+  color: color-mix(in oklab, var(--luck) 62%, var(--foreground));
+}
+
+.bx-clovers {
+  --luck: #22c55e;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--luck);
+}
+.bx-clovers svg {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  opacity: 0.13;
+  rotate: var(--r);
+  animation: bx-drift var(--d) ease-in-out infinite alternate;
+}
+.bx-boosted > :not(.bx-clovers) {
+  position: relative;
+  z-index: 1;
+}
+@keyframes bx-drift {
+  to {
+    translate: 0 -0.7rem;
+    rotate: calc(var(--r) + 16deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bx-clovers svg {
+    animation: none;
+  }
+}
+:root[data-motion="off"] .bx-clovers svg {
+  animation: none !important;
+}

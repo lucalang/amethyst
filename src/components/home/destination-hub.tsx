@@ -2,6 +2,7 @@ import { IntentLink as Link } from "@/components/layout/intent-link";
 import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight, Coins, LibraryBig } from "lucide-react";
 import { MarqueeArt } from "@/components/home/arcade-marquee";
+import { CaseArt } from "@/components/lootboxes/parts";
 import { MediaImage } from "@/components/media/media-image";
 import { MyDaySummary } from "@/components/tasks/home-my-day";
 import { ARCADE_GAMES } from "@/lib/arcade";
@@ -83,6 +84,23 @@ const CARDS: Record<DestinationId, { art: (data: HubData) => ReactNode; status: 
         </span>
       ),
   },
+  shop: {
+    art: () => (
+      <span className="hub-glyph">
+        <CaseArt id="release" size="4.75rem" />
+      </span>
+    ),
+    status: ({ arcade }) =>
+      arcade.balance === null ? (
+        "Cosmetics and cases"
+      ) : (
+        <span className="inline-flex items-center gap-1.5">
+          <Coins aria-hidden className="coin-ink size-3.5" />
+          <span className="font-semibold text-foreground tabular-nums">{arcade.balance.toLocaleString("en")}</span>
+          {arcade.balance === 1 ? "coin" : "coins"} to spend
+        </span>
+      ),
+  },
 };
 
 /** Home's app hub: a large card for each destination in the registry. */
@@ -92,7 +110,7 @@ export function DestinationHub({ data, startIndex = 1 }: { data: HubData; startI
       <h2 id="hub-heading" className="mb-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase md:mb-4">
         Your spaces
       </h2>
-      <ul className="grid gap-3 md:grid-cols-3 md:gap-4">
+      <ul className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
         {DESTINATIONS.map((destination, index) => {
           const card = CARDS[destination.id];
           const Icon = destination.icon;

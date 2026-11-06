@@ -5,8 +5,8 @@ import type { CSSProperties } from "react";
 import { ChevronRight, Lock } from "lucide-react";
 import { TYPE_LOOK } from "@/components/inventory/item-art";
 import { toInventoryItem, type InventoryItem, type InventoryType } from "@/lib/inventory";
-import { caseOdds, formatChance, lootCaseInfo, typeLabel, type LootResult, type LootTier } from "@/lib/lootboxes";
-import { RARITIES, type RarityId } from "@/lib/rarities";
+import { caseOdds, formatChance, lootCaseInfo, refundFor, typeLabel, type LootResult, type LootTier, type RefundRates } from "@/lib/lootboxes";
+import { RARITIES, RARITY_IDS, type RarityId } from "@/lib/rarities";
 import { cn } from "@/lib/utils";
 
 export const rarityStyle = (rarity: RarityId) => ({ "--rarity": RARITIES[rarity].color }) as CSSProperties;
@@ -41,12 +41,13 @@ export function TypeIcon({ kind, className }: { kind: InventoryType | null; clas
   return <Icon aria-hidden className={className} />;
 }
 
-/** Exact odds per rarity, expandable to every item's own chance, straight from the drop table. */
-export function OddsList({ tiers }: { tiers: readonly LootTier[] }) {
-  const odds = caseOdds(tiers);
+/** Exact odds per rarity, expandable to every item's own chance, straight from the drop table. With luck > 1 the boosted chance leads and the base chance follows. */
+export function OddsList({ tiers, luck = 1 }: { tiers: readonly LootTier[]; luck?: number }) {
+  const odds = caseOdds(tiers, luck);
+  const base = luck > 1 ? caseOdds(tiers) : null;
   return (
     <ul className="grid gap-2">
-      {odds.map((tier) => (
+      {odds.map((tier, tierIndex) => (
         <li key={tier.rarity}>
           <details className="lb-tier" style={rarityStyle(tier.rarity)}>
             <summary>
@@ -54,7 +55,10 @@ export function OddsList({ tiers }: { tiers: readonly LootTier[] }) {
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
                   <RarityTag rarity={tier.rarity} />
-                  <span className="text-sm font-semibold tabular-nums">{formatChance(tier.chance)}</span>
+                  <span className="text-sm font-semibold tabular-nums">
+                    {base ? <span className="mr-1.5 text-xs font-normal text-muted-foreground line-through">{formatChance(base[tierIndex].chance)}</span> : null}
+                    {formatChance(tier.chance)}
+                  </span>
                 </span>
                 <span aria-hidden className="lb-tier-bar mt-1.5 block">
                   <span style={{ width: `${Math.max(tier.chance * 100, 0.5)}%` }} />
@@ -88,4 +92,24 @@ export function OddsList({ tiers }: { tiers: readonly LootTier[] }) {
 }
 
 export const DUPLICATE_NOTE =
-  "Cosmetics are owned once. A reward you already own (or already won in an unclaimed opening) is shown as “Already owned” and doesn’t add a second copy or anything else.";
+  "Cosmetics are owned once. A reward you already own (or already won in an unclaimed opening) doesn’t add a second copy; it refunds Coins instead: a share of the price you paid for that case, set by the reward’s rarity and rounded down.";
+
+/** Duplicate refund rates by rarity, with the amount at a unit price when one is given. */
+export function RefundRateList({ rates, price, className }: { rates: RefundRates; price?: number; className?: string }) {
+  const rows = RARITY_IDS.filter((rarity) => rates[rarity] !== undefined);
+  if (!rows.length) return null;
+  return (
+    <dl className={cn("grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-3", className)}>
+      {rows.map((rarity) => (
+        <div key={rarity} className="flex items-center justify-between gap-2">
+          <dt>
+            <RarityTag rarity={rarity} />
+          </dt>
+          <dd className="tabular-nums text-muted-foreground">
+            {rates[rarity]}%{price !== undefined ? <span className="text-foreground"> · {refundFor(rates, rarity, price).toLocaleString("en")}</span> : null}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}

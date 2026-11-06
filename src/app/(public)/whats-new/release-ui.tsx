@@ -91,11 +91,17 @@ export function kindCounts(highlights: readonly Highlight[]): string {
     .join(" · ");
 }
 
+export function previewHighlights(highlights: readonly Highlight[]): Highlight[] {
+  const newHighlights = highlights.filter((highlight) => highlight.kind === "new").slice(0, 2);
+  const improvedHighlights = highlights.filter((highlight) => highlight.kind === "improved");
+  return [...newHighlights, ...improvedHighlights.slice(0, 2 - newHighlights.length)];
+}
+
 export function HighlightList({ highlights, className }: { highlights: readonly Highlight[]; className?: string }) {
   return (
     <ul className={cn("space-y-2.5", className)}>
-      {highlights.map((item) => (
-        <li key={item.feature} className="flex gap-3">
+      {highlights.map((item, index) => (
+        <li key={`${item.feature}-${index}`} className="flex gap-3">
           <KindMark kind={item.kind} className="mt-0.5" />
           <p className="min-w-0 text-sm leading-6 text-pretty text-muted-foreground">
             <span className="font-semibold text-foreground">{item.feature}</span>

@@ -44,8 +44,8 @@ export default async function ArtworkFramesPage() {
             Showcase
           </Link>{" "}
           to see yours. Unlock more frames with coins from the{" "}
-          <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
-            Arcade shop
+          <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
+            Shop
           </Link>
           .
         </p>

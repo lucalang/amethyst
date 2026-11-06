@@ -13,10 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { InventoryType } from "@/lib/inventory";
-import { OPEN_BATCH, OPEN_PRESETS, caseOdds, lootCaseInfo, typeLabel, type LootCase, type LootOpening, type LootResult } from "@/lib/lootboxes";
+import { OPEN_BATCH, OPEN_PRESETS, caseOdds, lootCaseInfo, typeLabel, type LootCase, type LootClaim, type LootOpening, type LootResult, type RefundRates } from "@/lib/lootboxes";
 import { RARITIES, rarityRank, type RarityId } from "@/lib/rarities";
 import { cn } from "@/lib/utils";
-import { CaseArt, DUPLICATE_NOTE, RarityTag, TypeIcon, caseStyle, rarityStyle, rewardItem } from "./parts";
+import { CaseArt, DUPLICATE_NOTE, OddsList, RarityTag, RefundRateList, TypeIcon, caseStyle, rarityStyle, rewardItem } from "./parts";
+import { CloverField, LuckBadge } from "./booster-parts";
+import { LUCK_NO_GUARANTEE } from "./booster-shop";
+import { boostedOpenings, luckColor, type Boost } from "@/lib/boosters";
 
 const CosmeticPreview = dynamic(() => import("@/components/arcade/shop/preview").then((mod) => mod.CosmeticPreview), {
   ssr: false,
@@ -39,9 +42,9 @@ const tileOf = (item: string | null, kind: InventoryType | null, rarity: RarityI
   name: item ? (rewardItem({ item, rarity })?.name ?? item) : "Secret item",
 });
 
-/** A reel strip of decoys drawn from the case's own odds, with the stored result placed under the marker. */
+/** A reel strip of decoys drawn from the case's own odds (at the result's luck), with the stored result placed under the marker. */
 function buildLane(result: LootResult, lootCase: LootCase | undefined): Lane {
-  const odds = lootCase ? caseOdds(lootCase.tiers) : [];
+  const odds = lootCase ? caseOdds(lootCase.tiers, result.luck) : [];
   const decoy = (): Tile => {
     let roll = Math.random();
     const tier = odds.find((entry) => (roll -= entry.chance) < 0) ?? odds[0];
@@ -85,9 +88,11 @@ function RewardArt({ result, profile, samples }: { result: LootResult; profile: 
   );
 }
 
-function Status({ duplicate }: { duplicate: boolean }) {
-  return duplicate ? (
-    <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">Already owned</span>
+function Status({ result }: { result: LootResult }) {
+  return result.duplicate ? (
+    <span className="rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+      Already owned{result.refund > 0 ? ` · +${result.refund.toLocaleString("en")} Coins refund` : ""}
+    </span>
   ) : (
     <span className="rounded-full border border-amethyst/50 bg-amethyst/15 px-2 py-0.5 text-[11px] font-semibold text-amethyst">New</span>
   );
@@ -99,7 +104,23 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
  * The opening overlay. Results are rolled and stored by the server before anything animates; the reel only
  * lands on them. Batches of up to ten run one after another until the request is done or stopped.
  */
-export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: OpenPlan; cases: LootCase[]; profile: ArtProfile; samples: ArtSamples; onClose: () => void }) {
+export function CaseOpening({
+  plan,
+  cases,
+  refundRates,
+  boost: initialBoost,
+  profile,
+  samples,
+  onClose,
+}: {
+  plan: OpenPlan;
+  cases: LootCase[];
+  refundRates: RefundRates;
+  boost: Boost;
+  profile: ArtProfile;
+  samples: ArtSamples;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const motion = useMotionLevel();
   const caseFor = (id: string) => cases.find((entry) => entry.id === id);
@@ -118,8 +139,10 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
   const [landed, setLanded] = useState(false);
   const [index, setIndex] = useState(0);
   const [history, setHistory] = useState<LootResult[]>([]);
+  const [refunded, setRefunded] = useState(0);
   const [error, setError] = useState<{ message: string; retry: "open" | "claim" | null } | null>(null);
   const [stopped, setStopped] = useState(false);
+  const [boost, setBoost] = useState(initialBoost);
   const stoppedRef = useRef(false);
   const pendingOpen = useRef<{ id: string; quantity: number } | null>(null);
   const busy = useRef(false);
@@ -175,6 +198,7 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
       const result = await apiFetch<LootOpening>("/api/lootboxes/open", { method: "POST", json: { opening: request.id, case: plan.caseId, quantity: request.quantity } });
       pendingOpen.current = null;
       if (typeof result.remaining === "number") setOwned(result.remaining);
+      if (result.boost) setBoost(result.boost);
       setBatch((count) => count + 1);
       reveal(result);
     } catch (caught) {
@@ -207,8 +231,10 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
     setError(null);
     setPhase("claiming");
     try {
-      await apiFetch("/api/lootboxes/claim", { method: "POST", json: { openings: ids } });
+      const claimed = await apiFetch<LootClaim>("/api/lootboxes/claim", { method: "POST", json: { openings: ids } });
       setHistory((current) => [...current, ...results]);
+      setRefunded((sum) => sum + claimed.refund);
+      if (claimed.refund > 0) window.dispatchEvent(new CustomEvent("archive:coins", { detail: claimed.balance }));
       setOpening(null);
       router.refresh();
       busy.current = false;
@@ -249,6 +275,7 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
   const results = opening?.results ?? [];
   const current = results[index];
   const last = index >= results.length - 1;
+  const batchLuck = Math.max(1, ...results.map((result) => result.luck));
   const onKey = (event: KeyboardEvent) => {
     if (phase !== "showcase") return;
     if (event.key === "ArrowRight" && !last) setIndex(index + 1);
@@ -293,9 +320,26 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
               start();
             }}
           >
-            <div className="lb-stage grid place-items-center py-8">
+            <div className={cn("lb-stage grid place-items-center py-8", boost.luck > 1 && "bx-boosted")}>
+              {boost.luck > 1 ? <CloverField color={luckColor(boost.luck, boost.boosters)} /> : null}
               <CaseArt id={caseId} size="9rem" float />
             </div>
+            {boost.luck > 1 && newCase ? (
+              <div className="grid gap-2 rounded-xl border border-border px-3 py-3 text-xs leading-5 text-muted-foreground">
+                <span className="flex flex-wrap items-center gap-2">
+                  <LuckBadge luck={boost.luck} tiers={boost.boosters} />
+                  <span>
+                    Luck Boosters apply to your next {plural(boostedOpenings(boost), "case")} opened, in order. {LUCK_NO_GUARANTEE}
+                  </span>
+                </span>
+                <details>
+                  <summary className="cursor-pointer font-medium text-foreground">Boosted odds for the next case</summary>
+                  <div className="mt-2">
+                    <OddsList tiers={newCase.tiers} luck={boost.luck} />
+                  </div>
+                </details>
+              </div>
+            ) : null}
             <fieldset className="grid gap-2">
               <legend className="mb-2 text-sm font-medium">How many to open?</legend>
               <div className="flex flex-wrap items-center gap-2">
@@ -328,6 +372,10 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
                     : "Rewards are rolled and saved the moment you open, so nothing is lost if you leave.")}
               </p>
             </fieldset>
+            <div className="grid gap-2 rounded-xl border border-border px-3 py-3">
+              <p className="text-xs text-muted-foreground">Already-owned rewards refund this share of the price you paid for the case:</p>
+              <RefundRateList rates={refundRates} />
+            </div>
             <Button type="submit" disabled={amountError !== null} className="justify-self-end">
               <PackageOpen aria-hidden />
               {amountError ? "Open" : `Open ${plural(parsedAmount, "case")}`}
@@ -368,7 +416,8 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
 
         {phase === "rolling" ? (
           <div className="grid gap-3">
-            <div className="lb-stage">
+            <div className={cn("lb-stage", batchLuck > 1 && "bx-boosted")}>
+              {batchLuck > 1 ? <CloverField color={luckColor(batchLuck, boost.boosters)} /> : null}
               <div ref={reels} aria-hidden className="lb-reels" data-compact={lanes.length > 1 || undefined}>
                 {lanes.map((lane, laneIndex) => (
                   <div key={laneIndex} className="lb-reel" data-landed={landed || undefined}>
@@ -396,7 +445,8 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
 
         {phase === "showcase" && current ? (
           <div className="grid gap-4">
-            <div className="lb-show" style={rarityStyle(current.rarity)}>
+            <div className={cn("lb-show", current.luck > 1 && "bx-boosted")} style={rarityStyle(current.rarity)}>
+              {current.luck > 1 ? <CloverField color={luckColor(current.luck, boost.boosters)} /> : null}
               <div key={`${opening?.id}-${index}`} className="relative grid w-full justify-items-center gap-4">
                 <div className="lb-show-art" aria-hidden>
                   <RewardArt result={current} profile={profile} samples={samples} />
@@ -406,7 +456,8 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
                   <p className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
                     <span>{typeLabel(current.kind)}</span>
                     <RarityTag rarity={current.rarity} />
-                    <Status duplicate={current.duplicate} />
+                    <Status result={current} />
+                    {current.luck > 1 ? <LuckBadge luck={current.luck} tiers={boost.boosters} /> : null}
                   </p>
                 </div>
               </div>
@@ -502,7 +553,8 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
         {phase === "done" ? (
           <div className="grid gap-4">
             <p className="text-sm text-muted-foreground">
-              {plural(history.length, "reward")} claimed: {history.filter((result) => !result.duplicate).length} new, {history.filter((result) => result.duplicate).length} already owned.
+              {plural(history.length, "reward")} claimed: {history.filter((result) => !result.duplicate).length} new, {history.filter((result) => result.duplicate).length} already owned
+              {refunded > 0 ? `, ${refunded.toLocaleString("en")} Coins refunded` : ""}.
               {stopped && queue > 0 ? ` ${plural(queue, "case")} stayed in your Inventory.` : ""}
             </p>
             {history.length ? (
@@ -521,7 +573,9 @@ export function CaseOpening({ plan, cases, profile, samples, onClose }: { plan: 
                       </span>
                       <span className="grid justify-items-end gap-1">
                         <RarityTag rarity={result.rarity} />
-                        {result.duplicate ? <span className="text-[10px] text-muted-foreground">Already owned</span> : null}
+                        {result.duplicate ? (
+                          <span className="text-[10px] text-muted-foreground">Already owned{result.refund > 0 ? ` · +${result.refund.toLocaleString("en")}` : ""}</span>
+                        ) : null}
                       </span>
                     </li>
                   ))}

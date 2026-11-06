@@ -16,12 +16,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { MAX_CASE_PURCHASE, lootCaseInfo, type LootCase, type LootState } from "@/lib/lootboxes";
+import { MAX_CASE_PURCHASE, lootCaseInfo, type LootCase, type LootState, type RefundRates } from "@/lib/lootboxes";
 import { cn } from "@/lib/utils";
-import { CaseArt, DUPLICATE_NOTE, OddsList, caseStyle } from "./parts";
+import { CaseArt, DUPLICATE_NOTE, OddsList, RefundRateList, caseStyle } from "./parts";
+import { LuckBadge } from "./booster-parts";
+import { LUCK_NO_GUARANTEE } from "./booster-shop";
+import { boostedOpenings, type Boost } from "@/lib/boosters";
 
 const coinsText = (value: number) => `${value.toLocaleString("en")} coin${value === 1 ? "" : "s"}`;
 const casesText = (value: number, name: string) => `${value.toLocaleString("en")} ${name}${value === 1 ? "" : "s"}`;
+const rateRange = (rates: RefundRates) => {
+  const values = Object.values(rates);
+  return values.length ? `${Math.min(...values)}–${Math.max(...values)}%` : "a share";
+};
 
 /** A whole number of cases from the field, or the reason it isn't one. */
 function readQuantity(text: string): { value: number } | { error: string } {
@@ -30,7 +37,7 @@ function readQuantity(text: string): { value: number } | { error: string } {
   if (!/^\d+$/.test(trimmed)) return { error: "Use a whole number, like 1 or 5." };
   const value = Number(trimmed);
   if (value < 1) return { error: "Buy at least one case." };
-  if (value > MAX_CASE_PURCHASE) return { error: `Buy up to ${MAX_CASE_PURCHASE} cases at a time.` };
+  if (value > MAX_CASE_PURCHASE) return { error: `Buy up to ${MAX_CASE_PURCHASE.toLocaleString("en")} cases at a time.` };
   return { value };
 }
 
@@ -52,12 +59,29 @@ function purchaseError(error: unknown) {
 
 type Purchase = { caseId: string; quantity: number; price: number; request: string; stage: "confirm" | "done"; error?: string | null; balanceAfter?: number; owned?: number };
 
-function CasePanel({ lootCase, balance, owned, onBuy, busy }: { lootCase: LootCase; balance: number; owned: number; onBuy: (quantity: number) => void; busy: boolean }) {
+function CasePanel({
+  lootCase,
+  balance,
+  owned,
+  refundRates,
+  boost,
+  onBuy,
+  busy,
+}: {
+  lootCase: LootCase;
+  balance: number;
+  owned: number;
+  refundRates: RefundRates;
+  boost: Boost;
+  onBuy: (quantity: number) => void;
+  busy: boolean;
+}) {
   const info = lootCaseInfo(lootCase.id);
   const [text, setText] = useState("1");
   const parsed = readQuantity(text);
   const quantity = "value" in parsed ? parsed.value : null;
-  const total = quantity === null ? null : quantity * lootCase.price;
+  const product = quantity === null ? null : quantity * lootCase.price;
+  const total = product !== null && Number.isSafeInteger(product) ? product : null;
   const short = total !== null && total > balance ? total - balance : 0;
   const step = (delta: number) => setText(String(Math.min(MAX_CASE_PURCHASE, Math.max(1, (quantity ?? 0) + delta))));
   const fieldId = `case-qty-${lootCase.id}`;
@@ -92,7 +116,7 @@ function CasePanel({ lootCase, balance, owned, onBuy, busy }: { lootCase: LootCa
             className="mt-6 grid gap-3 rounded-xl border border-border bg-background/40 p-4"
             onSubmit={(event) => {
               event.preventDefault();
-              if (quantity !== null && !short) onBuy(quantity);
+              if (total !== null && quantity !== null && !short) onBuy(quantity);
             }}
           >
             <label htmlFor={fieldId} className="text-sm font-medium">
@@ -115,7 +139,7 @@ function CasePanel({ lootCase, balance, owned, onBuy, busy }: { lootCase: LootCa
               <Button type="button" variant="outline" size="icon" aria-label="One more" disabled={quantity !== null && quantity >= MAX_CASE_PURCHASE} onClick={() => step(1)}>
                 <Plus aria-hidden />
               </Button>
-              {[5, 10, 25].map((preset) => (
+              {[5, 10, 25, 100].map((preset) => (
                 <Button key={preset} type="button" variant="ghost" size="sm" aria-pressed={quantity === preset} onClick={() => setText(String(preset))}>
                   ×{preset}
                 </Button>
@@ -132,9 +156,9 @@ function CasePanel({ lootCase, balance, owned, onBuy, busy }: { lootCase: LootCa
                 ? parsed.error
                 : short
                   ? `You need ${coinsText(short)} more for ${casesText(quantity ?? 0, "case")}. Play Arcade games to earn coins.`
-                  : `Cases go to your Inventory, where you open them. Up to ${MAX_CASE_PURCHASE} per purchase.`}
+                  : `Cases go to your Inventory, where you open them. Up to ${MAX_CASE_PURCHASE.toLocaleString("en")} per purchase.`}
             </p>
-            <Button type="submit" disabled={busy || quantity === null || short > 0} className="w-full sm:w-auto sm:justify-self-start">
+            <Button type="submit" disabled={busy || total === null || short > 0} className="w-full sm:w-auto sm:justify-self-start">
               <Coins aria-hidden />
               {quantity === null ? "Buy cases" : `Buy ${casesText(quantity, "case")}`}
             </Button>
@@ -151,7 +175,26 @@ function CasePanel({ lootCase, balance, owned, onBuy, busy }: { lootCase: LootCa
           </h3>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">Each case gives one cosmetic. Expand a rarity to see every item and its own chance.</p>
         </div>
-        <OddsList tiers={lootCase.tiers} />
+        {boost.luck > 1 ? (
+          <div className="grid gap-1.5 rounded-lg border border-border p-3 text-xs leading-5 text-muted-foreground">
+            <span className="flex flex-wrap items-center gap-2">
+              <LuckBadge luck={boost.luck} tiers={boost.boosters} />
+              <span>
+                Your next opening uses boosted odds; base chances are struck through. {boostedOpenings(boost).toLocaleString("en")} boosted opening
+                {boostedOpenings(boost) === 1 ? "" : "s"} left.
+              </span>
+            </span>
+            <span>{LUCK_NO_GUARANTEE}</span>
+          </div>
+        ) : null}
+        <OddsList tiers={lootCase.tiers} luck={boost.luck} />
+        <div className="grid gap-2 rounded-lg border border-border p-3">
+          <h3 className="text-sm font-semibold">Duplicate refunds</h3>
+          <p className="text-xs leading-5 text-muted-foreground">
+            Share of the price you paid, by rarity, with the Coins it refunds at {coinsText(lootCase.price)}. Refunds always use the price you actually paid.
+          </p>
+          <RefundRateList rates={refundRates} price={lootCase.price} />
+        </div>
         <p className="flex gap-2 rounded-lg border border-border bg-foreground/[0.02] p-3 text-xs leading-5 text-muted-foreground">
           <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
           <span>
@@ -237,7 +280,7 @@ export function LootboxShop({ state }: { state: LootState | null }) {
             coin{balance === 1 ? "" : "s"}
           </span>
         </span>
-        <Link href="/inventory" className="arcade-counter-cta">
+        <Link href="/inventory?tab=cases" className="arcade-counter-cta">
           <Backpack aria-hidden className="size-4" />
           <span className="hidden sm:inline">Open cases in Inventory</span>
           <span className="sm:hidden">Inventory</span>
@@ -252,7 +295,7 @@ export function LootboxShop({ state }: { state: LootState | null }) {
             Rewards from {casesText(pendingCases, "case")} are saved and waiting to be revealed and claimed.
           </span>
           <Button asChild size="sm">
-            <Link href="/inventory">Reveal rewards</Link>
+            <Link href="/inventory?tab=cases">Reveal rewards</Link>
           </Button>
         </div>
       ) : null}
@@ -264,6 +307,8 @@ export function LootboxShop({ state }: { state: LootState | null }) {
             lootCase={lootCase}
             balance={balance}
             owned={ownedOf(lootCase)}
+            refundRates={state.refundRates}
+            boost={state.boost}
             busy={busy}
             onBuy={(quantity) => setPurchase({ caseId: lootCase.id, quantity, price: lootCase.price, request: crypto.randomUUID(), stage: "confirm" })}
           />
@@ -289,7 +334,7 @@ export function LootboxShop({ state }: { state: LootState | null }) {
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep shopping</AlertDialogCancel>
                 <Button asChild>
-                  <Link href="/inventory">
+                  <Link href="/inventory?tab=cases">
                     <Backpack aria-hidden />
                     Open in Inventory
                   </Link>
@@ -300,7 +345,9 @@ export function LootboxShop({ state }: { state: LootState | null }) {
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle>Buy {casesText(purchase.quantity, dialogName)}?</AlertDialogTitle>
-                <AlertDialogDescription>Coins are taken once and the cases go straight to your Inventory.</AlertDialogDescription>
+                <AlertDialogDescription>
+                  Coins are taken once and the cases go straight to your Inventory. Duplicate rewards refund {rateRange(state.refundRates)} of this price, by rarity.
+                </AlertDialogDescription>
               </AlertDialogHeader>
               <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-lg border border-border bg-foreground/[0.02] px-3 py-2.5 text-sm">
                 <dt className="text-muted-foreground">

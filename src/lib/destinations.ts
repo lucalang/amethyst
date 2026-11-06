@@ -1,6 +1,6 @@
-import { Gamepad2, LibraryBig, ListChecks, type LucideIcon } from "lucide-react";
+import { Gamepad2, LibraryBig, ListChecks, Store, type LucideIcon } from "lucide-react";
 
-export type DestinationId = "archive" | "todo" | "arcade";
+export type DestinationId = "archive" | "todo" | "arcade" | "shop";
 
 /** The app's main areas: Home links to each, and the top bar shows the one you're in. */
 export type Destination = {
@@ -33,10 +33,18 @@ export const DESTINATIONS: Destination[] = [
   {
     id: "arcade",
     label: "Arcade",
-    tagline: "Quick games, coins and the prize shop",
+    tagline: "Quick games, records and earning coins",
     href: "/arcade",
     icon: Gamepad2,
     prefixes: ["/arcade"],
+  },
+  {
+    id: "shop",
+    label: "Shop",
+    tagline: "Spend coins on cosmetics and cases",
+    href: "/shop",
+    icon: Store,
+    prefixes: ["/shop"],
   },
 ];
 

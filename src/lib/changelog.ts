@@ -35,6 +35,8 @@ export type ReleaseNote = {
 export type Release = {
   /** Stable id: the detail page address and the "last seen" marker. Never change it. */
   id: string;
+  /** Former release ids remain valid links to a consolidated entry. */
+  aliases?: readonly string[];
   date: string;
   title: string;
   intro: string;
@@ -47,7 +49,151 @@ export type Release = {
 
 export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
-export const CHANGELOG: readonly Release[] = [
+const RELEASES: readonly Release[] = [
+  {
+    id: "2026-11-06-season-pass-and-quests",
+    date: "2026-11-06",
+    title: "Season Pass and Quests",
+    intro: "Arcade quests now earn Season XP and Coins, and Season XP climbs a 30-tier reward track of cosmetics, with an optional Premium track and tier skips bought with Coins.",
+    icon: "trophy",
+    highlights: [
+      { kind: "new", feature: "Quests", text: "Three daily quests (reset at 00:00 UTC), three weekly quests (reset Monday 00:00 UTC) and longer season quests, all tracked from your finished Arcade runs." },
+      { kind: "new", feature: "Season 1 reward track", text: "30 tiers, each with a free reward and a Premium cosmetic; earned rewards never expire." },
+      { kind: "new", feature: "Premium and tier skips", text: "Unlock Premium for 2,500 Coins (retroactive for tiers you've reached) or skip tiers for 150 Coins each while the season runs." },
+      { kind: "new", feature: "Easy to find", text: "Open it from the Arcade or the new Quests button in every game's header." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Quests",
+          body: "Quests ask you to finish runs, reach a score in a specific game, play several different games, or play on several different days. Progress updates from your finished runs, and a completed quest is claimed for Season XP and Coins.",
+          points: [
+            "Daily quests reset every day at 00:00 UTC; weekly quests every Monday at 00:00 UTC; season quests last until the season ends.",
+            "Runs that earn Coins count, and so do runs after you've reached the daily Coin limit.",
+            "Completed quests stay claimable after they reset, and each quest can only be claimed once.",
+          ],
+          where: "Arcade → Season Pass and Quests",
+          link: { href: "/arcade/season#quests", label: "Open Quests" },
+        },
+        {
+          title: "Season Pass",
+          body: "Season 1 runs until January 11, 2027 (UTC) with 30 tiers of 1,200 Season XP each. Every tier has a free reward (cosmetics at key tiers, Coins in between) and a Premium cosmetic. Claim everything you've reached with one button; items you already own pay half their value in Coins instead.",
+          link: { href: "/arcade/season", label: "Open the Season Pass" },
+        },
+        {
+          title: "Premium and tier skips",
+          body: "Premium costs 2,500 Coins and unlocks the Premium reward on every tier, including tiers you've already reached. Tier skips cost 150 Coins per tier. Both show the exact cost and your balance before you confirm, are only charged once, and are only on sale while the season runs. Rewards are cosmetic only.",
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-luck-boosters",
+    date: "2026-11-06",
+    title: "Luck Boosters",
+    intro: "Buy 2x, 5x and 10x Luck Boosters with Coins in the Shop, activate them from your Inventory, and your next case openings roll rarer rarities more often.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Boosters in the Shop", text: "A Boosters section sells 2x, 5x and 10x Luck charges for Coins, with the exact odds effect shown before you buy." },
+      { kind: "new", feature: "Boosters in the Inventory", text: "Activate any number of owned charges; each charge boosts one case opening, across every case type." },
+      { kind: "new", feature: "Stacking luck", text: "Active tiers add up (2x + 5x = 7x, up to 17x), and the boosted odds show on each case and before you open." },
+      { kind: "new", feature: "Lucky reveals", text: "Boosted openings get a soft four-leaf-clover backdrop in the booster's color." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Buying boosters",
+          body: "The Shop has a Boosters section next to Cosmetics and Cases. Each booster charge costs Coins and boosts one case opening. The confirmation shows the quantity, total cost, your balance before and after, and how many boosted openings you get.",
+          where: "Shop → Boosters",
+          link: { href: "/shop/boosters", label: "Open Boosters" },
+        },
+        {
+          title: "How luck works",
+          body: "Common keeps its weight and every rarer rarity's weight is multiplied by your luck; chances are then recalculated and split evenly between each rarity's items. Luck improves rarity chances but never guarantees a specific reward or rarity.",
+          points: [
+            "Active tiers stack additively: 2x + 5x is 7x, and all three tiers together give the 17x maximum.",
+            "Activating more charges of an active tier adds boosted openings instead of raising luck.",
+            "Each opened case uses one charge from every active tier; charges are only used when results are saved, never twice on a retry.",
+            "Duplicate refunds, secure rolls and the exact odds lists work exactly as before.",
+          ],
+        },
+        {
+          title: "Activating boosters",
+          body: "A Boosters tab in the Inventory shows owned and active charges per tier, your total luck and remaining boosted openings. Activate any number of owned charges; they apply to your next case openings of any case type.",
+          where: "Inventory → Boosters",
+          link: { href: "/inventory?tab=boosters", label: "Open Inventory Boosters" },
+        },
+        {
+          title: "Boosted odds and reveals",
+          body: "While luck is active, case pages and the opening dialog show boosted chances for every rarity and item next to the base chances. Boosted reveals get a subtle four-leaf-clover backdrop and a luck badge in the tier's color: green for 2x, blue for 5x, gold for 10x, with stacked totals in the highest tier's color. Reduced motion stops the drifting clovers.",
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-shop-and-case-refunds",
+    date: "2026-11-06",
+    title: "The Shop and case refunds",
+    intro: "The Shop is now its own space for cosmetics and cases, duplicate case rewards refund Coins, and the Inventory splits Items and Cases into tabs.",
+    icon: "box",
+    highlights: [
+      { kind: "new", feature: "Shop", text: "A separate Shop space on Home with Cosmetics and Cases sections, apart from the Arcade games." },
+      { kind: "new", feature: "Duplicate refunds", text: "A case reward you already own refunds 5% to 75% of the price you paid for that case, depending on its rarity." },
+      { kind: "improved", feature: "Inventory tabs", text: "Items and Cases have their own tabs, each with a count." },
+      { kind: "improved", feature: "Bigger purchases", text: "Buy up to 1,000 cases at once." },
+    ],
+    details: {
+      new: [
+        {
+          title: "The Shop",
+          body: "Spending Coins has moved out of the Arcade into its own Shop, listed on Home next to the Archive, To-do and Arcade. Shop home shows your balance and leads to Cosmetics (the cosmetics shop and every game shop) and Cases. The Arcade now focuses on games and earning Coins. Old Arcade shop and Lootboxes links open the matching Shop page.",
+          where: "Home → Shop",
+          link: { href: "/shop", label: "Open the Shop" },
+        },
+        {
+          title: "Duplicate refunds",
+          body: "When a case gives a cosmetic you already own (or already won in an unclaimed opening), you get Coins back instead: a share of the price you actually paid for that case, rounded down. The rates are listed on each case in the Shop and before you open. Each reward shows its refund, and the summary shows the total refunded. Refunds are credited once, when rewards are claimed, and never exceed what the case cost.",
+          points: ["Common 5%, Uncommon 10%, Epic 20%, Legendary 35%, Mythic 50%, Secret 75%.", "Cases keep the price you paid, so a later price change doesn’t change their refunds."],
+          where: "Shop → Cases",
+          link: { href: "/shop/cases", label: "See the refund rates" },
+        },
+      ],
+      improved: [
+        {
+          title: "Inventory tabs",
+          body: "The Inventory has an Items tab (with search, filters, sorting and item details) and a Cases tab (owned cases, opening and saved rewards waiting to be revealed). Each tab shows a count and has its own address, so links from the Shop open the Cases tab directly.",
+          where: "Inventory → Items or Cases",
+          link: { href: "/inventory?tab=cases", label: "Open your cases" },
+        },
+        {
+          title: "Up to 1,000 cases per purchase",
+          body: "The case quantity now goes up to 1,000, with a ×100 shortcut. The total and your balance after are still confirmed before anything is charged, and a retried purchase is never charged twice.",
+          where: "Shop → Cases",
+          link: { href: "/shop/cases", label: "Buy cases" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-index",
+    date: "2026-11-06",
+    title: "The Index",
+    intro: "A collection guide listing every item in Amethyst, which ones you own, and how to get the rest.",
+    icon: "box",
+    highlights: [
+      { kind: "new", feature: "Index", text: "Browse every frame, avatar decoration, banner theme, profile frame, badge, title and game cosmetic, owned or not, with your collected count." },
+      { kind: "new", feature: "Find what’s missing", text: "Filter by owned or missing, item type, game and rarity, or search by name." },
+      { kind: "new", feature: "How to get it", text: "Open any item to see its shop price, achievement, Lootbox case odds or Vault origin, with a link to each." },
+    ],
+    details: {
+      new: [{
+        title: "The Index",
+        body: "The Index lists every collectible item, including ones you don’t own yet. Each type shows how many you’ve collected, and missing items are marked Missing with slightly quieter artwork, but all their details stay visible. Select any item for its artwork, type, description and rarity, plus every current way to get it: the shop and price, the achievement that awards it, or the Lootbox cases it drops from with its exact chance. Secret Vault items say they come from secret codes, since active codes aren’t announced, and anything that can’t currently be obtained says so.",
+        where: "Account menu → Index, or the Index button in the Inventory",
+        link: { href: "/collection-index", label: "Open the Index" },
+      }],
+    },
+  },
   {
     id: "2026-11-06-lootboxes",
     date: "2026-11-06",
@@ -69,8 +215,8 @@ export const CHANGELOG: readonly Release[] = [
             "Each item in a rarity has an equal share of that rarity’s chance, and every item’s chance is listed.",
             "Secret items stay hidden in the list until you own them.",
           ],
-          where: "Arcade → Lootboxes",
-          link: { href: "/arcade/lootboxes", label: "Open the Lootboxes shop" },
+          where: "Shop → Cases",
+          link: { href: "/shop/cases", label: "Open the Lootboxes shop" },
         },
         {
           title: "Opening cases",
@@ -105,6 +251,30 @@ export const CHANGELOG: readonly Release[] = [
     },
   },
   {
+    id: "2026-11-06-tools-menu",
+    date: "2026-11-06",
+    title: "A tidier account menu",
+    intro: "The account menu groups The Tour, Version History, The Lab, The Vault and Admin into one Tools panel.",
+    icon: "shapes",
+    highlights: [
+      { kind: "new", feature: "Tools", text: "Open Tools in the account menu for a grouped grid: Explore, Utilities and, for admins, Administration." },
+      { kind: "improved", feature: "Account menu", text: "Shorter list: My Profile, Settings, Tools and Sign out." },
+      { kind: "improved", feature: "Moved entries", text: "What’s new stays on the megaphone button; Customization is reached through Settings." },
+    ],
+    details: {
+      new: [{
+        title: "The Tools panel",
+        body: "Choosing Tools in the account menu swaps the menu for a compact grid of icon links. Explore holds The Tour and Version History, Utilities holds The Lab and The Vault, and Administration holds Admin for administrators only. It works with the keyboard and screen readers, a Tools back row returns to the account menu, and choosing a link closes the menu.",
+        where: "Account menu → Tools",
+      }],
+      improved: [{
+        title: "Fewer rows in the account menu",
+        body: "The separate Tour, Version History, Lab, Vault, Admin, What’s new and Customization rows were removed. What’s new remains on the megaphone button in the top bar, and Customization remains in the Settings sidebar. Every page keeps its address and access rules.",
+        link: { href: "/settings", label: "Open Settings" },
+      }],
+    },
+  },
+  {
     id: "2026-11-06-scene-performance",
     date: "2026-11-06",
     title: "Less work, the same scenes",
@@ -133,12 +303,16 @@ export const CHANGELOG: readonly Release[] = [
       { kind: "improved", feature: "Home order", text: "After Welcome and Your spaces: Featured, Pinned favorites, Upcoming tasks, Quick Notes, then Your collections." },
       { kind: "improved", feature: "Existing sections", text: "Recently opened follows Your collections, My Day stays opt-in, and Achievements stays at the bottom." },
       { kind: "improved", feature: "Saved layouts", text: "Existing section orders and visibility preferences are unchanged. Reset layout uses the new default." },
+      { kind: "improved", feature: "Update Log", text: "Same-date changes are grouped together, with original dates, feature details and links retained." },
     ],
     details: {
       improved: [{
         title: "The new default, not a reset",
         body: "Home starts with Welcome and Your spaces, followed by Featured, Pinned favorites, Upcoming tasks, Quick Notes and Your collections. Recently opened remains visible after Your collections, My Day remains opt-in, and Achievements stays last. The default applies to both Normal and Flashy Home and to Reset layout in Customize Home. Your saved arrangement, hidden sections and other preferences are preserved.",
         link: { href: "/", label: "Open Home" },
+      }, {
+        title: "A more concise Update Log",
+        body: "Updates from the same calendar date are now grouped together. Their original dates, feature details and links are retained, and previous release links still open the grouped update.",
       }],
     },
   },
@@ -3113,10 +3287,85 @@ export const CHANGELOG: readonly Release[] = [
   },
 ];
 
+type Consolidation = { ids: readonly [string, ...string[]]; title: string };
+
+const CONSOLIDATIONS: readonly Consolidation[] = [
+  { ids: ["2026-11-06-scene-performance", "2026-11-06-home-default-order", "2026-11-06-flashy-update"], title: "Home and scene refinements" },
+  { ids: ["2026-11-06-everyday-polish", "2026-11-06-stats-evolution"], title: "Everyday improvements and Stats history" },
+  { ids: ["2026-11-06-streak-flame", "2026-11-06-snake-blender-unranked", "2026-11-06-profile-banners-frames"], title: "Arcade and profile looks" },
+  { ids: ["2026-11-05-profile-showcase", "2026-11-05-multiple-badges", "2026-11-05-member-profiles", "2026-11-05-quick-notes-and-stats"], title: "Your profile and personal tools" },
+  { ids: ["2026-11-05-arcade-streaks", "2026-11-05-sudoku-sizes", "2026-11-05-snake-daily", "2026-11-05-visible-achievements", "2026-11-05-arcade-leaderboards", "2026-11-05-arcade-trophy-door"], title: "The Arcade: play, compete and earn" },
+  { ids: ["2026-11-05-early-history-previews", "2026-11-05-launch-preview", "2026-11-05-public-version-history", "2026-11-05-version-history-chronometer"], title: "Explore Amethyst history" },
+  { ids: ["2026-11-05-forge-publish-sequence", "2026-11-05-vault-redemption-fix", "2026-11-05-special-page-designs", "2026-11-04-vault-unlock"], title: "The Vault and Admin Panel" },
+  { ids: ["2026-11-04-vault-transmission", "2026-11-04-tour-transitions"], title: "The Vault and The Tour" },
+  { ids: ["2026-11-03-ten-more-frames", "2026-11-03-themes-frames-and-polish"], title: "Themes, frames and a richer feel" },
+  { ids: ["2026-11-02-product-tour", "2026-11-02-forge-in-steps"], title: "The Tour and the Forge" },
+  { ids: ["2026-10-31-amethyst-text-cleanup", "2026-10-31-sculpted-frames-beta"], title: "Text polish and sculpted frames" },
+  { ids: ["2026-10-31-crimson-sanctum", "2026-10-31-system-vault-console"], title: "The Admin Panel, brought to life" },
+  { ids: ["2026-10-30-vault-code-rules", "2026-10-30-achievement-rewards", "2026-10-30-vault-forged", "2026-10-30-vault-rework", "2026-10-30-vault-lab-slots"], title: "Vault codes and achievement rewards" },
+  { ids: ["2026-10-30-big-lists-shops-search", "2026-11-13-first-load"], title: "A quicker, clearer Archive" },
+  { ids: ["2026-11-12-performance", "2026-10-29-private-attachment-delivery", "2026-10-30-amethyst", "2026-10-29-task-quality"], title: "Archive, artwork and task improvements" },
+  { ids: ["2026-11-11-game-shops", "2026-11-10-sudoku-fruit-stacker", "2026-11-03-2048-flutter-daily", "2026-11-02-snake-speed-game-colors", "2026-11-01-snake-v2", "2026-10-31-snake-modes"], title: "Arcade games, shops and Snake modes" },
+  { ids: ["2026-11-03-hub", "2026-10-27-tasks"], title: "A home for your tasks and Archive" },
+  { ids: ["2026-10-27-settings-customization-search", "2026-10-27-private-image-storage"], title: "Customization and private artwork" },
+  { ids: ["2026-10-24-home-cover-fan", "2026-10-24-make-it-yours", "2026-10-24-showcase-3d", "2026-10-24-themes-urls", "2026-10-23-showcase"], title: "Your Archive, on display" },
+  { ids: ["2026-10-24-arcade-shop", "2026-10-24-achievement-cabinet", "2026-10-24-achievements", "2026-10-24-arcade"], title: "The Arcade and Trophy Room" },
+  { ids: ["2026-10-23-themes", "2026-10-23-personalization"], title: "A more personal Archive" },
+  { ids: ["2026-10-01-notes-and-labels", "2026-09-30-workspaces"], title: "Workspaces, notes and labels" },
+];
+
+function consolidateReleases(releases: readonly Release[]): readonly Release[] {
+  const groupedById = new Map<string, Release>();
+
+  for (const consolidation of CONSOLIDATIONS) {
+    const members = consolidation.ids.map((id) => {
+      const release = releases.find((candidate) => candidate.id === id);
+      if (!release) throw new Error(`Unknown changelog release in consolidation: ${id}`);
+      return release;
+    });
+    const primary = members[0];
+    if (!primary) throw new Error("A changelog consolidation must contain a release");
+    if (members.some((member) => member.date !== primary.date)) {
+      throw new Error(`Changelog consolidation crosses release dates: ${consolidation.ids.join(", ")}`);
+    }
+    if (members.some((member) => groupedById.has(member.id))) {
+      throw new Error(`Changelog release appears in multiple consolidations: ${consolidation.ids.join(", ")}`);
+    }
+
+    const notices = members.flatMap((member) => member.notice ? [member.notice] : []);
+    if (notices.length > 1) throw new Error(`Multiple notices need a dedicated consolidation: ${consolidation.ids.join(", ")}`);
+
+    const details: Release["details"] = {};
+    for (const kind of CHANGE_KINDS) {
+      const notes = members.flatMap((member) => member.details[kind] ?? []);
+      if (notes.length) details[kind] = notes;
+    }
+
+    const consolidated: Release = {
+      ...primary,
+      title: consolidation.title,
+      intro: members.map((member) => member.intro).join(" "),
+      aliases: members.slice(1).map((member) => member.id),
+      notice: notices[0],
+      highlights: members.flatMap((member) => member.highlights),
+      details,
+    };
+    for (const member of members) groupedById.set(member.id, consolidated);
+  }
+
+  return releases.flatMap((release) => {
+    const consolidated = groupedById.get(release.id);
+    if (!consolidated) return [release];
+    return consolidated.id === release.id ? [consolidated] : [];
+  });
+}
+
+export const CHANGELOG = consolidateReleases(RELEASES);
+
 export const LATEST_CHANGE_ID = CHANGELOG[0].id;
 
 export function findRelease(id: string): { release: Release; newer?: Release; older?: Release } | null {
-  const index = CHANGELOG.findIndex((release) => release.id === id);
+  const index = CHANGELOG.findIndex((release) => release.id === id || release.aliases?.includes(id));
   if (index < 0) return null;
   return { release: CHANGELOG[index], newer: CHANGELOG[index - 1], older: CHANGELOG[index + 1] };
 }

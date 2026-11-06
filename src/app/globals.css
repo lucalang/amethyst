@@ -6554,6 +6554,9 @@ a.arcade-counter:hover {
 .hub-card[data-destination="arcade"] {
   --hub: var(--rose-rgb);
 }
+.hub-card[data-destination="shop"] {
+  --hub: 245 181 74;
+}
 .hub-card:is(:hover, :focus-visible) {
   translate: 0 calc(-3px * var(--hub-lift));
   background:

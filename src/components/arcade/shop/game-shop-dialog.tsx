@@ -62,9 +62,9 @@ export default function GameShopDialog({
             Back to game
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/arcade/shop">
+            <Link href="/shop/cosmetics">
               <Store aria-hidden />
-              Arcade Shop
+              Shop
             </Link>
           </Button>
         </div>

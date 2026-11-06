@@ -156,7 +156,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
         <div role="group" aria-label="Filter decorations by source" className="flex flex-wrap gap-1.5">
           {([
             ["all", "All"],
-            ["shop", "Arcade shop"],
+            ["shop", "Shop"],
             ["achievement", "Achievements"],
             ["vault", "The Vault"],
           ] as const).map(([value, label]) => (
@@ -225,8 +225,8 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
         </div>
         <p className="text-xs text-muted-foreground">
           Drawn around your picture everywhere it appears; the picture itself isn’t changed. Unlock more in the{" "}
-          <Link href="/arcade/shop" className="text-amethyst underline-offset-4 hover:underline">
-            Arcade shop
+          <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
+            Shop
           </Link>{" "}
           or your{" "}
           <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">

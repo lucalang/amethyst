@@ -190,6 +190,73 @@
   box-shadow: 0 0 10px var(--tone);
 }
 
+/* Index: missing items keep full information; only their artwork is quieter. */
+.inv-tile[data-owned="false"] .inv-art {
+  opacity: 0.72;
+  filter: saturate(0.5);
+}
+.inv-tile[data-owned="false"] .inv-stage {
+  background:
+    radial-gradient(rgb(var(--ink-rgb) / 0.06) 1px, transparent 1.2px) 0 0 / 14px 14px,
+    linear-gradient(180deg, rgb(var(--ink-rgb) / 0.02), transparent);
+}
+.inv-tile[data-owned="false"]:hover .inv-art,
+.inv-tile[data-owned="false"][aria-pressed="true"] .inv-art {
+  opacity: 0.9;
+  filter: saturate(0.8);
+}
+.idx-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.1rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.idx-status[data-owned="true"] {
+  border-color: color-mix(in oklab, var(--amethyst) 55%, transparent);
+  background: color-mix(in oklab, var(--amethyst) 16%, var(--card));
+  color: var(--foreground);
+}
+.idx-status[data-owned="true"] svg {
+  color: var(--amethyst);
+}
+.idx-progress {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / 0.08);
+}
+.idx-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--amethyst) 70%, transparent), var(--amethyst));
+  box-shadow: 0 0 12px color-mix(in oklab, var(--amethyst) 60%, transparent);
+}
+.idx-availability {
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  padding: 0.05rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--muted-foreground);
+}
+.idx-availability[data-availability="obtainable"] {
+  border-color: color-mix(in oklab, #4ade80 45%, transparent);
+  color: var(--foreground);
+}
+.idx-availability[data-availability="uncertain"] {
+  border-color: color-mix(in oklab, var(--warning) 50%, transparent);
+  color: var(--foreground);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .inv-kind,
   .inv-tile,

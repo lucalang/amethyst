@@ -8,7 +8,7 @@ import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { BannerSwatch, FrameSwatch } from "@/components/profile/profile-cosmetic-art";
 import { SampleArt, type FrameSample } from "@/app/(vault)/settings/frame-settings";
 import { GAME_SHOPS } from "@/lib/game-cosmetics";
-import type { InventoryItem, InventoryType } from "@/lib/inventory";
+import type { CollectibleItem, InventoryType } from "@/lib/inventory";
 import { cn } from "@/lib/utils";
 
 export type ArtProfile = { name: string | null; avatarUrl: string | null };
@@ -24,11 +24,11 @@ export const TYPE_LOOK: Record<InventoryType, { icon: LucideIcon; tone: string }
   game: { icon: Gamepad2, tone: "#ff7348" },
 };
 
-export const toneOf = (item: InventoryItem) => (item.type === "game" ? ARCADE_CABINETS[item.game].hue : TYPE_LOOK[item.type].tone);
+export const toneOf = (item: CollectibleItem) => (item.type === "game" ? ARCADE_CABINETS[item.game].hue : TYPE_LOOK[item.type].tone);
 export const toneStyle = (tone: string, enter?: number) => ({ "--tone": tone, ...(enter === undefined ? {} : { "--enter-index": enter }) }) as CSSProperties;
 
-/** An owned item's artwork: frames on sample covers, decorations on the avatar, swatches, emblems and icons. */
-export function ItemArt({ item, profile, samples, large = false }: { item: InventoryItem; profile: ArtProfile; samples: ArtSamples; large?: boolean }) {
+/** An item's artwork: frames on sample covers, decorations on the avatar, swatches, emblems and icons. */
+export function ItemArt({ item, profile, samples, large = false }: { item: CollectibleItem; profile: ArtProfile; samples: ArtSamples; large?: boolean }) {
   switch (item.type) {
     case "frame":
       return (

@@ -1,34 +1,34 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Backpack, Gamepad2 } from "lucide-react";
+import { Backpack, Package } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
-import { LootboxShop } from "@/components/lootboxes/lootbox-shop";
+import { BoosterShop } from "@/components/lootboxes/booster-shop";
 import { Button } from "@/components/ui/button";
 import { loadLootState } from "@/lib/data/inventory";
 import { requireUser } from "@/lib/supabase/auth";
 
-export const metadata: Metadata = { title: "Lootboxes" };
+export const metadata: Metadata = { title: "Luck Boosters" };
 
-export default async function LootboxesPage() {
+export default async function BoostersPage() {
   const ctx = await requireUser();
   const state = await loadLootState(ctx).catch(() => null);
   return (
     <EntranceScope>
       <PageContainer>
         <PageHeader
-          title="Lootboxes"
-          description="Buy cases with Coins and open them in your Inventory for cosmetics. Every reward and its exact chance is listed below."
+          title="Luck Boosters"
+          description="Premium charges that raise the chance of rarer rewards in your next case openings."
           actions={
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
-                <Link href="/arcade">
-                  <Gamepad2 aria-hidden />
-                  Arcade
+                <Link href="/shop/cases">
+                  <Package aria-hidden />
+                  Cases
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
-                <Link href="/inventory">
+                <Link href="/inventory?tab=boosters">
                   <Backpack aria-hidden />
                   Inventory
                 </Link>
@@ -36,7 +36,7 @@ export default async function LootboxesPage() {
             </div>
           }
         />
-        <LootboxShop state={state} />
+        <BoosterShop state={state} />
       </PageContainer>
     </EntranceScope>
   );

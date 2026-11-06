@@ -7,7 +7,7 @@ import { MarkUpdatesSeen } from "@/components/layout/whats-new";
 import { VersionHistoryLinkButton } from "@/components/version-history/version-history-browser";
 import { CHANGELOG, formatChangeDate, releasePath } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
-import { HighlightList, KindLegend, ReleaseGlyph, ReleaseNotice, kindCounts } from "./release-ui";
+import { HighlightList, KindLegend, ReleaseGlyph, ReleaseNotice, kindCounts, previewHighlights } from "./release-ui";
 
 export const metadata: Metadata = { title: "What’s new" };
 
@@ -27,8 +27,11 @@ export default async function WhatsNewPage() {
         />
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_13rem]">
           <ol aria-label="Updates, newest first" className="min-w-0">
-            {CHANGELOG.map((release, index) => (
-              <li key={release.id} className="enter" style={{ "--enter-index": Math.min(index, 4) + 1 } as React.CSSProperties}>
+            {CHANGELOG.map((release, index) => {
+              const preview = previewHighlights(release.highlights);
+              return (
+                <li key={release.id} className="enter" style={{ "--enter-index": Math.min(index, 4) + 1 } as React.CSSProperties}>
+                {release.aliases?.map((alias) => <span key={alias} id={alias} aria-hidden="true" />)}
                 <article
                   id={release.id}
                   aria-labelledby={`${release.id}-title`}
@@ -40,7 +43,7 @@ export default async function WhatsNewPage() {
                       <time dateTime={release.date} className="block font-medium text-foreground/80">
                         {formatChangeDate(release.date)}
                       </time>
-                      {index === 0 ? <span className="font-semibold tracking-wide text-amethyst uppercase">Latest</span> : <span>{kindCounts(release.highlights)}</span>}
+                      {index === 0 ? <span className="font-semibold tracking-wide text-amethyst uppercase">Latest</span> : <span>{kindCounts(preview)}</span>}
                     </div>
                   </div>
                   <div className="min-w-0">
@@ -54,7 +57,7 @@ export default async function WhatsNewPage() {
                         <ReleaseNotice>{release.notice}</ReleaseNotice>
                       </div>
                     ) : null}
-                    <HighlightList highlights={release.highlights} className="mt-5 max-w-2xl" />
+                    {preview.length ? <HighlightList highlights={preview} className="mt-5 max-w-2xl" /> : null}
                     <Link
                       href={releasePath(release.id)}
                       className="group mt-5 inline-flex items-center gap-1.5 rounded text-sm font-medium text-amethyst underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
@@ -65,8 +68,9 @@ export default async function WhatsNewPage() {
                     </Link>
                   </div>
                 </article>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ol>
           <nav aria-label="All updates" className="hidden lg:block">
             <div className="sticky top-24">

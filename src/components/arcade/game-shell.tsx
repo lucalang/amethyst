@@ -16,7 +16,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { ArrowLeft, House, Maximize, Minimize, Store, Trophy, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, House, Maximize, Minimize, ScrollText, Store, Trophy, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
@@ -182,6 +182,12 @@ export function GameShell({
                 <span aria-hidden className="hidden sm:inline">Ranks</span>
               </Link>
             </Button> : null}
+            <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
+              <Link href="/arcade/season#quests" prefetch={false} aria-label="Season Pass quests" title="Season Pass quests">
+                <ScrollText aria-hidden />
+                <span aria-hidden className="hidden sm:inline">Quests</span>
+              </Link>
+            </Button>
             <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
               <Store aria-hidden />
               Shop

@@ -55,7 +55,7 @@ export async function updateProfile(_prev: FormState, formData: FormData): Promi
     })
     .eq("id", ctx.userId);
   const badges = error ? null : await ctx.supabase.rpc("set_profile_badges", { p_badges: parsed.data.profileBadges });
-  if (error?.hint === "cosmetic_not_owned" || badges?.error?.hint === "cosmetic_not_owned") return { status: "error", message: "One of those isn't in your collection yet. Decorations come from the Arcade shop; badges and titles from the Vault." };
+  if (error?.hint === "cosmetic_not_owned" || badges?.error?.hint === "cosmetic_not_owned") return { status: "error", message: "One of those isn't in your collection yet. Decorations come from the Shop; badges and titles from the Vault." };
   if (error?.code === "23505") return { status: "error", message: "That display name is already taken. Try another one." };
   if (error || badges?.error) return { status: "error", message: "Could not save your profile." };
   revalidatePath("/", "layout");

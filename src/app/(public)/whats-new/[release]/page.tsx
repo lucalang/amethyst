@@ -58,8 +58,8 @@ export default async function ReleasePage({ params }: Props) {
                 {meta.section}
               </h2>
               <div className="space-y-7">
-                {notes.map((note) => (
-                  <NoteTopic key={note.title} note={note} />
+                {notes.map((note, index) => (
+                  <NoteTopic key={`${note.title}-${index}`} note={note} />
                 ))}
               </div>
             </section>

@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Backpack, Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { Backpack, BookMarked, ChevronLeft, ChevronRight, Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Settings, ShieldCheck, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -53,10 +54,56 @@ export type AccountSummary = {
   admin?: boolean;
 };
 
+type ToolGroup = { id: string; label: string; adminOnly?: boolean; links: { href: string; label: string; icon: LucideIcon }[] };
+
+const TOOL_GROUPS: readonly ToolGroup[] = [
+  { id: "explore", label: "Explore", links: [{ href: "/tour", label: "The Tour", icon: Clapperboard }, { href: "/version-history", label: "Version History", icon: History }] },
+  { id: "utilities", label: "Utilities", links: [{ href: "/lab", label: "The Lab", icon: FlaskConical }, { href: "/vault", label: "The Vault", icon: KeyRound }] },
+  { id: "administration", label: "Administration", adminOnly: true, links: [{ href: "/admin", label: "Admin", icon: ShieldCheck }] },
+];
+
+function ToolsPanel({ admin, onBack }: { admin: boolean; onBack: () => void }) {
+  const baseId = useId();
+  const backRef = useRef<HTMLDivElement>(null);
+  useEffect(() => backRef.current?.focus(), []);
+  return (
+    <>
+      <DropdownMenuItem
+        ref={backRef}
+        onSelect={(event) => {
+          event.preventDefault();
+          onBack();
+        }}
+        className="font-medium"
+      >
+        <ChevronLeft aria-hidden /> Tools
+        <span className="sr-only">, back to account menu</span>
+      </DropdownMenuItem>
+      {TOOL_GROUPS.filter((group) => admin || !group.adminOnly).map((group) => (
+        <DropdownMenuGroup key={group.id} aria-labelledby={`${baseId}-${group.id}`} className="mt-1">
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel id={`${baseId}-${group.id}`}>{group.label}</DropdownMenuLabel>
+          <div className="grid grid-cols-2 gap-1">
+            {group.links.map(({ href, label, icon: Icon }) => (
+              <DropdownMenuItem key={href} asChild className="min-h-16 flex-col justify-center gap-1.5 text-center text-xs focus:[&_svg]:translate-x-0">
+                <Link href={href}>
+                  <Icon aria-hidden className="size-5" /> {label}
+                </Link>
+              </DropdownMenuItem>
+            ))}
+          </div>
+        </DropdownMenuGroup>
+      ))}
+    </>
+  );
+}
+
 export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
   const currentId = useCurrentCollectionId(collections);
   const area = destinationFor(usePathname());
   const inArchive = area?.id === "archive";
+  const [menuView, setMenuView] = useState<"main" | "tools">("main");
+  const toolsRef = useRef<HTMLDivElement>(null);
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-black/85 backdrop-blur-md">
@@ -112,13 +159,23 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
           {inArchive ? <NewCategoryButton /> : null}
           <WhatsNewButton />
 
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={(open) => open && setMenuView("main")}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Account menu" className="shrink-0">
                 <ProfileAvatar name={account.name} src={account.avatarUrl} decoration={account.decoration} className="size-7 text-xs" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuContent align="end" className={menuView === "tools" ? "w-72 max-w-[calc(100vw-1rem)]" : "w-60"}>
+              {menuView === "tools" ? (
+                <ToolsPanel
+                  admin={Boolean(account.admin)}
+                  onBack={() => {
+                    setMenuView("main");
+                    requestAnimationFrame(() => toolsRef.current?.focus());
+                  }}
+                />
+              ) : (
+              <>
               <DropdownMenuLabel className="flex items-center gap-2.5">
                 <ProfileAvatar name={account.name} src={account.avatarUrl} decoration={account.decoration} className="size-8 text-xs" />
                 <span className="min-w-0">
@@ -139,8 +196,8 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/customization">
-                  <Palette aria-hidden /> Customization
+                <Link href="/collection-index">
+                  <BookMarked aria-hidden /> Index
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -148,39 +205,16 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
                   <Settings aria-hidden /> Settings
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/whats-new">
-                  <Megaphone aria-hidden /> What’s new
-                </Link>
+              <DropdownMenuItem
+                ref={toolsRef}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  setMenuView("tools");
+                }}
+              >
+                <Wrench aria-hidden /> Tools
+                <ChevronRight aria-hidden className="ml-auto" />
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/version-history">
-                  <History aria-hidden /> Version history
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/tour">
-                  <Clapperboard aria-hidden /> The Tour
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/lab">
-                  <FlaskConical aria-hidden /> The Lab
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/vault">
-                  <KeyRound aria-hidden /> The Vault
-                </Link>
-              </DropdownMenuItem>
-              {account.admin ? (
-                <DropdownMenuItem asChild>
-                  <Link href="/admin">
-                    <ShieldCheck aria-hidden /> Admin
-                  </Link>
-                </DropdownMenuItem>
-              ) : null}
               <DropdownMenuSeparator />
               <form action="/auth/signout" method="post">
                 <DropdownMenuItem asChild>
@@ -189,6 +223,8 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
                   </button>
                 </DropdownMenuItem>
               </form>
+              </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

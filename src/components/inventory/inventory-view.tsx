@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { catalogMatcher } from "@/lib/catalog-search";
 import { GAME_SHOPS, SHOP_GAMES, shopHref, type ShopGame } from "@/lib/game-cosmetics";
-import { INVENTORY_TYPES, INVENTORY_TYPE_LABELS, inventoryItemLabel, type InventoryItem, type InventoryType } from "@/lib/inventory";
+import { INVENTORY_TYPES, INVENTORY_TYPE_LABELS, inventoryItemLabel, type CollectibleItem, type InventoryItem, type InventoryType } from "@/lib/inventory";
 import { cn } from "@/lib/utils";
 import { ItemArt, TYPE_LOOK, toneOf, toneStyle, type ArtProfile as Profile, type ArtSamples as Samples } from "./item-art";
 
@@ -31,7 +31,7 @@ const SORTS: { id: Sort; label: string }[] = [
 ];
 
 /** Where an item is put to use; the Inventory itself never equips anything. */
-function placeFor(item: InventoryItem): { href: string; label: string } {
+export function placeFor(item: CollectibleItem): { href: string; label: string } {
   switch (item.type) {
     case "frame":
       return { href: "/customization/frames", label: "Set your default frame" };
@@ -114,7 +114,7 @@ export function InventoryView({ items, profile, samples }: { items: InventoryIte
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Button asChild>
-            <Link href="/arcade/shop">Visit the Arcade shop</Link>
+            <Link href="/shop">Visit the Shop</Link>
           </Button>
           <Button asChild variant="outline">
             <Link href="/achievements">See achievements</Link>

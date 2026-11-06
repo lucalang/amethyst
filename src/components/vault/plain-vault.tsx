@@ -488,7 +488,7 @@ export function PlainChamber({ initialFinds, looks }: { initialFinds: VaultFind[
           )}
           <p className="vp-log-note">
             Badges, titles and decorations are worn from <Link href="/customization/profile">your profile</Link>; coins go to your{" "}
-            <Link href="/arcade/shop">Arcade wallet</Link>.
+            <Link href="/shop">coin wallet</Link>.
           </p>
         </section>
         <p role="status" aria-live="polite" className="sr-only">
@@ -552,7 +552,7 @@ function PlainSlots({ coins, items, newItems, delay, countUp, looks }: { coins: 
             </Link>
           ) : null}
           {coins > 0 ? (
-            <Link href="/arcade/shop" className="vp-link">
+            <Link href="/shop" className="vp-link">
               Visit the shop <ArrowRight aria-hidden className="size-3.5" />
             </Link>
           ) : null}

@@ -28,9 +28,9 @@ export async function GameShopPage({ game }: { game: ShopGame }) {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
-                <Link href="/arcade/shop">
+                <Link href="/shop/cosmetics">
                   <Store aria-hidden />
-                  Arcade Shop
+                  Shop
                 </Link>
               </Button>
             </div>
