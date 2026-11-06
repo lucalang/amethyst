@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { GameLook, ShopGame } from "@/lib/game-cosmetics";
 import type { MotionLevel } from "@/lib/preferences";
 import type { SnakeFruit } from "@/lib/snake";
@@ -28,6 +28,10 @@ import {
   type JuiceSplat,
 } from "../fruit-look";
 import { drawBlock, drawPerfect, drawScenery, pedestalColor, perfectDuration, stackerTheme, type StackerTheme } from "../stacker-look";
+import { drawGemBody, drawGlimmer, drawShadeBody, drawSpark, gemChaseTheme, paintMaze, type GemChaseTheme } from "../gem-chase-look";
+import { applyArtStyle, blasterTheme, drawBossBody, drawLaser, drawShipBody, flameColor, glow, paintNebula, type BlasterTheme } from "../space-blaster-look";
+import { CELEBRATIONS, PuzzleCelebration, QueensCrown, QueensDefs, TangoSymbol, ZipMarker, lookAttributes, patchColors, queensRegionColors, zipTrail, type Celebration } from "../puzzle-looks";
+import "../minigames.css";
 
 /**
  * Shop previews: a small, looping scene of each game drawn with the real renderers, so what you
@@ -803,6 +807,358 @@ function PreviewSudoku({ look, effects }: { look: GameLook; effects: MotionLevel
 }
 
 // ---------------------------------------------------------------------------------------------
+// Gem Chase: the gem sweeps a row of glimmers while the shades drift below.
+// ---------------------------------------------------------------------------------------------
+
+const GEM_MAZE = ["###########", "#.........#", "#.##.#.##.#", "#....#....#", "#.##.#.##.#", "#.........#", "###########"].map((row) => row.split(""));
+const GEM_COLS = GEM_MAZE[0].length;
+const GEM_ROWS = GEM_MAZE.length;
+const GEM_LAP = 2600;
+const gemSolid = (x: number, y: number) => (GEM_MAZE[y]?.[x] ?? "#") === "#";
+
+function createGemChaseScene(theme: GemChaseTheme, effects: MotionLevel): Painter {
+  const animate = effects !== "off";
+  const start = performance.now();
+  let maze: HTMLCanvasElement | null = null;
+  let mazeKey = "";
+
+  return (ctx, size, now) => {
+    const { width: cw, height: ch, dpr } = size;
+    const tile = Math.min(cw / GEM_COLS, ch / GEM_ROWS);
+    const ox = (cw - tile * GEM_COLS) / 2;
+    const oy = (ch - tile * GEM_ROWS) / 2;
+    const key = `${cw}x${ch}@${dpr}`;
+    if (!maze || mazeKey !== key) {
+      maze = document.createElement("canvas");
+      maze.width = Math.ceil(cw * dpr);
+      maze.height = Math.ceil(ch * dpr);
+      const g = maze.getContext("2d");
+      if (g) {
+        g.scale(dpr, dpr);
+        g.translate(ox, oy);
+        g.scale(tile / 20, tile / 20);
+        paintMaze(g, GEM_MAZE, 20, theme.maze, theme.maze.wall, gemSolid, theme.style);
+      }
+      mazeKey = key;
+    }
+    ctx.fillStyle = theme.maze.background;
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(maze, 0, 0, cw, ch);
+
+    const t = animate ? ((now - start) % GEM_LAP) / GEM_LAP : 0.45;
+    const gemX = 1 + t * 8;
+    const at = (x: number, y: number) => ({ x: ox + (x + 0.5) * tile, y: oy + (y + 0.5) * tile });
+    GEM_MAZE.forEach((row, y) =>
+      row.forEach((c, x) => {
+        if (c !== "." || (y === 1 && x <= gemX)) return;
+        const p = at(x, y);
+        drawGlimmer(ctx, p.x, p.y, tile * 0.12, theme.maze.glimmer, theme.style);
+      }),
+    );
+
+    // Collection bursts for the glimmers the gem just picked up.
+    const colors = theme.collect.colors ?? [theme.maze.glimmer];
+    ctx.globalCompositeOperation = "lighter";
+    for (let x = 1; x <= 9; x += 1) {
+      const age = (gemX - x) / 1.6;
+      if (!animate || age < 0 || age >= 1) continue;
+      const p = at(x, 1);
+      for (let i = 0; i < 8; i += 1) {
+        const a = (i / 8) * Math.PI * 2 + x;
+        const d = tile * (0.15 + easeOut(age) * 0.7);
+        drawSpark(ctx, theme.collect.shape, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, tile * 0.09, colors[i % colors.length], age, a, theme.style);
+      }
+    }
+    ctx.globalCompositeOperation = "source-over";
+
+    const gem = at(gemX, 1);
+    ctx.save();
+    ctx.translate(gem.x, gem.y);
+    drawGemBody(ctx, theme, tile * 0.38, animate ? 0.12 + Math.abs(Math.sin(now / 90)) * 0.45 : 0.4, now, animate);
+    ctx.restore();
+
+    theme.shades.forEach((color, i) => {
+      const x = 1 + ((((8 - t * 8 + i * 2) % 8) + 8) % 8);
+      const p = at(x, 5);
+      const r = tile * 0.36;
+      drawShadeBody(ctx, p.x, p.y, r, color, animate ? Math.sin(now / 120 + i) * r * 0.12 : 0, animate, theme.style);
+      for (const side of [-1, 1]) {
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(p.x + side * r * 0.35, p.y - r * 0.2, r * 0.24, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#1b1530";
+        ctx.beginPath();
+        ctx.arc(p.x + side * r * 0.35 - r * 0.08, p.y - r * 0.2, r * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Space Blaster: the ship strafes below a boss, firing through the sector backdrop.
+// ---------------------------------------------------------------------------------------------
+
+const BLAST_W = 400;
+const BLAST_H = 300;
+const BLAST_SHOT = 350;
+const BLAST_FLIGHT = 1400;
+
+function createBlasterScene(theme: BlasterTheme, effects: MotionLevel): Painter {
+  const animate = effects !== "off";
+  const start = performance.now();
+  let nebula: HTMLCanvasElement | null = null;
+  let nebulaKey = "";
+  const shipX = (time: number) => BLAST_W / 2 + Math.sin(time / 700) * 70;
+
+  return (ctx, size, now) => {
+    const { width: cw, height: ch } = size;
+    if (!nebula || nebulaKey !== `${cw}x${ch}`) {
+      nebula = paintNebula(theme.sector, cw, ch);
+      nebulaKey = `${cw}x${ch}`;
+    }
+    const elapsed = animate ? now - start : 900;
+    const scroll = (elapsed * 0.03) % ch;
+    ctx.drawImage(nebula, 0, scroll - ch, cw, ch);
+    ctx.drawImage(nebula, 0, scroll, cw, ch);
+
+    const s = Math.min(cw / BLAST_W, ch / BLAST_H);
+    ctx.save();
+    ctx.translate((cw - BLAST_W * s) / 2, (ch - BLAST_H * s) / 2);
+    ctx.scale(s, s);
+
+    ctx.save();
+    ctx.translate(BLAST_W / 2, 66);
+    ctx.scale(0.62, 0.62);
+    drawBossBody(ctx, theme.sector, false, false, now, theme.style);
+    ctx.restore();
+
+    // Shots cycle through the three upgrade tiers so every weapon color shows.
+    const tier = Math.floor(elapsed / 2400) % 3;
+    for (let k = 0; k < BLAST_FLIGHT / BLAST_SHOT; k += 1) {
+      const fired = elapsed - ((elapsed % BLAST_SHOT) + k * BLAST_SHOT);
+      const age = (elapsed - fired) / BLAST_FLIGHT;
+      drawLaser(ctx, theme.weapon, shipX(fired), 222 - age * 150, theme.weapon.tiers[tier]);
+    }
+
+    const x = shipX(elapsed);
+    const flame = flameColor(theme.trail, false, now);
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 1; i < 6; i += 1) {
+      const trailX = shipX(elapsed - i * 45);
+      glow(ctx, trailX - 6, 254 + i * 8, 6 - i * 0.8, flame, 0.6 - i * 0.1);
+      glow(ctx, trailX + 6, 254 + i * 8, 6 - i * 0.8, flame, 0.6 - i * 0.1);
+      if (theme.trail.sparks && animate) {
+        ctx.fillStyle = withAlpha("#ffffff", 0.7 - i * 0.12);
+        ctx.fillRect(trailX + Math.sin(now / 50 + i * 2) * 8, 256 + i * 9, 1.5, 1.5);
+      }
+    }
+    ctx.globalCompositeOperation = "source-over";
+
+    ctx.save();
+    ctx.translate(x, 236);
+    drawShipBody(ctx, theme, Math.cos(elapsed / 700) * 0.6, flame, now, animate);
+    ctx.restore();
+    ctx.restore();
+    applyArtStyle(ctx, theme.style, now, animate);
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Logic puzzles: tiny solved-in-a-loop boards using the same classes as the games.
+// ---------------------------------------------------------------------------------------------
+
+function usePreviewBeat(effects: MotionLevel) {
+  const [beat, setBeat] = useState(0);
+  useEffect(() => {
+    if (effects === "off") return;
+    const id = window.setInterval(() => setBeat((b) => b + 1), 900);
+    return () => window.clearInterval(id);
+  }, [effects]);
+  return beat;
+}
+
+function PuzzleStage({ game, look, effects, celebrate, children }: { game: ShopGame; look: GameLook; effects: MotionLevel; celebrate?: Celebration | false; children: ReactNode }) {
+  return (
+    <div data-game-skin={game} className="rounded-xl p-4">
+      <div {...lookAttributes(look)} className="relative mx-auto w-full max-w-[16rem]">
+        {children}
+        {celebrate && effects !== "off" ? <PuzzleCelebration kind={celebrate} /> : null}
+      </div>
+    </div>
+  );
+}
+
+const gridOf = (n: number): CSSProperties => ({ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` });
+/** Placed steps out of `total`: grows by one per beat, then holds the solved board for a few beats. */
+const stepsAt = (beat: number, total: number, effects: MotionLevel, hold = 4) => (effects === "off" ? total : Math.min(total, (beat % (total + hold)) + 1));
+
+const ZIP_N = 5;
+const ZIP_PATH = Array.from({ length: ZIP_N * ZIP_N }, (_, i) => {
+  const r = Math.floor(i / ZIP_N);
+  const k = i % ZIP_N;
+  return r * ZIP_N + (r % 2 ? ZIP_N - 1 - k : k);
+});
+const ZIP_NUMBERS = new Map([0, 8, 16, 24].map((step, i) => [ZIP_PATH[step], { step, number: i + 1 }]));
+
+function PreviewZip({ look, effects }: { look: GameLook; effects: MotionLevel }) {
+  const beat = usePreviewBeat(effects);
+  const total = ZIP_PATH.length;
+  const steps = stepsAt(Math.floor(beat * 2.5), total, effects, 10);
+  const solved = steps === total;
+  const trailColor = zipTrail(look);
+  const point = (cell: number) => ({ x: (cell % ZIP_N) + 0.5, y: Math.floor(cell / ZIP_N) + 0.5 });
+  const path = ZIP_PATH.slice(0, steps);
+  return (
+    <PuzzleStage game="zip" look={look} effects={effects} celebrate={solved && CELEBRATIONS[look.finish ?? ""]}>
+      <div role="img" aria-label="Zip board preview" className={cn("puzzle-board zip-board relative aspect-square w-full", solved && "puzzle-board-solved zip-solved", effects !== "off" && "zip-fx")}>
+        <div aria-hidden className="grid size-full" style={gridOf(ZIP_N)}>
+          {ZIP_PATH.map((_, cell) => {
+            const index = path.indexOf(cell);
+            return <div key={cell} className={cn("zip-cell", index >= 0 && "zip-cell-on")} style={index >= 0 ? ({ "--zip-tint": trailColor(index / (total - 1)), "--zip-i": index } as CSSProperties) : undefined} />;
+          })}
+        </div>
+        <svg aria-hidden viewBox={`0 0 ${ZIP_N} ${ZIP_N}`} className="pointer-events-none absolute inset-0 size-full">
+          <polyline points={path.map((cell) => `${point(cell).x},${point(cell).y}`).join(" ")} className="zip-path-glow" />
+          {path.slice(1).map((cell, index) => {
+            const a = point(path[index]);
+            const b = point(cell);
+            return <line key={cell} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={trailColor((index + 1) / (total - 1))} className="zip-path" />;
+          })}
+          {[...ZIP_NUMBERS].map(([cell, { step, number }]) => (
+            <g key={cell} transform={`translate(${point(cell).x} ${point(cell).y})`}>
+              <ZipMarker shape={look.marker} number={number} on={step < steps} />
+            </g>
+          ))}
+        </svg>
+      </div>
+    </PuzzleStage>
+  );
+}
+
+const PATCHES_N = 5;
+const PATCHES = [
+  { r: 0, c: 0, h: 2, w: 2, clue: [0, 0] },
+  { r: 0, c: 2, h: 1, w: 3, clue: [0, 3] },
+  { r: 1, c: 2, h: 2, w: 3, clue: [2, 4] },
+  { r: 2, c: 0, h: 3, w: 2, clue: [3, 1] },
+  { r: 3, c: 2, h: 2, w: 3, clue: [4, 2] },
+];
+const pct = (v: number) => `${(v / PATCHES_N) * 100}%`;
+
+function PreviewPatches({ look, effects }: { look: GameLook; effects: MotionLevel }) {
+  const beat = usePreviewBeat(effects);
+  const placed = stepsAt(beat, PATCHES.length, effects);
+  const solved = placed === PATCHES.length;
+  const palette = patchColors(look);
+  return (
+    <PuzzleStage game="patches" look={look} effects={effects} celebrate={solved && CELEBRATIONS[look.effect ?? ""]}>
+      <div role="img" aria-label="Patches board preview" className={cn("puzzle-board patches-board relative aspect-square w-full", solved && "puzzle-board-solved patches-solved", effects !== "off" && "patches-fx")}>
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          {PATCHES.slice(0, placed).map((patch, index) => (
+            <div key={index} className="patch" style={{ left: pct(patch.c), top: pct(patch.r), width: pct(patch.w), height: pct(patch.h), "--patch-i": index, "--patch": palette[index % palette.length] } as CSSProperties} />
+          ))}
+        </div>
+        <div aria-hidden className="relative grid size-full" style={gridOf(PATCHES_N)}>
+          {Array.from({ length: PATCHES_N * PATCHES_N }, (_, cell) => {
+            const index = PATCHES.findIndex((patch) => patch.clue[0] * PATCHES_N + patch.clue[1] === cell);
+            return (
+              <div key={cell} className="patches-cell grid place-items-center">
+                {index >= 0 ? (
+                  <span className={cn("patches-clue flex flex-col items-center justify-center leading-none", index < placed && "patches-clue-done")}>
+                    <span className="text-[clamp(0.9rem,4.5cqi,1.4rem)] font-bold tabular-nums">{PATCHES[index].h * PATCHES[index].w}</span>
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </PuzzleStage>
+  );
+}
+
+const TANGO_N = 4;
+const TANGO_BOARD = "SMMSMSSMSMSMMSMS";
+const TANGO_GIVEN = new Set([0, 5, 10, 15]);
+const TANGO_ORDER = [...TANGO_GIVEN, ...Array.from({ length: 16 }, (_, i) => i).filter((i) => !TANGO_GIVEN.has(i))];
+
+function PreviewTango({ look, effects }: { look: GameLook; effects: MotionLevel }) {
+  const beat = usePreviewBeat(effects);
+  const filled = TANGO_GIVEN.size + stepsAt(beat, TANGO_ORDER.length - TANGO_GIVEN.size, effects);
+  const solved = filled === TANGO_ORDER.length;
+  const shown = new Set(TANGO_ORDER.slice(0, filled));
+  return (
+    <PuzzleStage game="tango" look={look} effects={effects} celebrate={solved && CELEBRATIONS[look.finish ?? ""]}>
+      <div role="img" aria-label="Tango board preview" className={cn("puzzle-board tango-board relative aspect-square w-full", solved && "puzzle-board-solved tango-solved", effects !== "off" && "tango-fx")}>
+        <div aria-hidden className="grid size-full gap-1" style={gridOf(TANGO_N)}>
+          {Array.from({ length: TANGO_N * TANGO_N }, (_, cell) => {
+            const sun = TANGO_BOARD[cell] === "S";
+            const on = shown.has(cell);
+            return (
+              <div
+                key={cell}
+                className={cn("puzzle-cell tango-cell relative grid place-items-center overflow-hidden rounded-md", on && (sun ? "tango-cell-sun" : "tango-cell-moon"), TANGO_GIVEN.has(cell) && "puzzle-cell-given")}
+                style={{ "--tango-d": Math.floor(cell / TANGO_N) + (cell % TANGO_N) } as CSSProperties}
+              >
+                {on ? (
+                  <span className={cn("tango-mark col-start-1 row-start-1 grid size-full place-items-center", sun ? "tango-mark-sun" : "tango-mark-moon")}>
+                    <TangoSymbol side={sun ? "sun" : "moon"} pair={look.icons} className={sun ? "size-[62%] text-[var(--tango-sun)]" : "size-[58%] text-[var(--tango-moon)]"} />
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </PuzzleStage>
+  );
+}
+
+const QUEENS_N = 5;
+const QUEENS_REGIONS = [0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 2, 2, 3, 4, 4, 2, 3, 3, 4, 4, 2, 3, 3, 4, 4];
+const QUEENS_CROWNS = [1, 8, 10, 17, 24];
+
+function PreviewQueens({ look, effects }: { look: GameLook; effects: MotionLevel }) {
+  const beat = usePreviewBeat(effects);
+  const placed = stepsAt(beat, QUEENS_CROWNS.length, effects);
+  const solved = placed === QUEENS_CROWNS.length;
+  const crowns = new Set(QUEENS_CROWNS.slice(0, placed));
+  const colors = queensRegionColors(look);
+  const edge = (cell: number, other: number | null) => other === null || QUEENS_REGIONS[other] !== QUEENS_REGIONS[cell];
+  return (
+    <PuzzleStage game="queens" look={look} effects={effects} celebrate={solved && CELEBRATIONS[look.effect ?? ""]}>
+      <QueensDefs />
+      <div role="img" aria-label="Queens board preview" className={cn("puzzle-board queens-board grid aspect-square w-full overflow-hidden rounded-xl", solved && "puzzle-board-solved queens-solved", effects !== "off" && "queens-fx")} style={gridOf(QUEENS_N)}>
+        {QUEENS_REGIONS.map((region, cell) => {
+          const r = Math.floor(cell / QUEENS_N);
+          const c = cell % QUEENS_N;
+          return (
+            <div
+              key={cell}
+              className={cn("queens-cell relative grid place-items-center", `queens-region-${region % 5}`)}
+              style={
+                {
+                  backgroundColor: colors[region % colors.length],
+                  borderTopWidth: edge(cell, r > 0 ? cell - QUEENS_N : null) ? 2 : 0.5,
+                  borderLeftWidth: edge(cell, c > 0 ? cell - 1 : null) ? 2 : 0.5,
+                  borderRightWidth: edge(cell, c < QUEENS_N - 1 ? cell + 1 : null) ? 2 : 0.5,
+                  borderBottomWidth: edge(cell, r < QUEENS_N - 1 ? cell + QUEENS_N : null) ? 2 : 0.5,
+                  "--queens-d": r + c,
+                } as CSSProperties
+              }
+            >
+              {crowns.has(cell) ? <QueensCrown design={look.crown} className="queens-crown size-[64%]" /> : null}
+            </div>
+          );
+        })}
+      </div>
+    </PuzzleStage>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
 
 const ASPECT: Record<ShopGame, string> = {
   snake: "aspect-[7/5]",
@@ -811,17 +1167,29 @@ const ASPECT: Record<ShopGame, string> = {
   sudoku: "",
   "fruit-slice": "aspect-[4/3]",
   stacker: "aspect-[4/3]",
+  "gem-chase": "aspect-[11/7]",
+  "space-blaster": "aspect-[4/3]",
+  zip: "",
+  patches: "",
+  tango: "",
+  queens: "",
 };
 
 /** A live preview of a game with the given look; `focus` is the category being browsed. */
 export function CosmeticPreview({ game, look, focus, effects }: { game: ShopGame; look: GameLook; focus: string; effects: MotionLevel }) {
   if (game === "2048") return <Preview2048 look={look} effects={effects} />;
   if (game === "sudoku") return <PreviewSudoku look={look} effects={effects} />;
+  if (game === "zip") return <PreviewZip look={look} effects={effects} />;
+  if (game === "patches") return <PreviewPatches look={look} effects={effects} />;
+  if (game === "tango") return <PreviewTango look={look} effects={effects} />;
+  if (game === "queens") return <PreviewQueens look={look} effects={effects} />;
   const key = `${JSON.stringify(look)}|${effects}|${game === "flutter" ? focus : ""}`;
   const create = (): Painter => {
     if (game === "snake") return createSnakeScene(snakeTheme(look), effects);
     if (game === "flutter") return createFlutterScene(flutterTheme(look), effects, focus);
     if (game === "fruit-slice") return createFruitScene(fruitTheme(look), effects);
+    if (game === "gem-chase") return createGemChaseScene(gemChaseTheme(look), effects);
+    if (game === "space-blaster") return createBlasterScene(blasterTheme(look), effects);
     return createStackerScene(stackerTheme(look), effects);
   };
   return (

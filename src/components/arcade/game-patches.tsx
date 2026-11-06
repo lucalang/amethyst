@@ -7,8 +7,8 @@ import { generatePatches, patchValid, patchesSolved, rectContains, type PatchSha
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
 import { PuzzleFrame, usePuzzleSession, type PuzzleSession } from "./puzzle-shell";
+import { CELEBRATIONS, patchColors } from "./puzzle-looks";
 
-const PATCH_COLORS = ["#b48cff", "#ff9a8b", "#6fd6a6", "#ffcf5c", "#7cc4ff", "#ff9ed1", "#c7b27a", "#7ee0d8", "#d39bff", "#a9cf6a"];
 const SHAPE_LABEL: Record<PatchShape, string> = { square: "square", wide: "wider than tall", tall: "taller than wide", any: "any shape" };
 
 function ShapeIcon({ shape }: { shape: PatchShape }) {
@@ -32,7 +32,8 @@ const overlaps = (a: Rect, b: Rect) => a.r < b.r + b.h && b.r < a.r + a.h && a.c
 const sameRect = (a: Rect, b: Rect) => a.r === b.r && a.c === b.c && a.h === b.h && a.w === b.w;
 
 function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
+  const palette = patchColors(look);
   const { puzzle, locked } = session;
   const n = puzzle.size;
   const [patches, setPatches] = useState<Rect[]>([]);
@@ -153,6 +154,7 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
       session={session}
       title="Patches"
       onHint={hint}
+      celebrate={CELEBRATIONS[look.effect ?? ""]}
       rules={[
         "Split the whole grid into rectangles (patches). Every cell belongs to exactly one patch.",
         "Each patch contains exactly one clue. The number is the patch's size in cells.",
@@ -183,7 +185,7 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
           {patches.map((patch, index) => {
             const valid = patchValid(patch, puzzle);
             const clue = puzzle.clues.findIndex((entry) => rectContains(patch, entry.cell, n));
-            const color = valid ? PATCH_COLORS[clue % PATCH_COLORS.length] : undefined;
+            const color = valid ? palette[clue % palette.length] : undefined;
             return (
               <span
                 key={`${patch.r}-${patch.c}-${patch.h}-${patch.w}`}

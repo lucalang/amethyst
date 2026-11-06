@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { LazyZip } from "@/components/arcade/lazy";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
 import { loadArcadeRecords } from "@/lib/data/arcade";
+import { loadGameLoadout } from "@/lib/data/shop";
 import { requireUser } from "@/lib/supabase/auth";
 
 export const metadata: Metadata = { title: "Zip · Arcade" };
 
 export default async function ZipPage() {
   const ctx = await requireUser();
-  const records = await loadArcadeRecords(ctx);
+  const [records, look] = await Promise.all([loadArcadeRecords(ctx), loadGameLoadout(ctx, "zip")]);
   // "" is the practice record; recent daily puzzles keep their own.
   const bests: Record<string, number> = {};
   for (const [key, score] of Object.entries(records)) {
@@ -16,5 +17,5 @@ export default async function ZipPage() {
     if (key === "zip") bests[""] = score;
     else if (key.startsWith("zip:") && isRecentDailyVariant(key.slice(4))) bests[key.slice(4)] = score;
   }
-  return <LazyZip records={bests} />;
+  return <LazyZip records={bests} look={look} />;
 }

@@ -7,6 +7,7 @@ import { MOON, SUN, generateTango, tangoIssues, tangoSolved, type TangoCell, typ
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
 import { PuzzleFrame, usePuzzleSession, type PuzzleSession } from "./puzzle-shell";
+import { CELEBRATIONS, TangoSymbol } from "./puzzle-looks";
 
 const NAMES = ["empty", "sun", "moon"] as const;
 /** New mistakes are only shown once the player stops changing the board for this long. */
@@ -22,30 +23,8 @@ function completeLines(cells: TangoCell[], bad: Set<number>, n: number) {
   return lines(n).filter((line) => line.every((cell) => cells[cell] !== 0 && !bad.has(cell)));
 }
 
-export function SunIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className}>
-      <g className="stroke-current" strokeWidth="2" strokeLinecap="round">
-        {Array.from({ length: 8 }, (_, i) => {
-          const a = (i * Math.PI) / 4;
-          return <line key={i} x1={12 + Math.cos(a) * 8} y1={12 + Math.sin(a) * 8} x2={12 + Math.cos(a) * 10.5} y2={12 + Math.sin(a) * 10.5} />;
-        })}
-      </g>
-      <circle cx="12" cy="12" r="5.5" className="fill-current" />
-    </svg>
-  );
-}
-
-export function MoonIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className}>
-      <path d="M15.5 3.2a9 9 0 1 0 5.3 13.2A7.2 7.2 0 0 1 15.5 3.2z" className="fill-current" />
-    </svg>
-  );
-}
-
 function TangoPlay({ session }: { session: PuzzleSession<TangoPuzzle> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
   const { puzzle, locked } = session;
   const n = puzzle.size;
   const [cells, setCells] = useState<TangoCell[]>(() => [...puzzle.givens]);
@@ -171,6 +150,7 @@ function TangoPlay({ session }: { session: PuzzleSession<TangoPuzzle> }) {
       session={session}
       title="Tango"
       onHint={hint}
+      celebrate={CELEBRATIONS[look.finish ?? ""]}
       rules={[
         "Fill every cell with a sun or a moon. Tap a cell to cycle: sun, moon, empty.",
         "Each row and column holds 3 suns and 3 moons.",
@@ -191,7 +171,7 @@ function TangoPlay({ session }: { session: PuzzleSession<TangoPuzzle> }) {
         </>
       }
     >
-      <div className={cn("puzzle-board relative mx-auto aspect-square w-full", solved && "puzzle-board-solved tango-solved", effects !== "off" && "tango-fx")}>
+      <div className={cn("puzzle-board tango-board relative mx-auto aspect-square w-full", solved && "puzzle-board-solved tango-solved", effects !== "off" && "tango-fx")}>
         <div role="grid" aria-label="Tango grid" className="grid size-full gap-1" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` }}>
           {Array.from({ length: n }, (_, r) => (
             <div key={r} role="row" className="contents">
@@ -223,10 +203,10 @@ function TangoPlay({ session }: { session: PuzzleSession<TangoPuzzle> }) {
                     style={{ "--tango-d": r + c } as CSSProperties}
                   >
                     {flash?.cells.has(cell) ? <span key={flash.id} aria-hidden className="tango-flash" /> : null}
-                    {value === 0 && !given && !locked ? <SunIcon className="tango-ghost col-start-1 row-start-1 size-[62%] text-[var(--tango-sun)]" /> : null}
+                    {value === 0 && !given && !locked ? <TangoSymbol side="sun" pair={look.icons} className="tango-ghost col-start-1 row-start-1 size-[62%] text-[var(--tango-sun)]" /> : null}
                     {value !== 0 ? (
                       <span key={value} className={cn("tango-mark col-start-1 row-start-1 grid size-full place-items-center", value === SUN ? "tango-mark-sun" : "tango-mark-moon", shake === cell && "tango-shake")}>
-                        {value === SUN ? <SunIcon className="size-[62%] text-[var(--tango-sun)]" /> : <MoonIcon className="size-[58%] text-[var(--tango-moon)]" />}
+                        {value === SUN ? <TangoSymbol side="sun" pair={look.icons} className="size-[62%] text-[var(--tango-sun)]" /> : <TangoSymbol side="moon" pair={look.icons} className="size-[58%] text-[var(--tango-moon)]" />}
                       </span>
                     ) : null}
                   </button>

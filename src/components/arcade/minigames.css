@@ -595,12 +595,12 @@
 
 /* Queens */
 .queens-board {
-  border: 3px solid var(--foreground);
-  box-shadow: 0 10px 30px -14px rgb(60 20 90 / 0.6);
+  border: 3px solid var(--queens-frame, var(--foreground));
+  box-shadow: var(--queens-shadow, 0 10px 30px -14px rgb(60 20 90 / 0.6));
 }
 .queens-cell {
   border-style: solid;
-  border-color: color-mix(in srgb, var(--foreground) 80%, transparent);
+  border-color: var(--queens-line, color-mix(in srgb, var(--foreground) 80%, transparent));
   color: #2a1838;
   font-size: clamp(0.9rem, 6cqi, 1.8rem);
   background-image: linear-gradient(rgb(255 255 255 / 0.18), transparent 60%);
@@ -613,9 +613,10 @@
 }
 .queens-crown path,
 .queens-crown rect,
+.queens-crown ellipse,
 .queens-crown circle {
-  fill: url(#queens-gold);
-  stroke: #6b3d00;
+  fill: var(--crown-fill, url(#queens-gold));
+  stroke: var(--crown-stroke, #6b3d00);
   stroke-width: 0.6px;
 }
 .queens-crown {
@@ -636,7 +637,7 @@
   transition: color 200ms, transform 200ms;
 }
 .queens-pip-on {
-  color: #e9a514;
+  color: var(--crown-pip, #e9a514);
   transform: scale(1.1);
 }
 .queens-pip-bad {
@@ -687,4 +688,1191 @@
 .queens-cell-bad {
   background-image: repeating-linear-gradient(135deg, rgb(var(--rose-rgb) / 0.45) 0 5px, transparent 5px 10px) !important;
   color: #8a0f2c;
+}
+
+/* ---------------------------------------------------------------------------
+ * Puzzle cosmetics, keyed on data-look-<category> attributes set by PuzzleFrame
+ * (see puzzle-looks.tsx). Visual only: cells, clues and regions keep their layout.
+ * ------------------------------------------------------------------------- */
+
+/* Solve celebrations */
+.puzzle-celebrate {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+.puzzle-celebrate > span {
+  position: absolute;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .puzzle-celebrate {
+    display: none;
+  }
+}
+.puzzle-celebrate-confetti > span {
+  left: var(--x);
+  top: -4%;
+  width: 0.55rem;
+  height: 0.85rem;
+  border-radius: 2px;
+  background: var(--c);
+  animation: celebrate-fall 1.9s cubic-bezier(0.25, 0.6, 0.55, 1) var(--d) forwards;
+}
+.puzzle-celebrate-petals > span {
+  left: var(--x);
+  top: -4%;
+  width: 0.85rem;
+  height: 0.55rem;
+  border-radius: 100% 0;
+  background: var(--c);
+  animation: celebrate-drift 2.6s ease-in var(--d) forwards;
+}
+.puzzle-celebrate-stars > span {
+  left: 50%;
+  top: 45%;
+  width: 1.1rem;
+  height: 1.1rem;
+  translate: -50% -50%;
+  background: var(--c);
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: celebrate-burst 1.1s cubic-bezier(0.2, 0.7, 0.4, 1) var(--d) forwards;
+}
+.puzzle-celebrate-ripple > span {
+  left: 50%;
+  top: 45%;
+  width: 30%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 999px;
+  border: 3px solid rgb(var(--accent-rgb));
+  animation: celebrate-ripple 1.3s ease-out var(--d) forwards;
+}
+@keyframes celebrate-fall {
+  0% {
+    opacity: 1;
+    top: -4%;
+    rotate: 0deg;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    top: 100%;
+    rotate: var(--r);
+  }
+}
+@keyframes celebrate-drift {
+  0% {
+    opacity: 1;
+    top: -4%;
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  50% {
+    translate: 1.5rem 0;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    top: 100%;
+    translate: -1rem 0;
+    rotate: var(--r);
+  }
+}
+@keyframes celebrate-burst {
+  0% {
+    opacity: 1;
+    left: 50%;
+    top: 45%;
+    scale: 0.3;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    left: var(--tx);
+    top: var(--ty);
+    scale: 1.1;
+    rotate: var(--r);
+  }
+}
+@keyframes celebrate-ripple {
+  0% {
+    opacity: 0.9;
+    scale: 0.2;
+  }
+  100% {
+    opacity: 0;
+    scale: 3.4;
+  }
+}
+
+/* Zip: board surfaces */
+[data-look-board="graph"] .zip-board {
+  --surface-raised: #fbfdff;
+  background-image:
+    linear-gradient(rgb(70 130 210 / 0.13) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(70 130 210 / 0.13) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+[data-look-board="kraft"] .zip-board {
+  --surface-raised: #dcc196;
+  --foreground: #2e1d0e;
+  --background: #f3e3c6;
+  --ink-rgb: 70 45 20;
+  background-image:
+    radial-gradient(rgb(90 60 25 / 0.12) 1px, transparent 1.5px),
+    radial-gradient(rgb(255 255 255 / 0.18) 1px, transparent 1.5px);
+  background-size: 9px 9px, 13px 13px;
+  background-position: 0 0, 4px 6px;
+}
+[data-look-board="blueprint"] .zip-board {
+  --surface-raised: #1f4f8f;
+  --foreground: #f3f8ff;
+  --background: #1f4f8f;
+  --ink-rgb: 220 235 255;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.1) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+[data-look-board="slate"] .zip-board {
+  --surface-raised: #2b2f3a;
+  --foreground: #f4f1ea;
+  --background: #2b2f3a;
+  --ink-rgb: 244 241 234;
+  background-image: radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.06), transparent 60%);
+}
+/* Zip: ring markers keep a light center with a dark number. */
+.zip-dot-ring {
+  fill: var(--surface-raised);
+  stroke: var(--foreground);
+  stroke-width: 0.07;
+}
+.zip-dot-ring.zip-dot-on {
+  fill: var(--surface-raised);
+  stroke: var(--amethyst);
+  stroke-width: 0.1;
+}
+.zip-number-ring {
+  fill: var(--foreground);
+}
+
+/* Patches: fills */
+[data-look-fill="gingham"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.3), transparent 55%),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.26) 0 6px, transparent 6px 12px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.26) 0 6px, transparent 6px 12px),
+    color-mix(in srgb, var(--patch) 80%, transparent);
+}
+[data-look-fill="polka"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.3), transparent 55%),
+    radial-gradient(rgb(255 255 255 / 0.5) 2px, transparent 2.6px) 0 0 / 12px 12px,
+    color-mix(in srgb, var(--patch) 80%, transparent);
+}
+[data-look-fill="denim"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.22), transparent 55%),
+    repeating-linear-gradient(135deg, rgb(255 255 255 / 0.14) 0 1px, transparent 1px 4px),
+    color-mix(in srgb, var(--patch) 85%, transparent);
+}
+[data-look-fill="denim"] .patch:not(.patch-bad, .patch-preview, .patch-hint)::after {
+  border-color: rgb(255 226 160 / 0.95);
+  border-width: 2px;
+  opacity: 0.85;
+}
+
+/* Patches: paper */
+[data-look-paper="graph"] .patches-board {
+  background-color: #fbfdff;
+  background-image:
+    linear-gradient(rgb(70 130 210 / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(70 130 210 / 0.12) 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+[data-look-paper="kraft"] .patches-board {
+  --ink-rgb: 70 45 20;
+  --foreground: #2a1a0b;
+  background-color: #dcc196;
+  background-image:
+    radial-gradient(rgb(90 60 25 / 0.12) 1px, transparent 1.5px),
+    radial-gradient(rgb(255 255 255 / 0.2) 1px, transparent 1.5px);
+  background-size: 9px 9px, 13px 13px;
+  background-position: 0 0, 4px 6px;
+}
+[data-look-paper="linen"] .patches-board {
+  background-color: #f6f1e7;
+  background-image:
+    repeating-linear-gradient(0deg, rgb(120 100 70 / 0.07) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgb(120 100 70 / 0.07) 0 1px, transparent 1px 4px);
+}
+
+/* Patches: clue badges */
+[data-look-badge] .patches-clue {
+  width: 74%;
+  aspect-ratio: 1;
+}
+[data-look-badge="bubbles"] .patches-clue {
+  border-radius: 999px;
+  background: var(--surface-raised);
+  box-shadow:
+    0 1px 4px rgb(var(--shadow-rgb) / 0.25),
+    inset 0 0 0 1.5px rgb(var(--ink-rgb) / 0.15);
+}
+[data-look-badge="tags"] .patches-clue {
+  aspect-ratio: 5 / 4;
+  border-radius: 0.3rem 0.9rem 0.9rem 0.3rem;
+  background: #fff7dc;
+  box-shadow:
+    inset 0 0 0 1.5px rgb(var(--ink-rgb) / 0.25),
+    0 1px 3px rgb(var(--shadow-rgb) / 0.2);
+  rotate: -4deg;
+}
+[data-look-badge="stamps"] .patches-clue {
+  border-radius: 999px;
+  border: 2px dashed rgb(var(--ink-rgb) / 0.55);
+  background: rgb(255 255 255 / 0.45);
+  font-family: ui-serif, Georgia, serif;
+  rotate: -8deg;
+}
+
+/* Patches: placement effects (solve celebrations come from PuzzleCelebration) */
+@media (prefers-reduced-motion: no-preference) {
+  [data-look-effect="confetti"] .patches-fx:not(.patches-solved) .patch:not(.patch-preview, .patch-hint, .patch-bad) {
+    animation: patch-jelly 480ms ease-out;
+  }
+  [data-look-effect="petals"] .patches-fx:not(.patches-solved) .patch:not(.patch-preview, .patch-hint, .patch-bad) {
+    animation: patch-bloom 420ms ease-out;
+  }
+  [data-look-effect="sparkle"] .patches-fx:not(.patches-solved) .patch:not(.patch-preview, .patch-hint, .patch-bad) {
+    animation: patch-stitch 360ms ease-out;
+  }
+}
+@keyframes patch-jelly {
+  0% {
+    scale: 0.6;
+    opacity: 0;
+  }
+  40% {
+    scale: 1.04 0.86;
+    opacity: 1;
+  }
+  65% {
+    scale: 0.9 1;
+  }
+  85% {
+    scale: 0.96 0.93;
+  }
+}
+@keyframes patch-bloom {
+  from {
+    opacity: 0;
+    scale: 1.1;
+    filter: blur(6px);
+  }
+}
+@keyframes patch-stitch {
+  from {
+    clip-path: inset(0 100% 0 0 round 0.6rem);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 0.6rem);
+  }
+}
+
+/* Tango: icon pair colors */
+[data-look-icons="star-heart"] {
+  --tango-sun: #d99400;
+  --tango-moon: #d0305f;
+}
+[data-look-icons="flame-drop"] {
+  --tango-sun: #e8590c;
+  --tango-moon: #1c7ed6;
+}
+[data-look-icons="flower-leaf"] {
+  --tango-sun: #d6408a;
+  --tango-moon: #2b9348;
+}
+[data-look-icons="bolt-cloud"] {
+  --tango-sun: #e0a100;
+  --tango-moon: #4c6ef5;
+}
+
+/* Tango: board themes (gaps between cells show the board color) */
+[data-look-board] .tango-board {
+  border-radius: 0.9rem;
+  outline: 4px solid var(--tango-board-bg);
+  background: var(--tango-board-bg);
+}
+[data-look-board="seaside"] .tango-board {
+  --surface-raised: #f3fbfc;
+  --accent-rgb: 22 132 156;
+  --ink-rgb: 20 60 72;
+  --tango-board-bg: #cfe9ee;
+}
+[data-look-board="meadow"] .tango-board {
+  --surface-raised: #f7fbef;
+  --accent-rgb: 64 140 56;
+  --ink-rgb: 34 60 28;
+  --tango-board-bg: #d3e8bf;
+}
+[data-look-board="parchment"] .tango-board {
+  --surface-raised: #fbf3df;
+  --accent-rgb: 150 96 30;
+  --ink-rgb: 80 55 20;
+  --tango-board-bg: #e6d3a8;
+}
+[data-look-board="blossom"] .tango-board {
+  --surface-raised: #fff6f9;
+  --accent-rgb: 205 70 125;
+  --ink-rgb: 90 30 60;
+  --tango-board-bg: #f7d5e3;
+}
+
+/* Tango: placement effects */
+@media (prefers-reduced-motion: no-preference) {
+  [data-look-place="pop"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon):not(.tango-shake) {
+    animation: tango-pop 0.36s cubic-bezier(0.3, 1.8, 0.5, 1);
+  }
+  [data-look-place="drop"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon):not(.tango-shake) {
+    animation: tango-drop 0.4s ease-out;
+  }
+  [data-look-place="glimmer"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon):not(.tango-shake) {
+    position: relative;
+    animation: tango-pop 0.3s ease-out;
+  }
+  [data-look-place="glimmer"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon)::after {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    border-radius: 999px;
+    border: 2px solid var(--tango-sun);
+    opacity: 0;
+    animation: tango-glimmer 0.55s ease-out;
+  }
+  [data-look-place="glimmer"] .tango-fx .tango-cell:not(.puzzle-cell-given) .tango-mark-moon::after {
+    border-color: var(--tango-moon);
+  }
+}
+@keyframes tango-pop {
+  0% {
+    scale: 0;
+  }
+  60% {
+    scale: 1.3;
+  }
+}
+@keyframes tango-drop {
+  0% {
+    translate: 0 -70%;
+    opacity: 0;
+  }
+  60% {
+    translate: 0 6%;
+    opacity: 1;
+  }
+  80% {
+    translate: 0 -3%;
+  }
+}
+@keyframes tango-glimmer {
+  0% {
+    opacity: 0.9;
+    scale: 0.4;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.25;
+  }
+}
+
+/* Queens: crown designs */
+.queens-crown .queens-gem {
+  fill: var(--crown-gem, #e0245e);
+  stroke-width: 0.4px;
+}
+[data-look-crown="tiara"] {
+  --crown-fill: url(#queens-silver);
+  --crown-stroke: #4a5163;
+  --crown-gem: #3d6bff;
+  --crown-pip: #7d879c;
+}
+[data-look-crown="chess"] {
+  --crown-fill: url(#queens-ebony);
+  --crown-stroke: #f3e9ff;
+  --crown-pip: #3a2a4a;
+}
+[data-look-crown="ice"] {
+  --crown-fill: url(#queens-ice);
+  --crown-stroke: #1d4f80;
+  --crown-pip: #3f8fd6;
+}
+
+/* Queens: region textures */
+[data-look-regions="patterned"] .queens-cell {
+  background-size: 100% 100%, 9px 9px;
+}
+[data-look-regions="patterned"] .queens-region-0 {
+  background-image: linear-gradient(rgb(255 255 255 / 0.18), transparent 60%), repeating-linear-gradient(45deg, rgb(0 0 0 / 0.1) 0 2px, transparent 2px 6px);
+}
+[data-look-regions="patterned"] .queens-region-1 {
+  background-image: linear-gradient(rgb(255 255 255 / 0.18), transparent 60%), radial-gradient(rgb(0 0 0 / 0.14) 1.3px, transparent 1.8px);
+}
+[data-look-regions="patterned"] .queens-region-2 {
+  background-image: linear-gradient(rgb(255 255 255 / 0.18), transparent 60%), repeating-linear-gradient(0deg, rgb(0 0 0 / 0.09) 0 2px, transparent 2px 5px);
+}
+[data-look-regions="patterned"] .queens-region-3 {
+  background-image: linear-gradient(rgb(255 255 255 / 0.18), transparent 60%), conic-gradient(rgb(0 0 0 / 0.08) 25%, transparent 0 50%, rgb(0 0 0 / 0.08) 0 75%, transparent 0);
+}
+[data-look-regions="patterned"] .queens-region-4 {
+  background-image: linear-gradient(rgb(255 255 255 / 0.18), transparent 60%), repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.35) 0 2px, transparent 2px 6px);
+}
+[data-look-regions="stained-glass"] .queens-cell {
+  border-color: #1c1424;
+  background-image:
+    radial-gradient(circle at 30% 25%, rgb(255 255 255 / 0.5), transparent 55%),
+    linear-gradient(135deg, transparent 55%, rgb(0 0 0 / 0.14));
+}
+
+/* Queens: board surfaces */
+[data-look-board="marble"] {
+  --queens-frame: #b49a64;
+  --queens-line: rgb(70 60 50 / 0.75);
+  --queens-shadow: 0 0 0 5px #f3efe8, 0 0 0 6.5px #c9bba0, 0 12px 30px -12px rgb(60 50 30 / 0.5);
+}
+[data-look-board="walnut"] {
+  --queens-frame: #3b2414;
+  --queens-line: rgb(59 36 20 / 0.8);
+  --queens-shadow: 0 0 0 6px #6e4527, 0 0 0 7.5px #2e1a0c, 0 12px 30px -12px rgb(40 20 5 / 0.6);
+}
+[data-look-board="velvet"] {
+  --queens-frame: #e0b04a;
+  --queens-line: rgb(90 15 36 / 0.85);
+  --queens-shadow: 0 0 0 6px #7a1233, 0 0 0 8px #e0b04a, 0 14px 34px -12px rgb(90 10 40 / 0.6);
+}
+[data-look-board] .queens-board {
+  margin-block: 8px;
+}
+
+/* Queens: placement effects */
+@media (prefers-reduced-motion: no-preference) {
+  [data-look-effect="stamp"] .queens-fx:not(.queens-solved) .queens-cell:not(.queens-cell-bad) .queens-crown {
+    animation: queens-stamp 340ms cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  [data-look-effect="sparkle"] .queens-fx:not(.queens-solved) .queens-cell:not(.queens-cell-bad) .queens-crown {
+    animation: queens-glint 600ms ease-out;
+  }
+}
+@keyframes queens-stamp {
+  0% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.88);
+    opacity: 1;
+  }
+}
+@keyframes queens-glint {
+  0% {
+    transform: scale(0.4) rotate(-20deg);
+    opacity: 0;
+    filter: brightness(2) drop-shadow(0 0 0 #fff6c2);
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    filter: brightness(1.4) drop-shadow(0 0 6px #fff6c2);
+  }
+}
+
+/* More solve celebrations */
+.puzzle-celebrate-hearts > span {
+  left: var(--x);
+  top: 100%;
+  width: var(--s);
+  aspect-ratio: 1;
+  background: var(--c);
+  clip-path: polygon(50% 95%, 10% 58%, 2% 36%, 6% 16%, 18% 5%, 32% 3%, 44% 10%, 50% 20%, 56% 10%, 68% 3%, 82% 5%, 94% 16%, 98% 36%, 90% 58%);
+  animation: celebrate-rise 2.4s ease-out var(--d) forwards;
+}
+.puzzle-celebrate-bubbles > span {
+  left: var(--x);
+  top: 100%;
+  width: calc(var(--s) * 1.5);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 2px solid var(--c);
+  background:
+    radial-gradient(circle at 32% 30%, rgb(255 255 255 / 0.85) 0 14%, transparent 16%),
+    color-mix(in srgb, var(--c) 18%, transparent);
+  animation: celebrate-bubble 2.2s ease-in var(--d) forwards;
+}
+.puzzle-celebrate-fireworks > span {
+  left: var(--ox);
+  top: var(--oy);
+  width: 0.4rem;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 999px;
+  background: var(--c);
+  box-shadow: 0 0 6px 1px var(--c);
+  animation: celebrate-firework 1.1s cubic-bezier(0.15, 0.7, 0.35, 1) var(--d) forwards;
+}
+.puzzle-celebrate-snow > span {
+  left: var(--x);
+  top: -4%;
+  width: calc(var(--s) * 0.8);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: var(--c);
+  box-shadow:
+    0 0 0 1px rgb(110 150 200 / 0.55),
+    0 0 6px rgb(255 255 255 / 0.9);
+  animation: celebrate-drift 3.2s linear var(--d) forwards;
+}
+@keyframes celebrate-rise {
+  0% {
+    opacity: 0;
+    top: 100%;
+    translate: 0 0;
+    scale: 0.6;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    translate: 0.8rem 0;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    top: -8%;
+    translate: -0.6rem 0;
+    scale: 1.1;
+  }
+}
+@keyframes celebrate-bubble {
+  0% {
+    opacity: 0;
+    top: 100%;
+    translate: 0 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  40% {
+    translate: 0.6rem 0;
+  }
+  80% {
+    opacity: 1;
+    scale: 1;
+    translate: -0.5rem 0;
+  }
+  100% {
+    opacity: 0;
+    top: calc(var(--x) * 0.4);
+    scale: 1.6;
+  }
+}
+@keyframes celebrate-firework {
+  0% {
+    opacity: 1;
+    left: var(--ox);
+    top: var(--oy);
+    scale: 0.4;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    left: var(--tx);
+    top: var(--ty);
+    scale: 0.8;
+  }
+}
+
+/* Zip: more boards and markers */
+[data-look-board="notebook"] .zip-board {
+  --surface-raised: #fffef8;
+  background-image:
+    linear-gradient(90deg, transparent 8%, rgb(220 70 90 / 0.4) 8% calc(8% + 1.5px), transparent calc(8% + 1.5px)),
+    repeating-linear-gradient(transparent 0 17px, rgb(70 120 200 / 0.22) 17px 18px);
+}
+[data-look-board="sakura"] .zip-board {
+  --surface-raised: #fff3f7;
+  --foreground: #4a1730;
+  --background: #fff3f7;
+  --ink-rgb: 110 40 70;
+  background-image:
+    radial-gradient(ellipse 5px 3px, rgb(255 150 190 / 0.35) 98%, transparent),
+    radial-gradient(ellipse 4px 6px, rgb(255 180 205 / 0.3) 98%, transparent);
+  background-size: 34px 30px;
+  background-position: 0 0, 17px 15px;
+}
+[data-look-board="midnight"] .zip-board {
+  --surface-raised: #14183a;
+  --foreground: #f5f2ff;
+  --background: #14183a;
+  --ink-rgb: 230 228 255;
+  background-image:
+    radial-gradient(rgb(255 255 255 / 0.5) 0.8px, transparent 1.2px),
+    radial-gradient(rgb(200 210 255 / 0.35) 0.7px, transparent 1.1px);
+  background-size: 23px 19px, 31px 27px;
+  background-position: 0 0, 11px 9px;
+}
+.zip-number-sm {
+  font-size: 0.26px;
+}
+
+/* Patches: more fills, paper and badges */
+[data-look-fill="felt"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  background:
+    radial-gradient(rgb(255 255 255 / 0.2) 0.6px, transparent 1px) 0 0 / 4px 4px,
+    radial-gradient(rgb(0 0 0 / 0.1) 0.6px, transparent 1px) 2px 2px / 5px 5px,
+    color-mix(in srgb, var(--patch) 88%, transparent);
+}
+[data-look-fill="felt"] .patch:not(.patch-bad, .patch-preview, .patch-hint)::after {
+  border-style: solid;
+  border-width: 1px;
+  opacity: 0.4;
+}
+[data-look-fill="plaid"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  background:
+    linear-gradient(160deg, rgb(255 255 255 / 0.25), transparent 55%),
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 0.1) 0 3px, transparent 3px 14px, rgb(255 255 255 / 0.25) 14px 17px, transparent 17px 24px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.1) 0 3px, transparent 3px 14px, rgb(255 255 255 / 0.25) 14px 17px, transparent 17px 24px),
+    color-mix(in srgb, var(--patch) 85%, transparent);
+}
+[data-look-paper="notebook"] .patches-board {
+  background-color: #fffef8;
+  background-image:
+    linear-gradient(90deg, transparent 8%, rgb(220 70 90 / 0.4) 8% calc(8% + 1.5px), transparent calc(8% + 1.5px)),
+    repeating-linear-gradient(transparent 0 17px, rgb(70 120 200 / 0.22) 17px 18px);
+}
+[data-look-paper="dotgrid"] .patches-board {
+  background-color: #fdfcf8;
+  background-image: radial-gradient(rgb(var(--ink-rgb) / 0.28) 1.1px, transparent 1.6px);
+  background-size: 14px 14px;
+}
+[data-look-paper="sakura"] .patches-board {
+  --ink-rgb: 110 40 70;
+  --foreground: #4a1730;
+  background-color: #fff3f7;
+  background-image:
+    radial-gradient(ellipse 5px 3px, rgb(255 150 190 / 0.35) 98%, transparent),
+    radial-gradient(ellipse 4px 6px, rgb(255 180 205 / 0.3) 98%, transparent);
+  background-size: 34px 30px;
+  background-position: 0 0, 17px 15px;
+}
+[data-look-paper="cork"] .patches-board {
+  --ink-rgb: 60 35 15;
+  --foreground: #24140a;
+  background-color: #d2a872;
+  background-image:
+    radial-gradient(rgb(90 55 20 / 0.35) 1px, transparent 1.6px),
+    radial-gradient(rgb(255 235 200 / 0.35) 1px, transparent 1.6px),
+    radial-gradient(rgb(110 70 30 / 0.25) 1.5px, transparent 2.2px);
+  background-size: 7px 7px, 11px 11px, 17px 13px;
+  background-position: 0 0, 3px 4px, 5px 1px;
+}
+[data-look-badge="tiles"] .patches-clue {
+  border-radius: 0.45rem;
+  background: var(--surface-raised);
+  box-shadow:
+    inset 0 -3px 0 rgb(var(--ink-rgb) / 0.18),
+    0 1px 3px rgb(var(--shadow-rgb) / 0.25);
+}
+[data-look-badge="hexes"] .patches-clue {
+  aspect-ratio: 1.1;
+  background: color-mix(in srgb, rgb(var(--accent-rgb)) 14%, var(--surface-raised));
+  clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+}
+[data-look-badge="notes"] .patches-clue {
+  border-radius: 2px;
+  background: #fff3a6;
+  color: #3a2f05;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.2);
+  rotate: 3deg;
+}
+[data-look-badge="seals"] .patches-clue {
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff3f0 52%, #e9b8ae 53% 58%, #fff3f0 59%);
+  color: #6b1d1a;
+  box-shadow:
+    0 0 0 2px #c0504d,
+    0 1px 3px rgb(var(--shadow-rgb) / 0.25);
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-look-effect="hearts"] .patches-fx:not(.patches-solved) .patch:not(.patch-preview, .patch-hint, .patch-bad) {
+    animation: patch-beat 460ms ease-out;
+  }
+  [data-look-effect="fizz"] .patches-fx:not(.patches-solved) .patch:not(.patch-preview, .patch-hint, .patch-bad) {
+    animation: patch-float 420ms ease-out;
+  }
+  [data-look-effect="fireworks"] .patches-fx:not(.patches-solved) .patch:not(.patch-preview, .patch-hint, .patch-bad) {
+    animation: patch-slam 300ms cubic-bezier(0.5, 0, 0.75, 0.4);
+  }
+  [data-look-effect="snow"] .patches-fx:not(.patches-solved) .patch:not(.patch-preview, .patch-hint, .patch-bad) {
+    animation: patch-settle 520ms ease-out;
+  }
+}
+@keyframes patch-beat {
+  0% {
+    scale: 0.5;
+    opacity: 0;
+  }
+  40% {
+    scale: 1.06;
+    opacity: 1;
+  }
+  60% {
+    scale: 0.9;
+  }
+  80% {
+    scale: 1;
+  }
+}
+@keyframes patch-float {
+  from {
+    translate: 0 14px;
+    scale: 0.88;
+    opacity: 0;
+  }
+}
+@keyframes patch-slam {
+  from {
+    scale: 1.35;
+    opacity: 0;
+  }
+}
+@keyframes patch-settle {
+  from {
+    translate: 0 -10px;
+    opacity: 0;
+    filter: brightness(1.4);
+  }
+}
+
+/* Tango: more pairs, boards and placement effects */
+[data-look-icons="x-o"] {
+  --tango-sun: #e03131;
+  --tango-moon: #1971c2;
+}
+[data-look-icons="spade-diamond"] {
+  --tango-sun: #2b2d42;
+  --tango-moon: #d6336c;
+}
+[data-look-icons="coin-gem"] {
+  --tango-sun: #d08700;
+  --tango-moon: #7b2ff7;
+}
+[data-look-board="lavender"] .tango-board {
+  --surface-raised: #fbf8ff;
+  --accent-rgb: 124 82 204;
+  --ink-rgb: 50 30 80;
+  --tango-board-bg: #e2d6f7;
+}
+[data-look-board="citrus"] .tango-board {
+  --surface-raised: #fffcea;
+  --accent-rgb: 196 140 0;
+  --ink-rgb: 80 60 0;
+  --tango-board-bg: #f6e7a1;
+}
+[data-look-board="glacier"] .tango-board {
+  --surface-raised: #f5fbff;
+  --accent-rgb: 60 130 200;
+  --ink-rgb: 25 55 85;
+  --tango-board-bg: #d4e6f5;
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-look-place="flip"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon):not(.tango-shake) {
+    animation: tango-flip 0.4s ease-out;
+  }
+  [data-look-place="zoom"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon):not(.tango-shake) {
+    animation: tango-zoom 0.3s ease-out;
+  }
+  [data-look-place="stamp"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon):not(.tango-shake) {
+    animation: tango-stamp 0.34s cubic-bezier(0.3, 1.4, 0.5, 1);
+  }
+  [data-look-place="swirl"] .tango-fx .tango-cell:not(.puzzle-cell-given) :is(.tango-mark-sun, .tango-mark-moon):not(.tango-shake) {
+    animation: tango-swirl 0.45s ease-out;
+  }
+}
+@keyframes tango-flip {
+  from {
+    rotate: y 90deg;
+    opacity: 0.3;
+  }
+}
+@keyframes tango-zoom {
+  from {
+    scale: 2.2;
+    opacity: 0;
+  }
+}
+@keyframes tango-stamp {
+  0% {
+    scale: 1.9;
+    opacity: 0;
+  }
+  55% {
+    scale: 0.85;
+    opacity: 1;
+  }
+  80% {
+    scale: 1.05;
+  }
+}
+@keyframes tango-swirl {
+  from {
+    rotate: -360deg;
+    scale: 0;
+  }
+}
+
+/* Queens: more crowns, regions, boards and effects */
+[data-look-crown="rose-gold"] {
+  --crown-fill: url(#queens-rose);
+  --crown-stroke: #7a3b2e;
+  --crown-pip: #d4826e;
+}
+[data-look-crown="emerald"] {
+  --crown-gem: #0f9d58;
+  --crown-pip: #0f9d58;
+}
+[data-look-crown="laurel"] {
+  --crown-fill: url(#queens-laurel);
+  --crown-stroke: #3e5212;
+  --crown-gem: #c0392b;
+  --crown-pip: #7a9a1e;
+}
+[data-look-regions="watercolor"] .queens-cell {
+  background-image:
+    radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.45), transparent 45%),
+    radial-gradient(circle at 75% 70%, rgb(0 0 0 / 0.07), transparent 50%);
+}
+[data-look-regions="mosaic"] .queens-cell {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.18), transparent 60%),
+    linear-gradient(rgb(255 255 255 / 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.55) 1px, transparent 1px);
+  background-size: 100% 100%, 33.4% 33.4%, 33.4% 33.4%;
+}
+[data-look-board="pearl"] {
+  --queens-frame: #c9bfd8;
+  --queens-line: rgb(80 70 100 / 0.7);
+  --queens-shadow: 0 0 0 5px #fbf8ff, 0 0 0 6.5px #e0d6ee, 0 0 18px 6px rgb(220 210 240 / 0.6);
+}
+[data-look-board="jade"] {
+  --queens-frame: #1f6f4a;
+  --queens-line: rgb(20 70 45 / 0.8);
+  --queens-shadow: 0 0 0 6px #4fa37a, 0 0 0 7.5px #1f6f4a, 0 12px 30px -12px rgb(10 60 35 / 0.55);
+}
+[data-look-board="onyx"] {
+  --queens-frame: #111114;
+  --queens-line: rgb(20 20 25 / 0.9);
+  --queens-shadow: 0 0 0 6px #2b2b33, 0 0 0 7.5px #c9c9d6, 0 12px 30px -12px rgb(0 0 0 / 0.6);
+}
+[data-look-board="gilded"] {
+  --queens-frame: #b8860b;
+  --queens-line: rgb(90 60 10 / 0.8);
+  --queens-shadow: 0 0 0 4px #f6d365, 0 0 0 6px #b8860b, 0 0 0 7px #fff3c4, 0 14px 32px -12px rgb(120 80 0 / 0.55);
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-look-effect="hearts"] .queens-fx:not(.queens-solved) .queens-cell:not(.queens-cell-bad) .queens-crown {
+    animation: queens-beat 520ms ease-out;
+  }
+  [data-look-effect="bubbles"] .queens-fx:not(.queens-solved) .queens-cell:not(.queens-cell-bad) .queens-crown {
+    animation: queens-float 420ms ease-out;
+  }
+  [data-look-effect="fireworks"] .queens-fx:not(.queens-solved) .queens-cell:not(.queens-cell-bad) .queens-crown {
+    animation: queens-spin 420ms ease-out;
+  }
+  [data-look-effect="snow"] .queens-fx:not(.queens-solved) .queens-cell:not(.queens-cell-bad) .queens-crown {
+    animation: queens-settle 520ms ease-out;
+  }
+}
+@keyframes queens-beat {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  80% {
+    transform: scale(1.08);
+  }
+}
+@keyframes queens-float {
+  0% {
+    transform: translateY(40%) scale(0.7);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(-6%);
+    opacity: 1;
+  }
+}
+@keyframes queens-spin {
+  from {
+    transform: rotate(-360deg) scale(0.2);
+    opacity: 0;
+  }
+}
+@keyframes queens-settle {
+  from {
+    transform: translateY(-25%);
+    opacity: 0;
+    filter: brightness(1.6);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Puzzle art styles (data-look-style). Shapes, shading and type only: colors come from the
+ * other cosmetics, so contrast holds. Pieces sit above the style overlays.
+ * ------------------------------------------------------------------------- */
+[data-look-style] :is(.tango-mark, .tango-ghost, .queens-crown, .queens-x) {
+  position: relative;
+  z-index: 1;
+}
+[data-look-style] .queens-board {
+  position: relative;
+}
+
+/* Pixel */
+[data-look-style="pixel"] .puzzle-board {
+  border-radius: 0;
+  font-family: ui-monospace, "Cascadia Mono", "Courier New", monospace;
+}
+[data-look-style="pixel"] .puzzle-board:not(.puzzle-board-solved, .queens-board) {
+  box-shadow: 6px 6px 0 rgb(var(--ink-rgb) / 0.28);
+}
+[data-look-style="pixel"] :is(.tango-board, .puzzle-cell, .patch, .patches-clue, .patch-size, .puzzle-sign, .zip-progress, .tango-progress, .patches-progress) {
+  border-radius: 0;
+}
+[data-look-style="pixel"] .patch::after {
+  border-radius: 0;
+  border-style: dotted;
+  border-width: 2px;
+}
+[data-look-style="pixel"] .puzzle-cell:not(.puzzle-hinted),
+[data-look-style="pixel"] .queens-cell:not(.puzzle-hinted) {
+  box-shadow:
+    inset -3px -3px 0 rgb(0 0 0 / 0.12),
+    inset 3px 3px 0 rgb(255 255 255 / 0.5);
+}
+[data-look-style="pixel"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--patch) 100%, black 30%),
+    4px 4px 0 rgb(var(--ink-rgb) / 0.22);
+}
+[data-look-style="pixel"] :is(.zip-board svg, .tango-mark svg, .tango-ghost, .queens-crown, .queens-x) {
+  shape-rendering: crispEdges;
+}
+[data-look-style="pixel"] :is(.zip-path, .zip-path-glow, .zip-wall) {
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+[data-look-style="pixel"] .puzzle-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(0 0 0 / 0.05) 0 2px, transparent 2px 4px);
+}
+
+/* Sketchbook */
+[data-look-style="sketch"] .puzzle-board {
+  font-family: "Comic Sans MS", "Comic Neue", "Chalkboard SE", "Segoe Print", cursive;
+  border-radius: 1.4rem 0.5rem 1.2rem 0.6rem / 0.6rem 1.3rem 0.5rem 1.4rem;
+}
+[data-look-style="sketch"] .puzzle-board:not(.puzzle-board-solved, .queens-board) {
+  box-shadow: 3px 4px 0 rgb(var(--ink-rgb) / 0.3);
+}
+[data-look-style="sketch"] .zip-board {
+  border: 2.5px solid rgb(var(--ink-rgb) / 0.75);
+}
+[data-look-style="sketch"] .zip-cell {
+  border-style: dashed;
+}
+[data-look-style="sketch"] .zip-path-glow {
+  stroke: rgb(var(--ink-rgb) / 0.3);
+  stroke-width: 0.42;
+  transform: translate(0.05px, 0.07px);
+}
+[data-look-style="sketch"] :is(.tango-cell, .patches-clue, .puzzle-sign) {
+  border-radius: 0.55rem 0.2rem 0.6rem 0.25rem / 0.25rem 0.6rem 0.2rem 0.55rem;
+}
+[data-look-style="sketch"] .tango-cell:not(.puzzle-hinted, .puzzle-cell-bad) {
+  border-color: rgb(var(--ink-rgb) / 0.45);
+  box-shadow: 1.5px 2px 0 rgb(var(--ink-rgb) / 0.35);
+}
+[data-look-style="sketch"] .patch {
+  border-radius: 1rem 0.4rem 1.1rem 0.5rem / 0.5rem 1rem 0.4rem 1.1rem;
+}
+[data-look-style="sketch"] .patch::after {
+  border-radius: inherit;
+  border-style: solid;
+  border-width: 1px;
+}
+[data-look-style="sketch"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  box-shadow:
+    inset 0 0 0 2px rgb(var(--ink-rgb) / 0.6),
+    2px 3px 0 rgb(var(--ink-rgb) / 0.2);
+}
+[data-look-style="sketch"] :is(.patch:not(.patch-bad, .patch-preview, .patch-hint), .queens-cell, .tango-cell)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: repeating-linear-gradient(-45deg, rgb(var(--ink-rgb) / 0.09) 0 1px, transparent 1px 6px);
+}
+[data-look-style="sketch"] .queens-cell:not(.queens-cell-bad) .queens-crown,
+[data-look-style="sketch"] .tango-mark svg {
+  filter: drop-shadow(1.5px 1.5px 0 rgb(var(--ink-rgb) / 0.45));
+}
+
+/* Soft Clay */
+[data-look-style="clay"] .puzzle-board {
+  border-radius: 1.6rem;
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", "Varela Round", system-ui, sans-serif;
+}
+[data-look-style="clay"] .puzzle-board:not(.puzzle-board-solved, .queens-board) {
+  box-shadow:
+    0 16px 30px -14px rgb(var(--shadow-rgb) / 0.5),
+    inset 0 2px 0 rgb(255 255 255 / 0.6);
+}
+[data-look-style="clay"] .tango-board {
+  border-radius: 1.6rem;
+}
+[data-look-style="clay"] :is(.tango-cell, .patches-clue) {
+  border-radius: 30%;
+}
+[data-look-style="clay"] .zip-cell {
+  border-color: transparent;
+  border-radius: 26%;
+}
+[data-look-style="clay"] :is(.tango-cell, .queens-cell, .zip-cell):not(.puzzle-hinted) {
+  box-shadow:
+    inset 0 -4px 6px rgb(0 0 0 / 0.1),
+    inset 0 3px 4px rgb(255 255 255 / 0.65);
+}
+[data-look-style="clay"] .zip-path {
+  stroke-width: 0.4;
+}
+[data-look-style="clay"] .zip-path-glow {
+  stroke: rgb(var(--shadow-rgb) / 0.22);
+  stroke-width: 0.46;
+  transform: translate(0, 0.06px);
+}
+[data-look-style="clay"] .patch {
+  border-radius: 1.3rem;
+}
+[data-look-style="clay"] .patch::after {
+  border-radius: 0.9rem;
+}
+[data-look-style="clay"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  box-shadow:
+    inset 0 -6px 10px color-mix(in srgb, var(--patch) 100%, black 22%),
+    inset 0 5px 8px rgb(255 255 255 / 0.55),
+    0 6px 12px -6px color-mix(in srgb, var(--patch) 100%, black 55%);
+}
+[data-look-style="clay"] .queens-cell:not(.queens-cell-bad) .queens-crown,
+[data-look-style="clay"] .tango-mark svg {
+  filter: drop-shadow(0 3px 2px rgb(0 0 0 / 0.28));
+}
+[data-look-style="clay"] .puzzle-sign {
+  box-shadow:
+    inset 0 -2px 3px rgb(0 0 0 / 0.12),
+    0 2px 4px rgb(var(--shadow-rgb) / 0.25);
+}
+
+/* Frosted Glass */
+[data-look-style="glass"] .puzzle-board {
+  border-radius: 1.1rem;
+}
+[data-look-style="glass"] .puzzle-board:not(.puzzle-board-solved, .queens-board) {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.75),
+    0 18px 40px -18px rgb(var(--shadow-rgb) / 0.55);
+}
+[data-look-style="glass"] .puzzle-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(140deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.05) 32%, transparent 48%);
+}
+[data-look-style="glass"] .tango-board {
+  border-radius: 1.1rem;
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--tango-sun) 35%, transparent), color-mix(in srgb, var(--tango-moon) 35%, transparent));
+}
+[data-look-style="glass"] .tango-cell {
+  border-radius: 0.7rem;
+  border-color: rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(6px);
+}
+[data-look-style="glass"] .tango-cell:not(.puzzle-cell-bad, .tango-cell-sun, .tango-cell-moon, .puzzle-cell-given) {
+  background-color: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+}
+[data-look-style="glass"] :is(.tango-cell, .queens-cell):not(.puzzle-hinted) {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.85),
+    inset 0 -1px 0 rgb(0 0 0 / 0.06);
+}
+[data-look-style="glass"] :is(.patch:not(.patch-bad, .patch-preview, .patch-hint), .queens-cell, .tango-cell)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(155deg, rgb(255 255 255 / 0.45), rgb(255 255 255 / 0.06) 42%, transparent 58%);
+}
+[data-look-style="glass"] .patch {
+  border-radius: 0.9rem;
+}
+[data-look-style="glass"] .patch:not(.patch-bad, .patch-preview, .patch-hint) {
+  backdrop-filter: blur(3px);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 255 255 / 0.75),
+    inset 0 0 0 3px color-mix(in srgb, var(--patch) 100%, black 22%),
+    0 10px 18px -10px color-mix(in srgb, var(--patch) 100%, black 55%);
+}
+[data-look-style="glass"] .zip-cell {
+  border-color: rgb(255 255 255 / 0.55);
+}
+[data-look-style="glass"] .zip-path-glow {
+  stroke: rgb(var(--accent-rgb) / 0.25);
+  stroke-width: 0.62;
+}
+[data-look-style="glass"] .puzzle-sign:not(.puzzle-sign-bad) {
+  border-color: rgb(255 255 255 / 0.8);
+  background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+  backdrop-filter: blur(4px);
+}
+[data-look-style="glass"] .queens-cell:not(.queens-cell-bad) .queens-crown,
+[data-look-style="glass"] .tango-mark svg {
+  filter: drop-shadow(0 4px 5px rgb(var(--shadow-rgb) / 0.35));
 }

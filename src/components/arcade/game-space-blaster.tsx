@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Bot, ChevronsUp, Crosshair, Flame, Gauge, Hexagon, Layers, Pause, Play, Rocket, Shield, Wrench, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
@@ -9,6 +9,7 @@ import { GAME_PALETTES } from "./palettes";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { focusQuietly, GameOverlay, GameShell, Stat, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import type { SoundName } from "./sound";
+import { applyArtStyle, blasterTheme, drawBossBody, drawLaser, drawShipBody, flameColor, glow, paintNebula, type BlasterTheme } from "./space-blaster-look";
 import "./minigames.css";
 
 /**
@@ -136,48 +137,16 @@ type Hooks = {
   onChoices: (choices: UpgradeId[]) => void;
   onStart: () => void;
   onOver: (score: number, metrics: { seconds: number; kills: number; wave: number }) => void;
-  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
+  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel; theme: BlasterTheme };
 };
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
-/** The scrolling backdrop, painted once: soft nebula clouds and faint dust, tiling vertically. */
-function paintNebula() {
-  const canvas = document.createElement("canvas");
-  canvas.width = WIDTH * 2;
-  canvas.height = HEIGHT * 2;
-  const g = canvas.getContext("2d");
-  if (!g) return canvas;
-  g.scale(2, 2);
-  g.fillStyle = "#060920";
-  g.fillRect(0, 0, WIDTH, HEIGHT);
-  const tints = ["#5b2bb5", "#1b6fb8", "#b02a7a", "#1f8fa8", "#3a2a9a"];
-  for (let i = 0; i < 10; i += 1) {
-    const x = Math.random() * WIDTH;
-    const y = Math.random() * HEIGHT;
-    const r = 90 + Math.random() * 170;
-    const tint = tints[i % tints.length];
-    for (const oy of [-HEIGHT, 0, HEIGHT]) {
-      const grad = g.createRadialGradient(x, y + oy, 0, x, y + oy, r);
-      grad.addColorStop(0, withAlpha(tint, 0.2));
-      grad.addColorStop(0.5, withAlpha(tint, 0.07));
-      grad.addColorStop(1, withAlpha(tint, 0));
-      g.fillStyle = grad;
-      g.fillRect(x - r, y + oy - r, r * 2, r * 2);
-    }
-  }
-  for (let i = 0; i < 280; i += 1) {
-    g.fillStyle = withAlpha("#cfe0ff", Math.random() * 0.35);
-    g.fillRect(Math.random() * WIDTH, Math.random() * HEIGHT, 0.8, 0.8);
-  }
-  return canvas;
-}
-
 function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
   const ctx = canvas.getContext("2d");
   const colors = GAME_PALETTES["space-blaster"];
-  const nebula = paintNebula();
-  const glowSprites = new Map<string, HTMLCanvasElement>();
+  let nebulaKey = hooks.live().theme.sector;
+  let nebula = paintNebula(nebulaKey, WIDTH, HEIGHT);
   const stars = [0.25, 0.6, 1.15].flatMap((z, layer) =>
     Array.from({ length: [46, 28, 14][layer] }, () => ({ x: rand(0, WIDTH), y: rand(0, HEIGHT), z, seed: rand(0, 10) })),
   );
@@ -823,7 +792,10 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
       }
     }
     if (fx() !== "off") {
-      for (const side of [-6, 6]) particle("glow", ship.x + side + rand(-1, 1), ship.y + 18, rand(-10, 10), rand(140, 200), rand(0.12, 0.2), rand(3, 5), ship.overdrive > 0 ? "#ffd84a" : "#ff9a4a");
+      const trail = hooks.live().theme.trail;
+      const flame = flameColor(trail, ship.overdrive > 0, time * 1000);
+      for (const side of [-6, 6]) particle("glow", ship.x + side + rand(-1, 1), ship.y + 18, rand(-10, 10), rand(140, 200), rand(0.12, 0.2), rand(3, 5), flame);
+      if (trail.sparks && Math.random() < 0.35) particle("spark", ship.x + rand(-5, 5), ship.y + 20, rand(-30, 30), rand(120, 220), rand(0.25, 0.45), 1.5, "#ffffff");
     }
   }
 
@@ -888,7 +860,8 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
 
   function shotColor() {
     if (ship.overdrive > 0) return "#ffe27a";
-    return levels.damage >= 4 ? "#ffd84a" : levels.damage >= 2 ? "#c49bff" : colors.accent;
+    const tiers = hooks.live().theme.weapon.tiers;
+    return levels.damage >= 4 ? tiers[2] : levels.damage >= 2 ? tiers[1] : tiers[0];
   }
 
   function world(dt: number) {
@@ -1057,34 +1030,12 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
 
   /* ---------- drawing ---------- */
 
-  function glowSprite(color: string) {
-    let sprite = glowSprites.get(color);
-    if (!sprite) {
-      sprite = document.createElement("canvas");
-      sprite.width = 64;
-      sprite.height = 64;
-      const g = sprite.getContext("2d");
-      if (g) {
-        const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-        grad.addColorStop(0, withAlpha(color, 1));
-        grad.addColorStop(0.22, withAlpha(color, 0.55));
-        grad.addColorStop(0.55, withAlpha(color, 0.14));
-        grad.addColorStop(1, withAlpha(color, 0));
-        g.fillStyle = grad;
-        g.fillRect(0, 0, 64, 64);
-      }
-      glowSprites.set(color, sprite);
-    }
-    return sprite;
-  }
-
-  function glow(c: CanvasRenderingContext2D, x: number, y: number, rx: number, color: string, alpha = 1, ry = rx) {
-    c.globalAlpha = Math.max(0, Math.min(1, alpha));
-    c.drawImage(glowSprite(color), x - rx, y - ry, rx * 2, ry * 2);
-    c.globalAlpha = 1;
-  }
-
   function drawBackground(c: CanvasRenderingContext2D, now: number, animate: boolean) {
+    const sector = hooks.live().theme.sector;
+    if (sector !== nebulaKey) {
+      nebulaKey = sector;
+      nebula = paintNebula(sector, WIDTH, HEIGHT);
+    }
     const offset = (scroll * 0.12) % HEIGHT;
     c.drawImage(nebula, 0, offset - HEIGHT, WIDTH, HEIGHT);
     c.drawImage(nebula, 0, offset, WIDTH, HEIGHT);
@@ -1289,68 +1240,9 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
   }
 
   function drawBoss(c: CanvasRenderingContext2D, e: Enemy, now: number) {
-    const enraged = e.hp < e.maxHp * 0.5;
-    const core = enraged ? "#ff4d6d" : "#ff7ad9";
     c.save();
     c.translate(e.x, e.y);
-    c.globalCompositeOperation = "lighter";
-    glow(c, 0, 0, 90, core, 0.25 + Math.sin(now / 160) * 0.08);
-    for (const side of [-1, 1]) glow(c, side * 40, -38, 14, "#ffb347", 0.8);
-    c.globalCompositeOperation = "source-over";
-    const hull = c.createLinearGradient(0, -50, 0, 50);
-    hull.addColorStop(0, "#9aa2cc");
-    hull.addColorStop(0.45, "#4a4f7c");
-    hull.addColorStop(1, "#1b1d33");
-    flashFill(c, e, hull);
-    c.beginPath();
-    c.moveTo(-86, -10);
-    c.lineTo(-60, -40);
-    c.lineTo(-22, -46);
-    c.lineTo(22, -46);
-    c.lineTo(60, -40);
-    c.lineTo(86, -10);
-    c.lineTo(70, 22);
-    c.lineTo(36, 30);
-    c.lineTo(20, 48);
-    c.lineTo(-20, 48);
-    c.lineTo(-36, 30);
-    c.lineTo(-70, 22);
-    c.closePath();
-    c.fill();
-    c.strokeStyle = withAlpha(core, 0.6);
-    c.lineWidth = 2;
-    c.stroke();
-    c.strokeStyle = "rgb(10 10 30 / 0.5)";
-    c.lineWidth = 1.2;
-    c.beginPath();
-    c.moveTo(-60, -10);
-    c.lineTo(-30, 10);
-    c.moveTo(60, -10);
-    c.lineTo(30, 10);
-    c.moveTo(-22, -46);
-    c.lineTo(-14, -16);
-    c.moveTo(22, -46);
-    c.lineTo(14, -16);
-    c.stroke();
-    for (const side of [-1, 1]) {
-      c.fillStyle = e.flash > 0 ? "#ffffff" : "#2a2440";
-      c.beginPath();
-      c.arc(side * 54, 8, 9, 0, Math.PI * 2);
-      c.fill();
-      c.fillStyle = core;
-      c.beginPath();
-      c.arc(side * 54, 10, 3, 0, Math.PI * 2);
-      c.fill();
-    }
-    const pulse = 1 + Math.sin(now / 120) * 0.12;
-    const coreGrad = c.createRadialGradient(0, 6, 0, 0, 6, 16 * pulse);
-    coreGrad.addColorStop(0, "#ffffff");
-    coreGrad.addColorStop(0.4, core);
-    coreGrad.addColorStop(1, withAlpha(core, 0));
-    c.fillStyle = coreGrad;
-    c.beginPath();
-    c.arc(0, 6, 16 * pulse, 0, Math.PI * 2);
-    c.fill();
+    drawBossBody(c, hooks.live().theme.sector, e.hp < e.maxHp * 0.5, e.flash > 0, now, hooks.live().theme.style);
     c.restore();
   }
 
@@ -1363,60 +1255,10 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
 
   function drawShip(c: CanvasRenderingContext2D, now: number, animate: boolean) {
     const blink = ship.invuln > 0 && Math.floor(now / 70) % 2 === 0;
+    const theme = hooks.live().theme;
     c.save();
     c.translate(ship.x, ship.y);
-    c.globalCompositeOperation = "lighter";
-    const flicker = animate ? 1 + Math.sin(now / 30) * 0.15 : 1;
-    const flame = ship.overdrive > 0 ? "#ffd84a" : "#ff9a4a";
-    glow(c, -6, 18, 7 * flicker, flame, 0.95, 12 * flicker);
-    glow(c, 6, 18, 7 * flicker, flame, 0.95, 12 * flicker);
-    glow(c, 0, 4, 36, colors.accent, 0.18);
-    c.globalCompositeOperation = "source-over";
-    if (blink) c.globalAlpha = 0.35;
-    c.scale(1 - Math.abs(ship.bank) * 0.16, 1);
-    const wing = c.createLinearGradient(-24, 0, 24, 0);
-    wing.addColorStop(0, "#26346a");
-    wing.addColorStop(0.5 - ship.bank * 0.25, "#7f9de0");
-    wing.addColorStop(1, "#26346a");
-    c.fillStyle = wing;
-    c.beginPath();
-    c.moveTo(0, -8);
-    c.lineTo(23, 11);
-    c.lineTo(21, 18);
-    c.lineTo(8, 14);
-    c.lineTo(-8, 14);
-    c.lineTo(-21, 18);
-    c.lineTo(-23, 11);
-    c.closePath();
-    c.fill();
-    c.strokeStyle = withAlpha(colors.accent, 0.8);
-    c.lineWidth = 1.2;
-    c.stroke();
-    const body = c.createLinearGradient(-8, 0, 8, 0);
-    body.addColorStop(0, "#8ea2d8");
-    body.addColorStop(0.45 - ship.bank * 0.2, "#f2f7ff");
-    body.addColorStop(1, "#5a6ca8");
-    c.fillStyle = body;
-    c.beginPath();
-    c.moveTo(0, -25);
-    c.bezierCurveTo(6, -15, 8, 0, 7, 15);
-    c.lineTo(-7, 15);
-    c.bezierCurveTo(-8, 0, -6, -15, 0, -25);
-    c.fill();
-    c.fillStyle = colors.accent;
-    c.fillRect(-1, -2, 2, 14);
-    const glass = c.createLinearGradient(0, -14, 0, 0);
-    glass.addColorStop(0, "#e9fbff");
-    glass.addColorStop(1, "#1a6f9a");
-    c.fillStyle = glass;
-    c.beginPath();
-    c.ellipse(0, -8, 3.4, 7, 0, 0, Math.PI * 2);
-    c.fill();
-    const on = !animate || Math.floor(now / 400) % 2 === 0;
-    c.fillStyle = on ? "#ff5d5d" : "#5a2030";
-    c.fillRect(-22, 11, 2.5, 2.5);
-    c.fillStyle = on ? "#7dff9a" : "#205a30";
-    c.fillRect(19.5, 11, 2.5, 2.5);
+    drawShipBody(c, theme, ship.bank, flameColor(theme.trail, ship.overdrive > 0, now), now, animate, blink ? 0.35 : 1);
     c.restore();
     c.globalAlpha = 1;
 
@@ -1625,11 +1467,14 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
 
     c.globalCompositeOperation = "lighter";
     const laser = shotColor();
+    const weapon = hooks.live().theme.weapon;
     for (const s of shots) {
-      const color = s.drone ? "#b6ff5c" : laser;
-      glow(c, s.x, s.y, 6, color, 0.9, 16);
-      c.fillStyle = "#ffffff";
-      c.fillRect(s.x - 1, s.y - 8, 2, 13);
+      if (s.drone) {
+        glow(c, s.x, s.y, 6, "#b6ff5c", 0.9, 16);
+        c.fillStyle = "#ffffff";
+        c.fillRect(s.x - 1, s.y - 8, 2, 13);
+      } else drawLaser(c, weapon, s.x, s.y, laser);
+      c.globalCompositeOperation = "lighter";
     }
     for (const m of missiles) {
       glow(c, m.x, m.y, 10, "#ff8a5c", 0.9);
@@ -1669,6 +1514,7 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
       c.fillText(p.text, p.x, p.y);
     }
     c.restore();
+    applyArtStyle(c, hooks.live().theme.style, now, animate);
 
     // Screen-space layers: damage vignette, HUD, countdown.
     const danger = ship.hull === 1 && phase === "playing" ? 0.25 + (animate ? Math.sin(now / 220) * 0.12 : 0) : 0;
@@ -1785,11 +1631,12 @@ const KEYS: Record<string, "left" | "right" | "up" | "down"> = {
 };
 
 export default function GameSpaceBlaster({ records: initialRecords }: { records: Record<string, number> }) {
-  const { play, effects, rootRef } = useArcade();
+  const { play, effects, rootRef, look } = useArcade();
+  const theme = useMemo(() => blasterTheme(look), [look]);
   const { records, submit } = useRecords("space-blaster", initialRecords);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<BlasterGame | null>(null);
-  const live = useRef({ play, effects });
+  const live = useRef({ play, effects, theme });
   const [phase, setPhase] = useState<Phase>("ready");
   const [hud, setHud] = useState<BlasterHud>({ score: 0, wave: 1, hull: 3, maxHull: 3, shield: false, levels: emptyLevels() });
   const [choices, setChoices] = useState<UpgradeId[]>([]);
@@ -1798,7 +1645,7 @@ export default function GameSpaceBlaster({ records: initialRecords }: { records:
   useGameAchievementTracking("space-blaster", phase);
 
   useEffect(() => {
-    live.current = { play, effects };
+    live.current = { play, effects, theme };
   });
 
   const start = useEffectEvent(() => beginRun(""));

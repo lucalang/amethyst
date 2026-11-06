@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { GameOverlay, GameShell, Stat, focusQuietly, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
+import { lookAttributes, PuzzleCelebration, type Celebration } from "./puzzle-looks";
 import "./minigames.css";
 
 export type PuzzleMode = "practice" | "daily";
@@ -189,6 +190,7 @@ export function PuzzleFrame<P>({
   rules,
   tools,
   onHint,
+  celebrate,
   children,
 }: {
   session: PuzzleSession<P>;
@@ -197,9 +199,12 @@ export function PuzzleFrame<P>({
   tools?: ReactNode;
   /** Applies one hint step (calling `session.takeHint()` if it changes anything). */
   onHint?: () => void;
+  /** Overlay played once when solved (from the equipped cosmetic). */
+  celebrate?: Celebration;
   children: ReactNode;
 }) {
   const today = useDailyDate();
+  const { look, effects } = useArcade();
   const { phase, mode, date, seconds, score, best, levels } = session;
   const active = phase === "playing" || phase === "paused";
   const daily = date !== null;
@@ -266,9 +271,10 @@ export function PuzzleFrame<P>({
           <span>{phase === "ready" ? "The clock starts with your first move." : "Press P to pause."}</span>
         </p>
         <div className="relative">
-          <div className={cn("transition-[filter] duration-200", phase === "paused" && "pointer-events-none blur-md select-none")} aria-hidden={phase === "paused"}>
+          <div className={cn("transition-[filter] duration-200", phase === "paused" && "pointer-events-none blur-md select-none")} aria-hidden={phase === "paused"} {...lookAttributes(look)}>
             {children}
           </div>
+          {phase === "solved" && celebrate && effects !== "off" ? <PuzzleCelebration kind={celebrate} /> : null}
           {phase === "paused" ? (
             <GameOverlay title="Paused" actions={<Button size="sm" onClick={session.resume} ref={focusQuietly}>Resume</Button>}>
               The clock is stopped at {formatClock(seconds)}.

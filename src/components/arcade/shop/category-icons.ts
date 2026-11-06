@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Apple, Bird, BookOpen, Brush, Building2, Columns3, Droplets, Grid3x3, Highlighter, Image as ImageIcon, Map as MapIcon, Mountain, Palette, Sparkles, Sword, Type, Wind } from "lucide-react";
+import { Apple, Bird, BookOpen, Brush, Building2, Columns3, Crown, Droplets, Flame, Gem, Ghost, Grid3x3, Highlighter, Image as ImageIcon, Map as MapIcon, Mountain, Orbit, Palette, PartyPopper, Rocket, Route, Sparkles, Sun, Sword, Tag, Type, Wind, Zap } from "lucide-react";
 import type { CategoryIcon } from "@/lib/game-cosmetics";
 
 export const CATEGORY_ICONS: Record<CategoryIcon, ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
@@ -20,4 +20,15 @@ export const CATEGORY_ICONS: Record<CategoryIcon, ComponentType<{ className?: st
   image: ImageIcon,
   droplets: Droplets,
   building: Building2,
+  gem: Gem,
+  ghost: Ghost,
+  rocket: Rocket,
+  flame: Flame,
+  zap: Zap,
+  orbit: Orbit,
+  route: Route,
+  tag: Tag,
+  party: PartyPopper,
+  sun: Sun,
+  crown: Crown,
 };

@@ -4,7 +4,7 @@
  * How each item looks lives with the game's renderer, keyed by the item's slug.
  */
 
-export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker"] as const;
+export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens"] as const;
 export type ShopGame = (typeof SHOP_GAMES)[number];
 export const isShopGame = (value: unknown): value is ShopGame => typeof value === "string" && (SHOP_GAMES as readonly string[]).includes(value);
 
@@ -25,7 +25,18 @@ export type CategoryIcon =
   | "apple"
   | "image"
   | "droplets"
-  | "building";
+  | "building"
+  | "gem"
+  | "ghost"
+  | "rocket"
+  | "flame"
+  | "zap"
+  | "orbit"
+  | "route"
+  | "tag"
+  | "party"
+  | "sun"
+  | "crown";
 
 type ItemDef = { slug: string; name: string; price: number; description: string };
 export type GameCategory = {
@@ -41,6 +52,22 @@ export type GameCategory = {
 export type GameShopInfo = { game: ShopGame; title: string; prefix: string; href: string; blurb: string; categories: GameCategory[] };
 
 const item = (slug: string, name: string, price: number, description: string): ItemDef => ({ slug, name, price, description });
+
+/** Shared art styles for the DOM puzzles (Zip, Patches, Tango, Queens); pure CSS in minigames.css. */
+const PUZZLE_STYLES: GameCategory = {
+  id: "style",
+  label: "Art styles",
+  icon: "brush",
+  style: true,
+  blurb: "Redraws the board, cells and pieces. Your other cosmetics and every clue stay as they are.",
+  default: { name: "Clean", description: "Smooth, simple shapes." },
+  items: [
+    item("pixel", "Pixel", 300, "Square corners, crisp pixel edges and hard drop shadows."),
+    item("sketch", "Sketchbook", 350, "Wobbly hand-drawn shapes, pencil hatching and a handwritten font."),
+    item("clay", "Soft Clay", 400, "Puffy, rounded pieces with soft sculpted shading."),
+    item("glass", "Frosted Glass", 450, "Translucent panes with a glossy sheen."),
+  ],
+};
 
 export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
   snake: {
@@ -504,6 +531,476 @@ export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
           item("fireworks", "Fireworks", 160, "Fireworks burst above the tower."),
         ],
       },
+    ],
+  },
+  "gem-chase": {
+    game: "gem-chase",
+    title: "Gem Chase",
+    prefix: "gem-chase",
+    href: "/arcade/gem-chase",
+    blurb: "Gem skins, maze materials, collection effects, shade palettes and art styles. Mazes, speeds and hitboxes never change.",
+    categories: [
+      {
+        id: "gem",
+        label: "Gem skins",
+        icon: "gem",
+        blurb: "The gem you steer through the maze.",
+        default: { name: "Classic Gem", description: "A bright faceted gem in your arcade theme colors." },
+        items: [
+          item("ruby", "Ruby", 90, "A deep red gem with a rosy glow."),
+          item("sapphire", "Sapphire", 90, "A rich blue gem with an icy edge."),
+          item("emerald", "Emerald", 100, "A vivid green gem with a soft halo."),
+          item("opal", "Opal", 140, "A pearly gem that shimmers through every hue as it moves."),
+          item("aquamarine", "Aquamarine", 100, "A clear sea-green gem with a teal edge."),
+          item("amethyst", "Amethyst", 110, "A royal violet gem with a lilac glow."),
+          item("diamond", "Diamond", 150, "An icy white gem with a brilliant white glow."),
+        ],
+      },
+      {
+        id: "maze",
+        label: "Maze materials",
+        icon: "grid",
+        blurb: "The walls and floor of the maze. Paths stay exactly where they are.",
+        default: { name: "Classic Maze", description: "Walls and floor in your arcade theme colors." },
+        items: [
+          item("neon-grid", "Neon Grid", 120, "Glowing cyan walls on a midnight floor."),
+          item("rose-quartz", "Rose Quartz", 120, "Soft pink stone walls on a deep plum floor."),
+          item("obsidian-gold", "Obsidian & Gold", 150, "Black glass walls trimmed with gold."),
+          item("jade", "Jade Temple", 150, "Carved green jade walls over a deep teal floor."),
+          item("glacier", "Glacier", 130, "Frosted ice-blue walls over a deep navy floor."),
+          item("circuit", "Circuit Board", 130, "Bright green traces on a dark circuit board."),
+          item("lava-forge", "Lava Forge", 160, "Molten orange walls over a scorched floor."),
+        ],
+      },
+      {
+        id: "collect",
+        label: "Collection effects",
+        icon: "sparkles",
+        blurb: "The burst when you pick up glimmers, power gems or catch a shade.",
+        default: { name: "Glint", description: "Little square sparks in the item's color." },
+        items: [
+          item("stardust", "Stardust", 110, "Tiny golden stars scatter outward."),
+          item("bubbles", "Bubbles", 110, "Light rings float away."),
+          item("petals", "Petals", 120, "Pink petals flutter out."),
+          item("prism", "Prism", 140, "Rainbow sparks in every direction."),
+          item("hearts", "Hearts", 120, "Little pink hearts pop out."),
+          item("snowflakes", "Snowflakes", 120, "Icy snowflakes spin away."),
+          item("confetti", "Confetti", 130, "Tumbling paper confetti in party colors."),
+        ],
+      },
+      {
+        id: "shades",
+        label: "Shade palettes",
+        icon: "ghost",
+        blurb: "Colors for the four shades. Scared shades keep their usual look so they stay easy to spot.",
+        default: { name: "Spectrum", description: "Pink, cyan, green and orange shades." },
+        items: [
+          item("pastel", "Pastel", 100, "Soft candy versions of the four shades."),
+          item("sunset", "Sunset", 110, "Red, orange, gold and hot pink shades."),
+          item("candy", "Candy Shop", 110, "Bubblegum, mint, grape and lemon shades."),
+          item("toxic", "Toxic", 130, "Acid green, magenta, aqua and orange shades."),
+          item("arcade", "Arcade Classic", 110, "Red, pink, cyan and orange, like the old cabinets."),
+          item("jewel", "Jewel Box", 120, "Ruby, emerald, topaz and amethyst shades."),
+          item("aurora", "Aurora", 130, "Mint, lilac, rose and lemon shades."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Redraws the gem, shades, glimmers and maze. Your gem, maze, effect and shade colors still apply.",
+        default: { name: "Crystal Glow", description: "Glossy gradients with a soft neon glow." },
+        items: [
+          item("pixel", "Pixel", 300, "Chunky 8-bit pixels and crisp, glow-free walls."),
+          item("cartoon", "Cartoon", 350, "Flat colors with thick ink outlines."),
+          item("paper", "Paper Cut", 400, "Matte paper shapes that cast hard shadows."),
+          item("wireframe", "Wireframe", 450, "Glowing outlines on see-through shapes."),
+        ],
+      },
+    ],
+  },
+  "space-blaster": {
+    game: "space-blaster",
+    title: "Space Blaster",
+    prefix: "space-blaster",
+    href: "/arcade/space-blaster",
+    blurb: "Ship hulls, engine trails, laser colors, sector looks and art styles. Hitboxes, damage and power-up colors never change.",
+    categories: [
+      {
+        id: "hull",
+        label: "Ship hulls",
+        icon: "rocket",
+        blurb: "The paint job on your ship.",
+        default: { name: "Starling", description: "A silver-blue hull with a cyan canopy." },
+        items: [
+          item("crimson", "Crimson Ace", 100, "A red racing hull with a gold stripe."),
+          item("viper", "Viper", 100, "A mint-green hull with a lime stripe."),
+          item("stealth", "Stealth", 120, "Matte charcoal with a red stripe and canopy."),
+          item("monarch", "Monarch", 140, "Gold plating with a violet canopy."),
+          item("hornet", "Hornet", 110, "Yellow wings with a black stripe and amber canopy."),
+          item("arctic", "Arctic", 120, "Snow-white plating with an ice-blue stripe."),
+          item("phantom", "Phantom", 150, "Deep violet plating with a pink stripe and canopy."),
+        ],
+      },
+      {
+        id: "trail",
+        label: "Engine trails",
+        icon: "flame",
+        blurb: "The flame behind your ship. Overdrive still turns it gold.",
+        default: { name: "Ion Flame", description: "A warm orange exhaust." },
+        items: [
+          item("plasma", "Plasma", 100, "A cool cyan plasma jet."),
+          item("violet-wake", "Violet Wake", 110, "A soft purple wake."),
+          item("comet", "Comet Tail", 130, "A pale flame that sheds white sparks."),
+          item("rainbow", "Rainbow Drive", 140, "A flame that cycles through the rainbow."),
+          item("toxic", "Toxic Exhaust", 100, "A bright acid-green jet."),
+          item("inferno", "Inferno", 120, "A fiery red flame that throws white sparks."),
+          item("aurora", "Aurora Drive", 140, "A flame that drifts through teal, blue and violet."),
+        ],
+      },
+      {
+        id: "weapon",
+        label: "Weapon effects",
+        icon: "zap",
+        blurb: "The color and shape of your lasers. Each upgrade level stays brighter than the last.",
+        default: { name: "Ion Laser", description: "Theme-colored bolts that turn lilac, then gold, as you upgrade." },
+        items: [
+          item("ruby", "Ruby Laser", 110, "Red bolts that brighten to pink with upgrades."),
+          item("mint", "Mint Laser", 110, "Mint bolts that shift to sky blue."),
+          item("lance", "Lance", 130, "Thin, long amber beams."),
+          item("void", "Void Bolts", 140, "Wide, short violet bolts that shift to pink."),
+          item("frost", "Frost Laser", 110, "Ice-blue bolts that brighten to white."),
+          item("rose-gold", "Rose Gold", 120, "Rose bolts that warm to peach and cream."),
+          item("needle", "Needle", 140, "Very thin, very long magenta beams."),
+        ],
+      },
+      {
+        id: "sector",
+        label: "Sectors & bosses",
+        icon: "orbit",
+        blurb: "The nebula backdrop and boss plating. Enraged bosses still flash red.",
+        default: { name: "Violet Nebula", description: "Deep blue-violet space with steel boss plating." },
+        items: [
+          item("crimson-rift", "Crimson Rift", 140, "Red nebula clouds and rust-red bosses."),
+          item("emerald", "Emerald Expanse", 140, "Green nebula with jade boss plating."),
+          item("ice", "Ice Field", 150, "Frosty blue space and crystal bosses."),
+          item("solar", "Solar Storm", 160, "Burning orange space with brass bosses."),
+          item("abyss", "Abyss", 140, "Deep-sea teal space with sea-glass bosses."),
+          item("amethyst-nebula", "Amethyst Nebula", 150, "Violet and magenta clouds with lilac bosses."),
+          item("obsidian", "Obsidian Void", 160, "Near-black space with gunmetal bosses and cyan cores."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Restyles the whole battlefield. Your hull, trail, laser and sector colors still apply, and the HUD stays sharp.",
+        default: { name: "Cinematic", description: "Smooth shading with soft glows." },
+        items: [
+          item("pixel", "Pixel", 300, "Chunky retro pixels across the whole screen."),
+          item("crt", "Retro CRT", 350, "Scanlines, a rolling glow band and a curved-screen vignette."),
+          item("comic", "Comic Book", 400, "Halftone dots, with ink outlines on your ship and the boss."),
+          item("hyperglow", "Hyperglow", 450, "Every light blooms with a soft, dreamy glow."),
+        ],
+      },
+    ],
+  },
+  zip: {
+    game: "zip",
+    title: "Zip",
+    prefix: "zip",
+    href: "/arcade/zip",
+    blurb: "Path strokes, board surfaces, checkpoint markers, finish effects and art styles. Puzzles and numbers never change.",
+    categories: [
+      {
+        id: "path",
+        label: "Path strokes",
+        icon: "route",
+        blurb: "The color of the line you draw.",
+        default: { name: "Sunset Trail", description: "Orange warming into pink." },
+        items: [
+          item("ocean", "Ocean", 80, "Cyan deepening into blue."),
+          item("berry", "Berry", 90, "Raspberry fading into violet."),
+          item("aurora", "Aurora", 110, "Green drifting into violet."),
+          item("rainbow", "Rainbow", 130, "The full rainbow from start to finish."),
+          item("lime", "Lime Fizz", 80, "Lime green cooling into teal."),
+          item("ember", "Ember", 100, "Gold burning down to red."),
+          item("candy", "Cotton Candy", 110, "Pink melting into sky blue."),
+        ],
+      },
+      {
+        id: "board",
+        label: "Board surfaces",
+        icon: "image",
+        blurb: "The surface under the grid.",
+        default: { name: "Warm Paper", description: "The usual clean paper board." },
+        items: [
+          item("graph", "Graph Paper", 100, "Fine blue grid lines."),
+          item("kraft", "Kraft Paper", 100, "Brown speckled card."),
+          item("blueprint", "Blueprint", 130, "White lines on blueprint blue."),
+          item("slate", "Slate", 140, "A dark chalk slate."),
+          item("notebook", "Notebook", 100, "Ruled lines with a red margin."),
+          item("sakura", "Sakura", 120, "Blush paper scattered with petals."),
+          item("midnight", "Midnight", 140, "A starry navy board with light lines."),
+        ],
+      },
+      {
+        id: "marker",
+        label: "Checkpoint markers",
+        icon: "tag",
+        blurb: "The shape of the numbered checkpoints. Numbers stay large and clear.",
+        default: { name: "Ink Dots", description: "Solid round dots." },
+        items: [
+          item("rings", "Rings", 60, "Outlined circles with dark numbers."),
+          item("tiles", "Tiles", 70, "Rounded square tiles."),
+          item("hexagons", "Hexagons", 80, "Six-sided badges."),
+          item("diamonds", "Diamonds", 80, "Tilted square diamonds."),
+          item("octagons", "Octagons", 70, "Eight-sided stop-sign badges."),
+          item("star-badges", "Stars", 90, "Chunky five-point stars."),
+          item("shields", "Shields", 90, "Little heraldic shields."),
+        ],
+      },
+      {
+        id: "finish",
+        label: "Completion effects",
+        icon: "party",
+        blurb: "What plays over the board when you solve it.",
+        default: { name: "Glow Wave", description: "The usual glow along the finished path." },
+        items: [
+          item("ripple", "Ripple", 110, "Rings spread out from the center."),
+          item("confetti", "Confetti", 120, "Confetti rains over the board."),
+          item("stars", "Star Burst", 120, "Stars shoot out from the middle."),
+          item("hearts", "Hearts", 120, "Hearts float up the board."),
+          item("bubbles", "Bubbles", 120, "Bubbles rise and pop."),
+          item("fireworks", "Fireworks", 140, "Three fireworks burst in turn."),
+          item("snow", "Snowfall", 130, "Snowflakes drift down."),
+        ],
+      },
+      PUZZLE_STYLES,
+    ],
+  },
+  patches: {
+    game: "patches",
+    title: "Patches",
+    prefix: "patches",
+    href: "/arcade/patches",
+    blurb: "Patch fills, paper, clue badges, placement effects and art styles. Clues and rules never change.",
+    categories: [
+      {
+        id: "fill",
+        label: "Patch fills",
+        icon: "palette",
+        blurb: "The colors and fabric of placed patches.",
+        default: { name: "Quilt Pastels", description: "Bright pastel patches with a stitched edge." },
+        items: [
+          item("gingham", "Gingham", 100, "Pastel patches woven with gingham checks."),
+          item("polka", "Polka Dots", 100, "Pastel patches covered in white dots."),
+          item("sunset", "Sunset Quilt", 110, "Warm corals, golds, pinks and lilac."),
+          item("denim", "Denim", 120, "Denim blues and tans with golden stitching."),
+          item("reef", "Coral Reef", 110, "Sea blues and teals mixed with coral and sand."),
+          item("felt", "Felt", 100, "Soft fuzzy felt in pastel colors."),
+          item("plaid", "Plaid", 120, "Pastel patches woven with tartan stripes."),
+        ],
+      },
+      {
+        id: "paper",
+        label: "Paper & grid",
+        icon: "grid",
+        blurb: "The board under your patches.",
+        default: { name: "Mint Paper", description: "The usual soft board." },
+        items: [
+          item("graph", "Graph Paper", 90, "Fine blue grid lines."),
+          item("kraft", "Kraft Paper", 100, "Brown speckled card."),
+          item("linen", "Linen", 100, "Woven cream linen."),
+          item("notebook", "Notebook", 90, "Ruled lines with a red margin."),
+          item("dotgrid", "Dot Grid", 90, "A bullet-journal dot grid."),
+          item("sakura", "Sakura", 110, "Blush paper scattered with petals."),
+          item("cork", "Corkboard", 120, "A speckled cork pinboard."),
+        ],
+      },
+      {
+        id: "badge",
+        label: "Clue badges",
+        icon: "tag",
+        blurb: "How the area clues are framed. Numbers and shape hints stay readable.",
+        default: { name: "Plain Numbers", description: "Numbers printed straight on the board." },
+        items: [
+          item("bubbles", "Bubbles", 70, "Round raised bubbles."),
+          item("tags", "Price Tags", 80, "Little tilted cream tags."),
+          item("stamps", "Stamps", 90, "Dashed ink stamps in a serif face."),
+          item("tiles", "Tiles", 70, "Raised square tiles."),
+          item("hexes", "Hexagons", 80, "Tinted six-sided badges."),
+          item("notes", "Sticky Notes", 80, "Tilted yellow sticky notes."),
+          item("seals", "Wax Seals", 90, "Round red-rimmed seals."),
+        ],
+      },
+      {
+        id: "effect",
+        label: "Placement & solve effects",
+        icon: "sparkles",
+        blurb: "How patches land and what plays when you solve.",
+        default: { name: "Pop & Wave", description: "Patches pop in and a wave plays on solve." },
+        items: [
+          item("confetti", "Jelly & Confetti", 120, "Patches wobble in; confetti on solve."),
+          item("petals", "Bloom & Petals", 120, "Patches bloom into focus; petals drift on solve."),
+          item("sparkle", "Stitch & Sparkle", 130, "Patches stitch in from the side; stars burst on solve."),
+          item("hearts", "Squish & Hearts", 120, "Patches land with a heartbeat; hearts float up on solve."),
+          item("fizz", "Float & Bubbles", 120, "Patches float up into place; bubbles rise on solve."),
+          item("fireworks", "Slam & Fireworks", 140, "Patches slam down; fireworks burst on solve."),
+          item("snow", "Settle & Snow", 130, "Patches settle softly; snow falls on solve."),
+        ],
+      },
+      PUZZLE_STYLES,
+    ],
+  },
+  tango: {
+    game: "tango",
+    title: "Tango",
+    prefix: "tango",
+    href: "/arcade/tango",
+    blurb: "Symbol pairs, board themes, placement and finish effects, and art styles. Every pair stays easy to tell apart.",
+    categories: [
+      {
+        id: "icons",
+        label: "Symbol pairs",
+        icon: "sun",
+        blurb: "The two symbols you place. Each pair uses different shapes and colors.",
+        default: { name: "Sun & Moon", description: "Golden suns and blue moons." },
+        items: [
+          item("star-heart", "Star & Heart", 100, "Golden stars and crimson hearts."),
+          item("flame-drop", "Flame & Drop", 110, "Orange flames and blue drops."),
+          item("flower-leaf", "Flower & Leaf", 110, "Pink flowers and green leaves."),
+          item("bolt-cloud", "Bolt & Cloud", 120, "Yellow bolts and periwinkle clouds."),
+          item("x-o", "X & O", 100, "Red crosses and blue rings."),
+          item("spade-diamond", "Card Suits", 110, "Black spades and red diamonds."),
+          item("coin-gem", "Coin & Gem", 120, "Gold coins and violet gems."),
+        ],
+      },
+      {
+        id: "board",
+        label: "Board themes",
+        icon: "grid",
+        blurb: "The tiles and frame of the board. Every theme stays light for contrast.",
+        default: { name: "Dawn", description: "The usual soft board." },
+        items: [
+          item("seaside", "Seaside", 100, "Sea-glass tiles on pale aqua."),
+          item("meadow", "Meadow", 100, "Fresh tiles on spring green."),
+          item("parchment", "Parchment", 110, "Old paper tiles on tan."),
+          item("blossom", "Blossom", 120, "Petal-white tiles on pink."),
+          item("lavender", "Lavender", 100, "Pale lilac tiles on lavender."),
+          item("citrus", "Citrus", 110, "Cream tiles on lemon yellow."),
+          item("glacier", "Glacier", 120, "Icy white tiles on frost blue."),
+        ],
+      },
+      {
+        id: "place",
+        label: "Placement effects",
+        icon: "sparkles",
+        blurb: "How a symbol appears when you place it.",
+        default: { name: "Spin & Swing", description: "Suns spin in and moons swing in." },
+        items: [
+          item("pop", "Pop", 90, "Symbols pop in with a bounce."),
+          item("drop", "Drop", 100, "Symbols drop into place."),
+          item("glimmer", "Glimmer", 110, "A glowing ring flashes around each symbol."),
+          item("flip", "Flip", 90, "Symbols flip over like a card."),
+          item("zoom", "Zoom", 100, "Symbols shrink down into place."),
+          item("stamp", "Stamp", 100, "Symbols stamp down with a thud."),
+          item("swirl", "Swirl", 110, "Symbols swirl in with a full spin."),
+        ],
+      },
+      {
+        id: "finish",
+        label: "Completion effects",
+        icon: "party",
+        blurb: "What plays over the board when you solve it.",
+        default: { name: "Glow Wave", description: "The usual glow across the board." },
+        items: [
+          item("confetti", "Confetti", 120, "Confetti rains over the board."),
+          item("petals", "Petals", 120, "Petals drift down."),
+          item("stars", "Star Burst", 120, "Stars shoot out from the middle."),
+          item("hearts", "Hearts", 120, "Hearts float up the board."),
+          item("bubbles", "Bubbles", 120, "Bubbles rise and pop."),
+          item("fireworks", "Fireworks", 140, "Three fireworks burst in turn."),
+          item("snow", "Snowfall", 130, "Snowflakes drift down."),
+        ],
+      },
+      PUZZLE_STYLES,
+    ],
+  },
+  queens: {
+    game: "queens",
+    title: "Queens",
+    prefix: "queens",
+    href: "/arcade/queens",
+    blurb: "Crowns, region colors, board surfaces, effects and art styles. Regions keep their exact shapes.",
+    categories: [
+      {
+        id: "crown",
+        label: "Crown designs",
+        icon: "crown",
+        blurb: "The crown placed on each queen.",
+        default: { name: "Gold Crown", description: "A classic golden crown." },
+        items: [
+          item("tiara", "Silver Tiara", 100, "A slim silver tiara with a sapphire."),
+          item("chess", "Chess Queen", 110, "An ebony chess queen."),
+          item("jeweled", "Jeweled Crown", 120, "Gold set with ruby gems."),
+          item("ice", "Ice Crown", 120, "A frosted crystal crown."),
+          item("rose-gold", "Rose Gold", 110, "A blush rose-gold crown."),
+          item("emerald", "Emerald Crown", 120, "Gold set with emerald gems."),
+          item("laurel", "Laurel Wreath", 130, "A golden-green laurel wreath."),
+        ],
+      },
+      {
+        id: "regions",
+        label: "Region colors",
+        icon: "palette",
+        blurb: "Colors for the regions. Every palette keeps neighbors clearly different.",
+        default: { name: "Pastel", description: "Soft pastel regions." },
+        items: [
+          item("vintage", "Vintage", 100, "Muted, dusty tones."),
+          item("jewel", "Jewel Tones", 110, "Rich, saturated regions."),
+          item("patterned", "Patterned", 130, "Pastel regions with subtle stripes, dots and checks."),
+          item("stained-glass", "Stained Glass", 140, "Glowing panes with dark leading."),
+          item("sorbet", "Sorbet", 100, "Bright, fruity pastels."),
+          item("watercolor", "Watercolor", 120, "Pastel regions with soft painted blooms."),
+          item("mosaic", "Mosaic", 130, "Pastel tiles set in white grout."),
+        ],
+      },
+      {
+        id: "board",
+        label: "Board surfaces",
+        icon: "grid",
+        blurb: "The frame and grid lines around the board.",
+        default: { name: "Royal Violet", description: "A plain dark frame." },
+        items: [
+          item("marble", "Marble", 120, "A cream marble frame with gold trim."),
+          item("walnut", "Walnut", 120, "A dark wooden frame."),
+          item("velvet", "Velvet", 140, "Crimson velvet with gold edging."),
+          item("pearl", "Pearl", 110, "A soft pearly frame with a glow."),
+          item("jade", "Jade", 120, "A carved green jade frame."),
+          item("onyx", "Onyx", 130, "Black onyx with a silver rim."),
+          item("gilded", "Gilded", 150, "A triple-banded gold frame."),
+        ],
+      },
+      {
+        id: "effect",
+        label: "Placement & solve effects",
+        icon: "sparkles",
+        blurb: "How crowns land and what plays when you solve.",
+        default: { name: "Drop & Shimmer", description: "Crowns drop in and shimmer on solve." },
+        items: [
+          item("stamp", "Royal Stamp", 100, "Crowns stamp down; rings spread on solve."),
+          item("sparkle", "Sparkle", 120, "Crowns glint in; stars burst on solve."),
+          item("confetti", "Confetti", 130, "Confetti rains on solve."),
+          item("hearts", "Heartbeat", 120, "Crowns pulse in; hearts float up on solve."),
+          item("bubbles", "Float & Bubbles", 120, "Crowns float up into place; bubbles rise on solve."),
+          item("fireworks", "Fireworks", 140, "Crowns spin in; fireworks burst on solve."),
+          item("snow", "Snowfall", 130, "Crowns settle softly; snow falls on solve."),
+        ],
+      },
+      PUZZLE_STYLES,
     ],
   },
 };

@@ -7,12 +7,12 @@ import { edgeKey, generateZip, ZIP_DAILY_SIZE, ZIP_LEVELS, zipNeighbours, zipSol
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
 import { PuzzleFrame, usePuzzleSession, type PuzzleMode, type PuzzleSession } from "./puzzle-shell";
-
-/** Trail color at `t` (0 = start, 1 = end): orange warming into pink. */
-const trailColor = (t: number) => `hsl(${(382 - t * 50) % 360} 78% ${52 - t * 6}%)`;
+import { CELEBRATIONS, ZipMarker, zipTrail } from "./puzzle-looks";
 
 function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
+  /** Trail color at `t` (0 = start, 1 = end). */
+  const trailColor = zipTrail(look);
   const { puzzle, locked } = session;
   const n = puzzle.size;
   const start = puzzle.numbers.indexOf(1);
@@ -179,6 +179,7 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
       session={session}
       title="Zip"
       onHint={hint}
+      celebrate={CELEBRATIONS[look.finish ?? ""]}
       rules={[
         "Draw one path from 1 that visits every cell exactly once.",
         "Pass the numbers in order (1, 2, 3 …) and finish on the highest number.",
@@ -245,8 +246,7 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
             number ? (
               <g key={`${cell}-${number <= top}`} transform={`translate(${(cell % n) + 0.5} ${Math.floor(cell / n) + 0.5})`}>
                 <g className={number <= top ? "zip-dot-pop" : undefined}>
-                  <circle r="0.3" className={number <= top ? "zip-dot zip-dot-on" : "zip-dot"} />
-                  <text y="0.11" textAnchor="middle" className="zip-number">{number}</text>
+                  <ZipMarker shape={look.marker} number={number} on={number <= top} />
                 </g>
               </g>
             ) : null,

@@ -7,29 +7,21 @@ import { generateQueens, queensConflicts, queensSolved, type QueensPuzzle } from
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
 import { PuzzleFrame, usePuzzleSession, type PuzzleSession } from "./puzzle-shell";
+import { CELEBRATIONS, QueensCrown, QueensDefs, queensRegionColors } from "./puzzle-looks";
 
 /** 0 empty, 1 marked as "no crown", 2 crown. */
 type Mark = 0 | 1 | 2;
 
-/** Region colors, readable on light and dark game skins. */
-const REGION_COLORS = ["#c9a7ff", "#ffb3a7", "#a8e6b0", "#ffe08a", "#9fd3ff", "#ffb8e0", "#d6c7a1", "#b5f0ec", "#e0b0ff", "#c2d68a"];
+/** Region names in palette order (every region palette keeps this hue order). */
 const REGION_NAMES = ["violet", "coral", "mint", "yellow", "sky", "pink", "sand", "aqua", "lilac", "olive"];
 const randomIndex = (length: number) => Math.floor(Math.random() * length);
 /** New conflicts are only shown once the player stops changing the board for this long. */
 const REVEAL_DELAY = 900;
 const crownsOf = (marks: Mark[]) => marks.flatMap((mark, cell) => (mark === 2 ? [cell] : []));
 
-export function CrownIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className={className}>
-      <path d="M3 18l1.6-10 4.6 4.4L12 5l2.8 7.4L19.4 8 21 18z" className="fill-current" />
-      <rect x="3" y="19" width="18" height="2.4" rx="1" className="fill-current" />
-    </svg>
-  );
-}
-
 function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
+  const regionColors = queensRegionColors(look);
   const { puzzle, locked } = session;
   const { size: n, regions } = puzzle;
   const [marks, setMarks] = useState<Mark[]>(() => new Array<Mark>(n * n).fill(0));
@@ -150,6 +142,7 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
       session={session}
       title="Queens"
       onHint={hint}
+      celebrate={CELEBRATIONS[look.effect ?? ""]}
       rules={[
         "Place exactly one crown in every row, every column and every color region.",
         "Crowns may not touch each other, not even diagonally.",
@@ -233,10 +226,10 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
                     }
                     set(cell, "cycle");
                   }}
-                  className={cn("queens-cell relative grid place-items-center", bad.has(cell) && mark === 2 && "queens-cell-bad", hinted === cell && "puzzle-hinted")}
+                  className={cn("queens-cell relative grid place-items-center", `queens-region-${region % 5}`, bad.has(cell) && mark === 2 && "queens-cell-bad", hinted === cell && "puzzle-hinted")}
                   style={
                     {
-                      backgroundColor: REGION_COLORS[region % REGION_COLORS.length],
+                      backgroundColor: regionColors[region % regionColors.length],
                       borderTopWidth: edge(r > 0 ? cell - n : null) ? 2 : 0.5,
                       borderLeftWidth: edge(c > 0 ? cell - 1 : null) ? 2 : 0.5,
                       borderRightWidth: edge(c < n - 1 ? cell + 1 : null) ? 2 : 0.5,
@@ -246,7 +239,7 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
                   }
                 >
                   {mark === 2 ? (
-                    <CrownIcon className="queens-crown size-[64%]" />
+                    <QueensCrown design={look.crown} className="queens-crown size-[64%]" />
                   ) : mark === 1 ? (
                     <svg viewBox="0 0 10 10" aria-hidden className="queens-x size-[26%]">
                       <path d="M2 2l6 6M8 2l-6 6" />
@@ -258,18 +251,10 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
           </div>
         ))}
       </div>
-      <svg aria-hidden className="absolute size-0">
-        <defs>
-          <linearGradient id="queens-gold" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#ffe680" />
-            <stop offset="0.55" stopColor="#f4b416" />
-            <stop offset="1" stopColor="#c97a06" />
-          </linearGradient>
-        </defs>
-      </svg>
+      <QueensDefs />
       <div aria-hidden className="mt-3 flex justify-center gap-1.5">
         {Array.from({ length: n }, (_, i) => (
-          <CrownIcon key={i} className={cn("queens-pip size-5", i < crowns.length && "queens-pip-on", i < crowns.length && bad.size > 0 && "queens-pip-bad")} />
+          <QueensCrown key={i} design={look.crown} className={cn("queens-pip size-5", i < crowns.length && "queens-pip-on", i < crowns.length && bad.size > 0 && "queens-pip-bad")} />
         ))}
       </div>
     </PuzzleFrame>

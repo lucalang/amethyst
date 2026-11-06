@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type PointerEvent } from "react";
 import { Heart, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { MotionLevel } from "@/lib/preferences";
@@ -9,6 +9,7 @@ import { GAME_PALETTES } from "./palettes";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { focusQuietly, GameOverlay, GameShell, Stat, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords, keyDirection } from "./game-shell";
 import type { SoundName } from "./sound";
+import { drawGemBody, drawGlimmer, drawShadeBody, drawSpark, gemChaseTheme, paintMaze, type GemChaseTheme, type SparkShape } from "./gem-chase-look";
 import "./minigames.css";
 
 /**
@@ -76,7 +77,6 @@ const DOOR = { x: 9, y: 8 };
 const EXIT = { x: 9, y: 7 };
 const HOME = { x: 9, y: 9 };
 const SHADE_STARTS = [EXIT, { x: 8, y: 9 }, { x: 9, y: 9 }, { x: 10, y: 9 }];
-const SHADE_COLORS = ["#ff5f8f", "#5fe3ff", "#7dff9a", "#ffae4f"];
 const SHADE_NAMES = ["Ember", "Frost", "Moss", "Dusk"];
 const CORNERS = [
   { x: COLS - 2, y: -2 },
@@ -97,7 +97,7 @@ type Phase = "ready" | "starting" | "playing" | "paused" | "dying" | "cleared" |
 type ShadeMode = "house" | "leaving" | "active" | "eyes";
 type Mover = { x: number; y: number; dir: Dir | null; progress: number };
 type Shade = Mover & { id: number; mode: ShadeMode; releaseAt: number; frightened: boolean; bob: number };
-type Spark = { x: number; y: number; vx: number; vy: number; age: number; life: number; size: number; color: string };
+type Spark = { x: number; y: number; vx: number; vy: number; age: number; life: number; size: number; color: string; shape: SparkShape; spin: number };
 const MAX_SPARKS = 240;
 
 type Hooks = {
@@ -105,7 +105,7 @@ type Hooks = {
   onHud: (hud: { score: number; lives: number; level: number }) => void;
   onOver: (score: number, metrics: { level: number; glimmers: number; shades: number }) => void;
   onStart: () => void;
-  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel };
+  live: () => { play: (name: SoundName, pitch?: number) => void; effects: MotionLevel; theme: GemChaseTheme };
 };
 
 const wrapX = (x: number) => (x + COLS) % COLS;
@@ -148,14 +148,18 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
   const tile = (x: number, y: number) => (y < 0 || y >= ROWS ? " " : (grid[y]?.[wrapX(x)] ?? " "));
   const solid = (c: string) => c === "#" || c === " ";
 
-  function burst(x: number, y: number, color: string, count: number, speed: number, life = 0.5) {
-    const effects = hooks.live().effects;
+  /** `collect` bursts wear the equipped collection effect. */
+  function burst(x: number, y: number, color: string, count: number, speed: number, life = 0.5, collect = false) {
+    const { effects, theme } = hooks.live();
     if (effects === "off") return;
     const n = effects === "subtle" ? Math.ceil(count / 2) : count;
+    const shape = collect ? theme.collect.shape : "square";
+    const palette = collect ? theme.collect.colors : null;
     for (let i = 0; i < n; i += 1) {
       const a = Math.random() * Math.PI * 2;
       const v = speed * (0.4 + Math.random() * 0.6);
-      sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, age: 0, life: life * (0.6 + Math.random() * 0.4), size: 1.5 + Math.random() * 1.5, color });
+      const tint = palette ? palette[Math.floor(Math.random() * palette.length)] : color;
+      sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, age: 0, life: life * (0.6 + Math.random() * 0.4), size: 1.5 + Math.random() * 1.5, color: tint, shape, spin: a });
     }
     if (sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS);
   }
@@ -335,7 +339,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
       glimmers += 1;
       chompPitch = !chompPitch;
       hooks.live().play("chomp", chompPitch ? 1 : 1.25);
-      burst(player.x * TILE + TILE / 2, player.y * TILE + TILE / 2, colors.accent2, 4, 60, 0.3);
+      burst(player.x * TILE + TILE / 2, player.y * TILE + TILE / 2, hooks.live().theme.maze.glimmer, 4, 60, 0.3, true);
       addScore(10);
     } else if (c === "o") {
       grid[player.y][player.x] = "_";
@@ -346,7 +350,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
       frightTotal = frightLeft;
       frightChain = 0;
       flash = hooks.live().effects === "off" ? 0 : 1;
-      burst(player.x * TILE + TILE / 2, player.y * TILE + TILE / 2, colors.foreground, 18, 140, 0.6);
+      burst(player.x * TILE + TILE / 2, player.y * TILE + TILE / 2, colors.foreground, 18, 140, 0.6, true);
       for (const shade of shades) {
         if (shade.mode === "eyes") continue;
         shade.frightened = true;
@@ -407,13 +411,13 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
         const points = 200 * 2 ** (frightChain - 1);
         addScore(points);
         popups.push({ x: s.x, y: s.y, text: String(points), age: 0 });
-        burst(s.x * TILE + TILE / 2, s.y * TILE + TILE / 2, "#7f9bff", 16, 120, 0.55);
+        burst(s.x * TILE + TILE / 2, s.y * TILE + TILE / 2, "#7f9bff", 16, 120, 0.55, true);
         shade.mode = "eyes";
         shade.frightened = false;
         hooks.live().play("combo", 1 + frightChain * 0.1);
       } else {
         hooks.live().play("hit");
-        burst(p.x * TILE + TILE / 2, p.y * TILE + TILE / 2, colors.accent2, 24, 110, 1);
+        burst(p.x * TILE + TILE / 2, p.y * TILE + TILE / 2, hooks.live().theme.gem.glow, 24, 110, 1);
         timer = 0;
         setPhase("dying");
         return;
@@ -489,7 +493,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
       trailTime = 0;
       const p = posOf(player);
       const back = VEC[player.dir];
-      burst(p.x * TILE + TILE / 2 - back.x * 7, p.y * TILE + TILE / 2 - back.y * 7, frightLeft > 0 ? colors.foreground : colors.accent2, 1, 12, 0.4);
+      burst(p.x * TILE + TILE / 2 - back.x * 7, p.y * TILE + TILE / 2 - back.y * 7, frightLeft > 0 ? colors.foreground : hooks.live().theme.gem.glow, 1, 12, 0.4);
     }
     if (phase !== "playing") return;
     collide();
@@ -506,39 +510,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-    const body = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
-    body.addColorStop(0, "#ffffff");
-    body.addColorStop(0.35, colors.accent2);
-    body.addColorStop(1, withAlpha(colors.accent, 0.95));
-    ctx.fillStyle = body;
-    ctx.shadowColor = colors.accent2;
-    ctx.shadowBlur = animate ? 14 : 0;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.arc(0, 0, r, open, Math.PI * 2 - open);
-    ctx.closePath();
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    // Facet lines make the round body read as a cut gem.
-    ctx.strokeStyle = withAlpha("#ffffff", 0.35);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (const a of [Math.PI * 0.55, Math.PI, Math.PI * 1.45]) {
-      ctx.moveTo(-r * 0.15, 0);
-      ctx.lineTo(Math.cos(a) * r * 0.95, Math.sin(a) * r * 0.95);
-    }
-    ctx.stroke();
-    ctx.strokeStyle = withAlpha("#ffffff", 0.6);
-    ctx.beginPath();
-    ctx.arc(0, 0, r - 0.5, open, Math.PI * 2 - open);
-    ctx.stroke();
-    ctx.fillStyle = withAlpha("#ffffff", 0.7);
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.2, -r * 0.75);
-    ctx.lineTo(r * 0.25, -r * 0.45);
-    ctx.lineTo(-r * 0.35, -r * 0.2);
-    ctx.closePath();
-    ctx.fill();
+    drawGemBody(ctx, hooks.live().theme, r, open, now, animate);
     ctx.restore();
   }
 
@@ -546,26 +518,8 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
     if (!ctx) return;
     const flashing = shade.frightened && frightLeft < 2 && animate && Math.floor(now / 180) % 2 === 0;
     if (shade.mode !== "eyes") {
-      const base = shade.frightened ? (flashing ? "#f6f0ff" : "#3d5cff") : SHADE_COLORS[shade.id];
-      const body = ctx.createLinearGradient(x, y - r, x, y + r);
-      body.addColorStop(0, withAlpha("#ffffff", 0.85));
-      body.addColorStop(0.18, base);
-      body.addColorStop(1, withAlpha(base, 0.7));
-      ctx.fillStyle = body;
-      ctx.shadowColor = base;
-      ctx.shadowBlur = animate ? 10 : 0;
-      ctx.beginPath();
-      ctx.arc(x, y - r * 0.15, r, Math.PI, 0);
-      const feet = 4;
-      const wave = animate ? Math.sin(now / 90 + shade.id) * r * 0.12 : 0;
-      ctx.lineTo(x + r, y + r);
-      for (let i = feet; i >= 0; i -= 1) {
-        const fx = x - r + (2 * r * i) / feet;
-        ctx.lineTo(fx, y + r - (i % 2 ? r * 0.35 + wave : 0));
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      const base = shade.frightened ? (flashing ? "#f6f0ff" : "#3d5cff") : hooks.live().theme.shades[shade.id];
+      drawShadeBody(ctx, x, y, r, base, animate ? Math.sin(now / 90 + shade.id) * r * 0.12 : 0, animate, hooks.live().theme.style);
       if (shade.frightened) {
         ctx.strokeStyle = flashing ? "#ff5f8f" : "#f6f0ff";
         ctx.lineWidth = 1.5;
@@ -596,80 +550,32 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
   }
 
   function wallLayer(color: string) {
-    const cached = wallCache[color];
+    const { maze, style } = hooks.live().theme;
+    const cacheKey = `${color}|${maze.surface}|${maze.floor}|${style}`;
+    const cached = wallCache[cacheKey];
     if (cached) return cached;
     const scale = 2;
     const layer = document.createElement("canvas");
     layer.width = WIDTH * scale;
     layer.height = ROWS * TILE * scale;
-    wallCache[color] = layer;
+    wallCache[cacheKey] = layer;
     const g = layer.getContext("2d");
     if (!g) return layer;
     g.scale(scale, scale);
-    const edges = new Path2D();
-    for (let y = 0; y < ROWS; y += 1) {
-      for (let x = 0; x < COLS; x += 1) {
-        const c = grid[y][x];
-        const px = x * TILE;
-        const py = y * TILE;
-        if (c !== "#") {
-          if (c !== " " && (x + y) % 2 === 0) {
-            g.fillStyle = withAlpha(colors.accent, 0.035);
-            g.fillRect(px, py, TILE, TILE);
-          }
-          continue;
-        }
-        const fill = g.createLinearGradient(px, py, px + TILE, py + TILE);
-        fill.addColorStop(0, withAlpha(colors.surface, 0.95));
-        fill.addColorStop(1, withAlpha(colors.surface, 0.75));
-        g.fillStyle = fill;
-        g.fillRect(px, py, TILE, TILE);
-        g.fillStyle = withAlpha(color, 0.07);
-        g.fillRect(px, py, TILE, TILE);
-        // Outline only the sides that face open floor.
-        if (!solid(tile(x, y - 1))) {
-          edges.moveTo(px, py + 2);
-          edges.lineTo(px + TILE, py + 2);
-        }
-        if (!solid(tile(x, y + 1))) {
-          edges.moveTo(px, py + TILE - 2);
-          edges.lineTo(px + TILE, py + TILE - 2);
-        }
-        if (x > 0 && !solid(tile(x - 1, y))) {
-          edges.moveTo(px + 2, py);
-          edges.lineTo(px + 2, py + TILE);
-        }
-        if (x < COLS - 1 && !solid(tile(x + 1, y))) {
-          edges.moveTo(px + TILE - 2, py);
-          edges.lineTo(px + TILE - 2, py + TILE);
-        }
-      }
-    }
-    g.lineCap = "round";
-    g.shadowColor = color;
-    g.shadowBlur = 10;
-    g.strokeStyle = withAlpha(color, 0.35);
-    g.lineWidth = 5;
-    g.stroke(edges);
-    g.shadowBlur = 0;
-    g.strokeStyle = withAlpha(color, 0.95);
-    g.lineWidth = 2;
-    g.stroke(edges);
-    g.strokeStyle = withAlpha("#ffffff", 0.35);
-    g.lineWidth = 0.75;
-    g.stroke(edges);
+    paintMaze(g, grid, TILE, maze, color, (x, y) => solid(tile(x, y)), style);
     return layer;
   }
 
   function draw() {
     if (!ctx || grid.length === 0) return;
-    const effects = hooks.live().effects;
+    const { effects, theme } = hooks.live();
+    const maze = theme.maze;
     const animate = effects !== "off";
     const now = performance.now();
     const { width, height, dpr } = size;
     const view = fitWorld(size, WIDTH, HEIGHT);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = colors.background;
+    ctx.fillStyle = maze.background;
     ctx.fillRect(0, 0, width, height);
     ctx.save();
     ctx.translate(view.x, view.y);
@@ -678,13 +584,13 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
     ctx.rect(0, 0, WIDTH, HEIGHT);
     ctx.clip();
     const glow = ctx.createRadialGradient(WIDTH / 2, HEIGHT / 2, 20, WIDTH / 2, HEIGHT / 2, HEIGHT * 0.7);
-    glow.addColorStop(0, withAlpha(colors.accent, 0.12));
-    glow.addColorStop(1, withAlpha(colors.accent, 0));
+    glow.addColorStop(0, withAlpha(maze.wall, 0.12));
+    glow.addColorStop(1, withAlpha(maze.wall, 0));
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     // HUD
-    ctx.fillStyle = colors.foreground;
+    ctx.fillStyle = maze.foreground;
     ctx.font = "700 18px ui-sans-serif, system-ui, sans-serif";
     ctx.textBaseline = "middle";
     ctx.textAlign = "left";
@@ -694,8 +600,8 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
     ctx.fillText(`LEVEL ${level}`, WIDTH / 2, HUD / 2);
     for (let i = 0; i < Math.min(lives, 6); i += 1) {
       const lx = WIDTH - 16 - i * 22;
-      ctx.fillStyle = colors.accent2;
-      ctx.shadowColor = colors.accent2;
+      ctx.fillStyle = theme.gem.glow;
+      ctx.shadowColor = theme.gem.glow;
       ctx.shadowBlur = animate ? 6 : 0;
       ctx.beginPath();
       ctx.arc(lx, HUD / 2, 7, 0.4, Math.PI * 2 - 0.4);
@@ -713,7 +619,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
 
     ctx.translate(0, HUD);
     const cleared = phase === "cleared" && animate && Math.floor(timer / 0.2) % 2 === 0;
-    const wallColor = cleared ? colors.foreground : colors.accent;
+    const wallColor = cleared ? maze.foreground : maze.wall;
     ctx.drawImage(wallLayer(wallColor), 0, 0, WIDTH, ROWS * TILE);
     if (frightLeft > 0) {
       ctx.fillStyle = withAlpha("#3d5cff", 0.07 + (animate ? Math.sin(now / 200) * 0.025 : 0));
@@ -725,25 +631,18 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
         const px = x * TILE;
         const py = y * TILE;
         if (c === "-") {
-          ctx.fillStyle = withAlpha(colors.foreground, 0.5);
+          ctx.fillStyle = withAlpha(maze.foreground, 0.5);
           ctx.fillRect(px + 2, py + TILE / 2 - 2, TILE - 4, 4);
         } else if (c === ".") {
           const s = 2.6 + (animate ? Math.sin(now / 320 + x * 1.7 + y * 2.3) * 0.7 : 0);
-          ctx.fillStyle = colors.accent2;
-          ctx.beginPath();
-          ctx.moveTo(px + TILE / 2, py + TILE / 2 - s);
-          ctx.lineTo(px + TILE / 2 + s * 0.8, py + TILE / 2);
-          ctx.lineTo(px + TILE / 2, py + TILE / 2 + s);
-          ctx.lineTo(px + TILE / 2 - s * 0.8, py + TILE / 2);
-          ctx.closePath();
-          ctx.fill();
+          drawGlimmer(ctx, px + TILE / 2, py + TILE / 2, s, maze.glimmer, theme.style);
         } else if (c === "o") {
           const pulse = animate ? 1 + Math.sin(now / 160) * 0.15 : 1;
           const cx = px + TILE / 2;
           const cy = py + TILE / 2;
           const halo = ctx.createRadialGradient(cx, cy, 1, cx, cy, 13 * pulse);
-          halo.addColorStop(0, withAlpha(colors.foreground, 0.55));
-          halo.addColorStop(1, withAlpha(colors.accent2, 0));
+          halo.addColorStop(0, withAlpha(maze.foreground, 0.55));
+          halo.addColorStop(1, withAlpha(maze.glimmer, 0));
           ctx.fillStyle = halo;
           ctx.fillRect(px - 4, py - 4, TILE + 8, TILE + 8);
           ctx.save();
@@ -752,9 +651,9 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
           const s = 6.5 * pulse;
           const facets: [string, number][] = [
             ["#ffffff", 0],
-            [colors.accent2, 1],
-            [colors.accent, 2],
-            [colors.foreground, 3],
+            [maze.glimmer, 1],
+            [maze.wall, 2],
+            [maze.foreground, 3],
           ];
           for (const [fill, i] of facets) {
             const a = (i * Math.PI) / 2;
@@ -787,7 +686,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
     if (phase === "dying") {
       const t = Math.min(1, timer / 1.2);
       if (animate) {
-        ctx.fillStyle = withAlpha(colors.accent2, 1 - t);
+        ctx.fillStyle = withAlpha(theme.gem.glow, 1 - t);
         for (let i = 0; i < 8; i += 1) {
           const a = (i / 8) * Math.PI * 2;
           ctx.beginPath();
@@ -798,10 +697,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
     } else drawGem(pc.x, pc.y, TILE * 0.42, now, animate);
 
     ctx.globalCompositeOperation = "lighter";
-    for (const s of sparks) {
-      ctx.fillStyle = withAlpha(s.color, 1 - s.age / s.life);
-      ctx.fillRect(s.x - s.size / 2, s.y - s.size / 2, s.size, s.size);
-    }
+    for (const s of sparks) drawSpark(ctx, s.shape, s.x, s.y, s.size, s.color, s.age / s.life, s.spin, theme.style);
     ctx.globalCompositeOperation = "source-over";
     if (flash > 0) {
       ctx.fillStyle = withAlpha("#ffffff", flash * 0.18);
@@ -875,11 +771,12 @@ type GemChaseGame = ReturnType<typeof createGemChase>;
 const isActive = (phase: Phase) => phase !== "ready" && phase !== "over";
 
 export default function GameGemChase({ records: initialRecords }: { records: Record<string, number> }) {
-  const { play, effects, rootRef } = useArcade();
+  const { play, effects, rootRef, look } = useArcade();
+  const theme = useMemo(() => gemChaseTheme(look), [look]);
   const { records, submit } = useRecords("gem-chase", initialRecords);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<GemChaseGame | null>(null);
-  const live = useRef({ play, effects });
+  const live = useRef({ play, effects, theme });
   const swipe = useRef<{ x: number; y: number; id: number } | null>(null);
   const [phase, setPhase] = useState<Phase>("ready");
   const [hud, setHud] = useState({ score: 0, lives: 3, level: 1 });
@@ -888,7 +785,7 @@ export default function GameGemChase({ records: initialRecords }: { records: Rec
   useGameAchievementTracking("gem-chase", phase);
 
   useEffect(() => {
-    live.current = { play, effects };
+    live.current = { play, effects, theme };
   });
 
   const start = useEffectEvent(() => beginRun(""));

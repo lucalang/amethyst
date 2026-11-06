@@ -51,6 +51,34 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-06-minigame-shops",
+    date: "2026-11-06",
+    title: "Shops for six more Arcade games",
+    intro: "Gem Chase, Space Blaster, Zip, Patches, Tango and Queens now have their own cosmetic shops. Every item is visual only.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Six new game shops", text: "Buy and equip skins, boards, symbols and effects with coins, and preview each one live before you buy." },
+      { kind: "new", feature: "Art styles", text: "Redraw Gem Chase as Pixel, Cartoon, Paper Cut or Wireframe art, Space Blaster as Pixel, Retro CRT, Comic Book or Hyperglow, and Zip, Patches, Tango and Queens as Pixel, Sketchbook, Soft Clay or Frosted Glass." },
+      { kind: "new", feature: "Solve celebrations", text: "Zip, Patches, Tango and Queens can play confetti, petals, stars, ripples, hearts, bubbles, fireworks or snowfall when you solve a puzzle." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Gem Chase and Space Blaster shops",
+          body: "Gem Chase sells gem skins, maze materials, collection effects, shade palettes and four art styles (Pixel, Cartoon, Paper Cut and Wireframe) that redraw the whole maze. Space Blaster sells ship hulls, engine trails, laser effects, sector and boss looks, and four art styles (Pixel, Retro CRT, Comic Book and Hyperglow). Hitboxes, speeds, scared shades, power-up colors and the boss's enraged red don't change.",
+          where: "Arcade → Gem Chase / Space Blaster → Shop",
+          link: { href: "/arcade/gem-chase/shop", label: "Open the Gem Chase shop" },
+        },
+        {
+          title: "Zip, Patches, Tango and Queens shops",
+          body: "Zip sells path colors, board surfaces, checkpoint markers and completion effects. Patches sells patch fills, paper, clue badges and placement effects. Tango sells symbol pairs, board themes, placement effects and completion effects. Queens sells crowns, region colors, board frames and placement effects. All four also sell the same four art styles (Pixel, Sketchbook, Soft Clay and Frosted Glass), which reshape the board, cells and pieces while keeping your other colors. Clues, regions and rules don't change, and every look keeps strong contrast.",
+          where: "Arcade → Zip / Patches / Tango / Queens → Shop",
+          link: { href: "/arcade/zip/shop", label: "Open the Zip shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-queens-patches-polish",
     date: "2026-11-06",
     title: "Queens and Patches get a makeover",
