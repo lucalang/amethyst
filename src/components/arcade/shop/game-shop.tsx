@@ -1,31 +1,7 @@
 "use client";
 
-import { useRef, useState, type ComponentType } from "react";
-import {
-  Apple,
-  Bird,
-  BookOpen,
-  Brush,
-  Building2,
-  Check,
-  Columns3,
-  Coins,
-  Droplets,
-  Eye,
-  Grid3x3,
-  Highlighter,
-  Image as ImageIcon,
-  Loader2,
-  Lock,
-  Map as MapIcon,
-  Mountain,
-  Palette,
-  RotateCcw,
-  Sparkles,
-  Sword,
-  Type,
-  Wind,
-} from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, Coins, Eye, Loader2, Lock, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { CatalogEmpty, CatalogSearch, OwnershipFilter } from "@/components/catalog/catalog-search";
 import { useMotionLevel } from "@/components/showcase/motion";
@@ -42,29 +18,10 @@ import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { catalogMatcher, ownershipMatches, type Ownership } from "@/lib/catalog-search";
 import type { GameShopData } from "@/lib/data/shop";
-import { GAME_SHOPS, type CategoryIcon, type GameCategory, type GameLook } from "@/lib/game-cosmetics";
+import { GAME_SHOPS, type GameCategory, type GameLook } from "@/lib/game-cosmetics";
 import { cn } from "@/lib/utils";
+import { CATEGORY_ICONS } from "./category-icons";
 import { CosmeticPreview } from "./preview";
-
-const ICONS: Record<CategoryIcon, ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
-  palette: Palette,
-  map: MapIcon,
-  sparkles: Sparkles,
-  brush: Brush,
-  grid: Grid3x3,
-  type: Type,
-  bird: Bird,
-  wind: Wind,
-  columns: Columns3,
-  mountain: Mountain,
-  book: BookOpen,
-  highlighter: Highlighter,
-  sword: Sword,
-  apple: Apple,
-  image: ImageIcon,
-  droplets: Droplets,
-  building: Building2,
-};
 
 type Entry = { slug: string | null; id: string | null; name: string; description: string; price: number; available: boolean; owned: boolean; equipped: boolean };
 type Purchase = { entry: Entry; category: GameCategory; stage: "confirm" | "done"; already?: boolean; error?: string | null };
@@ -279,7 +236,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
     );
   }
 
-  const Icon = ICONS[category.icon];
+  const Icon = CATEGORY_ICONS[category.icon];
   const buying = purchase !== null && busy === purchase.entry.id && purchase.stage === "confirm";
 
   return (
@@ -305,7 +262,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
 
       <div role="group" aria-label={`${shop.title} cosmetic categories`} className="-mt-2 flex flex-wrap gap-2">
         {shop.categories.map((cat) => {
-          const CatIcon = ICONS[cat.icon];
+          const CatIcon = CATEGORY_ICONS[cat.icon];
           const owned = entriesOf(cat).filter((entry) => entry.slug && entry.owned).length;
           const hits = filtering ? visibleIn(cat).length : null;
           const selected = cat.id === category.id;

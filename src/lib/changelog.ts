@@ -49,6 +49,25 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-inventory",
+    date: "2026-11-06",
+    title: "Your Inventory",
+    intro: "One place to see every item you own, from artwork frames to game cosmetics.",
+    icon: "box",
+    highlights: [
+      { kind: "new", feature: "Inventory", text: "Browse everything you’ve bought, earned or unlocked, and select any item for a large preview." },
+      { kind: "new", feature: "Find items", text: "Filter by type or game, search by name, and sort by newest, A–Z or type." },
+    ],
+    details: {
+      new: [{
+        title: "The Inventory",
+        body: "The Inventory lists only items you own: artwork frames, avatar decorations, banner themes, profile frames, badges, titles and game cosmetics. Type tiles count what you have and filter the list, game cosmetics can be narrowed to one game, and search matches names and descriptions. Selecting an item opens a large preview (frames on your own artwork, live previews for game cosmetics) with the date you got it and a link to where you can use it. The Inventory is view-only; equipping still happens where it did before.",
+        where: "Account menu → Inventory",
+        link: { href: "/inventory", label: "Open Inventory" },
+      }],
+    },
+  },
+  {
     id: "2026-11-06-scene-performance",
     date: "2026-11-06",
     title: "Less work, the same scenes",

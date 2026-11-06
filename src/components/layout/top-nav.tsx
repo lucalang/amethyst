@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { Backpack, Clapperboard, FlaskConical, Gem, History, KeyRound, LibraryBig, LogOut, Megaphone, Palette, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -131,6 +131,11 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
               <DropdownMenuItem asChild>
                 <Link href="/profile">
                   <UserRound aria-hidden /> My Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/inventory">
+                  <Backpack aria-hidden /> Inventory
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

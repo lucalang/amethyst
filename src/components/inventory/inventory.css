@@ -1,0 +1,213 @@
+/* Inventory: kind summary, item tiles and the inspector. Each item sets --tone (its type's hue). */
+
+.inv-kind {
+  --tone: var(--amethyst);
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: linear-gradient(160deg, rgb(var(--ink-rgb) / 0.035), transparent 60%), var(--card);
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 200ms ease,
+    translate 200ms var(--ease-out-soft, ease-out),
+    scale 120ms ease;
+}
+.inv-kind:hover {
+  translate: 0 -1px;
+  border-color: color-mix(in oklab, var(--tone) 45%, var(--border));
+}
+.inv-kind:active {
+  scale: 0.98;
+}
+.inv-kind:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.inv-kind[aria-pressed="true"] {
+  border-color: color-mix(in oklab, var(--tone) 70%, transparent);
+  background: radial-gradient(14rem 6rem at 0% 0%, color-mix(in oklab, var(--tone) 22%, transparent), transparent 75%), var(--card);
+  box-shadow: 0 14px 30px -22px var(--tone);
+}
+.inv-kind-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  border: 1px solid color-mix(in oklab, var(--tone) 40%, transparent);
+  background: color-mix(in oklab, var(--tone) 14%, transparent);
+  color: var(--tone);
+}
+.inv-kind-count {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+.inv-kind-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.inv-tile {
+  --tone: var(--amethyst);
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  text-align: left;
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    translate 220ms var(--ease-out-soft, ease-out),
+    scale 120ms ease;
+}
+.inv-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--tone), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.inv-tile:hover {
+  translate: 0 -3px;
+  border-color: color-mix(in oklab, var(--tone) 45%, var(--border));
+  box-shadow: 0 20px 36px -26px var(--tone);
+}
+.inv-tile:hover::before,
+.inv-tile[aria-pressed="true"]::before {
+  opacity: 1;
+}
+.inv-tile:active {
+  scale: 0.985;
+}
+.inv-tile:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.inv-tile[aria-pressed="true"] {
+  border-color: color-mix(in oklab, var(--amethyst) 75%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--amethyst) 55%, transparent),
+    0 22px 40px -28px var(--amethyst);
+}
+
+.inv-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(70% 80% at 50% 0%, color-mix(in oklab, var(--tone) 24%, transparent), transparent 72%),
+    radial-gradient(rgb(var(--ink-rgb) / 0.07) 1px, transparent 1.2px) 0 0 / 14px 14px,
+    linear-gradient(180deg, rgb(var(--ink-rgb) / 0.02), transparent);
+}
+/* A soft floor shadow for the item to stand on. */
+.inv-stage::after {
+  content: "";
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  z-index: -1;
+  width: 55%;
+  height: 14%;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--tone) 32%, transparent), transparent);
+  filter: blur(4px);
+}
+.inv-tile .inv-stage {
+  height: 8.5rem;
+  border-bottom: 1px solid var(--border);
+}
+@media (min-width: 40rem) {
+  .inv-tile .inv-stage {
+    height: 9.5rem;
+  }
+}
+.inv-art {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+  transition: scale 260ms var(--ease-out-soft, ease-out);
+}
+.inv-tile:hover .inv-art {
+  scale: 1.06;
+}
+
+.inv-inspect .inv-stage {
+  min-height: 13rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border);
+  padding: 2rem 1rem 1.75rem;
+}
+@media (min-width: 64rem) {
+  .inv-inspect .inv-stage {
+    min-height: 17rem;
+  }
+}
+.inv-inspect .inv-stage[data-type="game"] {
+  min-height: 0;
+  padding: 0.75rem;
+}
+.inv-inspect .inv-stage[data-type="game"]::after {
+  display: none;
+}
+.inv-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--tone);
+  box-shadow: 0 0 10px var(--tone);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-kind,
+  .inv-tile,
+  .inv-art {
+    transition: none;
+  }
+  .inv-kind:hover,
+  .inv-tile:hover {
+    translate: none;
+  }
+  .inv-tile:hover .inv-art {
+    scale: none;
+  }
+}
+:root[data-motion="off"] .inv-kind:hover,
+:root[data-motion="off"] .inv-tile:hover {
+  translate: none;
+}
+:root[data-motion="off"] .inv-tile:hover .inv-art {
+  scale: none;
+}

@@ -1,0 +1,36 @@
+import type { Metadata } from "next";
+import { InventoryView } from "@/components/inventory/inventory-view";
+import { PageContainer, PageHeader } from "@/components/layout/app-shell";
+import { EntranceScope } from "@/components/layout/entrance-scope";
+import { artworkSrc } from "@/lib/attachments";
+import { loadInventory } from "@/lib/data/inventory";
+import { requireUser } from "@/lib/supabase/auth";
+import type { FrameSample } from "../settings/frame-settings";
+
+export const metadata: Metadata = { title: "Inventory" };
+
+export default async function InventoryPage() {
+  const ctx = await requireUser();
+  const [items, { data: profile }, { data: covers }] = await Promise.all([
+    loadInventory(ctx).catch(() => null),
+    ctx.supabase.from("users").select("display_name, avatar_url").eq("id", ctx.userId).maybeSingle(),
+    // The account's own covers to show frames on (row-level security keeps this to the account).
+    ctx.supabase.from("entries").select("title, cover_url, cover_shape").not("cover_url", "is", null).order("updated_at", { ascending: false }).limit(40),
+  ]);
+  const sample = (shape: "portrait" | "square"): FrameSample | null => {
+    const row = (covers ?? []).find((cover) => cover.cover_shape === shape && artworkSrc(cover.cover_url));
+    return row?.cover_url ? { title: row.title, coverUrl: row.cover_url } : null;
+  };
+  return (
+    <EntranceScope>
+      <PageContainer>
+        <PageHeader title="Inventory" description="Everything you’ve bought, earned or unlocked, in one place." />
+        <InventoryView
+          items={items}
+          profile={{ name: profile?.display_name?.trim() || null, avatarUrl: profile?.avatar_url ?? null }}
+          samples={{ portrait: sample("portrait"), square: sample("square") }}
+        />
+      </PageContainer>
+    </EntranceScope>
+  );
+}
