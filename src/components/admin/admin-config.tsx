@@ -31,7 +31,7 @@ export function validateConfig(
   else if (expires !== null && config.startsAt && expires <= Date.parse(config.startsAt)) errors.expiresAt = "The expiry has to be after the start.";
   if (config.maxRedemptions !== null && (config.maxRedemptions < 1 || config.maxRedemptions > LIMITS.maxRedemptions))
     errors.maxRedemptions = `Enter a number from 1 to ${number(LIMITS.maxRedemptions)}, or leave it empty for no limit.`;
-  if (config.perAccountLimit < 1 || config.perAccountLimit > LIMITS.perAccount) errors.perAccountLimit = `Enter a number from 1 to ${LIMITS.perAccount}.`;
+  if (config.perAccountLimit < 1 || config.perAccountLimit > LIMITS.perAccount) errors.perAccountLimit = `Enter a number from 1 to ${number(LIMITS.perAccount)}.`;
   if (needsRepeatConfirmation(config) && !confirmRepeat && raisesPayout(config, original)) errors.confirm = "Confirm the repeatable coin payout before publishing.";
   return errors;
 }
@@ -267,7 +267,7 @@ export function SealFields({ idPrefix, config, onChange, errors, accounts = [] }
             aria-describedby={describedBy(id("max"), true, errors.maxRedemptions)}
           />
         </Field>
-        <Field id={id("per")} label="Per account" hint={`How often one account may redeem it (1 to ${LIMITS.perAccount}).`} error={errors.perAccountLimit}>
+        <Field id={id("per")} label="Per account" hint={`How often one account may redeem it (1 to ${number(LIMITS.perAccount)}).`} error={errors.perAccountLimit}>
           <input
             id={id("per")}
             className="cs-input cs-input-number"
@@ -418,7 +418,7 @@ function AccountPicker({ idPrefix, value, initial, onChange, error }: { idPrefix
           ))}
         </ul>
       ) : null}
-      <p className="cs-hint">{value.length ? `${number(value.length)} of at most ${LIMITS.allowlist} accounts listed.` : "No accounts listed yet."}</p>
+      <p className="cs-hint">{value.length ? `${number(value.length)} of at most ${number(LIMITS.allowlist)} accounts listed.` : "No accounts listed yet."}</p>
       {value.length ? (
         <ul className="cs-account-list">
           {value.map((id) => {

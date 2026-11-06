@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useEffectEvent, type CSSProperties } from "react";
+import { useEffect, useEffectEvent, useRef, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { FastForward } from "lucide-react";
+import { useSettings } from "@/components/layout/settings-context";
 import { CUTSCENE_RARITIES, RARITIES, type CutsceneRarity } from "@/lib/rarities";
+import { playPullAudio } from "./pull-audio";
+import { playPullScene } from "./pull-scene";
 import "./pull-cutscene.css";
 
-/** Length of each scene in ms; higher rarities build up longer. */
-const DURATION: Record<CutsceneRarity, number> = { secret: 2800, prismatic: 3800, exalted: 4800, amethyst: 6400 };
-const BUILD: Record<CutsceneRarity, number> = { secret: 500, prismatic: 900, exalted: 1400, amethyst: 2400 };
+/** Length of each scene in ms; higher rarities charge up longer before the gem shatters. */
+const DURATION: Record<CutsceneRarity, number> = { secret: 4200, prismatic: 4600, exalted: 5600, amethyst: 7400 };
+const BUILD: Record<CutsceneRarity, number> = { secret: 1900, prismatic: 1800, exalted: 2300, amethyst: 3200 };
 const LINES: Record<CutsceneRarity, string> = {
-  secret: "Something hidden surfaced",
+  secret: "Decrypting something hidden",
   prismatic: "Light splits into every colour",
-  exalted: "The vault bows",
+  exalted: "Something descends",
   amethyst: "The rarest stone in the archive",
 };
 
@@ -23,6 +26,12 @@ const LINES: Record<CutsceneRarity, string> = {
 export function PullCutscene({ rarity, name, onDone }: { rarity: CutsceneRarity; name: string; onDone: () => void }) {
   const level = CUTSCENE_RARITIES.indexOf(rarity) + 1;
   const done = useEffectEvent(onDone);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const { arcadeSound } = useSettings();
+  useEffect(() => {
+    if (arcadeSound) return playPullAudio(rarity, BUILD[rarity], DURATION[rarity]);
+  }, [rarity, arcadeSound]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => done(), DURATION[rarity]);
     const onKey = (event: KeyboardEvent) => {
@@ -38,30 +47,25 @@ export function PullCutscene({ rarity, name, onDone }: { rarity: CutsceneRarity;
     };
   }, [rarity]);
 
+  useEffect(() => {
+    if (!canvas.current) return;
+    return playPullScene(canvas.current, { rarity, color: RARITIES[rarity].color, build: BUILD[rarity], duration: DURATION[rarity] });
+  }, [rarity]);
+
+  const label = RARITIES[rarity].label;
   const style = { "--pc": RARITIES[rarity].color, "--pc-time": `${DURATION[rarity]}ms`, "--pc-build": `${BUILD[rarity]}ms` } as CSSProperties;
-  const sparks = Array.from({ length: level * 10 }, (_, index) => index);
   return createPortal(
-    <div className="pc-root" data-rarity={rarity} data-level={level} style={style} role="dialog" aria-modal aria-label={`${RARITIES[rarity].label} pull: ${name}`} onClick={onDone}>
-      <div className="pc-veil" aria-hidden />
-      <div className="pc-rays" aria-hidden />
-      {level >= 2 ? <div className="pc-prism" aria-hidden /> : null}
-      {level >= 3 ? (
-        <div className="pc-rings" aria-hidden>
-          <span />
-          <span />
-          <span />
-        </div>
-      ) : null}
-      {level >= 4 ? <div className="pc-vortex" aria-hidden /> : null}
-      <div className="pc-sparks" aria-hidden>
-        {sparks.map((index) => (
-          <span key={index} style={{ "--a": `${(index * 137.5) % 360}deg`, "--d": `${(index % 7) * 60}ms`, "--r": `${30 + ((index * 53) % 40)}vmax` } as CSSProperties} />
-        ))}
-      </div>
-      <div className="pc-flash" aria-hidden />
+    <div className="pc-root" data-rarity={rarity} data-level={level} style={style} role="dialog" aria-modal aria-label={`${label} pull: ${name}`} onClick={onDone}>
+      <canvas ref={canvas} className="pc-canvas" aria-hidden />
       <div className="pc-text">
         <p className="pc-line">{LINES[rarity]}</p>
-        <p className="pc-rarity">{RARITIES[rarity].label}</p>
+        <p className="pc-rarity" aria-hidden>
+          {[...label].map((letter, index) => (
+            <span key={index} style={{ "--i": index, "--n": label.length } as CSSProperties}>
+              {letter}
+            </span>
+          ))}
+        </p>
         <p className="pc-name">{name}</p>
       </div>
       <button

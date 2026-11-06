@@ -166,7 +166,7 @@ export function RewardsEditor({ value, onChange, context, error, idPrefix }: Edi
   );
 }
 
-const QUICK_COINS = [100, 500, 1000, 5000, 25_000, 100_000, 1_000_000];
+const QUICK_COINS = [100, 1000, 10_000, 100_000, 1_000_000, 10_000_000, 1_000_000_000];
 
 function CoinEditor({ value, onChange, idPrefix }: EditorProps) {
   const id = `${idPrefix}-coins`;

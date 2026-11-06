@@ -58,7 +58,7 @@ const RELEASES: readonly Release[] = [
     icon: "sparkles",
     highlights: [
       { kind: "new", feature: "Prismatic, Exalted and Amethyst", text: "Three new rarities above Secret, each with a case-exclusive banner and title in the Release Case. Amethyst is extremely rare." },
-      { kind: "new", feature: "Rare pull cutscenes", text: "Secret and higher pulls play a skippable scene that gets bigger with every rarity; pick which rarities play it in Settings." },
+      { kind: "new", feature: "Rare pull cutscenes", text: "Secret and higher pulls play a skippable scene, and every rarity has its own: a decryption lock, a rainbow prism, a golden ascension and a shattering crystal, each with its own soundtrack. Pick which rarities play it in Settings." },
       { kind: "improved", feature: "Luck Boosters", text: "Each booster now covers 10 case openings at about a tenth of the old price, and luck matters most for the rarest tiers." },
       { kind: "improved", feature: "Shop and Inventory", text: "A cleaner Shop landing with three big sections and new Inventory tabs." },
     ],
@@ -72,7 +72,7 @@ const RELEASES: readonly Release[] = [
         },
         {
           title: "Rare pull cutscenes",
-          body: "When an opening lands on a Secret or rarer item, a full-screen scene plays before the reward: Secret gets a burst of light, Prismatic adds rainbow light, Exalted adds shockwaves and a screen shake, and Amethyst builds up with a vortex. Skip any scene with the Skip button, a click, or Esc. Scenes don't play with reduced motion.",
+          body: "When an opening lands on a Secret or rarer item, a full-screen scene plays before the reward, and each rarity has its own. Secret decrypts a lock: glyphs rain down, cipher rings snap into place and an eye opens and blows them apart. Prismatic sends white light through a spinning prism that fans into rainbows and then shatters into a turning kaleidoscope with aurora ribbons. Exalted lowers a heaven beam onto a rune circle, forms a halo and unfurls golden wings as feathers drift down. Amethyst pulls light out of a black hole into a crystal that cracks and shatters into shards and shockwaves. The rarity name then slams in letter by letter. Every scene has its own synthesized sound (data chatter and lock clicks, glass pings and a shatter, a choir swell with bells, a heartbeat and a double shockwave) that follows the Arcade sound switch and fades out when you skip. Skip any scene with the Skip button, a click, or Esc. Scenes don't play when motion is off.",
           where: "Settings → General → Notifications",
           link: { href: "/settings", label: "Choose rarities" },
         },

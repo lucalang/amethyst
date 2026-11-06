@@ -7,15 +7,15 @@ import { z } from "zod";
 
 export const LIMITS = {
   label: 120,
-  coins: 10_000_000,
-  items: 100,
-  achievements: 50,
-  loot: 20,
-  cases: 1000,
-  boosters: 100,
-  allowlist: 500,
-  maxRedemptions: 1_000_000,
-  perAccount: 100,
+  coins: 1_000_000_000,
+  items: 1000,
+  achievements: 500,
+  loot: 100,
+  cases: 100_000,
+  boosters: 100_000,
+  allowlist: 10_000,
+  maxRedemptions: 1_000_000_000,
+  perAccount: 10_000,
 } as const;
 
 /** Code-granted coins are recorded as their own kind and never count toward the daily earning limit. */
@@ -41,7 +41,7 @@ const configShape = {
   loot: z
     .array(lootGrantSchema)
     .max(LIMITS.loot)
-    .refine((loot) => loot.every((grant) => grant.quantity <= lootLimit(grant.kind)), `Give up to ${LIMITS.cases.toLocaleString("en")} of each case and ${LIMITS.boosters} of each booster.`),
+    .refine((loot) => loot.every((grant) => grant.quantity <= lootLimit(grant.kind)), `Give up to ${LIMITS.cases.toLocaleString("en")} of each case and ${LIMITS.boosters.toLocaleString("en")} of each booster.`),
   audience: z.enum(["everyone", "allowlist"]),
   allowlist: z.array(z.uuid()).max(LIMITS.allowlist),
   startsAt: isoDate,
