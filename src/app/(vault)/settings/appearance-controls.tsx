@@ -91,7 +91,7 @@ export function HoverScaleSetting({ value, labelId }: { value: number; labelId: 
         marks={["No zoom", "Big zoom"]}
       />
       <div
-        className="flex items-end gap-4 rounded-lg border border-white/[0.07] bg-black/40 px-5 pt-6 pb-4"
+        className="flex items-end gap-4 rounded-2xl border border-border bg-background/60 bg-[radial-gradient(60%_80%_at_50%_0%,rgb(var(--accent-rgb)/0.12),transparent_72%)] px-5 pt-6 pb-4"
         style={{ "--card-hover-scale": 1 + local / 100 } as CSSProperties}
       >
         {TONES.map((tone, index) => (

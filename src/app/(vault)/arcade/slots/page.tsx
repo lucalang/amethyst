@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
+import { Cherry } from "lucide-react";
 import { CoinSlots, type SlotHistoryRow, type SlotStatus } from "@/components/arcade/slots/coin-slots";
 import { PageContainer } from "@/components/layout/app-shell";
 import { parseSlotMachine, slotOdds } from "@/lib/slots";
@@ -19,9 +21,12 @@ export default async function SlotsPage() {
   if (!machine || !status) {
     return (
       <PageContainer>
-        <p role="status" className="rounded-xl border border-border p-6 text-center text-sm text-muted-foreground">
+        <div role="status" className="ui-empty enter mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-10 text-center text-sm text-muted-foreground" style={{ "--tone": "#f472b6" } as CSSProperties}>
+          <span aria-hidden className="ui-icon">
+            <Cherry className="size-4.5" />
+          </span>
           Coin Slots is closed for maintenance right now. Your coins are safe; try again later.
-        </p>
+        </div>
       </PageContainer>
     );
   }

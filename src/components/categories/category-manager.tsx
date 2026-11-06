@@ -105,18 +105,21 @@ export function CategoryManager({ categories: initial, usage, collectionId }: { 
       </form>
 
       {categories.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-white/[0.1] px-4 py-6 text-center text-sm text-muted-foreground">
-          No labels yet.
-        </p>
+        <div className="ui-empty flex flex-col items-center gap-2 px-4 py-8 text-center">
+          <span aria-hidden className="ui-icon">
+            <Tag className="size-4" />
+          </span>
+          <p className="text-sm text-muted-foreground">No labels yet.</p>
+        </div>
       ) : (
-        <ul aria-label="Your labels" className="divide-y divide-white/[0.06] overflow-hidden rounded-lg border border-white/[0.08]">
+        <ul aria-label="Your labels" className="ui-panel divide-y divide-border overflow-hidden">
           {categories.map((category) => {
             const count = usage[category.id] ?? 0;
             const isEditing = editing?.id === category.id;
             return (
-              <li key={category.id} className="group/row flex min-h-14 items-center gap-3 px-3 py-2 transition-colors hover:bg-white/[0.025]">
-                <span className="grid size-8 shrink-0 place-items-center rounded-full bg-amethyst/10 text-amethyst ring-1 ring-amethyst/25 transition-transform duration-200 group-hover/row:-rotate-12">
-                  <Tag aria-hidden className="size-3.5" />
+              <li key={category.id} className="group/row flex min-h-14 items-center gap-3 px-3 py-2 transition-colors hover:bg-amethyst/[0.04]">
+                <span aria-hidden className="ui-icon ui-icon-sm transition-transform duration-200 group-hover/row:-rotate-12 motion-reduce:transition-none">
+                  <Tag className="size-3.5" />
                 </span>
                 {isEditing ? (
                   <form

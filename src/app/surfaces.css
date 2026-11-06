@@ -1,0 +1,186 @@
+/* Site-wide surfaces in the Inventory/Cases language. --tone tints a surface (defaults to the theme accent). */
+
+.ui-hero {
+  --tone: var(--amethyst);
+  position: relative;
+  isolation: isolate;
+}
+.ui-hero::before {
+  content: "";
+  position: absolute;
+  inset: -3rem -2rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 45% 50% at 12% 50%, color-mix(in oklab, var(--tone) 16%, transparent), transparent);
+}
+.ui-hero-icon,
+.ui-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 0.8rem;
+  border: 1px solid color-mix(in oklab, var(--tone, var(--amethyst)) 40%, transparent);
+  background: color-mix(in oklab, var(--tone, var(--amethyst)) 14%, transparent);
+  color: var(--tone, var(--amethyst));
+}
+.ui-hero-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  box-shadow: 0 14px 30px -18px var(--tone);
+}
+.ui-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+.ui-icon-sm {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.6rem;
+}
+
+.ui-panel {
+  --tone: var(--amethyst);
+  position: relative;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: linear-gradient(160deg, rgb(var(--ink-rgb) / 0.03), transparent 55%), var(--card);
+}
+.ui-panel[data-glow] {
+  background:
+    radial-gradient(36rem 9rem at 50% 0%, color-mix(in oklab, var(--tone) 12%, transparent), transparent 75%),
+    var(--card);
+}
+
+/* Interactive card: lifts and glows in its tone. */
+.ui-card {
+  --tone: var(--amethyst);
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  outline: none;
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    translate 220ms var(--ease-out-soft, ease-out),
+    scale 120ms ease;
+}
+.ui-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--tone), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.ui-card:hover {
+  translate: 0 -3px;
+  border-color: color-mix(in oklab, var(--tone) 45%, var(--border));
+  box-shadow: 0 20px 36px -26px var(--tone);
+}
+.ui-card:hover::before,
+.ui-card[aria-current="page"]::before,
+.ui-card[data-selected="true"]::before {
+  opacity: 1;
+}
+.ui-card:active {
+  scale: 0.985;
+}
+.ui-card:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.ui-card[data-selected="true"],
+.ui-card[aria-current="page"] {
+  border-color: color-mix(in oklab, var(--tone) 70%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--tone) 45%, transparent),
+    0 22px 40px -28px var(--tone);
+}
+
+/* Artwork area of a card: tone glow, dot grid and a soft floor shadow. */
+.ui-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(70% 80% at 50% 0%, color-mix(in oklab, var(--tone) 24%, transparent), transparent 72%),
+    radial-gradient(rgb(var(--ink-rgb) / 0.07) 1px, transparent 1.2px) 0 0 / 14px 14px,
+    linear-gradient(180deg, rgb(var(--ink-rgb) / 0.02), transparent);
+}
+.ui-stage > * {
+  transition: scale 260ms var(--ease-out-soft, ease-out);
+}
+.ui-card:hover .ui-stage > * {
+  scale: 1.06;
+}
+
+.ui-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.1rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+.ui-pill[data-tone] {
+  border-color: color-mix(in oklab, var(--tone, var(--amethyst)) 55%, transparent);
+  background: color-mix(in oklab, var(--tone, var(--amethyst)) 16%, var(--card));
+  color: var(--foreground);
+}
+
+.ui-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--tone, var(--amethyst));
+  box-shadow: 0 0 10px var(--tone, var(--amethyst));
+}
+
+.ui-empty {
+  border-radius: 1rem;
+  border: 1px dashed color-mix(in oklab, var(--tone, var(--amethyst)) 30%, var(--border));
+  background: radial-gradient(20rem 8rem at 50% 0%, color-mix(in oklab, var(--tone, var(--amethyst)) 8%, transparent), transparent 75%);
+}
+
+/* Segmented control with a tinted active segment (Inventory tabs). */
+.ui-segment {
+  display: inline-flex;
+  gap: 0.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: rgb(var(--ink-rgb) / 0.025);
+  padding: 0.3rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-card,
+  .ui-stage > * {
+    transition: none;
+  }
+  .ui-card:hover {
+    translate: none;
+  }
+  .ui-card:hover .ui-stage > * {
+    scale: none;
+  }
+}
+:root[data-motion="off"] .ui-card:hover {
+  translate: none;
+}
+:root[data-motion="off"] .ui-card:hover .ui-stage > * {
+  scale: none;
+}

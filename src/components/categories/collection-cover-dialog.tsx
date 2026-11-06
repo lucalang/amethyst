@@ -66,11 +66,11 @@ export function CollectionCoverDialog({ open, onOpenChange, collection }: { open
               const custom = draft.map(asPreview).filter((item) => item.coverUrl);
               const shown = custom.length ? custom : choices.data.automatic;
               return (
-                <div className="flex items-center gap-4 rounded-lg border border-white/[0.1] bg-black/30 p-3">
+                <div className="ui-panel flex items-center gap-4 p-3" data-glow>
                   {shown.length ? (
                     <CoverStack previews={shown} />
                   ) : (
-                    <span aria-hidden className="grid h-24 w-16 shrink-0 place-items-center rounded-md border border-dashed border-white/[0.16] text-[10px] text-muted-foreground">
+                    <span aria-hidden className="ui-empty grid h-24 w-16 shrink-0 place-items-center text-[10px] text-muted-foreground">
                       No art
                     </span>
                   )}

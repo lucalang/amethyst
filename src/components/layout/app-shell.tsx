@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { settingsStyle } from "@/lib/appearance";
 import type { AvatarDecorationId, ProfileBadgeId, ProfileTitleId } from "@/lib/cosmetics";
 import type { LibraryCategory } from "@/lib/collections";
@@ -75,12 +76,32 @@ export function PageContainer({ children, className = "" }: { children: ReactNod
   return <div className={`mx-auto w-full max-w-[88rem] px-4 py-7 md:px-6 md:py-10 ${className}`}>{children}</div>;
 }
 
-export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  icon: Icon,
+  tone,
+}: {
+  title: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+  icon?: LucideIcon;
+  /** Any CSS color; tints the header glow and icon (defaults to the theme accent). */
+  tone?: string;
+}) {
   return (
-    <div className="enter mb-7 flex flex-wrap items-end justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight break-words md:text-3xl">{title}</h1>
-        {description ? <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">{description}</p> : null}
+    <div className="ui-hero enter mb-7 flex flex-wrap items-end justify-between gap-3" style={tone ? ({ "--tone": tone } as CSSProperties) : undefined}>
+      <div className="flex min-w-0 items-center gap-4">
+        {Icon ? (
+          <span aria-hidden className="ui-hero-icon">
+            <Icon className="size-6" />
+          </span>
+        ) : null}
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold tracking-tight break-words md:text-3xl">{title}</h1>
+          {description ? <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p> : null}
+        </div>
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>

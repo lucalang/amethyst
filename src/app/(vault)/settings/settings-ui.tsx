@@ -13,7 +13,7 @@ export function resetFor(preferences: Preferences, keys: readonly PreferenceKey[
 /** Page title for one settings section. */
 export function SettingsHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
   return (
-    <div id="settings-section-title" className="enter mb-8 flex scroll-mt-40 flex-wrap items-end justify-between gap-4">
+    <div id="settings-section-title" className="ui-hero enter mb-7 flex scroll-mt-40 flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
         <h1 className="text-2xl font-extrabold tracking-tight break-words md:text-3xl">{title}</h1>
         {description ? <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
@@ -26,9 +26,12 @@ export function SettingsHeader({ title, description, actions }: { title: string;
 /** A titled group of related settings. */
 export function SettingsGroup({ id, title, description, children, className }: { id: string; title: string; description?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section id={id} aria-labelledby={`${id}-heading`} className={cn("enter enter-soft scroll-mt-28 border-t border-white/[0.08] py-7 first-of-type:border-t-0 first-of-type:pt-0", className)}>
-      <div className="mb-5">
-        <h2 id={`${id}-heading`} className="text-base font-semibold tracking-normal">{title}</h2>
+    <section id={id} aria-labelledby={`${id}-heading`} className={cn("ui-panel enter enter-soft mb-4 scroll-mt-28 p-5 md:p-6", className)}>
+      <div className="mb-5 border-b border-border pb-4">
+        <h2 id={`${id}-heading`} className="flex items-center gap-2 text-base font-semibold tracking-normal">
+          <span aria-hidden className="ui-dot" />
+          {title}
+        </h2>
         {description ? <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}
       </div>
       {children}
@@ -51,7 +54,7 @@ export function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div id={labelId ? `${labelId}-setting` : undefined} className="grid scroll-mt-40 gap-4 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-8">
+    <div id={labelId ? `${labelId}-setting` : undefined} className="grid scroll-mt-40 gap-4 border-t border-border pt-7 first:border-t-0 first:pt-0 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-8">
       <div className="min-w-0">
         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">
           <p id={labelId} className="text-sm font-medium text-foreground">{label}</p>

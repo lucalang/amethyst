@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Backpack, Store } from "lucide-react";
+import { Backpack, Package, Store } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { LootboxShop } from "@/components/lootboxes/lootbox-shop";
@@ -18,6 +18,7 @@ export default async function CasesShopPage() {
       <PageContainer>
         <PageHeader
           title="Cases"
+          icon={Package}
           description="Buy cases with Coins and open them in your Inventory for cosmetics. Every reward and its exact chance is listed below."
           actions={
             <div className="flex gap-2">

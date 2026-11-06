@@ -3,9 +3,11 @@
 import { useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Award, Check, Coins, Eye, Loader2, Lock } from "lucide-react";
+import { ArrowRight, Award, Check, Coins, Eye, LayoutGrid, Loader2, Lock, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
-import { CatalogEmpty, CatalogSearch, FilterChip, OwnershipFilter } from "@/components/catalog/catalog-search";
+import { CatalogEmpty, CatalogSearch, OwnershipFilter } from "@/components/catalog/catalog-search";
+import { TYPE_LOOK, toneStyle } from "@/components/inventory/item-art";
+import "@/components/inventory/inventory.css";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import {
@@ -35,13 +37,13 @@ type Filter = "all" | CosmeticKind | "achievement";
 type Busy = { action: "buy" | "equip"; id: CosmeticId | null } | null;
 type Purchase = { item: ShopItem; stage: "confirm" | "done"; already?: boolean; balanceAfter?: number; error?: string | null };
 
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "frame", label: "Frames" },
-  { id: "avatar_decoration", label: "Avatar decorations" },
-  { id: "profile_banner", label: "Banner themes" },
-  { id: "profile_frame", label: "Profile frames" },
-  { id: "achievement", label: "Achievements" },
+const FILTERS: { id: Filter; label: string; icon: LucideIcon; tone: string }[] = [
+  { id: "all", label: "All", icon: LayoutGrid, tone: "var(--amethyst)" },
+  { id: "frame", label: "Frames", ...TYPE_LOOK.frame },
+  { id: "avatar_decoration", label: "Avatar decorations", ...TYPE_LOOK.avatar_decoration },
+  { id: "profile_banner", label: "Banner themes", ...TYPE_LOOK.profile_banner },
+  { id: "profile_frame", label: "Profile frames", ...TYPE_LOOK.profile_frame },
+  { id: "achievement", label: "Achievements", icon: Award, tone: TYPE_LOOK.badge.tone },
 ];
 /** Worn on the profile showcase rather than on artwork or the avatar. */
 const isShowcaseKind = (kind: CosmeticKind) => kind === "profile_banner" || kind === "profile_frame";
@@ -329,25 +331,28 @@ export function ShopView({
           <section
             ref={fittingRoom}
             aria-labelledby="fitting-heading"
-            className="enter scroll-mt-24 rounded-2xl border border-border bg-surface/50 p-4 lg:sticky lg:top-24"
-            style={{ "--enter-index": 2 } as CSSProperties}
+            data-glow
+            className="ui-panel enter scroll-mt-24 p-4 lg:sticky lg:top-24"
+            style={toneStyle(TYPE_LOOK[focus.kind].tone, 2)}
           >
             <h2 id="fitting-heading" className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-              <Eye aria-hidden className="size-4 text-amethyst" />
+              <span aria-hidden className="ui-icon ui-icon-sm">
+                <Eye className="size-4" />
+              </span>
               Preview
             </h2>
-            <div
-              aria-hidden
-              className="mt-3 flex min-h-56 items-center justify-center rounded-xl border border-border bg-[radial-gradient(20rem_12rem_at_50%_0%,rgb(var(--accent-rgb)/0.16),transparent_70%)] px-4 pt-10 pb-8"
-            >
+            <div aria-hidden className="ui-stage mt-3 min-h-56 rounded-xl border border-border px-4 pt-10 pb-8">
               <ItemPreview id={focus.id} large samples={samples} profile={profile} />
             </div>
             <div aria-live="polite" className="mt-4">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{COSMETIC_KIND_LABELS[focus.kind]}</p>
+              <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                <span aria-hidden className="ui-dot" />
+                {COSMETIC_KIND_LABELS[focus.kind]}
+              </p>
               <p className="mt-0.5 flex items-center justify-between gap-3 text-base font-semibold text-foreground">
                 {COSMETICS[focus.id].name}
                 {focus.owned ? null : focus.source === "achievement" ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amethyst">
+                  <span className="ui-pill" data-tone>
                     <Award aria-hidden className="size-3.5" />
                     Achievement
                   </span>
@@ -415,22 +420,38 @@ export function ShopView({
             Items
           </h2>
           <div className="enter mb-4 grid gap-3" style={{ "--enter-index": 2 } as CSSProperties}>
-            <CatalogSearch value={query} onChange={setQuery} label="Search the shop" placeholder="Search frames, decorations and themes" className="sm:w-80" />
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <div role="group" aria-label="Kind" className="flex flex-wrap gap-2">
-                {FILTERS.map((option) => (
-                  <FilterChip key={option.id} pressed={filter === option.id} onClick={() => setFilter(option.id)} count={counts[option.id]}>
-                    {option.label}
-                  </FilterChip>
-                ))}
-              </div>
-              <span aria-hidden className="hidden h-5 w-px bg-border sm:block" />
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <CatalogSearch value={query} onChange={setQuery} label="Search the shop" placeholder="Search frames, decorations and themes" className="sm:w-80" />
               <OwnershipFilter value={ownership} onChange={setOwnership} />
+            </div>
+            <div role="group" aria-label="Kind" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {FILTERS.map((option) => {
+                const Icon = option.icon;
+                const pressed = filter === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    aria-pressed={pressed}
+                    onClick={() => setFilter(option.id)}
+                    className={cn("inv-kind select-none", counts[option.id] === 0 && !pressed && "opacity-60")}
+                    style={toneStyle(option.tone)}
+                  >
+                    <span aria-hidden className="inv-kind-icon">
+                      <Icon className="size-[1.1rem]" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="inv-kind-count">{counts[option.id]}</span>
+                      <span className="inv-kind-label">{option.label}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
           {shown.length === 0 ? (
             ownership === "owned" && !match && !items.some((item) => item.owned) ? (
-              <p className="rounded-xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
+              <p className="ui-empty px-4 py-10 text-center text-sm text-muted-foreground">
                 Nothing here yet. Items you buy stay yours for good and show up here.
               </p>
             ) : (
@@ -450,61 +471,51 @@ export function ShopView({
                 const isFocus = focus?.id === item.id;
                 return (
                   <li key={item.id} className="enter enter-card min-w-0" style={{ "--enter-index": index + 3 } as CSSProperties}>
-                    <article
-                      className={cn(
-                        "group/shop-card flex h-full flex-col overflow-hidden rounded-xl border bg-surface/40 transition-[border-color,background-color,box-shadow] duration-200",
-                        isFocus
-                          ? "border-amethyst/65 bg-amethyst/[0.04] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.32),0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] hover:border-amethyst/80"
-                          : "border-border hover:border-amethyst/45 hover:bg-surface/65 hover:shadow-[0_14px_34px_-24px_rgb(var(--accent-rgb)/0.45)]",
-                      )}
-                    >
+                    <article className="group/shop-card inv-tile" data-selected={isFocus} style={toneStyle(TYPE_LOOK[item.kind].tone)}>
                       <button
                         type="button"
                         onClick={() => preview(item.id)}
                         aria-pressed={isFocus}
                         aria-label={`Preview ${info.name}`}
-                        className={cn(
-                          "group/preview relative flex h-40 items-center justify-center px-4 pt-6 pb-5 transition-[background-color,scale] duration-200 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:active:scale-100",
-                          isFocus
-                            ? "bg-[radial-gradient(16rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.2),transparent_72%)]"
-                            : "bg-[radial-gradient(16rem_9rem_at_50%_0%,rgb(var(--accent-rgb)/0.11),transparent_70%)] hover:bg-[radial-gradient(16rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.18),transparent_72%)]",
-                        )}
+                        className="group/preview inv-stage w-full outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                       >
-                        <span className="transition-transform duration-200 ease-out group-hover/preview:-translate-y-0.5 motion-reduce:transition-none motion-reduce:group-hover/preview:translate-y-0">
+                        <span className="inv-art">
                           <ItemPreview id={item.id} samples={samples} profile={profile} />
                         </span>
                         {item.owned ? (
-                          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border">
-                            <Check aria-hidden className="size-3 text-amethyst" />
+                          <span className="idx-status absolute top-2.5 left-2.5" data-owned="true">
+                            <Check aria-hidden className="size-3" />
                             {item.equipped ? "Equipped" : "Owned"}
                           </span>
                         ) : null}
                         <span
                           aria-hidden
+                          data-tone={isFocus ? "" : undefined}
                           className={cn(
-                            "absolute top-2.5 right-2.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-[opacity,color,border-color,background-color] duration-150",
-                            isFocus
-                              ? "border border-amethyst/45 bg-amethyst/15 text-amethyst opacity-100"
-                              : "border border-border bg-background/85 text-muted-foreground opacity-0 group-hover/preview:border-amethyst/35 group-hover/preview:text-foreground group-hover/preview:opacity-100 group-focus-visible/preview:opacity-100",
+                            "ui-pill absolute top-2.5 right-2.5 transition-opacity duration-150",
+                            isFocus ? "opacity-100" : "opacity-0 group-hover/preview:opacity-100 group-focus-visible/preview:opacity-100",
                           )}
                         >
                           <Eye className="size-3" />
                           {isFocus ? "In preview" : "Preview"}
                         </span>
                       </button>
-                      <div className="flex flex-1 flex-col gap-1 border-t border-border p-4">
+                      <div className="flex flex-1 flex-col gap-1 p-4">
                         <div className="flex items-start justify-between gap-3">
-                          <h3 className="text-sm font-semibold text-foreground transition-colors group-hover/shop-card:text-amethyst">{info.name}</h3>
+                          <h3 className="text-sm font-semibold text-foreground transition-colors group-hover/shop-card:text-(--tone)">{info.name}</h3>
                           {item.owned ? null : item.source === "achievement" ? (
-                            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-amethyst">
-                              <Award aria-hidden className="size-3.5" />
+                            <span className="ui-pill shrink-0" data-tone>
+                              <Award aria-hidden className="size-3" />
                               Achievement
                             </span>
                           ) : (
                             <Price value={item.price} className="text-sm" />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">{COSMETIC_KIND_LABELS[item.kind]}</p>
+                        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <span aria-hidden className="inv-dot" />
+                          {COSMETIC_KIND_LABELS[item.kind]}
+                        </p>
                         <div className="mt-auto pt-3">{itemAction(item)}</div>
                       </div>
                     </article>
@@ -532,10 +543,10 @@ export function ShopView({
                     {COSMETIC_KIND_LABELS[dialogItem.kind]}. It’s yours for good once bought, and it doesn’t change anything until you equip it.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <div aria-hidden className="flex justify-center rounded-lg border border-border px-4 pt-6 pb-5">
+                <div aria-hidden className="ui-stage rounded-xl border border-border px-4 pt-6 pb-5" style={toneStyle(TYPE_LOOK[dialogItem.kind].tone)}>
                   <ItemPreview id={purchase.item.id} samples={samples} profile={profile} />
                 </div>
-                <dl className="grid grid-cols-[1fr_auto] gap-y-1.5 rounded-lg border border-border p-3 text-sm">
+                <dl className="ui-panel grid grid-cols-[1fr_auto] gap-y-1.5 p-3 text-sm">
                   <dt className="text-muted-foreground">Price</dt>
                   <dd className="text-right">
                     <Price value={purchase.item.price} />
@@ -573,7 +584,7 @@ export function ShopView({
                       : "Wear it on your profile picture now, or keep it for later in Profile settings."}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <div aria-hidden className="flex justify-center rounded-lg border border-border px-4 pt-6 pb-5">
+                <div aria-hidden className="ui-stage rounded-xl border border-border px-4 pt-6 pb-5" style={toneStyle(TYPE_LOOK[dialogItem.kind].tone)}>
                   <ItemPreview id={purchase.item.id} samples={samples} profile={profile} />
                 </div>
                 {purchase.error ? (

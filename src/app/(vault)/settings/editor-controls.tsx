@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { EDITOR_FONT_STACKS, EDITOR_WIDTH_VALUES, effectiveHeadingColors, headingsFollowTheme } from "@/lib/appearance";
 import {
   DEFAULT_SETTINGS,
@@ -128,7 +129,8 @@ export function EditorAppearanceSettings({ settings }: { settings: EditorSetting
             {HEADING_LEVELS.map((level) => (
               <label
                 key={level}
-                className="flex cursor-pointer items-center gap-3 rounded-md border border-white/[0.09] bg-white/[0.02] px-3 py-2 transition-colors hover:border-amethyst/40 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+                className="ui-card flex cursor-pointer items-center gap-3 px-3 py-2.5"
+                style={{ "--tone": shown[level] } as CSSProperties}
               >
                 <input
                   type="color"
@@ -155,7 +157,7 @@ export function EditorAppearanceSettings({ settings }: { settings: EditorSetting
       </SettingRow>
 
       <SettingRow label="Preview" description="How a note will look with these choices.">
-        <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-black/50 px-5 py-6">
+        <div className="overflow-hidden rounded-2xl border border-border bg-background/60 bg-[radial-gradient(60%_80%_at_50%_0%,rgb(var(--accent-rgb)/0.12),transparent_72%)] px-5 py-6">
           <div
             className="mx-auto transition-[max-width] duration-300"
             style={{

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Backpack } from "lucide-react";
+import { Backpack, BookMarked } from "lucide-react";
 import { CollectionIndexView } from "@/components/inventory/collection-index";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -30,6 +30,7 @@ export default async function CollectionIndexPage({ searchParams }: { searchPara
       <PageContainer>
         <PageHeader
           title="Index"
+          icon={BookMarked}
           description="Every collectible in Amethyst: what you own, what you’re missing, and where to find it."
           actions={
             <Button asChild variant="outline" size="sm">

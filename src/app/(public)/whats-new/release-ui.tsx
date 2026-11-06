@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -26,11 +27,14 @@ import { PreviewIntroButton } from "@/components/layout/whats-new";
 import { CHANGE_KINDS, type ChangeKind, type Highlight, type ReleaseIcon, type ReleaseNote } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
 
+/** `tone` is a CSS color fed to the shared --tone surfaces. */
 export const KIND_META: Record<ChangeKind, { label: string; section: string; icon: LucideIcon; tone: string; text: string }> = {
-  new: { label: "New", section: "New features", icon: Plus, tone: "bg-amethyst/12 text-amethyst ring-amethyst/30", text: "text-amethyst" },
-  improved: { label: "Improved", section: "Improvements", icon: Sparkles, tone: "bg-rose/10 text-rose ring-rose/30", text: "text-rose" },
-  fixed: { label: "Fixed", section: "Fixes", icon: Wrench, tone: "bg-white/[0.05] text-muted-foreground ring-white/[0.14]", text: "text-muted-foreground" },
+  new: { label: "New", section: "New features", icon: Plus, tone: "var(--amethyst)", text: "text-amethyst" },
+  improved: { label: "Improved", section: "Improvements", icon: Sparkles, tone: "var(--rose)", text: "text-rose" },
+  fixed: { label: "Fixed", section: "Fixes", icon: Wrench, tone: "var(--muted-foreground)", text: "text-muted-foreground" },
 };
+
+export const toneStyle = (tone: string) => ({ "--tone": tone }) as CSSProperties;
 
 const RELEASE_ICONS: Record<ReleaseIcon, LucideIcon> = {
   megaphone: Megaphone,
@@ -51,11 +55,11 @@ const RELEASE_ICONS: Record<ReleaseIcon, LucideIcon> = {
   tasks: ListChecks,
 };
 
-export function ReleaseGlyph({ icon, className }: { icon: ReleaseIcon; className?: string }) {
+export function ReleaseGlyph({ icon, hero = false, className }: { icon: ReleaseIcon; hero?: boolean; className?: string }) {
   const Icon = RELEASE_ICONS[icon];
   return (
-    <span aria-hidden className={cn("grid shrink-0 place-items-center rounded-lg bg-amethyst/10 text-amethyst ring-1 ring-amethyst/20", className)}>
-      <Icon className="size-[55%]" />
+    <span aria-hidden className={cn(hero ? "ui-hero-icon" : "ui-icon", className)}>
+      <Icon className="size-[50%]" />
     </span>
   );
 }
@@ -63,7 +67,7 @@ export function ReleaseGlyph({ icon, className }: { icon: ReleaseIcon; className
 export function KindMark({ kind, className }: { kind: ChangeKind; className?: string }) {
   const meta = KIND_META[kind];
   return (
-    <span className={cn("grid size-5 shrink-0 place-items-center rounded-full ring-1", meta.tone, className)}>
+    <span className={cn("grid size-5 shrink-0 place-items-center rounded-full border border-(--tone)/40 bg-(--tone)/15 text-(--tone)", className)} style={toneStyle(meta.tone)}>
       <meta.icon aria-hidden className="size-3" />
       <span className="sr-only">{meta.label}:</span>
     </span>
@@ -72,9 +76,9 @@ export function KindMark({ kind, className }: { kind: ChangeKind; className?: st
 
 export function KindLegend({ className }: { className?: string }) {
   return (
-    <ul aria-label="Change types" className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground", className)}>
+    <ul aria-label="Change types" className={cn("ui-segment items-center gap-1 text-xs text-muted-foreground", className)}>
       {CHANGE_KINDS.map((kind) => (
-        <li key={kind} className="flex items-center gap-1.5">
+        <li key={kind} className="flex items-center gap-1.5 rounded-xl px-2.5 py-1">
           <KindMark kind={kind} />
           <span aria-hidden>{KIND_META[kind].label}</span>
         </li>
@@ -117,8 +121,10 @@ export function HighlightList({ highlights, className }: { highlights: readonly 
 
 export function ReleaseNotice({ children }: { children: React.ReactNode }) {
   return (
-    <p role="note" className="flex gap-2 rounded-md border-l-2 border-rose bg-rose/[0.06] px-3 py-2 text-sm leading-6 text-foreground/90">
-      <TriangleAlert aria-hidden className="mt-1 size-4 shrink-0 text-rose" />
+    <p role="note" className="ui-panel flex gap-3 px-3.5 py-3 text-sm leading-6 text-foreground/90" data-glow style={toneStyle("var(--rose)")}>
+      <span aria-hidden className="ui-icon ui-icon-sm">
+        <TriangleAlert className="size-3.5" />
+      </span>
       <span>
         <span className="font-semibold">Heads up: </span>
         {children}

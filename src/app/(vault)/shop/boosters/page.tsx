@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Backpack, Package } from "lucide-react";
+import { Backpack, Clover, Package } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { BoosterShop } from "@/components/lootboxes/booster-shop";
@@ -18,6 +18,8 @@ export default async function BoostersPage() {
       <PageContainer>
         <PageHeader
           title="Luck Boosters"
+          icon={Clover}
+          tone="#22c55e"
           description="Each booster improves the odds of your next 10 case openings."
           actions={
             <div className="flex gap-2">

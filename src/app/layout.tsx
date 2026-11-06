@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bungee, Caveat, Cinzel, Fredoka, JetBrains_Mono, Literata, Manrope, Patrick_Hand, Permanent_Marker, Playfair_Display, Press_Start_2P, Special_Elite, VT323 } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
 import "./globals.css";
+import "./surfaces.css";
 
 const manrope = Manrope({
   variable: "--font-manrope",

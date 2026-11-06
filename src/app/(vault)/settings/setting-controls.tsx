@@ -129,27 +129,15 @@ export function ChoiceCards<T extends string>({
       {options.map((option) => {
         const checked = value === option.value;
         return (
-          <label
-            key={option.value}
-            className={cn(
-              "group/option relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-foreground/[0.02] p-3.5 transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out select-none hover:-translate-y-0.5 hover:scale-[1.01] hover:border-amethyst/45 hover:bg-amethyst/[0.05] hover:shadow-[0_14px_34px_-22px_rgb(var(--accent-rgb)/0.6)] active:translate-y-0 active:scale-[0.98] active:duration-75 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
-              checked ? "border-amethyst/65 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-border",
-            )}
-          >
+          <label key={option.value} data-selected={checked} className="ui-card flex cursor-pointer flex-col select-none">
             <input type="radio" name={name} value={option.value} checked={checked} onChange={() => onChange(option.value)} className="sr-only" />
             {option.preview ? (
-              <span aria-hidden className="flex min-h-16 items-center justify-center overflow-hidden rounded-md bg-black/60 p-3 ring-1 ring-white/[0.05]">
+              <span aria-hidden className="set-stage flex min-h-20 items-center justify-center border-b border-border p-3.5">
                 {option.preview}
               </span>
             ) : null}
-            <span className="flex items-start gap-2.5">
-              <span
-                aria-hidden
-                className={cn(
-                  "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-[border-color,background-color,scale] duration-150",
-                  checked ? "scale-105 border-amethyst bg-amethyst text-amethyst-foreground" : "border-input group-hover/option:border-amethyst/65",
-                )}
-              >
+            <span className="flex items-start gap-2.5 p-3.5">
+              <span aria-hidden data-on={checked} className="set-mark">
                 {checked ? <Check className="size-3" strokeWidth={3} /> : null}
               </span>
               <span className="min-w-0">
@@ -189,9 +177,9 @@ type BooleanKey = { [K in keyof Settings]: Settings[K] extends boolean ? K : nev
 export function SwitchSetting({ settingKey, value, labelId, onLabel, offLabel }: { settingKey: BooleanKey; value: boolean; labelId: string; onLabel: string; offLabel: string }) {
   const [local, update] = useSetting(settingKey, value);
   return (
-    <div className="flex items-center gap-3">
+    <div className="inline-flex items-center gap-3 rounded-2xl border border-border bg-surface/40 py-2 pr-4 pl-2.5">
       <Switch id={`${settingKey}-switch`} aria-labelledby={labelId} checked={local} onCheckedChange={update} />
-      <label htmlFor={`${settingKey}-switch`} className="cursor-pointer text-sm text-muted-foreground">
+      <label htmlFor={`${settingKey}-switch`} className={cn("cursor-pointer text-sm font-medium transition-colors", local ? "text-foreground" : "text-muted-foreground")}>
         {local ? onLabel : offLabel}
       </label>
     </div>
@@ -237,7 +225,7 @@ export function RangeInput({
           className="settings-range h-5 min-w-0 flex-1 cursor-pointer"
           style={{ "--range-fill": `${percent}%` } as CSSProperties}
         />
-        <output htmlFor={id} className="w-16 shrink-0 rounded-md border border-white/[0.09] bg-white/[0.03] px-2 py-1 text-center text-sm tabular-nums">
+        <output htmlFor={id} className="w-16 shrink-0 rounded-xl border border-amethyst/40 bg-amethyst/15 px-2 py-1 text-center text-sm font-semibold tabular-nums shadow-[0_8px_24px_-14px_var(--amethyst)]">
           {format(value)}
         </output>
       </div>

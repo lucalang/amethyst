@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookMarked } from "lucide-react";
+import { Backpack, BookMarked } from "lucide-react";
 import { InventoryTabs } from "@/components/inventory/inventory-tabs";
 import { InventoryView } from "@/components/inventory/inventory-view";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
@@ -39,6 +39,7 @@ export default async function InventoryPage() {
       <PageContainer>
         <PageHeader
           title="Inventory"
+          icon={Backpack}
           description="Everything you’ve bought, earned or unlocked, in one place."
           actions={
             <Button asChild variant="outline" size="sm">

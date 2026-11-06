@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { PageContainer } from "@/components/layout/app-shell";
 import { SettingsSearch } from "@/components/layout/settings-search";
 import { SettingsNav } from "./settings-nav";
+import "./settings.css";
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return (

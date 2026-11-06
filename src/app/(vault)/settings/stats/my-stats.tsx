@@ -90,7 +90,7 @@ export function MyStatsView({ stats }: { stats: MyStats }) {
         <Stat historyKey="cosmetics" icon={Gem} label="Cosmetics owned" value={rewards.cosmetics} definition={`Frames, decorations, badges, titles and game looks you own. ${plural(rewards.codes, "Vault code")} redeemed.`} />
       </Group>
 
-      <p className="flex items-start gap-2 border-t border-white/[0.08] pt-5 text-xs leading-5 text-muted-foreground">
+      <p className="ui-empty flex items-start gap-2 px-4 py-3.5 text-xs leading-5 text-muted-foreground">
         <CalendarCheck aria-hidden className="mt-0.5 size-3.5 shrink-0 text-amethyst" />
         Only you can see these numbers. They&rsquo;re counted from what&rsquo;s saved right now, so deleting something removes it from your stats.
       </p>

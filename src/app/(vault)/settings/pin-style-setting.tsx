@@ -80,13 +80,7 @@ export function PinStyleSetting({ value, labelId }: { value: PinStyle; labelId: 
       {OPTIONS.map((option) => {
         const checked = selected === option.value;
         return (
-          <label
-            key={option.value}
-            className={cn(
-              "group/option relative flex cursor-pointer flex-col gap-4 rounded-lg border bg-white/[0.02] p-4 transition-[border-color,background-color,box-shadow] duration-200 hover:border-amethyst/40 hover:bg-amethyst/[0.04] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-              checked ? "border-amethyst/60 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-white/[0.09]",
-            )}
-          >
+          <label key={option.value} data-selected={checked} className="ui-card flex cursor-pointer flex-col select-none">
             <input
               type="radio"
               name="pin-style"
@@ -95,19 +89,15 @@ export function PinStyleSetting({ value, labelId }: { value: PinStyle; labelId: 
               onChange={() => void choose(option.value)}
               className="sr-only"
             />
-            <span aria-hidden className="flex items-end gap-2.5 rounded-md bg-black/60 px-3 pt-3 pb-2.5 ring-1 ring-white/[0.05]">
-              <MiniPoster variant={option.value} pinned tone="bg-[linear-gradient(160deg,#6d4bb8,#2a1747_60%,#120a1f)]" />
-              <MiniPoster variant={option.value} tone="bg-[linear-gradient(160deg,#a14f7f,#3b1830_60%,#140812)]" />
-              <MiniPoster variant={option.value} pinned tone="bg-[linear-gradient(160deg,#4f6bb8,#1a2547_60%,#0a0f1f)]" />
+            <span aria-hidden className="set-stage border-b border-border px-4 pt-4 pb-3">
+              <span className="flex items-end justify-center gap-2.5">
+                <MiniPoster variant={option.value} pinned tone="bg-[linear-gradient(160deg,#6d4bb8,#2a1747_60%,#120a1f)]" />
+                <MiniPoster variant={option.value} tone="bg-[linear-gradient(160deg,#a14f7f,#3b1830_60%,#140812)]" />
+                <MiniPoster variant={option.value} pinned tone="bg-[linear-gradient(160deg,#4f6bb8,#1a2547_60%,#0a0f1f)]" />
+              </span>
             </span>
-            <span className="flex items-start gap-3">
-              <span
-                aria-hidden
-                className={cn(
-                  "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-colors",
-                  checked ? "border-amethyst bg-amethyst text-amethyst-foreground" : "border-white/25",
-                )}
-              >
+            <span className="flex items-start gap-2.5 p-3.5">
+              <span aria-hidden data-on={checked} className="set-mark">
                 {checked ? <Check className="size-3" strokeWidth={3} /> : null}
               </span>
               <span className="min-w-0">

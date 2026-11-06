@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -52,9 +52,9 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
   const fieldClass = "h-11 border-white/[0.16] bg-black/50 px-3.5 text-sm placeholder:text-muted-foreground/75";
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!pending) { setError(null); onOpenChange(next); } }}>
-      <DialogContent className="max-h-[92dvh] gap-6 overflow-y-auto rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[34rem]">
+      <DialogContent className="max-h-[92dvh] gap-6 overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[34rem]">
         <DialogHeader className="flex-row items-center gap-3.5">
-          <span aria-hidden style={accentStyle(accent)} className={cn("grid size-11 shrink-0 place-items-center rounded-lg border", accent ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-[var(--ca)]" : "border-amethyst/25 bg-amethyst/10 text-amethyst")}>
+          <span aria-hidden style={accent ? { ...accentStyle(accent), "--tone": "var(--ca)" } as CSSProperties : undefined} className="ui-hero-icon">
             {icon ? <ClientCollectionIcon icon={icon} className="size-5" /> : collection ? <Pencil className="size-5" /> : <FolderPlus className="size-5" />}
           </span>
           <div className="min-w-0">
@@ -193,8 +193,8 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
             </div>
           </fieldset>
 
-          {error ? <p id={`collection-error-${key}`} role="alert" className="flex items-start gap-2 rounded-md border border-rose/20 bg-rose/[0.06] px-3 py-2.5 text-xs leading-5 text-rose"><AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />{error}</p> : null}
-          <DialogFooter className="-mx-6 -mb-6 gap-2 rounded-b-lg border-white/[0.07] bg-white/[0.015] px-6 py-4">
+          {error ? <p id={`collection-error-${key}`} role="alert" className="flex items-start gap-2 rounded-xl border border-rose/25 bg-rose/[0.07] px-3 py-2.5 text-xs leading-5 text-rose"><AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />{error}</p> : null}
+          <DialogFooter className="-mx-6 -mb-6 gap-2 rounded-b-2xl border-border bg-[rgb(var(--ink-rgb)/0.02)] px-6 py-4">
             <Button type="button" variant="ghost" className="h-10 px-4 text-muted-foreground" disabled={pending} onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" className="h-10 gap-2 px-4" disabled={pending}>{pending ? <Loader2 aria-hidden className="animate-spin" /> : collection ? <Pencil aria-hidden /> : <FolderPlus aria-hidden />}{collection ? "Save changes" : "Create collection"}</Button>
           </DialogFooter>
@@ -207,12 +207,13 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
 export function NewCategoryButton({ className, label = "New collection" }: { className?: string; label?: string }) {
   const [open, setOpen] = useState(false);
   return <>
-    <Button variant="outline" size="sm" className={cn("h-9 shrink-0 gap-2 border-white/[0.12] bg-white/[0.025] px-3 shadow-none hover:translate-y-0 hover:border-amethyst/40 hover:bg-amethyst/[0.08] hover:shadow-none [&_svg]:text-amethyst", className)} onClick={() => setOpen(true)}><FolderPlus aria-hidden className="size-4" />{label}</Button>
+    <Button variant="outline" size="sm" className={cn("h-9 shrink-0 gap-2 rounded-xl border-border bg-card px-3 shadow-none hover:translate-y-0 hover:border-amethyst/40 hover:bg-amethyst/[0.08] hover:shadow-[0_10px_24px_-16px_var(--amethyst)] [&_svg]:text-amethyst", className)} onClick={() => setOpen(true)}><FolderPlus aria-hidden className="size-4" />{label}</Button>
     <CollectionDialog open={open} onOpenChange={setOpen} />
   </>;
 }
 
 const CONFIRM_PHRASE = "I understand";
+const DANGER = { "--tone": "var(--destructive)" } as CSSProperties;
 
 export function CollectionActions({ collection, entryCount, className }: { collection: LibraryCategory; entryCount: number; className?: string }) {
   const router = useRouter();
@@ -267,11 +268,11 @@ export function CollectionActions({ collection, entryCount, className }: { colle
     } finally { setPending(false); }
   }
 
-  const errorBox = error ? <p role="alert" className="flex items-start gap-2 rounded-md border border-rose/20 bg-rose/[0.06] px-3 py-2.5 text-xs leading-5 text-rose"><AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />{error}</p> : null;
+  const errorBox = error ? <p role="alert" className="flex items-start gap-2 rounded-xl border border-rose/25 bg-rose/[0.07] px-3 py-2.5 text-xs leading-5 text-rose"><AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />{error}</p> : null;
 
   return <>
     <DropdownMenu>
-      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className={cn("size-9 shrink-0 border border-white/[0.08] bg-black/20 text-muted-foreground hover:border-amethyst/30 hover:bg-amethyst/[0.08] data-[state=open]:border-amethyst/30 data-[state=open]:bg-amethyst/[0.08]", className)} aria-label={`Manage ${collection.name}`} title={`Manage ${collection.name}`}><MoreHorizontal aria-hidden /></Button></DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className={cn("size-9 shrink-0 rounded-xl border border-border bg-card text-muted-foreground hover:border-amethyst/30 hover:bg-amethyst/[0.08] data-[state=open]:border-amethyst/30 data-[state=open]:bg-amethyst/[0.08]", className)} aria-label={`Manage ${collection.name}`} title={`Manage ${collection.name}`}><MoreHorizontal aria-hidden /></Button></DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-56 border border-white/[0.08] bg-surface-raised p-1.5 shadow-xl shadow-black/50">
         <DropdownMenuLabel className="flex min-w-0 items-center gap-2 px-2 py-2 text-xs font-medium text-muted-foreground"><span aria-hidden style={accentStyle(collection.accent_color)} className={cn("size-3.5 shrink-0", collection.accent_color ? "text-[var(--ca)]" : "text-amethyst")}><ClientCollectionIcon icon={collection.icon} className="size-full" /></span><span className="truncate">{collection.name}</span></DropdownMenuLabel>
         <DropdownMenuSeparator className="mx-0 my-1 bg-white/[0.07]" />
@@ -283,16 +284,16 @@ export function CollectionActions({ collection, entryCount, className }: { colle
     <CollectionDialog open={renaming} onOpenChange={setRenaming} collection={collection} />
     <CollectionCoverDialog open={choosingCovers} onOpenChange={setChoosingCovers} collection={collection} />
     <AlertDialog open={step !== null} onOpenChange={(open) => { if (!open) closeDelete(); }}>
-      <AlertDialogContent className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 sm:max-w-[28rem]">
+      <AlertDialogContent className="gap-5 rounded-2xl border border-border bg-card p-6 sm:max-w-[28rem]">
         {step === "final" ? <>
           <AlertDialogHeader className="text-left">
-            <span aria-hidden className="mb-2 grid size-11 place-items-center rounded-lg border border-destructive/25 bg-destructive/[0.1] text-destructive"><TriangleAlert className="size-5" /></span>
+            <span aria-hidden style={DANGER} className="ui-hero-icon mb-2"><TriangleAlert className="size-5" /></span>
             <AlertDialogTitle className="text-lg leading-7 font-semibold tracking-normal break-words">Permanently delete everything in &quot;{collection.name}&quot;?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-6">
               The collection, its {entriesLabel}, and all of their workspace content (folders, notes, checklists and tasks) will be permanently deleted. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-md border border-destructive/20 bg-destructive/[0.05] px-3.5 py-3 text-xs">
+          <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-xl border border-destructive/25 bg-destructive/[0.06] px-3.5 py-3 text-xs">
             <dt className="text-muted-foreground">Collection</dt>
             <dd className="truncate font-medium text-foreground" title={collection.name}>{collection.name}</dd>
             <dt className="text-muted-foreground">Entries</dt>
@@ -322,7 +323,7 @@ export function CollectionActions({ collection, entryCount, className }: { colle
           </AlertDialogFooter>
         </> : <>
           <AlertDialogHeader className="text-left">
-            <span aria-hidden className="mb-2 grid size-11 place-items-center rounded-lg border border-destructive/20 bg-destructive/[0.08] text-destructive"><Trash2 className="size-5" /></span>
+            <span aria-hidden style={DANGER} className="ui-hero-icon mb-2"><Trash2 className="size-5" /></span>
             <AlertDialogTitle className="text-lg leading-7 font-semibold tracking-normal break-words">Delete &quot;{collection.name}&quot;?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm leading-6">
               {populated

@@ -229,7 +229,8 @@ export function TemplateEditor({ template }: { template: WorkspaceTemplate }) {
       </Link>
 
       <form
-        className="flex flex-wrap items-end gap-3"
+        className="ui-panel flex flex-wrap items-end gap-3 p-4"
+        data-glow
         onSubmit={(event) => {
           event.preventDefault();
           void save();
@@ -243,7 +244,7 @@ export function TemplateEditor({ template }: { template: WorkspaceTemplate }) {
             onChange={(event) => { setName(event.target.value); setSaveError(null); }}
             maxLength={80}
             autoComplete="off"
-            className="h-11 border-white/[0.12] bg-black/50 text-base font-semibold"
+            className="h-11 rounded-xl bg-background/60 text-base font-semibold"
             aria-invalid={Boolean(nameError)}
           />
         </div>
@@ -255,13 +256,13 @@ export function TemplateEditor({ template }: { template: WorkspaceTemplate }) {
         </div>
       </form>
       {saveError ? (
-        <p role="alert" className="flex items-start gap-2 rounded-md border border-rose/20 bg-rose/[0.06] px-3 py-2.5 text-xs leading-5 text-rose">
+        <p role="alert" className="flex items-start gap-2 rounded-xl border border-rose/30 bg-rose/[0.08] px-3 py-2.5 text-xs leading-5 text-rose">
           <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />
           Couldn’t save the template: {saveError}
         </p>
       ) : null}
 
-      <div className="grid h-[min(46rem,calc(100dvh-14rem))] min-h-[28rem] grid-cols-1 overflow-hidden rounded-xl border border-border bg-black md:grid-cols-[14rem_minmax(0,1fr)]">
+      <div className="grid h-[min(46rem,calc(100dvh-14rem))] min-h-[28rem] grid-cols-1 overflow-hidden rounded-2xl border border-border bg-black shadow-[0_24px_48px_-36px_var(--amethyst)] md:grid-cols-[14rem_minmax(0,1fr)]">
         <aside aria-label="Template explorer" className="hidden min-h-0 border-r border-border bg-surface md:block">
           <Explorer scope="desktop" {...explorerProps} />
         </aside>
@@ -500,7 +501,7 @@ function StarterTasks({ node, autoFocus, onChange }: { node: TemplateNode; autoF
           ))}
         </ol>
       ) : (
-        <p className="mb-4 rounded-md border border-dashed border-white/[0.1] px-3 py-4 text-sm text-muted-foreground">No starter tasks yet. The checklist will start empty.</p>
+        <p className="ui-empty mb-4 px-3 py-4 text-sm text-muted-foreground">No starter tasks yet. The checklist will start empty.</p>
       )}
       <form
         className="space-y-2"

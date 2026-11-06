@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import { catalogMatcher } from "@/lib/catalog-search";
 import { findBrowserDemoSpec } from "@/lib/browser-version-demos";
 import { formatChangeDate, releasePath } from "@/lib/changelog";
-import { cn } from "@/lib/utils";
 import {
   VERSION_HISTORY_CATALOG,
   getCatalogSummary,
@@ -60,6 +59,13 @@ const STATE_LABELS: Readonly<Record<DemoAvailabilityState, string>> = {
 
 const PAGE_SIZES = [15, 30, 60] as const;
 
+const STATE_TONES: Readonly<Record<DemoAvailabilityState, string>> = {
+  available: "#10b981",
+  not_prepared: "var(--muted-foreground)",
+  unavailable: "var(--warning)",
+};
+const toneOf = (tone: string) => ({ "--tone": tone }) as CSSProperties;
+
 /** Milestone section classes: the chronometer's brass plates, or the standard card style. */
 const MILESTONE_CLASSES = {
   special: {
@@ -84,18 +90,18 @@ const MILESTONE_CLASSES = {
   standard: {
     section: "space-y-4",
     head: "",
-    title: "text-lg font-bold tracking-tight",
+    title: "flex items-center gap-3 text-lg font-bold tracking-tight",
     grid: "grid gap-3 sm:grid-cols-2 xl:grid-cols-3",
-    card: "flex flex-col gap-2 rounded-xl border border-border bg-card/80 p-4",
+    card: "ui-panel flex flex-col gap-2 p-4",
     cardHead: "flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground",
     window: "flex items-center gap-2",
-    sha: "rounded bg-amethyst/15 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amethyst",
-    lamp: "group inline-flex items-center gap-1.5 text-xs font-medium data-[state=online]:text-emerald-300",
-    bulb: "size-1.5 rounded-full bg-muted-foreground group-data-[state=online]:bg-emerald-400",
+    sha: "ui-pill font-mono",
+    lamp: "ui-pill group data-[state=online]:text-foreground",
+    bulb: "size-1.5 rounded-full bg-muted-foreground group-data-[state=online]:bg-emerald-400 group-data-[state=online]:shadow-[0_0_8px_rgb(52_211_153/0.9)]",
     milestone: "inline-flex items-center gap-1 text-xs font-semibold text-amethyst",
     cardTitle: "text-base font-semibold tracking-tight text-foreground",
     meta: "text-xs text-muted-foreground [&_a]:text-amethyst [&_a]:underline-offset-4 [&_a:hover]:underline",
-    controls: "mt-auto flex flex-wrap items-center justify-between gap-2 pt-2",
+    controls: "mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3",
     launch: "",
     state: "text-xs text-muted-foreground",
     confirm:
@@ -104,26 +110,16 @@ const MILESTONE_CLASSES = {
 } as const;
 
 function StateBadge({ state }: { state: DemoAvailabilityState }) {
-  if (state === "available") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
-        <span aria-hidden className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-        {STATE_LABELS.available}
-      </span>
-    );
-  }
-  if (state === "unavailable") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-warning">
-        <AlertTriangle aria-hidden className="size-3" />
-        {STATE_LABELS.unavailable}
-      </span>
-    );
-  }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white/[0.03] px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-      <Clock aria-hidden className="size-3" />
-      {STATE_LABELS.not_prepared}
+    <span className="ui-pill text-xs" data-tone={state === "not_prepared" ? undefined : ""} style={toneOf(STATE_TONES[state])}>
+      {state === "available" ? (
+        <span aria-hidden className="ui-dot" />
+      ) : state === "unavailable" ? (
+        <AlertTriangle aria-hidden className="size-3 text-(--tone)" />
+      ) : (
+        <Clock aria-hidden className="size-3" />
+      )}
+      {STATE_LABELS[state]}
     </span>
   );
 }
@@ -252,10 +248,10 @@ export function VersionHistoryBrowser({
   };
 
   const gauges = [
-    { label: "Cataloged commits", value: summary.total, tone: "brass" },
-    { label: STATE_LABELS.available, value: summary.available, tone: "ok" },
-    { label: STATE_LABELS.not_prepared, value: summary.notPrepared, tone: "off" },
-    { label: STATE_LABELS.unavailable, value: summary.unavailable, tone: "warn" },
+    { label: "Cataloged commits", value: summary.total, tone: "brass", color: "var(--amethyst)", icon: History },
+    { label: STATE_LABELS.available, value: summary.available, tone: "ok", color: STATE_TONES.available, icon: Play },
+    { label: STATE_LABELS.not_prepared, value: summary.notPrepared, tone: "off", color: STATE_TONES.not_prepared, icon: Clock },
+    { label: STATE_LABELS.unavailable, value: summary.unavailable, tone: "warn", color: STATE_TONES.unavailable, icon: AlertTriangle },
   ];
 
   const whatsNew = (
@@ -306,7 +302,11 @@ export function VersionHistoryBrowser({
               <span aria-hidden className="vh-section-index">
                 I
               </span>
-            ) : null}
+            ) : (
+              <span aria-hidden className="ui-icon ui-icon-sm">
+                <Play className="size-3.5" />
+              </span>
+            )}
             Playable historical milestones
           </h2>
           {specialPages ? <span aria-hidden className="vh-section-rule" /> : null}
@@ -321,7 +321,7 @@ export function VersionHistoryBrowser({
             const isResetting = resettingSha === commit.sha;
 
             return (
-              <article key={commit.sha} className={ms.card} data-online={isOnline}>
+              <article key={commit.sha} className={ms.card} data-online={isOnline} data-glow={specialPages || !isOnline ? undefined : ""} style={specialPages ? undefined : toneOf(isOnline ? STATE_TONES.available : "var(--amethyst)")}>
                 <div className={ms.cardHead}>
                   <span className={ms.window}>
                     <time dateTime={commit.commitDate}>{formatDay(dayNumber(commit.commitDate))}</time>
@@ -412,14 +412,19 @@ export function VersionHistoryBrowser({
 
       {/* Complete Retained Commit Catalog */}
       <section aria-labelledby="complete-catalog-heading" className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-4 border-t border-white/[0.08] pt-8">
-          <div>
-            <h2 id="complete-catalog-heading" className="text-lg font-bold tracking-tight">
-              Complete commit catalog ({summary.total} commits)
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Every retained commit reachable from repository branches and tags, deduplicated by full 40-character SHA.
-            </p>
+        <div className="flex flex-wrap items-end justify-between gap-4 pt-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <span aria-hidden className="ui-icon">
+              <GitBranch className="size-4" />
+            </span>
+            <div className="min-w-0">
+              <h2 id="complete-catalog-heading" className="text-lg font-bold tracking-tight">
+                Complete commit catalog ({summary.total} commits)
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Every retained commit reachable from repository branches and tags, deduplicated by full 40-character SHA.
+              </p>
+            </div>
           </div>
           <CatalogSearch
             value={query}
@@ -433,7 +438,7 @@ export function VersionHistoryBrowser({
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="ui-panel flex flex-wrap items-center justify-between gap-3 p-2.5">
           <div role="group" aria-label="Filter commits by demo state" className="flex flex-wrap items-center gap-2">
             <FilterChip
               pressed={stateFilter === "all"}
@@ -487,7 +492,7 @@ export function VersionHistoryBrowser({
             </FilterChip>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 pr-1 text-xs text-muted-foreground">
             <label htmlFor="commits-per-page">Per page:</label>
             <select
               id="commits-per-page"
@@ -496,7 +501,7 @@ export function VersionHistoryBrowser({
                 setPageSize(Number(e.target.value));
                 setPage(1);
               }}
-              className="h-8 cursor-pointer rounded-md border border-border bg-surface px-2 text-xs text-foreground transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-8 cursor-pointer rounded-lg border border-border bg-card px-2 text-xs text-foreground transition-[border-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:ring-2 focus-visible:ring-ring"
             >
               {PAGE_SIZES.map((sz) => (
                 <option key={sz} value={sz}>
@@ -511,7 +516,7 @@ export function VersionHistoryBrowser({
           <CatalogEmpty query={query} onReset={resetFilters} />
         ) : (
           <ol aria-label="Cataloged repository commits" className="space-y-3">
-            {visibleCommits.map((commit) => {
+            {visibleCommits.map((commit, index) => {
               const runtime = demos[commit.sha];
               const demoUrl = runtime?.demoUrl;
               const isOnline = Boolean(runtime?.online && demoUrl);
@@ -522,30 +527,22 @@ export function VersionHistoryBrowser({
                 <li
                   key={commit.sha}
                   id={`commit-${commit.shortSha}`}
-                  className={cn(
-                    "rounded-xl border p-4 transition-colors",
-                    commit.state === "available"
-                      ? "border-amethyst/30 bg-card/85"
-                      : commit.state === "unavailable"
-                        ? "border-amber-500/20 bg-card/50"
-                        : "border-border bg-card/60",
-                  )}
+                  className="ui-panel enter p-4"
+                  data-glow={commit.state === "available" ? "" : undefined}
+                  style={{ ...toneOf(commit.state === "available" ? "var(--amethyst)" : STATE_TONES[commit.state]), "--enter-index": index } as CSSProperties}
                 >
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <StateBadge state={commit.state} />
                         {commit.milestone ? (
-                          <span className="inline-flex items-center gap-1 rounded-md border border-amethyst/35 bg-amethyst/15 px-2 py-0.5 text-xs font-semibold text-amethyst">
-                            <Sparkles aria-hidden className="size-3" />
+                          <span className="ui-pill text-xs" data-tone>
+                            <Sparkles aria-hidden className="size-3 text-amethyst" />
                             {commit.milestone}
                           </span>
                         ) : null}
                         {commit.refs.map((ref) => (
-                          <span
-                            key={ref}
-                            className="inline-flex items-center gap-1 rounded border border-white/[0.08] bg-white/[0.03] px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground"
-                          >
+                          <span key={ref} className="ui-pill font-mono font-medium">
                             <GitBranch aria-hidden className="size-2.5" />
                             {ref}
                           </span>
@@ -580,7 +577,7 @@ export function VersionHistoryBrowser({
                     </div>
 
                     {commit.releaseDescription ? (
-                      <div className="rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-xs leading-5 text-foreground/85">
+                      <div className="rounded-xl border border-amethyst/25 bg-amethyst/[0.06] px-3 py-2 text-xs leading-5 text-foreground/85">
                         <span className="font-semibold text-amethyst">
                           Release ({commit.releaseTitle ?? commit.releaseDate}):{" "}
                         </span>
@@ -596,9 +593,9 @@ export function VersionHistoryBrowser({
                       </div>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-black/30 px-3 py-1.5 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-[rgb(var(--ink-rgb)/0.03)] px-3 py-1.5 text-xs">
                       <div className="flex min-w-0 items-center gap-2 font-mono text-[11px] text-muted-foreground">
-                        <span className="rounded bg-amethyst/15 px-1.5 py-0.5 font-semibold text-amethyst">
+                        <span className="ui-pill font-mono" data-tone>
                           {commit.shortSha}
                         </span>
                         <span className="truncate select-all" title={commit.sha}>
@@ -608,7 +605,7 @@ export function VersionHistoryBrowser({
                           type="button"
                           onClick={() => void handleCopySha(commit.sha)}
                           aria-label={`Copy full SHA ${commit.sha}`}
-                          className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-foreground/[0.03] px-2 py-0.5 font-sans text-[11px] font-medium text-foreground/85 transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-amethyst/50 hover:bg-amethyst/[0.1] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 font-sans text-[11px] font-medium text-foreground/85 transition-[color,background-color,border-color,scale] duration-150 outline-none select-none hover:border-amethyst/50 hover:bg-amethyst/[0.1] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
                         >
                           {copiedSha === commit.sha ? (
                             <>
@@ -672,7 +669,7 @@ export function VersionHistoryBrowser({
                       <div
                         role="alertdialog"
                         aria-label={`Confirm reset for demo ${commit.shortSha}`}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs text-rose-200"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-xs text-rose-200"
                       >
                         <span>
                           Reset only your demo workspace for <strong>{commit.shortSha}</strong> back to its starting
@@ -708,7 +705,7 @@ export function VersionHistoryBrowser({
 
         {/* Pagination */}
         {filteredCommits.length > 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-4 text-xs text-muted-foreground">
+          <div className="ui-panel flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs text-muted-foreground">
             <span>
               Showing <strong className="font-medium text-foreground">{startIndex + 1}</strong>–
               <strong className="font-medium text-foreground">
@@ -762,13 +759,17 @@ export function VersionHistoryBrowser({
         title="Version history"
         description="Every retained commit in Amethyst's repository, with interactive fresh-account demos for prepared milestones."
         actions={whatsNew}
+        icon={History}
       />
       <section aria-label="Version history overview" className="mb-8">
         <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {gauges.map((gauge) => (
-            <div key={gauge.label} className="rounded-xl border border-border bg-card/70 px-4 py-3">
-              <dt className="text-xs text-muted-foreground">{gauge.label}</dt>
-              <dd className="mt-1 text-2xl font-semibold tabular-nums">{gauge.value}</dd>
+          {gauges.map((gauge, index) => (
+            <div key={gauge.label} className="ui-panel enter grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 px-3.5 py-3" style={{ ...toneOf(gauge.color), "--enter-index": index + 1 } as CSSProperties}>
+              <span aria-hidden className="ui-icon row-span-2">
+                <gauge.icon className="size-4" />
+              </span>
+              <dt className="col-start-2 row-start-2 truncate text-xs text-muted-foreground">{gauge.label}</dt>
+              <dd className="col-start-2 row-start-1 text-xl leading-tight font-bold tabular-nums">{gauge.value}</dd>
             </div>
           ))}
         </dl>

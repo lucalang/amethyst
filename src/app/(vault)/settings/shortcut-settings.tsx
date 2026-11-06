@@ -16,7 +16,7 @@ function Keys({ shortcut, mac }: { shortcut: string; mac: boolean }) {
   return (
     <span className="flex flex-wrap items-center gap-1">
       {shortcutParts(shortcut, mac).map((part, index) => (
-        <kbd key={index} className="min-w-6 rounded-md border border-white/15 border-b-white/25 bg-white/[0.06] px-1.5 py-0.5 text-center font-sans text-xs font-medium text-foreground">
+        <kbd key={index} className="min-w-6 rounded-md border border-border border-b-foreground/25 bg-surface-raised px-1.5 py-0.5 text-center font-sans text-xs font-semibold text-foreground shadow-[inset_0_-1px_0_rgb(var(--ink-rgb)/0.08)]">
           {part}
         </kbd>
       ))}
@@ -70,7 +70,7 @@ export function ShortcutSettings({ value }: { value: Settings["shortcuts"] }) {
 
   return (
     <div className="space-y-4">
-      <ul className="divide-y divide-white/[0.06] overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.015]">
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface/40">
         {SHORTCUT_ACTIONS.map((action) => {
           const shortcut = shortcuts[action];
           const active = recording === action;
@@ -113,10 +113,10 @@ export function ShortcutSettings({ value }: { value: Settings["shortcuts"] }) {
                   onKeyDown={active ? (event) => record(action, event) : undefined}
                   onBlur={() => active && setRecording(null)}
                   className={cn(
-                    "flex min-h-9 min-w-36 items-center justify-center rounded-md border px-3 py-1.5 text-sm transition-[color,background-color,border-color,box-shadow,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
+                    "flex min-h-10 min-w-36 items-center justify-center rounded-xl border px-3 py-1.5 text-sm transition-[color,background-color,border-color,box-shadow,scale] duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
                     active
-                      ? "animate-pulse border-amethyst bg-amethyst/12 text-amethyst shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35)]"
-                      : "border-border bg-surface hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_6px_16px_-10px_rgb(var(--accent-rgb)/0.55)]",
+                      ? "animate-pulse border-amethyst/60 bg-amethyst/15 text-amethyst shadow-[0_8px_24px_-12px_var(--amethyst)] motion-reduce:animate-none"
+                      : "border-border bg-card hover:border-amethyst/45 hover:shadow-[0_10px_24px_-16px_var(--amethyst)]",
                   )}
                 >
                   {active ? "Press keys…" : <Keys shortcut={shortcut} mac={mac} />}

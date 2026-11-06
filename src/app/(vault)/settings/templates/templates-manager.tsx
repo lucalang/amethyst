@@ -108,15 +108,17 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
 export function TemplateList({ templates, defaults }: { templates: TemplateSummary[]; defaults: Record<string, string[]> }) {
   if (templates.length === 0) {
     return (
-      <div className="enter enter-soft flex flex-col items-start gap-4 rounded-lg border border-dashed border-white/[0.1] px-5 py-7 text-sm text-muted-foreground sm:flex-row sm:items-center">
-        <LayoutTemplate aria-hidden className="size-5 shrink-0 text-amethyst/70" />
+      <div className="ui-empty enter enter-soft flex flex-col items-start gap-4 px-5 py-7 text-sm text-muted-foreground sm:flex-row sm:items-center">
+        <span aria-hidden className="ui-icon">
+          <LayoutTemplate className="size-[18px]" />
+        </span>
         <p className="flex-1">No templates yet. A template sets up folders, notes and checklists for a new entry, such as a reading log or a game checklist.</p>
         <NewTemplateButton label="Create your first template" />
       </div>
     );
   }
   return (
-    <ul aria-label="Your templates" className="enter enter-soft divide-y divide-white/[0.06] border-y border-white/[0.08]">
+    <ul aria-label="Your templates" className="ui-panel enter enter-soft divide-y divide-border overflow-hidden">
       {templates.map((template) => <TemplateRow key={template.id} template={template} defaultFor={defaults[template.id] ?? []} />)}
     </ul>
   );
@@ -156,13 +158,13 @@ function TemplateRow({ template, defaultFor }: { template: TemplateSummary; defa
   }
 
   return (
-    <li className="group/template flex items-center gap-3 px-3 transition-colors hover:bg-white/[0.025] focus-within:bg-white/[0.025]">
-      <Link href={`/settings/templates/${template.id}`} className="flex min-h-18 min-w-0 flex-1 items-center gap-3.5 py-3.5">
-        <span aria-hidden className="grid size-10 shrink-0 place-items-center self-start rounded-md border border-white/[0.08] bg-surface-raised text-amethyst/80 transition-[color,background-color,border-color] group-hover/template:border-amethyst/30 group-hover/template:bg-amethyst/[0.08] group-hover/template:text-amethyst">
+    <li className="set-list-row group/template flex items-center gap-3 px-4">
+      <Link href={`/settings/templates/${template.id}`} className="flex min-h-18 min-w-0 flex-1 items-center gap-3.5 rounded-lg py-3.5 outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <span aria-hidden className="ui-icon self-start">
           <LayoutTemplate className="size-[18px]" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium break-words text-foreground transition-colors group-hover/template:text-amethyst">{template.name}</span>
+          <span className="block text-sm font-semibold break-words text-foreground transition-colors group-hover/template:text-amethyst">{template.name}</span>
           <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {empty ? <span>Empty</span> : (
               <>
@@ -170,7 +172,7 @@ function TemplateRow({ template, defaultFor }: { template: TemplateSummary; defa
                 <span className="inline-flex items-center gap-1"><FileText aria-hidden className="size-3.5" />{plural(template.files, "file")}</span>
               </>
             )}
-            {defaultFor.length ? <span className="min-w-0 truncate text-amethyst/90">Default for {defaultFor.join(", ")}</span> : null}
+            {defaultFor.length ? <span className="ui-pill max-w-full min-w-0 overflow-hidden" data-tone><span className="truncate">Default for {defaultFor.join(", ")}</span></span> : null}
           </span>
         </span>
       </Link>

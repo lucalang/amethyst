@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Package, Store } from "lucide-react";
+import { ArrowRight, Package, Palette, Store } from "lucide-react";
 import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -46,6 +46,8 @@ export default async function CosmeticsShopPage() {
       <PageContainer>
         <PageHeader
           title="Cosmetics"
+          icon={Palette}
+          tone="#a855f7"
           actions={
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
@@ -64,35 +66,36 @@ export default async function CosmeticsShopPage() {
           }
         />
         <section aria-labelledby="game-shops-heading" className="mb-8">
-          <h2 id="game-shops-heading" className="flex items-center gap-2 text-base font-semibold">
-            <Store aria-hidden className="size-4 text-amethyst" />
+          <h2 id="game-shops-heading" className="flex items-center gap-2.5 text-base font-semibold">
+            <span aria-hidden className="ui-icon ui-icon-sm">
+              <Store className="size-4" />
+            </span>
             Game shops
           </h2>
           <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {SHOP_GAMES.map((game) => {
+            {SHOP_GAMES.map((game, index) => {
               const shop = GAME_SHOPS[game];
               const count = shop.categories.reduce((sum, category) => sum + category.items.length, 0);
               return (
-                <li key={game} style={{ "--cab": ARCADE_CABINETS[game].hue } as CSSProperties}>
-                  <Link
-                    href={shopHref(game)}
-                    className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface/40 transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out outline-none hover:-translate-y-0.5 hover:border-(--cab) hover:bg-surface/65 hover:shadow-[0_18px_38px_-24px_color-mix(in_oklab,var(--cab)_55%,transparent)] focus-visible:border-(--cab) focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
-                  >
-                    <span aria-hidden className="relative block aspect-[16/6] overflow-hidden border-b border-border">
-                      <span className="block size-full transition-transform duration-300 group-hover:scale-[1.04] motion-reduce:transition-none">
+                <li key={game} className="enter" style={{ "--enter-index": index + 1 } as CSSProperties}>
+                  <Link href={shopHref(game)} className="ui-card group flex h-full flex-col" style={{ "--tone": ARCADE_CABINETS[game].hue } as CSSProperties}>
+                    <span aria-hidden className="ui-stage aspect-[16/6] border-b border-border">
+                      <span className="block size-full">
                         <ArcadePreview game={game} />
                       </span>
-                      <span className="absolute inset-0 bg-linear-to-t from-(--cab)/30 via-transparent to-transparent" />
-                      <span className="absolute inset-x-0 top-0 h-1 bg-(--cab)" />
+                      <span className="absolute inset-0 bg-linear-to-t from-(--tone)/30 via-transparent to-transparent" />
                     </span>
-                    <span className="flex flex-1 items-center gap-3 p-3">
+                    <span className="flex flex-1 items-center gap-3 p-3.5">
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-foreground transition-colors group-hover:text-(--cab)">{shop.title} shop</span>
+                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground transition-colors group-hover:text-(--tone)">
+                          <span aria-hidden className="ui-dot" />
+                          {shop.title} shop
+                        </span>
                         <span className="mt-0.5 block text-xs text-muted-foreground">
                           {count} items · {shop.categories.map((category) => category.label).join(", ")}
                         </span>
                       </span>
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-foreground/[0.03] px-2.5 py-1 text-xs font-medium text-muted-foreground transition-[color,border-color,background-color] group-hover:border-(--cab)/50 group-hover:bg-(--cab)/12 group-hover:text-foreground">
+                      <span className="ui-pill shrink-0 transition-colors group-hover:text-foreground" data-tone>
                         Browse
                         <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
                       </span>

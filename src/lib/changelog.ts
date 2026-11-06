@@ -51,6 +51,28 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-06-site-refresh",
+    date: "2026-11-06",
+    title: "A fresh look across Amethyst",
+    intro: "The card style from the Inventory and the case shop now runs through the whole app.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "Page headers", text: "Pages open with a glowing icon and title." },
+      { kind: "improved", feature: "Settings and Customization", text: "Each settings group sits in its own card, and choices, themes and frames are picked from cards that lift and glow." },
+      { kind: "improved", feature: "Shop, Arcade and Leaderboards", text: "Shop departments, game shops, the Arcade hub, leaderboards and the Season Pass use the new cards, tabs and badges." },
+      { kind: "improved", feature: "Collections, Notes, Lab and What’s new", text: "Collection cards, notes, experiments and update notes share the same style." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "One visual style everywhere",
+          body: "Cards, panels, tabs, badges and empty states now use the same style as the Inventory: soft tinted glows, cards that lift on hover, and segmented tabs. Nothing moved and every feature works as before. Games, the Trophy Room, Home and To Do keep their own looks.",
+          link: { href: "/settings", label: "Open Settings" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-minigame-shops",
     date: "2026-11-06",
     title: "Shops for six more Arcade games",
@@ -60,6 +82,7 @@ const RELEASES: readonly Release[] = [
       { kind: "new", feature: "Six new game shops", text: "Buy and equip skins, boards, symbols and effects with coins, and preview each one live before you buy." },
       { kind: "new", feature: "Art styles", text: "Redraw Gem Chase as Pixel, Cartoon, Paper Cut or Wireframe art, Space Blaster as Pixel, Retro CRT, Comic Book or Hyperglow, and Zip, Patches, Tango and Queens as Pixel, Sketchbook, Soft Clay or Frosted Glass." },
       { kind: "new", feature: "Solve celebrations", text: "Zip, Patches, Tango and Queens can play confetti, petals, stars, ripples, hearts, bubbles, fireworks or snowfall when you solve a puzzle." },
+      { kind: "improved", feature: "Game shop design", text: "Every game shop now matches the Inventory: category cards show how many items you own, and item cards lift and glow like inventory tiles." },
     ],
     details: {
       new: [

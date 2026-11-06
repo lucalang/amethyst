@@ -36,7 +36,7 @@ export function TimeZoneSetting({ value, labelId }: { value: string; labelId: st
           if (!ok) setLocal(value);
         });
       }}
-      className="h-10 w-72 max-w-full cursor-pointer rounded-md border border-input bg-surface px-3 text-sm transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 [&>option]:bg-popover"
+      className="h-10 w-72 max-w-full cursor-pointer rounded-xl border border-input bg-surface px-3 text-sm transition-[border-color,background-color,box-shadow] duration-200 outline-none hover:border-amethyst/50 hover:bg-surface-raised hover:shadow-[0_0_0_3px_rgb(var(--accent-rgb)/0.08)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 [&>option]:bg-popover"
     >
       <option value="">{device ? `Device time zone (${device.replace(/_/g, " ")})` : "Device time zone"}</option>
       {local && !options?.includes(local) ? <option value={local}>{local.replace(/_/g, " ")}</option> : null}

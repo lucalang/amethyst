@@ -21,6 +21,7 @@ import type { GameShopData } from "@/lib/data/shop";
 import { GAME_SHOPS, type GameCategory, type GameLook } from "@/lib/game-cosmetics";
 import { cn } from "@/lib/utils";
 import { CATEGORY_ICONS } from "./category-icons";
+import "@/components/inventory/inventory.css";
 import { CosmeticPreview } from "./preview";
 
 type Entry = { slug: string | null; id: string | null; name: string; description: string; price: number; available: boolean; owned: boolean; equipped: boolean };
@@ -62,19 +63,19 @@ function Price({ value, className }: { value: number; className?: string }) {
 function StateBadge({ entry }: { entry: Entry }) {
   if (entry.equipped)
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amethyst/15 px-2 py-0.5 text-[11px] font-semibold text-amethyst ring-1 ring-amethyst/40">
+      <span className="idx-status" data-owned="true">
         <Check aria-hidden className="size-3" />
         Equipped
       </span>
     );
   if (entry.owned)
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-background/80 px-2 py-0.5 text-[11px] font-medium text-foreground ring-1 ring-border">
-        <Check aria-hidden className="size-3 text-muted-foreground" />
+      <span className="idx-status">
+        <Check aria-hidden className="size-3" />
         {entry.slug ? "Owned" : "Free"}
       </span>
     );
-  if (!entry.available) return <span className="rounded-full px-2 py-0.5 text-[11px] text-muted-foreground ring-1 ring-border">Unavailable</span>;
+  if (!entry.available) return <span className="idx-status">Unavailable</span>;
   return <Price value={entry.price} className="text-sm" />;
 }
 
@@ -260,7 +261,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
         <OwnershipFilter value={ownership} onChange={setOwnership} />
       </div>
 
-      <div role="group" aria-label={`${shop.title} cosmetic categories`} className="-mt-2 flex flex-wrap gap-2">
+      <div role="group" aria-label={`${shop.title} cosmetic categories`} className="-mt-1 grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fill,minmax(10rem,1fr))]">
         {shop.categories.map((cat) => {
           const CatIcon = CATEGORY_ICONS[cat.icon];
           const owned = entriesOf(cat).filter((entry) => entry.slug && entry.owned).length;
@@ -272,25 +273,24 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
               type="button"
               aria-pressed={selected}
               onClick={() => setCategoryId(cat.id)}
-              className={cn(
-                "group/cat inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-[color,background-color,border-color,box-shadow,scale] duration-150 ease-out outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-[0.95] active:duration-75 motion-reduce:transition-none motion-reduce:active:scale-100",
-                selected
-                  ? "border-amethyst/65 bg-amethyst/[0.14] text-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.08),0_6px_18px_-10px_rgb(var(--accent-rgb)/0.75)] hover:border-amethyst/85 hover:bg-amethyst/[0.2]"
-                  : "border-border bg-foreground/[0.02] text-muted-foreground hover:border-amethyst/45 hover:bg-amethyst/[0.07] hover:text-foreground active:bg-amethyst/[0.11]",
-                hits === 0 && !selected && "opacity-60",
-              )}
+              className={cn("inv-kind select-none", hits === 0 && !selected && "opacity-60")}
             >
-              <CatIcon aria-hidden className={cn("size-4 transition-colors", selected ? "text-amethyst" : "group-hover/cat:text-amethyst")} />
-              {cat.label}
-              {hits !== null ? (
-                <span className={cn("text-xs tabular-nums transition-colors", selected ? "font-semibold text-amethyst" : "text-muted-foreground")} aria-label={`${hits} ${hits === 1 ? "match" : "matches"}`}>
-                  {hits}
-                </span>
-              ) : (
-                <span className={cn("text-xs tabular-nums transition-colors", selected ? "font-semibold text-amethyst" : "text-muted-foreground")} aria-label={`${owned} of ${cat.items.length} owned`}>
-                  {owned}/{cat.items.length}
-                </span>
-              )}
+              <span aria-hidden className="inv-kind-icon">
+                <CatIcon className="size-4" />
+              </span>
+              <span className="min-w-0">
+                {hits !== null ? (
+                  <span className="inv-kind-count" aria-label={`${hits} ${hits === 1 ? "match" : "matches"}`}>
+                    {hits}
+                  </span>
+                ) : (
+                  <span className="inv-kind-count" aria-label={`${owned} of ${cat.items.length} owned`}>
+                    {owned}
+                    <span className="text-sm font-medium text-muted-foreground">/{cat.items.length}</span>
+                  </span>
+                )}
+                <span className="inv-kind-label">{cat.label}</span>
+              </span>
             </button>
           );
         })}
@@ -300,7 +300,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
         <section
           ref={previewRef}
           aria-labelledby="game-preview-heading"
-          className={cn("scroll-mt-24 rounded-2xl border border-border bg-surface/50 p-4", compact ? "md:sticky md:top-0" : "lg:sticky lg:top-24")}
+          className={cn("scroll-mt-24 rounded-2xl border border-border bg-[radial-gradient(70%_40%_at_50%_0%,rgb(var(--accent-rgb)/0.13),transparent_75%),var(--card)] p-4", compact ? "md:sticky md:top-0" : "lg:sticky lg:top-24")}
         >
           <h2 id="game-preview-heading" className="mb-3 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
             <Eye aria-hidden className="size-4 text-amethyst" />
@@ -368,20 +368,13 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
               const isFocus = entry.slug === focus.slug;
               return (
                 <li key={entry.slug ?? "default"} className="min-w-0">
-                  <article
-                    className={cn(
-                      "group/game-card flex h-full flex-col rounded-xl border bg-surface/40 transition-[border-color,background-color,box-shadow] duration-200",
-                      isFocus
-                        ? "border-amethyst/65 bg-amethyst/[0.04] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.32),0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] hover:border-amethyst/80"
-                        : "border-border hover:border-amethyst/45 hover:bg-surface/65 hover:shadow-[0_14px_34px_-24px_rgb(var(--accent-rgb)/0.45)]",
-                    )}
-                  >
+                  <article className="group/game-card inv-tile" data-selected={isFocus}>
                     <button
                       type="button"
                       onClick={() => preview(entry)}
                       aria-pressed={isFocus}
                       aria-label={`Preview ${entry.name}`}
-                      className="flex flex-1 flex-col gap-1 rounded-t-xl p-3 text-left transition-[background-color,scale] duration-150 outline-none select-none hover:bg-amethyst/[0.04] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:active:scale-100"
+                      className="flex flex-1 flex-col gap-1 rounded-t-[inherit] p-3.5 text-left outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                     >
                       <span className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm font-semibold text-foreground transition-colors group-hover/game-card:text-amethyst">{entry.name}</span>
@@ -397,7 +390,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                         tabIndex={-1}
                         aria-hidden
                         className={cn(
-                          "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs transition-[color,border-color,background-color,scale] duration-150 active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100",
+                          "inline-flex h-6 items-center gap-1 rounded-full border px-2 text-xs whitespace-nowrap transition-[color,border-color,background-color,scale] duration-150 active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100",
                           isFocus
                             ? "border-amethyst/45 bg-amethyst/15 font-medium text-amethyst"
                             : "border-border bg-foreground/[0.02] text-muted-foreground hover:border-amethyst/40 hover:bg-amethyst/[0.08] hover:text-foreground",

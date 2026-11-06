@@ -93,44 +93,33 @@ export function FrameSettings({
           return (
             <label
               key={id}
-              className={cn(
-                "frame-option group/frame relative flex flex-col gap-3 rounded-lg border bg-foreground/[0.02] p-3 transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out select-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none",
-                isOwned
-                  ? "cursor-pointer hover:-translate-y-0.5 hover:scale-[1.01] hover:border-amethyst/45 hover:bg-amethyst/[0.05] hover:shadow-[0_14px_34px_-22px_rgb(var(--accent-rgb)/0.6)] active:translate-y-0 active:scale-[0.98] active:duration-75 motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
-                  : "cursor-not-allowed opacity-80",
-                checked ? "border-amethyst/65 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-border",
-              )}
+              data-selected={checked}
+              data-locked={!isOwned}
+              className={cn("frame-option ui-card flex flex-col select-none", isOwned ? "cursor-pointer" : "opacity-80")}
             >
               <input type="radio" name="artwork-frame" value={id} checked={checked} disabled={!isOwned} onChange={() => isOwned && setFrame(id)} className="sr-only" />
-              <span
-                aria-hidden
-                className="flex items-end justify-center gap-5 rounded-md border border-border bg-[radial-gradient(18rem_10rem_at_50%_0%,rgb(var(--accent-rgb)/0.14),transparent_70%)] px-4 pt-8 pb-5"
-              >
-                <ArtworkFrame frame={id} className="w-[4.75rem]">
-                  <SampleArt sample={portrait} shape="portrait" />
-                </ArtworkFrame>
-                <ArtworkFrame frame={id} className="w-[5.75rem]">
-                  <SampleArt sample={square} shape="square" />
-                </ArtworkFrame>
+              <span aria-hidden className="ui-stage border-b border-border px-4 pt-8 pb-5">
+                <span className="flex items-end justify-center gap-5">
+                  <ArtworkFrame frame={id} className="w-[4.75rem]">
+                    <SampleArt sample={portrait} shape="portrait" />
+                  </ArtworkFrame>
+                  <ArtworkFrame frame={id} className="w-[5.75rem]">
+                    <SampleArt sample={square} shape="square" />
+                  </ArtworkFrame>
+                </span>
               </span>
-              <span className="flex items-start gap-2.5 px-0.5">
-                <span
-                  aria-hidden
-                  className={cn(
-                    "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-[border-color,background-color,scale] duration-150",
-                    checked ? "scale-105 border-amethyst bg-amethyst text-amethyst-foreground" : cn("border-input", isOwned && "group-hover/frame:border-amethyst/65"),
-                  )}
-                >
+              <span className="flex items-start gap-2.5 p-3.5">
+                <span aria-hidden data-on={checked} className="set-mark">
                   {checked ? <Check className="size-3" strokeWidth={3} /> : !isOwned ? <Lock className="size-2.5 text-muted-foreground" /> : null}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{info.name}</span>
-                    {info.animated ? <span className="text-[11px] text-muted-foreground">Animated</span> : null}
-                    {isShopFrameId(id) ? <span className="coin-ink text-[11px]">Shop</span> : null}
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <span className="mr-0.5 text-sm font-semibold text-foreground">{info.name}</span>
+                    {info.animated ? <span className="ui-pill">Animated</span> : null}
+                    {isShopFrameId(id) ? <span className="ui-pill"><span className="coin-ink">Shop</span></span> : null}
                     {isAchievementFrameId(id) ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amethyst">
-                        <Award aria-hidden className="size-3" />
+                      <span className="ui-pill" data-tone>
+                        <Award aria-hidden className="size-3 text-amethyst" />
                         {isOwned ? "Achievement" : achLabel}
                       </span>
                     ) : null}

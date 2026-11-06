@@ -102,8 +102,8 @@ export function SeasonPass({ state: initial, profile, samples, tab: initialTab }
 
   if (!state) {
     return (
-      <div role="alert" className="enter mx-auto max-w-md rounded-2xl border border-rose/40 bg-card px-6 py-10 text-center">
-        <span aria-hidden className="mx-auto grid size-12 place-items-center rounded-2xl border border-rose/40 bg-rose/10 text-rose">
+      <div role="alert" className="ui-panel enter mx-auto max-w-md px-6 py-10 text-center" data-glow style={{ "--tone": "var(--rose)" } as CSSProperties}>
+        <span aria-hidden className="ui-hero-icon mx-auto">
           <TriangleAlert className="size-5" />
         </span>
         <h1 className="mt-4 text-base font-semibold">The Season Pass couldn’t be loaded</h1>
@@ -211,8 +211,10 @@ export function SeasonPass({ state: initial, profile, samples, tab: initialTab }
   return (
     <div className="sp grid gap-5" style={{ "--season": info.hue, "--season-glow": info.glow } as CSSProperties}>
       {state.otherSeasons.some((other) => other.claimable > 0) ? (
-        <div role="status" className="enter flex flex-wrap items-center gap-3 rounded-xl border border-amethyst/40 bg-amethyst/[0.08] px-4 py-3 text-sm">
-          <Gift aria-hidden className="size-4 text-amethyst" />
+        <div role="status" className="ui-panel enter flex flex-wrap items-center gap-3 px-4 py-3 text-sm" data-glow>
+          <span aria-hidden className="ui-icon ui-icon-sm">
+            <Gift className="size-4" />
+          </span>
           <span className="min-w-0 flex-1">You have unclaimed rewards from another season. Earned rewards never expire.</span>
           {state.otherSeasons
             .filter((other) => other.claimable > 0)
@@ -640,12 +642,12 @@ function QuestGroup({ title, note, quests, busy, onClaim, empty }: { title: stri
       </div>
       {quests.length ? (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {quests.map((quest) => {
+          {quests.map((quest, index) => {
             const done = quest.progress >= quest.target;
             const name = questTitle(quest);
             const key = `quest:${quest.id}`;
             return (
-              <li key={quest.id} className="sp-quest" data-cadence={quest.cadence} data-done={(done && !quest.claimedAt) || undefined} data-claimed={quest.claimedAt ? true : undefined}>
+              <li key={quest.id} className="sp-quest enter enter-soft" style={{ "--enter-index": index } as CSSProperties} data-cadence={quest.cadence} data-done={(done && !quest.claimedAt) || undefined} data-claimed={quest.claimedAt ? true : undefined}>
                 <span className="sp-quest-tag">{quest.cadence === "season" ? "Season" : quest.cadence === "weekly" ? "Weekly" : "Daily"}</span>
                 <p className="text-sm font-semibold text-pretty text-white">{name}</p>
                 <div className="flex items-center gap-2">
@@ -683,7 +685,7 @@ function QuestGroup({ title, note, quests, busy, onClaim, empty }: { title: stri
           })}
         </ul>
       ) : (
-        <p className="text-sm text-white/50">{empty}</p>
+        <p className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-center text-sm text-white/50">{empty}</p>
       )}
     </section>
   );

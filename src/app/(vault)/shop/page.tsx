@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Backpack, Clover, Coins, Gamepad2, Palette } from "lucide-react";
+import { ArrowRight, Backpack, Clover, Coins, Gamepad2, Palette, Store } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { CaseArt } from "@/components/lootboxes/parts";
@@ -13,11 +13,6 @@ import { loadCoinBalance } from "@/lib/data/shop";
 import { requireUser } from "@/lib/supabase/auth";
 
 export const metadata: Metadata = { title: "Shop" };
-
-const CARD =
-  "group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface/40 transition-[border-color,background-color,translate,box-shadow] duration-200 outline-none hover:-translate-y-1 hover:border-(--accent)/60 hover:bg-surface/65 hover:shadow-[0_18px_40px_-24px_var(--accent)] focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none motion-reduce:hover:translate-y-0";
-const STAGE =
-  "relative grid h-40 place-items-center overflow-hidden border-b border-border bg-[radial-gradient(circle_at_50%_60%,color-mix(in_oklab,var(--accent)_30%,transparent),transparent_70%)] [&>*]:transition-transform [&>*]:duration-300 group-hover:[&>*]:scale-110 motion-reduce:group-hover:[&>*]:scale-100";
 
 /** Shop home: where Coins are spent, split into Cosmetics, Cases and Boosters. */
 export default async function ShopPage() {
@@ -32,7 +27,7 @@ export default async function ShopPage() {
       title: "Cosmetics",
       tagline: "Profile, artwork and game looks.",
       accent: "#a855f7",
-      art: <Palette className="size-16 text-(--accent) drop-shadow-[0_0_18px_var(--accent)]" strokeWidth={1.5} />,
+      art: <Palette className="size-16 text-(--tone) drop-shadow-[0_0_18px_var(--tone)]" strokeWidth={1.5} />,
       meta: null,
     },
     {
@@ -48,7 +43,7 @@ export default async function ShopPage() {
       title: "Luck Boosters",
       tagline: "Better odds for your next 10 cases.",
       accent: "#22c55e",
-      art: <Clover className="size-16 text-(--accent) drop-shadow-[0_0_18px_var(--accent)]" strokeWidth={1.5} />,
+      art: <Clover className="size-16 text-(--tone) drop-shadow-[0_0_18px_var(--tone)]" strokeWidth={1.5} />,
       meta: boosted > 0 ? `Next ${boosted.toLocaleString("en")} openings boosted` : null,
     },
   ];
@@ -58,6 +53,7 @@ export default async function ShopPage() {
       <PageContainer>
         <PageHeader
           title="Shop"
+          icon={Store}
           description="Spend the Coins you earn in the Arcade on cosmetics, cases and Luck Boosters."
           actions={
             <div className="flex gap-2">
@@ -93,17 +89,26 @@ export default async function ShopPage() {
 
         <ul className="grid gap-4 md:grid-cols-3">
           {departments.map((department, index) => (
-            <li key={department.href} className="enter" style={{ "--enter-index": index + 2, "--accent": department.accent } as CSSProperties}>
-              <Link href={department.href} className={CARD}>
-                <span aria-hidden className={STAGE}>
+            <li key={department.href} className="enter" style={{ "--enter-index": index + 2 } as CSSProperties}>
+              <Link href={department.href} className="ui-card group flex h-full flex-col" style={{ "--tone": department.accent } as CSSProperties}>
+                <span aria-hidden className="ui-stage h-40 border-b border-border">
                   {department.art}
                 </span>
                 <span className="flex items-center justify-between gap-3 px-5 pt-4">
-                  <span className="text-lg font-semibold">{department.title}</span>
-                  <ArrowRight aria-hidden className="size-4 text-(--accent) transition-transform group-hover:translate-x-1 motion-reduce:transition-none" />
+                  <span className="text-lg font-semibold transition-colors group-hover:text-(--tone)">{department.title}</span>
+                  <span aria-hidden className="ui-icon ui-icon-sm">
+                    <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
+                  </span>
                 </span>
                 <span className="px-5 pt-1 text-sm text-pretty text-muted-foreground">{department.tagline}</span>
-                <span className="min-h-5 px-5 pt-3 pb-4 text-xs font-medium text-(--accent)">{department.meta}</span>
+                <span className="flex min-h-12 items-end px-5 pt-3 pb-4">
+                  {department.meta ? (
+                    <span className="ui-pill" data-tone>
+                      <span aria-hidden className="ui-dot" />
+                      {department.meta}
+                    </span>
+                  ) : null}
+                </span>
               </Link>
             </li>
           ))}

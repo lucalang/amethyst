@@ -15,38 +15,47 @@
   }
 }
 
-/* Tabs */
+/* Tabs: the segmented control from Inventory, tinted by the season. */
 .sp-tabs {
   display: inline-flex;
   gap: 0.25rem;
-  padding: 0.25rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--season-glow) 18%, transparent);
-  background: color-mix(in oklab, black 70%, var(--season) 8%);
+  padding: 0.3rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  background: rgb(0 0 0 / 0.3);
 }
 .sp-tab {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  height: 2.25rem;
+  gap: 0.5rem;
+  height: 2.5rem;
   padding: 0 1rem;
-  border-radius: 999px;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
   font-size: 0.875rem;
   font-weight: 600;
   color: color-mix(in oklab, white 60%, transparent);
-  transition: color 0.2s, background-color 0.2s, box-shadow 0.2s;
+  transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
   outline: none;
 }
 .sp-tab:hover {
   color: white;
+  background: rgb(255 255 255 / 0.04);
 }
 .sp-tab:focus-visible {
   box-shadow: 0 0 0 2px var(--season-glow);
 }
+.sp-tab svg {
+  transition: color 0.2s;
+}
 .sp-tab[data-state="active"] {
   color: white;
-  background: linear-gradient(135deg, color-mix(in oklab, var(--season) 70%, black), color-mix(in oklab, var(--season-glow) 35%, var(--season)));
-  box-shadow: 0 6px 22px -8px var(--season), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  border-color: color-mix(in oklab, var(--season-glow) 40%, transparent);
+  background: color-mix(in oklab, var(--season-glow) 15%, transparent);
+  box-shadow: 0 8px 24px -12px var(--season-glow);
+}
+.sp-tab[data-state="active"] svg {
+  color: var(--season-glow);
 }
 .sp-tab-count {
   display: grid;
@@ -66,7 +75,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 1.75rem;
+  border-radius: 1.25rem;
   border: 1px solid color-mix(in oklab, var(--season-glow) 22%, transparent);
   background:
     radial-gradient(70% 90% at 0% 0%, color-mix(in oklab, var(--season) 42%, transparent), transparent 65%),
@@ -595,7 +604,7 @@ button.sp-card:focus-visible {
   box-shadow: 0 0 0 2px var(--season-glow);
 }
 
-/* Quests. */
+/* Quests: interactive-card language (tone line, lift) on the dark stage. */
 .sp-quest {
   --accent: var(--season-glow);
   position: relative;
@@ -603,11 +612,32 @@ button.sp-card:focus-visible {
   gap: 0.75rem;
   overflow: hidden;
   padding: 1rem;
-  border-radius: 1.1rem;
+  border-radius: 1rem;
   border: 1px solid rgb(255 255 255 / 0.08);
   background:
     radial-gradient(80% 120% at 100% 0%, color-mix(in oklab, var(--accent) 14%, transparent), transparent 60%),
     #0c0814;
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease,
+    translate 220ms var(--ease-out-soft, ease-out);
+}
+.sp-quest::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.sp-quest:hover {
+  translate: 0 -3px;
+  border-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  box-shadow: 0 20px 36px -26px var(--accent);
+}
+.sp-quest:is(:hover, [data-done])::before {
+  opacity: 1;
 }
 .sp-quest[data-cadence="weekly"] {
   --accent: #60a5fa;
@@ -639,7 +669,12 @@ button.sp-card:focus-visible {
 .sp-quest-tag {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
   gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--accent) 45%, transparent);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  padding: 0.1rem 0.55rem;
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.18em;
@@ -838,11 +873,19 @@ button.sp-card:focus-visible {
   .sp-xp > span,
   .sp-rail-fill,
   .sp-quest-bar > span,
+  .sp-quest,
+  .sp-tab,
   .sp-card,
   .sp-btn,
   .sp-node {
     transition: none;
   }
+  .sp-quest:hover {
+    translate: none;
+  }
+}
+:root[data-motion="off"] .sp-quest:hover {
+  translate: none;
 }
 :root[data-motion="off"] .sp-stage::before,
 :root[data-motion="off"] :is(.sp-card, .sp-btn-claim, .sp-unlock, .sp-unlock *) {

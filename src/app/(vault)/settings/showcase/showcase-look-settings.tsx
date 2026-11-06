@@ -15,7 +15,7 @@ function LookPreview({ look }: { look: ViewerLook }) {
   return (
     <div
       aria-hidden
-      className="relative grid h-56 place-items-center overflow-hidden rounded-lg border border-white/[0.08] sm:h-64"
+      className="relative grid h-56 place-items-center overflow-hidden rounded-2xl border border-border shadow-[0_22px_44px_-30px_var(--amethyst)] sm:h-64"
       style={{
         background:
           look.background === "color"

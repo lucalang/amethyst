@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Clover, Loader2, Store, Zap } from "lucide-react";
@@ -65,9 +65,11 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
   }
 
   return (
-    <li className="bx-tier grid gap-3 rounded-xl border p-4" style={tierStyle(booster)}>
+    <li data-glow className="ui-panel grid content-start gap-3 p-4" style={{ ...tierStyle(booster), "--tone": "var(--luck)" } as CSSProperties}>
       <div className="flex items-center gap-3">
-        <Clover aria-hidden className="bx-ink size-6 shrink-0" />
+        <span aria-hidden className="ui-icon">
+          <Clover className="size-5" />
+        </span>
         <div className="min-w-0 flex-1">
           <p id={`${fieldId}-name`} className="bx-ink font-semibold">
             {look.name}
@@ -129,7 +131,7 @@ export function BoosterShelf({ boost: initial }: { boost: Boost | null }) {
   }
   const boost = local ?? initial;
   if (!boost) {
-    return <p className="rounded-xl border border-border px-4 py-6 text-center text-sm text-muted-foreground">Your boosters couldn’t be loaded. They’re safe; try again in a moment.</p>;
+    return <p className="ui-empty px-4 py-6 text-center text-sm text-muted-foreground">Your boosters couldn’t be loaded. They’re safe; try again in a moment.</p>;
   }
 
   const active = activeBoosters(boost);
@@ -146,7 +148,7 @@ export function BoosterShelf({ boost: initial }: { boost: Boost | null }) {
         </Button>
       </div>
 
-      <div role="status" className="grid gap-2 rounded-xl border border-border bg-foreground/[0.02] px-4 py-3 text-sm">
+      <div role="status" data-glow className="ui-panel grid gap-2 px-4 py-3 text-sm" style={{ "--tone": "#22c55e" } as CSSProperties}>
         {active.length ? (
           <>
             <p className="flex flex-wrap items-center gap-2">
@@ -167,7 +169,10 @@ export function BoosterShelf({ boost: initial }: { boost: Boost | null }) {
             </p>
           </>
         ) : (
-          <p className="text-muted-foreground">No booster is active. Case openings use the normal odds.</p>
+            <p className="flex items-center gap-2 text-muted-foreground">
+              <span aria-hidden className="ui-dot opacity-50" />
+              No booster is active. Case openings use the normal odds.
+            </p>
         )}
       </div>
 
@@ -179,7 +184,7 @@ export function BoosterShelf({ boost: initial }: { boost: Boost | null }) {
         </ul>
       ) : null}
       {!ownedAny ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="ui-empty px-4 py-6 text-center text-sm text-muted-foreground" style={{ "--tone": "#22c55e" } as CSSProperties}>
           You don’t have any boosters yet.{" "}
           <Link href="/shop/boosters" className="text-amethyst underline-offset-4 hover:underline">
             See Luck Boosters in the Shop

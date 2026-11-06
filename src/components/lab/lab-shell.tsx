@@ -24,15 +24,15 @@ export function LabShell({ id, title, blurb }: { id: LabExperimentId; title: str
           All experiments
         </Link>
       </Button>
-      <section aria-labelledby="lab-title" className="overflow-hidden rounded-2xl border border-border bg-surface/50">
+      <section aria-labelledby="lab-title" className="ui-panel enter overflow-hidden" data-glow>
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4 md:p-5">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amethyst/[0.12] text-amethyst">
-              <Icon aria-hidden className="size-5" />
+          <div className="flex min-w-0 items-center gap-4">
+            <span aria-hidden className="ui-hero-icon">
+              <Icon className="size-6" />
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 id="lab-title" className="text-xl font-semibold tracking-tight">
+                <h1 id="lab-title" className="text-xl font-extrabold tracking-tight">
                   {title}
                 </h1>
                 <span className="lab-demo-tag">
@@ -67,7 +67,7 @@ export function LabShell({ id, title, blurb }: { id: LabExperimentId; title: str
         <div className="p-4 md:p-6">
           <Experiment key={run} assist={assist} />
         </div>
-        <p className="border-t border-border bg-foreground/[0.02] px-4 py-2.5 text-xs text-muted-foreground md:px-5">
+        <p className="border-t border-border bg-[rgb(var(--ink-rgb)/0.02)] px-4 py-2.5 text-xs text-muted-foreground md:px-5">
           This is a pretend demo. It never changes your settings, purchases, sign-in or subscriptions, and nothing you enter is saved or sent.
         </p>
       </section>

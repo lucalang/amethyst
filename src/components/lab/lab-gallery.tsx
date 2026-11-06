@@ -22,9 +22,13 @@ export function LabGallery() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {LAB_EXPERIMENTS.length} experiments. Every one is a demo: nothing here touches your account, settings or coins.
+      <div className="enter flex flex-wrap items-center justify-between gap-3" style={{ "--enter-index": 1 } as CSSProperties}>
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="ui-pill" data-tone>
+            <span aria-hidden className="ui-dot" />
+            {LAB_EXPERIMENTS.length} experiments
+          </span>
+          Every one is a demo: nothing here touches your account, settings or coins.
         </p>
         <CatalogSearch value={query} onChange={setQuery} label="Search experiments" placeholder="Search experiments" />
       </div>
@@ -35,28 +39,27 @@ export function LabGallery() {
           {shown.map((item, index) => {
             const Icon = LAB_ICONS[item.id];
             return (
-              <li key={item.id} className="enter" style={{ "--enter-index": index } as CSSProperties}>
-                <Link
-                  href={`/lab/${item.id}`}
-                  className="group flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface/50 p-4 outline-none transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out hover:-translate-y-0.5 hover:border-amethyst/50 hover:bg-surface/75 hover:shadow-[0_16px_38px_-24px_rgb(var(--accent-rgb)/0.65)] focus-visible:ring-2 focus-visible:ring-ring active:translate-y-0 active:scale-[0.985] active:duration-75 motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
-                >
-                  <span className="flex items-center justify-between">
-                    <span className="grid size-10 place-items-center rounded-xl bg-amethyst/[0.12] text-amethyst transition-transform duration-200 group-hover:scale-105 motion-reduce:transition-none">
-                      <Icon aria-hidden className="size-5" />
+              <li key={item.id} className="enter enter-card" style={{ "--enter-index": index } as CSSProperties}>
+                <Link href={`/lab/${item.id}`} className="ui-card group flex h-full flex-col">
+                  <span className="ui-stage h-24 border-b border-border">
+                    <span aria-hidden className="ui-hero-icon">
+                      <Icon className="size-6" />
                     </span>
-                    <span className="lab-demo-tag">Demo</span>
+                    <span className="lab-demo-tag absolute top-3 right-3">Demo</span>
                   </span>
-                  <span className="text-base font-semibold transition-colors group-hover:text-amethyst">{item.title}</span>
-                  <span className="flex-1 text-sm text-pretty text-muted-foreground">{item.blurb}</span>
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="flex flex-wrap gap-1">
-                      {item.tags.map((tag) => (
-                        <span key={tag} className="rounded-full bg-foreground/[0.06] px-2 py-0.5 text-[11px] text-muted-foreground">
-                          {tag}
-                        </span>
-                      ))}
+                  <span className="flex flex-1 flex-col gap-2 p-4">
+                    <span className="text-base font-semibold transition-colors group-hover:text-(--tone)">{item.title}</span>
+                    <span className="flex-1 text-sm text-pretty text-muted-foreground">{item.blurb}</span>
+                    <span className="mt-1 flex items-center justify-between gap-2">
+                      <span className="flex flex-wrap gap-1">
+                        {item.tags.map((tag) => (
+                          <span key={tag} className="ui-pill">
+                            {tag}
+                          </span>
+                        ))}
+                      </span>
+                      <ArrowRight aria-hidden className="size-4 shrink-0 text-muted-foreground transition-[color,translate] group-hover:translate-x-0.5 group-hover:text-(--tone) motion-reduce:transition-none" />
                     </span>
-                    <ArrowRight aria-hidden className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </Link>
               </li>

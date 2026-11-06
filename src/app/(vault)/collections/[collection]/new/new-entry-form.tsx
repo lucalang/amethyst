@@ -50,8 +50,9 @@ export function NewEntryForm({
         const formData = new FormData(event.currentTarget);
         startTransition(() => action(formData));
       }}
-      className="enter max-w-2xl rounded-lg border border-white/[0.08] bg-surface/70 shadow-[0_24px_60px_-40px_rgb(var(--accent-rgb)/0.5)]"
-      style={{ "--enter-index": 1 } as React.CSSProperties}
+      className="ui-panel enter max-w-2xl overflow-hidden shadow-[0_24px_60px_-40px_var(--tone)]"
+      data-glow
+      style={{ "--enter-index": 1, "--tone": collection.accent_color ? "var(--ca)" : "var(--amethyst)" } as React.CSSProperties}
       noValidate
     >
       <input type="hidden" name="collection" value={collection.id} />
@@ -106,7 +107,7 @@ export function NewEntryForm({
           <button
             type="button"
             onClick={() => setBannerOpen(true)}
-            className="group/banner -mt-2 inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-amethyst focus-visible:text-amethyst focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="group/banner -mt-2 inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-(--tone) focus-visible:text-(--tone) focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <Plus aria-hidden className="size-4 transition-transform duration-200 group-hover/banner:rotate-90" />
             Add a banner image
@@ -114,7 +115,7 @@ export function NewEntryForm({
           </button>
         )}
 
-        <div className="grid gap-5 border-t border-white/[0.06] pt-6 sm:grid-cols-2">
+        <div className="grid gap-5 border-t border-border pt-6 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="templateId" className="text-sm">Workspace template</Label>
             <Select name="templateId" value={template} onValueChange={setTemplate}>
@@ -167,7 +168,7 @@ export function NewEntryForm({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-3 border-t border-white/[0.06] px-5 py-4 md:px-7">
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-3 border-t border-border bg-[rgb(var(--ink-rgb)/0.02)] px-5 py-4 md:px-7">
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" className="h-10 px-3.5">
             <Link href={collectionPath(collection)}>Cancel</Link>

@@ -55,28 +55,30 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       </SettingsGroup>
 
       <SettingsGroup id="notifications" title="Notifications">
-        <SettingRow
-          labelId="achievement-notifications-label"
-          label="Achievement celebrations"
-          description="Play a short celebration when you earn an achievement. It never takes focus and waits until you finish typing or playing. Progress tracking stays on when this is off."
-          reset={resetFor(preferences, ["achievementNotifications"], "On")}
-        >
-          <SwitchSetting
-            settingKey="achievementNotifications"
-            value={preferences.achievementNotifications}
+        <div className="space-y-8">
+          <SettingRow
             labelId="achievement-notifications-label"
-            onLabel="Celebrations on"
-            offLabel="Celebrations off"
-          />
-        </SettingRow>
-        <SettingRow
-          labelId="pull-cutscenes-label"
-          label="Rare pull cutscenes"
-          description="Which rarities play a cutscene when you pull them from a case. Higher rarities get bigger scenes; every scene can be skipped. Reduced motion turns them all off."
-          reset={resetFor(preferences, ["pullCutscenes"], "All on")}
-        >
-          <PullCutscenesSetting value={preferences.pullCutscenes} labelId="pull-cutscenes-label" />
-        </SettingRow>
+            label="Achievement celebrations"
+            description="Play a short celebration when you earn an achievement. It never takes focus and waits until you finish typing or playing. Progress tracking stays on when this is off."
+            reset={resetFor(preferences, ["achievementNotifications"], "On")}
+          >
+            <SwitchSetting
+              settingKey="achievementNotifications"
+              value={preferences.achievementNotifications}
+              labelId="achievement-notifications-label"
+              onLabel="Celebrations on"
+              offLabel="Celebrations off"
+            />
+          </SettingRow>
+          <SettingRow
+            labelId="pull-cutscenes-label"
+            label="Rare pull cutscenes"
+            description="Which rarities play a cutscene when you pull them from a case. Higher rarities get bigger scenes; every scene can be skipped. Reduced motion turns them all off."
+            reset={resetFor(preferences, ["pullCutscenes"], "All on")}
+          >
+            <PullCutscenesSetting value={preferences.pullCutscenes} labelId="pull-cutscenes-label" />
+          </SettingRow>
+        </div>
       </SettingsGroup>
 
       <SettingsGroup

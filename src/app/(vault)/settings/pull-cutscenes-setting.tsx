@@ -21,9 +21,9 @@ export function PullCutscenesSetting({ value, labelId }: { value: CutsceneRarity
             aria-pressed={on}
             onClick={() => toggle(rarity)}
             style={{ "--rarity": RARITIES[rarity].color } as CSSProperties}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground aria-pressed:border-(--rarity) aria-pressed:bg-(--rarity)/15 aria-pressed:text-foreground"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface/40 px-3 py-1.5 text-sm font-semibold text-muted-foreground transition-[color,background-color,border-color,box-shadow,scale] duration-150 hover:border-(--rarity)/50 hover:text-foreground active:scale-[0.97] aria-pressed:border-(--rarity)/70 aria-pressed:bg-(--rarity)/15 aria-pressed:text-foreground aria-pressed:shadow-[0_8px_22px_-12px_var(--rarity)] motion-reduce:transition-none motion-reduce:active:scale-100"
           >
-            <span aria-hidden className="grid size-4 place-items-center rounded-full border border-current">
+            <span aria-hidden className="grid size-4 place-items-center rounded-full border border-current text-(--rarity)">
               {on ? <Check className="size-3" /> : null}
             </span>
             {RARITIES[rarity].label}

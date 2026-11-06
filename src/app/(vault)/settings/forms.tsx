@@ -100,7 +100,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
   }
   return (
     <form action={action} className="space-y-5">
-      <div className="flex flex-wrap items-center gap-4 rounded-lg border border-white/[0.07] bg-white/[0.02] p-4">
+      <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-surface/40 bg-[radial-gradient(32rem_9rem_at_0%_0%,rgb(var(--accent-rgb)/0.16),transparent_72%)] p-4 shadow-[0_18px_40px_-30px_var(--amethyst)]">
         <ProfileAvatar name={name} src={avatar} decoration={decoration} className="size-16 text-xl" />
         <div className="min-w-0">
           <p className="truncate text-base font-semibold">{name.trim() || "Your account"}</p>
@@ -168,7 +168,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
         {visibleDecorations.length + 1 >= PICKER_SEARCH_MIN ? (
           <CatalogSearch value={decorationQuery} onChange={setDecorationQuery} label="Search avatar decorations" placeholder="Search decorations" />
         ) : null}
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {[null, ...visibleDecorations]
             .filter((id) => {
               if (id === null) return decorationSource === "all" || decoration === null;
@@ -183,15 +183,9 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
               return (
                 <label
                   key={id ?? "none"}
-                  className={cn(
-                    "group/deco flex items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-[color,border-color,background-color,box-shadow,translate,scale] duration-200 ease-out select-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none",
-                    isOwned
-                      ? "cursor-pointer hover:-translate-y-0.5 hover:scale-[1.015] active:translate-y-0 active:scale-[0.97] active:duration-75 motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
-                      : "cursor-not-allowed opacity-75",
-                    checked
-                      ? "border-amethyst/65 bg-amethyst/[0.09] text-foreground shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_12px_32px_-18px_rgb(var(--accent-rgb)/0.75)]"
-                      : "border-border bg-foreground/[0.02] text-muted-foreground hover:border-amethyst/45 hover:bg-amethyst/[0.05] hover:text-foreground hover:shadow-[0_10px_26px_-18px_rgb(var(--accent-rgb)/0.55)]",
-                  )}
+                  data-selected={checked}
+                  data-locked={!isOwned}
+                  className={cn("ui-card flex items-center gap-3 p-2 pr-3 text-sm select-none", isOwned ? "cursor-pointer" : "opacity-75")}
                 >
                   <input
                     type="radio"
@@ -202,11 +196,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                     onChange={() => isOwned && setDecoration(id)}
                     className="sr-only"
                   />
-                  <span className="grid size-11 place-items-center transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover/deco:scale-110 motion-reduce:transition-none motion-reduce:group-hover/deco:scale-100">
+                  <span className="ui-stage size-12 shrink-0 rounded-xl border border-border">
                     <ProfileAvatar name={name} src={avatar} decoration={id} className="size-7 text-[10px]" />
                   </span>
-                  <span className="min-w-0">
-                    <span className="block font-medium text-foreground">{id ? AVATAR_DECORATIONS[id].name : "None"}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-foreground">{id ? AVATAR_DECORATIONS[id].name : "None"}</span>
                     {id && AVATAR_DECORATIONS[id].source === "achievement" ? (
                       <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-amethyst">
                         {isOwned ? <Award aria-hidden className="size-3" /> : <Lock aria-hidden className="size-3" />}
@@ -267,7 +261,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                 {badges.map((id, index) => {
                   const name = PROFILE_BADGES[id].name;
                   return (
-                    <li key={id} className="flex items-center gap-2 rounded-lg border border-amethyst/30 bg-amethyst/[0.06] py-1 pr-1 pl-2.5 text-sm">
+                    <li key={id} className="flex items-center gap-2 rounded-xl border border-amethyst/35 bg-amethyst/[0.08] py-1 pr-1 pl-2.5 text-sm shadow-[0_8px_24px_-16px_var(--amethyst)]">
                       <span aria-hidden className="w-3 text-center text-xs text-muted-foreground tabular-nums">
                         {index + 1}
                       </span>

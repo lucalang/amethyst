@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Medal } from "lucide-react";
 import { LeaderboardView } from "@/components/arcade/leaderboard-view";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
+import { EntranceScope } from "@/components/layout/entrance-scope";
 import { Button } from "@/components/ui/button";
 import type { ArcadeGameId } from "@/lib/arcade";
 import { LEADERBOARD_GAMES, LEADERBOARD_GAME_IDS, isLeaderboardBoard } from "@/lib/leaderboards";
@@ -19,17 +20,21 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
   const board = isLeaderboardBoard(game, askedBoard) ? askedBoard : LEADERBOARD_GAMES[game].boards[0].id;
 
   return (
-    <PageContainer>
-      <PageHeader
-        title="Leaderboards"
-        description="The best verified runs in every Arcade game."
-        actions={
-          <Button asChild variant="outline" size="sm" className="h-9 px-3">
-            <Link href="/arcade"><ArrowLeft aria-hidden />Arcade</Link>
-          </Button>
-        }
-      />
-      <LeaderboardView key={`${game}|${board}`} game={game} board={board} />
-    </PageContainer>
+    <EntranceScope>
+      <PageContainer>
+        <PageHeader
+          title="Leaderboards"
+          description="The best verified runs in every Arcade game."
+          icon={Medal}
+          tone="#38bdf8"
+          actions={
+            <Button asChild variant="outline" size="sm" className="h-9 px-3">
+              <Link href="/arcade"><ArrowLeft aria-hidden />Arcade</Link>
+            </Button>
+          }
+        />
+        <LeaderboardView key={`${game}|${board}`} game={game} board={board} />
+      </PageContainer>
+    </EntranceScope>
   );
 }

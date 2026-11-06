@@ -6276,75 +6276,89 @@ a.arcade-counter:hover {
   color: var(--cab-tint);
 }
 
-/* Leaderboards: a cabinet scoreboard tinted by the selected game's --cab hue. */
-.lb-games {
+/* Leaderboards (Inventory/Cases language), tinted by the selected game's --cab hue. */
+.lb-games,
+.lb-boards {
   display: flex;
-  gap: 0.375rem;
+  gap: 0.25rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: rgb(var(--ink-rgb) / 0.025);
+  padding: 0.3rem;
+}
+.lb-games {
   overflow-x: auto;
-  padding: 0.25rem;
-  margin: -0.25rem;
   scrollbar-width: none;
-}
-.lb-game {
-  flex: none;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--cab) 25%, var(--border));
-  padding: 0.375rem 0.875rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  background: color-mix(in oklab, var(--surface) 70%, transparent);
-  outline: none;
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background-color 180ms ease;
-}
-.lb-game:hover {
-  color: var(--foreground);
-  border-color: color-mix(in oklab, var(--cab) 55%, var(--border));
-}
-.lb-game[aria-current="page"] {
-  color: color-mix(in oklab, var(--cab) 70%, #fff);
-  border-color: color-mix(in oklab, var(--cab) 70%, transparent);
-  background: linear-gradient(180deg, #180f2a, #0a0613);
-  box-shadow: inset 0 -8px 14px -12px var(--cab);
 }
 .lb-boards {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-  border-radius: calc(0.7rem * var(--radius-unit, 1));
-  border: 1px solid var(--border);
-  background: color-mix(in oklab, var(--surface) 70%, transparent);
-  padding: 0.25rem;
 }
+.lb-game,
 .lb-board-pick {
-  border-radius: calc(0.5rem * var(--radius-unit, 1));
-  padding: 0.25rem 0.75rem;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  padding: 0 0.9rem;
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--muted-foreground);
   outline: none;
   transition:
-    color 160ms ease,
-    background-color 160ms ease;
+    color 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 220ms ease;
 }
+.lb-board-pick {
+  height: 2.25rem;
+  padding: 0 0.8rem;
+}
+.lb-game:hover,
 .lb-board-pick:hover {
   color: var(--foreground);
+  background: rgb(var(--ink-rgb) / 0.04);
 }
+.lb-game .ui-dot {
+  opacity: 0.55;
+  box-shadow: none;
+  transition: opacity 180ms ease;
+}
+.lb-game:hover .ui-dot,
+.lb-game[aria-current="page"] .ui-dot {
+  opacity: 1;
+}
+.lb-game[aria-current="page"] .ui-dot {
+  box-shadow: 0 0 10px var(--tone);
+}
+.lb-game[aria-current="page"],
 .lb-board-pick[aria-pressed="true"] {
-  color: #1a0f05;
-  background: color-mix(in oklab, var(--cab) 85%, #fff);
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--cab) 40%, transparent);
+  background: color-mix(in oklab, var(--cab) 15%, transparent);
+  box-shadow: 0 8px 24px -12px var(--cab);
+}
+.lb-game[aria-current="page"] {
+  border-color: color-mix(in oklab, var(--tone) 40%, transparent);
+  background: color-mix(in oklab, var(--tone) 15%, transparent);
+  box-shadow: 0 8px 24px -12px var(--tone);
 }
 .lb-select {
-  height: 2rem;
-  border-radius: calc(0.5rem * var(--radius-unit, 1));
+  height: 2.25rem;
+  border-radius: 0.75rem;
   border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 0 0.5rem;
+  background: var(--card);
+  padding: 0 0.6rem;
   color: var(--foreground);
   outline: none;
+  transition: border-color 180ms ease;
+}
+.lb-select:hover {
+  border-color: color-mix(in oklab, var(--cab) 45%, var(--border));
 }
 :is(.lb-game, .lb-board-pick, .lb-select):focus-visible {
   box-shadow:
@@ -6352,65 +6366,101 @@ a.arcade-counter:hover {
     0 0 0 4px var(--ring);
 }
 .lb-panel {
+  position: relative;
   overflow: hidden;
-  border-radius: calc(1rem * var(--radius-unit, 1));
-  border: 1px solid color-mix(in oklab, var(--cab) 22%, var(--border));
-  background: linear-gradient(180deg, color-mix(in oklab, var(--cab) 7%, var(--surface)), var(--surface) 40%);
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(36rem 9rem at 50% 0%, color-mix(in oklab, var(--cab) 12%, transparent), transparent 75%),
+    var(--card);
+}
+.lb-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cab), transparent);
+  opacity: 0.7;
 }
 .lb-marquee {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin: 0.5rem 0.5rem 0;
-  border-radius: calc(0.6rem * var(--radius-unit, 1));
-  padding: 0.75rem 0.9rem;
-  background:
-    radial-gradient(120% 170% at 50% 0%, color-mix(in oklab, var(--cab) 30%, transparent), transparent 68%),
-    linear-gradient(180deg, #180f2a, #0a0613);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.08),
-    inset 0 -10px 18px -14px var(--cab);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.1rem;
 }
 .lb-title {
   min-width: 0;
-  font-family: var(--font-press-start), ui-monospace, monospace;
-  font-size: 0.8rem;
-  line-height: 1.5 !important;
-  text-transform: uppercase;
-  color: color-mix(in oklab, var(--cab) 72%, #fff);
-  text-shadow:
-    0 0 6px color-mix(in oklab, var(--cab) 65%, transparent),
-    2px 2px 0 rgb(0 0 0 / 0.55) !important;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
 }
 .lb-variant {
-  color: rgb(255 255 255 / 0.7);
-  text-shadow: none;
+  font-weight: 500;
+  color: var(--muted-foreground);
 }
 .lb-meta {
   flex: none;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgb(255 255 255 / 0.6);
 }
 .lb-list {
   display: flex;
   flex-direction: column;
-  padding: 0.5rem;
+  gap: 0.4rem;
+  padding: 0.75rem;
 }
 .lb-row {
+  --tone: var(--cab);
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-radius: calc(0.6rem * var(--radius-unit, 1));
-  padding: 0.55rem 0.75rem;
+  overflow: hidden;
+  border-radius: 0.8rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  padding: 0.6rem 0.8rem;
+  transition:
+    border-color 180ms ease,
+    box-shadow 220ms ease;
 }
-.lb-row:nth-child(even) {
-  background: color-mix(in oklab, var(--foreground) 3%, transparent);
+.lb-row:hover {
+  border-color: color-mix(in oklab, var(--tone) 35%, var(--border));
+}
+.lb-row[data-podium="1"] {
+  --tone: #f5b93a;
+}
+.lb-row[data-podium="2"] {
+  --tone: #aab3c5;
+}
+.lb-row[data-podium="3"] {
+  --tone: #d08a52;
+}
+.lb-row[data-podium] {
+  border-color: color-mix(in oklab, var(--tone) 32%, var(--border));
+  background:
+    linear-gradient(90deg, color-mix(in oklab, var(--tone) 13%, transparent), transparent 55%),
+    var(--card);
+}
+.lb-row[data-podium]::before {
+  content: "";
+  position: absolute;
+  inset: 0.5rem auto 0.5rem 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--tone);
+  box-shadow: 0 0 10px var(--tone);
 }
 .lb-row[data-you] {
-  background: color-mix(in oklab, var(--cab) 14%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--cab) 45%, transparent);
+  --tone: var(--cab);
+  border-color: color-mix(in oklab, var(--cab) 65%, transparent);
+  background:
+    radial-gradient(28rem 5rem at 0% 50%, color-mix(in oklab, var(--cab) 18%, transparent), transparent 75%),
+    var(--card);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--cab) 40%, transparent),
+    0 14px 30px -20px var(--cab);
 }
 .lb-rank {
   display: inline-flex;
@@ -6419,16 +6469,22 @@ a.arcade-counter:hover {
   justify-content: center;
   gap: 0.2rem;
   min-width: 2.75rem;
-  height: 1.75rem;
-  border-radius: 999px;
-  font-family: var(--font-press-start), ui-monospace, monospace;
-  font-size: 0.65rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: rgb(var(--ink-rgb) / 0.03);
+  font-size: 0.8125rem;
+  font-weight: 700;
   color: var(--muted-foreground);
   font-variant-numeric: tabular-nums;
 }
 .lb-row[data-podium] .lb-rank {
+  border-color: color-mix(in oklab, var(--tone) 55%, transparent);
   color: #2b1a02;
-  box-shadow: inset 0 -1.5px 0 rgb(0 0 0 / 0.25), inset 0 0 0 1.5px rgb(255 255 255 / 0.3);
+  box-shadow:
+    inset 0 -1.5px 0 rgb(0 0 0 / 0.2),
+    inset 0 0 0 1px rgb(255 255 255 / 0.3),
+    0 6px 16px -8px var(--tone);
 }
 .lb-row[data-podium="1"] .lb-rank {
   background: radial-gradient(circle at 35% 30%, #fff1b8, #ffd36b 45%, #d79a1e);
@@ -6439,33 +6495,35 @@ a.arcade-counter:hover {
 .lb-row[data-podium="3"] .lb-rank {
   background: radial-gradient(circle at 35% 30%, #ffe0c2, #e3a370 45%, #9c5a2a);
 }
+.lb-row[data-you]:not([data-podium]) .lb-rank {
+  border-color: color-mix(in oklab, var(--cab) 45%, transparent);
+  background: color-mix(in oklab, var(--cab) 14%, transparent);
+  color: var(--foreground);
+}
 .lb-score {
   flex: none;
   font-size: 1rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.lb-row[data-podium] .lb-score {
+  color: color-mix(in oklab, var(--tone) 55%, var(--foreground));
+}
 .lb-you {
+  --tone: var(--cab);
   flex: none;
-  border-radius: 999px;
-  padding: 0 0.45rem;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.1rem;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #1a0f05;
-  background: color-mix(in oklab, var(--cab) 85%, #fff);
 }
 .lb-footer {
   border-top: 1px dashed color-mix(in oklab, var(--cab) 25%, var(--border));
-  padding: 0.25rem 0.5rem 0.5rem;
+  padding: 0.25rem 0 0;
 }
 .lb-footer:empty {
   display: none;
 }
 .lb-footer > p {
-  padding: 0.5rem 0.25rem 0;
+  padding: 0.75rem 1rem;
 }
 .lb-state {
   display: flex;
@@ -6473,10 +6531,19 @@ a.arcade-counter:hover {
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
+  margin: 0.75rem;
   padding: 2.5rem 1rem;
   text-align: center;
   font-size: 0.875rem;
   color: var(--muted-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.lb-game, .lb-board-pick, .lb-select, .lb-row, .lb-game .ui-dot) {
+    transition: none;
+  }
+}
+:root[data-motion="off"] :is(.lb-game, .lb-board-pick, .lb-select, .lb-row, .lb-game .ui-dot) {
+  transition: none;
 }
 
 /* Subtle: keep the glow, drop the travelling light. Off or reduced: everything holds still. */

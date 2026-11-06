@@ -20,9 +20,9 @@ function Score({ row, fast }: { row: LeaderboardRow; fast: boolean }) {
   return <span className="lb-score">{fast ? formatDuration(row.score) : row.score.toLocaleString("en")}</span>;
 }
 
-function Row({ row, fast }: { row: LeaderboardRow; fast: boolean }) {
+function Row({ row, fast, index = 0 }: { row: LeaderboardRow; fast: boolean; index?: number }) {
   return (
-    <li className="lb-row" data-you={row.you ? "" : undefined} data-podium={row.rank <= 3 ? row.rank : undefined}>
+    <li className="lb-row enter enter-soft" style={{ "--enter-index": index } as CSSProperties} data-you={row.you ? "" : undefined} data-podium={row.rank <= 3 ? row.rank : undefined}>
       <span className="lb-rank" aria-label={`Rank ${row.rank}`}>
         {row.rank === 1 ? <Crown aria-hidden className="size-3.5" /> : null}
         {row.rank}
@@ -30,7 +30,7 @@ function Row({ row, fast }: { row: LeaderboardRow; fast: boolean }) {
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium">{row.name}</span>
-          {row.you ? <span className="lb-you">You</span> : null}
+          {row.you ? <span className="ui-pill lb-you" data-tone>You</span> : null}
         </span>
         <span className="block text-xs text-muted-foreground">
           {dateFormat.format(new Date(row.achievedAt))}
@@ -86,24 +86,25 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
   const href = ARCADE_GAMES.find((entry) => entry.id === game)?.href ?? "/arcade";
 
   return (
-    <div className="flex flex-col gap-4" style={{ "--cab": ARCADE_CABINETS[game].hue } as CSSProperties}>
-      <nav aria-label="Games" className="lb-games">
+    <div className="flex flex-col gap-4" style={{ "--cab": ARCADE_CABINETS[game].hue, "--tone": ARCADE_CABINETS[game].hue } as CSSProperties}>
+      <nav aria-label="Games" className="lb-games enter" style={{ "--enter-index": 1 } as CSSProperties}>
         {LEADERBOARD_GAME_IDS.map((id) => (
           <button
             key={id}
             type="button"
             className="lb-game"
             aria-current={id === game ? "page" : undefined}
-            style={{ "--cab": ARCADE_CABINETS[id].hue } as CSSProperties}
+            style={{ "--tone": ARCADE_CABINETS[id].hue } as CSSProperties}
             onClick={() => pickGame(id)}
           >
+            <span aria-hidden className="ui-dot" />
             {titleOf(id)}
           </button>
         ))}
       </nav>
 
       {snakeParts ? (
-        <div className="flex flex-wrap items-end gap-x-3 gap-y-2 text-sm text-muted-foreground">
+        <div className="ui-panel enter flex flex-wrap items-end gap-x-3 gap-y-2 p-3 text-sm text-muted-foreground" style={{ "--enter-index": 2 } as CSSProperties}>
           <label className="flex flex-col gap-1">
             Mode
             <select className="lb-select" value={snakeParts.key} onChange={(event) => pickSnake({ key: event.target.value })}>
@@ -145,7 +146,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
             </select>
           </label>
           {board !== snakeBoard ? (
-            <Button size="sm" variant="outline" className="h-9" onClick={() => setBoard(snakeBoard)}>
+            <Button size="sm" variant="outline" className="h-9 rounded-xl" onClick={() => setBoard(snakeBoard)}>
               Your setup
             </Button>
           ) : null}
@@ -169,7 +170,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
           ) : null}
         </div>
       ) : (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="enter flex flex-wrap items-center gap-x-4 gap-y-2" style={{ "--enter-index": 2 } as CSSProperties}>
           <div role="group" aria-label="Board" className="lb-boards">
             {(config.setups ? [{ id: snakeBoard, label: "Your setup" }] : config.boards).map((option) => (
               <button key={option.id || "main"} type="button" className="lb-board-pick" aria-pressed={board === option.id} onClick={() => setBoard(option.id)}>
@@ -197,13 +198,18 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
         </div>
       )}
 
-      <section className="lb-panel" aria-labelledby="lb-title" aria-busy={current === null}>
+      <section className="lb-panel enter" style={{ "--enter-index": 3 } as CSSProperties} aria-labelledby="lb-title" aria-busy={current === null}>
         <header className="lb-marquee">
-          <h2 id="lb-title" className="lb-title">
-            {titleOf(game)}
-            <span className="sr-only"> leaderboard,</span> <span className="lb-variant">{boardLabel(game, board)}</span>
-          </h2>
-          <span className="lb-meta">{data ? `${data.players.toLocaleString("en")} player${data.players === 1 ? "" : "s"}` : config.scoreLabel}</span>
+          <span className="flex min-w-0 items-center gap-3">
+            <span aria-hidden className="ui-icon">
+              <Trophy className="size-4" />
+            </span>
+            <h2 id="lb-title" className="lb-title">
+              {titleOf(game)}
+              <span className="sr-only"> leaderboard,</span> <span className="lb-variant">{boardLabel(game, board)}</span>
+            </h2>
+          </span>
+          <span className="ui-pill lb-meta tabular-nums">{data ? `${data.players.toLocaleString("en")} player${data.players === 1 ? "" : "s"}` : config.scoreLabel}</span>
         </header>
 
         {current === null ? (
@@ -221,8 +227,10 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
             </Button>
           </div>
         ) : data && data.top.length === 0 ? (
-          <div className="lb-state">
-            <Trophy aria-hidden className="size-5 text-[var(--cab)]" />
+          <div className="lb-state ui-empty">
+            <span aria-hidden className="ui-icon">
+              <Trophy className="size-4" />
+            </span>
             No ranked runs on this board yet.
             <Button asChild size="sm">
               <Link href={href}>
@@ -235,7 +243,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
           <>
             <ol className="lb-list" aria-label={`Top ${data.top.length}`}>
               {data.top.map((row, index) => (
-                <Row key={`${row.rank}-${index}`} row={row} fast={fast} />
+                <Row key={`${row.rank}-${index}`} row={row} fast={fast} index={index} />
               ))}
             </ol>
             <footer className="lb-footer">
@@ -259,7 +267,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
         ) : null}
       </section>
 
-      <p className="text-xs text-pretty text-muted-foreground">
+      <p className="px-1 text-xs text-pretty text-muted-foreground">
         {fast ? "Fastest solve first; fewer hints break a tie, then the earlier solve." : "Highest score first; on a tie, whoever reached it first ranks higher."} Only runs the server
         timed and checked are ranked, one best per player. Players appear under their display name, or an anonymous arcade name if they haven’t set one.
       </p>

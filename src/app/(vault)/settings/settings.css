@@ -1,0 +1,135 @@
+/* Settings & Customization helpers on top of the global ui-* surfaces (surfaces.css). */
+
+/* Radio/checkbox cards hide their input, so the card shows keyboard focus. */
+.ui-card.ui-card:has(:focus-visible) {
+  box-shadow:
+    0 0 0 2px var(--ring),
+    0 22px 40px -28px var(--tone);
+}
+.ui-card[data-locked="true"] {
+  cursor: not-allowed;
+}
+.ui-card[data-locked="true"]:hover {
+  translate: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
+.ui-card[data-locked="true"]:hover::before {
+  opacity: 0;
+}
+.ui-card[data-locked="true"]:active {
+  scale: none;
+}
+.ui-card[data-locked="true"]:hover .ui-stage > *,
+.ui-card[data-locked="true"]:hover .set-stage > * {
+  scale: none;
+}
+
+/* Dark preview area for samples drawn in light-on-dark ink. */
+.set-stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(70% 90% at 50% 0%, color-mix(in oklab, var(--tone, var(--amethyst)) 26%, transparent), transparent 72%),
+    radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1.2px) 0 0 / 14px 14px,
+    #0c0a12;
+}
+.ui-card .set-stage > * {
+  transition: scale 260ms var(--ease-out-soft, ease-out);
+}
+.ui-card:hover .set-stage > * {
+  scale: 1.04;
+}
+
+/* Radio mark on selectable cards. */
+.set-mark {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.0625rem;
+  border-radius: 999px;
+  border: 1px solid var(--input);
+  color: var(--amethyst-foreground);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 200ms ease;
+}
+.ui-card:hover .set-mark {
+  border-color: color-mix(in oklab, var(--tone) 65%, transparent);
+}
+.set-mark[data-on="true"] {
+  border-color: var(--tone, var(--amethyst));
+  background: var(--tone, var(--amethyst));
+  box-shadow: 0 0 12px color-mix(in oklab, var(--tone, var(--amethyst)) 55%, transparent);
+}
+
+/* Segment inside a .ui-segment (Inventory tabs look); aria-current marks the active one. */
+.set-segment-item {
+  --tone: var(--amethyst);
+  display: inline-flex;
+  min-width: 0;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  padding: 0 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  outline: none;
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 200ms ease,
+    scale 120ms ease;
+}
+.set-segment-item:hover {
+  color: var(--foreground);
+  background: rgb(var(--ink-rgb) / 0.04);
+}
+.set-segment-item:active {
+  scale: 0.97;
+}
+.set-segment-item:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.set-segment-item[aria-current]:not([aria-current="false"]) {
+  color: var(--foreground);
+  border-color: color-mix(in oklab, var(--tone) 40%, transparent);
+  background: color-mix(in oklab, var(--tone) 15%, transparent);
+  box-shadow: 0 8px 24px -12px var(--tone);
+}
+
+/* Rows of a list panel (collections, templates). */
+.set-list-row {
+  transition: background-color 150ms ease;
+}
+.set-list-row:is(:hover, :focus-within) {
+  background: radial-gradient(28rem 6rem at 0% 50%, color-mix(in oklab, var(--tone, var(--amethyst)) 9%, transparent), transparent 75%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-card .set-stage > *,
+  .set-mark,
+  .set-segment-item {
+    transition: none;
+  }
+  .ui-card:hover .set-stage > * {
+    scale: none;
+  }
+  .set-segment-item:active {
+    scale: none;
+  }
+}
+:root[data-motion="off"] .ui-card:hover .set-stage > * {
+  scale: none;
+}

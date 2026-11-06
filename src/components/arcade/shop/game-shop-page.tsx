@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Gamepad2, Store } from "lucide-react";
+import { Gamepad2, ShoppingBag, Store } from "lucide-react";
+import { ARCADE_CABINETS } from "@/components/arcade/previews";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,8 @@ export async function GameShopPage({ game }: { game: ShopGame }) {
       <PageContainer>
         <PageHeader
           title={`${shop.title} shop`}
+          icon={ShoppingBag}
+          tone={ARCADE_CABINETS[game].hue}
           actions={
             <div className="flex flex-wrap gap-2">
               <Button asChild size="sm" className="h-9 px-3.5">

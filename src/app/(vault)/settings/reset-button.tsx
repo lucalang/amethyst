@@ -11,8 +11,8 @@ import { useResetPreferences } from "./setting-controls";
 /** The small accent marker shown beside a setting that differs from its default. */
 export function ChangedBadge({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-1 rounded-full bg-amethyst/10 px-1.5 py-px text-[10px] font-semibold tracking-wide text-amethyst uppercase", className)}>
-      <span aria-hidden className="size-1 rounded-full bg-amethyst" />
+    <span className={cn("inline-flex items-center gap-1 rounded-full border border-amethyst/40 bg-amethyst/12 px-1.5 py-px text-[10px] font-semibold tracking-wide text-amethyst uppercase", className)}>
+      <span aria-hidden className="size-1 rounded-full bg-amethyst shadow-[0_0_6px_var(--amethyst)]" />
       Changed
     </span>
   );

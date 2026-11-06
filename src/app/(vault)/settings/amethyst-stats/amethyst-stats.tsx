@@ -50,7 +50,7 @@ export function AmethystStatsView({ platform, code, computedAt }: { platform: Pl
         <Stat historyKey="characters" history={codeHistory("characters")} icon={Type} label="Characters of source code" value={code.characters} definition="Characters in the same files at the snapshot. Not the number of characters contributors typed, which Git does not record." />
         <Stat historyKey="commits" history={codeHistory("commits")} icon={GitCommitHorizontal} label="Commits" value={code.commits} definition="Commits in the history leading up to the snapshot commit." />
       </Group>
-      <p className="flex items-start gap-2 border-t border-white/[0.08] pt-5 text-xs leading-5 text-muted-foreground">
+      <p className="ui-empty flex items-start gap-2 px-4 py-3.5 text-xs leading-5 text-muted-foreground">
         <Sparkles aria-hidden className="mt-0.5 size-3.5 shrink-0 text-amethyst" />
         Only totals are shown: never accounts, emails, codes or what any one person did. Data removed with a deleted account is no longer counted.
       </p>

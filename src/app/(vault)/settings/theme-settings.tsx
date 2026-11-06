@@ -6,7 +6,6 @@ import { Check, Moon, Sun } from "lucide-react";
 import { CatalogEmpty, CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
 import { catalogMatcher } from "@/lib/catalog-search";
 import { THEME_IDS, THEMES, type ThemeId } from "@/lib/themes";
-import { cn } from "@/lib/utils";
 import { useSetting } from "./setting-controls";
 
 /** Applies a theme to the open page right away; the saved value re-renders it from the server. */
@@ -100,29 +99,19 @@ export function ThemeSettings({ value, labelId }: { value: ThemeId; labelId: str
           const info = THEMES[id];
           const checked = theme === id;
           return (
-            <label
-              key={id}
-              className={cn(
-                "group/theme relative flex cursor-pointer flex-col gap-3 rounded-lg border bg-foreground/[0.02] p-3 transition-[border-color,background-color,box-shadow,translate,scale] duration-200 ease-out select-none hover:-translate-y-0.5 hover:scale-[1.01] hover:border-amethyst/45 hover:bg-amethyst/[0.05] hover:shadow-[0_14px_34px_-22px_rgb(var(--accent-rgb)/0.6)] active:translate-y-0 active:scale-[0.98] active:duration-75 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
-                checked ? "border-amethyst/65 bg-amethyst/[0.07] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.35),0_14px_40px_-22px_rgb(var(--accent-rgb)/0.8)]" : "border-border",
-              )}
-            >
+            <label key={id} data-selected={checked} className="ui-card flex cursor-pointer flex-col select-none">
               <input type="radio" name="theme" value={id} checked={checked} onChange={() => setTheme(id)} className="sr-only" />
-              <ThemePreview id={id} />
-              <span className="flex items-start gap-2.5 px-0.5">
-                <span
-                  aria-hidden
-                  className={cn(
-                    "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border transition-[border-color,background-color,scale] duration-150",
-                    checked ? "scale-105 border-amethyst bg-amethyst text-amethyst-foreground" : "border-input group-hover/theme:border-amethyst/65",
-                  )}
-                >
+              <span className="ui-stage border-b border-border p-4 *:w-full">
+                <ThemePreview id={id} />
+              </span>
+              <span className="flex items-start gap-2.5 p-3.5">
+                <span aria-hidden data-on={checked} className="set-mark">
                   {checked ? <Check className="size-3" strokeWidth={3} /> : null}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{info.name}</span>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-foreground">{info.name}</span>
+                    <span className="ui-pill">
                       {info.mode === "light" ? <Sun aria-hidden className="size-3" /> : <Moon aria-hidden className="size-3" />}
                       {info.mode === "light" ? "Light" : "Dark"}
                     </span>

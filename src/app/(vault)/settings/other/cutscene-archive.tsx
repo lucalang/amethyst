@@ -25,29 +25,32 @@ export function CutsceneArchive() {
 
   return (
     <>
-      {motion === "off" ? <p className="mb-4 text-sm text-muted-foreground">Cutscenes need motion. Turn motion back on in Appearance to play them.</p> : null}
-      <ul className="grid gap-3">
-        {VERSIONS.map((version) => (
-          <li key={version.id} className="rounded-xl border border-white/[0.08] bg-foreground/[0.02] p-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-semibold">{version.name}</h3>
-              <span className="rounded-full border border-amethyst/30 bg-amethyst/10 px-2 py-0.5 text-[11px] font-medium text-amethyst">{version.tag}</span>
-            </div>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{version.description}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {CUTSCENE_RARITIES.map((rarity) => (
-                <button
-                  key={rarity}
-                  type="button"
-                  disabled={motion === "off"}
-                  onClick={() => setPlaying({ version: version.id, rarity })}
-                  style={{ "--rarity": RARITIES[rarity].color } as CSSProperties}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-(--rarity)/50 bg-(--rarity)/10 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-(--rarity)/20 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Play aria-hidden className="size-3.5 text-(--rarity)" />
-                  {RARITIES[rarity].label}
-                </button>
-              ))}
+      {motion === "off" ? <p className="ui-empty mb-4 px-4 py-3 text-sm text-muted-foreground">Cutscenes need motion. Turn motion back on in Appearance to play them.</p> : null}
+      <ul className="divide-y divide-border">
+        {VERSIONS.map((version, index) => (
+          <li key={version.id} className="flex gap-4 py-5 first:pt-0 last:pb-0">
+            <span aria-hidden className="ui-icon text-sm font-bold tabular-nums">{index + 1}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-semibold">{version.name}</h3>
+                <span className="ui-pill" data-tone={version.tag === "Current" ? "" : undefined}>{version.tag}</span>
+              </div>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{version.description}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {CUTSCENE_RARITIES.map((rarity) => (
+                  <button
+                    key={rarity}
+                    type="button"
+                    disabled={motion === "off"}
+                    onClick={() => setPlaying({ version: version.id, rarity })}
+                    style={{ "--rarity": RARITIES[rarity].color } as CSSProperties}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-(--rarity)/45 bg-(--rarity)/10 px-3 py-1.5 text-sm font-semibold transition-[background-color,border-color,box-shadow,scale] duration-150 hover:border-(--rarity)/70 hover:bg-(--rarity)/20 hover:shadow-[0_8px_22px_-12px_var(--rarity)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+                  >
+                    <Play aria-hidden className="size-3.5 text-(--rarity)" />
+                    {RARITIES[rarity].label}
+                  </button>
+                ))}
+              </div>
             </div>
           </li>
         ))}

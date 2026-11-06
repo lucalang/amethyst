@@ -91,10 +91,10 @@ function BoosterCard({ booster, balance, busy, onBuy }: { booster: Booster; bala
   const step = (delta: number) => setText(String(Math.min(MAX_BOOSTER_PURCHASE, Math.max(1, (quantity ?? 0) + delta))));
 
   return (
-    <li className="bx-tier grid content-start gap-4 rounded-2xl border p-5" style={tierStyle(booster)}>
+    <li data-glow className="ui-panel grid content-start gap-4 p-5" style={{ ...tierStyle(booster), "--tone": "var(--luck)" } as CSSProperties}>
       <div className="flex items-center gap-3">
-        <span aria-hidden className="bx-ink grid size-11 shrink-0 place-items-center rounded-xl bg-[color-mix(in_oklab,var(--luck)_15%,transparent)]">
-          <Clover className="size-6" />
+        <span aria-hidden className="ui-icon">
+          <Clover className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
           <h3 id={`${fieldId}-name`} className="bx-ink text-lg font-semibold">
@@ -118,9 +118,11 @@ function BoosterCard({ booster, balance, busy, onBuy }: { booster: Booster; bala
           <Coins aria-hidden className="coin-ink size-5" />
           <span className="coin-ink">{booster.price.toLocaleString("en")}</span>
         </p>
-        <p className="text-xs text-muted-foreground tabular-nums">
-          {booster.quantity + booster.active ? `${(booster.quantity + booster.active).toLocaleString("en")} openings owned` : null}
-        </p>
+        {booster.quantity + booster.active ? (
+          <span className="ui-pill tabular-nums" data-tone>
+            {(booster.quantity + booster.active).toLocaleString("en")} openings owned
+          </span>
+        ) : null}
       </div>
       {booster.available ? (
         <form
@@ -178,7 +180,7 @@ function OddsChart({ state, boost }: { state: LootState; boost: Boost }) {
   const odds = caseOdds(lootCase.tiers, luck);
   const label = (value: number) => (value === 1 ? "None" : value === boost.cap && !boost.boosters.some((booster) => booster.multiplier === value) ? `${value}x max` : `${value}x`);
   return (
-    <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
+    <div data-glow className="ui-panel grid gap-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div role="group" aria-label="Luck to preview" className="bx-seg">
           {[...new Set([...levels, ...(boost.luck > 1 ? [boost.luck] : [])])].sort((a, b) => a - b).map((value) => (
@@ -187,7 +189,7 @@ function OddsChart({ state, boost }: { state: LootState; boost: Boost }) {
             </button>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground">{lootCaseInfo(lootCase.id).name}</p>
+        <p className="ui-pill">{lootCaseInfo(lootCase.id).name}</p>
       </div>
       <ul aria-label={`Rarity chances per case at ${luck}x luck`} className="grid gap-1.5">
         {odds.map((tier, row) => {
@@ -230,8 +232,10 @@ export function BoosterShop({ state }: { state: LootState | null }) {
 
   if (!state) {
     return (
-      <div role="alert" className="enter mx-auto max-w-md rounded-2xl border border-rose/40 bg-card px-6 py-10 text-center">
-        <TriangleAlert aria-hidden className="mx-auto size-6 text-rose" />
+      <div role="alert" data-glow className="ui-panel enter mx-auto max-w-md px-6 py-10 text-center" style={{ "--tone": "var(--rose)" } as CSSProperties}>
+        <span aria-hidden className="ui-icon mx-auto">
+          <TriangleAlert className="size-5" />
+        </span>
         <h2 className="mt-4 text-base font-semibold">Boosters couldn’t be loaded</h2>
         <p className="mt-2 text-sm text-muted-foreground">Your coins and boosters are safe. Try again in a moment.</p>
         <Button className="mt-5" disabled={retrying} onClick={() => startRetry(() => router.refresh())}>
@@ -293,7 +297,7 @@ export function BoosterShop({ state }: { state: LootState | null }) {
       </section>
 
       {active.length ? (
-        <p role="status" className="enter flex flex-wrap items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm">
+        <p role="status" data-glow className="ui-panel enter flex flex-wrap items-center gap-2 px-4 py-3 text-sm" style={{ "--tone": "#22c55e" } as CSSProperties}>
           <LuckBadge luck={boost.luck} tiers={boost.boosters} />
           <span className="text-muted-foreground">active for your next {openingsText(boostedOpenings(boost))}.</span>
         </p>
@@ -313,7 +317,10 @@ export function BoosterShop({ state }: { state: LootState | null }) {
 
       <section aria-labelledby="luck-odds" className="enter grid gap-3" style={{ "--enter-index": 3 } as CSSProperties}>
         <div className="flex items-center justify-between gap-2">
-          <h2 id="luck-odds" className="text-base font-semibold">
+          <h2 id="luck-odds" className="flex items-center gap-2.5 text-base font-semibold">
+            <span aria-hidden className="ui-icon ui-icon-sm" style={{ "--tone": "#22c55e" } as CSSProperties}>
+              <Clover className="size-4" />
+            </span>
             Odds per case
           </h2>
           <InfoTip label="How luck works">
@@ -363,7 +370,7 @@ export function BoosterShop({ state }: { state: LootState | null }) {
                   Coins are taken once and the boosters go to your Inventory, inactive until you activate them. {LUCK_NO_GUARANTEE}
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-lg border border-border bg-foreground/[0.02] px-3 py-2.5 text-sm">
+              <dl className="ui-panel grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 px-3 py-2.5 text-sm">
                 <dt className="text-muted-foreground">Quantity</dt>
                 <dd className="text-right tabular-nums">
                   {purchase.quantity} × {coinsText(purchase.booster.price)}

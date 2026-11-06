@@ -82,10 +82,14 @@ export function MemberProfileView({
             }
           />
           {own ? (
-            <p role="status" aria-live="polite" className="mt-4 flex items-start gap-2 px-1 text-xs leading-5 text-muted-foreground">
-              <Eye aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-              {saved ? <span className="text-amethyst">Showcase saved. </span> : null}
-              This is how other signed-in Amethyst members see your profile. Your email, coins, notes, tasks and anything you haven’t featured are never shown.
+            <p role="status" aria-live="polite" className="ui-panel mt-4 flex items-center gap-3 px-3.5 py-2.5 text-xs leading-5 text-muted-foreground">
+              <span aria-hidden className="ui-icon ui-icon-sm">
+                <Eye className="size-3.5" />
+              </span>
+              <span>
+                {saved ? <span className="font-semibold text-amethyst">Showcase saved. </span> : null}
+                This is how other signed-in Amethyst members see your profile. Your email, coins, notes, tasks and anything you haven’t featured are never shown.
+              </span>
             </p>
           ) : null}
         </>

@@ -99,7 +99,8 @@
   box-shadow: 0 20px 36px -26px var(--tone);
 }
 .inv-tile:hover::before,
-.inv-tile[aria-pressed="true"]::before {
+.inv-tile[aria-pressed="true"]::before,
+.inv-tile[data-selected="true"]::before {
   opacity: 1;
 }
 .inv-tile:active {
@@ -108,7 +109,8 @@
 .inv-tile:focus-visible {
   box-shadow: 0 0 0 2px var(--ring);
 }
-.inv-tile[aria-pressed="true"] {
+.inv-tile[aria-pressed="true"],
+.inv-tile[data-selected="true"] {
   border-color: color-mix(in oklab, var(--amethyst) 75%, transparent);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--amethyst) 55%, transparent),

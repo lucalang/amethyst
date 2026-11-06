@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, GripVertical, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -150,9 +150,9 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
       </Button>
     )}
     <Dialog open={open} onOpenChange={(next) => { if (!pending) setOpen(next); }}>
-      <DialogContent className="gap-5 rounded-lg border border-white/[0.08] bg-surface p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[28rem]">
+      <DialogContent className="gap-5 rounded-2xl border border-border bg-card p-6 shadow-[0_24px_90px_rgb(var(--shadow-rgb)/calc(0.75*var(--shadow-alpha)))] sm:max-w-[28rem]">
         <DialogHeader className="flex-row items-center gap-3.5">
-          <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-lg border border-amethyst/25 bg-amethyst/10 text-amethyst">
+          <span aria-hidden className="ui-hero-icon">
             <ArrowUpDown className="size-5" />
           </span>
           <div className="min-w-0">
@@ -172,8 +172,8 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
                   key={item.id}
                   data-arrange-id={item.id}
                   className={cn(
-                    "flex min-w-0 items-center gap-1.5 rounded-md border py-1 pr-1 pl-1 transition-[background-color,border-color,box-shadow] duration-150",
-                    dragging ? "relative z-10 border-amethyst/45 bg-amethyst/[0.1] shadow-lg shadow-black/50" : "border-white/[0.07] bg-black/30",
+                    "flex min-w-0 items-center gap-1.5 rounded-xl border py-1 pr-1 pl-1 transition-[background-color,border-color,box-shadow] duration-150",
+                    dragging ? "relative z-10 border-amethyst/55 bg-amethyst/[0.12] shadow-[0_18px_36px_-20px_var(--amethyst)]" : "border-border bg-[rgb(var(--ink-rgb)/0.025)] hover:border-amethyst/30",
                   )}
                 >
                   <button
@@ -182,7 +182,7 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
                     aria-label={`Reorder ${item.name}`}
                     aria-describedby="arrange-instructions"
                     className={cn(
-                      "grid size-9 shrink-0 touch-none place-items-center rounded text-muted-foreground transition-colors outline-none hover:bg-amethyst/[0.08] hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring",
+                      "grid size-9 shrink-0 touch-none place-items-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-amethyst/[0.08] hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring",
                       dragging ? "cursor-grabbing text-amethyst" : "cursor-grab",
                     )}
                     disabled={pending}
@@ -196,8 +196,8 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
                     <GripVertical aria-hidden className="size-4" />
                   </button>
                   <span aria-hidden className="w-5 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{index + 1}</span>
-                  <span aria-hidden style={accentStyle(item.accent_color)} className={cn("ml-1 size-3.5 shrink-0", item.accent_color ? "text-[var(--ca)]" : "text-amethyst/70")}>
-                    <ClientCollectionIcon icon={item.icon} className="size-full" />
+                  <span aria-hidden style={item.accent_color ? { ...accentStyle(item.accent_color), "--tone": "var(--ca)" } as CSSProperties : undefined} className="ui-icon ui-icon-sm ml-1">
+                    <ClientCollectionIcon icon={item.icon} className="size-3.5" />
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm font-medium" title={item.name}>{item.name}</span>
                   <Button
@@ -233,12 +233,12 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
         </div>
         <p aria-live="polite" className="sr-only">{announcement}</p>
         {error ? (
-          <p role="alert" className="flex items-start gap-2 rounded-md border border-rose/20 bg-rose/[0.06] px-3 py-2.5 text-xs leading-5 text-rose">
+          <p role="alert" className="flex items-start gap-2 rounded-xl border border-rose/25 bg-rose/[0.07] px-3 py-2.5 text-xs leading-5 text-rose">
             <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />
             {error}
           </p>
         ) : null}
-        <DialogFooter className="-mx-6 -mb-6 gap-2 rounded-b-lg border-white/[0.07] bg-white/[0.015] px-6 py-4">
+        <DialogFooter className="-mx-6 -mb-6 gap-2 rounded-b-2xl border-border bg-[rgb(var(--ink-rgb)/0.02)] px-6 py-4">
           <Button type="button" variant="ghost" className="h-10 px-4 text-muted-foreground" disabled={pending} onClick={() => setOpen(false)}>Cancel</Button>
           <Button type="button" className="h-10 gap-2 px-4" disabled={pending || !changed} onClick={() => void save()}>
             {pending ? <Loader2 aria-hidden className="animate-spin" /> : <ArrowUpDown aria-hidden />}
