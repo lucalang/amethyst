@@ -124,7 +124,7 @@ export function GameShell({
   stats?: ReactNode;
   actions?: ReactNode;
   /** The board the leaderboard link opens (the mode currently picked). */
-  leaderboard?: string;
+  leaderboard?: string | null;
   children: ReactNode;
 }) {
   const { rootRef, sound, toggleSound, look, setLook } = useArcade();
@@ -174,12 +174,12 @@ export function GameShell({
           <div className="ml-auto flex items-center gap-1.5">
             {actions}
             <GameStreak game={game} />
-            <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
+            {leaderboard !== null ? <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
               <Link href={leaderboardHref(game, leaderboard)} prefetch={false} aria-label={`${title} leaderboard`} title={`${title} leaderboard`}>
                 <Trophy aria-hidden />
                 <span aria-hidden className="hidden sm:inline">Ranks</span>
               </Link>
-            </Button>
+            </Button> : null}
             <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
               <Store aria-hidden />
               Shop

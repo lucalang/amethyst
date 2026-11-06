@@ -2,7 +2,7 @@ import { z } from "zod";
 import { ARCADE_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, type ArcadeGameId } from "@/lib/arcade";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 import { dailyDate, dailyVariant } from "@/lib/arcade-daily";
-import { BLEND_MODE_IDS, SNAKE_MODES, SNAKE_SIZES, SNAKE_SPEEDS, isSnakeVariant, type SnakeMode, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
+import { BLEND_MODE_IDS, SNAKE_MODES, SNAKE_SIZES, SNAKE_SPEEDS, isSnakeLeaderboardVariant, type SnakeMode, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 
 /**
  * Leaderboards rank only runs the server timed and checked, one best per player and board.
@@ -114,7 +114,7 @@ export function dailyBoards(now = Date.now()): BoardOption[] {
 export function isLeaderboardBoard(game: ArcadeGameId, board: string, now = Date.now()) {
   const entry = LEADERBOARD_GAMES[game];
   if (entry.boards.some((option) => option.id === board)) return true;
-  if (entry.setups && game === "snake" && isSnakeVariant(board)) return true;
+  if (entry.setups && game === "snake" && isSnakeLeaderboardVariant(board)) return true;
   return entry.daily && dailyBoards(now).some((option) => option.id === board);
 }
 

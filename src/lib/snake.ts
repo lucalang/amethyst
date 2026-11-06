@@ -212,6 +212,10 @@ export function snakeVariant(setup: SnakeSetup): string {
   return `${key}-${setup.size}-${setup.fruitCount}${speed}`;
 }
 
+export function isSnakeLeaderboardVariant(value: string): boolean {
+  return !/^x[0-9a-z]+-/.test(value) && isSnakeVariant(value);
+}
+
 export function isSnakeVariant(value: string): boolean {
   if (value === "") return true;
   if (value.startsWith("daily-")) return isRecentDailyVariant(value);

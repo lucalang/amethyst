@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { ARCADE_GAMES, formatDuration, type ArcadeGameId } from "@/lib/arcade";
 import { LEADERBOARD_GAMES, LEADERBOARD_GAME_IDS, boardLabel, dailyBoards, leaderboardHref, parseSnakeBoard, snakeBoardLabel, snakeBoardOf, type Leaderboard, type LeaderboardRow, type SnakeBoardParts } from "@/lib/leaderboards";
-import { FRUIT_COUNT, SNAKE_MODES, SNAKE_MODE_IDS, SNAKE_SIZES, SNAKE_SIZE_IDS, SNAKE_SPEEDS, SNAKE_SPEED_IDS, snakeVariant, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
+import { FRUIT_COUNT, SNAKE_MODES, SNAKE_MODE_IDS, SNAKE_SIZES, SNAKE_SIZE_IDS, SNAKE_SPEEDS, SNAKE_SPEED_IDS, snakeVariant, isSnakeLeaderboardVariant, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 
 type Load = { key: string } & ({ status: "ready"; data: Leaderboard } | { status: "error"; unavailable: boolean });
 
@@ -44,7 +44,8 @@ function Row({ row, fast }: { row: LeaderboardRow; fast: boolean }) {
 
 /** Snake boards offer the player's current setup first. */
 export function LeaderboardView({ game: initialGame, board: initialBoard }: { game: ArcadeGameId; board: string }) {
-  const snakeBoard = snakeVariant(useSettings().arcadeSnake);
+  const snakeSetup = useSettings().arcadeSnake;
+  const snakeBoard = snakeSetup.mode === "blender" ? "" : snakeVariant(snakeSetup);
   const [game, setGame] = useState(initialGame);
   const [board, setBoard] = useState(initialBoard);
   const [attempt, setAttempt] = useState(0);
@@ -66,7 +67,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
       .then((data) => {
         if (!live) return;
         setLoad({ key, status: "ready", data });
-        if (data.boards) setSnakeBoards(data.boards);
+        if (data.boards) setSnakeBoards(data.boards.filter(entry => isSnakeLeaderboardVariant(entry.board)));
       })
       .catch((error: unknown) => live && setLoad({ key, status: "error", unavailable: error instanceof ApiError && error.status === 503 }));
     return () => {
@@ -106,7 +107,6 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
           <label className="flex flex-col gap-1">
             Mode
             <select className="lb-select" value={snakeParts.key} onChange={(event) => pickSnake({ key: event.target.value })}>
-              {snakeParts.key.startsWith("x") ? <option value={snakeParts.key}>{snakeBoardLabel(board).split(" · ")[0]}</option> : null}
               {SNAKE_MODE_IDS.filter((mode) => mode !== "blender").map((mode) => (
                 <option key={mode} value={mode}>
                   {SNAKE_MODES[mode].label}

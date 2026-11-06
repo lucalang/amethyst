@@ -49,6 +49,22 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-snake-blender-unranked",
+    date: "2026-11-06",
+    title: "Blender stays off the rankings",
+    intro: "Snake leaderboards cover individual modes and daily challenges, without separate boards for every Blender mix.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Snake rankings", text: "Blender runs no longer create leaderboard entries or appear in ranked setup lists." },
+      { kind: "improved", feature: "Personal play", text: "Blender gameplay, personal records, coins and achievements are unchanged." },
+    ],
+    details: { improved: [{
+      title: "Fewer boards, clearer competition",
+      body: "Blender is now unranked, including mixes with just one selected mode. Existing mixed leaderboard boards are no longer browsable, while personal bests remain saved. Individual Snake modes and daily challenges keep their rankings.",
+      link: { href: "/arcade/leaderboards?game=snake", label: "View Snake rankings" },
+    }] },
+  },
+  {
     id: "2026-11-05-forge-publish-sequence",
     date: "2026-11-05",
     title: "The Admin Panel - Forging a Code",

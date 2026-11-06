@@ -51,7 +51,10 @@ export default function GameSnake({ records: initialRecords }: { records: Record
 
   const changePhase = useEffectEvent((next: Phase) => {
     setPhase(next);
-    if (next === "playing" && gameRef.current) beginRun(gameRef.current.variant);
+    if (next === "playing" && gameRef.current) {
+      const game = gameRef.current;
+      beginRun(game.setup.mode === "blender" && !game.date ? undefined : game.variant);
+    }
   });
 
   useEffect(() => {
@@ -233,7 +236,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
     <GameShell
       game="snake"
       title="Snake"
-      leaderboard={variant}
+      leaderboard={round.mode === "blender" && !roundDate ? null : variant}
       active={inRound}
       stats={
         <>

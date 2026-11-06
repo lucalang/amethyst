@@ -30,7 +30,7 @@ export function useArcadeRun(game: ScoreGame) {
   const latest = useRef(0);
   const [coins, setCoins] = useState<CoinState>({ status: "idle" });
 
-  const begin = useCallback((board: string) => {
+  const begin = useCallback((board?: string) => {
     if (run.current) return;
     limited.current = false;
     latest.current += 1;
