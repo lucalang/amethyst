@@ -16,7 +16,7 @@ export default async function ProfileSettingsPage() {
     <>
       <SettingsHeader
         title="Profile"
-        description="How the archive greets you on Home, in your achievement cabinet and on your profile page. Other signed-in Amethyst members can view your profile page: name, avatar, decoration, motto, badge, title and when you joined — never your email or private data."
+        description="How the archive greets you on Home, in your achievement cabinet and on your profile page. Other signed-in Amethyst members can view your profile page: name, avatar, decoration, motto, badges, title, when you joined and anything you feature in your showcase — never your email or private data."
         actions={
           <Button asChild variant="outline" size="sm">
             <Link href="/profile">

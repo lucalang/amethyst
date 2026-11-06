@@ -8,6 +8,7 @@ import {
   MeshBasicMaterial,
   PMREMGenerator,
   Scene,
+  SRGBColorSpace,
   type Texture,
   type WebGLRenderer,
 } from "three";
@@ -57,6 +58,16 @@ export function radialTexture(stops: [number, string][]) {
     ctx.fillRect(0, 0, 128, 128);
   }
   return new CanvasTexture(canvas);
+}
+
+/** The active theme's accent, secondary colour and darkness, read from an element's CSS custom properties. */
+export function themeColors(el: Element) {
+  const styles = getComputedStyle(el);
+  const channel = (name: string, fallback: string) => {
+    const parts = styles.getPropertyValue(name).trim().split(/[\s,]+/).map(Number);
+    return parts.length >= 3 && parts.every((part) => Number.isFinite(part)) ? new Color().setRGB(parts[0] / 255, parts[1] / 255, parts[2] / 255, SRGBColorSpace) : new Color(fallback);
+  };
+  return { accent: channel("--accent-rgb", "#a57cff"), secondary: channel("--rose-rgb", "#f472a8"), dark: styles.getPropertyValue("--theme-dark").trim() !== "0" };
 }
 
 export type Spring = { value: number; target: number; velocity: number };

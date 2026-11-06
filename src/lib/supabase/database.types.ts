@@ -189,6 +189,24 @@ export type Database = {
                 { foreignKeyName: "user_cosmetics_item_id_fkey"; columns: ["item_id"]; isOneToOne: false; referencedRelation: "cosmetic_items"; referencedColumns: ["id"] },
               ]
             },
+            "profile_showcase_achievements": {
+              Row: { user_id: string; position: number; achievement_id: string }
+              Insert: { user_id: string; position: number; achievement_id: string }
+              Update: { user_id?: string; position?: number; achievement_id?: string }
+              Relationships: []
+            },
+            "profile_looks": {
+              Row: { id: string; user_id: string; name: string; style: string; sections: string[]; ambient: string; pedestal: string | null; achievements: string[]; items: Json; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id: string; name: string; style: string; sections: string[]; ambient: string; pedestal?: string | null; achievements?: string[]; items?: Json; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; style?: string; sections?: string[]; ambient?: string; pedestal?: string | null; achievements?: string[]; items?: Json; created_at?: string; updated_at?: string }
+              Relationships: []
+            },
+            "profile_showcase_items": {
+              Row: { user_id: string; position: number; entry_id: string | null; collection_id: string | null; show_title: boolean }
+              Insert: { user_id: string; position: number; entry_id?: string | null; collection_id?: string | null; show_title?: boolean }
+              Update: { user_id?: string; position?: number; entry_id?: string | null; collection_id?: string | null; show_title?: boolean }
+              Relationships: []
+            },
             "user_profile_badges": {
               Row: { user_id: string; position: number; badge_id: string }
               Insert: { user_id: string; position: number; badge_id: string }
@@ -341,13 +359,13 @@ isOneToOne: false
                   ]
                 },"users": {
                   Row: {
-                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"avatar_url": string | null,"motto": string | null,"avatar_decoration": string | null,"profile_badge": string | null,"profile_title": string | null,"id": string,"updated_at": string
+                    "preferred_cover_shape": "square" | "portrait","pin_style": "current" | "clean","intro_seen_on": string | null,"settings": NonNullable<Json>,"created_at": string,"display_name": string | null,"avatar_url": string | null,"motto": string | null,"avatar_decoration": string | null,"profile_badge": string | null,"profile_title": string | null,"profile_style": string,"profile_sections": string[],"profile_ambient": string,"profile_pedestal": string | null,"profile_look": string | null,"id": string,"updated_at": string
                   }
                   Insert: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"profile_badge"?: string | null,"profile_title"?: string | null,"id": string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"profile_badge"?: string | null,"profile_title"?: string | null,"profile_style"?: string,"profile_sections"?: string[],"profile_ambient"?: string,"profile_pedestal"?: string | null,"profile_look"?: string | null,"id": string,"updated_at"?: string
                   }
                   Update: {
-                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"profile_badge"?: string | null,"profile_title"?: string | null,"id"?: string,"updated_at"?: string
+                    "preferred_cover_shape"?: "square" | "portrait","pin_style"?: "current" | "clean","intro_seen_on"?: string | null,"settings"?: NonNullable<Json>,"created_at"?: string,"display_name"?: string | null,"avatar_url"?: string | null,"motto"?: string | null,"avatar_decoration"?: string | null,"profile_badge"?: string | null,"profile_title"?: string | null,"profile_style"?: string,"profile_sections"?: string[],"profile_ambient"?: string,"profile_pedestal"?: string | null,"profile_look"?: string | null,"id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -524,6 +542,15 @@ isOneToOne: false
             }
             "member_avatar": { Args: { p_user: string }; Returns: { remote_url: string | null; object_name: string | null }[] }
             "set_profile_badges": { Args: { p_badges: string[] }; Returns: string[] }
+            "member_showcase": { Args: { p_user: string }; Returns: Json }
+            "member_showcase_image": { Args: { p_user: string; p_position: number }; Returns: { remote_url: string | null; object_name: string | null }[] }
+            "set_profile_showcase": { Args: { p_style: string; p_achievements: string[]; p_items: Json }; Returns: undefined }
+            "save_profile_showcase": {
+              Args: { p_style: string; p_sections: string[]; p_ambient: string; p_pedestal: string | null; p_achievements: string[]; p_items: Json; p_look: string | null; p_new_look: string | null }
+              Returns: string | null
+            }
+            "rename_profile_look": { Args: { p_look: string; p_name: string }; Returns: undefined }
+            "delete_profile_look": { Args: { p_look: string }; Returns: undefined }
             "wear_profile_badge": { Args: { p_badge: string }; Returns: string[] }
             "add_checklist_items":
 { Args: { "p_file_id": string,"p_labels": (string)[] }; Returns: {

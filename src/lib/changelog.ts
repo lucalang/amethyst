@@ -95,6 +95,41 @@ export const CHANGELOG: readonly Release[] = [
     },
   },
   {
+    id: "2026-11-05-profile-showcase",
+    date: "2026-11-05",
+    title: "Your profile, as a display case",
+    intro: "Profiles are now a curated showcase of who you are and what you love in Amethyst.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Display styles", text: "Present your profile as a Gallery wall, Trophy cabinet or Collector’s desk." },
+      { kind: "new", feature: "Pinned achievements", text: "Set up to three earned medals on display, in the order you choose." },
+      { kind: "new", feature: "Featured artwork", text: "Feature up to four entry covers or collection covers from your Archive, with or without their titles." },
+      { kind: "improved", feature: "Profile page", text: "Your avatar, decoration, title, motto and badges now form one arranged identity." },
+      { kind: "new", feature: "Living display", text: "Your avatar tints the room, featured pieces tilt and catch the light, medals glint and each style lights up its own way. Calmer with reduced motion." },
+      { kind: "new", feature: "Centerpiece pedestal", text: "Stand one collectible you own on a lit 3D pedestal — game cosmetics play their live preview on it." },
+      { kind: "new", feature: "Saved looks", text: "Save up to five arrangements and switch, rename or delete them, with a live preview while you edit." },
+      { kind: "new", feature: "Section order and ambience", text: "Choose the order of your sections and an ambient effect — motes, glints, aurora or off." },
+      { kind: "new", feature: "Opening reveal", text: "Profiles open with a short, skippable glass reveal at full motion; it never plays with reduced motion." },
+    ],
+    details: {
+      new: [{
+        title: "Arrange your showcase",
+        body: "Open your profile and choose Arrange showcase. The display updates live while you pick a style, the title, decoration and badges you own, up to three earned achievements and up to four pieces from your Archive. Reorder or remove anything, then save. Until you add something, your profile shows the Gallery wall with your identity front and centre.",
+        where: "Account menu → My Profile → Arrange showcase",
+        link: { href: "/profile", label: "Open my profile" },
+      }, {
+        title: "Saved looks",
+        body: "In Arrange showcase, Save as new look keeps the current style, section order, featured pieces, centerpiece and ambient effect under a name. Pick a look to preview it, save it to wear it, or rename and delete it. Deleting the look you’re wearing asks you to choose another look or the default first.",
+        where: "My Profile → Arrange showcase → Saved looks",
+        link: { href: "/profile", label: "Open my profile" },
+      }],
+      improved: [{
+        title: "Private by default",
+        body: "Profiles remain visible only to signed-in members, and only you can change yours. Nothing from your Archive appears unless you feature it. For featured pieces, others see the artwork and, if you allow it, its title or collection name; never notes, tasks, other entries, your email or coins.",
+      }],
+    },
+  },
+  {
     id: "2026-11-05-arcade-streaks",
     date: "2026-11-05",
     title: "Daily Arcade streaks",
