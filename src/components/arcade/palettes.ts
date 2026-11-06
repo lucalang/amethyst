@@ -11,4 +11,8 @@ export const GAME_PALETTES = {
   "fruit-slice": { background: "#3b2414", surface: "#6b4423", foreground: "#fff4e0", muted: "#d8b98f", accent: "#e8a33d", accent2: "#ff4d4d", dark: true },
   /** A dusk city sky with warm orange-to-pink blocks. */
   stacker: { background: "#1b2647", surface: "#2c3b66", foreground: "#f4f1ff", muted: "#aab3d6", accent: "#ffb347", accent2: "#ff5e7e", dark: true },
+  /** A midnight crystal maze with violet walls and golden glimmers. */
+  "gem-chase": { background: "#0c0820", surface: "#2a1a5e", foreground: "#f6f0ff", muted: "#8f7fd0", accent: "#b48cff", accent2: "#ffd84a", dark: true },
+  /** Deep space with a cyan ship and warm hazards. */
+  "space-blaster": { background: "#05081a", surface: "#16204a", foreground: "#eaf6ff", muted: "#7f93c4", accent: "#4fd8ff", accent2: "#ff7a59", dark: true },
 } satisfies Record<string, Palette>;

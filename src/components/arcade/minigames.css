@@ -1,0 +1,289 @@
+/* Skins and boards for Gem Chase, Space Blaster and the logic puzzles (see [data-game-skin] in globals.css). */
+
+/* Gem Chase: a deep amethyst maze with gold glimmers. */
+[data-game-skin="gem-chase"] {
+  --background: #0c0820;
+  --surface: #1a1240;
+  --surface-raised: #2a1a5e;
+  --foreground: #f6f0ff;
+  --muted-foreground: #b4a6e6;
+  --amethyst: #ffd84a;
+  --amethyst-foreground: #1a1206;
+  --rose: #ff5f8f;
+  --rose-foreground: #2a0712;
+  --destructive: #ff7a8a;
+  --ink-rgb: 246 240 255;
+  --paper-rgb: 12 8 32;
+  --accent-rgb: 255 216 74;
+  --rose-rgb: 255 95 143;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
+/* Space Blaster: deep space with cyan and ember. */
+[data-game-skin="space-blaster"] {
+  --background: #05081a;
+  --surface: #0e1533;
+  --surface-raised: #16204a;
+  --foreground: #eaf6ff;
+  --muted-foreground: #9fb2dc;
+  --amethyst: #4fd8ff;
+  --amethyst-foreground: #03121a;
+  --rose: #ff7a59;
+  --rose-foreground: #2b0d05;
+  --destructive: #ff7a6b;
+  --ink-rgb: 234 246 255;
+  --paper-rgb: 5 8 26;
+  --accent-rgb: 79 216 255;
+  --rose-rgb: 255 122 89;
+  --shadow-rgb: 0 0 0;
+  --shadow-alpha: 1;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
+/* Zip: warm paper with an orange trail. */
+[data-game-skin="zip"] {
+  --background: #fbf4ec;
+  --surface: #fffaf4;
+  --surface-raised: #ffffff;
+  --foreground: #2a1d14;
+  --muted-foreground: #6b5646;
+  --amethyst: #c4521a;
+  --amethyst-foreground: #ffffff;
+  --rose: #d1405f;
+  --rose-foreground: #ffffff;
+  --destructive: #c2302a;
+  --ink-rgb: 42 29 20;
+  --paper-rgb: 251 244 236;
+  --accent-rgb: 196 82 26;
+  --rose-rgb: 209 64 95;
+  --shadow-rgb: 42 29 20;
+  --shadow-alpha: 0.3;
+  --theme-dark: 0;
+  color-scheme: light;
+}
+/* Patches: a soft quilt of greens. */
+[data-game-skin="patches"] {
+  --background: #eff7f1;
+  --surface: #f8fcf9;
+  --surface-raised: #ffffff;
+  --foreground: #16302a;
+  --muted-foreground: #4c665e;
+  --amethyst: #1f8a62;
+  --amethyst-foreground: #ffffff;
+  --rose: #cf4d6f;
+  --rose-foreground: #ffffff;
+  --destructive: #c2302a;
+  --ink-rgb: 22 48 42;
+  --paper-rgb: 239 247 241;
+  --accent-rgb: 31 138 98;
+  --rose-rgb: 207 77 111;
+  --shadow-rgb: 22 48 42;
+  --shadow-alpha: 0.3;
+  --theme-dark: 0;
+  color-scheme: light;
+}
+/* Tango: dawn sky, golden suns and indigo moons. */
+[data-game-skin="tango"] {
+  --background: #fdf7e8;
+  --surface: #fffbf1;
+  --surface-raised: #ffffff;
+  --foreground: #262140;
+  --muted-foreground: #5d587a;
+  --amethyst: #5a4bd1;
+  --amethyst-foreground: #ffffff;
+  --rose: #d1405f;
+  --rose-foreground: #ffffff;
+  --destructive: #c2302a;
+  --ink-rgb: 38 33 64;
+  --paper-rgb: 253 247 232;
+  --accent-rgb: 90 75 209;
+  --rose-rgb: 209 64 95;
+  --shadow-rgb: 38 33 64;
+  --shadow-alpha: 0.3;
+  --theme-dark: 0;
+  --tango-sun: #e8a10c;
+  --tango-moon: #4b5bd6;
+  color-scheme: light;
+}
+/* Queens: a royal violet frame around pastel regions. */
+[data-game-skin="queens"] {
+  --background: #f7f1fb;
+  --surface: #fcf9fe;
+  --surface-raised: #ffffff;
+  --foreground: #2a1838;
+  --muted-foreground: #634f73;
+  --amethyst: #9b3fc4;
+  --amethyst-foreground: #ffffff;
+  --rose: #d1405f;
+  --rose-foreground: #ffffff;
+  --destructive: #c2302a;
+  --ink-rgb: 42 24 56;
+  --paper-rgb: 247 241 251;
+  --accent-rgb: 155 63 196;
+  --rose-rgb: 209 64 95;
+  --shadow-rgb: 42 24 56;
+  --shadow-alpha: 0.3;
+  --theme-dark: 0;
+  color-scheme: light;
+}
+
+/* Shared puzzle board: square, sized by its container so text scales with cqi units. */
+.puzzle-board {
+  container-type: inline-size;
+  max-width: min(100%, 34rem);
+  border-radius: 0.75rem;
+  transition: box-shadow 0.4s ease;
+}
+.puzzle-board-solved {
+  box-shadow:
+    0 0 0 3px rgb(var(--accent-rgb) / 0.7),
+    0 0 28px rgb(var(--accent-rgb) / 0.35);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .puzzle-board-solved {
+    animation: puzzle-solved-pop 0.5s ease-out;
+  }
+}
+@keyframes puzzle-solved-pop {
+  40% {
+    transform: scale(1.02);
+  }
+}
+.puzzle-cell {
+  background: var(--surface-raised);
+  border: 1px solid rgb(var(--ink-rgb) / 0.16);
+  transition: background-color 0.15s ease;
+}
+.puzzle-cell:hover:not([aria-disabled="true"]) {
+  background: rgb(var(--accent-rgb) / 0.08);
+}
+.puzzle-cell:focus-visible,
+.patches-cell:focus-visible,
+.queens-cell:focus-visible {
+  outline: 3px solid var(--amethyst);
+  outline-offset: -3px;
+  position: relative;
+  z-index: 1;
+}
+.puzzle-cell-given {
+  background: rgb(var(--ink-rgb) / 0.08);
+  cursor: default;
+}
+.puzzle-cell-bad {
+  background: repeating-linear-gradient(135deg, rgb(var(--rose-rgb) / 0.16) 0 6px, rgb(var(--rose-rgb) / 0.05) 6px 12px);
+  border-color: rgb(var(--rose-rgb) / 0.8);
+}
+.puzzle-sign {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: clamp(1rem, 5cqi, 1.6rem);
+  height: clamp(1rem, 5cqi, 1.6rem);
+  translate: -50% -50%;
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-weight: 800;
+  font-size: clamp(0.75rem, 3.6cqi, 1.1rem);
+  line-height: 1;
+  pointer-events: none;
+}
+.puzzle-sign-bad {
+  background: var(--rose);
+  color: var(--rose-foreground);
+}
+
+/* Zip */
+.zip-board {
+  overflow: hidden;
+  border: 2px solid rgb(var(--ink-rgb) / 0.3);
+  background: var(--surface-raised);
+}
+.zip-cell {
+  border: 0.5px solid rgb(var(--ink-rgb) / 0.12);
+  transition: background-color 0.12s ease;
+}
+.zip-cell-on {
+  background: rgb(var(--accent-rgb) / 0.16);
+}
+.zip-cell-flash {
+  background: rgb(var(--rose-rgb) / 0.3);
+}
+.zip-cell-shake {
+  animation: zip-shake 0.25s ease;
+}
+@keyframes zip-shake {
+  25% {
+    translate: -3px 0;
+  }
+  75% {
+    translate: 3px 0;
+  }
+}
+.zip-path {
+  fill: none;
+  stroke: rgb(var(--accent-rgb) / 0.75);
+  stroke-width: 0.34;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.zip-wall {
+  stroke: var(--foreground);
+  stroke-width: 0.1;
+  stroke-linecap: round;
+}
+.zip-dot {
+  fill: var(--foreground);
+}
+.zip-dot-on {
+  fill: var(--amethyst);
+}
+.zip-number {
+  fill: var(--background);
+  font-size: 0.32px;
+  font-weight: 800;
+}
+
+/* Patches */
+.patches-cell {
+  border: 0.5px dashed rgb(var(--ink-rgb) / 0.2);
+  background: transparent;
+}
+.patches-clue {
+  color: var(--foreground);
+  gap: 0.15rem;
+}
+.patch {
+  --patch: #9bd7b8;
+  position: absolute;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--patch) 70%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--patch) 100%, black 25%);
+  scale: 0.94;
+}
+.patch-bad {
+  background: repeating-linear-gradient(135deg, rgb(var(--rose-rgb) / 0.3) 0 6px, rgb(var(--rose-rgb) / 0.12) 6px 12px);
+  box-shadow: inset 0 0 0 2px var(--rose);
+}
+.patch-preview {
+  background: rgb(var(--accent-rgb) / 0.15);
+  box-shadow: inset 0 0 0 2px rgb(var(--accent-rgb) / 0.8);
+}
+
+/* Queens */
+.queens-board {
+  border: 3px solid var(--foreground);
+}
+.queens-cell {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--foreground) 80%, transparent);
+  color: #2a1838;
+  font-size: clamp(0.9rem, 6cqi, 1.8rem);
+}
+.queens-cell-bad {
+  background-image: repeating-linear-gradient(135deg, rgb(var(--rose-rgb) / 0.45) 0 5px, transparent 5px 10px) !important;
+  color: #8a0f2c;
+}

@@ -91,9 +91,10 @@ export function formatAchievementReward(reward: AchievementReward): string {
   return parts.join(" · ");
 }
 
-export const ARCADE_GAME_FILTERS = ARCADE_GAMES.map(({ id, title }) => ({ id, title }));
-
 export const ARCADE_EXPLORER_GAME_IDS = ["2048", "flutter", "snake", "sudoku", "fruit-slice", "stacker"] as const;
+
+/** Games that have achievements. */
+export const ARCADE_GAME_FILTERS = ARCADE_GAMES.filter(({ id }) => (ARCADE_EXPLORER_GAME_IDS as readonly string[]).includes(id)).map(({ id, title }) => ({ id, title }));
 const gameStarted = z.object({ type: z.literal("game_started"), game: z.enum(ARCADE_EXPLORER_GAME_IDS) }).strict();
 const runFinished = z.discriminatedUnion("game", [
   z.object({ type: z.literal("run_finished"), game: z.literal("2048"), maxTile: z.number().int().min(0).max(1_048_576) }).strict(),

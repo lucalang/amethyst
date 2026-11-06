@@ -68,6 +68,17 @@ export const SOUNDS = {
     { freq: 311, duration: 0.12, type: "triangle", volume: 0.08, delay: 0.12 },
     { freq: 233, duration: 0.3, type: "triangle", volume: 0.08, delay: 0.24 },
   ],
+  chomp: [{ freq: 520, to: 340, duration: 0.05, type: "square", volume: 0.03 }],
+  laser: [{ freq: 1500, to: 520, duration: 0.07, type: "square", volume: 0.025 }],
+  power: [
+    { freq: 440, to: 880, duration: 0.12, type: "triangle", volume: 0.08 },
+    { freq: 660, to: 1320, duration: 0.14, type: "triangle", volume: 0.06, delay: 0.08 },
+  ],
+  boom: [
+    { noise: true, duration: 0.22, volume: 0.14, filter: "lowpass", freq: 1400 },
+    { freq: 180, to: 60, duration: 0.18, type: "triangle", volume: 0.06 },
+  ],
+  invalid: [{ freq: 196, to: 165, duration: 0.12, type: "sawtooth", volume: 0.035 }],
 } satisfies Record<string, Part[]>;
 
 export type SoundName = keyof typeof SOUNDS;

@@ -22,9 +22,9 @@ import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
-import type { AchievementEvent } from "@/lib/achievements";
+import { ARCADE_EXPLORER_GAME_IDS, type AchievementEvent } from "@/lib/achievements";
 import type { ArcadeGameId, ScoreGame } from "@/lib/arcade";
-import type { GameLook } from "@/lib/game-cosmetics";
+import { isShopGame, type GameLook } from "@/lib/game-cosmetics";
 import { leaderboardHref } from "@/lib/leaderboards";
 import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
@@ -182,10 +182,12 @@ export function GameShell({
                 <span aria-hidden className="hidden sm:inline">Ranks</span>
               </Link>
             </Button> : null}
-            <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
-              <Store aria-hidden />
-              Shop
-            </Button>
+            {isShopGame(game) ? (
+              <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
+                <Store aria-hidden />
+                Shop
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               size="icon-sm"
@@ -215,7 +217,7 @@ export function GameShell({
           {stats ? <div className="flex flex-wrap items-stretch gap-2">{stats}</div> : null}
           <div className="relative min-h-0">{children}</div>
         </div>
-        {shop !== "closed" ? (
+        {shop !== "closed" && isShopGame(game) ? (
           <GameShopDialog
             game={game}
             open={shop === "open"}
@@ -236,7 +238,9 @@ export function useGameAchievementTracking(game: ArcadeGameId, phase: string) {
   useEffect(() => {
     if (phase !== "playing" || started.current) return;
     started.current = true;
-    sendAchievementEvent({ type: "game_started", game });
+    // Only games with achievements report starts.
+    const tracked = ARCADE_EXPLORER_GAME_IDS.find((id) => id === game);
+    if (tracked) sendAchievementEvent({ type: "game_started", game: tracked });
   }, [game, phase]);
   useEffect(() => {
     window.dispatchEvent(new Event("archive:arcade-activity"));

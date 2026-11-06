@@ -72,6 +72,64 @@ const RELEASES: readonly Release[] = [
     },
   },
   {
+    id: "2026-11-06-six-new-minigames",
+    date: "2026-11-06",
+    title: "Six new Arcade games",
+    intro: "Two action games and four logic puzzles join the Arcade: Gem Chase, Space Blaster, Zip, Patches, Tango and Queens.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Gem Chase", text: "Collect every glimmer in a crystal maze while four shades hunt you; prisms turn the tables." },
+      { kind: "new", feature: "Space Blaster", text: "Dodge and shoot rocks and raiders, grab power-ups, and survive ever tougher waves. One hit ends the run." },
+      { kind: "new", feature: "Zip, Patches, Tango and Queens", text: "Generated logic puzzles with live rule feedback, undo, a practice mode and a shared daily puzzle." },
+      { kind: "new", feature: "Records and coins", text: "All six keep personal bests, count toward Arcade streaks, appear on the leaderboards and pay coins like the other games." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Gem Chase",
+          body: "Guide the Gem through a maze with the arrow keys, WASD or swipes. Glimmers score 10 and prisms 50; a prism makes the four shades flee for a few seconds, and catching them scores 200, 400, 800 and 1,600. Clear a maze for a bonus and move to the next board, where the shades get faster. You have three lives and earn an extra one at 10,000 points.",
+          where: "Arcade → Gem Chase",
+          link: { href: "/arcade/gem-chase", label: "Play Gem Chase" },
+        },
+        {
+          title: "Space Blaster",
+          body: "Your ship fires on its own; move it with the arrow keys, WASD or by dragging. Big rocks split into smaller ones, and raiders weave across the screen and later shoot back. Power-ups give rapid fire, a spread shot or thrusters for 10 seconds. A new wave arrives every 30 seconds, and one hit ends the run.",
+          where: "Arcade → Space Blaster",
+          link: { href: "/arcade/space-blaster", label: "Play Space Blaster" },
+        },
+        {
+          title: "Zip",
+          body: "Draw one path from 1 through every number in order, filling every cell without crossing walls. Wrong moves flash, and you can undo or reset.",
+          where: "Arcade → Zip",
+          link: { href: "/arcade/zip", label: "Play Zip" },
+        },
+        {
+          title: "Patches",
+          body: "Split the grid into rectangles by dragging. Each rectangle holds exactly one clue, which gives its size and shape (square, wide, tall or any). Patches that don't fit are striped.",
+          where: "Arcade → Patches",
+          link: { href: "/arcade/patches", label: "Play Patches" },
+        },
+        {
+          title: "Tango",
+          body: "Fill the grid with suns and moons: each row and column holds equal numbers of both, no three alike sit in a line, = joins matching cells and × joins opposite ones. Broken rules are highlighted.",
+          where: "Arcade → Tango",
+          link: { href: "/arcade/tango", label: "Play Tango" },
+        },
+        {
+          title: "Queens",
+          body: "Place one crown in every row, column and colored region, with no two crowns touching, not even diagonally. Tap to mark × or place a crown, or drag to mark several cells; conflicting crowns are highlighted.",
+          where: "Arcade → Queens",
+          link: { href: "/arcade/queens", label: "Play Queens" },
+        },
+        {
+          title: "Daily puzzles, records and coins",
+          body: "Zip, Patches, Tango and Queens each have a Practice mode with endless new puzzles and a Daily puzzle that is the same for everyone. The clock starts on your first move and a faster solve scores more. All six games save personal bests, count toward Arcade streaks, rank on the leaderboards and pay coins within the usual daily limit.",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-rarities-and-rare-pulls",
     date: "2026-11-06",
     title: "New rarities and rare pull cutscenes",

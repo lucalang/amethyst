@@ -4,7 +4,7 @@ import { isSnakeVariant } from "@/lib/snake";
 import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
-export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker"] as const;
+export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens"] as const;
 export type ScoreGame = (typeof SCORE_GAMES)[number];
 export type ArcadeGameId = ScoreGame | "sudoku";
 
@@ -28,7 +28,20 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "sudoku", title: "Sudoku", href: "/arcade/sudoku", blurb: "Mini 4×4, Normal 9×9 and XXL 16×16 logic puzzles. Pick up where you left off.", recordLabel: "Fastest times" },
   { id: "fruit-slice", title: "Fruit Slice", href: "/arcade/fruit-slice", blurb: "Swipe through flying fruit, chain combos and steer clear of bombs.", recordLabel: "Best score" },
   { id: "stacker", title: "Tower Stacker", href: "/arcade/stacker", blurb: "Drop each sliding block right on top. Only the overlap stays.", recordLabel: "Highest tower" },
+  { id: "gem-chase", title: "Gem Chase", href: "/arcade/gem-chase", blurb: "Collect every glimmer in the maze while four shades give chase. Prisms turn the tables.", recordLabel: "Best score" },
+  { id: "space-blaster", title: "Space Blaster", href: "/arcade/space-blaster", blurb: "Shoot down incoming rocks and raiders, grab power-ups and survive. One hit ends the run.", recordLabel: "Best score" },
+  { id: "zip", title: "Zip", href: "/arcade/zip", blurb: "Draw one path through every cell, passing the numbers in order.", recordLabel: "Best score" },
+  { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Best score" },
+  { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Best score" },
+  { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Best score" },
 ];
+
+/** Logic puzzles with a Practice board ("") and a daily puzzle; scored by solve speed. */
+export const PUZZLE_GAMES = ["zip", "patches", "tango", "queens"] as const;
+export type PuzzleGame = (typeof PUZZLE_GAMES)[number];
+
+/** Puzzle score: 1,000 for an instant solve, 4 fewer per second, never below 100. */
+export const puzzleScore = (seconds: number) => Math.max(100, 1000 - 4 * Math.floor(seconds));
 
 /**
  * Records keyed by game id (the main record), by `sudoku:<difficulty>` for Sudoku times (seconds) and
@@ -51,6 +64,7 @@ function isKnownVariant(game: ScoreGame, variant: string) {
   if (game === "flutter") return isRecentDailyVariant(variant);
   if (game === "fruit-slice") return (FRUIT_MODE_VARIANTS as readonly string[]).includes(variant) || isRecentDailyVariant(variant);
   if (game === "stacker") return variant === STACKER_CLASSIC || isRecentDailyVariant(variant);
+  if ((PUZZLE_GAMES as readonly string[]).includes(game)) return isRecentDailyVariant(variant);
   return false;
 }
 

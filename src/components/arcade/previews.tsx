@@ -10,6 +10,12 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   sudoku: { hue: "#6aa8ff", genre: "Logic" },
   "fruit-slice": { hue: "#ff7348", genre: "Action" },
   stacker: { hue: "#b48cff", genre: "Timing" },
+  "gem-chase": { hue: "#ffd84a", genre: "Maze" },
+  "space-blaster": { hue: "#4fd8ff", genre: "Shooter" },
+  zip: { hue: "#ff8a3d", genre: "Path" },
+  patches: { hue: "#5fd0a0", genre: "Logic" },
+  tango: { hue: "#ffc93d", genre: "Logic" },
+  queens: { hue: "#e86bff", genre: "Logic" },
 };
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
@@ -194,6 +200,96 @@ const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
       <g transform="translate(124 40) rotate(24)">
         <rect width="10" height="8" className="fill-amethyst/60" />
       </g>
+    </g>
+  ),
+  "gem-chase": (
+    <g>
+      <g className="fill-none stroke-amethyst/70" strokeWidth="3" strokeLinecap="round">
+        <path d="M14 12h132v76H14z" />
+        <path d="M34 32h30M96 32h30M34 68h30M96 68h30M80 22v20M80 58v20M50 44v12M110 44v12" />
+      </g>
+      {[24, 36, 48, 60, 72, 84, 96, 108, 120, 132].map((x) => (
+        <circle key={x} cx={x} cy="50" r="1.6" className="fill-foreground/70" />
+      ))}
+      <circle cx="136" cy="22" r="3.5" className="fill-foreground" />
+      <path d="M44 50l10-8 10 8-10 8z" className="fill-amethyst" />
+      <path d="M100 58v-10a8 8 0 0 1 16 0v10l-2.7-3-2.6 3-2.7-3-2.7 3-2.6-3z" className="fill-rose" />
+      <circle cx="105" cy="48" r="1.6" className="fill-background" />
+      <circle cx="111" cy="48" r="1.6" className="fill-background" />
+    </g>
+  ),
+  "space-blaster": (
+    <g>
+      {[[18, 14], [44, 70], [70, 24], [128, 12], [148, 58], [24, 88], [96, 84]].map(([x, y]) => (
+        <circle key={`${x}-${y}`} cx={x} cy={y} r="0.9" className="fill-foreground/60" />
+      ))}
+      <path d="M110 18l9 3 3 9-6 7-9-2-4-9z" className="fill-foreground/30" />
+      <path d="M40 26l7 1 2 6-5 4-6-3z" className="fill-foreground/25" />
+      <path d="M62 30l8 6-8 6-8-6z" className="fill-rose" />
+      <rect x="79" y="38" width="2" height="10" rx="1" className="fill-amethyst" />
+      <rect x="79" y="54" width="2" height="10" rx="1" className="fill-amethyst/70" />
+      <path d="M80 68l10 20-10-5-10 5z" className="fill-amethyst" />
+      <path d="M77 88h6l-3 7z" className="fill-rose/80" />
+    </g>
+  ),
+  zip: (
+    <g transform="translate(48 18)">
+      {Array.from({ length: 16 }, (_, cell) => (
+        <rect key={cell} x={(cell % 4) * 16} y={Math.floor(cell / 4) * 16} width="16" height="16" className="fill-foreground/[0.04] stroke-foreground/15" strokeWidth="0.6" />
+      ))}
+      <path d="M8 8h48v16H8v16h48v16H8" className="fill-none stroke-amethyst" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+      {[[8, 8, 1], [56, 24, 2], [56, 40, 3], [8, 56, 4]].map(([x, y, n]) => (
+        <g key={n}>
+          <circle cx={x} cy={y} r="5.5" className="fill-foreground" />
+          <text x={x} y={y + 2.4} textAnchor="middle" fontSize="7" fontWeight="700" className="fill-background">{n}</text>
+        </g>
+      ))}
+    </g>
+  ),
+  patches: (
+    <g transform="translate(44 14)">
+      {[
+        [0, 0, 2, 2, "fill-amethyst/45", 4],
+        [2, 0, 3, 1, "fill-rose/45", 3],
+        [2, 1, 1, 3, "fill-foreground/20", 3],
+        [3, 1, 2, 2, "fill-amethyst/25", 4],
+        [0, 2, 2, 2, "fill-rose/25", 4],
+        [3, 3, 2, 1, "fill-foreground/10", 2],
+      ].map(([x, y, w, h, fill, n]) => (
+        <g key={`${x}-${y}`}>
+          <rect x={(x as number) * 14.4 + 1} y={(y as number) * 18 + 1} width={(w as number) * 14.4 - 2} height={(h as number) * 18 - 2} rx="3" className={fill as string} />
+          <text x={(x as number) * 14.4 + 7.2} y={(y as number) * 18 + 12} textAnchor="middle" fontSize="8" fontWeight="700" className="fill-foreground">{n}</text>
+        </g>
+      ))}
+    </g>
+  ),
+  tango: (
+    <g transform="translate(44 14)">
+      {Array.from({ length: 16 }, (_, cell) => {
+        const x = (cell % 4) * 18;
+        const y = Math.floor(cell / 4) * 18;
+        const sun = [0, 3, 5, 6, 9, 10, 12, 15].includes(cell);
+        return (
+          <g key={cell}>
+            <rect x={x} y={y} width="18" height="18" className="fill-foreground/[0.04] stroke-foreground/15" strokeWidth="0.6" />
+            {sun ? <circle cx={x + 9} cy={y + 9} r="5" className="fill-amethyst" /> : <path d={`M${x + 11} ${y + 3.5}a5.6 5.6 0 1 0 0 11 4.4 4.4 0 1 1 0-11z`} className="fill-foreground/70" />}
+          </g>
+        );
+      })}
+      <text x="18" y="11.5" textAnchor="middle" fontSize="7" fontWeight="700" className="fill-rose">=</text>
+      <text x="36" y="47.5" textAnchor="middle" fontSize="7" fontWeight="700" className="fill-rose">×</text>
+    </g>
+  ),
+  queens: (
+    <g transform="translate(50 12)">
+      {Array.from({ length: 25 }, (_, cell) => {
+        const regions = [0, 0, 1, 1, 1, 0, 2, 2, 1, 3, 0, 2, 4, 3, 3, 2, 2, 4, 4, 3, 2, 4, 4, 4, 3];
+        const fills = ["fill-amethyst/40", "fill-rose/35", "fill-foreground/15", "fill-amethyst/20", "fill-rose/15"];
+        return <rect key={cell} x={(cell % 5) * 12} y={Math.floor(cell / 5) * 15} width="12" height="15" className={cn(fills[regions[cell]], "stroke-background/60")} strokeWidth="0.6" />;
+      })}
+      {[[1, 0], [4, 1], [2, 2], [0, 3], [3, 4]].map(([x, y]) => (
+        <path key={`${x}-${y}`} d={`M${x * 12 + 2.5} ${y * 15 + 11}l1-6 2.5 3 2.5-4 2.5 4 2.5-3 1 6z`} className="fill-foreground" />
+      ))}
     </g>
   ),
 };

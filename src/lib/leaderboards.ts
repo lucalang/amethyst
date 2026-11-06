@@ -64,6 +64,12 @@ export const LEADERBOARD_GAMES: Record<ArcadeGameId, LeaderboardGame> = {
     ],
     daily: true,
   },
+  "gem-chase": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
+  "space-blaster": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
+  zip: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
+  patches: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
+  tango: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
+  queens: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
 };
 
 export const LEADERBOARD_GAME_IDS = ARCADE_GAMES.map((game) => game.id);

@@ -26,7 +26,7 @@ export default async function ArcadePage() {
       <PageContainer>
         <PageHeader
           title="Arcade"
-          description="Six quick games for a break. Your personal records and Sudoku progress are saved to your account."
+          description="Quick games and daily puzzles for a break. Your personal records and Sudoku progress are saved to your account."
           actions={
             <div className="flex items-center gap-2">
               <Link href="/achievements" className="arcade-trophy-door">

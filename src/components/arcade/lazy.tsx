@@ -36,6 +36,12 @@ export const LazyFlutter = wrap(dynamic<{ records: Record<string, number> }>(() 
 export const LazySnake = wrap(dynamic<{ records: Record<string, number> }>(() => import("./game-snake"), { ssr: false, loading: Loading }));
 export const LazyFruit = wrap(dynamic<RecordProps>(() => import("./game-fruit"), { ssr: false, loading: Loading }));
 export const LazyStacker = wrap(dynamic<RecordProps>(() => import("./game-stacker"), { ssr: false, loading: Loading }));
+export const LazyGemChase = wrap(dynamic<RecordProps>(() => import("./game-gem-chase"), { ssr: false, loading: Loading }));
+export const LazySpaceBlaster = wrap(dynamic<RecordProps>(() => import("./game-space-blaster"), { ssr: false, loading: Loading }));
+export const LazyZip = wrap(dynamic<RecordProps>(() => import("./game-zip"), { ssr: false, loading: Loading }));
+export const LazyPatches = wrap(dynamic<RecordProps>(() => import("./game-patches"), { ssr: false, loading: Loading }));
+export const LazyTango = wrap(dynamic<RecordProps>(() => import("./game-tango"), { ssr: false, loading: Loading }));
+export const LazyQueens = wrap(dynamic<RecordProps>(() => import("./game-queens"), { ssr: false, loading: Loading }));
 export const LazySudoku = wrap(
   dynamic<{
     regular: Partial<Record<SudokuSize, SudokuSave | null>>;

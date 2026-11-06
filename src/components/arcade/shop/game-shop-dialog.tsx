@@ -6,9 +6,8 @@ import { ArrowLeft, Loader2, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiFetch } from "@/lib/api-client";
-import type { ArcadeGameId } from "@/lib/arcade";
 import type { GameShopData } from "@/lib/data/shop";
-import { GAME_SHOPS, type GameLook } from "@/lib/game-cosmetics";
+import { GAME_SHOPS, type GameLook, type ShopGame } from "@/lib/game-cosmetics";
 import { GameShop } from "./game-shop";
 
 /** The game's shop over the paused game; equipping applies to the running game straight away. */
@@ -18,7 +17,7 @@ export default function GameShopDialog({
   onLook,
   onOpenChange,
 }: {
-  game: ArcadeGameId;
+  game: ShopGame;
   open: boolean;
   look: GameLook;
   onLook: (look: GameLook) => void;
