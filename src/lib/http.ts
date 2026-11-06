@@ -60,6 +60,7 @@ const HINTED: Record<string, number> = {
   cosmetic_not_owned: 403,
   badge_limit: 409,
   insufficient_funds: 409,
+  not_enough_cases: 409,
   price_changed: 409,
   streak_not_recoverable: 409,
   item_unavailable: 404,

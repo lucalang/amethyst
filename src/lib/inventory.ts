@@ -12,6 +12,7 @@ import {
 import type { UnlockableFrameId } from "@/lib/frames";
 import { GAME_SHOPS, gameCosmetic, type ShopGame } from "@/lib/game-cosmetics";
 import type { ProfileBannerItemId, ProfileFrameId } from "@/lib/profile-cosmetics";
+import type { RarityId } from "@/lib/rarities";
 
 /**
  * Everything an account owns, as one flat list. Ownership is `user_cosmetics`; names and art come
@@ -30,7 +31,7 @@ export const INVENTORY_TYPE_LABELS: Record<InventoryType, { one: string; many: s
   game: { one: "Game cosmetic", many: "Game cosmetics" },
 };
 
-type Owned<Type extends InventoryType, Id extends string> = { type: Type; id: Id; name: string; description: string; acquiredAt: string };
+type Owned<Type extends InventoryType, Id extends string> = { type: Type; id: Id; name: string; description: string; acquiredAt: string; rarity: RarityId };
 
 export type InventoryItem =
   | Owned<"frame", UnlockableFrameId>
@@ -42,8 +43,8 @@ export type InventoryItem =
   | (Owned<"game", string> & { game: ShopGame; category: string; slug: string });
 
 /** An owned item id resolved through the registries, or null when this version doesn't know it. */
-export function toInventoryItem(id: string, acquiredAt: string): InventoryItem | null {
-  const owned = { acquiredAt };
+export function toInventoryItem(id: string, acquiredAt: string, rarity: RarityId): InventoryItem | null {
+  const owned = { acquiredAt, rarity };
   const game = gameCosmetic(id);
   if (game) return { type: "game", id, name: game.name, description: game.description, game: game.game, category: game.category, slug: game.slug, ...owned };
   if (isProfileBadgeId(id)) return { type: "badge", id, name: PROFILE_BADGES[id].name, description: PROFILE_BADGES[id].description, ...owned };

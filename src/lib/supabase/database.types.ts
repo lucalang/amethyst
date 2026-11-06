@@ -166,9 +166,9 @@ export type Database = {
               Relationships: [{ foreignKeyName: "coin_transactions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "cosmetic_items": {
-              Row: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available: boolean; secret: boolean; source: "shop" | "vault" | "achievement"; created_at: string; game: string | null; category: string | null }
-              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null }
-              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price?: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null }
+              Row: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available: boolean; secret: boolean; source: "shop" | "vault" | "achievement"; created_at: string; game: string | null; category: string | null; rarity: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" }
+              Insert: { id: string; kind: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null; rarity?: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" }
+              Update: { id?: string; kind?: "frame" | "avatar_decoration" | "game" | "badge" | "title"; price?: number; available?: boolean; secret?: boolean; source?: "shop" | "vault" | "achievement"; created_at?: string; game?: string | null; category?: string | null; rarity?: "common" | "uncommon" | "epic" | "legendary" | "mythic" | "secret" }
               Relationships: []
             },
             "game_loadouts": {
@@ -637,17 +637,29 @@ isOneToOne: false
 "purchase_cosmetic":
 { Args: { "p_item": string,"p_expected_price": number }; Returns: Json
                            },
+"loot_state":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"buy_loot_cases":
+{ Args: { "p_request": string,"p_case": string,"p_quantity": number,"p_expected_price": number }; Returns: Json
+                           },
+"open_loot_cases":
+{ Args: { "p_opening": string,"p_case": string,"p_quantity": number }; Returns: Json
+                           },
+"claim_loot_openings":
+{ Args: { "p_openings": string[] }; Returns: Json
+                           },
 "arcade_streaks":
 { Args: Record<PropertyKey, never>; Returns: { game: string; current_streak: number; best_streak: number; played_today: boolean; last_played: string; recover_date: string | null; recover_streak: number | null; recover_cost: number | null; recover_ready: boolean }[]
                            },
 "recover_arcade_streak":
 { Args: { "p_game": string,"p_expected_cost": number }; Returns: Json
                            },
-"redeem_secret_code":
-{ Args: { "p_code_hash": string }; Returns: Json
 "claim_streak_celebration":
 { Args: { "p_game": string }; Returns: Json
                            },
+"redeem_secret_code":
+{ Args: { "p_code_hash": string }; Returns: Json
                            },
 "redeem_vault_code":
 { Args: { "p_loose_hash": string,"p_phrase_hash"?: string | null,"p_request"?: string | null }; Returns: Json

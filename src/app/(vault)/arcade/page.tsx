@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Cherry, ChevronRight, Coins, House, Medal, Store, Trophy } from "lucide-react";
+import { ArrowRight, Cherry, ChevronRight, Coins, House, Medal, Package, Store, Trophy } from "lucide-react";
 import { ArcadeGames } from "@/components/arcade/arcade-games";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -74,7 +74,20 @@ export default async function ArcadePage() {
             <ArrowRight aria-hidden className="size-3.5" />
           </span>
         </Link>
-        <Link href="/arcade/leaderboards" prefetch={false} className="arcade-counter enter mb-6" style={{ "--enter-index": 3 } as CSSProperties}>
+        <Link href="/arcade/lootboxes" prefetch={false} className="arcade-counter enter mb-6" style={{ "--enter-index": 3 } as CSSProperties}>
+          <span aria-hidden className="arcade-counter-coin">
+            <Package className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-foreground">Lootboxes</span>
+            <span className="block text-xs text-pretty text-muted-foreground">Buy cases with coins and open them in your Inventory for cosmetics. Every reward’s exact odds are listed.</span>
+          </span>
+          <span className="arcade-counter-cta">
+            Browse
+            <ArrowRight aria-hidden className="size-3.5" />
+          </span>
+        </Link>
+        <Link href="/arcade/leaderboards" prefetch={false} className="arcade-counter enter mb-6" style={{ "--enter-index": 4 } as CSSProperties}>
           <span aria-hidden className="arcade-counter-coin">
             <Medal className="size-5" />
           </span>

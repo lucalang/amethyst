@@ -49,6 +49,43 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-lootboxes",
+    date: "2026-11-06",
+    title: "Lootboxes",
+    intro: "Buy cases with Coins, open them in your Inventory and win cosmetics, with every reward’s exact odds shown up front.",
+    icon: "box",
+    highlights: [
+      { kind: "new", feature: "Lootboxes shop", text: "Buy Release Cases with Coins in any quantity, with the total and your balance after shown before you confirm." },
+      { kind: "new", feature: "Case opening", text: "Open cases from your Inventory, one to ten at a time, with a rolling reel and a showcase of every reward. Larger amounts run in batches you can stop." },
+      { kind: "new", feature: "Rarities", text: "Every cosmetic now has a rarity: Common, Uncommon, Epic, Legendary, Mythic or Secret, shown in the Inventory and the Lootboxes shop." },
+    ],
+    details: {
+      new: [
+        {
+          title: "The Lootboxes shop",
+          body: "The Lootboxes shop lists every case on sale with its price, the rewards it can give and their exact chances. The Release Case costs 150 Coins and contains frames, avatar decorations, banner themes, profile frames, badges, titles and game cosmetics. Choose a quantity, check the total, and confirm; Coins are taken once, even if you retry after a connection problem. Cases are bought with Coins only.",
+          points: [
+            "Odds per rarity for the Release Case: Common 45%, Uncommon 30%, Epic 17%, Legendary 6%, Mythic 1.5%, Secret 0.5%.",
+            "Each item in a rarity has an equal share of that rarity’s chance, and every item’s chance is listed.",
+            "Secret items stay hidden in the list until you own them.",
+          ],
+          where: "Arcade → Lootboxes",
+          link: { href: "/arcade/lootboxes", label: "Open the Lootboxes shop" },
+        },
+        {
+          title: "Opening cases",
+          body: "Cases you own appear at the top of your Inventory. Pick 1, 3, 5, 10 or a custom amount up to what you own. Each batch of up to ten is rolled and saved the moment it opens, then a reel lands on each reward. Skip the reel to go straight to the rewards, step through them with Previous and Next, or skip the showcase and claim them all. Amounts above ten open in batches one after another with the remaining count shown, and you can stop before the next batch starts. If you leave or lose your connection, opened rewards are kept and waiting in your Inventory to be revealed and claimed. With reduced motion, rewards are shown without the rolling reel.",
+          where: "Inventory → Cases",
+          link: { href: "/inventory", label: "Open Inventory" },
+        },
+        {
+          title: "Rarities and duplicates",
+          body: "Every cosmetic has one of six rarities, each with its own color in the Lootboxes shop, the case opening and the Inventory. Cosmetics are owned once: a reward you already own is marked “Already owned” and doesn’t add a second copy or anything else.",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-inventory",
     date: "2026-11-06",
     title: "Your Inventory",

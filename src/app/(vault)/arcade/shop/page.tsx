@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Gamepad2, Store } from "lucide-react";
+import { ArrowRight, Gamepad2, Package, Store } from "lucide-react";
 import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -47,12 +47,20 @@ export default async function ArcadeShopPage() {
         <PageHeader
           title="Arcade shop"
           actions={
-            <Button asChild variant="outline" size="sm" className="h-9 px-3">
-              <Link href="/arcade">
-                <Gamepad2 aria-hidden />
-                Arcade
-              </Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm" className="h-9 px-3">
+                <Link href="/arcade/lootboxes">
+                  <Package aria-hidden />
+                  Lootboxes
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="h-9 px-3">
+                <Link href="/arcade">
+                  <Gamepad2 aria-hidden />
+                  Arcade
+                </Link>
+              </Button>
+            </div>
           }
         />
         <section aria-labelledby="game-shops-heading" className="mb-8">
