@@ -10,7 +10,7 @@ export const MOON = 2;
 export type TangoCell = 0 | typeof SUN | typeof MOON;
 /** A sign between two neighbouring cells (`a` < `b`). */
 export type TangoSign = { a: number; b: number; same: boolean };
-export type TangoPuzzle = { size: number; givens: TangoCell[]; signs: TangoSign[] };
+export type TangoPuzzle = { size: number; givens: TangoCell[]; signs: TangoSign[]; solution: TangoCell[] };
 
 const N = TANGO_SIZE;
 const HALF = N / 2;
@@ -101,7 +101,7 @@ export function generateTango(random: () => number): TangoPuzzle {
     const next = signs.filter((s) => s !== sign);
     if (solve(givens, next, 2).count === 1) signs = next;
   }
-  return { size: N, givens, signs };
+  return { size: N, givens, signs, solution };
 }
 
 /** Cells breaking a rule (for highlighting) and the signs that are violated. */

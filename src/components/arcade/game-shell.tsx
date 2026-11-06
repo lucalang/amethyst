@@ -280,6 +280,11 @@ export function GameOverlay({ title, children, actions, tone = "default" }: { ti
 
 const INTERACTIVE = "button, a, input, select, textarea, [contenteditable], [role=button], [role=dialog]";
 
+/** Ref callback that focuses on mount without scrolling the page (unlike `autoFocus`). */
+export const focusQuietly = (element: HTMLElement | null) => {
+  element?.focus({ preventScroll: true });
+};
+
 /**
  * Keyboard input for the game while it has focus (or nothing else does). Return true from the
  * handler for keys the game used; those keys then don't scroll the page.

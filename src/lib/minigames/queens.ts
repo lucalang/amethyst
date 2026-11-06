@@ -4,7 +4,8 @@
  * other placement fits, so each puzzle has exactly one solution (with a solvable fallback).
  */
 
-export type QueensPuzzle = { size: number; regions: number[] };
+/** `solution`: the crown's column in each row. */
+export type QueensPuzzle = { size: number; regions: number[]; solution: number[] };
 
 function shuffle<T>(items: T[], random: () => number) {
   for (let i = items.length - 1; i > 0; i -= 1) {
@@ -104,16 +105,16 @@ function growRegions(size: number, crowns: number[], random: () => number) {
 }
 
 export function generateQueens(random: () => number, size = 8): QueensPuzzle {
-  let fallback: number[] | null = null;
+  let fallback: QueensPuzzle | null = null;
   for (let attempt = 0; attempt < 40; attempt += 1) {
     const crowns = placement(size, random);
     if (!crowns) continue;
     const regions = growRegions(size, crowns, random);
     const seeds = new Set(crowns.map((c, r) => r * size + c));
-    fallback ??= [...regions];
+    fallback ??= { size, regions: [...regions], solution: crowns };
     for (let step = 0; step < 160; step += 1) {
       const other = solutions(size, regions, 2).find((cols) => cols.some((c, r) => c !== crowns[r]));
-      if (!other) return { size, regions };
+      if (!other) return { size, regions, solution: crowns };
       // Move one of the other solution's crowns into a neighbouring region; that solution breaks.
       let moved = false;
       for (const r of shuffle(Array.from({ length: size }, (_, i) => i), random)) {
@@ -129,7 +130,9 @@ export function generateQueens(random: () => number, size = 8): QueensPuzzle {
       if (!moved) break;
     }
   }
-  return { size, regions: fallback ?? growRegions(size, placement(size, random)!, random) };
+  if (fallback) return fallback;
+  const crowns = placement(size, random)!;
+  return { size, regions: growRegions(size, crowns, random), solution: crowns };
 }
 
 /** Crowns that break a rule: same row, column or region, or touching. */

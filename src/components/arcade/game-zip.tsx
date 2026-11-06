@@ -1,12 +1,15 @@
 "use client";
 
-import { useRef, useState, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { Eraser, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { edgeKey, generateZip, zipNeighbours, zipSolved, type ZipPuzzle } from "@/lib/minigames/zip";
+import { edgeKey, generateZip, ZIP_DAILY_SIZE, ZIP_LEVELS, zipNeighbours, zipSolved, type ZipPuzzle } from "@/lib/minigames/zip";
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
-import { PuzzleFrame, usePuzzleSession, type PuzzleSession } from "./puzzle-shell";
+import { PuzzleFrame, usePuzzleSession, type PuzzleMode, type PuzzleSession } from "./puzzle-shell";
+
+/** Trail color at `t` (0 = start, 1 = end): orange warming into pink. */
+const trailColor = (t: number) => `hsl(${(382 - t * 50) % 360} 78% ${52 - t * 6}%)`;
 
 function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
   const { play, effects } = useArcade();
@@ -17,6 +20,7 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
   const [path, setPathState] = useState<number[]>([start]);
   const [history, setHistory] = useState<number[][]>([]);
   const [flash, setFlash] = useState<number | null>(null);
+  const [hinted, setHinted] = useState<Set<number> | null>(null);
   const drag = useRef<{ pointer: number; before: number[] } | null>(null);
   const flashTimer = useRef(0);
   // Pointer events can outpace renders, so moves read the latest path from here.
@@ -54,8 +58,11 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
     const previous = pathRef.current;
     if (before) setHistory((entries) => [...entries.slice(-199), before]);
     setPath(next);
+    setHinted(null);
     session.touch();
     if (next.length > previous.length) play("tap", 0.9 + next.length / (n * n) / 2);
+    const top = reached(next);
+    if (top > reached(previous) && top < puzzle.last) play("point", 1 + (top / puzzle.last) * 0.5);
     if (zipSolved(puzzle, next)) {
       drag.current = null;
       session.solve({ moves: history.length + 1 });
@@ -76,6 +83,20 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
     setPath(history[history.length - 1]);
     setHistory((previous) => previous.slice(0, -1));
     play("erase");
+  }
+
+  /** Keeps the part of the path that matches the answer, then extends it by up to 3 cells. */
+  function hint() {
+    if (locked) return;
+    const current = pathRef.current;
+    const answer = puzzle.solution;
+    let keep = 0;
+    while (keep < current.length && current[keep] === answer[keep]) keep += 1;
+    if (keep >= answer.length) return;
+    const to = Math.min(answer.length, keep + 3);
+    session.takeHint();
+    apply(answer.slice(0, to), current);
+    setHinted(new Set(answer.slice(keep, to)));
   }
 
   useGameKeys((event) => {
@@ -145,14 +166,19 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
     }
   }
 
-  const point = (cell: number) => `${(cell % n) + 0.5},${Math.floor(cell / n) + 0.5}`;
-  const visited = new Set(path);
+  const point = (cell: number) => ({ x: (cell % n) + 0.5, y: Math.floor(cell / n) + 0.5 });
+  const order = new Map(path.map((cell, index) => [cell, index]));
   const top = reached(path);
+  const total = n * n;
+  const solved = session.phase === "solved";
+  const fx = effects !== "off";
+  const head = point(path[path.length - 1]);
 
   return (
     <PuzzleFrame
       session={session}
       title="Zip"
+      onHint={hint}
       rules={[
         "Draw one path from 1 that visits every cell exactly once.",
         "Pass the numbers in order (1, 2, 3 …) and finish on the highest number.",
@@ -176,19 +202,39 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
       <div
         role="application"
         aria-label={`Zip board, ${n} by ${n}. Path covers ${path.length} of ${n * n} cells, last number reached ${top} of ${puzzle.last}.`}
-        className={cn("puzzle-board zip-board relative mx-auto aspect-square w-full touch-none select-none", session.phase === "solved" && "puzzle-board-solved")}
+        className={cn("puzzle-board zip-board relative mx-auto aspect-square w-full touch-none select-none", solved && "puzzle-board-solved zip-solved", fx && "zip-fx")}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={() => (drag.current = null)}
         onPointerCancel={() => (drag.current = null)}
       >
-        <div aria-hidden className="grid size-full" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
-          {Array.from({ length: n * n }, (_, cell) => (
-            <div key={cell} className={cn("zip-cell", visited.has(cell) && "zip-cell-on", flash === cell && "zip-cell-flash", flash === cell && effects !== "off" && "zip-cell-shake")} />
-          ))}
+        <div aria-hidden className="grid size-full" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` }}>
+          {Array.from({ length: total }, (_, cell) => {
+            const index = order.get(cell);
+            const style = index === undefined ? undefined : ({ "--zip-tint": trailColor(index / (total - 1)), "--zip-i": index } as CSSProperties);
+            return (
+              <div
+                key={cell}
+                style={style}
+                className={cn("zip-cell", index !== undefined && "zip-cell-on", hinted?.has(cell) && "puzzle-hinted", flash === cell && "zip-cell-flash", flash === cell && fx && "zip-cell-shake")}
+              />
+            );
+          })}
         </div>
         <svg aria-hidden viewBox={`0 0 ${n} ${n}`} className="pointer-events-none absolute inset-0 size-full">
-          {path.length > 1 ? <polyline points={path.map(point).join(" ")} className="zip-path" /> : null}
+          {path.length > 1 ? (
+            <>
+              <polyline points={path.map((cell) => `${point(cell).x},${point(cell).y}`).join(" ")} className="zip-path-glow" />
+              {path.slice(1).map((cell, index) => {
+                const a = point(path[index]);
+                const b = point(cell);
+                return <line key={`${path[index]}-${cell}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={trailColor((index + 1) / (total - 1))} className="zip-path" />;
+              })}
+            </>
+          ) : null}
+          {!solved && !locked ? (
+            <circle cx={head.x} cy={head.y} r="0.2" fill={trailColor((path.length - 1) / (total - 1))} className="zip-head" />
+          ) : null}
           {puzzle.walls.map((key) => {
             const [a, b] = key.split("-").map(Number);
             const r = Math.floor(a / n);
@@ -197,21 +243,37 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
           })}
           {puzzle.numbers.map((number, cell) =>
             number ? (
-              <g key={cell} transform={`translate(${(cell % n) + 0.5} ${Math.floor(cell / n) + 0.5})`}>
-                <circle r="0.3" className={number <= top ? "zip-dot zip-dot-on" : "zip-dot"} />
-                <text y="0.11" textAnchor="middle" className="zip-number">{number}</text>
+              <g key={`${cell}-${number <= top}`} transform={`translate(${(cell % n) + 0.5} ${Math.floor(cell / n) + 0.5})`}>
+                <g className={number <= top ? "zip-dot-pop" : undefined}>
+                  <circle r="0.3" className={number <= top ? "zip-dot zip-dot-on" : "zip-dot"} />
+                  <text y="0.11" textAnchor="middle" className="zip-number">{number}</text>
+                </g>
               </g>
             ) : null,
           )}
         </svg>
       </div>
+      <div
+        role="progressbar"
+        aria-label="Cells covered"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={path.length}
+        className="zip-progress mx-auto w-full max-w-[34rem]"
+      >
+        <span style={{ width: `${(path.length / total) * 100}%`, background: trailColor((path.length - 1) / (total - 1)) }} />
+      </div>
     </PuzzleFrame>
   );
 }
 
-const generate = (random: () => number, mode: string) => generateZip(random, mode === "daily" ? 7 : 6);
+const generate = (random: () => number, mode: PuzzleMode, level: string) => {
+  if (mode === "daily") return generateZip(random, ZIP_DAILY_SIZE);
+  const config = ZIP_LEVELS.find((option) => option.id === level) ?? ZIP_LEVELS[1];
+  return generateZip(random, config.size, config.hints);
+};
 
 export default function GameZip({ records }: { records: Record<string, number> }) {
-  const session = usePuzzleSession("zip", generate, records);
+  const session = usePuzzleSession("zip", generate, records, ZIP_LEVELS);
   return <ZipPlay key={session.puzzleId} session={session} />;
 }

@@ -13,7 +13,7 @@ const SHAPE_LABEL: Record<PatchShape, string> = { square: "square", wide: "wider
 
 function ShapeIcon({ shape }: { shape: PatchShape }) {
   return (
-    <svg viewBox="0 0 16 16" aria-hidden className="size-[34%] max-w-4">
+    <svg viewBox="0 0 16 16" aria-hidden className="mt-[0.15em] w-[clamp(0.7rem,3.4cqi,1.15rem)] opacity-70">
       {shape === "square" ? <rect x="3" y="3" width="10" height="10" rx="1.5" className="fill-none stroke-current" strokeWidth="1.8" /> : null}
       {shape === "wide" ? <rect x="1.5" y="5" width="13" height="6" rx="1.5" className="fill-none stroke-current" strokeWidth="1.8" /> : null}
       {shape === "tall" ? <rect x="5" y="1.5" width="6" height="13" rx="1.5" className="fill-none stroke-current" strokeWidth="1.8" /> : null}
@@ -29,15 +29,17 @@ const boundingRect = (a: number, b: number, n: number): Rect => {
 };
 
 const overlaps = (a: Rect, b: Rect) => a.r < b.r + b.h && b.r < a.r + a.h && a.c < b.c + b.w && b.c < a.c + a.w;
+const sameRect = (a: Rect, b: Rect) => a.r === b.r && a.c === b.c && a.h === b.h && a.w === b.w;
 
 function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
-  const { play } = useArcade();
+  const { play, effects } = useArcade();
   const { puzzle, locked } = session;
   const n = puzzle.size;
   const [patches, setPatches] = useState<Rect[]>([]);
   const [history, setHistory] = useState<Rect[][]>([]);
   const [cursor, setCursor] = useState(0);
   const [selection, setSelection] = useState<{ anchor: number; to: number; pointer: number | null } | null>(null);
+  const [hinted, setHinted] = useState<{ rect: Rect; removed: boolean } | null>(null);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const clueAt = new Map(puzzle.clues.map((clue, index) => [clue.cell, index]));
 
@@ -45,9 +47,14 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
     if (locked) return;
     setHistory((previous) => [...previous.slice(-199), patches]);
     setPatches(next);
+    setHinted(null);
     session.touch();
-    play(sound);
-    if (patchesSolved(next, puzzle)) session.solve({ moves: history.length + 1 });
+    if (patchesSolved(next, puzzle)) {
+      session.solve({ moves: history.length + 1 });
+      return;
+    }
+    const covered = next.reduce((sum, rect) => sum + rect.h * rect.w, 0);
+    play(sound, sound === "place" ? 0.85 + (covered / (n * n)) * 0.5 : 1);
   }
 
   function draw(rect: Rect) {
@@ -64,6 +71,20 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
     setSelection(null);
     if (anchor === to && patches.some((patch) => rectContains(patch, anchor, n))) removeAt(anchor);
     else draw(boundingRect(anchor, to, n));
+  }
+
+  /** Removes a wrong patch if there is one, otherwise draws a missing one. */
+  function hint() {
+    if (locked) return;
+    const wrong = patches.find((patch) => !puzzle.solution.some((rect) => sameRect(rect, patch)));
+    const missing = puzzle.solution.filter((rect) => !patches.some((patch) => sameRect(rect, patch)));
+    const rect = wrong ?? missing[Math.floor(Math.random() * missing.length)];
+    if (!rect) return;
+    session.takeHint();
+    setSelection(null);
+    if (wrong) commit(patches.filter((patch) => patch !== wrong), "erase");
+    else commit([...patches.filter((patch) => !overlaps(patch, rect)), rect]);
+    setHinted({ rect, removed: wrong !== undefined });
   }
 
   function undo() {
@@ -110,7 +131,10 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!selection || selection.pointer !== event.pointerId) return;
     const cell = cellAt(event.clientX, event.clientY);
-    if (cell !== null && cell !== selection.to) setSelection({ ...selection, to: cell });
+    if (cell !== null && cell !== selection.to) {
+      setSelection({ ...selection, to: cell });
+      if (patchValid(boundingRect(selection.anchor, cell, n), puzzle)) play("tick");
+    }
   }
 
   function onPointerUp(event: PointerEvent<HTMLDivElement>) {
@@ -120,12 +144,15 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
   }
 
   const preview = selection ? boundingRect(selection.anchor, selection.to, n) : null;
+  const previewValid = preview !== null && patchValid(preview, puzzle);
+  const previewClues = preview ? puzzle.clues.filter((clue) => rectContains(preview, clue.cell, n)).length : 0;
   const pct = (value: number) => `${(value / n) * 100}%`;
 
   return (
     <PuzzleFrame
       session={session}
       title="Patches"
+      onHint={hint}
       rules={[
         "Split the whole grid into rectangles (patches). Every cell belongs to exactly one patch.",
         "Each patch contains exactly one clue. The number is the patch's size in cells.",
@@ -147,13 +174,13 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
       }
     >
       <div
-        className={cn("puzzle-board relative mx-auto aspect-square w-full touch-none select-none", session.phase === "solved" && "puzzle-board-solved")}
+        className={cn("puzzle-board patches-board relative mx-auto aspect-square w-full touch-none select-none", session.phase === "solved" && "puzzle-board-solved patches-solved", effects !== "off" && "patches-fx")}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={() => setSelection(null)}
       >
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          {patches.map((patch) => {
+          {patches.map((patch, index) => {
             const valid = patchValid(patch, puzzle);
             const clue = puzzle.clues.findIndex((entry) => rectContains(patch, entry.cell, n));
             const color = valid ? PATCH_COLORS[clue % PATCH_COLORS.length] : undefined;
@@ -161,13 +188,28 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
               <span
                 key={`${patch.r}-${patch.c}-${patch.h}-${patch.w}`}
                 className={cn("patch", !valid && "patch-bad")}
-                style={{ left: pct(patch.c), top: pct(patch.r), width: pct(patch.w), height: pct(patch.h), ...(color ? { "--patch": color } : {}) } as CSSProperties}
+                style={{ left: pct(patch.c), top: pct(patch.r), width: pct(patch.w), height: pct(patch.h), "--patch-i": index, ...(color ? { "--patch": color } : {}) } as CSSProperties}
               />
             );
           })}
-          {preview ? <span className="patch patch-preview" style={{ left: pct(preview.c), top: pct(preview.r), width: pct(preview.w), height: pct(preview.h) }} /> : null}
+          {preview ? (
+            <span
+              className={cn("patch patch-preview grid place-items-center", previewValid ? "patch-preview-ok" : previewClues !== 1 && "patch-preview-bad")}
+              style={{ left: pct(preview.c), top: pct(preview.r), width: pct(preview.w), height: pct(preview.h) }}
+            >
+              <span className="patch-size">
+                {preview.w}×{preview.h}
+              </span>
+            </span>
+          ) : null}
+          {hinted ? (
+            <span
+              className={cn("patch patch-hint", hinted.removed && "patch-hint-removed")}
+              style={{ left: pct(hinted.rect.c), top: pct(hinted.rect.r), width: pct(hinted.rect.w), height: pct(hinted.rect.h) }}
+            />
+          ) : null}
         </div>
-        <div role="grid" aria-label="Patches grid" className="relative grid size-full" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
+        <div role="grid" aria-label="Patches grid" className="relative grid size-full" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` }}>
           {Array.from({ length: n }, (_, r) => (
             <div key={r} role="row" className="contents">
               {Array.from({ length: n }, (_, c) => {
@@ -202,7 +244,7 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
                     className="patches-cell grid place-items-center"
                   >
                     {clue ? (
-                      <span className="patches-clue flex flex-col items-center justify-center leading-none">
+                      <span className={cn("patches-clue flex flex-col items-center justify-center leading-none", covered && patchValid(covered, puzzle) && "patches-clue-done")}>
                         <span className="text-[clamp(0.9rem,4.5cqi,1.6rem)] font-bold tabular-nums">{clue.area}</span>
                         <ShapeIcon shape={clue.shape} />
                       </span>
@@ -213,6 +255,9 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
             </div>
           ))}
         </div>
+      </div>
+      <div aria-hidden className="patches-progress mx-auto mt-3 w-full">
+        <span style={{ width: `${(patches.reduce((sum, rect) => sum + rect.h * rect.w, 0) / (n * n)) * 100}%` }} />
       </div>
     </PuzzleFrame>
   );

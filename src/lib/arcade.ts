@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
+import { ZIP_LEVEL_VARIANTS } from "@/lib/minigames/zip";
 import { isSnakeVariant } from "@/lib/snake";
 import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize } from "@/lib/sudoku";
 
@@ -29,7 +30,7 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "fruit-slice", title: "Fruit Slice", href: "/arcade/fruit-slice", blurb: "Swipe through flying fruit, chain combos and steer clear of bombs.", recordLabel: "Best score" },
   { id: "stacker", title: "Tower Stacker", href: "/arcade/stacker", blurb: "Drop each sliding block right on top. Only the overlap stays.", recordLabel: "Highest tower" },
   { id: "gem-chase", title: "Gem Chase", href: "/arcade/gem-chase", blurb: "Collect every glimmer in the maze while four shades give chase. Prisms turn the tables.", recordLabel: "Best score" },
-  { id: "space-blaster", title: "Space Blaster", href: "/arcade/space-blaster", blurb: "Shoot down incoming rocks and raiders, grab power-ups and survive. One hit ends the run.", recordLabel: "Best score" },
+  { id: "space-blaster", title: "Space Blaster", href: "/arcade/space-blaster", blurb: "A roguelite shooter: clear waves, stack upgrades and outgun ever tougher enemies and bosses.", recordLabel: "Best score" },
   { id: "zip", title: "Zip", href: "/arcade/zip", blurb: "Draw one path through every cell, passing the numbers in order.", recordLabel: "Best score" },
   { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Best score" },
   { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Best score" },
@@ -64,6 +65,7 @@ function isKnownVariant(game: ScoreGame, variant: string) {
   if (game === "flutter") return isRecentDailyVariant(variant);
   if (game === "fruit-slice") return (FRUIT_MODE_VARIANTS as readonly string[]).includes(variant) || isRecentDailyVariant(variant);
   if (game === "stacker") return variant === STACKER_CLASSIC || isRecentDailyVariant(variant);
+  if (game === "zip") return ZIP_LEVEL_VARIANTS.includes(variant) || isRecentDailyVariant(variant);
   if ((PUZZLE_GAMES as readonly string[]).includes(game)) return isRecentDailyVariant(variant);
   return false;
 }

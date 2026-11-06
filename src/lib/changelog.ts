@@ -51,6 +51,176 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-06-queens-patches-polish",
+    date: "2026-11-06",
+    title: "Queens and Patches get a makeover",
+    intro: "Queens now has golden crowns and drag-to-erase, and Patches looks like a stitched quilt with live size previews.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Drag to erase in Queens", text: "Start a drag on a × to wipe every mark you sweep over." },
+      { kind: "improved", feature: "Patches previews", text: "While you draw, a size label appears and the outline turns green when the patch fits its clue." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Drag to erase marks in Queens",
+          body: "Dragging from an empty cell still marks × across the board. Dragging from a × now clears every × it passes over instead.",
+          where: "Arcade → Queens",
+          link: { href: "/arcade/queens", label: "Play Queens" },
+        },
+      ],
+      improved: [
+        {
+          title: "Queens looks and feels better",
+          body: "Crowns are gold and drop into place with a rising chime as you place more of them. A row of crowns under the board counts your progress. Clashing crowns turn red after a short pause instead of right away. Solving sends a shimmer across the board while the crowns bounce.",
+          where: "Arcade → Queens",
+          link: { href: "/arcade/queens", label: "Play Queens" },
+        },
+        {
+          title: "Patches looks and feels better",
+          body: "Patches look like stitched fabric and pop into place, while wrong patches shake. Shape icons on clues are larger and easier to read. While you draw, a size label shows the patch's dimensions, and the outline turns green with a soft tick when the patch fits a clue. A bar under the board fills as you cover the grid, and solving makes every patch bounce in turn.",
+          where: "Arcade → Patches",
+          link: { href: "/arcade/patches", label: "Play Patches" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-puzzle-hints",
+    date: "2026-11-06",
+    title: "Hints for Zip, Tango, Queens and Patches",
+    intro: "Stuck on a puzzle? Each logic puzzle now has a Hint button that shows you the next step.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Puzzle hints", text: "Tap Hint to fix a mistake or reveal one more correct step. Each hint adds 15 seconds to your time." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Puzzle hints",
+          body: "Hint fixes a mistake first if you've made one, otherwise it reveals a correct step. In Zip it extends your path by up to three cells. In Tango it fills one sun or moon, in Queens it places one crown, and in Patches it draws one patch. The changed cell or patch glows, and each hint adds 15 seconds to your time, so hint-free solves still score highest. The result shows how many hints you used.",
+          where: "Arcade → Zip, Tango, Queens or Patches",
+          link: { href: "/arcade/zip", label: "Try Zip" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-tango-polish",
+    date: "2026-11-06",
+    title: "Tango glows up, and puzzle grids stay square",
+    intro: "Tango feels livelier to play, and the Tango, Queens and Patches boards no longer stretch or shift as you fill them in.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Tango feel", text: "Suns spin in, moons swing in, cells take on warm or cool tints, and finishing a correct row or column lights it up with a chime." },
+      { kind: "fixed", feature: "Square grids", text: "Tiles in Tango, Queens and Patches are now always square and stay put while you play." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "A more satisfying Tango",
+          body: "Placing a sun or moon now pops it in with its own sound, and its cell takes on a soft sun or moon tint. Completing a valid row or column flashes it with a rising chime. A rule break now waits until you pause before it buzzes, shakes the tile and turns the broken signs red, so quickly tapping through sun and moon stays quiet. Hovering an empty cell previews a faint sun, and a bar under the board fills as you go. Solving sends a wave across the grid. The = and × signs are easier to read, and animations follow your motion setting.",
+          where: "Arcade → Tango",
+          link: { href: "/arcade/tango", label: "Play Tango" },
+        },
+      ],
+      fixed: [
+        {
+          title: "Uneven puzzle tiles",
+          body: "Rows in Tango, Queens and Patches could grow or shrink depending on what was in them, so tiles weren't square and the board shifted as you played. Patches could also draw your rectangles slightly off the grid. Every row is now the same height.",
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-zip-difficulties",
+    date: "2026-11-06",
+    title: "Zip difficulties and a juicier trail",
+    intro: "Zip now has four practice difficulties, each with its own best score and leaderboard, and drawing the path feels a lot more rewarding.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Zip difficulties", text: "Easy (5×5), Medium (6×6), Hard (7×7) and Expert (8×8) practice puzzles, with fewer numbers the harder you go." },
+      { kind: "improved", feature: "Zip feel", text: "A color-shifting trail, a glowing path head, numbers that pop when you reach them, a progress bar and a wave of light when you solve it." },
+      { kind: "fixed", feature: "No more page jump", text: "Finishing a puzzle in Zip, Patches, Tango or Queens no longer scrolls the page to the bottom." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Zip difficulties",
+          body: "Pick Easy, Medium, Hard or Expert above the board in Practice. Bigger boards start with fewer numbers, so you'll lean on walls and logic more. Each difficulty keeps its own best score and leaderboard; Medium keeps your existing records. The Daily puzzle is unchanged.",
+          where: "Arcade → Zip",
+          link: { href: "/arcade/zip", label: "Play Zip" },
+        },
+      ],
+      improved: [
+        {
+          title: "A more satisfying Zip",
+          body: "The trail now shifts from orange to pink as it grows, cells fill with its color, and the end of your path pulses. Reaching a number pops it with a rising chime, a bar below the board fills as you cover cells, and solving sends a wave of light along your path. Animations follow your motion setting. New puzzles also generate faster.",
+        },
+      ],
+      fixed: [
+        {
+          title: "Page jumping after a game",
+          body: "Finishing a Zip, Patches, Tango or Queens puzzle used to jump the page down to the result. The page now stays put. The same fix applies to pause and upgrade screens in Gem Chase and Space Blaster.",
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-gem-chase-polish",
+    date: "2026-11-06",
+    title: "Gem Chase gets some sparkle",
+    intro: "Gem Chase looks more like a crystal maze now, with glowing walls, twinkling glimmers and more lively shades.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Gem Chase visuals", text: "Glowing maze walls, twinkling glimmers, spinning prisms, a faceted Gem with a sparkle trail and glowing shades." },
+      { kind: "improved", feature: "Prism timer", text: "A bar under the score shows how long the shades stay scared, and flashes when it's about to run out." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "A more detailed Gem Chase",
+          body: "The maze walls glow and flash when you clear a board. Glimmers twinkle, prisms spin with a halo, and the Gem leaves a sparkle trail. Shades are shaded and glow, and look scared with a wobbly mouth when a prism is active. Collecting, catching shades and getting caught all burst into sparks. A timer bar under the score shows how long a prism lasts. Particles and flashes follow your motion setting.",
+          where: "Arcade → Gem Chase",
+          link: { href: "/arcade/gem-chase", label: "Play Gem Chase" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-06-space-blaster-roguelite",
+    date: "2026-11-06",
+    title: "Space Blaster, rebuilt as a roguelite",
+    intro: "Space Blaster now runs in waves: clear one, pick an upgrade and take on a tougher wave, with a Mothership boss every fifth. It also looks brand new.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Upgrades", text: "After every wave, choose one of three: faster fire, more lasers at once, harder hits, piercing, missiles, drones, shields and more." },
+      { kind: "new", feature: "Tougher waves and bosses", text: "Enemies gain armor and numbers each wave, new enemy types join, and a Mothership attacks every fifth wave." },
+      { kind: "improved", feature: "Hull", text: "Your ship takes three hits instead of one, with repairs and overdrive pickups along the way." },
+      { kind: "improved", feature: "Visuals", text: "A new ship, glowing lasers, nebula backdrop, shaded rocks, explosions and screen shake (which follows your motion setting)." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Roguelite runs",
+          body: "Each wave has a set amount of enemies to clear. When it's cleared you get a bonus (more if you took no damage) and choose one of three upgrades with a click or the 1, 2 and 3 keys. Upgrades stack, so a run builds up as it goes: Rapid Cyclers, Extra Laser (up to five at once), Focused Beams, Piercing Rounds, Afterburners, Reinforced Hull, Deflector shield, Seeker Missiles and Wingman Drones. Field Repair shows up when you're damaged.",
+          where: "Arcade → Space Blaster",
+          link: { href: "/arcade/space-blaster", label: "Play Space Blaster" },
+        },
+        {
+          title: "Enemies and bosses",
+          body: "Enemies get tougher every wave and come in larger numbers. Raiders start shooting back from wave 2, divers lock on and dash at you from wave 3, armored gunships fire spreads from wave 4, and molten rocks appear from wave 6. Every fifth wave a Mothership arrives with rings, aimed volleys, spirals and reinforcements, and it gets angrier at half health.",
+        },
+      ],
+      improved: [
+        {
+          title: "A better-looking, fairer game",
+          body: "Your hull takes three hits, with a short safety window after each one. Destroyed enemies can drop repairs and Overdrive (faster fire for a few seconds). The game has a new look throughout: ship, enemies, lasers, explosions, a scrolling nebula and a boss health bar. Screen shake and particles follow your motion setting.",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-other-settings-cutscene-archive",
     date: "2026-11-06",
     title: "Replay every cutscene version",

@@ -234,8 +234,8 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
         ) : data ? (
           <>
             <ol className="lb-list" aria-label={`Top ${data.top.length}`}>
-              {data.top.map((row) => (
-                <Row key={row.rank} row={row} fast={fast} />
+              {data.top.map((row, index) => (
+                <Row key={`${row.rank}-${index}`} row={row} fast={fast} />
               ))}
             </ol>
             <footer className="lb-footer">

@@ -4,7 +4,18 @@
  * (so they are always solvable); numbers and walls are added until no other path fits.
  */
 
-export type ZipPuzzle = { size: number; numbers: number[]; walls: string[]; last: number };
+/** `solution`: the answer path, cell by cell. */
+export type ZipPuzzle = { size: number; numbers: number[]; walls: string[]; last: number; solution: number[] };
+
+/** Practice difficulties; ids are record and leaderboard variants ("" keeps the original 6×6 records). */
+export const ZIP_LEVELS = [
+  { id: "easy", label: "Easy", hint: "5×5 with plenty of numbers", size: 5, hints: 8 },
+  { id: "", label: "Medium", hint: "6×6", size: 6, hints: undefined },
+  { id: "hard", label: "Hard", hint: "7×7 with fewer numbers", size: 7, hints: 5 },
+  { id: "expert", label: "Expert", hint: "8×8 with the fewest numbers", size: 8, hints: 4 },
+] as const;
+export const ZIP_LEVEL_VARIANTS: readonly string[] = ZIP_LEVELS.map((level) => level.id).filter(Boolean);
+export const ZIP_DAILY_SIZE = 7;
 
 export const edgeKey = (a: number, b: number) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
@@ -39,45 +50,73 @@ function findPaths(puzzle: ZipPuzzle, limit: number, budget = 120_000): number[]
   const { size, numbers, last } = puzzle;
   const total = size * size;
   const walls = new Set(puzzle.walls);
+  const links = Array.from({ length: total }, (_, cell) => zipNeighbours(cell, size).filter((next) => !walls.has(edgeKey(cell, next))));
   const start = numbers.indexOf(1);
-  const visited = new Array<boolean>(total).fill(false);
+  const finish = numbers.indexOf(last);
+  const visited = new Uint8Array(total);
+  // Unvisited neighbours of each cell.
+  const free = Uint8Array.from(links, (list) => list.length);
+  const seen = new Uint32Array(total);
+  const queue = new Int32Array(total);
+  let stamp = 0;
   const path = [start];
-  visited[start] = true;
   const found: number[][] = [];
   let steps = 0;
 
-  const reachable = (from: number) => {
-    // Every unvisited cell must still be reachable from the path's end.
-    const seen = new Set<number>();
-    const queue = [from];
-    while (queue.length) {
-      const cell = queue.pop()!;
-      for (const next of zipNeighbours(cell, size)) {
-        if (visited[next] || seen.has(next) || walls.has(edgeKey(cell, next))) continue;
-        seen.add(next);
-        queue.push(next);
+  const visit = (cell: number) => {
+    visited[cell] = 1;
+    for (const next of links[cell]) free[next] -= 1;
+  };
+  const leave = (cell: number) => {
+    visited[cell] = 0;
+    for (const next of links[cell]) free[next] += 1;
+  };
+  visit(start);
+
+  /** A cell other than the finish needs two ways in or out; the finish needs one. */
+  const stranded = (end: number, cell: number) => {
+    if (visited[cell]) return false;
+    const exits = free[cell] + (links[cell].includes(end) ? 1 : 0);
+    return exits < (cell === finish ? 1 : 2);
+  };
+
+  const connected = (from: number) => {
+    stamp += 1;
+    let head = 0;
+    let tail = 0;
+    let count = 0;
+    queue[tail++] = from;
+    while (head < tail) {
+      const cell = queue[head++];
+      for (const next of links[cell]) {
+        if (visited[next] || seen[next] === stamp) continue;
+        seen[next] = stamp;
+        count += 1;
+        queue[tail++] = next;
       }
     }
-    return seen.size === total - path.length;
+    return count === total - path.length;
   };
 
   const go = (expected: number): boolean => {
     if ((steps += 1) > budget) return false;
     const end = path[path.length - 1];
     if (path.length === total) {
-      if (numbers[end] === last) found.push([...path]);
+      if (end === finish) found.push([...path]);
       return true;
     }
-    if (!reachable(end)) return true;
-    for (const next of zipNeighbours(end, size)) {
-      if (visited[next] || walls.has(edgeKey(end, next))) continue;
+    if (end === finish || !connected(end)) return true;
+    for (const next of links[end]) {
+      if (visited[next]) continue;
       const number = numbers[next];
       if (number && number !== expected) continue;
-      visited[next] = true;
+      if (next === finish && path.length !== total - 1) continue;
+      visit(next);
       path.push(next);
-      const ok = go(number ? expected + 1 : expected);
+      const blocked = links[end].some((cell) => stranded(next, cell)) || links[next].some((cell) => stranded(next, cell));
+      const ok = blocked || go(number ? expected + 1 : expected);
       path.pop();
-      visited[next] = false;
+      leave(next);
       if (!ok) return false;
       if (found.length >= limit) return true;
     }
@@ -96,11 +135,12 @@ function numbersAlong(path: number[], marks: Set<number>) {
   return { numbers, last: n };
 }
 
-export function generateZip(random: () => number, size = 6): ZipPuzzle {
+/** `hints`: numbers placed up front (more are added only where the answer would be ambiguous). */
+export function generateZip(random: () => number, size = 6, hints?: number): ZipPuzzle {
   const path = randomPath(size, random);
   const total = size * size;
   const marks = new Set([0, total - 1]);
-  const extra = size + Math.floor(random() * 3) - 1;
+  const extra = hints ?? size + Math.floor(random() * 3) - 1;
   while (marks.size < extra) marks.add(1 + Math.floor(random() * (total - 2)));
   const used = new Set(path.slice(1).map((cell, i) => edgeKey(path[i], cell)));
   const spare: string[] = [];
@@ -111,7 +151,7 @@ export function generateZip(random: () => number, size = 6): ZipPuzzle {
   const wallCount = Math.floor(random() * 4);
   while (walls.size < wallCount && spare.length) walls.add(spare.splice(Math.floor(random() * spare.length), 1)[0]);
 
-  let puzzle: ZipPuzzle = { size, walls: [...walls], ...numbersAlong(path, marks) };
+  let puzzle: ZipPuzzle = { size, walls: [...walls], ...numbersAlong(path, marks), solution: path };
   for (let round = 0; round < 40; round += 1) {
     const found = findPaths(puzzle, 2);
     const other = found?.find((candidate) => candidate.some((cell, i) => cell !== path[i]));
@@ -125,7 +165,7 @@ export function generateZip(random: () => number, size = 6): ZipPuzzle {
       const free = path.map((_, i) => i).filter((i) => !marks.has(i));
       marks.add(free[Math.floor(random() * free.length)]);
     }
-    puzzle = { size, walls: [...walls], ...numbersAlong(path, marks) };
+    puzzle = { size, walls: [...walls], ...numbersAlong(path, marks), solution: path };
   }
   return puzzle;
 }

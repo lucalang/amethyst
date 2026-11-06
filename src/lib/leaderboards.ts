@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ARCADE_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, type ArcadeGameId } from "@/lib/arcade";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 import { dailyDate, dailyVariant } from "@/lib/arcade-daily";
+import { ZIP_LEVELS } from "@/lib/minigames/zip";
 import { BLEND_MODE_IDS, SNAKE_MODES, SNAKE_SIZES, SNAKE_SPEEDS, isSnakeLeaderboardVariant, type SnakeMode, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 
 /**
@@ -66,7 +67,7 @@ export const LEADERBOARD_GAMES: Record<ArcadeGameId, LeaderboardGame> = {
   },
   "gem-chase": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
   "space-blaster": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
-  zip: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
+  zip: { order: "high", scoreLabel: "Score", boards: ZIP_LEVELS.map((level) => ({ id: level.id, label: level.label })), daily: true },
   patches: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
   tango: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
   queens: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },

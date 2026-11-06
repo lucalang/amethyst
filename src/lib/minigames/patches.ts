@@ -6,7 +6,7 @@
 
 export type PatchShape = "square" | "wide" | "tall" | "any";
 export type PatchClue = { cell: number; area: number; shape: PatchShape };
-export type PatchesPuzzle = { size: number; clues: PatchClue[] };
+export type PatchesPuzzle = { size: number; clues: PatchClue[]; solution: Rect[] };
 export type Rect = { r: number; c: number; h: number; w: number };
 
 function shuffle<T>(items: T[], random: () => number) {
@@ -119,7 +119,7 @@ function countSolutions(size: number, clues: PatchClue[], limit: number) {
 }
 
 export function generatePatches(random: () => number, size = 6): PatchesPuzzle {
-  let fallback: PatchClue[] | null = null;
+  let fallback: PatchesPuzzle | null = null;
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const rects = partition(size, random);
     if (rects.length < size || rects.filter((rect) => rect.h * rect.w === 1).length > 2) continue;
@@ -127,16 +127,16 @@ export function generatePatches(random: () => number, size = 6): PatchesPuzzle {
       const cells = rectCells(rect, size);
       return { cell: cells[Math.floor(random() * cells.length)], area: cells.length, shape: shapeOf(rect) };
     });
-    fallback ??= clues;
+    fallback ??= { size, clues, solution: rects };
     if (countSolutions(size, clues, 2) !== 1) continue;
     // Hide some shapes while the answer stays unique.
     for (const index of shuffle(clues.map((_, i) => i), random).slice(0, Math.ceil(clues.length / 2))) {
       const next = clues.map((clue, i) => (i === index ? { ...clue, shape: "any" as const } : clue));
       if (countSolutions(size, next, 2) === 1) clues = next;
     }
-    return { size, clues };
+    return { size, clues, solution: rects };
   }
-  return { size, clues: fallback ?? [] };
+  return fallback ?? { size, clues: [], solution: [] };
 }
 
 /** Whether a drawn patch matches exactly one clue's area and shape. */

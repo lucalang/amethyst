@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Eraser, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateQueens, queensConflicts, queensSolved, type QueensPuzzle } from "@/lib/minigames/queens";
@@ -14,6 +14,10 @@ type Mark = 0 | 1 | 2;
 /** Region colors, readable on light and dark game skins. */
 const REGION_COLORS = ["#c9a7ff", "#ffb3a7", "#a8e6b0", "#ffe08a", "#9fd3ff", "#ffb8e0", "#d6c7a1", "#b5f0ec", "#e0b0ff", "#c2d68a"];
 const REGION_NAMES = ["violet", "coral", "mint", "yellow", "sky", "pink", "sand", "aqua", "lilac", "olive"];
+const randomIndex = (length: number) => Math.floor(Math.random() * length);
+/** New conflicts are only shown once the player stops changing the board for this long. */
+const REVEAL_DELAY = 900;
+const crownsOf = (marks: Mark[]) => marks.flatMap((mark, cell) => (mark === 2 ? [cell] : []));
 
 export function CrownIcon({ className }: { className?: string }) {
   return (
@@ -25,28 +29,57 @@ export function CrownIcon({ className }: { className?: string }) {
 }
 
 function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
-  const { play } = useArcade();
+  const { play, effects } = useArcade();
   const { puzzle, locked } = session;
   const { size: n, regions } = puzzle;
   const [marks, setMarks] = useState<Mark[]>(() => new Array<Mark>(n * n).fill(0));
   const [history, setHistory] = useState<Mark[][]>([]);
   const [cursor, setCursor] = useState(0);
+  const [hinted, setHinted] = useState<number | null>(null);
+  const [shown, setShown] = useState<number[]>([]);
+  const timer = useRef<number | undefined>(undefined);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
-  // A drag that started on an empty cell marks every empty cell it passes.
-  const drag = useRef<{ pointer: number; start: number; moved: boolean } | null>(null);
+  // A drag from an empty cell marks every empty cell it passes; a drag from a mark erases marks.
+  const drag = useRef<{ pointer: number; start: number; moved: boolean; erase: boolean } | null>(null);
   const suppressClick = useRef(false);
-  const crowns = marks.flatMap((mark, cell) => (mark === 2 ? [cell] : []));
-  const bad = queensConflicts(n, regions, crowns);
+  const crowns = crownsOf(marks);
+  const real = queensConflicts(n, regions, crowns);
+  const seen = queensConflicts(n, regions, shown);
+  const bad = new Set([...real].filter((cell) => seen.has(cell)));
+  const solved = session.phase === "solved";
+
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  /** Shows fixed conflicts right away and new ones only after a pause. */
+  function check(nextCrowns: number[]) {
+    window.clearTimeout(timer.current);
+    const fresh = [...queensConflicts(n, regions, nextCrowns)].filter((cell) => !seen.has(cell));
+    if (fresh.length === 0) {
+      setShown(nextCrowns);
+      return;
+    }
+    timer.current = window.setTimeout(() => {
+      setShown(nextCrowns);
+      play("invalid");
+    }, REVEAL_DELAY);
+  }
 
   function commit(next: Mark[], sound = true) {
     if (locked) return;
     setHistory((previous) => [...previous.slice(-199), marks]);
     setMarks(next);
+    setHinted(null);
     session.touch();
-    const nextCrowns = next.flatMap((mark, cell) => (mark === 2 ? [cell] : []));
-    const conflicts = queensConflicts(n, regions, nextCrowns);
-    if (sound) play(conflicts.size > bad.size ? "invalid" : nextCrowns.length > crowns.length ? "place" : "tap");
-    if (queensSolved(n, regions, nextCrowns)) session.solve({ moves: history.length + 1 });
+    const nextCrowns = crownsOf(next);
+    check(nextCrowns);
+    if (queensSolved(n, regions, nextCrowns)) {
+      session.solve({ moves: history.length + 1 });
+      return;
+    }
+    if (!sound) return;
+    if (nextCrowns.length > crowns.length) play("place", 0.9 + nextCrowns.length * 0.06);
+    else if (next.filter(Boolean).length < marks.filter(Boolean).length) play("erase");
+    else play("tap");
   }
 
   function set(cell: number, value: Mark | "cycle") {
@@ -55,10 +88,26 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
     if (next[cell] !== marks[cell]) commit(next);
   }
 
+  /** Removes a misplaced crown if there is one, otherwise places a missing one. */
+  function hint() {
+    if (locked) return;
+    const answer = puzzle.solution.map((c, r) => r * n + c);
+    const wrong = crowns.find((cell) => !answer.includes(cell));
+    const missing = answer.filter((cell) => marks[cell] !== 2);
+    const cell = wrong ?? missing[randomIndex(missing.length)];
+    if (cell === undefined) return;
+    session.takeHint();
+    const next = [...marks];
+    next[cell] = wrong === undefined ? 2 : 0;
+    commit(next);
+    setHinted(cell);
+  }
+
   function undo() {
     if (locked || history.length === 0) return;
     setMarks(history[history.length - 1]);
     setHistory((previous) => previous.slice(0, -1));
+    check(crownsOf(history[history.length - 1]));
     play("erase");
   }
 
@@ -100,11 +149,12 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
     <PuzzleFrame
       session={session}
       title="Queens"
+      onHint={hint}
       rules={[
         "Place exactly one crown in every row, every column and every color region.",
         "Crowns may not touch each other, not even diagonally.",
-        "Tap a cell once to mark it ×, twice for a crown, three times to clear. Drag across empty cells to mark several ×.",
-        "Crowns that break a rule turn red.",
+        "Tap a cell once to mark it ×, twice for a crown, three times to clear. Drag across empty cells to mark several ×, or start a drag on a × to erase marks.",
+        "Crowns that break a rule turn red after a moment.",
         "Keyboard: arrows move, Q places a crown, X marks, 0 clears, U undoes.",
       ]}
       tools={
@@ -123,23 +173,26 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
       <div
         role="grid"
         aria-label="Queens grid"
-        className={cn("puzzle-board queens-board mx-auto grid aspect-square w-full touch-none overflow-hidden rounded-lg", session.phase === "solved" && "puzzle-board-solved")}
-        style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}
+        className={cn("puzzle-board queens-board mx-auto grid aspect-square w-full touch-none overflow-hidden rounded-xl", solved && "puzzle-board-solved queens-solved", effects !== "off" && "queens-fx")}
+        style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` }}
         onPointerMove={(event) => {
           const current = drag.current;
           if (!current || current.pointer !== event.pointerId || locked) return;
           const cell = cellAt(event.clientX, event.clientY);
           if (cell === null || (cell === current.start && !current.moved)) return;
+          const [from, to]: Mark[] = current.erase ? [1, 0] : [0, 1];
           const next = [...marks];
           if (!current.moved) {
             setHistory((previous) => [...previous.slice(-199), marks]);
-            if (next[current.start] === 0) next[current.start] = 1;
+            setHinted(null);
+            if (next[current.start] === from) next[current.start] = to;
           }
           current.moved = true;
-          if (next[cell] === 0) next[cell] = 1;
+          if (next[cell] === from) next[cell] = to;
           if (next.some((mark, i) => mark !== marks[i])) {
             setMarks(next);
             session.touch();
+            play(current.erase ? "erase" : "tick");
           }
         }}
         onPointerUp={() => {
@@ -171,7 +224,7 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
                   onPointerDown={(event) => {
                     if (event.button !== 0 || locked) return;
                     suppressClick.current = false;
-                    drag.current = marks[cell] === 0 ? { pointer: event.pointerId, start: cell, moved: false } : null;
+                    drag.current = marks[cell] === 2 ? null : { pointer: event.pointerId, start: cell, moved: false, erase: marks[cell] === 1 };
                   }}
                   onClick={() => {
                     if (suppressClick.current) {
@@ -180,20 +233,43 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
                     }
                     set(cell, "cycle");
                   }}
-                  className={cn("queens-cell grid place-items-center", bad.has(cell) && mark === 2 && "queens-cell-bad")}
-                  style={{
-                    background: REGION_COLORS[region % REGION_COLORS.length],
-                    borderTopWidth: edge(r > 0 ? cell - n : null) ? 2 : 0.5,
-                    borderLeftWidth: edge(c > 0 ? cell - 1 : null) ? 2 : 0.5,
-                    borderRightWidth: edge(c < n - 1 ? cell + 1 : null) ? 2 : 0.5,
-                    borderBottomWidth: edge(r < n - 1 ? cell + n : null) ? 2 : 0.5,
-                  }}
+                  className={cn("queens-cell relative grid place-items-center", bad.has(cell) && mark === 2 && "queens-cell-bad", hinted === cell && "puzzle-hinted")}
+                  style={
+                    {
+                      backgroundColor: REGION_COLORS[region % REGION_COLORS.length],
+                      borderTopWidth: edge(r > 0 ? cell - n : null) ? 2 : 0.5,
+                      borderLeftWidth: edge(c > 0 ? cell - 1 : null) ? 2 : 0.5,
+                      borderRightWidth: edge(c < n - 1 ? cell + 1 : null) ? 2 : 0.5,
+                      borderBottomWidth: edge(r < n - 1 ? cell + n : null) ? 2 : 0.5,
+                      "--queens-d": r + c,
+                    } as CSSProperties
+                  }
                 >
-                  {mark === 2 ? <CrownIcon className="size-[62%]" /> : mark === 1 ? <span aria-hidden className="text-[0.8em] font-bold opacity-50">×</span> : null}
+                  {mark === 2 ? (
+                    <CrownIcon className="queens-crown size-[64%]" />
+                  ) : mark === 1 ? (
+                    <svg viewBox="0 0 10 10" aria-hidden className="queens-x size-[26%]">
+                      <path d="M2 2l6 6M8 2l-6 6" />
+                    </svg>
+                  ) : null}
                 </button>
               );
             })}
           </div>
+        ))}
+      </div>
+      <svg aria-hidden className="absolute size-0">
+        <defs>
+          <linearGradient id="queens-gold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#ffe680" />
+            <stop offset="0.55" stopColor="#f4b416" />
+            <stop offset="1" stopColor="#c97a06" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div aria-hidden className="mt-3 flex justify-center gap-1.5">
+        {Array.from({ length: n }, (_, i) => (
+          <CrownIcon key={i} className={cn("queens-pip size-5", i < crowns.length && "queens-pip-on", i < crowns.length && bad.size > 0 && "queens-pip-bad")} />
         ))}
       </div>
     </PuzzleFrame>
