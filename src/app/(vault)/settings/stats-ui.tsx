@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StatHistory, type HistoryPoint } from "./stats-history";
 
 export const fmt = (value: number) => value.toLocaleString("en");
 export const day = new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
-export function Stat({ icon: Icon, label, value, definition, className, children }: { icon: LucideIcon; label: string; value: number | string; definition: ReactNode; className?: string; children?: ReactNode }) {
+export function Stat({ icon: Icon, label, value, definition, className, children, historyKey, totalKey, percent, history }: { icon: LucideIcon; label: string; value: number | string; definition: ReactNode; className?: string; children?: ReactNode; historyKey?: string | string[]; totalKey?: string; percent?: boolean; history?: HistoryPoint[] }) {
   return (
     <div className={cn("flex min-w-0 flex-col rounded-xl border border-white/[0.08] bg-surface/40 p-4 md:p-5", className)}>
       <dt className="flex items-center gap-2 text-sm font-medium text-foreground/85">
@@ -18,9 +19,14 @@ export function Stat({ icon: Icon, label, value, definition, className, children
         <span className="mt-3 truncate text-3xl leading-none font-semibold tracking-tight tabular-nums">{typeof value === "number" ? fmt(value) : value}</span>
         {children}
         <span className="mt-2 text-xs leading-5 text-muted-foreground">{definition}</span>
+        {historyKey ? <StatHistory label={label} keys={typeof historyKey === "string" ? [historyKey] : historyKey} totalKey={totalKey} percent={percent} points={history} /> : null}
       </dd>
     </div>
   );
+}
+
+export function StatsLoading() {
+  return <div role="status" aria-label="Loading stats and history" className="grid gap-3 sm:grid-cols-2">{[0, 1, 2, 3].map((index) => <div key={index} className="h-72 animate-pulse rounded-xl bg-surface/40 motion-reduce:animate-none" />)}<span className="sr-only">Loading stats and history...</span></div>;
 }
 
 export function Group({ id, title, meta, wide = false, children }: { id: string; title: string; meta?: ReactNode; wide?: boolean; children: ReactNode }) {

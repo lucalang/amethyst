@@ -531,6 +531,8 @@ isOneToOne: false
                 }
           }
           Functions: {
+            "stats_history": { Args: { p_scope: "amethyst" | "personal" }; Returns: Json }
+            "stats_recorded_history": { Args: { p_scope: "amethyst" | "personal" }; Returns: Json }
             "amethyst_stats": { Args: Record<PropertyKey, never>; Returns: Json }
             "my_stats": { Args: Record<PropertyKey, never>; Returns: Json }
             "member_profile": {

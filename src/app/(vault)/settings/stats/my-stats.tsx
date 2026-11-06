@@ -25,6 +25,7 @@ export function MyStatsView({ stats }: { stats: MyStats }) {
       <Group id="archive" title="Your archive" meta={stats.memberSince ? `Member since ${day.format(new Date(stats.memberSince))}` : undefined}>
         <Stat
           icon={BookOpenCheck}
+          historyKey="entries"
           label="Entries"
           value={library.entries}
           definition={<>{fmt(library.completed)} completed · {fmt(library.inProgress)} in progress · {fmt(notStarted)} not started. {plural(library.added30d, "entry", "entries")} added in the last 30 days.</>}
@@ -36,15 +37,17 @@ export function MyStatsView({ stats }: { stats: MyStats }) {
         </Stat>
         <Stat
           icon={Target}
+          historyKey="progress_done" totalKey="progress_total" percent
           label="Overall progress"
           value={percent(library.progressDone, library.progressTotal)}
           definition={library.progressTotal ? `${fmt(library.progressDone)} of ${fmt(library.progressTotal)} items that count toward entry progress are done.` : "Nothing counts toward entry progress yet."}
         >
           <Bar label={`${library.progressDone} of ${library.progressTotal} done`} parts={[{ value: library.progressDone, className: FILL }, { value: library.progressTotal - library.progressDone, className: REST }]} />
         </Stat>
-        <Stat icon={LibraryBig} label="Collections" value={library.collections} definition={`${plural(library.pinned, "entry", "entries")} pinned to Home.`} />
+        <Stat historyKey="collections" icon={LibraryBig} label="Collections" value={library.collections} definition={`${plural(library.pinned, "entry", "entries")} pinned to Home.`} />
         <Stat
           icon={FolderOpen}
+          historyKey={["notes", "checklists", "quick_notes"]}
           label="Notes & checklists"
           value={workspace.notes + workspace.checklists + workspace.quickNotes}
           definition={`${plural(workspace.notes, "note")} and ${plural(workspace.checklists, "checklist")} in entry workspaces, plus ${plural(workspace.quickNotes, "quick note")}. Folders aren't counted.`}
@@ -54,6 +57,7 @@ export function MyStatsView({ stats }: { stats: MyStats }) {
       <Group id="tasks" title="Tasks">
         <Stat
           icon={ListChecks}
+          historyKey="checklist_done" totalKey="checklist_items"
           label="Checklist tasks done"
           value={workspace.items ? `${fmt(workspace.itemsDone)}/${fmt(workspace.items)}` : 0}
           definition={`Tasks in your entry checklists, whether or not they count toward progress. ${plural(workspace.starredOpen, "starred task")} still open.`}
@@ -62,6 +66,7 @@ export function MyStatsView({ stats }: { stats: MyStats }) {
         </Stat>
         <Stat
           icon={ListTodo}
+          historyKey="todo_completed" totalKey="todo_total"
           label="To Do tasks completed"
           value={todo.total ? `${fmt(todo.completed)}/${fmt(todo.total)}` : 0}
           definition={`${plural(todo.completed7d, "task")} completed in the last 7 days · ${fmt(todo.importantOpen)} important and still open. Deleted tasks aren't counted.`}
@@ -71,17 +76,18 @@ export function MyStatsView({ stats }: { stats: MyStats }) {
       </Group>
 
       <Group id="arcade" title="Arcade & rewards" wide>
-        <Stat icon={Coins} label="Coin balance" value={arcade.balance} definition={`${fmt(arcade.coinsIn)} coins received and ${fmt(arcade.coinsOut)} spent in total, including Slots.`} />
+        <Stat historyKey="coins_balance" icon={Coins} label="Coin balance" value={arcade.balance} definition={`${fmt(arcade.coinsIn)} coins received and ${fmt(arcade.coinsOut)} spent in total, including Slots.`} />
         <Stat
           icon={Gamepad2}
+          historyKey="runs"
           label="Arcade games played"
           value={arcade.runs}
           definition={<>{arcade.favoriteGame ? <>Most played: {arcade.favoriteGame}. </> : null}{plural(arcade.records, "personal record")} across games and modes. Sudoku is counted separately.</>}
         />
-        <Stat icon={Puzzle} label="Daily Sudokus solved" value={arcade.dailySudokus} definition="Daily puzzles you finished on their day." />
-        <Stat icon={Dices} label="Slot spins" value={arcade.slotSpins} definition={arcade.slotBest ? `Biggest single payout: ${plural(arcade.slotBest, "coin")}.` : "No winning spin yet."} />
-        <Stat icon={Award} label="Achievements earned" value={`${fmt(rewards.achievements)}/${fmt(rewards.achievementsTotal)}`} definition="Earned achievements out of all achievements, including hidden ones." />
-        <Stat icon={Gem} label="Cosmetics owned" value={rewards.cosmetics} definition={`Frames, decorations, badges, titles and game looks you own. ${plural(rewards.codes, "Vault code")} redeemed.`} />
+        <Stat historyKey="daily_sudokus" icon={Puzzle} label="Daily Sudokus solved" value={arcade.dailySudokus} definition="Daily puzzles you finished on their day." />
+        <Stat historyKey="slot_spins" icon={Dices} label="Slot spins" value={arcade.slotSpins} definition={arcade.slotBest ? `Biggest single payout: ${plural(arcade.slotBest, "coin")}.` : "No winning spin yet."} />
+        <Stat historyKey="achievements" icon={Award} label="Achievements earned" value={`${fmt(rewards.achievements)}/${fmt(rewards.achievementsTotal)}`} definition="Earned achievements out of all achievements, including hidden ones." />
+        <Stat historyKey="cosmetics" icon={Gem} label="Cosmetics owned" value={rewards.cosmetics} definition={`Frames, decorations, badges, titles and game looks you own. ${plural(rewards.codes, "Vault code")} redeemed.`} />
       </Group>
 
       <p className="flex items-start gap-2 border-t border-white/[0.08] pt-5 text-xs leading-5 text-muted-foreground">

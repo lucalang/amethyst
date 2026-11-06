@@ -1,19 +1,30 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ACHIEVEMENTS } from "@/lib/achievements";
 import { ARCADE_GAMES } from "@/lib/arcade";
 import { requireUser } from "@/lib/supabase/auth";
 import { SettingsHeader } from "../settings-ui";
+import { StatsHistoryProvider, type StatsSnapshot } from "../stats-history";
+import { StatsLoading } from "../stats-ui";
 import { MyStatsView, type MyStats } from "./my-stats";
 
 export const metadata: Metadata = { title: "Stats · Settings" };
 
 type Raw = Record<string, unknown>;
 
-export default async function MyStatsPage() {
+export default function MyStatsPage() {
+  return <><SettingsHeader title="Stats" description="Your own numbers across the archive, To Do and the Arcade." /><Suspense fallback={<StatsLoading />}><MyStatsData /></Suspense></>;
+}
+
+async function MyStatsData() {
   const ctx = await requireUser();
-  const { data, error } = await ctx.supabase.rpc("my_stats");
-  if (error) throw new Error("Your stats could not be loaded.");
-  const raw = (data ?? {}) as Raw;
+  const [{ data, error }, recorded] = await Promise.all([
+    ctx.supabase.rpc("stats_history", { p_scope: "personal" }),
+    ctx.supabase.rpc("stats_recorded_history", { p_scope: "personal" }),
+  ]);
+  if (error || recorded.error) throw new Error("Your stats could not be loaded.");
+  const result = data as { current: Raw; history: StatsSnapshot[] };
+  const raw = result.current;
   const n = (key: string) => Number(raw[key] ?? 0);
   const favorite = typeof raw.favorite_game === "string" ? raw.favorite_game : null;
 
@@ -53,9 +64,8 @@ export default async function MyStatsPage() {
   };
 
   return (
-    <>
-      <SettingsHeader title="Stats" description="Your own numbers across the archive, To Do and the Arcade." />
+    <StatsHistoryProvider history={result.history} reconstructed={recorded.data as StatsSnapshot[]}>
       <MyStatsView stats={stats} />
-    </>
+    </StatsHistoryProvider>
   );
 }

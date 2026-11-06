@@ -69,6 +69,28 @@ export const CHANGELOG: readonly Release[] = [
     },
   },
   {
+    id: "2026-11-06-stats-evolution",
+    date: "2026-11-06",
+    title: "Stats over time",
+    intro: "See how your Stats and Amethyst's totals change by date.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Evolution graphs", text: "Every stat has a date-based graph with values you can inspect by pointer or keyboard. Dots mark value changes only." },
+      { kind: "new", feature: "Stat history", text: "View more opens the full graph and an exact date-and-value table." },
+      { kind: "improved", feature: "Older Stats", text: "Recover older totals from retained dated records, with reconstructed history clearly distinguished from observed snapshots." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Date-based Stats",
+          body: "Stats and Amethyst Stats now show the latest 30 recorded dates beneath each value. View more opens the full recorded history. Cosmetics granted counts all account–cosmetic ownerships, including shop purchases. Older collection, entry, note, task, reward and activity totals are reconstructed from retained dated records where possible. Deleted records/accounts and earlier status changes cannot be recovered, so reconstructed totals are labelled separately from observed snapshots. Progress and checklist completion use snapshots only. Personal history stays private; Amethyst history contains only aggregate totals. Snapshots are captured daily and when Stats is opened. Code history comes from actual Git snapshots. Missing dates are never filled in.",
+          where: "Settings → Stats or Amethyst Stats",
+          link: { href: "/settings/stats", label: "Open Stats" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-flashy-update",
     date: "2026-11-06",
     title: "The Flashy update",
