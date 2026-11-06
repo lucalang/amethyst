@@ -15,6 +15,15 @@ export type PullSceneOptions = { rarity: CutsceneRarity; color: string; build: n
 
 const TAU = Math.PI * 2;
 const WHITE: RGB = [255, 255, 255];
+const GOLD: RGB = [253, 214, 120];
+const PRISM: RGB[] = [
+  [240, 171, 252],
+  [147, 197, 253],
+  [110, 231, 183],
+  [253, 230, 138],
+  [252, 165, 165],
+  [196, 181, 253],
+];
 // Crystal outline (unit size, centred) and the facet hub its faces meet at.
 const GEM = [0, -1.25, 0.72, -0.38, 0.56, 0.5, 0, 1.12, -0.56, 0.5, -0.72, -0.38];
 const HUB = [0, -0.2];
@@ -58,13 +67,13 @@ export function playPullScene(canvas: HTMLCanvasElement, options: PullSceneOptio
   return runScene(canvas, options, SCENES[options.rarity]);
 }
 
-/** Crystal scene: black hole, charge, crack, shatter, afterglow. */
-function playCrystalScene(canvas: HTMLCanvasElement, { rarity, color, build, duration }: PullSceneOptions): () => void {
+/** Crystal scene: charge, crack, shatter, afterglow. Also the archived "Crystal" version for every rarity. */
+export function playCrystalScene(canvas: HTMLCanvasElement, { rarity, color, build, duration }: PullSceneOptions): () => void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return () => {};
   const level = CUTSCENE_RARITIES.indexOf(rarity) + 1;
   const base = hex(color);
-  const tint = (i: number): RGB => (i % 4 ? base : WHITE);
+  const tint = (i: number): RGB => (rarity === "prismatic" ? PRISM[i % PRISM.length] : rarity === "exalted" ? (i % 3 ? GOLD : WHITE) : i % 4 ? base : WHITE);
 
   let w = 0;
   let h = 0;
@@ -238,6 +247,61 @@ function playCrystalScene(canvas: HTMLCanvasElement, { rarity, color, build, dur
         c.lineWidth = mote.w;
         c.strokeStyle = rgba(mote.c, 0.8);
         c.stroke();
+      }
+
+      if (rarity === "secret" && Math.random() < 0.25 + p * 0.5) {
+        for (let k = 0; k < 3; k++) {
+          c.fillStyle = rgba(k % 2 ? base : WHITE, 0.05 + p * 0.12);
+          c.fillRect(-w / 2 + rand(-40, 40), rand(-h / 2, h / 2), w, rand(1, 6));
+        }
+      }
+
+      if (rarity === "prismatic") {
+        const beam = easeOut(span(p, 0, 0.3));
+        c.beginPath();
+        c.moveTo(-w / 2, -m * 0.12);
+        c.lineTo(0, 0);
+        c.lineWidth = 2 + p * 5;
+        c.strokeStyle = rgba(WHITE, beam * 0.9);
+        c.stroke();
+        const fan = easeOut(span(p, 0.3, 0.9));
+        PRISM.forEach((col, i) => {
+          const a = (i / (PRISM.length - 1) - 0.5) * 0.7 * fan + 0.12;
+          c.beginPath();
+          c.moveTo(0, 0);
+          c.lineTo(Math.cos(a - 0.03) * reach, Math.sin(a - 0.03) * reach);
+          c.lineTo(Math.cos(a + 0.03) * reach, Math.sin(a + 0.03) * reach);
+          c.closePath();
+          c.fillStyle = rgba(col, fan * 0.45);
+          c.fill();
+        });
+      }
+
+      if (rarity === "exalted") {
+        const pillar = easeOut(span(p, 0.1, 0.8));
+        const pw = m * 0.02 + m * 0.08 * pillar;
+        const g = c.createLinearGradient(-pw, 0, pw, 0);
+        g.addColorStop(0, rgba(GOLD, 0));
+        g.addColorStop(0.5, rgba(WHITE, 0.55 * pillar));
+        g.addColorStop(1, rgba(GOLD, 0));
+        c.fillStyle = g;
+        c.fillRect(-pw, -h, pw * 2, h);
+        for (let k = 0; k < 3; k++) {
+          const radius = m * (0.16 + k * 0.07) * easeOut(span(p, 0.15 + k * 0.12, 0.6 + k * 0.1));
+          c.beginPath();
+          c.ellipse(0, 0, radius, radius * 0.26, (k - 1) * 0.35, 0, TAU);
+          c.lineWidth = 2;
+          c.strokeStyle = rgba(GOLD, 0.7 * pillar);
+          c.stroke();
+          for (let r = 0; r < 6; r++) {
+            const a = t * 0.002 * (k % 2 ? 1 : -1) + (r / 6) * TAU;
+            const x = Math.cos(a) * radius;
+            const y = Math.sin(a) * radius * 0.26;
+            const tilt = (k - 1) * 0.35;
+            c.fillStyle = rgba(WHITE, pillar);
+            c.fillRect(x * Math.cos(tilt) - y * Math.sin(tilt) - 2, x * Math.sin(tilt) + y * Math.cos(tilt) - 2, 4, 4);
+          }
+        }
       }
 
       if (rarity === "amethyst") {

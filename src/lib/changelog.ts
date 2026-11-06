@@ -51,6 +51,27 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-06-other-settings-cutscene-archive",
+    date: "2026-11-06",
+    title: "Replay every cutscene version",
+    intro: "A new Other tab in Settings keeps older versions of replaced features, starting with every version of the rare pull cutscenes.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Other settings", text: "A home for older versions of things that have since been replaced." },
+      { kind: "new", feature: "Cutscene archive", text: "Play all three versions of the rare pull cutscenes for any rarity: the first burst, the crystal shatter and today's unique scenes." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Cutscene archive",
+          body: "Pick a version and a rarity to play that scene full screen. Version 1 is the original burst of rays, rings and a vortex, Version 2 the crystal that every rarity shared, and Version 3 the current unique scenes with sound. Previews give you nothing and can be skipped like any cutscene. They need motion turned on.",
+          where: "Settings → Other",
+          link: { href: "/settings/other", label: "Open Other" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-rarities-and-rare-pulls",
     date: "2026-11-06",
     title: "New rarities and rare pull cutscenes",

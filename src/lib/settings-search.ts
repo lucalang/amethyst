@@ -88,6 +88,9 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
     area: "Settings", section: "Amethyst Stats", path: "/settings/amethyst-stats", keywords: "statistics totals platform coins redemptions cosmetics lines of code commits codebase", settings: [],
   },
   {
+    area: "Settings", section: "Other", path: "/settings/other", keywords: "old versions archive legacy classic replay cutscenes pulls rarities preview", settings: [],
+  },
+  {
     area: "Settings", section: "Version history", path: "/version-history", keywords: "commits catalog historical demos milestones releases sha reset", settings: [],
   },
 ];
