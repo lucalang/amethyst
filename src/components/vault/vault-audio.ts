@@ -170,8 +170,6 @@ export type SanctumSound =
   | "flight"
   | "token"
   | "eject"
-  | "implode"
-  | "boom"
   | "error"
   | "draft"
   | "copy"
@@ -217,17 +215,6 @@ export function playSanctumSound(name: SanctumSound, delay = 0) {
     case "eject":
       noise(at, 0.35, 3600, 500, 0.06, "bandpass", undefined, 0.15);
       tone(392, at, 0.25, "triangle", 0.05, 196);
-      break;
-    case "implode":
-      noise(at, 0.7, 5200, 160, 0.16, "lowpass", undefined, 0.9);
-      tone(220, at, 0.65, "sawtooth", 0.05, 40);
-      break;
-    case "boom":
-      tone(48, at, 2.2, "sine", 0.9, 26);
-      noise(at, 1.6, 2400, 90, 0.45, "lowpass", undefined, 0.03);
-      clank(at, 1.1);
-      [261.63, 392, 523.25, 783.99].forEach((freq, i) => tone(freq, at + 0.25 + i * 0.06, 1.8, "triangle", 0.1));
-      [1567.98, 2093, 3135.96].forEach((freq, i) => tone(freq, at + 0.6 + i * 0.1, 1.4, "sine", 0.035));
       break;
     case "error":
       [0, 0.09, 0.18].forEach((offset) => tone(110 - offset * 80, at + offset, 0.08, "square", 0.06));
@@ -302,6 +289,119 @@ export function startSanctumCharge() {
       if (!done) for (const { osc, base } of oscillators) osc.frequency.setTargetAtTime(base * 0.7, t, 0.12);
       gain.gain.setTargetAtTime(0, t, done ? 0.08 : 0.12);
       for (const { osc } of oscillators) osc.stop(t + 0.8);
+    },
+  };
+}
+
+type ForgeCues = {
+  gather: readonly [number, number];
+  flight: number;
+  fuse: readonly [number, number];
+  strike: number;
+  settle: number;
+  fail: number;
+};
+export type ForgeAudio = { strike: (quick: boolean) => void; fail: () => void; stop: () => void };
+
+/**
+ * The Forge's publish sequence, in step with the scene (timings in ms from now): a swelling rumble, one
+ * rising chime per reward token as it reaches the core (`arrivals`), hammer blows while the seal is beaten,
+ * then a drone that holds until the answer. `strike` plays the stamp and the quench (success only),
+ * `fail` the seal cracking apart, `stop` fades everything out.
+ */
+export function playSanctumForge(timing: ForgeCues, arrivals: readonly number[]): ForgeAudio | null {
+  if (!allowed()) return null;
+  const { ctx, master } = out();
+  const bus = ctx.createGain();
+  bus.connect(master);
+  const s = (ms: number) => ms / 1000;
+  // The build-up cues share a gain so a skip or a failure can silence the ones still pending.
+  const cues = ctx.createGain();
+  cues.connect(bus);
+  const fuse = timing.fuse.map(s);
+  // Without motion there's nothing to follow: just the drone, then the answer.
+  if (fuse[1] > 0) {
+    const gather = s(timing.gather[1]);
+    noise(0, gather + 0.25, 120, 900, 0.13, "lowpass", cues, 0.9);
+    tone(40, 0, gather + 0.4, "sine", 0.32, 64, cues);
+    const chimes = [659.25, 783.99, 987.77, 1174.66, 1318.51, 1567.98, 1975.53];
+    arrivals.forEach((ms, i) => {
+      noise(Math.max(0, s(ms - timing.flight)), s(timing.flight), 600, 3600, 0.04, "bandpass", cues, 0.85);
+      tone(chimes[i % chimes.length], s(ms), 0.6, "sine", 0.05, undefined, cues);
+      tone(110, s(ms), 0.2, "sine", 0.18, 70, cues);
+    });
+    for (let i = 0; i < 3; i++) clank(fuse[0] + (i * (fuse[1] - fuse[0])) / 3, 0.45 + i * 0.15, cues);
+  }
+  const hush = (at: number) => cues.gain.setTargetAtTime(0, at, 0.03);
+
+  // The held drone: a low D chord through a closing filter, until the answer.
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 420;
+  const drone = ctx.createGain();
+  const t0 = ctx.currentTime;
+  drone.gain.setValueAtTime(0, t0);
+  drone.gain.setValueAtTime(0, t0 + fuse[0]);
+  drone.gain.linearRampToValueAtTime(0.09, t0 + fuse[1] + 0.05);
+  filter.connect(drone).connect(bus);
+  const oscillators = [73.42, 110, 146.83].map((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = i === 1 ? "sawtooth" : "triangle";
+    osc.frequency.value = freq;
+    osc.connect(filter);
+    osc.start(t0);
+    return osc;
+  });
+  let ended = false;
+  const endDrone = (at: number, fall: number) => {
+    for (const osc of oscillators) {
+      osc.frequency.setTargetAtTime(osc.frequency.value * fall, at, 0.15);
+      osc.stop(at + 0.9);
+    }
+    drone.gain.cancelScheduledValues(at);
+    drone.gain.setTargetAtTime(0, at, fall < 1 ? 0.2 : 0.05);
+  };
+
+  return {
+    strike(quick) {
+      if (ended) return;
+      ended = true;
+      const now = ctx.currentTime;
+      if (quick) hush(now);
+      const at = quick ? 0 : s(timing.strike);
+      if (at > 0) {
+        noise(0, at, 300, 5200, 0.12, "bandpass", bus, 0.95);
+        filter.frequency.setTargetAtTime(2400, now, at / 3);
+      }
+      endDrone(now + at, 1.5);
+      tone(48, at, 2.2, "sine", 0.9, 26, bus);
+      noise(at, 1.6, 2400, 90, 0.45, "lowpass", bus, 0.03);
+      clank(at, 1.1, bus);
+      [261.63, 392, 523.25, 783.99].forEach((freq, i) => tone(freq, at + 0.25 + i * 0.06, 1.8, "triangle", 0.1, undefined, bus));
+      [1567.98, 2093, 3135.96].forEach((freq, i) => tone(freq, at + 0.6 + i * 0.1, 1.4, "sine", 0.035, undefined, bus));
+      // The quench as the seal cools, then one soft settling chime.
+      noise(at + 0.3, Math.max(0.4, s(timing.settle)), 7000, 1600, 0.07, "highpass", bus, 0.1);
+      tone(1046.5, at + Math.max(0.3, s(timing.settle) * 0.85), 1.2, "sine", 0.04, undefined, bus);
+    },
+    fail() {
+      if (ended) return;
+      ended = true;
+      const now = ctx.currentTime;
+      hush(now);
+      endDrone(now, 0.5);
+      [0, 0.11, 0.26].forEach((at, i) => noise(at, 0.14, 5200 - i * 900, 1800, 0.12, "highpass", bus, 0.05));
+      tone(233.08, 0.02, 0.9, "sawtooth", 0.05, 116, bus);
+      tone(164.81, 0.08, 0.9, "sawtooth", 0.045, 82, bus);
+      tone(58, 0.3, Math.max(0.5, s(timing.fail) * 0.6), "sine", 0.5, 34, bus);
+      noise(0.3, Math.max(0.5, s(timing.fail) * 0.6), 900, 90, 0.18, "lowpass", bus, 0.05);
+    },
+    stop() {
+      if (ctx.state === "closed") return;
+      const now = ctx.currentTime;
+      if (!ended) endDrone(now, 1);
+      ended = true;
+      bus.gain.setTargetAtTime(0, now, 0.06);
+      setTimeout(() => bus.disconnect(), 500);
     },
   };
 }

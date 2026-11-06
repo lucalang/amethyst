@@ -7,7 +7,7 @@ import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
 import { PageContainer } from "@/components/layout/app-shell";
 import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
-import { closeVaultAudio, playSanctumIntro, playSanctumSound, startSanctumCharge, type SanctumSound } from "@/components/vault/vault-audio";
+import { closeVaultAudio, playSanctumForge, playSanctumIntro, playSanctumSound, startSanctumCharge, type SanctumSound } from "@/components/vault/vault-audio";
 import type { VaultLooks } from "@/components/vault/vault-reveal";
 import { apiFetch } from "@/lib/api-client";
 import type { AdminCodeDetail, AdminSnapshot } from "@/lib/vault-admin";
@@ -84,6 +84,7 @@ function Sanctum({ initial }: { initial: AdminInitial }) {
     if (soundRef.current) playSanctumSound(name);
   }, []);
   const startCharge = useCallback(() => (soundRef.current ? startSanctumCharge() : null), []);
+  const startForge = useCallback((...cues: Parameters<typeof playSanctumForge>) => (soundRef.current ? playSanctumForge(...cues) : null), []);
 
   const navigate = useCallback((href: string) => {
     if (href !== window.location.pathname + window.location.search) window.history.pushState(null, "", href);
@@ -198,6 +199,7 @@ function Sanctum({ initial }: { initial: AdminInitial }) {
         fallbackNow={snapshot.now}
         sound={sound}
         startCharge={startCharge}
+        startForge={startForge}
         onNew={() => newForge()}
         onDraftSaved={refresh}
         onPublished={refresh}

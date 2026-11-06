@@ -1028,6 +1028,17 @@ a.cs-list-row:focus-visible {
   border-style: solid;
   border-color: color-mix(in oklab, var(--cs-ok) 50%, transparent);
 }
+.cs-plate[data-phase="publishing"] .cs-plate-code {
+  opacity: 0.6;
+}
+.cs-plate[data-failed] .cs-plate-code {
+  border-color: color-mix(in oklab, var(--cs-bad) 60%, transparent);
+}
+.cs-forge-status {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
 .cs-plate .cs-draft-row {
   justify-content: center;
 }

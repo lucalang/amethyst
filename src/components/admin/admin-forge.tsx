@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { DecodeText } from "@/components/vault/vault-reveal";
-import type { SanctumSound, startSanctumCharge } from "@/components/vault/vault-audio";
+import type { ForgeAudio, playSanctumForge, SanctumSound, startSanctumCharge } from "@/components/vault/vault-audio";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { compactCode, normalizePhrase } from "@/lib/code-format";
 import type { MotionLevel } from "@/lib/preferences";
@@ -10,7 +10,7 @@ import { configFrom, EMPTY_CONFIG, needsRepeatConfirmation, type AdminCodeDetail
 import { cloneConfig, draftable, effectiveConfig, NameFields, PayoutFacts, RepeatConfirm, SealFields, validateConfig, type ConfigErrors } from "./admin-config";
 import { describeRewards, RewardsEditor, RewardTokens, type RewardContext } from "./admin-rewards";
 import { flashPanel, Panel, useStage } from "./admin-stage";
-import { PUBLISH } from "./admin-timing";
+import { drawArrival, FORGE, PUBLISH } from "./admin-timing";
 import { ConfirmAction, formatWhen, NavLink, PanelHead, plural, useNow } from "./admin-ui";
 
 /** How a Forge session starts: empty, from a draft, or as a clone (config given, or fetched by id). */
@@ -33,7 +33,6 @@ const failing = (index: number, errors: ConfigErrors) => STEPS[index].fields.som
 
 const NO_ANSWER = "No answer from the server. Check the code list before publishing again.";
 const SAVE_FAILED = "The draft couldn’t be saved. Your choices are still here; try again.";
-const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
 export function Forge({
   seed,
@@ -43,6 +42,7 @@ export function Forge({
   fallbackNow,
   sound,
   startCharge,
+  startForge,
   onNew,
   onDraftSaved,
   onPublished,
@@ -54,6 +54,7 @@ export function Forge({
   fallbackNow: number;
   sound: (name: SanctumSound) => void;
   startCharge: () => ReturnType<typeof startSanctumCharge>;
+  startForge: (...cues: Parameters<typeof playSanctumForge>) => ForgeAudio | null;
   onNew: () => void;
   onDraftSaved: () => void;
   onPublished: () => void;
@@ -85,10 +86,21 @@ export function Forge({
   const [copied, setCopied] = useState(false);
   const hold = useRef<{ frame: number; audio: ReturnType<typeof startSanctumCharge> } | null>(null);
   const stepRef = useRef<HTMLDivElement>(null);
+  // The publish sequence: whether it's past the strike, whether the last one failed, and its skip/cleanup handles.
+  const [sealing, setSealing] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const live = useRef(true);
+  const forgeAudio = useRef<ForgeAudio | null>(null);
+  const skipped = useRef(false);
+  const wake = useRef<(() => void) | null>(null);
+  const animated = Boolean(engine) && motion !== "off";
 
-  // A new session starts with a calm core.
+  // A new session starts with a calm core, and leaves one behind.
   useEffect(() => {
     engine?.publish("idle");
+    return () => {
+      engine?.publish("idle");
+    };
   }, [engine]);
 
   useEffect(() => {
@@ -130,15 +142,36 @@ export function Forge({
     return () => window.clearTimeout(timer);
   }, [config, dirty, phase, retry, sound, onDraftSaved]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    live.current = true;
+    return () => {
+      live.current = false;
+      wake.current?.();
+      forgeAudio.current?.stop();
+      forgeAudio.current = null;
       if (hold.current) {
         cancelAnimationFrame(hold.current.frame);
         hold.current.audio?.stop(false);
+        hold.current = null;
       }
-    },
-    [],
-  );
+    };
+  }, []);
+
+  // Any key or click skips ahead to the strike (once the server has answered).
+  useEffect(() => {
+    if (phase !== "publishing" || !animated) return;
+    const skip = (event: Event) => {
+      if (event instanceof KeyboardEvent && event.repeat) return;
+      skipped.current = true;
+      wake.current?.();
+    };
+    window.addEventListener("keydown", skip);
+    window.addEventListener("pointerdown", skip);
+    return () => {
+      window.removeEventListener("keydown", skip);
+      window.removeEventListener("pointerdown", skip);
+    };
+  }, [phase, animated]);
 
   const change = (patch: Partial<CodeConfig>) => {
     setConfig((current) => ({ ...current, ...patch }));
@@ -184,33 +217,64 @@ export function Forge({
     go(step + 1);
   };
 
+  /** Waits `ms`, or less if skipped; resolves true when cut short. */
+  const pause = (ms: number) =>
+    new Promise<boolean>((resolve) => {
+      if (skipped.current || ms <= 0 || !live.current) return resolve(skipped.current);
+      const timer = window.setTimeout(() => {
+        wake.current = null;
+        resolve(false);
+      }, ms);
+      wake.current = () => {
+        window.clearTimeout(timer);
+        wake.current = null;
+        resolve(true);
+      };
+    });
+
+  // The scene forges the seal while the server answers; the strike (and the reveal) only follows a success.
   const publish = async () => {
     setPhase("publishing");
-    engine?.publish("implode");
-    sound("implode");
+    setSealing(false);
+    skipped.current = false;
+    const timing = FORGE[animated ? motion : "off"];
+    const count = engine?.publish("forge") ?? 0;
+    forgeAudio.current?.stop();
+    const audio = startForge(
+      timing,
+      Array.from({ length: count }, (_, index) => drawArrival(timing, index, count)),
+    );
+    forgeAudio.current = audio;
     const started = performance.now();
     try {
       const published = await apiFetch<Published>("/api/admin/vault/codes", {
         method: "POST",
         json: { config: { ...effectiveConfig(config), label: config.label.trim() }, code: checkCode, confirmRepeat, draftId: draftRef.current },
       });
-      await wait(Math.max(0, PUBLISH.implode - (performance.now() - started)));
-      engine?.publish("success");
-      sound("boom");
+      if (!live.current) return;
+      const quick = await pause(timing.fuse[1] - (performance.now() - started));
+      if (!live.current) return;
+      engine?.publish("strike", quick);
+      audio?.strike(quick);
+      setSealing(true);
+      if (!quick) await pause(timing.strike);
+      if (!live.current) return;
       setResult(published);
       setPhase("done");
       setCharge(0);
       onPublished();
     } catch (error) {
+      if (!live.current) return;
       engine?.publish("error");
-      sound("error");
+      if (audio) audio.fail();
+      else sound("error");
+      setFailed(true);
       alertPanel();
       setPhase("edit");
       setCharge(0);
       if (error instanceof ApiError && (error.code === "duplicate_code" || error.code === "invalid_code")) setServerErrors({ code: error.message });
       else if (error instanceof ApiError && error.code === "confirm_repeat") setServerErrors({ confirm: error.message });
       setFailure(error instanceof ApiError && error.status > 0 ? error.message : NO_ANSWER);
-      window.setTimeout(() => engine?.publish("idle"), 1400);
     }
   };
 
@@ -218,6 +282,7 @@ export function Forge({
     if (phase !== "edit" || hold.current) return;
     setChecked(ALL_STEPS);
     setFailure(null);
+    setFailed(false);
     if (Object.keys(validateConfig(config, { now: Date.now(), code: checkCode, confirmRepeat })).length) {
       sound("error");
       alertPanel();
@@ -290,7 +355,7 @@ export function Forge({
   return (
     <>
       <Panel station="forge" slot="plate" kind="plate" label={result ? "Your new code" : "Code preview"}>
-        <div className="cs-plate" data-phase={phase} aria-live="polite">
+        <div className="cs-plate" data-phase={phase} data-failed={failed && phase === "edit" ? "" : undefined} aria-live="polite">
           {result ? (
             <>
               <p className="cs-kicker">Published · {result.format === "phrase" ? "phrase" : "code"}</p>
@@ -317,6 +382,12 @@ export function Forge({
                 {preview}
               </p>
               <p className="cs-hint">{config.label.trim() ? config.label.trim() : "An unnamed code"} · {describeRewards(config)}</p>
+              {phase === "publishing" ? (
+                <p className="cs-forge-status">
+                  {sealing ? "Sealing the code…" : "Forging the code and its rewards…"}
+                  {animated && !sealing ? <span className="cs-forge-skip"> Press any key to skip.</span> : null}
+                </p>
+              ) : null}
             </>
           )}
           {cloning ? <p className="cs-hint">Copying the code’s settings…</p> : null}

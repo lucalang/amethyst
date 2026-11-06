@@ -75,7 +75,7 @@ import {
   UV_VERTEX,
   WAVE_FRAGMENT,
 } from "./admin-shaders";
-import { FLIGHT, INTRO, PUBLISH, type IntroKind } from "./admin-timing";
+import { FLIGHT, FORGE, INTRO, drawArrival, type ForgeTiming, type IntroKind } from "./admin-timing";
 
 /**
  * The Crimson Sanctum: one WebGL scene (the vault core, chamber, particles and the bodies of every panel)
@@ -96,7 +96,12 @@ export type SanctumHooks = {
 export type TokenShape = "coins" | "card" | "medallion";
 /** A reward shown as a physical token circling the code plate; `face` is DOM shown on the token (card art, badge). */
 export type TokenSpec = { key: string; shape: TokenShape; face: HTMLElement | null };
-export type PublishPhase = "idle" | "implode" | "success" | "error";
+/**
+ * The publish sequence: `forge` gathers energy, draws the reward tokens into the core and beats them into a
+ * seal (then holds until the answer); `strike` stamps the seal into the plate (success only); `error` breaks
+ * it apart and sends the tokens back; `idle` resets at once.
+ */
+export type PublishPhase = "idle" | "forge" | "strike" | "error";
 
 export type SanctumOptions = {
   viewport: HTMLElement;
@@ -119,7 +124,8 @@ export type Sanctum = {
   setTimeline: (values: number[], hover: number) => void;
   setTokens: (tokens: TokenSpec[]) => void;
   setCharge: (level: number) => void;
-  publish: (phase: PublishPhase) => void;
+  /** Returns how many reward tokens the forge draws in (for the sound's beats); `quick` lands a strike at once. */
+  publish: (phase: PublishPhase, quick?: boolean) => number;
   alert: (el: HTMLElement) => void;
   dispose: () => void;
 };
@@ -403,7 +409,12 @@ type Token = {
   seed: number;
   /** Place on the plate's track (laps), eased toward an even share as tokens come and go. */
   spot: number;
+  /** Absorbed by the forge (its flight into the core has landed). */
+  absorbed: boolean;
 };
+
+/** A [from, to] progress that also copes with zero-length ranges (the no-motion timings). */
+const ramp = (t: number, from: number, to: number) => (to > from ? span(t, from, to) : t >= from ? 1 : 0);
 
 export function createSanctum(options: SanctumOptions): Sanctum {
   const { viewport, scroller, spacer, hooks } = options;
@@ -636,6 +647,41 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   wave.quaternion.copy(forgeQuaternion);
   wave.visible = false;
   scene.add(wave);
+
+  /* The seal: the code and its rewards, forged into one piece ----------------- */
+
+  const HOT = hex(0xffd2a0);
+  const EMBER = hex(0xc0280f);
+  const ASH = hex(0x3a3436);
+  const SEAL_BASE = hex(0x2a0c12);
+  const seal = new Group();
+  seal.visible = false;
+  scene.add(seal);
+  const sealMetal = keep(
+    new MeshStandardMaterial({ color: SEAL_BASE.clone(), metalness: 1, roughness: 0.3, envMapIntensity: 1.5, emissive: EMBER.clone(), emissiveIntensity: 0 }),
+  );
+  seal.add(new Mesh(keep(lathe([[0.001, 0.1], [0.72, 0.1], [0.86, 0.07], [0.93, 0], [0.86, -0.07], [0.72, -0.1], [0.001, -0.1]], 72)), sealMetal));
+  // The engraving traces itself while the seal is beaten, and unwinds if the forge fails.
+  const sealSigilU = { uMap: { value: sigilMap }, uTrace: { value: 0 }, uGlow: { value: 0 }, uTime: time, uColor: { value: HOT.clone().multiplyScalar(1.3) } };
+  const sealSigil = new Mesh(keep(new PlaneGeometry(1.32, 1.32)), additive(sealSigilU, SIGIL_FRAGMENT));
+  sealSigil.position.z = 0.11;
+  const sealRunesU = runeUniforms(runesB, 0.03);
+  const sealRunes = new Mesh(keep(band(0.7, 0.86, 96, 2)), additive(sealRunesU, RUNE_FRAGMENT));
+  sealRunes.position.z = 0.105;
+  const sealGlow = new Sprite(keep(new SpriteMaterial({ map: glowMap, color: HOT.clone(), blending: AdditiveBlending, depthWrite: false, transparent: true, fog: false })));
+  sealGlow.position.z = -0.2;
+  const sealLight = new PointLight(0xffb27a, 0, 14, 1.6);
+  sealLight.position.z = 1.2;
+  seal.add(sealSigil, sealRunes, sealGlow);
+  // Lives outside the seal so the light count (and every material's program) never changes.
+  scene.add(sealLight);
+  // A ring of gathered energy that tightens onto the seal as it is fused.
+  const bindU = { uLife: { value: 0 }, uColor: { value: HOT.clone().lerp(RED, 0.5).multiplyScalar(1.4) } };
+  const bind = new Mesh(keep(new PlaneGeometry(2, 2)), additive(bindU, WAVE_FRAGMENT));
+  bind.visible = false;
+  scene.add(bind);
+  const sealPos = new Vector3();
+  let sealYaw = 0;
 
   /* Energy arcs along the ring ------------------------------------------------ */
 
@@ -1203,6 +1249,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
         leaveDir: new Vector3(),
         seed: Math.random() * 10,
         spot: Number.NaN,
+        absorbed: false,
       };
       tokenRoot.add(token.group);
       tokens.set(spec.key, token);
@@ -1226,33 +1273,56 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   }
 
   let orbit = 0;
+  /** A flare each time a token is absorbed (1 → 0). */
+  let absorb = 0;
   const sink = new Vector3();
   const tokenTarget = new Vector3();
   const bezierA = new Vector3();
   const bezierB = new Vector3();
+  const spiral = new Vector3();
+  let plateFrame: Matrix4 | null = null;
+  let plateW = 0;
+  let plateH = 0;
+  /** The code plate's frame, and the sink just behind it where the seal is forged. */
+  function trackPlate() {
+    const codePlate = forgeEntry("plate");
+    plateFrame = codePlate?.placed ? codePlate.root.matrixWorld : null;
+    plateW = codePlate?.w ?? 0;
+    plateH = codePlate?.h ?? 0;
+    if (plateFrame) plateCenter.setFromMatrixPosition(plateFrame);
+    sink.copy(plateCenter).addScaledVector(forgeNormal, -0.6);
+  }
   function updateTokens(now: number, dt: number) {
     const active = [...tokens.values()].filter((token) => token.leaving === null);
-    const collapse = phase === "implode" ? easeIn(span(now, phaseAt, phaseAt + PUBLISH.implode)) : 0;
     const still = motion === "off";
-    if (!still) orbit += dt * (0.025 + charge * 0.3 + collapse * 0.6);
-    // The tokens float along a loop just outside the code plate, in its plane (so they never hide behind it),
-    // and sink into the phrase as it implodes.
-    const codePlate = forgeEntry("plate");
-    const frame = codePlate?.placed ? codePlate.root.matrixWorld : null;
-    if (frame) plateCenter.setFromMatrixPosition(frame);
-    sink.copy(plateCenter).addScaledVector(forgeNormal, -0.6);
+    if (!still) orbit += dt * (0.025 + charge * 0.3 + fx.build * 0.45);
+    // The tokens float along a loop just outside the code plate, in its plane (so they never hide behind it).
     const size = TOKEN_PX * s;
     active.forEach((token, index) => {
       const share = index / active.length;
       token.spot = Number.isNaN(token.spot) || still ? share : damp(token.spot, share, 3, dt);
-      aroundRect(tokenTarget, codePlate?.w ?? 0, codePlate?.h ?? 0, TRACK_GAP, token.spot + orbit);
+      aroundRect(tokenTarget, plateW, plateH, TRACK_GAP, token.spot + orbit);
       if (!still) {
         tokenTarget.y += Math.sin(now * 0.0017 + token.seed) * 4;
         tokenTarget.z += Math.sin(now * 0.0011 + token.seed * 2) * 10;
       }
-      if (frame) tokenTarget.applyMatrix4(frame);
+      if (plateFrame) tokenTarget.applyMatrix4(plateFrame);
       else tokenTarget.multiplyScalar(s).applyQuaternion(forgeQuaternion).add(forgeCore);
-      tokenTarget.lerp(sink, collapse);
+      // Forging: each token spirals into the seal on its beat, and flies back out if the forge fails.
+      let drawn = 0;
+      if (seq) {
+        const T = seq.timing;
+        const arrive = drawArrival(T, index, active.length);
+        drawn = ramp(now - seq.start, arrive - T.flight, arrive);
+        if (seq.failAt !== null) {
+          const back = (index / Math.max(1, active.length - 1)) * T.fail * 0.4;
+          drawn *= 1 - easeOut(ramp(now - seq.failAt, back, back + T.fail * 0.55));
+        }
+      }
+      if (drawn >= 1 && !token.absorbed) {
+        token.absorbed = true;
+        if (!still) absorb = 1;
+      } else if (drawn < 1) token.absorbed = false;
       const k = still ? 1 : span(now, token.born, token.born + 900);
       if (k < 1) {
         const e = easeInOut(k);
@@ -1267,12 +1337,18 @@ export function createSanctum(options: SanctumOptions): Sanctum {
           kick = 1;
         }
       }
+      const pull = drawn * drawn;
+      if (drawn > 0) {
+        spiral.copy(token.pos).sub(sink).applyAxisAngle(forgeNormal, pull * 2.4);
+        token.pos.copy(sink).addScaledVector(spiral, 1 - pull).addScaledVector(forgeNormal, Math.sin(Math.PI * pull) * 0.9);
+      }
+      token.group.visible = drawn < 1;
       token.group.position.copy(token.pos);
       token.group.quaternion.copy(forgeQuaternion);
       const spin = still ? 0 : token.spec.shape === "coins" ? now * 0.0016 + token.seed : Math.sin(now * 0.0011 + token.seed) * 0.55;
-      token.group.rotateY(spin);
+      token.group.rotateY(spin + pull * 9);
       if (token.spec.shape === "coins") token.group.rotateX(0.35);
-      token.group.scale.setScalar(size * (0.35 + 0.65 * easeOut(k)) * (1 - collapse * 0.9));
+      token.group.scale.setScalar(size * (0.35 + 0.65 * easeOut(k)) * (1 - 0.8 * pull));
     });
     for (const token of tokens.values()) {
       if (token.leaving === null) continue;
@@ -1298,8 +1374,14 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   let typing = false;
   let charge = 0;
   let chargeTarget = 0;
-  let phase: PublishPhase = "idle";
-  let phaseAt = 0;
+  /** The running publish sequence (see PublishPhase); times are performance.now() ms. */
+  let seq: { timing: ForgeTiming; start: number; strikeAt: number | null; failAt: number | null } | null = null;
+  /** When the seal last hit the plate (success) or cracked (failure); the sparks outlive the sequence. */
+  let impactAt = -1;
+  let crackAt = -1;
+  /** Its levels this frame, 0..1: energy gathered, seal shown, seal heat, stamp wind-up, hammer blow, breakup. */
+  const fx = { build: 0, show: 0, heat: 0, stamp: 0, blow: 0, unmake: 0, fuse: 0, settle: 0 };
+  let focus = 0;
   let kick = 0;
   let light = 0;
   let clock = 0;
@@ -1483,7 +1565,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       raf = 0;
       if (!active()) return;
       const idle = now - lastInput;
-      const busy = intro || flight || phase !== "idle" || charge > 0.001 || leaving.size > 0 || [...entries.values()].some((entry) => entry.anim);
+      const busy = intro || flight || seq || now - Math.max(impactAt, crackAt) < 3000 || charge > 0.001 || leaving.size > 0 || [...entries.values()].some((entry) => entry.anim);
       const animated = motion !== "off" && (busy || idle < 120_000);
       if (!animated && dirty <= 0) {
         last = 0;
@@ -1509,9 +1591,98 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   const lightPoint = new Vector3();
   const shockPoint = new Vector3();
 
+  /** Reads the publish sequence into `fx` for this frame, and ends it once it's over. */
+  function forgeLevels(now: number, still: boolean) {
+    fx.build = fx.show = fx.heat = fx.stamp = fx.blow = fx.unmake = fx.fuse = fx.settle = 0;
+    if (!seq) return;
+    const T = seq.timing;
+    const t = now - seq.start;
+    const fuseLength = T.fuse[1] - T.fuse[0];
+    fx.build = easeInOut(ramp(t, T.gather[0], T.gather[1]));
+    fx.fuse = ramp(t, T.fuse[0], T.fuse[1]);
+    fx.show = easeOut(ramp(t, T.fuse[0], T.fuse[0] + fuseLength * 0.4));
+    // White-hot while it's beaten, then a slow glow while the answer is awaited.
+    fx.heat = fx.fuse < 1 ? 1 - fx.fuse * 0.3 : 0.62 + (still ? 0 : 0.12 * Math.sin((t - T.fuse[1]) * 0.005));
+    if (fuseLength > 0) {
+      for (let i = 0; i < 3; i++) {
+        const at = T.fuse[0] + (i * fuseLength) / 3;
+        if (t >= at) fx.blow = Math.max(fx.blow, Math.exp(-(t - at) / 110));
+      }
+    }
+    let done = false;
+    if (seq.strikeAt !== null) {
+      const st = now - seq.strikeAt;
+      const settle = ramp(st, T.strike, T.strike + T.settle);
+      fx.settle = settle;
+      fx.build *= 1 - easeInOut(settle);
+      if (st < T.strike) {
+        fx.stamp = easeIn(ramp(st, 0, T.strike));
+        fx.heat += fx.stamp * 0.5;
+      } else {
+        // Cooled to dark, polished metal, then sinks into the core.
+        fx.heat = 1.5 * (1 - easeOut(settle));
+        fx.show = 1 - easeIn(ramp(settle, 0.5, 1));
+      }
+      done = settle >= 1;
+    } else if (seq.failAt !== null) {
+      const k = ramp(now - seq.failAt, 0, T.fail);
+      fx.unmake = k;
+      fx.build *= 1 - easeOut(k);
+      fx.heat *= 1 - easeOut(Math.min(1, k * 2));
+      fx.show *= 1 - easeIn(k);
+      done = k >= 1;
+    }
+    if (done) {
+      seq = null;
+      for (const token of tokens.values()) token.absorbed = false;
+    }
+  }
+
+  const jolt = new Vector3();
+  function updateSeal(dt: number, still: boolean, forgeVisible: boolean, boom: number, glitch: number) {
+    const { show, heat, stamp, blow, unmake, fuse, settle } = fx;
+    seal.visible = forgeVisible && show > 0.002;
+    bind.visible = seal.visible && !still && fuse > 0 && fuse < 1;
+    if (!seal.visible) {
+      sealLight.intensity = 0;
+      return;
+    }
+    // Beaten just behind the plate, stamped up onto it, then settles back and sinks into the core.
+    const out = settle > 0 ? 1 - easeInOut(settle) : stamp;
+    sealPos.copy(sink).addScaledVector(forgeNormal, 0.6 * out);
+    sealPos.lerp(forgeCore, easeIn(ramp(settle, 0.5, 1)) * 0.6);
+    if (glitch > 0.01) sealPos.add(jolt.set(wobble(clock * 23, 4), wobble(clock * 23, 5), wobble(clock * 23, 6)).multiplyScalar(glitch * 0.12));
+    seal.position.copy(sealPos);
+    seal.quaternion.copy(forgeQuaternion);
+    if (!still) sealYaw += dt * (fuse < 1 ? 2 + 9 * fuse : 1.4) * (1 - stamp);
+    const facing = settle > 0 ? 0 : 1 - stamp;
+    seal.rotateY(Math.atan2(Math.sin(sealYaw), Math.cos(sealYaw)) * facing);
+    if (unmake > 0) seal.rotateZ(unmake * 0.6);
+    const base = (Math.min(120, plateW * 0.28 || 90) * s) / 0.93;
+    seal.scale.setScalar(base * (0.2 + 0.8 * show) * (1 + boom * 0.15 + blow * 0.08 + absorb * 0.06 + unmake * 0.3));
+
+    sealMetal.emissive.copy(EMBER).lerp(HOT, clamp01(heat - 0.4));
+    sealMetal.emissiveIntensity = heat * 2.2 + absorb * 0.8;
+    sealMetal.color.copy(SEAL_BASE).lerp(ASH, unmake);
+    sealMetal.roughness = 0.3 + unmake * 0.5;
+    sealSigilU.uTrace.value = fuse * (1 - unmake);
+    sealSigilU.uGlow.value = 0.6 + heat * 1.5 + boom * 2;
+    sealRunesU.uLevel.value = show * (0.6 + heat) * (1 - unmake);
+    sealGlow.material.opacity = Math.min(1, heat * 0.7 + boom) * show;
+    sealGlow.scale.setScalar(2.4 + heat + boom * 3);
+    sealLight.position.copy(sealPos).addScaledVector(forgeNormal, base * 1.2);
+    sealLight.intensity = (18 * heat + boom * 40) * show;
+    if (bind.visible) {
+      bind.position.copy(sealPos);
+      bind.quaternion.copy(forgeQuaternion);
+      bind.scale.setScalar(base * lerp(4, 1.1, easeOut(fuse)));
+      bindU.uLife.value = (1 - fuse) * 0.9;
+    }
+  }
+
   function frame(now: number) {
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
-    if (last && !intro && !flight && phase === "idle") {
+    if (last && !intro && !flight && !seq) {
       averageFrame = lerp(averageFrame, now - last, 0.05);
       warmup += dt;
       slowFor = averageFrame > 24 && warmup > 3 ? slowFor + dt : 0;
@@ -1577,19 +1748,22 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     }
 
     charge = still ? chargeTarget : damp(charge, chargeTarget, 6, dt);
-    const age = phase === "success" ? (now - phaseAt) / 1000 : -1;
-    const implode = phase === "implode" ? easeIn(span(now, phaseAt, phaseAt + PUBLISH.implode)) : 0;
-    const glitch = phase === "error" ? Math.exp(-(now - phaseAt) / 450) : 0;
+    forgeLevels(now, still);
+    const { build, show, heat, stamp, blow } = fx;
+    const age = impactAt >= 0 && now >= impactAt && !still ? (now - impactAt) / 1000 : -1;
+    const crackAge = crackAt >= 0 && !still ? (now - crackAt) / 1000 : -1;
+    const glitch = crackAge >= 0 ? Math.exp(-crackAge / 0.45) : 0;
     const boom = age >= 0 ? Math.exp(-age / 0.45) : 0;
     kick = still ? 0 : damp(kick, 0, 5, dt);
-    distort += charge * 0.45 + implode * 0.9 + glitch * 0.4;
+    absorb = still ? 0 : damp(absorb, 0, 7, dt);
+    distort += charge * 0.45 + build * 0.35 + stamp * 0.6 + glitch * 0.4;
     flash += age >= 0 ? 0.9 * Math.exp(-age / 0.16) : 0;
 
     /* Core */
     const beat = heartbeat(still ? 400 : now);
     coreYaw = still ? STATION_ANGLE[flight?.to ?? station] * 0.6 : damp(coreYaw, STATION_ANGLE[flight?.to ?? station] * 0.6, 0.9, dt);
     core.rotation.y = coreYaw;
-    const spin = 1 + spinBoost + charge * 5 + implode * 14;
+    const spin = 1 + spinBoost + charge * 5 + build * 12;
     if (!still) {
       ringMain.rotation.z += dt * 0.05 * spin;
       gimbalB.rotation.x += dt * 0.11 * spin;
@@ -1599,31 +1773,34 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       crystal.rotation.y += dt * 0.6 * spin;
       crystal.rotation.x += dt * 0.27;
     }
-    const ringScale = (1 - implode * 0.18) * (age >= 0 ? 1 + 0.14 * Math.sin(age * 11) * Math.exp(-age * 3) : 1);
+    const ringScale = (1 - build * 0.12) * (age >= 0 ? 1 + 0.14 * Math.sin(age * 11) * Math.exp(-age * 3) : 1);
     spinner.scale.setScalar(ringScale);
     sigilU.uTrace.value = trace;
-    sigilU.uGlow.value = 0.75 * light + charge * 0.8 + kick * 0.6 + boom * 1.5 + flash;
-    const runeLevel = (0.6 + charge * 0.9 + boom) * light;
+    sigilU.uGlow.value = 0.75 * light + charge * 0.8 + build * 0.9 + kick * 0.6 + boom * 1.5 + flash;
+    const runeLevel = (0.6 + charge * 0.9 + build * 0.8 + boom) * light;
     runeFront.uLevel.value = runeBack.uLevel.value = runeInner.uLevel.value = runeLevel;
-    crownU.uLevel.value = (0.4 + charge * 0.7 + implode + boom * 2) * light;
+    crownU.uLevel.value = (0.4 + charge * 0.7 + build + boom * 2) * light;
     metal.envMapIntensity = 1.3 * light;
-    metal.emissiveIntensity = (0.35 + beat * 0.25 + charge) * light;
-    const glow = (1 + beat * 0.35 + charge * 1.5 + implode * 3 + kick + boom * 4) * light;
-    heart.scale.setScalar(1.8 * (1 + beat * 0.18 + charge * 0.4 - implode * 0.5 + boom * 2));
+    metal.emissiveIntensity = (0.35 + beat * 0.25 + charge + build * 0.8) * light;
+    gold.emissiveIntensity = medalMetal.emissiveIntensity = 0.7 + build * 2.5 + absorb;
+    key.intensity = 0.7 * (1 - build * 0.6) + boom * 1.2;
+    const glow = (1 + beat * 0.35 + charge * 1.5 + build * 2 + absorb + blow * 0.8 + kick + boom * 4) * light;
+    heart.scale.setScalar(1.8 * (1 + beat * 0.18 + charge * 0.4 - build * 0.35 + boom * 2));
     heart.material.opacity = Math.min(1, glow);
     halo.material.opacity = 0.6 * light + charge * 0.3 + boom * 0.5;
     halo.scale.setScalar(9 * (1 + charge * 0.2 + boom * 0.8));
     crystalMaterial.opacity = light;
     coreLight.intensity = 26 * glow;
+    coreLight.color.copy(RED).lerp(HOT, clamp01(heat * show * 0.8 + boom * 0.5));
     smokeLevel.value = 0.32 * light;
     dustU.uTime.value = clock;
     dustU.uAlpha.value = light;
-    dustU.uPull.value = Math.max(charge * 0.3, implode * 0.95);
-    dustU.uCore.value.copy(forgeCore);
+    dustU.uPull.value = Math.max(charge * 0.3, build * 0.9);
+    dustU.uCore.value.copy(seq ? sink : forgeCore);
     const floorUniforms = [plainFloorU as Record<string, { value: unknown }>, mirrorU].filter(Boolean) as Record<string, { value: unknown }>[];
     for (const u of floorUniforms) {
       u.uLevel.value = light;
-      u.uCharge.value = charge + implode + boom;
+      u.uCharge.value = charge + build + boom;
     }
     STATIONS.forEach((id, index) => {
       pools[index].w = (id === (flight?.to ?? station) ? 0.9 : 0.35) * light;
@@ -1631,7 +1808,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
 
     /* Arcs */
     if (!still) {
-      nextArc -= dt * (1 + charge * 6 + implode * 12);
+      nextArc -= dt * (1 + charge * 6 + build * 10);
       if (nextArc <= 0 && light > 0.9) {
         spawnArc(clock, charge > 0.2 && Math.random() < 0.6);
         nextArc = 2.5 + Math.random() * 3.5;
@@ -1651,11 +1828,17 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       }
     }
 
-    /* Burst and shockwave */
-    burst.visible = age >= 0 && age < 3;
-    burstU.uAge.value = Math.max(0, age);
+    /* Burst and shockwave: sparks off the stamped seal, or a smaller spray of shards when it cracks. */
+    const sparkAge = age >= 0 ? age : crackAge;
+    burst.visible = sparkAge >= 0 && sparkAge < 3;
+    if (burst.visible) {
+      burst.position.copy(plateCenter).addScaledVector(forgeNormal, age >= 0 ? 0.1 : -0.6);
+      burst.scale.setScalar(age >= 0 ? 1 : 0.55);
+    }
+    burstU.uAge.value = Math.max(0, sparkAge);
     wave.visible = age >= 0 && age < 1.2;
     if (wave.visible) {
+      wave.position.copy(plateCenter).addScaledVector(forgeNormal, 0.1);
       wave.scale.setScalar(0.4 + age * 14);
       waveU.uLife.value = 1 - age / 1.2;
     }
@@ -1666,16 +1849,20 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       parallax.y = damp(parallax.y, parallaxTarget.y, 2.5, dt);
       breathe += dt;
     }
-    const theta = pose.theta;
+    // While forging, the camera leans in on the plate, and recoils at the strike.
+    focus = still ? 0 : damp(focus, station === "forge" && !flight && !intro ? 1 : 0, 3, dt);
+    const push = (build - boom * 0.35) * focus * (compact ? 0.4 : 1) * amount;
+    const theta = pose.theta + 0.04 * push;
+    const radius = pose.radius - 0.6 * push;
     look.set(Math.sin(theta) * pose.look, pose.lookHeight, Math.cos(theta) * pose.look);
-    eye.set(Math.sin(theta) * pose.radius, pose.height, Math.cos(theta) * pose.radius);
+    eye.set(Math.sin(theta) * radius, pose.height - 0.3 * push, Math.cos(theta) * radius);
     const sway = amount * (0.32 * parallax.x + 0.07 * Math.sin(breathe * 0.21));
     const rise = amount * (-0.2 * parallax.y + 0.05 * Math.sin(breathe * 0.17));
     eye.x += Math.cos(theta) * sway;
     eye.z -= Math.sin(theta) * sway;
     eye.y += rise;
     eye.addScaledVector(towards.copy(eye).sub(look).normalize(), amount * 0.12 * Math.sin(breathe * 0.13));
-    const shake = (boom * 0.18 + implode * 0.03 + glitch * 0.05) * amount;
+    const shake = (boom * 0.18 + build * 0.012 + blow * 0.03 + stamp * 0.02 + glitch * 0.05) * amount;
     if (shake > 0.001) {
       shakeOffset.set(wobble(clock * 9, 1), wobble(clock * 9, 2), wobble(clock * 9, 3)).multiplyScalar(shake);
       eye.add(shakeOffset);
@@ -1685,8 +1872,9 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     camera.up.set(0, 1, 0);
     camera.lookAt(look);
     if (pose.roll) camera.rotateZ(pose.roll);
-    if (Math.abs(camera.fov - pose.fov) > 0.001) {
-      camera.fov = pose.fov;
+    const fov = pose.fov - 1.5 * push;
+    if (Math.abs(camera.fov - fov) > 0.001) {
+      camera.fov = fov;
       camera.updateProjectionMatrix();
     }
     camera.updateMatrixWorld();
@@ -1700,8 +1888,10 @@ export function createSanctum(options: SanctumOptions): Sanctum {
       if (at) hovered.u.uPointer.value.set(clamp01(at.x), clamp01(at.y));
     }
 
+    trackPlate();
     tokenRoot.visible = forgeVisible;
     if (forgeVisible || tokens.size) updateTokens(now, dt);
+    updateSeal(dt, still, forgeVisible, boom, glitch);
 
     /* Post */
     corePoint.set(0, 0, 0);
@@ -1712,16 +1902,16 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     post.uDistort.value = distort * amount + glitch * 0.5;
     post.uGlitch.value = glitch;
     post.uFlash.value = flash * (still ? 0.3 : 1);
-    post.uRays.value = (0.55 + charge * 0.6 + boom) * light;
-    post.uAberration.value = 0.0016 + charge * 0.002 + boom * 0.004;
+    post.uRays.value = (0.55 + charge * 0.6 + build * 0.5 + boom) * light;
+    post.uAberration.value = 0.0016 + charge * 0.002 + build * 0.0015 + glitch * 0.004 + boom * 0.004;
     if (age >= 0 && age < 1.1) {
-      shockPoint.copy(forgeCore).project(camera);
+      shockPoint.copy(plateCenter).project(camera);
       post.uShock.value[0] = shockPoint.x * 0.5 + 0.5;
       post.uShock.value[1] = shockPoint.y * 0.5 + 0.5;
       post.uShock.value[2] = age * 0.95;
       post.uShockStrength.value = (1 - age / 1.1) * amount;
     } else post.uShockStrength.value = 0;
-    bloom.strength = (0.74 * tier.bloom + 0.12 + charge * 0.4 + implode * 0.8 + boom * 2.2 + flash * 1.5) * Math.max(0.2, light);
+    bloom.strength = (0.74 * tier.bloom + 0.12 + charge * 0.4 + build * 0.5 + heat * show * 0.3 + boom * 2.2 + flash * 1.5) * Math.max(0.2, light);
 
     composer.render(dt);
     css.render(scene, camera);
@@ -1812,7 +2002,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     u.uPress.value = entry.press.x;
     u.uFocus.value = entry.focus;
     u.uAlert.value = entry.alert;
-    u.uPulse.value = entry.spec.kind === "tablet" && entry.spec.tone === "active" && !still ? 0.18 + 0.18 * Math.sin(clock * 2.2 + entry.key * 0.37) : entry.spec.kind === "plate" ? 0.15 + kick * 0.5 : 0;
+    u.uPulse.value = entry.spec.kind === "tablet" && entry.spec.tone === "active" && !still ? 0.18 + 0.18 * Math.sin(clock * 2.2 + entry.key * 0.37) : entry.spec.kind === "plate" ? 0.15 + kick * 0.5 + fx.build * 0.35 + fx.blow * 0.3 + fx.stamp * 0.5 : 0;
     if (entry.body) entry.body.material.opacity = smooth(0.4, 0.9, entry.reveal);
     if (entry.shadow) {
       entry.shadow.position.z = -30 - Math.max(0, lift);
@@ -1889,6 +2079,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   function setMotion(next: Motion) {
     motion = next;
     if (next === "off") {
+      if (seq) seq.timing = FORGE.off;
       if (intro) skipIntro();
       if (flight) {
         const to = flight.to;
@@ -1914,16 +2105,35 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     poke();
   }
 
-  function publish(next: PublishPhase) {
-    phase = next;
-    phaseAt = performance.now();
-    if (next === "success") {
+  function publish(next: PublishPhase, quick = false) {
+    const now = performance.now();
+    const T = FORGE[motion];
+    if (next === "idle") {
+      seq = null;
+      chargeTarget = 0;
+      for (const token of tokens.values()) token.absorbed = false;
+    } else if (next === "forge") {
+      seq = { timing: T, start: now, strikeAt: null, failAt: null };
+      sealYaw = 0;
+      impactAt = crackAt = -1;
+    } else if (next === "strike" && seq && seq.failAt === null && seq.strikeAt === null) {
+      // A skip (or a slow sequence) jumps straight to the impact.
+      if (quick) seq.start = Math.min(seq.start, now - seq.timing.fuse[1]);
+      seq.strikeAt = now - (quick ? seq.timing.strike : 0);
+      impactAt = seq.strikeAt + seq.timing.strike;
       for (const token of [...tokens.values()]) dropToken(token);
       chargeTarget = 0;
       charge = 0;
+    } else if (next === "error") {
+      if (!seq) seq = { timing: T, start: now - T.fuse[1], strikeAt: null, failAt: null };
+      if (seq.failAt === null && seq.strikeAt === null) {
+        seq.failAt = now;
+        crackAt = now;
+      }
+      chargeTarget = 0;
     }
-    if (next === "error" || next === "idle") chargeTarget = 0;
     poke();
+    return [...tokens.values()].filter((token) => token.leaving === null).length;
   }
 
   function alert(el: HTMLElement) {

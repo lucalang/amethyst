@@ -49,6 +49,36 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-05-forge-publish-sequence",
+    date: "2026-11-05",
+    title: "The Admin Panel - Forging a Code",
+    intro: "For administrators, publishing a code in the Forge is now a full forging sequence: the rewards are drawn into the core and beaten into the code's seal, which is stamped onto the plate the moment the code is ready.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "Publishing", text: "Energy gathers as the hold completes, the reward tokens spiral into the core one by one, and a glowing seal is hammered into shape while the server answers." },
+      { kind: "improved", feature: "The reveal", text: "The finished seal is stamped onto the plate and the new code appears on that beat, then the seal cools and settles back into the core." },
+      { kind: "improved", feature: "Failures", text: "If publishing fails, the seal cracks apart, the tokens return to the plate and the error is shown; nothing celebrates a code that wasn't made." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "A forging sequence for every published code",
+          body: "Holding the Forge seal to publish now starts a sequence in the 3D scene, with matching sound when sound is on. The code itself is never shown before the server has created it.",
+          points: [
+            "The core spins up and the camera leans in as the hold completes.",
+            "Each reward token spirals into the core with its own chime, and a seal is beaten into shape behind the code plate.",
+            "When the server confirms the code, the seal is stamped onto the plate with a burst of sparks and the code is revealed on that beat; then it cools and sinks back into the core.",
+            "If publishing fails, the seal cracks and fades, the tokens fly back to their loop and the error appears as before; your choices stay as they were.",
+            "Press any key or click to skip ahead to the reveal.",
+            "With Motion set to Subtle the sequence is shorter and calmer; with Motion off, reduced motion or plain pages, publishing shows a short status line instead.",
+          ],
+          where: "Admin panel → Forge (administrators only)",
+          link: { href: "/admin/new", label: "Open the Forge" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-05-arcade-streaks",
     date: "2026-11-05",
     title: "Daily Arcade streaks",
