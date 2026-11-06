@@ -170,10 +170,12 @@ export function GameShell({
               </Link>
             </Button>
           </nav>
-          <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
+            <GameStreak game={game} />
+          </div>
           <div className="ml-auto flex items-center gap-1.5">
             {actions}
-            <GameStreak game={game} />
             {leaderboard !== null ? <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
               <Link href={leaderboardHref(game, leaderboard)} prefetch={false} aria-label={`${title} leaderboard`} title={`${title} leaderboard`}>
                 <Trophy aria-hidden />

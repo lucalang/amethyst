@@ -49,6 +49,26 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 export const CHANGELOG: readonly Release[] = [
   {
+    id: "2026-11-06-streak-flame",
+    date: "2026-11-06",
+    title: "A livelier streak flame",
+    intro: "Minigame streaks now have a fixed spot next to the game's name and a flame that celebrates your first win of the day.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Streak placement", text: "The streak flame now sits right after the game's name in every minigame, on desktop and mobile." },
+      { kind: "improved", feature: "Living flame", text: "Once you've played a game today, its flame flickers. Under reduced motion it stays still." },
+      { kind: "new", feature: "Daily celebration", text: "After your first finished game of the day, the page dims, a flame rises, counts up your streak and flies into its place." },
+    ],
+    details: {
+      new: [{
+        title: "Once a day, after a real finish",
+        body: "The celebration plays once per account and UTC day, after the first game the server confirms as finished (a recorded score, or a solved Sudoku). Retries, other tabs and later games that day do not replay it. With reduced motion it simply fades in, swaps the number and fades out. Streak rules, coins and recoveries are unchanged.",
+        where: "Any minigame → the flame next to the game's name",
+        link: { href: "/arcade", label: "Open the Arcade" },
+      }],
+    },
+  },
+  {
     id: "2026-11-06-flashy-update",
     date: "2026-11-06",
     title: "The Flashy update",

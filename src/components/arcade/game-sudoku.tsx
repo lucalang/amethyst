@@ -25,7 +25,7 @@ import {
   type SudokuDifficulty,
   type SudokuSave,
 } from "@/lib/arcade";
-import { announcePlayed } from "@/lib/arcade-streaks";
+import { announceCompleted, announcePlayed } from "@/lib/arcade-streaks";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuDigit, sudokuSymbol, sudokuPeers, sudokuProgressValid, sudokuSlotKey, sudokuVariant, type SudokuSize } from "@/lib/sudoku";
 import { cn } from "@/lib/utils";
 import { CoinReward, type CoinState } from "./coin-reward";
@@ -465,6 +465,7 @@ export default function GameSudoku({
       });
       hints = response.hints;
       announcePlayed();
+      announceCompleted("sudoku");
       if (response.best !== null) setRecords((current) => ({ ...current, [sudokuVariant(game.size, game.difficulty)]: response.best! }));
       if (response.daily) setDailyResult(response.daily);
       setResult({ seconds, best: response.best ?? (game.slot === "regular" ? (records[sudokuVariant(game.size, game.difficulty)] ?? null) : null), improved: response.improved, hints });

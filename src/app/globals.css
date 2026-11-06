@@ -5971,6 +5971,172 @@ a.arcade-counter:hover {
 .streak-chip[data-recover="true"] {
   border-color: color-mix(in oklab, var(--warning) 55%, var(--border));
 }
+.streak-chip[data-played="true"] {
+  border-color: color-mix(in oklab, var(--warning) 35%, var(--border));
+  background: color-mix(in oklab, var(--warning) 8%, var(--background));
+}
+.streak-chip svg.fire-mark {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.streak-chip-pop {
+  display: inline-block;
+  animation: streak-chip-pop 520ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes streak-chip-pop {
+  0% { transform: scale(1.6); color: var(--warning); }
+  100% { transform: none; }
+}
+
+/* The streak flame: three layered tongues flickering from the base (transforms only). */
+.fire-mark {
+  overflow: visible;
+  flex-shrink: 0;
+}
+.fire-mark path {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.fire-mark[data-lit="false"] .fire-outer {
+  fill: currentColor;
+  opacity: 0.55;
+}
+.fire-mark[data-lit="false"] :is(.fire-mid, .fire-core) {
+  display: none;
+}
+.fire-mark[data-lit="true"] {
+  filter: drop-shadow(0 0 0.18em color-mix(in oklab, var(--warning) 60%, transparent));
+}
+.fire-mark[data-lit="true"] .fire-outer {
+  fill: color-mix(in oklab, var(--warning) 62%, var(--destructive));
+  animation: fire-sway 2.1s ease-in-out infinite alternate;
+}
+.fire-mark[data-lit="true"] .fire-mid {
+  fill: var(--warning);
+  animation: fire-lick 1.3s ease-in-out infinite alternate;
+}
+.fire-mark[data-lit="true"] .fire-core {
+  fill: color-mix(in oklab, var(--warning) 35%, white);
+  animation: fire-lick 0.8s ease-in-out infinite alternate-reverse;
+}
+@keyframes fire-sway {
+  0% { transform: skewX(-3deg) scale(1, 0.97); }
+  35% { transform: skewX(2.5deg) scale(0.97, 1.04); }
+  70% { transform: skewX(-1.5deg) scale(1.02, 0.99); }
+  100% { transform: skewX(3deg) scale(0.98, 1.03); }
+}
+@keyframes fire-lick {
+  0% { transform: scale(0.94, 0.9) skewX(4deg); }
+  50% { transform: scale(1.03, 1.08) skewX(-3deg); }
+  100% { transform: scale(0.97, 1) skewX(2deg); }
+}
+[data-motion="subtle"] .fire-mark path {
+  animation-duration: 3.2s;
+}
+
+/* Daily streak celebration, centred at 50% / 42% (StreakBurst measures its flight from there). */
+.streak-burst-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.78) 70%);
+  animation: streak-burst-scrim 2.6s ease both;
+}
+@keyframes streak-burst-scrim {
+  0% { opacity: 0; }
+  12%, 70% { opacity: 1; }
+  92%, 100% { opacity: 0; }
+}
+:root .streak-burst-scrim[data-level="off"] {
+  animation: streak-burst-fade 1.8s ease both !important;
+}
+.streak-burst {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  z-index: 80;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.streak-burst-body {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  translate: -50% -50%;
+  animation: streak-burst 2.6s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+.streak-burst-fire {
+  width: clamp(4.5rem, 18vmin, 7.5rem);
+  height: clamp(4.5rem, 18vmin, 7.5rem);
+}
+.streak-burst-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: streak-burst-text 2.6s ease both;
+}
+.streak-burst-count {
+  font-size: clamp(2.25rem, 10vmin, 3.75rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 2px 18px color-mix(in oklab, var(--warning) 60%, transparent);
+}
+.streak-burst-tick {
+  animation: streak-burst-tick 480ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+.streak-burst-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.75);
+}
+@keyframes streak-burst {
+  0% { opacity: 0; transform: translateY(3.5rem) scale(0.6); }
+  16% { opacity: 1; transform: translateY(-0.25rem) scale(1.05); }
+  24% { transform: none; }
+  60% { opacity: 1; transform: none; }
+  88% { opacity: 0.9; transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.2); }
+  100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.12); }
+}
+@keyframes streak-burst-text {
+  0%, 58% { opacity: 1; }
+  68%, 100% { opacity: 0; }
+}
+@keyframes streak-burst-tick {
+  0% { opacity: 0; transform: translateY(45%) scale(0.8); }
+  60% { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: none; }
+}
+/* Reduced motion: no travel or flicker; a plain fade with the number swapped in place. */
+:root .streak-burst[data-level="off"] .streak-burst-body {
+  animation: streak-burst-fade 1.8s ease both !important;
+}
+:root .streak-burst[data-level="off"] :is(.streak-burst-text, .streak-burst-tick, .fire-mark path) {
+  animation: none !important;
+}
+@keyframes streak-burst-fade {
+  0% { opacity: 0; }
+  15%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fire-mark path,
+  .streak-chip-pop,
+  :root .streak-burst :is(.streak-burst-text, .streak-burst-tick) {
+    animation: none !important;
+  }
+  :root .streak-burst .streak-burst-body,
+  :root .streak-burst-scrim {
+    animation: streak-burst-fade 1.8s ease both !important;
+  }
+}
 .arcade-cab-marquee {
   position: relative;
   display: flex;

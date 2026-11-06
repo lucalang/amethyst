@@ -1,13 +1,14 @@
 import { recoverStreakSchema, type StreakRecovery } from "@/lib/arcade-streaks";
-import { loadArcadeStreaks } from "@/lib/data/arcade";
+import { loadArcadeStreaks, loadStreakCelebrated } from "@/lib/data/arcade";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 
-/** The player's streak for every game. */
+/** The player's streak for every game, and whether today's celebration already played. */
 export async function GET() {
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;
   try {
-    return jsonResponse({ streaks: await loadArcadeStreaks(ctx) });
+    const [streaks, celebrated] = await Promise.all([loadArcadeStreaks(ctx), loadStreakCelebrated(ctx)]);
+    return jsonResponse({ streaks, celebrated });
   } catch {
     return apiError(500, "load_failed", "Could not load your streaks.");
   }

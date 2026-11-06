@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useState } from "react";
-import { Check, Coins, Flame, Loader2, RotateCcw } from "lucide-react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
+import { Check, Coins, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "@/components/arcade/daily";
+import { useArcade } from "@/components/arcade/game-shell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,18 +21,43 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { ARCADE_GAMES, type ArcadeGameId } from "@/lib/arcade";
 import { dailyDate } from "@/lib/arcade-daily";
-import { ARCADE_PLAYED_EVENT, dayWord, type ArcadeStreak, type ArcadeStreaks, type StreakRecovery } from "@/lib/arcade-streaks";
+import {
+  ARCADE_COMPLETED_EVENT,
+  ARCADE_PLAYED_EVENT,
+  dayWord,
+  type ArcadeStreak,
+  type ArcadeStreaks,
+  type StreakCelebration,
+  type StreakRecovery,
+} from "@/lib/arcade-streaks";
+import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 
 const gameTitle = (game: ArcadeGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
 
-const fetchStreaks = () => apiFetch<{ streaks: ArcadeStreaks }>("/api/arcade/streaks").then((body) => ({ date: dailyDate(), streaks: body.streaks }));
+type StreakState = { date: string; streaks: ArcadeStreaks; celebrated?: boolean };
+
+const fetchStreaks = () =>
+  apiFetch<{ streaks: ArcadeStreaks; celebrated: boolean }>("/api/arcade/streaks").then(
+    (body): StreakState => ({ date: dailyDate(), streaks: body.streaks, celebrated: body.celebrated }),
+  );
+
+/** The streak flame: layered tongues that flicker while today is played (static under reduced motion). */
+export function FireMark({ lit, className }: { lit: boolean; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={cn("fire-mark", className)} data-lit={lit ? "true" : "false"}>
+      <path className="fire-outer" d="M12 1.5c.9 3.4 3.3 5.2 5 7.4 1.4 1.8 2.3 3.7 2.3 6A7.3 7.3 0 0 1 4.7 15c0-2.6 1.1-4.6 2.7-6.2.2 1.7 1 2.9 2.2 3.5-.6-3.9.4-7.7 2.4-10.8z" />
+      <path className="fire-mid" d="M12 7.5c.6 2.3 2.1 3.5 3.2 5 .9 1.2 1.5 2.4 1.5 3.9a4.7 4.7 0 0 1-9.4 0c0-1.7.7-3 1.8-4 .2 1 .7 1.7 1.4 2.1-.3-2.5.3-4.9 1.5-7z" />
+      <path className="fire-core" d="M12 13c.4 1.3 1.2 2 1.8 2.8.5.7.8 1.3.8 2.1a2.6 2.6 0 0 1-5.2 0c0-.9.4-1.7 1-2.2.1.5.4.9.8 1.1-.1-1.3.2-2.6.8-3.8z" />
+    </svg>
+  );
+}
 
 /**
  * Streaks kept fresh: reloaded when the UTC day changes and after play is reported (`refreshOnPlay`
  * decides whether a play event is worth a request).
  */
-export function useArcadeStreaks(initial: { date: string; streaks: ArcadeStreaks } | null, refreshOnPlay: (streaks: ArcadeStreaks) => boolean) {
+export function useArcadeStreaks(initial: StreakState | null, refreshOnPlay: (streaks: ArcadeStreaks) => boolean) {
   const [state, setState] = useState(initial);
   const today = useDailyDate();
   const loadedFor = state?.date;
@@ -49,8 +76,16 @@ export function useArcadeStreaks(initial: { date: string; streaks: ArcadeStreaks
     return () => window.removeEventListener(ARCADE_PLAYED_EVENT, listener);
   }, []);
 
-  const replace = useCallback((streaks: ArcadeStreaks) => setState({ date: dailyDate(), streaks }), []);
-  return { streaks: state?.streaks ?? null, replace };
+  const replace = useCallback(
+    (streaks: ArcadeStreaks) =>
+      setState((previous) => {
+        const date = dailyDate();
+        return { date, streaks, celebrated: previous?.date === date ? previous.celebrated : undefined };
+      }),
+    [],
+  );
+  const markCelebrated = useCallback(() => setState((previous) => (previous ? { ...previous, celebrated: true } : previous)), []);
+  return { streaks: state?.streaks ?? null, celebrated: state?.celebrated ?? null, replace, markCelebrated };
 }
 
 /** Confirms and buys back yesterday; the price shown is the one the server enforces. */
@@ -154,7 +189,7 @@ export function StreakLine({ streak, onRecover }: { streak: ArcadeStreak; onReco
     <div className="streak-line" data-played={streak.playedToday ? "true" : "false"}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <span className="streak-flame inline-flex items-center gap-1 font-semibold text-foreground" aria-label={`Current streak ${dayWord(streak.current)}`}>
-          <Flame aria-hidden className="size-3.5" />
+          <FireMark lit={streak.playedToday} className="size-3.5" />
           <span className="tabular-nums">{dayWord(streak.current)}</span>
         </span>
         <span className="tabular-nums">Best {dayWord(streak.best)}</span>
@@ -168,21 +203,53 @@ export function StreakLine({ streak, onRecover }: { streak: ArcadeStreak; onReco
   );
 }
 
-/** The current game's streak in its header, with details and recovery in a popover. */
+/** The current game's streak beside its title, with details and recovery in a popover. */
 export function GameStreak({ game }: { game: ArcadeGameId }) {
-  const { streaks, replace } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));
+  const { effects } = useArcade();
+  const { streaks, celebrated, replace, markCelebrated } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));
   const [open, setOpen] = useState(false);
   const [recovering, setRecovering] = useState(false);
+  const [burst, setBurst] = useState<{ from: number; to: number } | null>(null);
+  const [landings, setLandings] = useState(0);
+  const chipRef = useRef<HTMLButtonElement>(null);
+  const claiming = useRef(false);
   const streak = streaks?.[game];
+
+  // The first verified completion of the day claims the celebration; the server grants it once.
+  const onCompleted = useEffectEvent((completed: unknown) => {
+    if (completed !== game || claiming.current || celebrated === true) return;
+    claiming.current = true;
+    apiFetch<{ celebration: StreakCelebration }>("/api/arcade/streaks/celebrate", { method: "POST", json: { game } }).then(
+      ({ celebration }) => {
+        if (celebration.streak === 0) {
+          claiming.current = false;
+          return;
+        }
+        if (celebration.celebrate) setBurst({ from: celebration.streak - 1, to: celebration.streak });
+        markCelebrated();
+      },
+      () => {
+        claiming.current = false;
+      },
+    );
+  });
+  useEffect(() => {
+    const listener = (event: Event) => onCompleted((event as CustomEvent<unknown>).detail);
+    window.addEventListener(ARCADE_COMPLETED_EVENT, listener);
+    return () => window.removeEventListener(ARCADE_COMPLETED_EVENT, listener);
+  }, []);
 
   if (!streak) {
     return (
-      <Button variant="outline" size="sm" className="h-8 px-2.5" disabled aria-label="Loading streak">
-        <Flame aria-hidden />
+      <Button variant="outline" size="sm" className="streak-chip h-7 rounded-full px-2" disabled aria-label="Loading streak">
+        <FireMark lit={false} />
       </Button>
     );
   }
 
+  // Today's increment is shown when the celebration lands, so hold the previous count until then.
+  const holding = streak.playedToday && streak.current > 0 && (celebrated === false || burst !== null);
+  const shown = holding ? streak.current - 1 : streak.current;
   const label = `${dayWord(streak.current)} streak${streak.playedToday ? ", played today" : ""}`;
   return (
     <>
@@ -198,21 +265,24 @@ export function GameStreak({ game }: { game: ArcadeGameId }) {
       >
         <PopoverTrigger asChild>
           <Button
+            ref={chipRef}
             variant="outline"
             size="sm"
-            className="streak-chip h-8 px-2.5"
+            className="streak-chip h-7 rounded-full px-2"
             data-played={streak.playedToday ? "true" : "false"}
             data-recover={streak.recovery?.ready ? "true" : undefined}
             aria-label={label}
             title={label}
           >
-            <Flame aria-hidden />
-            <span className="tabular-nums">{streak.current}</span>
+            <FireMark lit={streak.playedToday && !holding} />
+            <span key={landings} className={cn("tabular-nums", landings > 0 && "streak-chip-pop")}>
+              {shown}
+            </span>
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-[min(20rem,calc(100vw-1.5rem))] gap-3 p-3.5">
           <div className="flex items-center gap-2">
-            <Flame aria-hidden className="streak-flame-icon size-4" />
+            <FireMark lit={streak.playedToday} className="size-4" />
             <p className="font-semibold">{gameTitle(game)} streak</p>
           </div>
           <dl className="grid grid-cols-2 gap-2">
@@ -255,6 +325,79 @@ export function GameStreak({ game }: { game: ArcadeGameId }) {
         onOpenChange={setRecovering}
         onRecovered={(next) => (next ? replace(next) : void fetchStreaks().then((value) => replace(value.streaks), () => {}))}
       />
+      <span role="status" className="sr-only">
+        {burst ? `${gameTitle(game)} streak extended to ${dayWord(burst.to)}.` : ""}
+      </span>
+      {burst ? (
+        <StreakBurst
+          from={burst.from}
+          to={burst.to}
+          effects={effects}
+          target={chipRef}
+          onDone={() => {
+            setBurst(null);
+            setLandings((count) => count + 1);
+          }}
+        />
+      ) : null}
     </>
+  );
+}
+
+const BURST_MS = { full: 2600, subtle: 2600, off: 1800 } satisfies Record<MotionLevel, number>;
+
+/** The flame rises, the count ticks up, then the flame flies into the header chip and fades. */
+function StreakBurst({
+  from,
+  to,
+  effects,
+  target,
+  onDone,
+}: {
+  from: number;
+  to: number;
+  effects: MotionLevel;
+  target: RefObject<HTMLElement | null>;
+  onDone: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [count, setCount] = useState(from);
+  const finish = useEffectEvent(onDone);
+
+  useEffect(() => {
+    const node = ref.current;
+    const chip = target.current?.getBoundingClientRect();
+    if (node && chip && chip.width > 0) {
+      // The burst is centred at 50% / 42% of the viewport (see .streak-burst).
+      node.style.setProperty("--dx", `${Math.round(chip.left + chip.width / 2 - window.innerWidth / 2)}px`);
+      node.style.setProperty("--dy", `${Math.round(chip.top + chip.height / 2 - window.innerHeight * 0.42)}px`);
+    }
+    const total = BURST_MS[effects];
+    const tick = window.setTimeout(() => setCount(to), effects === "off" ? 600 : 800);
+    const done = window.setTimeout(() => finish(), total);
+    return () => {
+      window.clearTimeout(tick);
+      window.clearTimeout(done);
+    };
+  }, [effects, target, to]);
+
+  const host = typeof document === "undefined" ? null : (document.fullscreenElement ?? document.body);
+  if (!host) return null;
+  return createPortal(
+    <>
+      <div className="streak-burst-scrim" data-level={effects} aria-hidden />
+      <div ref={ref} className="streak-burst" data-level={effects} aria-hidden>
+      <div className="streak-burst-body">
+        <FireMark lit className="streak-burst-fire" />
+        <span className="streak-burst-text">
+          <span key={count} className={cn("streak-burst-count", count === to && "streak-burst-tick")}>
+            {count}
+          </span>
+          <span className="streak-burst-label">day streak</span>
+        </span>
+      </div>
+      </div>
+    </>,
+    host,
   );
 }

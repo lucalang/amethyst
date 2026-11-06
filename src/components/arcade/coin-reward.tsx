@@ -5,7 +5,7 @@ import { Coins, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { RunReward, ScoreGame } from "@/lib/arcade";
-import { announcePlayed } from "@/lib/arcade-streaks";
+import { announceCompleted, announcePlayed } from "@/lib/arcade-streaks";
 import { cn } from "@/lib/utils";
 
 export type CoinState =
@@ -78,6 +78,7 @@ export function useArcadeRun(game: ScoreGame) {
             keepalive: options.keepalive,
           });
           show({ status: "done", reward: body.reward });
+          if (!quiet && !options.announce && (body.reward.status === "paid" || body.reward.status === "unpaid")) announceCompleted(game);
           if (body.reward.status === "paid") {
             window.dispatchEvent(new CustomEvent("archive:coins", { detail: body.reward.balance }));
             if (options.announce && !quiet) toast(`+${body.reward.coins} coin${body.reward.coins === 1 ? "" : "s"} from your last run`, { icon: <Coins aria-hidden className="coin-ink size-4" /> });
@@ -91,7 +92,7 @@ export function useArcadeRun(game: ScoreGame) {
       }
       show({ status: "error" });
     })();
-  }, []);
+  }, [game]);
 
   return { begin, finish, active, coins };
 }

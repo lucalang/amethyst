@@ -45,12 +45,19 @@ export function toArcadeStreaks(rows: readonly StreakRow[]): ArcadeStreaks {
   ) as ArcadeStreaks;
 }
 
+const gameSchema = z.enum(ARCADE_GAMES.map((game) => game.id) as [ArcadeGameId, ...ArcadeGameId[]]);
+
 export const recoverStreakSchema = z
   .object({
-    game: z.enum(ARCADE_GAMES.map((game) => game.id) as [ArcadeGameId, ...ArcadeGameId[]]),
+    game: gameSchema,
     expectedCost: z.number().int().min(1).max(10_000),
   })
   .strict();
+
+export const celebrateStreakSchema = z.object({ game: gameSchema }).strict();
+
+/** `celebrate` is true for exactly one claim per player and UTC day. */
+export type StreakCelebration = { celebrate: boolean; streak: number };
 
 export type StreakRecovery = { status: "recovered" | "already"; balance: number; cost: number; streak: number };
 
@@ -59,6 +66,13 @@ export const ARCADE_PLAYED_EVENT = "archive:arcade-played";
 
 export function announcePlayed() {
   window.dispatchEvent(new Event(ARCADE_PLAYED_EVENT));
+}
+
+/** Fired after the server confirmed a successfully finished round (detail: the game id). */
+export const ARCADE_COMPLETED_EVENT = "archive:arcade-completed";
+
+export function announceCompleted(game: ArcadeGameId) {
+  window.dispatchEvent(new CustomEvent<ArcadeGameId>(ARCADE_COMPLETED_EVENT, { detail: game }));
 }
 
 export const dayWord = (count: number) => `${count} day${count === 1 ? "" : "s"}`;

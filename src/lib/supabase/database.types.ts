@@ -195,6 +195,12 @@ export type Database = {
               Update: { user_id?: string; position?: number; achievement_id?: string }
               Relationships: []
             },
+            "arcade_streak_celebrations": {
+              Row: { user_id: string; celebrate_date: string; game: string; streak: number; created_at: string }
+              Insert: { user_id: string; celebrate_date: string; game: string; streak: number; created_at?: string }
+              Update: { user_id?: string; celebrate_date?: string; game?: string; streak?: number; created_at?: string }
+              Relationships: []
+            },
             "profile_looks": {
               Row: { id: string; user_id: string; name: string; style: string; sections: string[]; ambient: string; pedestal: string | null; banner: string | null; frame: string | null; achievements: string[]; items: Json; created_at: string; updated_at: string }
               Insert: { id?: string; user_id: string; name: string; style: string; sections: string[]; ambient: string; pedestal?: string | null; banner?: string | null; frame?: string | null; achievements?: string[]; items?: Json; created_at?: string; updated_at?: string }
@@ -637,6 +643,9 @@ isOneToOne: false
                            },
 "redeem_secret_code":
 { Args: { "p_code_hash": string }; Returns: Json
+"claim_streak_celebration":
+{ Args: { "p_game": string }; Returns: Json
+                           },
                            },
 "redeem_vault_code":
 { Args: { "p_loose_hash": string,"p_phrase_hash"?: string | null,"p_request"?: string | null }; Returns: Json
