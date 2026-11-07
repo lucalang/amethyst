@@ -51,6 +51,29 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-07-lab-redesign",
+    date: "2026-11-07",
+    title: "The Lab gets a new look",
+    intro: "The Lab now looks like its own simple website: clean white pages with blue accents and a workbench for every experiment.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "improved", feature: "Experiment index", text: "The Lab opens straight onto numbered experiment cards with search." },
+      { kind: "improved", feature: "Workbench", text: "Each experiment has a side list of all experiments, an Easy mode switch, Reset and Exit, plus Previous and Next links." },
+      { kind: "new", feature: "Little celebrations", text: "Catching the Shy Button, finishing a cancellation, beating the Password Gauntlet or pushing the volume to the top sets off a short burst, and shredding a password scatters its letters." },
+      { kind: "new", feature: "More things to cancel", text: "Cancel Anything now has eight made-up subscriptions, each with its own flow: hold music, a sad ghost, double-negative checkboxes, quizzes and ever-better duck offers. The Mystery Box takes a full 22 steps to escape." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "A redesigned Lab",
+          body: "Every experiment works exactly as before and still never touches your account, settings or coins. Effects are short, never block what you're doing, and are skipped when reduced motion is on.",
+          where: "Menu → Utilities → The Lab",
+          link: { href: "/lab", label: "Visit the Lab" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-06-site-refresh",
     date: "2026-11-06",
     title: "A fresh look across Amethyst",

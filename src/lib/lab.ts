@@ -21,7 +21,7 @@ export const LAB_EXPERIMENTS = [
   {
     id: "cancel-maze",
     title: "Cancel Anything",
-    blurb: "Cancel three made-up subscriptions through the most persuasive retention flow ever built.",
+    blurb: "Cancel eight made-up subscriptions, each with its own wildly persuasive retention flow.",
     tags: ["forms", "dark patterns", "parody"],
   },
   {

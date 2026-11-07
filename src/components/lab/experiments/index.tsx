@@ -4,10 +4,21 @@ import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { LabExperimentId } from "@/lib/lab";
 
-/** Props every experiment gets. `assist` swaps in a plain, accessible version of the joke. */
-export type LabProps = { assist: boolean };
+export type LabPoint = { x: number; y: number };
 
-const loading = () => <p className="py-16 text-center text-sm text-muted-foreground">Warming up the apparatus…</p>;
+/** Props every experiment gets. `assist` swaps in a plain, accessible version of the joke; `celebrate` plays a success burst (at a viewport point, else the stage centre). */
+export type LabProps = { assist: boolean; celebrate: (at?: LabPoint) => void };
+
+const loading = () => (
+  <p role="status" className="lab-loading">
+    <span aria-hidden>
+      <i />
+      <i />
+      <i />
+    </span>
+    Warming up the apparatus…
+  </p>
+);
 
 export const LAB_COMPONENTS: Record<LabExperimentId, ComponentType<LabProps>> = {
   "uphill-volume": dynamic(() => import("./uphill-volume").then((m) => m.UphillVolume), { loading }),

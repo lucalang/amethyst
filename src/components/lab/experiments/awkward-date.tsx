@@ -65,7 +65,7 @@ export function AwkwardDate({ assist }: LabProps) {
           type="date"
           value={plain}
           onChange={(event) => setPlain(event.target.value)}
-          className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="lab-input"
         />
         <p aria-live="polite" className="text-sm text-muted-foreground">
           {date && !Number.isNaN(date.getTime()) ? `That’s a ${date.toLocaleDateString(undefined, { weekday: "long" })}. Nothing is saved.` : "Pick any date; nothing is saved."}
@@ -85,10 +85,10 @@ export function AwkwardDate({ assist }: LabProps) {
         <p className="font-serif text-2xl tracking-wide">{roman(year)}</p>
         <p className="text-xs text-muted-foreground">({year}, for the non-Romans)</p>
         <div className="flex justify-center gap-2">
-          <button type="button" aria-label="One year earlier" onClick={() => setYear((value) => Math.max(1, value - 1))} className="lab-control">
+          <button type="button" aria-label="One year earlier" onClick={() => setYear((value) => Math.max(1, value - 1))} className="lab-btn lab-btn-icon">
             <Minus aria-hidden className="size-4" />
           </button>
-          <button type="button" aria-label="One year later" onClick={() => setYear((value) => Math.min(3999, value + 1))} className="lab-control">
+          <button type="button" aria-label="One year later" onClick={() => setYear((value) => Math.min(3999, value + 1))} className="lab-btn lab-btn-icon">
             <Plus aria-hidden className="size-4" />
           </button>
         </div>
@@ -100,10 +100,10 @@ export function AwkwardDate({ assist }: LabProps) {
           Month
         </h2>
         <div className="relative mx-auto size-44">
-          <span aria-hidden className="absolute top-[-6px] left-1/2 z-10 -translate-x-1/2 border-x-[7px] border-t-[10px] border-x-transparent border-t-amethyst" />
+          <span aria-hidden className="absolute top-[-6px] left-1/2 z-10 -translate-x-1/2 border-x-[7px] border-t-[10px] border-x-transparent border-t-(--lab-accent-text)" />
           <div
             aria-hidden
-            className={cn("relative size-full rounded-full border-4 border-amethyst/40 bg-surface", spinning ? "transition-transform duration-[2400ms] ease-[cubic-bezier(.12,.7,.2,1)]" : "transition-transform duration-200")}
+            className={cn("relative size-full rounded-full border-4 border-(--lab-line-strong) bg-(--lab-surface)", spinning ? "transition-transform duration-[2400ms] ease-[cubic-bezier(.12,.7,.2,1)]" : "transition-transform duration-200")}
             style={{ transform: `rotate(${turn}deg)` }}
           >
             {MONTHS.map((name, index) => (
@@ -121,14 +121,14 @@ export function AwkwardDate({ assist }: LabProps) {
           {spinning ? "Spinning…" : MONTHS[month]}
         </p>
         <div className="flex justify-center gap-2">
-          <button type="button" aria-label="Previous month" onClick={() => nudge(-1)} disabled={spinning} className="lab-control">
+          <button type="button" aria-label="Previous month" onClick={() => nudge(-1)} disabled={spinning} className="lab-btn lab-btn-icon">
             <Minus aria-hidden className="size-4" />
           </button>
-          <button type="button" onClick={spin} disabled={spinning} className="lab-control">
+          <button type="button" onClick={spin} disabled={spinning} className="lab-btn lab-btn-primary">
             <RefreshCw aria-hidden className="size-4" />
             Spin
           </button>
-          <button type="button" aria-label="Next month" onClick={() => nudge(1)} disabled={spinning} className="lab-control">
+          <button type="button" aria-label="Next month" onClick={() => nudge(1)} disabled={spinning} className="lab-btn lab-btn-icon">
             <Plus aria-hidden className="size-4" />
           </button>
         </div>
@@ -148,7 +148,7 @@ export function AwkwardDate({ assist }: LabProps) {
                 aria-pressed={on}
                 aria-label={`${bit}`}
                 onClick={() => setDay((value) => value ^ bit)}
-                className={cn("grid size-10 place-items-center rounded-lg border font-mono text-lg outline-none focus-visible:ring-2 focus-visible:ring-ring", on ? "border-amethyst bg-amethyst text-white" : "border-border")}
+                className={cn("grid size-10 place-items-center rounded-lg border font-mono text-lg outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring", on ? "border-transparent bg-(--lab-accent) text-(--lab-accent-ink)" : "border-(--lab-line-strong) bg-(--lab-surface)")}
               >
                 {on ? 1 : 0}
               </button>
@@ -158,11 +158,11 @@ export function AwkwardDate({ assist }: LabProps) {
         <p className="font-mono text-xs text-muted-foreground">16 · 8 · 4 · 2 · 1</p>
         <p className="text-sm">
           = <strong className="tabular-nums">{day}</strong>
-          {!valid ? <span className="text-destructive">{day === 0 ? " (day zero isn’t a thing)" : ` (${MONTHS[month]} only has ${max} days)`}</span> : null}
+          {!valid ? <span className="text-(--lab-bad)">{day === 0 ? " (day zero isn’t a thing)" : ` (${MONTHS[month]} only has ${max} days)`}</span> : null}
         </p>
       </section>
 
-      <p aria-live="polite" className="rounded-xl border border-border bg-background/40 p-3 text-center text-sm md:col-span-3">
+      <p aria-live="polite" className="lab-box p-3 text-center text-sm md:col-span-3">
         {shown
           ? `Selected: ${shown.toLocaleDateString(undefined, { dateStyle: "long", timeZone: "UTC" })}, a ${shown.toLocaleDateString(undefined, { weekday: "long", timeZone: "UTC" })}. Nothing is saved.`
           : "That day doesn’t exist yet. Flip some bits."}

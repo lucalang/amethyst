@@ -22,7 +22,7 @@ const LINES = [
 const STAMINA = LINES.length - 1;
 const DODGE_RADIUS = 80;
 
-export function RunawayButton({ assist }: LabProps) {
+export function RunawayButton({ assist, celebrate }: LabProps) {
   const [spot, setSpot] = useState({ x: 50, y: 50 });
   const [dodges, setDodges] = useState(0);
   const [caught, setCaught] = useState(false);
@@ -63,12 +63,12 @@ export function RunawayButton({ assist }: LabProps) {
       <div
         ref={arena}
         onPointerMove={onPointerMove}
-        className="relative h-72 overflow-hidden rounded-xl border border-dashed border-border bg-[radial-gradient(circle,var(--color-border)_1px,transparent_1px)] [background-size:18px_18px]"
+        className="lab-arena relative h-72 overflow-hidden"
       >
         {caught ? (
-          <div className="absolute inset-0 grid place-items-center text-center">
+          <div className="lab-stage-body absolute inset-0 grid place-items-center text-center">
             <div>
-              <PartyPopper aria-hidden className="mx-auto size-10 text-amethyst" />
+              <PartyPopper aria-hidden className="mx-auto size-10 text-(--lab-accent-text)" />
               <p className="mt-2 text-lg font-semibold">Caught!</p>
               <p className="text-sm text-muted-foreground">
                 {dodges === 0 ? "First try. The button is embarrassed." : `It dodged ${dodges} ${dodges === 1 ? "time" : "times"} before giving in.`}
@@ -87,16 +87,18 @@ export function RunawayButton({ assist }: LabProps) {
                 dodge(event.clientX - box.left, event.clientY - box.top);
               }
             }}
-            onClick={() => {
+            onClick={(event) => {
               if (swallowClick.current) {
                 swallowClick.current = false;
                 return;
               }
+              const b = event.currentTarget.getBoundingClientRect();
+              celebrate({ x: b.left + b.width / 2, y: b.top + b.height / 2 });
               setCaught(true);
             }}
             style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
             className={cn(
-              "absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-amethyst px-5 py-2.5 text-sm font-semibold whitespace-nowrap text-white shadow-lg outline-none transition-[left,top] duration-300 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+              "lab-btn lab-btn-primary lab-btn-lg lab-runaway absolute -translate-x-1/2 -translate-y-1/2",
               dodges >= STAMINA - 3 && "opacity-90",
             )}
           >
@@ -108,7 +110,7 @@ export function RunawayButton({ assist }: LabProps) {
         <p aria-live="polite" className="text-sm font-medium">
           {line}
         </p>
-        <p className="text-xs text-muted-foreground tabular-nums">
+        <p className="lab-mono text-xs text-muted-foreground tabular-nums">
           Dodges: {dodges} / {STAMINA}
         </p>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Check, Scissors, ShieldAlert, Wand2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LabProps } from ".";
@@ -52,9 +52,10 @@ function example(now: Date) {
 }
 
 /** A pretend password field. Plain text on purpose, never stored, never sent. */
-export function PasswordGauntlet({ assist }: LabProps) {
+export function PasswordGauntlet({ assist, celebrate }: LabProps) {
   const [value, setValue] = useState("");
   const [shredded, setShredded] = useState(false);
+  const [scraps, setScraps] = useState<{ n: number; text: string } | null>(null);
   const [skipped, setSkipped] = useState(false);
   const rules = useMemo(() => makeRules(new Date()), []);
   const results = rules.map((rule) => rule.ok(value));
@@ -63,41 +64,57 @@ export function PasswordGauntlet({ assist }: LabProps) {
   // Rules appear one at a time, like a bureaucrat remembering them; easy mode shows them all.
   const visible = assist || skipped ? rules.length : done ? rules.length : firstFail + 1;
 
+  useEffect(() => {
+    if (done) celebrate();
+  }, [done, celebrate]);
+
   function shred() {
+    if (value) setScraps((last) => ({ n: (last?.n ?? 0) + 1, text: value.slice(0, 60) }));
     setValue("");
     setShredded(true);
   }
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <p className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-        <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-amber-500" />
+      <p className="lab-note">
+        <ShieldAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-(--lab-warn)" />
         Don’t type a real password. This is a pretend one: it stays in this tab, is shown in plain text, and is never saved or sent.
       </p>
       <div className="space-y-1.5">
         <label htmlFor="gauntlet-input" className="text-sm font-medium">
           Make up a pretend password
         </label>
-        <input
-          id="gauntlet-input"
-          name="lab-pretend-text"
-          type="text"
-          value={value}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setShredded(false);
-          }}
-          autoComplete="off"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          data-1p-ignore
-          data-lpignore="true"
-          data-form-type="other"
-          maxLength={200}
-          className="h-11 w-full rounded-lg border border-border bg-background px-3 font-mono text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-        <p className="text-xs text-muted-foreground tabular-nums">{value.length} characters</p>
+        <div className="relative">
+          <input
+            id="gauntlet-input"
+            name="lab-pretend-text"
+            type="text"
+            value={value}
+            onChange={(event) => {
+              setValue(event.target.value);
+              setShredded(false);
+            }}
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            data-1p-ignore
+            data-lpignore="true"
+            data-form-type="other"
+            maxLength={200}
+            className="lab-input lab-mono"
+          />
+          {scraps ? (
+            <span key={scraps.n} aria-hidden className="lab-shred">
+              {[...scraps.text].map((char, i) => (
+                <span key={i} style={{ "--t": `${(i * 17) % 160}ms`, "--dx": `${((i * 29) % 21) - 10}px`, "--rot": `${((i * 47) % 120) - 60}deg` } as CSSProperties}>
+                  {char}
+                </span>
+              ))}
+            </span>
+          ) : null}
+        </div>
+        <p className="lab-mono text-xs text-muted-foreground tabular-nums">{value.length} characters</p>
       </div>
 
       <ol aria-live="polite" className="space-y-1.5">
@@ -105,11 +122,11 @@ export function PasswordGauntlet({ assist }: LabProps) {
           <li
             key={rule.text}
             className={cn(
-              "flex items-start gap-2 rounded-lg border px-3 py-2 text-sm",
-              results[index] ? "border-emerald-500/30 bg-emerald-500/5" : "border-destructive/40 bg-destructive/5",
+              "flex items-start gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+              results[index] ? "border-(--lab-good)/35 bg-(--lab-good)/8" : "border-(--lab-bad)/40 bg-(--lab-bad)/6",
             )}
           >
-            {results[index] ? <Check aria-label="Met" className="mt-0.5 size-4 shrink-0 text-emerald-500" /> : <X aria-label="Not met" className="mt-0.5 size-4 shrink-0 text-destructive" />}
+            {results[index] ? <Check aria-label="Met" className="mt-0.5 size-4 shrink-0 text-(--lab-good)" /> : <X aria-label="Not met" className="mt-0.5 size-4 shrink-0 text-(--lab-bad)" />}
             <span>
               <span className="text-muted-foreground">Rule {index + 1}.</span> {rule.text}
             </span>
@@ -121,18 +138,18 @@ export function PasswordGauntlet({ assist }: LabProps) {
         {done ? "Password accepted. It is magnificent. Now please shred it." : shredded ? "Shredded. Not a single character survived." : skipped ? "Skipped. These are all the rules; no password required." : ""}
       </p>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={shred} className="lab-control">
+        <button type="button" onClick={shred} className="lab-btn">
           <Scissors aria-hidden className="size-4" />
           Shred it
         </button>
         {assist ? (
-          <button type="button" onClick={() => setValue(example(new Date()))} className="lab-control">
+          <button type="button" onClick={() => setValue(example(new Date()))} className="lab-btn">
             <Wand2 aria-hidden className="size-4" />
             Fill an example
           </button>
         ) : null}
         {!done && !skipped ? (
-          <button type="button" onClick={() => setSkipped(true)} className="lab-control">
+          <button type="button" onClick={() => setSkipped(true)} className="lab-btn lab-btn-ghost">
             Skip: show me every rule
           </button>
         ) : null}

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { Triangle, Volume2, VolumeX } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { LabProps } from ".";
 
 /** The hill, in SVG units: louder is further up the slope. */
@@ -45,7 +44,7 @@ function useDemoTone(level: number, on: boolean) {
   }, [level, on]);
 }
 
-export function UphillVolume({ assist }: LabProps) {
+export function UphillVolume({ assist, celebrate }: LabProps) {
   const [level, setLevel] = useState(0.35);
   const [chocked, setChocked] = useState(false);
   const [sound, setSound] = useState(false);
@@ -116,6 +115,10 @@ export function UphillVolume({ assist }: LabProps) {
   }, [assist]);
 
   const percent = Math.round(level * 100);
+  const summit = percent >= 100;
+  useEffect(() => {
+    if (summit) celebrate();
+  }, [summit, celebrate]);
   const cx = X0 + (X1 - X0) * level + NX * ROCK;
   const cy = Y0 + (Y1 - Y0) * level + NY * ROCK;
   const message = assist
@@ -140,7 +143,7 @@ export function UphillVolume({ assist }: LabProps) {
               pos.current = Number(event.target.value) / 100;
               setLevel(pos.current);
             }}
-            className="w-full accent-amethyst"
+            className="w-full accent-(--lab-accent-text)"
           />
         </label>
       ) : (
@@ -153,7 +156,7 @@ export function UphillVolume({ assist }: LabProps) {
           aria-valuenow={percent}
           aria-valuetext={`${percent}%${chocked ? ", wedged" : ""}`}
           onKeyDown={onKeyDown}
-          className="mx-auto max-w-xl touch-none rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="lab-box mx-auto max-w-xl touch-none p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <svg
             ref={svg}
@@ -174,15 +177,15 @@ export function UphillVolume({ assist }: LabProps) {
               target.current = null;
             }}
           >
-            <path d={`M0,${Y0} H${X0} L${X1},${Y1} H400 V210 H0 Z`} className="fill-amethyst/15" />
-            <path d={`M${X0},${Y0} L${X1},${Y1}`} className="stroke-amethyst/60" strokeWidth="3" strokeLinecap="round" />
+            <path d={`M0,${Y0} H${X0} L${X1},${Y1} H400 V210 H0 Z`} className="fill-(--lab-accent)" fillOpacity={0.14} />
+            <path d={`M${X0},${Y0} L${X1},${Y1}`} className="stroke-(--lab-accent-text)" strokeWidth="3" strokeLinecap="round" />
             {[0.25, 0.5, 0.75].map((t) => (
-              <circle key={t} cx={X0 + (X1 - X0) * t} cy={Y0 + (Y1 - Y0) * t} r="2.5" className="fill-amethyst/50" />
+              <circle key={t} cx={X0 + (X1 - X0) * t} cy={Y0 + (Y1 - Y0) * t} r="2.5" className="fill-(--lab-accent-text)" fillOpacity={0.6} />
             ))}
             <text x={X0 - 6} y={Y0 + 22} className="fill-muted-foreground text-[11px]">
               hush
             </text>
-            <path d={`M${X1},${Y1} v-34 l18,7 -18,7`} className="fill-amethyst stroke-amethyst" strokeWidth="1.5" />
+            <path d={`M${X1},${Y1} v-34 l18,7 -18,7`} className="fill-(--lab-accent) stroke-(--lab-accent-text)" strokeWidth="1.5" />
             <text x={X1 - 34} y={Y1 + 22} className="fill-muted-foreground text-[11px]">
               LOUD
             </text>
@@ -190,12 +193,12 @@ export function UphillVolume({ assist }: LabProps) {
               <path
                 d="M-10,0 L6,0 L6,-11 Z"
                 transform={`translate(${cx - NX * ROCK - ((X1 - X0) / LENGTH) * 16} ${cy - NY * ROCK - ((Y1 - Y0) / LENGTH) * 16}) rotate(${(Math.atan2(Y1 - Y0, X1 - X0) * 180) / Math.PI})`}
-                className="fill-amber-500"
+                className="fill-(--lab-warn)"
               />
             ) : null}
             <g transform={`translate(${cx} ${cy}) rotate(${level * 760})`}>
               <circle r={ROCK} className="fill-foreground/80" />
-              <circle r={ROCK - 4} className="fill-surface" />
+              <circle r={ROCK - 4} className="fill-(--lab-surface)" />
               <path d="M-5,-4 h3 l5,-5 v18 l-5,-5 h-3 z" className="fill-foreground/80" />
               <path d="M6,-4 q3,4 0,8" className="fill-none stroke-foreground/80" strokeWidth="1.6" />
             </g>
@@ -205,17 +208,17 @@ export function UphillVolume({ assist }: LabProps) {
 
       <div className="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-3">
         <div aria-live="polite" className="min-w-0">
-          <p className="text-2xl font-semibold tabular-nums">{percent}%</p>
+          <p className="lab-mono text-3xl font-semibold tabular-nums">{percent}%</p>
           <p className="text-sm text-muted-foreground">{message}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {!assist ? (
-            <button type="button" aria-pressed={chocked} onClick={() => setChock(!chocked)} className={cn("lab-control", chocked && "lab-control-on")}>
+            <button type="button" aria-pressed={chocked} onClick={() => setChock(!chocked)} className="lab-btn">
               <Triangle aria-hidden className="size-4" />
               {chocked ? "Remove wedge" : "Wedge it"}
             </button>
           ) : null}
-          <button type="button" aria-pressed={sound} onClick={() => setSound((value) => !value)} className={cn("lab-control", sound && "lab-control-on")}>
+          <button type="button" aria-pressed={sound} onClick={() => setSound((value) => !value)} className="lab-btn">
             {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}
             {sound ? "Mute demo tone" : "Play demo tone"}
           </button>
