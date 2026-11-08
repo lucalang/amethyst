@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { STARTUP_COOKIE, STARTUP_PATH, startupCookieOptions } from "@/lib/startup";
 import { isBrowserDemoPath } from "@/lib/browser-version-demos";
+import { GUEST_HOME, GUEST_INFO, guestMayCall, guestMayOpen } from "@/lib/guest";
 import type { Database } from "./database.types";
 
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/signout", "/auth/session-expired", "/tour"];
@@ -43,6 +44,7 @@ export async function updateSession(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims?.sub);
+  const guest = signedIn && data?.claims?.is_anonymous === true;
   const { pathname, search } = request.nextUrl;
 
   if (!signedIn && !pathname.startsWith("/api/") && !isPublic(pathname)) {
@@ -50,6 +52,23 @@ export async function updateSession(request: NextRequest) {
     url.pathname = "/login";
     url.search = "";
     if (pathname !== "/") url.searchParams.set("next", `${pathname}${search}`);
+    return withSessionCookies(NextResponse.redirect(url), response);
+  }
+
+  // Guests keep to the Arcade; they may still reach sign-in and sign-up to get a real account.
+  if (guest) {
+    if (pathname.startsWith("/api/")) {
+      if (guestMayCall(pathname)) return response;
+      return withSessionCookies(NextResponse.json({ error: { code: "guest", message: "This needs an account. Guests can only use the Arcade." } }, { status: 403 }), response);
+    }
+    if (isPublic(pathname) || guestMayOpen(pathname)) return response;
+    const url = request.nextUrl.clone();
+    url.search = "";
+    if (pathname === "/") url.pathname = GUEST_HOME;
+    else {
+      url.pathname = GUEST_INFO;
+      url.searchParams.set("from", pathname);
+    }
     return withSessionCookies(NextResponse.redirect(url), response);
   }
 

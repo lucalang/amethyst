@@ -6,7 +6,7 @@ import { ACHIEVEMENTS } from "@/lib/achievements";
 import { AVATAR_DECORATION_IDS, MAX_PROFILE_BADGES, PROFILE_BADGE_IDS, PROFILE_TITLE_IDS } from "@/lib/cosmetics";
 import { MAX_SHOWCASE_ACHIEVEMENTS, MAX_SHOWCASE_ITEMS, PROFILE_AMBIENT_IDS, PROFILE_SECTION_IDS, PROFILE_STYLE_IDS, pedestalCollectible, type ProfileStyleId } from "@/lib/profile-styles";
 import { DEFAULT_PROFILE_BANNER, PROFILE_BANNER_IDS, PROFILE_FRAME_IDS } from "@/lib/profile-cosmetics";
-import { requireUser } from "@/lib/supabase/auth";
+import { requireAccount as requireUser } from "@/lib/supabase/auth";
 
 export type ShowcaseSaveState = { status: "idle" | "success" | "error"; message?: string; look?: string | null };
 

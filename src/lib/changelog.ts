@@ -51,6 +51,110 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-07-guest-mode-quick-nav-sounds",
+    date: "2026-11-07",
+    title: "Guest mode, one-click navigation and more sound",
+    intro: "Play the Arcade without an account, jump between the main areas in one click, and hear more of the app.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Guest mode", text: "Choose “Continue as guest” on the sign-in page to play the Arcade without an account. Everything else stays tied to an account." },
+      { kind: "new", feature: "Area switcher", text: "Archive, To Do, Arcade and Shop now sit side by side in the top bar, one click away from anywhere." },
+      { kind: "improved", feature: "Tools menu", text: "Tools now has Arcade, Library, Shop, Explore and Utilities sections, with Season Pass, Quests, Leaderboards, Quick Notes, Cases and more." },
+      { kind: "improved", feature: "Account menu", text: "The account menu now links straight to Archive, To Do and Arcade; Index and Inventory moved to Tools → Library." },
+      { kind: "new", feature: "Sound effects", text: "To Do, the Shop, case openings, the Season Pass, streaks and Arcade coin rewards now have their own sounds, with a single switch in Settings." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Guest mode",
+          body: "The sign-in page has a “Continue as guest” button. Guests can play every Arcade game, earn coins and check the leaderboards. Collections, To Do, the Shop, the Season Pass, Inventory, achievements, the profile and Settings need an account; opening them explains why and offers to sign in or create one. A bar under the top bar shows you’re a guest. Guest progress isn’t moved to a new account and is discarded when you end the guest session.",
+          where: "Sign-in page",
+          link: { href: "/login", label: "Open the sign-in page" },
+        },
+        {
+          title: "Area switcher",
+          body: "The top bar shows Archive, To Do, Arcade and Shop as one row of buttons, with the current area highlighted and named. On wide screens every button shows its name.",
+          where: "Top bar",
+        },
+        {
+          title: "Sound effects",
+          body: "Short, synthesized sounds now play across the app:",
+          points: [
+            "To Do: completing or reopening a task or step, and adding tasks.",
+            "Shop: buying cosmetics, game cosmetics, cases and boosters, equipping cosmetics, activating boosters, and failed purchases.",
+            "Case opening: the case cracking open, a tick for every item passing the marker, a landing sound pitched by rarity and a chime when rewards are claimed.",
+            "Season Pass: claiming rewards and quests, a pop for each revealed reward (higher for rarer ones), unlocking Premium and buying tier skips.",
+            "Streaks: the daily flame celebration and recovering a streak.",
+            "Arcade: a coin chime when a run pays out.",
+          ],
+          where: "Settings → General → Sound effects",
+          link: { href: "/settings#notifications", label: "Open sound settings" },
+        },
+      ],
+      improved: [
+        {
+          title: "Tools menu",
+          body: "The Tools part of the account menu is now grouped into Arcade (Season Pass, Quests, Leaderboards, Achievements), Library (Quick Notes, Index, Inventory), Shop (Cosmetics, Cases, Boosters), Explore (Tour, Version History, What’s New) and Utilities (Lab, Vault).",
+          where: "Account menu → Tools",
+        },
+        {
+          title: "Account menu shortcuts",
+          body: "The account menu lists Archive, To Do and Arcade right under My Profile. Index and Inventory are still one step away in Tools → Library.",
+          where: "Account menu",
+        },
+        {
+          title: "One sound switch",
+          body: "Settings has a Sound effects switch. It is the same setting as the sound button inside Arcade games, so muting one mutes both.",
+          where: "Settings → General",
+          link: { href: "/settings#notifications", label: "Open Settings" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-07-season-pass-polish-streak-fix",
+    date: "2026-11-07",
+    title: "Clearer Season Pass, sturdier streak flame, nicer scrollbars",
+    intro: "The Season Pass track is easier to read, the daily streak celebration no longer goes missing, and scrollbars match your theme.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Season Pass", text: "Claiming rewards now pops each one onto the screen with a burst in its rarity colour, rarest first." },
+      { kind: "improved", feature: "Season Pass", text: "Bigger reward cards with items standing on a glowing pedestal that lift out of the card on hover. Ready, claimed, locked and Premium rewards each have their own badge, your current tier is highlighted and the track can jump to your first unclaimed reward." },
+      { kind: "fixed", feature: "Streak celebration", text: "The flame now reliably plays after your first finished game of the day, even if the connection hiccups, and shows the right count." },
+      { kind: "improved", feature: "Scrollbars", text: "Slim, rounded scrollbars in your theme's colours that brighten on hover. Touch screens keep their usual scrolling." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Reward reveal",
+          body: "When you claim Season Pass rewards, each one pops onto the screen with a burst and sparks in its rarity colour, rarest first, along with any coins for items you already owned. A button takes you straight to your Inventory. With reduced motion the rewards simply appear.",
+          where: "Season Pass",
+          link: { href: "/arcade/season", label: "Open the Season Pass" },
+        },
+      ],
+      improved: [
+        {
+          title: "Season Pass track",
+          body: "Reward cards are larger, with items on a glowing pedestal instead of shrunk into a box; they lift out of the card on hover, and ready rewards gently float. The pass shows how much XP is left to the next tier, a key for reward states, a highlighted column for your current tier and a shortcut to the first reward you can claim. The arrows dim at either end of the track. Prices, rewards, progress and claiming work exactly as before.",
+          where: "Season Pass",
+          link: { href: "/arcade/season", label: "Open the Season Pass" },
+        },
+        {
+          title: "Scrollbars",
+          body: "Scrollbars across Amethyst use a slim thumb tinted by your theme, light or dark, and turn to your accent colour while you drag. Firefox uses the same colours on its own scrollbar, and phones and tablets keep their native ones.",
+        },
+      ],
+      fixed: [
+        {
+          title: "Daily streak celebration",
+          body: "If the streak was still loading or a request briefly failed, the celebration could be used up without ever showing. It now waits for the streak, retries briefly and appears once, after your first finished game of the UTC day, with the updated count. With reduced motion it fades in and the new number is highlighted in colour instead of popping.",
+          where: "Any Arcade game",
+          link: { href: "/arcade", label: "Go to the Arcade" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-07-lab-redesign",
     date: "2026-11-07",
     title: "The Lab gets a new look",

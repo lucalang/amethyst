@@ -21,6 +21,7 @@ import { MAX_BOOSTER_PURCHASE, activeBoosters, boostedOpenings, boosterLook, typ
 import { caseOdds, formatChance, lootCaseInfo, type LootState } from "@/lib/lootboxes";
 import { RARITIES } from "@/lib/rarities";
 import { cn } from "@/lib/utils";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { LuckBadge, tierStyle } from "./booster-parts";
 import { RarityTag } from "./parts";
 
@@ -223,6 +224,7 @@ export function BoosterShop({ state }: { state: LootState | null }) {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
+  const sound = useUiSound();
   const [local, setLocal] = useState<{ balance?: number; boost?: Boost }>({});
   const [seen, setSeen] = useState(state);
   if (seen !== state) {
@@ -262,9 +264,11 @@ export function BoosterShop({ state }: { state: LootState | null }) {
       });
       setLocal({ balance: result.balance, boost: result.boost });
       setPurchase({ ...purchase, stage: "done", balanceAfter: result.balance });
+      sound("purchase");
       window.dispatchEvent(new CustomEvent("archive:coins", { detail: result.balance }));
       router.refresh();
     } catch (error) {
+      sound("invalid");
       setPurchase({ ...purchase, error: purchaseError(error) });
       if (error instanceof ApiError && error.status >= 400 && error.status < 500) router.refresh();
     } finally {

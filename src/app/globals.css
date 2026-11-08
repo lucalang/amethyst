@@ -1281,6 +1281,53 @@
   }
 }
 
+/* Scrollbars: slim themed thumb. Ungated, as touch-capable desktops report coarse pointers; phones' overlay scrollbars ignore it. */
+:root {
+  --scrollbar-thumb: color-mix(in oklab, var(--foreground) 42%, transparent);
+  --scrollbar-thumb-hover: color-mix(in oklab, var(--amethyst) 60%, var(--foreground));
+  --scrollbar-thumb-active: var(--amethyst);
+  --scrollbar-track-hover: color-mix(in oklab, var(--foreground) 7%, transparent);
+}
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-track:hover {
+  background: var(--scrollbar-track-hover);
+}
+::-webkit-scrollbar-thumb {
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-color: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover,
+:focus-visible::-webkit-scrollbar-thumb {
+  border-width: 2px;
+  background-color: var(--scrollbar-thumb-hover);
+}
+::-webkit-scrollbar-thumb:active {
+  border-width: 2px;
+  background-color: var(--scrollbar-thumb-active);
+}
+/* Firefox has no scrollbar pseudo-elements: colour its native scrollbar (inherited, so nested areas match). */
+@supports not selector(::-webkit-scrollbar) {
+  :root {
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
+
 /* Comfortable touch targets on coarse pointers. */
 @media (pointer: coarse) {
   [data-slot="button"],
@@ -6049,7 +6096,7 @@ a.arcade-counter:hover {
   92%, 100% { opacity: 0; }
 }
 :root .streak-burst-scrim[data-level="off"] {
-  animation: streak-burst-fade 1.8s ease both !important;
+  animation: streak-burst-fade 2.4s ease both !important;
 }
 .streak-burst {
   position: fixed;
@@ -6116,10 +6163,14 @@ a.arcade-counter:hover {
 }
 /* Reduced motion: no travel or flicker; a plain fade with the number swapped in place. */
 :root .streak-burst[data-level="off"] .streak-burst-body {
-  animation: streak-burst-fade 1.8s ease both !important;
+  animation: streak-burst-fade 2.4s ease both !important;
 }
 :root .streak-burst[data-level="off"] :is(.streak-burst-text, .streak-burst-tick, .fire-mark path) {
   animation: none !important;
+}
+/* Without motion the new count is marked by colour instead of a pop. */
+.streak-burst[data-level="off"] .streak-burst-tick {
+  color: color-mix(in oklab, var(--warning) 45%, white);
 }
 @keyframes streak-burst-fade {
   0% { opacity: 0; }
@@ -6134,7 +6185,10 @@ a.arcade-counter:hover {
   }
   :root .streak-burst .streak-burst-body,
   :root .streak-burst-scrim {
-    animation: streak-burst-fade 1.8s ease both !important;
+    animation: streak-burst-fade 2.4s ease both !important;
+  }
+  .streak-burst-tick {
+    color: color-mix(in oklab, var(--warning) 45%, white);
   }
 }
 .arcade-cab-marquee {

@@ -71,6 +71,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             />
           </SettingRow>
           <SettingRow
+            labelId="sound-effects-label"
+            label="Sound effects"
+            description="Short sounds for Arcade games, completing tasks, shop purchases, case openings, Season Pass rewards, streaks and achievements. The sound button inside a game changes this too."
+            reset={resetFor(preferences, ["arcadeSound"], "On")}
+          >
+            <SwitchSetting settingKey="arcadeSound" value={preferences.arcadeSound} labelId="sound-effects-label" onLabel="Sounds on" offLabel="Sounds off" />
+          </SettingRow>
+          <SettingRow
             labelId="pull-cutscenes-label"
             label="Rare pull cutscenes"
             description="Which rarities play a cutscene when you pull them from a case. Higher rarities get bigger scenes; every scene can be skipped. Reduced motion turns them all off."

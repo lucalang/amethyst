@@ -7,6 +7,8 @@ export type AuthContext = {
   supabase: ServerSupabase;
   userId: string;
   email: string | null;
+  /** An anonymous guest session: Arcade only, no account features. */
+  guest: boolean;
 };
 
 /**
@@ -19,12 +21,19 @@ export const getAuthContext = cache(async (): Promise<AuthContext | null> => {
   const sub = data?.claims?.sub;
   if (error || typeof sub !== "string" || !sub) return null;
   const email = data?.claims?.email;
-  return { supabase, userId: sub, email: typeof email === "string" ? email : null };
+  return { supabase, userId: sub, email: typeof email === "string" ? email : null, guest: data?.claims?.is_anonymous === true };
 });
 
 export async function requireUser(): Promise<AuthContext> {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
+  return ctx;
+}
+
+/** Like requireUser, but guests are sent to the page explaining what needs an account. */
+export async function requireAccount(): Promise<AuthContext> {
+  const ctx = await requireUser();
+  if (ctx.guest) redirect("/guest");
   return ctx;
 }
 

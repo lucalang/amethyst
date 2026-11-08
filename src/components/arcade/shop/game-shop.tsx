@@ -20,6 +20,7 @@ import { catalogMatcher, ownershipMatches, type Ownership } from "@/lib/catalog-
 import type { GameShopData } from "@/lib/data/shop";
 import { GAME_SHOPS, type GameCategory, type GameLook } from "@/lib/game-cosmetics";
 import { cn } from "@/lib/utils";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { CATEGORY_ICONS } from "./category-icons";
 import "@/components/inventory/inventory.css";
 import { CosmeticPreview } from "./preview";
@@ -97,6 +98,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
   const [query, setQuery] = useState("");
   const [ownership, setOwnership] = useState<Ownership>("all");
   const inFlight = useRef(false);
+  const sound = useUiSound();
   const previewRef = useRef<HTMLElement>(null);
 
   const states = new Map(data.items.map((item) => [item.id, item]));
@@ -159,8 +161,10 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
       setBalance(result.balance);
       setBought((current) => [...current, entry.id as string]);
       setPurchase({ ...purchase, stage: "done", already: result.status === "owned" });
+      if (result.status === "purchased") sound("purchase");
       window.dispatchEvent(new CustomEvent("archive:coins", { detail: result.balance }));
     } catch (error) {
+      sound("invalid");
       setPurchase({ ...purchase, error: purchaseError(error) });
     } finally {
       inFlight.current = false;
@@ -184,6 +188,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
         return rest;
       });
       onLook?.(next);
+      sound("equip");
       toast.success(entry.slug ? `${entry.name} equipped` : `${cat.label}: default restored`);
       setPurchase(null);
     } catch (error) {

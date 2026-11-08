@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { MAX_CASE_PURCHASE, lootCaseInfo, type LootCase, type LootState, type RefundRates } from "@/lib/lootboxes";
 import { cn } from "@/lib/utils";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { CaseArt, DUPLICATE_NOTE, OddsList, RefundRateList, caseStyle } from "./parts";
 import { LuckBadge } from "./booster-parts";
 import { LUCK_NO_GUARANTEE } from "./booster-shop";
@@ -213,6 +214,7 @@ export function LootboxShop({ state }: { state: LootState | null }) {
   const [purchase, setPurchase] = useState<Purchase | null>(null);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
+  const sound = useUiSound();
   const [local, setLocal] = useState<{ balance?: number; owned: Record<string, number> }>({ owned: {} });
   const [seen, setSeen] = useState(state);
   if (seen !== state) {
@@ -252,9 +254,11 @@ export function LootboxShop({ state }: { state: LootState | null }) {
       });
       setLocal((current) => ({ balance: result.balance, owned: { ...current.owned, [purchase.caseId]: result.owned } }));
       setPurchase({ ...purchase, stage: "done", balanceAfter: result.balance, owned: result.owned });
+      if (result.status === "purchased") sound("purchase");
       window.dispatchEvent(new CustomEvent("archive:coins", { detail: result.balance }));
       router.refresh();
     } catch (error) {
+      sound("invalid");
       setPurchase({ ...purchase, error: purchaseError(error) });
       if (error instanceof ApiError && error.status >= 400 && error.status < 500) router.refresh();
     } finally {

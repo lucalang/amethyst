@@ -4,6 +4,7 @@ import { createContext, use, useCallback, useEffect, useMemo, useRef, useState, 
 import { toast } from "sonner";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import { useSettings } from "@/components/layout/settings-context";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { createClient } from "@/lib/supabase/client";
 import {
   dateInZone,
@@ -332,6 +333,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
     [commit, enqueue, schedulePull],
   );
 
+  const sound = useUiSound();
   const actions = useMemo(() => {
     const task = (id: string) => dataRef.current.tasks[id];
     const nowIso = () => new Date().toISOString();
@@ -346,6 +348,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
         try {
           const result = await enqueue(() => apiFetch<{ tasks: Task[] }>("/api/tasks", { method: "POST", json: { listId, tasks: items, batchId, ...extras } }));
           commit((current) => applyPatch(current, { tasks: index(result.tasks) }));
+          sound("add");
           return null;
         } catch (error) {
           const message = errorMessage(error);
@@ -361,6 +364,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
         const current = task(id);
         if (!current) return Promise.resolve("That task no longer exists.");
         const next = patchedTask(current, patch, nowIso());
+        if (patch.completed !== undefined && patch.completed !== Boolean(current.completedAt)) sound(patch.completed ? "check" : "uncheck");
         if (patch.listId !== undefined && patch.listId !== current.listId) {
           const top = Object.values(dataRef.current.tasks).filter((other) => other.listId === patch.listId);
           next.listId = patch.listId;
@@ -393,6 +397,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
       async bulkTasks(ids: string[], change: { patch: TaskPatch } | { delete: true }, label: string): Promise<BulkResult> {
         const rows = ids.map(task).filter(Boolean);
         if (rows.length === 0) return { saved: 0, failed: 0, missing: 0 };
+        if ("patch" in change && change.patch.completed !== undefined) sound(change.patch.completed ? "check" : "uncheck");
         const now = nowIso();
         const patch: Patch = { tasks: {} };
         if ("delete" in change) {
@@ -482,6 +487,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
       updateStep(id: string, patch: { title?: string; completed?: boolean }) {
         const current = dataRef.current.steps[id];
         if (!current) return Promise.resolve("That step no longer exists.");
+        if (patch.completed !== undefined && patch.completed !== current.completed) sound(patch.completed ? "check" : "uncheck", 1.2);
         return mutate(
           { steps: { [id]: { ...current, ...patch } } },
           () => apiFetch<{ step: TaskStep }>(`/api/task-steps/${id}`, { method: "PATCH", json: patch }),
@@ -602,7 +608,7 @@ function useStoreValue(userId: string, initial: TaskChanges) {
         }
       },
     };
-  }, [commit, enqueue, mutate, schedulePull, userId]);
+  }, [commit, enqueue, mutate, schedulePull, sound, userId]);
 
   const rememberedListId = useSyncExternalStore(
     subscribeToLastList,

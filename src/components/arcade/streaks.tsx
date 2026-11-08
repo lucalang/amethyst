@@ -32,6 +32,7 @@ import {
 } from "@/lib/arcade-streaks";
 import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
+import { useUiSound } from "@/components/layout/ui-sound";
 
 const gameTitle = (game: ArcadeGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
 
@@ -41,6 +42,22 @@ const fetchStreaks = () =>
   apiFetch<{ streaks: ArcadeStreaks; celebrated: boolean }>("/api/arcade/streaks").then(
     (body): StreakState => ({ date: dailyDate(), streaks: body.streaks, celebrated: body.celebrated }),
   );
+
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+/** Claims today's celebration, retrying connection and server errors; `retried` means an earlier attempt may have landed. */
+async function claimCelebration(game: ArcadeGameId): Promise<{ celebration: StreakCelebration; retried: boolean } | null> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const body = await apiFetch<{ celebration: StreakCelebration }>("/api/arcade/streaks/celebrate", { method: "POST", json: { game } });
+      return { celebration: body.celebration, retried: attempt > 0 };
+    } catch (error) {
+      if (error instanceof ApiError && error.status < 500 && error.status !== 429) return null;
+      if (attempt < 2) await wait(1000 * (attempt + 1));
+    }
+  }
+  return null;
+}
 
 /** The streak flame: layered tongues that flicker while today is played (static under reduced motion). */
 export function FireMark({ lit, className }: { lit: boolean; className?: string }) {
@@ -59,16 +76,32 @@ export function FireMark({ lit, className }: { lit: boolean; className?: string 
  */
 export function useArcadeStreaks(initial: StreakState | null, refreshOnPlay: (streaks: ArcadeStreaks) => boolean) {
   const [state, setState] = useState(initial);
+  const [failures, setFailures] = useState(0);
   const today = useDailyDate();
   const loadedFor = state?.date;
 
+  const refresh = useCallback(
+    () =>
+      void fetchStreaks().then(
+        (next) => {
+          setFailures(0);
+          // An answer requested before this page's claim must not forget that today was celebrated.
+          setState((previous) => (previous?.date === next.date && previous.celebrated ? { ...next, celebrated: true } : next));
+        },
+        () => setFailures((count) => count + 1),
+      ),
+    [],
+  );
+
   useEffect(() => {
-    if (loadedFor === today) return;
-    void fetchStreaks().then(setState, () => {});
-  }, [loadedFor, today]);
+    if (loadedFor === today || failures > 4) return;
+    if (failures === 0) return refresh();
+    const id = window.setTimeout(refresh, 1500 * failures);
+    return () => window.clearTimeout(id);
+  }, [loadedFor, today, failures, refresh]);
 
   const onPlayed = useEffectEvent(() => {
-    if (!state || refreshOnPlay(state.streaks)) void fetchStreaks().then(setState, () => {});
+    if (!state || refreshOnPlay(state.streaks)) refresh();
   });
   useEffect(() => {
     const listener = () => onPlayed();
@@ -85,7 +118,9 @@ export function useArcadeStreaks(initial: StreakState | null, refreshOnPlay: (st
     [],
   );
   const markCelebrated = useCallback(() => setState((previous) => (previous ? { ...previous, celebrated: true } : previous)), []);
-  return { streaks: state?.streaks ?? null, celebrated: state?.celebrated ?? null, replace, markCelebrated };
+  // Yesterday's answer says nothing about today's celebration.
+  const celebrated = state?.date === today ? (state.celebrated ?? null) : null;
+  return { streaks: state?.streaks ?? null, celebrated, replace, markCelebrated, refresh };
 }
 
 /** Confirms and buys back yesterday; the price shown is the one the server enforces. */
@@ -101,6 +136,7 @@ export function RecoverStreakDialog({
   onRecovered: (streaks: ArcadeStreaks | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const sound = useUiSound();
   const recovery = streak.recovery;
   if (!recovery) return null;
   const title = gameTitle(streak.game);
@@ -114,6 +150,7 @@ export function RecoverStreakDialog({
         json: { game: streak.game, expectedCost: recovery.cost },
       });
       window.dispatchEvent(new CustomEvent("archive:coins", { detail: body.recovery.balance }));
+      if (body.recovery.status === "recovered") sound("flame");
       toast.success(
         body.recovery.status === "recovered"
           ? `${title} streak recovered: ${dayWord(body.recovery.streak)} and counting.`
@@ -206,32 +243,37 @@ export function StreakLine({ streak, onRecover }: { streak: ArcadeStreak; onReco
 /** The current game's streak beside its title, with details and recovery in a popover. */
 export function GameStreak({ game }: { game: ArcadeGameId }) {
   const { effects } = useArcade();
-  const { streaks, celebrated, replace, markCelebrated } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));
+  const sound = useUiSound();
+  const { streaks, celebrated, replace, markCelebrated, refresh } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));
   const [open, setOpen] = useState(false);
   const [recovering, setRecovering] = useState(false);
   const [burst, setBurst] = useState<{ from: number; to: number } | null>(null);
   const [landings, setLandings] = useState(0);
   const chipRef = useRef<HTMLButtonElement>(null);
-  const claiming = useRef(false);
+  // The UTC day this page claimed (or is claiming) the celebration for.
+  const claimedFor = useRef<string | null>(null);
   const streak = streaks?.[game];
 
   // The first verified completion of the day claims the celebration; the server grants it once.
   const onCompleted = useEffectEvent((completed: unknown) => {
-    if (completed !== game || claiming.current || celebrated === true) return;
-    claiming.current = true;
-    apiFetch<{ celebration: StreakCelebration }>("/api/arcade/streaks/celebrate", { method: "POST", json: { game } }).then(
-      ({ celebration }) => {
-        if (celebration.streak === 0) {
-          claiming.current = false;
-          return;
-        }
-        if (celebration.celebrate) setBurst({ from: celebration.streak - 1, to: celebration.streak });
-        markCelebrated();
-      },
-      () => {
-        claiming.current = false;
-      },
-    );
+    const day = dailyDate();
+    if (completed !== game || claimedFor.current === day || celebrated === true) return;
+    claimedFor.current = day;
+    const unclaimedBefore = celebrated === false;
+    void claimCelebration(game).then((result) => {
+      if (!result || result.celebration.streak === 0) {
+        claimedFor.current = null;
+        return;
+      }
+      const { celebration, retried } = result;
+      // A retry after a lost answer reads "already claimed" for the claim that attempt just made.
+      if (celebration.celebrate || (retried && unclaimedBefore)) {
+        setBurst({ from: celebration.streak - 1, to: celebration.streak });
+        sound("flame");
+      }
+      markCelebrated();
+      refresh();
+    });
   });
   useEffect(() => {
     const listener = (event: Event) => onCompleted((event as CustomEvent<unknown>).detail);
@@ -239,11 +281,37 @@ export function GameStreak({ game }: { game: ArcadeGameId }) {
     return () => window.removeEventListener(ARCADE_COMPLETED_EVENT, listener);
   }, []);
 
+  // The celebration renders even while the streak itself is still loading.
+  const celebration = (
+    <>
+      <span role="status" className="sr-only">
+        {burst ? `${gameTitle(game)} streak extended to ${dayWord(burst.to)}.` : ""}
+      </span>
+      {burst ? (
+        <StreakBurst
+          from={burst.from}
+          to={burst.to}
+          effects={effects}
+          target={chipRef}
+          onDone={() => {
+            setBurst(null);
+            setLandings((count) => count + 1);
+            sound("combo");
+          }}
+        />
+      ) : null}
+    </>
+  );
+
   if (!streak) {
     return (
-      <Button variant="outline" size="sm" className="streak-chip h-7 rounded-full px-2" disabled aria-label="Loading streak">
-        <FireMark lit={false} />
-      </Button>
+      <>
+        <Button ref={chipRef} variant="outline" size="sm" className="streak-chip h-7 rounded-full px-2" disabled aria-label="Loading streak">
+          <FireMark lit={false} />
+        </Button>
+        {null}
+        {celebration}
+      </>
     );
   }
 
@@ -325,26 +393,12 @@ export function GameStreak({ game }: { game: ArcadeGameId }) {
         onOpenChange={setRecovering}
         onRecovered={(next) => (next ? replace(next) : void fetchStreaks().then((value) => replace(value.streaks), () => {}))}
       />
-      <span role="status" className="sr-only">
-        {burst ? `${gameTitle(game)} streak extended to ${dayWord(burst.to)}.` : ""}
-      </span>
-      {burst ? (
-        <StreakBurst
-          from={burst.from}
-          to={burst.to}
-          effects={effects}
-          target={chipRef}
-          onDone={() => {
-            setBurst(null);
-            setLandings((count) => count + 1);
-          }}
-        />
-      ) : null}
+      {celebration}
     </>
   );
 }
 
-const BURST_MS = { full: 2600, subtle: 2600, off: 1800 } satisfies Record<MotionLevel, number>;
+const BURST_MS = { full: 2600, subtle: 2600, off: 2400 } satisfies Record<MotionLevel, number>;
 
 /** The flame rises, the count ticks up, then the flame flies into the header chip and fades. */
 function StreakBurst({
@@ -373,7 +427,7 @@ function StreakBurst({
       node.style.setProperty("--dy", `${Math.round(chip.top + chip.height / 2 - window.innerHeight * 0.42)}px`);
     }
     const total = BURST_MS[effects];
-    const tick = window.setTimeout(() => setCount(to), effects === "off" ? 600 : 800);
+    const tick = window.setTimeout(() => setCount(to), effects === "off" ? 1000 : 800);
     const done = window.setTimeout(() => finish(), total);
     return () => {
       window.clearTimeout(tick);

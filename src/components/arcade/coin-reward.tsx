@@ -7,6 +7,7 @@ import { ApiError, apiFetch } from "@/lib/api-client";
 import type { RunReward, ScoreGame } from "@/lib/arcade";
 import { announceCompleted, announcePlayed } from "@/lib/arcade-streaks";
 import { cn } from "@/lib/utils";
+import { useUiSound } from "@/components/layout/ui-sound";
 
 export type CoinState =
   | { status: "idle" }
@@ -29,6 +30,7 @@ export function useArcadeRun(game: ScoreGame) {
   // Only the latest run's result is shown; an older answer arriving late is ignored.
   const latest = useRef(0);
   const [coins, setCoins] = useState<CoinState>({ status: "idle" });
+  const sound = useUiSound();
 
   const begin = useCallback((board?: string) => {
     if (run.current) return;
@@ -81,6 +83,7 @@ export function useArcadeRun(game: ScoreGame) {
           if (!quiet && !options.announce && (body.reward.status === "paid" || body.reward.status === "unpaid")) announceCompleted(game);
           if (body.reward.status === "paid") {
             window.dispatchEvent(new CustomEvent("archive:coins", { detail: body.reward.balance }));
+            if (!quiet && body.reward.coins > 0) window.setTimeout(() => sound("coin"), 450);
             if (options.announce && !quiet) toast(`+${body.reward.coins} coin${body.reward.coins === 1 ? "" : "s"} from your last run`, { icon: <Coins aria-hidden className="coin-ink size-4" /> });
           }
           return;
@@ -92,7 +95,7 @@ export function useArcadeRun(game: ScoreGame) {
       }
       show({ status: "error" });
     })();
-  }, [game]);
+  }, [game, sound]);
 
   return { begin, finish, active, coins };
 }

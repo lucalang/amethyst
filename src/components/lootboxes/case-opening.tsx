@@ -16,6 +16,7 @@ import type { InventoryType } from "@/lib/inventory";
 import { OPEN_BATCH, OPEN_PRESETS, caseOdds, lootCaseInfo, typeLabel, type LootCase, type LootClaim, type LootOpening, type LootResult, type RefundRates } from "@/lib/lootboxes";
 import { RARITIES, isCutsceneRarity, rarityRank, type CutsceneRarity, type RarityId } from "@/lib/rarities";
 import { useSettings } from "@/components/layout/settings-context";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { PullCutscene } from "./pull-cutscene";
 import { cn } from "@/lib/utils";
 import { CaseArt, DUPLICATE_NOTE, OddsList, RarityTag, RefundRateList, TypeIcon, caseStyle, rarityStyle, rewardItem } from "./parts";
@@ -151,6 +152,8 @@ export function CaseOpening({
   const pendingOpen = useRef<{ id: string; quantity: number } | null>(null);
   const busy = useRef(false);
   const reels = useRef<HTMLDivElement>(null);
+  const sound = useUiSound();
+  const bestPitch = (results: { rarity: RarityId }[]) => 1 + Math.max(0, ...results.map((result) => rarityRank(result.rarity))) * 0.08;
 
   const caseId = opening?.case ?? (plan.kind === "new" ? plan.caseId : (plan.openings[0]?.case ?? "release"));
   const info = lootCaseInfo(caseId);
@@ -167,10 +170,13 @@ export function CaseOpening({
     } else setPhase("showcase");
   }
   const afterLanding = useEffectEvent(finishRoll);
+  const reelTick = useEffectEvent(() => sound("tick"));
+  const reelLanded = useEffectEvent(() => sound("reveal", bestPitch(lanes.map((lane) => lane.tiles[lane.win]))));
 
   useEffect(() => {
     if (phase !== "rolling" || !reels.current) return;
     let timer = 0;
+    let frame = 0;
     const strips = Array.from(reels.current.querySelectorAll<HTMLElement>(".lb-strip"));
     const animations = strips.map((strip, lane) => {
       const tile = strip.children[lanes[lane]?.win ?? WIN_AT] as HTMLElement | undefined;
@@ -182,15 +188,33 @@ export function CaseOpening({
         fill: "forwards",
       });
     });
+    // Tick each time a tile of the first reel passes the marker.
+    const first = strips[0];
+    const pitch = first && first.children.length > 1 ? (first.children[1] as HTMLElement).offsetLeft - (first.children[0] as HTMLElement).offsetLeft : 0;
+    let passed = 0;
+    const watch = () => {
+      if (first && pitch > 0) {
+        const at = Math.floor(-new DOMMatrixReadOnly(getComputedStyle(first).transform).m41 / pitch);
+        if (at > passed) {
+          passed = at;
+          reelTick();
+        }
+      }
+      frame = requestAnimationFrame(watch);
+    };
+    frame = requestAnimationFrame(watch);
     Promise.all(animations.map((animation) => animation.finished)).then(
       () => {
+        cancelAnimationFrame(frame);
         setLanded(true);
+        reelLanded();
         timer = window.setTimeout(afterLanding, 950);
       },
       () => undefined,
     );
     return () => {
       window.clearTimeout(timer);
+      cancelAnimationFrame(frame);
       animations.forEach((animation) => animation.cancel());
     };
   }, [phase, lanes]);
@@ -205,6 +229,8 @@ export function CaseOpening({
     setIndex(0);
     setLanded(false);
     setLanes(next.results.map((result) => buildLane(result, caseFor(next.case))));
+    if (motion === "off") sound("reveal", bestPitch(next.results));
+    else sound("crack");
     setPhase(motion === "off" ? "showcase" : "rolling");
   }
 
@@ -255,6 +281,7 @@ export function CaseOpening({
     try {
       const claimed = await apiFetch<LootClaim>("/api/lootboxes/claim", { method: "POST", json: { openings: ids } });
       setHistory((current) => [...current, ...results]);
+      sound("claim");
       setRefunded((sum) => sum + claimed.refund);
       if (claimed.refund > 0) window.dispatchEvent(new CustomEvent("archive:coins", { detail: claimed.balance }));
       setOpening(null);

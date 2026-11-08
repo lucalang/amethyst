@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { Loader2, Mail } from "lucide-react";
+import { Gamepad2, Loader2, Mail } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { resendConfirmation, sendMagicLink, signInWithPassword, type AuthState } from "../actions";
+import { continueAsGuest, resendConfirmation, sendMagicLink, signInWithPassword, type AuthState } from "../actions";
 import { FormStatus } from "../form-status";
 
 const initial: AuthState = { status: "idle" };
@@ -17,6 +17,7 @@ export function LoginForm({ next, notice }: { next?: string; notice?: { tone: "e
   const [passwordState, passwordAction, passwordPending] = useActionState(signInWithPassword, initial);
   const [magicState, magicAction, magicPending] = useActionState(sendMagicLink, initial);
   const [resendState, resendAction, resendPending] = useActionState(resendConfirmation, initial);
+  const [guestState, guestAction, guestPending] = useActionState(continueAsGuest, initial);
   const state = mode === "password" ? passwordState : magicState;
 
   return (
@@ -81,6 +82,17 @@ export function LoginForm({ next, notice }: { next?: string; notice?: { tone: "e
       >
         {mode === "password" ? "Use a magic link instead" : "Use your password instead"}
       </button>
+
+      <form action={guestAction} className="space-y-2 border-t border-border pt-5">
+        <Button type="submit" variant="outline" className="h-10 w-full" disabled={guestPending}>
+          {guestPending ? <Loader2 aria-hidden className="animate-spin" /> : <Gamepad2 aria-hidden />}
+          {guestPending ? "Starting guest session…" : "Continue as guest"}
+        </Button>
+        <p className="text-center text-xs text-pretty text-muted-foreground">
+          No account needed, but guests can only play the Arcade. Guest progress stays on this device until you sign out.
+        </p>
+        <FormStatus state={guestState} />
+      </form>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import "./season-pass.css";
-import { useEffect, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ItemArt, type ArtProfile, type ArtSamples } from "@/components/inventory/item-art";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { describeItem, inventoryItemLabel } from "@/lib/inventory";
-import { RARITIES } from "@/lib/rarities";
+import { RARITIES, rarityRank } from "@/lib/rarities";
 import { CADENCE_LABELS, QUEST_CADENCES, questHref, questTitle, seasonInfo, type SeasonQuest, type SeasonReward, type SeasonState } from "@/lib/season-pass";
 
 type Season = NonNullable<SeasonState["season"]>;
@@ -93,6 +94,8 @@ export function SeasonPass({ state: initial, profile, samples, tab: initialTab }
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [unlocking, setUnlocking] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
+  const [reveal, setReveal] = useState<string[] | null>(null);
+  const sound = useUiSound();
 
   useEffect(() => {
     if (!celebrate) return;
@@ -164,18 +167,27 @@ export function SeasonPass({ state: initial, profile, samples, tab: initialTab }
 
   async function claimQuest(quest: SeasonQuest) {
     const result = await run<{ xp: number; coins: number; balance: number }>(`quest:${quest.id}`, { action: "quest", assignment: quest.id, season: season!.id }, "The quest couldn’t be claimed.");
-    if (typeof result === "string") toast.error(result);
-    else toast.success(`Quest complete: +${result.xp.toLocaleString("en")} Season XP and +${coinsText(result.coins)}`);
+    if (typeof result === "string") {
+      sound("invalid");
+      toast.error(result);
+    } else {
+      sound("claim");
+      toast.success(`Quest complete: +${result.xp.toLocaleString("en")} Season XP and +${coinsText(result.coins)}`);
+    }
   }
 
   async function claimRewards() {
+    const keys = claimable.map(rewardKey);
     const result = await run<{ claimed: number; items: number; coins: number; balance: number }>("rewards", { action: "rewards", season: season!.id }, "The rewards couldn’t be claimed.");
-    if (typeof result === "string") toast.error(result);
-    else if (!result.claimed) toast.info("Everything you’ve reached is already claimed.");
-    else
-      toast.success(
-        `${plural(result.claimed, "reward")} claimed${result.items ? `: ${plural(result.items, "item")} added to your Inventory` : ""}${result.coins ? `, +${coinsText(result.coins)}` : ""}`,
-      );
+    if (typeof result === "string") {
+      sound("invalid");
+      toast.error(result);
+    } else if (!result.claimed) toast.info("Everything you’ve reached is already claimed.");
+    else {
+      sound("claim");
+      if (keys.length) setReveal(keys);
+      else toast.success(`${plural(result.claimed, "reward")} claimed`);
+    }
   }
 
   async function buyPremium() {
@@ -183,19 +195,24 @@ export function SeasonPass({ state: initial, profile, samples, tab: initialTab }
     if (typeof result === "string") return setDialog({ mode: "premium", error: result });
     setDialog(null);
     if (result.status === "owned") toast.info("You already have Premium for this season, so no coins were taken.");
-    else setUnlocking(true);
+    else {
+      sound("unlock");
+      setUnlocking(true);
+    }
   }
 
   async function skip(tiers: number, request: string) {
     const cost = tiers * season!.skipPrice;
     const result = await run<{ status: string; tier: number; balance: number }>("skip", { action: "skip", request, season: season!.id, tiers, cost }, "The purchase didn’t go through, and no coins were taken.");
     if (typeof result === "string") setDialog({ mode: "skip", tiers, request, error: result });
-    else
+    else {
+      if (result.status !== "repeat") sound("power");
       setDialog({
         mode: "done",
         title: `Tier ${result.tier} reached`,
         text: result.status === "repeat" ? "This skip was already applied, so no coins were taken again." : `${coinsText(cost)} spent on ${plural(tiers, "tier")}.`,
       });
+    }
   }
 
   const openSkip = (tiers = 1) => setDialog({ mode: "skip", tiers, request: crypto.randomUUID() });
@@ -268,8 +285,12 @@ export function SeasonPass({ state: initial, profile, samples, tab: initialTab }
             >
               <span style={{ width: `${(intoTier / season.xpPerTier) * 100}%` }} />
             </div>
-            <p className="text-xs text-white/50">
-              {progress.xp.toLocaleString("en")} Season XP{progress.skipped ? ` · ${plural(progress.skipped, "tier")} skipped` : ""} · {season.tierCount} tiers
+            <p className="text-xs text-white/55 tabular-nums">
+              {maxed ? null : (
+                <span className="font-semibold text-white/80">{(season.xpPerTier - intoTier).toLocaleString("en")} XP to tier {progress.tier + 1} · </span>
+              )}
+              {progress.xp.toLocaleString("en")} Season XP · Tier {progress.tier} of {season.tierCount}
+              {progress.skipped ? ` · ${plural(progress.skipped, "tier")} skipped` : ""}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <button type="button" className="sp-btn sp-btn-claim" onClick={() => void claimRewards()} disabled={busy !== null || claimable.length === 0} aria-busy={busy === "rewards"}>
@@ -414,9 +435,13 @@ export function SeasonPass({ state: initial, profile, samples, tab: initialTab }
           }}
         />
       ) : null}
+
+      {reveal ? <RewardReveal rewards={state.rewards.filter((reward) => reveal.includes(rewardKey(reward)))} profile={profile} samples={samples} onClose={() => setReveal(null)} /> : null}
     </div>
   );
 }
+
+const rewardKey = (reward: SeasonReward) => `${reward.tier}:${reward.track}`;
 
 /** The reward track, scrolled sideways: Premium above the rail, Free below, one column per tier. */
 function Track({
@@ -441,9 +466,21 @@ function Track({
   onSkip: ((tier: number) => void) | null;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: true, end: false });
   const maxed = progress.tier >= season.tierCount;
   const pos = maxed ? season.tierCount - 1 : progress.tier - 1 + (progress.xp % season.xpPerTier) / season.xpPerTier;
   const focusTier = Math.min(season.tierCount, progress.tier + 1);
+  const firstReady = rewards
+    .filter((reward) => !reward.claimed && reward.tier <= progress.tier && (reward.track === "free" || progress.premium))
+    .reduce<number | null>((lowest, reward) => (lowest === null || reward.tier < lowest ? reward.tier : lowest), null);
+
+  const measure = () => {
+    const box = scroller.current;
+    if (!box) return;
+    const start = box.scrollLeft <= 4;
+    const end = box.scrollLeft + box.clientWidth >= box.scrollWidth - 4;
+    setEdges((previous) => (previous.start === start && previous.end === end ? previous : { start, end }));
+  };
 
   const scrollToTier = (tier: number, smooth: boolean) => {
     const box = scroller.current;
@@ -453,6 +490,7 @@ function Track({
   };
   useEffect(() => {
     scrollToTier(focusTier, false);
+    measure();
     // Only on first view of a season; later progress shouldn't yank the track.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [season.id]);
@@ -461,21 +499,39 @@ function Track({
 
   return (
     <div className="pt-4 pb-5">
-      <div className="flex items-center justify-between gap-3 px-5 pb-2 sm:px-7">
-        <p className="text-xs text-white/50">Cosmetic rewards only. Items you already own pay half their value in coins.</p>
+      <div className="sp-track-head flex flex-wrap items-center justify-between gap-x-3 gap-y-2.5 px-5 pb-2 sm:px-7">
+        <ul className="sp-legend-keys" aria-label="Reward states">
+          <li data-key="ready">
+            <Gift aria-hidden /> Ready
+          </li>
+          <li data-key="claimed">
+            <Check aria-hidden /> Claimed
+          </li>
+          <li data-key="locked">
+            <Lock aria-hidden /> Locked
+          </li>
+          <li data-key="premium">
+            <Crown aria-hidden /> Premium
+          </li>
+        </ul>
         <div className="flex shrink-0 items-center gap-1.5">
-          <button type="button" className="sp-btn sp-btn-ghost h-9 px-3 text-xs" onClick={() => scrollToTier(focusTier, true)}>
-            {maxed ? `Tier ${season.tierCount}` : `Tier ${focusTier}`}
+          {firstReady !== null && firstReady !== focusTier ? (
+            <button type="button" className="sp-btn sp-btn-ghost sp-jump h-9 px-3 text-xs" data-tone="ready" onClick={() => scrollToTier(firstReady, true)}>
+              <Gift aria-hidden /> Tier {firstReady}
+            </button>
+          ) : null}
+          <button type="button" className="sp-btn sp-btn-ghost sp-jump h-9 px-3 text-xs" onClick={() => scrollToTier(focusTier, true)} title={maxed ? "Show the last tier" : "Show your next tier"}>
+            {maxed ? `Tier ${season.tierCount}` : `Next · Tier ${focusTier}`}
           </button>
-          <button type="button" className="sp-nav-btn" aria-label="Scroll the track left" onClick={() => page(-1)}>
+          <button type="button" className="sp-nav-btn" aria-label="Scroll the track left" onClick={() => page(-1)} disabled={edges.start}>
             <ChevronLeft aria-hidden className="size-4" />
           </button>
-          <button type="button" className="sp-nav-btn" aria-label="Scroll the track right" onClick={() => page(1)}>
+          <button type="button" className="sp-nav-btn" aria-label="Scroll the track right" onClick={() => page(1)} disabled={edges.end}>
             <ChevronRight aria-hidden className="size-4" />
           </button>
         </div>
       </div>
-      <div ref={scroller} className="sp-scroller" role="region" aria-label="Reward track" tabIndex={0}>
+      <div ref={scroller} className="sp-scroller" role="region" aria-label="Reward track" tabIndex={0} onScroll={measure} data-end={edges.end || undefined}>
         <div className="sp-lane" style={{ "--pos": pos } as CSSProperties}>
           <div aria-hidden className="sp-legend">
             <span className="text-[var(--gold-soft)]">
@@ -492,7 +548,7 @@ function Track({
             const free = rewards.find((reward) => reward.tier === tier && reward.track === "free");
             const premium = rewards.find((reward) => reward.tier === tier && reward.track === "premium");
             return (
-              <div key={tier} role="group" aria-label={`Tier ${tier}${reached ? ", reached" : ""}`} className="sp-col" data-tier={tier}>
+              <div key={tier} role="group" aria-label={`Tier ${tier}${current ? ", your tier" : reached ? ", reached" : ""}`} className="sp-col" data-tier={tier} data-reached={reached || undefined} data-current={current || undefined}>
                 <RewardCard reward={premium} tier={tier} reached={reached} unlocked={progress.premium} busy={busy} index={tier} profile={profile} samples={samples} onClaim={onClaim} onPremium={onPremium} />
                 {!reached && onSkip ? (
                   <button type="button" className="sp-node" onClick={() => onSkip(tier)} title={`Skip to tier ${tier}`} aria-label={`Skip to tier ${tier}`} disabled={busy !== null}>
@@ -509,6 +565,7 @@ function Track({
           })}
         </div>
       </div>
+      <p className="px-5 pt-1 text-xs text-white/50 sm:px-7">Cosmetic rewards only. Items you already own pay half their value in coins.</p>
     </div>
   );
 }
@@ -549,8 +606,8 @@ function RewardCard({
       : state === "ready"
         ? "Claim"
         : state === "premium-locked"
-          ? "Premium"
-          : `Tier ${tier}`;
+          ? "Needs Premium"
+          : `Reach tier ${tier}`;
   const StatusIcon = state === "claimed" ? Check : state === "ready" ? Gift : state === "premium-locked" ? Crown : Lock;
   const style = { "--rarity": reward.rarity ? RARITIES[reward.rarity].color : "#f59e0b", "--i": index ?? 0 } as CSSProperties;
 
@@ -567,7 +624,7 @@ function RewardCard({
       </span>
       <span className="sp-card-body">
         {item && reward.rarity ? (
-          <span className="text-[0.6rem] font-extrabold tracking-[0.18em] uppercase" style={{ color: RARITIES[reward.rarity].color }}>
+          <span className="truncate text-[0.6rem] font-extrabold tracking-[0.18em] uppercase" style={{ color: RARITIES[reward.rarity].color }}>
             {RARITIES[reward.rarity].label} · {inventoryItemLabel(item)}
           </span>
         ) : null}
@@ -579,6 +636,10 @@ function RewardCard({
       {state === "premium-locked" ? (
         <span aria-hidden className="sp-card-lock">
           <Lock />
+        </span>
+      ) : state === "claimed" ? (
+        <span aria-hidden className="sp-card-lock" data-claimed>
+          <Check />
         </span>
       ) : null}
     </>
@@ -769,6 +830,93 @@ function SkipDialog({
         </Button>
       </AlertDialogFooter>
     </>
+  );
+}
+
+const REVEAL_MAX = 8;
+const CARD_SPARKS = Array.from({ length: 10 }, (_, index) => ({ a: `${index * 36 + 18}deg`, d: `${5.5 + (index % 3) * 1.5}rem` }));
+
+/** Full-screen reveal after claiming track rewards: each reward pops in, rarest glow sets the tint. */
+function RewardReveal({ rewards, profile, samples, onClose }: { rewards: SeasonReward[]; profile: ArtProfile; samples: ArtSamples; onClose: () => void }) {
+  const button = useRef<HTMLButtonElement>(null);
+  const sound = useUiSound();
+  useEffect(() => button.current?.focus(), []);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const sorted = [...rewards].sort((a, b) => (b.rarity ? rarityRank(b.rarity) : -1) - (a.rarity ? rarityRank(a.rarity) : -1) || a.tier - b.tier);
+  const shown = sorted.slice(0, REVEAL_MAX);
+  // One pop per card as it lands (timing matches --at in the CSS); rarer cards pop higher.
+  const pops = shown.map((reward) => (reward.rarity ? 1 + rarityRank(reward.rarity) * 0.08 : 0.9));
+  const startPops = useEffectEvent(() => pops.map((pitch, index) => window.setTimeout(() => sound("reveal", pitch), 400 + index * 160)));
+  useEffect(() => {
+    const timers = startPops();
+    return () => timers.forEach((id) => window.clearTimeout(id));
+  }, []);
+  const top = sorted.find((reward) => reward.rarity)?.rarity;
+  const tone = top ? RARITIES[top].color : "#f59e0b";
+  const single = shown.length === 1;
+  const coins = rewards.reduce((sum, reward) => sum + (reward.item ? (reward.duplicate ? reward.paid : 0) : reward.coins), 0);
+  const doneAt = 0.45 + shown.length * 0.16;
+
+  return createPortal(
+    <div className="sp-reveal" role="dialog" aria-modal="true" aria-labelledby="sp-reveal-title" style={{ "--tone": tone } as CSSProperties}>
+      <span aria-hidden className="sp-reveal-rays" />
+      <div className="sp-reveal-content">
+        <p className="sp-eyebrow sp-unlock-rise" style={{ "--delay": "0.1s" } as CSSProperties}>
+          <Sparkles aria-hidden className="size-3.5" /> Season Pass
+        </p>
+        <h2 id="sp-reveal-title" className="sp-reveal-title">
+          {rewards.length === 1 ? "Reward unlocked" : `${rewards.length} rewards unlocked`}
+        </h2>
+        <ul className="sp-reveal-grid" data-single={single || undefined}>
+          {shown.map((reward, index) => {
+            const item = reward.item ? describeItem(reward.item) : null;
+            const color = reward.rarity ? RARITIES[reward.rarity].color : "#f59e0b";
+            return (
+              <li key={rewardKey(reward)} className="sp-reveal-card" style={{ "--rarity": color, "--i": index } as CSSProperties}>
+                <span aria-hidden className="sp-reveal-burst" />
+                {CARD_SPARKS.map((spark, s) => (
+                  <span key={s} aria-hidden className="sp-reveal-spark" style={{ "--a": spark.a, "--d": spark.d } as CSSProperties} />
+                ))}
+                <span className="sp-reveal-art" aria-hidden>
+                  {item ? <ItemArt item={item} profile={profile} samples={samples} large={single} /> : <span className="sp-card-coins">{reward.coins}</span>}
+                </span>
+                {item && reward.rarity ? (
+                  <span className="text-[0.6rem] font-extrabold tracking-[0.18em] uppercase" style={{ color }}>
+                    {RARITIES[reward.rarity].label} · {inventoryItemLabel(item)}
+                  </span>
+                ) : null}
+                <span className="sp-reveal-name">{item ? item.name : coinsText(reward.coins)}</span>
+                <span className="text-xs text-white/60">
+                  {reward.track === "premium" ? "Premium · " : ""}Tier {reward.tier}
+                  {item && reward.duplicate ? ` · Owned, +${reward.paid.toLocaleString("en")} coins` : ""}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="sp-unlock-rise text-sm text-white/70" style={{ "--delay": `${doneAt}s` } as CSSProperties}>
+          {rewards.length > shown.length ? `+${rewards.length - shown.length} more. ` : ""}
+          {rewards.some((reward) => reward.item && !reward.duplicate) ? "New items are in your Inventory" : "Added to your balance"}
+          {coins ? ` · +${coinsText(coins)}` : ""}
+        </p>
+        <div className="sp-unlock-rise flex flex-wrap justify-center gap-2" style={{ "--delay": `${doneAt + 0.1}s` } as CSSProperties}>
+          {rewards.some((reward) => reward.item) ? (
+            <Link href="/inventory" className="sp-btn sp-btn-ghost h-11 px-5">
+              Open Inventory
+            </Link>
+          ) : null}
+          <button ref={button} type="button" className="sp-btn sp-btn-claim h-11 px-6" onClick={onClose}>
+            <Check aria-hidden /> Nice
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 

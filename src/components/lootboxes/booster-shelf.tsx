@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { activeBoosters, boostedOpenings, boosterLook, type Boost, type Booster } from "@/lib/boosters";
 import { cn } from "@/lib/utils";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { LuckBadge, tierStyle } from "./booster-parts";
 import { LUCK_NO_GUARANTEE } from "./booster-shop";
 
@@ -30,6 +31,7 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
   const request = useRef<{ id: string; charges: number } | null>(null);
+  const sound = useUiSound();
   const value = /^\d+$/.test(text.trim()) ? Number(text) : NaN;
   const others = activeBoosters(boost).filter((entry) => entry.id !== booster.id).reduce((sum, entry) => sum + entry.multiplier, 0);
   const overCap = booster.active === 0 && others + booster.multiplier > boost.cap;
@@ -54,9 +56,11 @@ function TierRow({ booster, boost, onBoost }: { booster: Booster; boost: Boost; 
       request.current = null;
       onBoost(result.boost);
       setText("1");
+      sound("power");
       setMessage({ error: false, text: `${plural(value, "boosted opening")} activated.` });
       router.refresh();
     } catch (error) {
+      sound("invalid");
       if (error instanceof ApiError && error.status >= 400 && error.status < 500) request.current = null;
       setMessage({ error: true, text: activateError(error) });
     } finally {

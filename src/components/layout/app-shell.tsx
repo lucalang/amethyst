@@ -7,6 +7,8 @@ import type { Preferences } from "@/lib/preferences";
 import { AchievementNotifications } from "@/components/achievements/achievement-notifications";
 import { CosmeticsProvider } from "./cosmetics-context";
 import { CurrentCollectionProvider } from "./current-collection";
+import { GuestBar } from "./guest-bar";
+import { GuestProvider } from "./guest-context";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
 import { OpeningIntro } from "./opening-intro";
 import { ScrollExitFallback } from "./scroll-exit-fallback";
@@ -38,8 +40,10 @@ export function AppShell({
   collectionIcons?: Record<string, ReactNode>;
 }) {
   const icons = collectionIcons;
+  const guest = Boolean(account.guest);
   return (
     <SettingsProvider value={preferences}>
+      <GuestProvider guest={guest}>
       <CosmeticsProvider value={cosmetics}>
       <CurrentCollectionProvider>
       <div
@@ -50,7 +54,7 @@ export function AppShell({
       >
         <style>{settingsStyle(preferences)}</style>
         <div hidden suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `<script>${ROOT_ATTRIBUTES_SCRIPT}</script>` }} />
-        <OpeningIntro userId={userId} lastSeen={introSeenOn} motion={preferences.motion} frequency={preferences.introFrequency} />
+        {guest ? null : <OpeningIntro userId={userId} lastSeen={introSeenOn} motion={preferences.motion} frequency={preferences.introFrequency} />}
         <KeyboardShortcuts collections={collections} />
         <a
           href="#main"
@@ -59,15 +63,17 @@ export function AppShell({
           Skip to content
         </a>
         <TopNav account={account} collections={collections} icons={icons} />
+        {guest ? <GuestBar /> : null}
         <main id="main" tabIndex={-1} className="flex-1 overflow-x-clip pb-24 md:pb-10">
           {children}
         </main>
-        <AchievementNotifications enabled={preferences.achievementNotifications} />
+        {guest ? null : <AchievementNotifications enabled={preferences.achievementNotifications} />}
         <MobileTabBar collections={collections} icons={icons} />
         <ScrollExitFallback />
       </div>
       </CurrentCollectionProvider>
       </CosmeticsProvider>
+      </GuestProvider>
     </SettingsProvider>
   );
 }

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { parseCategoryIds } from "@/lib/categories";
 import { entryPath } from "@/lib/collections";
 import { loadCollection } from "@/lib/data/collections";
-import { requireUser } from "@/lib/supabase/auth";
+import { requireAccount as requireUser } from "@/lib/supabase/auth";
 import { NO_TEMPLATE } from "@/lib/templates";
 import { newEntrySchema } from "@/lib/validation/entries";
 

@@ -19,6 +19,7 @@ import {
 import { ArrowLeft, House, Maximize, Minimize, Store, Trophy, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings } from "@/components/layout/settings-context";
+import { useGuest } from "@/components/layout/guest-context";
 import { useMotionLevel } from "@/components/showcase/motion";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
@@ -59,6 +60,11 @@ export function useArcade() {
   const value = use(ArcadeContext);
   if (!value) throw new Error("useArcade must be used inside ArcadeProvider");
   return value;
+}
+
+/** The surrounding game's context, or null outside one. */
+export function useOptionalArcade() {
+  return use(ArcadeContext);
 }
 
 /** Sound, effects level and keyboard focus for one game; audio is released when the game unmounts. */
@@ -128,9 +134,11 @@ export function GameShell({
   children: ReactNode;
 }) {
   const { rootRef, sound, toggleSound, look, setLook } = useArcade();
+  const guest = useGuest();
   const fullscreen = useSyncExternalStore(subscribeFullscreen, () => Boolean(document.fullscreenElement), () => false);
   const canFullscreen = useSyncExternalStore(noSubscribe, () => Boolean(document.fullscreenEnabled), () => false);
   const [shop, setShop] = useState<"closed" | "open" | "idle">("closed");
+  const shopGame = isShopGame(game) && !guest;
 
   useEffect(() => {
     rootRef.current?.focus({ preventScroll: true });
@@ -182,7 +190,7 @@ export function GameShell({
                 <span aria-hidden className="hidden sm:inline">Ranks</span>
               </Link>
             </Button> : null}
-            {isShopGame(game) ? (
+            {shopGame ? (
               <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={openShop} aria-haspopup="dialog" title={`${title} shop`}>
                 <Store aria-hidden />
                 Shop
@@ -217,7 +225,7 @@ export function GameShell({
           {stats ? <div className="flex flex-wrap items-stretch gap-2">{stats}</div> : null}
           <div className="relative min-h-0">{children}</div>
         </div>
-        {shop !== "closed" && isShopGame(game) ? (
+        {shop !== "closed" && shopGame ? (
           <GameShopDialog
             game={game}
             open={shop === "open"}

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "@/lib/supabase/auth";
+import { requireAccount as requireUser } from "@/lib/supabase/auth";
 import { AVATAR_DECORATION_IDS, MAX_PROFILE_BADGES, PROFILE_BADGE_IDS, PROFILE_TITLE_IDS } from "@/lib/cosmetics";
 import { artworkUrl } from "@/lib/validation/entries";
 

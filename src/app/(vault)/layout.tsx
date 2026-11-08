@@ -40,7 +40,7 @@ export default async function VaultLayout({ children }: { children: ReactNode })
   const avatarDecoration = toAvatarDecoration(profile?.avatar_decoration);
   const title = isProfileTitleId(profile?.profile_title) ? profile.profile_title : null;
   // The email is never used as a name; it only appears as private account detail.
-  const account = { name: profile?.display_name?.trim() || null, avatarUrl: profile?.avatar_url ?? null, decoration: avatarDecoration, email: ctx.email ?? null, admin };
+  const account = { name: profile?.display_name?.trim() || null, avatarUrl: profile?.avatar_url ?? null, decoration: avatarDecoration, email: ctx.email ?? null, admin, guest: ctx.guest };
   const collectionIcons = Object.fromEntries(collections.map((item) => [item.id, <CollectionIcon key={item.id} icon={item.icon} className="size-full" />]));
   return (
     <AppShell

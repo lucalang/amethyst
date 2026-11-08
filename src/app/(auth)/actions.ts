@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { serverEnv } from "@/lib/env";
+import { GUEST_HOME } from "@/lib/guest";
 import { STARTUP_COOKIE, STARTUP_PATH, startupCookieOptions } from "@/lib/startup";
 import { createClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/validation/redirect";
@@ -54,6 +55,23 @@ export async function signInWithPassword(_prev: AuthState, formData: FormData): 
   const next = destination(formData.get("next"));
   (await cookies()).set(STARTUP_COOKIE, "1", startupCookieOptions(serverEnv().APP_URL.startsWith("https:")));
   redirect(next === "/" ? STARTUP_PATH : next);
+}
+
+/** Starts (or resumes) an anonymous guest session limited to the Arcade. */
+export async function continueAsGuest(): Promise<AuthState> {
+  const supabase = await createClient();
+  const { data: current } = await supabase.auth.getClaims();
+  if (current?.claims?.is_anonymous !== true) {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) {
+      if (error.status === 429) return { status: "error", message: "Too many guest sessions were started from this network. Try again later or sign in." };
+      return { status: "error", message: "Guest play isn’t available right now. Sign in or create an account instead." };
+    }
+    const { error: profileError } = await supabase.rpc("ensure_profile");
+    if (profileError) return { status: "error", message: "The guest session couldn’t be set up. Try again." };
+  }
+  (await cookies()).set(STARTUP_COOKIE, "1", startupCookieOptions(serverEnv().APP_URL.startsWith("https:")));
+  redirect(GUEST_HOME);
 }
 
 export async function signUp(_prev: AuthState, formData: FormData): Promise<AuthState> {

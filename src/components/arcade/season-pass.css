@@ -5,13 +5,13 @@
   --season-glow: #f0abfc;
   --gold: #fbbf24;
   --gold-soft: #fde68a;
-  --sp-w: 8.75rem;
-  --sp-gap: 0.75rem;
+  --sp-w: 10rem;
+  --sp-gap: 0.85rem;
   --sp-pad: 3rem;
 }
 @media (min-width: 640px) {
   .sp {
-    --sp-w: 9.75rem;
+    --sp-w: 11.25rem;
   }
 }
 
@@ -151,12 +151,17 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 7.5rem;
+  width: 6rem;
   aspect-ratio: 1;
   flex-shrink: 0;
   border-radius: 50%;
   background: conic-gradient(var(--season-glow) calc(var(--p) * 1turn), rgb(255 255 255 / 0.08) 0);
   box-shadow: 0 0 40px -6px color-mix(in oklab, var(--season) 80%, transparent);
+}
+@media (min-width: 640px) {
+  .sp-emblem {
+    width: 7.5rem;
+  }
 }
 .sp-stage[data-premium] .sp-emblem {
   background: conic-gradient(var(--gold) calc(var(--p) * 1turn), rgb(255 255 255 / 0.08) 0);
@@ -182,7 +187,7 @@
   color: #1c1205;
 }
 .sp-emblem-num {
-  font-size: 2.4rem;
+  font-size: clamp(1.9rem, 6vw, 2.4rem);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -326,24 +331,31 @@
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   scroll-padding-inline: calc(2.75rem + var(--sp-gap)) var(--sp-pad);
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--season) 60%, transparent) transparent;
   mask-image: linear-gradient(90deg, black calc(100% - 2.5rem), transparent);
+}
+.sp-scroller[data-end] {
+  mask-image: none;
+}
+.sp-scroller:focus-visible {
+  outline: 2px solid var(--season-glow);
+  outline-offset: -2px;
+  border-radius: 0.75rem;
 }
 .sp-lane {
   --pos: -0.5;
-  --sp-card-h: 11.25rem;
+  --sp-card-h: 13rem;
+  --sp-top: 1.5rem;
   --sp-start: calc(0.5rem + 2.25rem + var(--sp-gap));
   position: relative;
   display: flex;
   gap: var(--sp-gap);
   width: max-content;
-  padding: 0.75rem var(--sp-pad) 1.25rem 0.5rem;
+  padding: var(--sp-top) var(--sp-pad) 1.25rem 0.5rem;
 }
 .sp-rail,
 .sp-rail-fill {
   position: absolute;
-  top: calc(0.75rem + var(--sp-card-h) + 1.5rem);
+  top: calc(var(--sp-top) + var(--sp-card-h) + 1.5rem);
   height: 4px;
   translate: 0 -50%;
   border-radius: 999px;
@@ -371,6 +383,19 @@
   width: var(--sp-w);
   flex-shrink: 0;
   scroll-snap-align: start;
+}
+/* Your current tier: a faint column of light behind both rewards. */
+.sp-col[data-current]::before {
+  content: "";
+  position: absolute;
+  inset: -0.45rem -0.35rem;
+  border-radius: 1.3rem;
+  border: 1px solid color-mix(in oklab, var(--season-glow) 35%, transparent);
+  background: linear-gradient(to bottom, color-mix(in oklab, var(--season-glow) 12%, transparent), transparent 35%, transparent 65%, color-mix(in oklab, var(--season-glow) 12%, transparent));
+  pointer-events: none;
+}
+.sp-stage[data-premium] .sp-col[data-current]::before {
+  border-color: color-mix(in oklab, var(--gold) 40%, transparent);
 }
 .sp-node {
   z-index: 1;
@@ -440,53 +465,105 @@ button.sp-node:focus-visible {
   rotate: 90deg;
 }
 
-/* Reward cards. */
+/* Reward cards: a lit display case; the art sits on a rarity-coloured pedestal and lifts out of the card. */
 .sp-card {
   --rarity: #a1a1aa;
   position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-rows: 1fr auto;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  border-radius: 1rem;
-  border: 1px solid color-mix(in oklab, var(--rarity) 35%, rgb(255 255 255 / 0.08));
+  border-radius: 1.1rem;
+  border: 1px solid color-mix(in oklab, var(--rarity) 45%, rgb(255 255 255 / 0.08));
   background:
-    radial-gradient(90% 60% at 50% 35%, color-mix(in oklab, var(--rarity) 22%, transparent), transparent 70%),
-    linear-gradient(to top, color-mix(in oklab, var(--rarity) 16%, #0b0712), #0d0815);
+    radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--rarity) 30%, transparent), transparent 70%),
+    linear-gradient(to bottom, color-mix(in oklab, var(--rarity) 10%, #0d0815), #08050e 70%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 0 0 4px rgb(0 0 0 / 0.25), inset 0 0 0 5px color-mix(in oklab, var(--rarity) 14%, transparent), 0 14px 30px -20px var(--rarity);
   text-align: left;
   outline: none;
-  transition: translate 0.2s, border-color 0.2s, box-shadow 0.2s, filter 0.2s, opacity 0.2s;
+  transition: translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s, box-shadow 0.2s, filter 0.2s, opacity 0.2s;
+}
+/* Holo sheen that sweeps across on hover. */
+.sp-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.16) 45%, color-mix(in oklab, var(--rarity) 30%, transparent) 52%, transparent 65%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 120% 0;
+  pointer-events: none;
+  transition: background-position 0.7s ease;
+}
+.sp-card:hover::after {
+  background-position: -20% 0;
 }
 .sp-card[data-track="premium"] {
-  border-top-color: color-mix(in oklab, var(--gold) 60%, transparent);
+  border-top-color: color-mix(in oklab, var(--gold) 70%, transparent);
 }
 .sp-card[data-track="premium"]::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto;
+  inset: -1px 1.25rem auto;
   height: 2px;
   background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  box-shadow: 0 0 10px var(--gold);
 }
 .sp-card-art {
+  position: relative;
   display: grid;
   place-items: center;
   min-height: 0;
-  overflow: hidden;
-  padding-top: 0.5rem;
+  padding-top: 0.4rem;
+}
+/* Pedestal glow under the item. */
+.sp-card-art::before {
+  content: "";
+  position: absolute;
+  bottom: 0.35rem;
+  left: 50%;
+  width: 72%;
+  height: 1.1rem;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--rarity) 70%, transparent), transparent);
+  filter: blur(2px);
+  opacity: 0.8;
 }
 .sp-card-art > span {
-  scale: 0.72;
+  position: relative;
+  scale: 0.84;
+  filter: drop-shadow(0 10px 14px rgb(0 0 0 / 0.55));
+  transition: scale 0.3s cubic-bezier(0.3, 1.5, 0.5, 1), translate 0.3s cubic-bezier(0.3, 1.5, 0.5, 1), filter 0.3s;
+}
+:is(button.sp-card:hover:not(:disabled), button.sp-card:focus-visible, .sp-card[data-state="claimed"]:hover) .sp-card-art > span {
+  scale: 0.94;
+  translate: 0 -0.6rem;
+  filter: drop-shadow(0 16px 18px rgb(0 0 0 / 0.6)) drop-shadow(0 0 14px color-mix(in oklab, var(--rarity) 60%, transparent));
+}
+.sp-card[data-state="ready"] .sp-card-art > span {
+  animation: sp-bob 2.4s ease-in-out infinite;
+}
+@keyframes sp-bob {
+  50% {
+    translate: 0 -0.35rem;
+  }
 }
 .sp-card-body {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: 0.2rem;
-  padding: 0.5rem 0.65rem 0.6rem;
-  background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent);
+  padding: 0.55rem 0.75rem 0.7rem;
+  border-radius: 0 0 1.1rem 1.1rem;
+  border-top: 1px solid color-mix(in oklab, var(--rarity) 20%, transparent);
+  background: linear-gradient(to top, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0.25));
 }
 .sp-card-name {
   overflow: hidden;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.15;
   color: white;
@@ -496,25 +573,39 @@ button.sp-node:focus-visible {
 .sp-card-status {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
   gap: 0.3rem;
+  max-width: 100%;
+  margin-top: 0.15rem;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
   font-size: 0.68rem;
-  font-weight: 600;
-  color: rgb(255 255 255 / 0.55);
+  font-weight: 700;
+  white-space: nowrap;
+  color: rgb(255 255 255 / 0.62);
 }
 .sp-card-status svg {
   width: 0.75rem;
   height: 0.75rem;
+  flex-shrink: 0;
 }
 .sp-card[data-state="locked"] {
   filter: saturate(0.55) brightness(0.72);
+  border-style: dashed;
 }
 .sp-card[data-state="premium-locked"] .sp-card-art {
   filter: saturate(0.6) brightness(0.7);
+}
+.sp-card[data-state="premium-locked"] .sp-card-status {
+  background: color-mix(in oklab, var(--gold) 16%, transparent);
+  color: var(--gold-soft);
 }
 .sp-card-lock {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
+  z-index: 3;
   display: grid;
   place-items: center;
   width: 1.6rem;
@@ -524,27 +615,34 @@ button.sp-node:focus-visible {
   color: var(--gold-soft);
   backdrop-filter: blur(4px);
 }
+.sp-card-lock[data-claimed] {
+  background: color-mix(in oklab, var(--season-glow) 85%, white);
+  color: #12081f;
+  box-shadow: 0 0 12px -2px var(--season-glow);
+}
 .sp-card-lock svg {
   width: 0.8rem;
   height: 0.8rem;
 }
 .sp-card[data-state="claimed"] .sp-card-art {
-  opacity: 0.55;
+  opacity: 0.5;
 }
 .sp-card[data-state="claimed"] .sp-card-status {
+  background: color-mix(in oklab, var(--season-glow) 14%, transparent);
   color: color-mix(in oklab, var(--season-glow) 70%, white);
 }
 .sp-card[data-state="ready"] {
   border-color: var(--season-glow);
-  box-shadow: 0 0 0 1px var(--season-glow), 0 10px 30px -10px var(--season-glow);
+  box-shadow: inset 0 0 0 4px rgb(0 0 0 / 0.2), 0 0 0 1px var(--season-glow), 0 10px 30px -10px var(--season-glow);
   animation: sp-ready 1.8s ease-in-out infinite;
 }
 .sp-card[data-state="ready"] .sp-card-status {
-  color: white;
+  background: var(--season-glow);
+  color: #12081f;
 }
 @keyframes sp-ready {
   50% {
-    box-shadow: 0 0 0 1px var(--season-glow), 0 12px 38px -6px var(--season-glow);
+    box-shadow: inset 0 0 0 4px rgb(0 0 0 / 0.2), 0 0 0 1px var(--season-glow), 0 12px 38px -6px var(--season-glow);
   }
 }
 button.sp-card {
@@ -597,11 +695,53 @@ button.sp-card:focus-visible {
   outline: none;
   transition: background-color 0.2s;
 }
-.sp-nav-btn:hover {
+.sp-nav-btn:hover:not(:disabled) {
   background: rgb(255 255 255 / 0.12);
+}
+.sp-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 .sp-nav-btn:focus-visible {
   box-shadow: 0 0 0 2px var(--season-glow);
+}
+.sp-jump[data-tone="ready"] {
+  border-color: color-mix(in oklab, var(--season-glow) 55%, transparent);
+  background: color-mix(in oklab, var(--season-glow) 16%, transparent);
+}
+
+/* State key above the track, matching the card status pills. */
+.sp-legend-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.sp-legend-keys li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.62);
+}
+.sp-legend-keys svg {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+.sp-legend-keys [data-key="ready"] {
+  background: var(--season-glow);
+  color: #12081f;
+}
+.sp-legend-keys [data-key="claimed"] {
+  background: color-mix(in oklab, var(--season-glow) 14%, transparent);
+  color: color-mix(in oklab, var(--season-glow) 70%, white);
+}
+.sp-legend-keys [data-key="premium"] {
+  background: color-mix(in oklab, var(--gold) 16%, transparent);
+  color: var(--gold-soft);
 }
 
 /* Quests: interactive-card language (tone line, lift) on the dark stage. */
@@ -859,6 +999,152 @@ button.sp-card:focus-visible {
   }
 }
 
+/* Reward reveal after claiming. Base styles are the end state; --i staggers each card's pop. */
+.sp-reveal {
+  --season: #8b5cf6;
+  --season-glow: #f0abfc;
+  --tone: #f59e0b;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: radial-gradient(circle at 50% 45%, color-mix(in oklab, var(--tone) 32%, rgb(7 4 13 / 0.7)), rgb(7 4 13 / 0.95) 65%);
+  backdrop-filter: blur(8px);
+  animation: sp-fade 0.35s ease-out both;
+}
+.sp-reveal-rays {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 160vmax;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--tone) 22%, transparent) 0 5deg, transparent 5deg 16deg);
+  mask-image: radial-gradient(circle, black, transparent 42%);
+  pointer-events: none;
+  animation: sp-rays-in 1s 0.2s ease-out both, sp-aurora 50s linear infinite;
+}
+.sp-reveal-content {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  width: min(100%, 60rem);
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+.sp-reveal-title {
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, white, color-mix(in oklab, var(--tone) 70%, white));
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 24px color-mix(in oklab, var(--tone) 60%, transparent));
+  animation: sp-title 0.7s 0.15s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.sp-reveal-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-block: 0.75rem;
+  perspective: 900px;
+}
+.sp-reveal-card {
+  --rarity: #f59e0b;
+  --at: calc(0.4s + var(--i) * 0.16s);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  grid-template-rows: 1fr;
+  gap: 0.3rem;
+  width: 10.5rem;
+  min-height: 13rem;
+  padding: 1rem 0.75rem 0.9rem;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--rarity) 60%, transparent);
+  background:
+    radial-gradient(120% 70% at 50% 0%, color-mix(in oklab, var(--rarity) 38%, transparent), transparent 70%),
+    linear-gradient(to bottom, color-mix(in oklab, var(--rarity) 12%, #0d0815), #08050e);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4), 0 0 50px -10px var(--rarity), inset 0 1px 0 rgb(255 255 255 / 0.15);
+  animation: sp-reveal-pop 0.75s var(--at) cubic-bezier(0.3, 1.5, 0.45, 1) both;
+}
+.sp-reveal-grid[data-single] .sp-reveal-card {
+  width: min(20rem, 100%);
+  min-height: 19rem;
+  padding-top: 1.5rem;
+}
+@keyframes sp-reveal-pop {
+  from {
+    opacity: 0;
+    scale: 0.2;
+    rotate: y 100deg;
+    filter: brightness(3);
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.sp-reveal-art {
+  display: grid;
+  place-items: center;
+  min-height: 6rem;
+  max-width: 100%;
+  filter: drop-shadow(0 14px 18px rgb(0 0 0 / 0.55)) drop-shadow(0 0 18px color-mix(in oklab, var(--rarity) 55%, transparent));
+  animation: sp-bob 3s calc(var(--at) + 0.8s) ease-in-out infinite;
+}
+.sp-reveal-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: white;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sp-reveal-grid[data-single] .sp-reveal-name {
+  font-size: 1.15rem;
+}
+.sp-reveal-burst {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: 0 0 0 2px var(--rarity), 0 0 60px 10px var(--rarity);
+  animation: sp-reveal-burst 0.9s calc(var(--at) + 0.15s) ease-out both;
+}
+@keyframes sp-reveal-burst {
+  from {
+    opacity: 1;
+    scale: 0.9;
+  }
+  to {
+    opacity: 0;
+    scale: 1.45;
+  }
+}
+.sp-reveal-spark {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  width: 0.4rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--rarity) 40%, white);
+  box-shadow: 0 0 10px var(--rarity);
+  opacity: 0;
+  pointer-events: none;
+  animation: sp-spark 1s calc(var(--at) + 0.15s) cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sp-stage::before,
   .sp-xp > span::after,
@@ -866,6 +1152,9 @@ button.sp-card:focus-visible {
   .sp-shimmer::after,
   .sp-btn-claim,
   .sp-card,
+  .sp-card-art > span,
+  .sp-reveal,
+  .sp-reveal *,
   .sp-unlock *,
   .sp-unlock {
     animation: none !important;
@@ -876,6 +1165,8 @@ button.sp-card:focus-visible {
   .sp-quest,
   .sp-tab,
   .sp-card,
+  .sp-card::after,
+  .sp-card-art > span,
   .sp-btn,
   .sp-node {
     transition: none;
@@ -888,6 +1179,6 @@ button.sp-card:focus-visible {
   translate: none;
 }
 :root[data-motion="off"] .sp-stage::before,
-:root[data-motion="off"] :is(.sp-card, .sp-btn-claim, .sp-unlock, .sp-unlock *) {
+:root[data-motion="off"] :is(.sp-card, .sp-card-art > span, .sp-btn-claim, .sp-unlock, .sp-unlock *, .sp-reveal, .sp-reveal *) {
   animation: none !important;
 }

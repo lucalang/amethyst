@@ -79,6 +79,50 @@ export const SOUNDS = {
     { freq: 180, to: 60, duration: 0.18, type: "triangle", volume: 0.06 },
   ],
   invalid: [{ freq: 196, to: 165, duration: 0.12, type: "sawtooth", volume: 0.035 }],
+  // Interface effects used outside the games.
+  check: [
+    { freq: 660, to: 990, duration: 0.07, type: "sine", volume: 0.07 },
+    { freq: 1320, duration: 0.14, type: "sine", volume: 0.045, delay: 0.06 },
+  ],
+  uncheck: [{ freq: 520, to: 360, duration: 0.08, type: "sine", volume: 0.045 }],
+  add: [{ freq: 480, to: 760, duration: 0.07, type: "triangle", volume: 0.05 }],
+  coin: [
+    { freq: 988, duration: 0.06, type: "square", volume: 0.03 },
+    { freq: 1319, duration: 0.18, type: "square", volume: 0.03, delay: 0.06 },
+  ],
+  purchase: [
+    { noise: true, duration: 0.05, volume: 0.06, filter: "bandpass", freq: 3000 },
+    { freq: 1175, duration: 0.07, type: "triangle", volume: 0.07, delay: 0.03 },
+    { freq: 1568, duration: 0.2, type: "triangle", volume: 0.06, delay: 0.1 },
+  ],
+  equip: [
+    { freq: 523, duration: 0.05, type: "triangle", volume: 0.06 },
+    { freq: 784, duration: 0.1, type: "triangle", volume: 0.06, delay: 0.05 },
+  ],
+  claim: [
+    { freq: 784, duration: 0.08, type: "triangle", volume: 0.07 },
+    { freq: 988, duration: 0.08, type: "triangle", volume: 0.07, delay: 0.06 },
+    { freq: 1319, duration: 0.22, type: "triangle", volume: 0.07, delay: 0.12 },
+    { freq: 2637, duration: 0.16, type: "sine", volume: 0.02, delay: 0.14 },
+  ],
+  reveal: [
+    { freq: 300, to: 900, duration: 0.12, type: "triangle", volume: 0.06 },
+    { noise: true, duration: 0.1, volume: 0.04, filter: "highpass", freq: 3000, delay: 0.04 },
+  ],
+  unlock: [
+    { freq: 392, to: 784, duration: 0.25, type: "sawtooth", volume: 0.025 },
+    { freq: 523, duration: 0.32, type: "triangle", volume: 0.07, delay: 0.1 },
+    { freq: 659, duration: 0.32, type: "triangle", volume: 0.07, delay: 0.16 },
+    { freq: 784, duration: 0.45, type: "triangle", volume: 0.07, delay: 0.22 },
+  ],
+  flame: [
+    { noise: true, duration: 0.38, volume: 0.12, filter: "bandpass", freq: 900 },
+    { freq: 180, to: 540, duration: 0.32, type: "triangle", volume: 0.06 },
+  ],
+  crack: [
+    { noise: true, duration: 0.12, volume: 0.14, filter: "lowpass", freq: 1600 },
+    { freq: 220, to: 110, duration: 0.14, type: "triangle", volume: 0.07 },
+  ],
 } satisfies Record<string, Part[]>;
 
 export type SoundName = keyof typeof SOUNDS;

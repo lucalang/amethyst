@@ -28,6 +28,7 @@ import type { ShopData } from "@/lib/data/shop";
 import { ARTWORK_FRAMES, type ArtworkFrameId } from "@/lib/frames";
 import { DEFAULT_PROFILE_BANNER, PROFILE_BANNERS, PROFILE_FRAMES, type ProfileBannerId, type ProfileFrameId } from "@/lib/profile-cosmetics";
 import { cn } from "@/lib/utils";
+import { useUiSound } from "@/components/layout/ui-sound";
 import { BannerSwatch, FrameSwatch } from "@/components/profile/profile-cosmetic-art";
 import { SampleArt, type FrameSample } from "../../settings/frame-settings";
 
@@ -140,6 +141,7 @@ export function ShopView({
   const [busy, setBusy] = useState<Busy>(null);
   // Synchronous guard so a double click can't send a second request before the first re-render.
   const inFlight = useRef(false);
+  const sound = useUiSound();
   const fittingRoom = useRef<HTMLElement>(null);
 
   // What changed here since the server last rendered; cleared when fresh server data arrives.
@@ -210,9 +212,11 @@ export function ShopView({
       });
       setLocal((current) => ({ ...current, balance: result.balance, owned: [...current.owned, item.id] }));
       setPurchase({ item, stage: "done", already: result.status === "owned", balanceAfter: result.balance });
+      if (result.status === "purchased") sound("purchase");
       window.dispatchEvent(new CustomEvent("archive:coins", { detail: result.balance }));
       router.refresh();
     } catch (error) {
+      sound("invalid");
       setPurchase({ item, stage: "confirm", error: purchaseError(error) });
       if (error instanceof ApiError && error.status < 500) router.refresh();
     } finally {
@@ -233,6 +237,7 @@ export function ShopView({
         if (kind === "profile_frame") return { ...current, profileFrame: id as ProfileFrameId | null };
         return { ...current, decoration: id as AvatarDecorationId | null };
       });
+      sound("equip");
       toast.success(id ? `${COSMETICS[id].name} equipped` : `${COSMETIC_KIND_LABELS[kind]} removed`);
       setPurchase(null);
       router.refresh();

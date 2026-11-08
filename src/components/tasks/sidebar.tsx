@@ -296,7 +296,7 @@ export function TasksSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3 pb-2 [scrollbar-width:thin]">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-3 pb-2">
         <nav aria-label="Smart lists">
           <ul className="space-y-0.5">
             {SMART_VIEWS.map((view) => {
