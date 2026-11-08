@@ -1,12 +1,13 @@
 "use client";
 
 import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { CalendarClock, Star, type LucideIcon } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Star, type LucideIcon } from "lucide-react";
 import { UpcomingTasks } from "@/components/home/upcoming-tasks";
 import type { HomeTask } from "@/lib/data/home";
 import { cn } from "@/lib/utils";
 
 type TabId = "upcoming" | "favorited";
+const FAVORITES_PER_PAGE = 8;
 const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
   { id: "upcoming", label: "Upcoming", icon: CalendarClock },
   { id: "favorited", label: "Favorited", icon: Star },
@@ -19,8 +20,12 @@ function Empty({ children }: { children: ReactNode }) {
 /** Home's checklist tasks: upcoming (due soonest) or favorited (starred), as ARIA tabs. */
 export function HomeTasks({ upcoming, favorited }: { upcoming: HomeTask[]; favorited: HomeTask[] }) {
   const [tab, setTab] = useState<TabId>("upcoming");
+  const [favoritePage, setFavoritePage] = useState(0);
   const id = useId();
   const refs = useRef<Partial<Record<TabId, HTMLButtonElement | null>>>({});
+  const pageCount = Math.ceil(favorited.length / FAVORITES_PER_PAGE);
+  const currentPage = Math.min(favoritePage, Math.max(pageCount - 1, 0));
+  const pageTasks = favorited.slice(currentPage * FAVORITES_PER_PAGE, (currentPage + 1) * FAVORITES_PER_PAGE);
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const index = TABS.findIndex((item) => item.id === tab);
@@ -70,7 +75,34 @@ export function HomeTasks({ upcoming, favorited }: { upcoming: HomeTask[]; favor
           {tabId === "upcoming" ? (
             upcoming.length ? <UpcomingTasks tasks={upcoming} /> : <Empty>No open tasks with due dates. Add a due date to a checklist task to see it here.</Empty>
           ) : favorited.length ? (
-            <UpcomingTasks tasks={favorited} label="Favorited tasks" />
+            <>
+              <UpcomingTasks tasks={pageTasks} label="Favorited tasks" />
+              {pageCount > 1 ? (
+                <nav aria-label="Favorited task pages" className="mt-3 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFavoritePage((page) => Math.max(page - 1, 0))}
+                    disabled={currentPage === 0}
+                    className="inline-flex h-8 items-center gap-1 rounded-md border border-white/[0.1] px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    <ChevronLeft aria-hidden className="size-3.5" />
+                    Previous
+                  </button>
+                  <span aria-live="polite" className="text-xs text-muted-foreground">
+                    Page {currentPage + 1} of {pageCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFavoritePage((page) => Math.min(page + 1, pageCount - 1))}
+                    disabled={currentPage >= pageCount - 1}
+                    className="inline-flex h-8 items-center gap-1 rounded-md border border-white/[0.1] px-2.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    Next
+                    <ChevronRight aria-hidden className="size-3.5" />
+                  </button>
+                </nav>
+              ) : null}
+            </>
           ) : (
             <Empty>No favorited open tasks. Star a checklist task in any entry to keep it here.</Empty>
           )}

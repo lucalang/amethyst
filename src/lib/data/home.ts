@@ -101,16 +101,17 @@ export async function loadHome(
       .order("id")
       .limit(TASK_LIMIT)
       .then(check),
-    supabase
-      .from("workspace_checklist_items")
-      .select("id, file_id, label, due_date, starred")
-      .eq("checked", false)
-      .eq("starred", true)
-      .order("due_date", { nullsFirst: false })
-      .order("position")
-      .order("id")
-      .limit(TASK_LIMIT)
-      .then(check),
+    fetchAll((from, to) =>
+      supabase
+        .from("workspace_checklist_items")
+        .select("id, file_id, label, due_date, starred")
+        .eq("checked", false)
+        .eq("starred", true)
+        .order("due_date", { nullsFirst: false })
+        .order("position")
+        .order("id")
+        .range(from, to),
+    ),
     loadProfile(ctx),
     supabase.from("home_fan_items").select("id, entry_id, image_url, image_shape").order("position").then(check),
     supabase.from("collection_cover_items").select("id, collection_id, entry_id, image_url, image_shape").order("position").then(check),

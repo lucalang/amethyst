@@ -51,6 +51,26 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-08-home-favorited-task-pages",
+    date: "2026-11-08",
+    title: "Browse all favorited tasks from Home",
+    intro: "The Favorited tab now pages through every open task you’ve starred.",
+    icon: "tasks",
+    highlights: [
+      { kind: "improved", feature: "Favorited Tasks", text: "Browse all your open starred tasks in pages of eight, instead of seeing only the first few." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Favorited task pages",
+          body: "The Favorited tab under Upcoming tasks on Home now includes every open checklist task you’ve starred, with Previous and Next controls to move through pages of eight.",
+          where: "Home → Upcoming tasks → Favorited",
+          link: { href: "/", label: "Open Home" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-07-guest-mode-quick-nav-sounds",
     date: "2026-11-07",
     title: "Guest mode, one-click navigation and more sound",
