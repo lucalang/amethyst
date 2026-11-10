@@ -51,13 +51,13 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
-    id: "2026-11-09-flashy-home-smoothness",
+    id: "2026-11-09-performance",
     date: "2026-11-09",
-    title: "Smoother Flashy Home",
-    intro: "Home loads noticeably faster and the Flashy Home stage keeps its look while doing far less drawing work on every frame, so scrolling and pointer effects stay fluid.",
+    title: "Faster loading and smoother visuals",
+    intro: "Pages load faster, the Flashy Home stage does far less drawing work per frame, and the 3D scenes adapt to slower devices without giving up their look.",
     icon: "home",
     highlights: [
-      { kind: "improved", feature: "Faster loading", text: "Pages download much less script (about a third less on Home), and on phones the greeting shows up right away instead of after the artwork." },
+      { kind: "improved", feature: "Faster loading", text: "Pages download much less script (about a third less on Home), the featured image loads first, and on phones the greeting shows up right away instead of after the artwork." },
       { kind: "improved", feature: "Flashy Home", text: "The aurora, sparkles, glowing title and collection pills no longer redraw heavy blur effects every frame, and pointer parallax and card tilt touch only the pieces that move." },
       { kind: "fixed", feature: "Scrolling in Firefox", text: "Fading cards and headers measure the page once per frame instead of once per card, so scrolling long pages no longer stutters." },
       { kind: "improved", feature: "Smoother 3D scenes", text: "Vault, Admin, Version History and the profile pedestal lower their rendering resolution only while frames run slow, and return to full sharpness as soon as the device keeps up." },
@@ -67,7 +67,7 @@ const RELEASES: readonly Release[] = [
       improved: [
         {
           title: "Faster page loads",
-          body: "The update log, the full icon catalog and unused validation translations are no longer downloaded with every page; the icon catalog now loads only when a collection icon picker or arrange list opens. On phones the Flashy Home skips its backdrop artwork wall, which was almost fully hidden behind the shading there, and the greeting no longer starts invisible, so it appears with the first paint. Signed-in pages also no longer keep the browser busy while artwork is still loading, and Try again on an error page now reloads the page's data. In Firefox the top bar no longer blurs the page behind it, which made scrolling heavier there.",
+          body: "Home's selected featured image loads eagerly with high priority, while decorative backdrops stay lazy-loaded. The update log, the full icon catalog and unused validation translations are no longer downloaded with every page; the icon catalog now loads only when a collection icon picker or arrange list opens. On phones the Flashy Home skips its backdrop artwork wall, which was almost fully hidden behind the shading there, and the greeting no longer starts invisible, so it appears with the first paint. Signed-in pages also no longer keep the browser busy while artwork is still loading, and Try again on an error page now reloads the page's data. In Firefox the top bar no longer blurs the page behind it, which made scrolling heavier there.",
           where: "Every signed-in page, especially Home on phones",
           link: { href: "/", label: "Open Home" },
         },
@@ -79,7 +79,7 @@ const RELEASES: readonly Release[] = [
         },
         {
           title: "Adaptive 3D resolution",
-          body: "The Vault, Admin, Version History and profile pedestal scenes watch their own frame times. When a device can't keep up they render at a slightly lower resolution, one step at a time, and step back up to full sharpness once frames are fast again. Fast devices never leave full quality.",
+          body: "The Vault, Admin, Version History and profile pedestal scenes watch their own frame times. When a device can't keep up they render at a slightly lower resolution, one step at a time, and step back up to full sharpness once frames are fast again. Fast devices never leave full quality, and oversized drawing buffers on very high-resolution screens are capped.",
           where: "Vault, Admin, Version History and profiles",
           link: { href: "/vault", label: "Open the Vault" },
         },
@@ -97,31 +97,6 @@ const RELEASES: readonly Release[] = [
           title: "Scrolling in Firefox",
           body: "Browsers without scroll-driven animations, such as Firefox, animate fading cards and headers with a script. It now measures all of them first and only updates cards whose progress changed, instead of forcing a page layout for every card while scrolling.",
           where: "Home and collection pages in Firefox",
-        },
-      ],
-    },
-  },
-  {
-    id: "2026-11-09-home-and-3d-performance",
-    date: "2026-11-09",
-    title: "Faster Home loading and smoother 3D scenes",
-    intro: "Home prioritizes its selected featured image without promoting decorative backdrops, while 3D scenes limit oversized render buffers on high-resolution screens.",
-    icon: "image",
-    highlights: [
-      { kind: "improved", feature: "Performance", text: "Home's selected featured image loads with high priority without promoting decorative backdrops, and Vault, Admin and Version History limit excessive 3D rendering work on large displays." },
-    ],
-    details: {
-      improved: [
-        {
-          title: "Home artwork loading",
-          body: "The selected featured image loads eagerly with high fetch priority. Decorative featured-entry backdrops remain lazy-loaded so they do not compete with visible content.",
-          where: "Home",
-          link: { href: "/", label: "Open Home" },
-        },
-        {
-          title: "High-resolution 3D rendering",
-          body: "Vault, Admin and Version History cap oversized WebGL drawing buffers on high-resolution screens while retaining their existing quality tiers.",
-          where: "Vault, Admin and Version History",
         },
       ],
     },
