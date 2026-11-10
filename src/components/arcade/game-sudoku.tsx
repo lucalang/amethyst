@@ -120,17 +120,22 @@ export default function GameSudoku({
   daily,
   dailyResult: initialDailyResult,
   records: initialRecords,
+  wager = null,
+  onSettled,
 }: {
   regular: Partial<Record<SudokuSize, SudokuSave | null>>;
   daily: SudokuSave | null;
   dailyResult: SudokuDailyResult | null;
   records: Records;
+  /** A wager round's puzzle: the only board shown, without hints or the puzzle list. */
+  wager?: SudokuSave | null;
+  onSettled?: () => void;
 }) {
   const { play, effects, look } = useArcade();
   const today = useDailyDate();
   // Opens on an unfinished puzzle when there is one (regular first), otherwise on the puzzle list.
   const [start] = useState(() => {
-    const pick = SUDOKU_SIZES.map(size => regular[size]).find(save => save && !save.completed)
+    const pick = wager ?? SUDOKU_SIZES.map(size => regular[size]).find(save => save && !save.completed)
       ?? (daily && !daily.completed ? daily : regular.normal) ?? null;
     return withBackup(pick);
   });
@@ -479,6 +484,7 @@ export default function GameSudoku({
         ));
       setCoins(reward ? { status: "done", reward } : { status: "error" });
       if (reward?.status === "paid") window.dispatchEvent(new CustomEvent("archive:coins", { detail: reward.balance }));
+      if (game.slot === "wager") onSettled?.();
     } catch {
       toast.error("Could not verify and save the solve. Check your connection and retry the final cell.");
       dirty.current = true;
@@ -581,6 +587,7 @@ export default function GameSudoku({
       return true;
     }
     if (event.key === "h" || event.key === "H") {
+      if (wager) return false;
       askHint();
       return true;
     }
@@ -749,10 +756,12 @@ export default function GameSudoku({
                 <span className="hidden sm:inline">{paused ? "Resume" : "Pause"}</span>
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3" aria-label="Puzzles" title="Puzzles" onClick={openPicker} disabled={finishing}>
-              <LayoutGrid aria-hidden />
-              <span className="hidden sm:inline">Puzzles</span>
-            </Button>
+            {wager ? null : (
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3" aria-label="Puzzles" title="Puzzles" onClick={openPicker} disabled={finishing}>
+                <LayoutGrid aria-hidden />
+                <span className="hidden sm:inline">Puzzles</span>
+              </Button>
+            )}
           </>
         ) : null
       }
@@ -844,15 +853,17 @@ export default function GameSudoku({
             </div>
               {hidden ? (
                 <GameOverlay title="Paused" actions={<Button size="sm" onClick={resume} autoFocus>Resume</Button>}>
-                  The timer is stopped at {formatDuration(elapsed / 1000)}.
+                  {wager ? "The board is hidden, but the match clock keeps running." : `The timer is stopped at ${formatDuration(elapsed / 1000)}.`}
                 </GameOverlay>
               ) : game.completed && result ? (
                 <GameOverlay
                   title="Solved!"
                   actions={
-                    <Button size="sm" onClick={() => setView("picker")} autoFocus>
-                      {isDaily ? "Back to puzzles" : "New puzzle"}
-                    </Button>
+                    wager ? undefined : (
+                      <Button size="sm" onClick={() => setView("picker")} autoFocus>
+                        {isDaily ? "Back to puzzles" : "New puzzle"}
+                      </Button>
+                    )
                   }
                 >
                   {isDaily ? `Daily ${formatDailyDate(game.puzzleDate ?? today)}` : SUDOKU_LABELS[game.difficulty]} in {formatDuration(result.seconds)}
@@ -910,16 +921,18 @@ export default function GameSudoku({
                   <PencilLine aria-hidden />
                   Notes
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={askHint}
-                  disabled={!editable || game.puzzle[selected] !== "0"}
-                  title="Reveal the selected cell (marks the solve as assisted)"
-                >
-                  {hinting ? <Loader2 aria-hidden className="animate-spin" /> : <Lightbulb aria-hidden />}
-                  Hint
-                </Button>
+                {wager ? null : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={askHint}
+                    disabled={!editable || game.puzzle[selected] !== "0"}
+                    title="Reveal the selected cell (marks the solve as assisted)"
+                  >
+                    {hinting ? <Loader2 aria-hidden className="animate-spin" /> : <Lightbulb aria-hidden />}
+                    Hint
+                  </Button>
+                )}
               </div>
             </div>
           </div>

@@ -51,6 +51,48 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-10-tournaments-wagers",
+    date: "2026-11-10",
+    title: "Daily Tournaments and Wagers in the Arcade",
+    intro: "The Arcade has two ways to compete: a free Daily Tournament on a rotating game, and Coin wagers where two players face off in a best-of-five.",
+    icon: "trophy",
+    highlights: [
+      { kind: "new", feature: "Daily Tournament", text: "One game a day (UTC), rotating through Flutter, Snake, Fruit Slice and Tower Stacker. Free to enter; your best run counts, and the top ten win Coins, with exclusive flair for the podium." },
+      { kind: "new", feature: "Wagers", text: "Stake 10 to 10,000,000 Coins on a best-of-five against another player, on any of the 12 minigames with the settings you choose. Both stakes are held until the match ends and the winner takes the pot." },
+      { kind: "new", feature: "Custom rounds", text: "Build a match from up to five rounds and tune each one: Snake's mode, size, fruit and speed, Sudoku's size and difficulty, 2048's board and more. Puzzle and Sudoku rounds give both players the same puzzle." },
+      { kind: "new", feature: "Tournament flair", text: "The Daybreak Cup and Podium badges and the Daily Champion title can only be won in Daily Tournaments." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Daily Tournament",
+          body: "Each UTC day has one tournament on a set game and settings, shown in a week-long schedule. Join for free and play as often as you like; your best run that started and finished inside the day is your score, and equal scores rank by who set them first. Results are final a few minutes after midnight UTC and stay viewable for every past day.",
+          points: [
+            "1st: 300 Coins, the Daybreak Cup badge and the Daily Champion title",
+            "2nd: 180 Coins and the Podium badge; 3rd: 120 Coins and the Podium badge",
+            "4th to 10th: 40 Coins each",
+            "Rewards need at least two ranked players and are claimed once on the tournament page",
+          ],
+          where: "Arcade → Daily Tournament",
+          link: { href: "/arcade/tournaments", label: "Open Daily Tournament" },
+        },
+        {
+          title: "Wagers",
+          body: "Open a challenge with a stake and one to five games, or accept someone else's. Each round both players get one run of the round's game, and the first to three round wins takes both stakes. Open challenges can be cancelled for a refund and expire after 48 hours; accepted matches can't be cancelled. Rounds have 24 hours: a missing result loses the round by forfeit, two empty rounds in a row abandon the match with refunds, and a match still level after nine rounds is a draw with refunds.",
+          points: [
+            "Stakes from 10 to 10,000,000 Coins, set with a slider, quick presets or an exact amount",
+            "Every minigame can be a round; pick a game tile, then choose its settings on the round card",
+            "Zip, Patches, Tango and Queens rounds deal both players the same puzzle",
+            "Sudoku rounds share one puzzle too: the faster solve wins, hints are off and the clock keeps running while paused",
+            "Match pages show a live scoreboard, round-win pips and a round-by-round timeline",
+          ],
+          where: "Arcade → Wagers",
+          link: { href: "/arcade/wagers", label: "Open Wagers" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-10-vault-admin-colours",
     date: "2026-11-10",
     title: "New colours for the Vault and the Admin panel",

@@ -8,7 +8,9 @@ export const SUDOKU_CONFIG = {
 export const sudokuSymbol = (digit: number) => digit === 0 ? "0" : "123456789ABCDEFG"[digit - 1];
 export const sudokuDigit = (symbol: string) => "0123456789ABCDEFG".indexOf(symbol.toUpperCase());
 export const sudokuVariant = (size: SudokuSize, difficulty: string) => size === "normal" ? difficulty : `${size}-${difficulty}`;
-export const sudokuSlotKey = (slot: "regular" | "daily", size: SudokuSize) => slot === "daily" ? "daily" : size;
+/** "wager" holds the puzzle of a wager round. */
+export type SudokuSlot = "regular" | "daily" | "wager";
+export const sudokuSlotKey = (slot: SudokuSlot, size: SudokuSize) => slot === "daily" ? "daily" : size;
 export function sudokuProgressValid(size: SudokuSize, entries: string, notes: number[]) {
   const config = SUDOKU_CONFIG[size];
   return entries.length === config.cells && [...entries].every(symbol => symbol === "0" || config.symbols.includes(symbol))

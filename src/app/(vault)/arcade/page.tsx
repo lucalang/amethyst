@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Cherry, ChevronRight, Coins, Gamepad2, House, Medal, Store, Trophy } from "lucide-react";
+import { ArrowRight, Cherry, ChevronRight, Coins, Crown, Gamepad2, House, Medal, Store, Swords, Trophy } from "lucide-react";
 import { ArcadeGames } from "@/components/arcade/arcade-games";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
@@ -86,6 +86,34 @@ export default async function ArcadePage() {
             <span className="block text-xs text-pretty text-muted-foreground">See how your best runs rank against other players in every game.</span>
             <span className="arcade-counter-cta mt-auto self-start">
               View
+              <ArrowRight aria-hidden className="size-3.5" />
+            </span>
+          </Link>
+        </div>
+        <div className="mb-8 grid gap-3 md:grid-cols-2">
+          <Link href="/arcade/tournaments" prefetch={false} className="ui-card enter flex flex-col gap-3 p-4" style={{ "--enter-index": 4, "--tone": "#a78bfa" } as CSSProperties}>
+            <span className="flex min-w-0 items-center gap-3">
+              <span aria-hidden className="ui-icon">
+                <Crown className="size-4.5" />
+              </span>
+              <span className="block text-sm font-semibold text-foreground">Daily Tournament</span>
+            </span>
+            <span className="block text-xs text-pretty text-muted-foreground">One game a day, free to enter. Post your best run before midnight UTC for Coins and exclusive flair.</span>
+            <span className="arcade-counter-cta mt-auto self-start">
+              Compete
+              <ArrowRight aria-hidden className="size-3.5" />
+            </span>
+          </Link>
+          <Link href="/arcade/wagers" prefetch={false} className="ui-card enter flex flex-col gap-3 p-4" style={{ "--enter-index": 5, "--tone": "#34d399" } as CSSProperties}>
+            <span className="flex min-w-0 items-center gap-3">
+              <span aria-hidden className="ui-icon">
+                <Swords className="size-4.5" />
+              </span>
+              <span className="block text-sm font-semibold text-foreground">Wagers</span>
+            </span>
+            <span className="block text-xs text-pretty text-muted-foreground">Stake Coins on a best-of-five against another player. Winner takes the pot.</span>
+            <span className="arcade-counter-cta mt-auto self-start">
+              Challenge
               <ArrowRight aria-hidden className="size-3.5" />
             </span>
           </Link>

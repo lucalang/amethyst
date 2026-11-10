@@ -15,7 +15,8 @@ export type ItemSource =
   | { kind: "case"; name: string; chance: number; href: string }
   /** A secret the account doesn't own: the case lists it only as a hidden reward. */
   | { kind: "hidden-case"; name: string; href: string }
-  | { kind: "vault"; href: string };
+  | { kind: "vault"; href: string }
+  | { kind: "tournament"; href: string };
 
 /** `uncertain`: only secret Vault codes (or hidden case rewards) grant it, and which codes are live isn't public. */
 export type Availability = "obtainable" | "uncertain" | "unavailable";
@@ -70,8 +71,9 @@ export function buildCollectionIndex(rows: readonly CatalogRow[], owned: Readonl
       else if (hidden && tiers.some((entry) => entry.items.some((entry) => entry.id === null))) sources.push({ kind: "hidden-case", name, href: casesHref(lootCase.id) });
     }
     if (source === "vault") sources.push({ kind: "vault", href: "/vault" });
+    if (source === "tournament") sources.push({ kind: "tournament", href: "/arcade/tournaments" });
 
-    const availability: Availability = sources.some((entry) => entry.kind === "shop" || entry.kind === "achievement" || entry.kind === "case")
+    const availability: Availability = sources.some((entry) => entry.kind === "shop" || entry.kind === "achievement" || entry.kind === "case" || entry.kind === "tournament")
       ? "obtainable"
       : sources.length
         ? "uncertain"

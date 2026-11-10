@@ -11,6 +11,7 @@ import { drawBlock, drawPerfect, drawScenery, pedestalColor, perfectDuration, sc
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import { CoinReward, useArcadeRun } from "./coin-reward";
+import { useCompetitionBoard } from "./competition";
 import type { SoundName } from "./sound";
 
 /** Footprint of a fresh block, in world units. */
@@ -439,8 +440,10 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<StackerGame | null>(null);
   const live = useRef({ play, effects, theme });
+  const lockedBoard = useCompetitionBoard("stacker");
+  const lockedMode: Mode | null = lockedBoard === null ? null : lockedBoard === "classic" ? "classic" : "casual";
   const [phase, setPhase] = useState<Phase>("ready");
-  const [mode, setMode] = useState<Mode>("classic");
+  const [mode, setMode] = useState<Mode>(lockedMode ?? "classic");
   const [runDate, setRunDate] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -478,7 +481,7 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
         onOver: (final, perfectStreak, variant) => finish(final, perfectStreak, variant),
         live: () => live.current,
       },
-      "classic",
+      lockedMode ?? "classic",
     );
     gameRef.current = game;
     return () => {
@@ -490,7 +493,7 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
       game.destroy();
       gameRef.current = null;
     };
-  }, [submit, finishRun]);
+  }, [submit, finishRun, lockedMode]);
 
   useAway(() => gameRef.current?.pause());
 
@@ -554,7 +557,7 @@ export default function GameStacker({ records: initialRecords }: { records: Reco
           <Stat label="Height" value={score} />
           <Stat label={daily ? (shownDate === today ? "Today's best" : "Daily best") : `${RULES[mode].label} best`} value={shownBest} highlight={score > 0 && score >= best} />
           <Stat label="Perfect streak" value={streak} highlight={streak >= 3} />
-          <div role="group" aria-label="Mode" className="ml-auto flex flex-wrap items-center gap-1 self-center">
+          <div role="group" aria-label="Mode" hidden={lockedMode !== null} className="ml-auto flex flex-wrap items-center gap-1 self-center">
             {(Object.keys(RULES) as Mode[]).map((id) => (
               <Button
                 key={id}

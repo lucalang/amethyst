@@ -9,10 +9,12 @@ import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
 import { formatDuration } from "@/lib/arcade";
 import { dailyVariant } from "@/lib/arcade-daily";
-import { SNAKE_MODES, SNAKE_SIZES, dailySnakeSetup, snakeVariant, type SnakeSetup } from "@/lib/snake";
+import { parseSnakeBoard } from "@/lib/leaderboards";
+import { DEFAULT_SNAKE_SETUP, SNAKE_MODES, SNAKE_SIZES, dailySnakeSetup, snakeVariant, type SnakeMode, type SnakeSetup } from "@/lib/snake";
 import { swipeDirection } from "./engine";
 import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import { CoinReward, useArcadeRun } from "./coin-reward";
+import { useCompetitionBoard } from "./competition";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { LAYER_HUES, START_LENGTH, createSnake, sameSetup, type Direction, type OverReason, type Phase, type SnakeGame, type SnakeStatus } from "./snake-engine";
 import { ModeIcon, SnakeSetupPanel, describeSetup, setupTitle } from "./snake-setup";
@@ -21,6 +23,12 @@ import { snakeTheme } from "./snake-look";
 const OVER_TITLES: Record<OverReason, string> = { crash: "Game over", time: "Time's up!", cleared: "Board cleared!", boom: "Kaboom!" };
 const ARROWS: Record<Direction, typeof ArrowUp> = { up: ArrowUp, right: ArrowRight, down: ArrowDown, left: ArrowLeft };
 const NO_STATUS: SnakeStatus = { layer: null, scrambled: null, ghost: null };
+
+/** A competitive board id (as on the leaderboards) as a setup. */
+function competitiveSnakeSetup(board: string): SnakeSetup {
+  const { key, size, count, speed } = parseSnakeBoard(board);
+  return { ...DEFAULT_SNAKE_SETUP, mode: key as SnakeMode, size, fruitCount: count, speed };
+}
 
 export default function GameSnake({ records: initialRecords }: { records: Record<string, number> }) {
   const { play, effects, look } = useArcade();
@@ -33,7 +41,8 @@ export default function GameSnake({ records: initialRecords }: { records: Record
   const gameRef = useRef<SnakeGame | null>(null);
   const swipe = useRef<{ id: number; x: number; y: number } | null>(null);
   const live = useRef({ play, effects, theme });
-  const [setup, setSetup] = useState<SnakeSetup>(settings.arcadeSnake);
+  const lockedBoard = useCompetitionBoard("snake");
+  const [setup, setSetup] = useState<SnakeSetup>(() => (lockedBoard === null ? settings.arcadeSnake : competitiveSnakeSetup(lockedBoard)));
   const initialSetup = useRef(setup);
   const pendingSave = useRef<{ timer: number; setup: SnakeSetup } | null>(null);
   const [round, setRound] = useState<SnakeSetup>(setup);
@@ -265,7 +274,7 @@ export default function GameSnake({ records: initialRecords }: { records: Record
       }
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Snake play mode" className="lb-boards [--cab:#ffd54a]">
+        <div role="group" aria-label="Snake play mode" hidden={lockedBoard !== null} className="lb-boards [--cab:#ffd54a]">
           {(["regular", "daily"] as const).map((option) => (
             <button key={option} type="button" className="lb-board-pick disabled:opacity-50" aria-pressed={mode === option} disabled={inRound} onClick={() => switchMode(option)}>
               {option === "daily" ? "Daily" : "Regular"}
@@ -410,6 +419,12 @@ export default function GameSnake({ records: initialRecords }: { records: Record
                 <span className="tabular-nums">{records[snakeVariant(setup)] ?? 0}</span>
               </div>
               {roundDate !== today ? <p className="text-xs text-muted-foreground">This run counts for {roundDate}. Your next run uses today&apos;s challenge.</p> : null}
+            </section>
+          ) : lockedBoard !== null ? (
+            <section aria-labelledby="snake-locked-title" className="flex flex-col gap-3 border-t-2 border-border py-3.5">
+              <h2 id="snake-locked-title" className="text-base font-semibold">Match setup · {setupTitle(round)}</h2>
+              <p className="text-sm text-pretty">{describeSetup(round)}</p>
+              <p className="text-sm text-muted-foreground">{SNAKE_MODES[round.mode].tip}. The setup is fixed for this competition.</p>
             </section>
           ) : (
             <SnakeSetupPanel setup={setup} onChange={changeSetup} locked={inRound} waiting={phase === "over"} records={records} />

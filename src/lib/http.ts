@@ -76,6 +76,16 @@ const HINTED: Record<string, number> = {
   layout_changed: 409,
   list_changed: 409,
   replaced: 409,
+  tournament_not_found: 404,
+  tournament_closed: 409,
+  nothing_to_claim: 409,
+  wager_not_found: 404,
+  wager_limit: 409,
+  own_wager: 409,
+  wager_closed: 409,
+  wager_locked: 409,
+  wager_round_closed: 409,
+  wager_attempt_used: 409,
 };
 
 /** Map a PostgREST/Postgres error to a safe client response without leaking internals. */

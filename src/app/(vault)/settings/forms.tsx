@@ -50,12 +50,12 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
   const [decoration, setDecoration] = useState<AvatarDecorationId | null>(cosmetics.avatarDecoration);
   const [decorationSource, setDecorationSource] = useState<"all" | CosmeticSource>("all");
   const visibleBadges = PROFILE_BADGE_IDS.filter(
-    (id) => cosmetics.owned.includes(id) || PROFILE_BADGES[id].source === "achievement",
+    (id) => cosmetics.owned.includes(id) || PROFILE_BADGES[id].source === "achievement" || PROFILE_BADGES[id].source === "tournament",
   );
   const visibleTitles = PROFILE_TITLE_IDS.filter(
-    (id) => cosmetics.owned.includes(id) || PROFILE_TITLES[id].source === "achievement",
+    (id) => cosmetics.owned.includes(id) || PROFILE_TITLES[id].source === "achievement" || PROFILE_TITLES[id].source === "tournament",
   );
-  const [flairSource, setFlairSource] = useState<"all" | "achievement" | "vault">("all");
+  const [flairSource, setFlairSource] = useState<"all" | "achievement" | "vault" | "tournament">("all");
   const [badges, setBadges] = useState<ProfileBadgeId[]>(() => [...cosmetics.badges]);
   const [badgeNote, setBadgeNote] = useState("");
   const badgesFull = badges.length >= MAX_PROFILE_BADGES;
@@ -237,6 +237,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
               ["all", "All"],
               ["achievement", "Achievements"],
               ["vault", "The Vault"],
+              ["tournament", "Tournaments"],
             ] as const).map(([value, label]) => (
               <FilterChip key={value} pressed={flairSource === value} onClick={() => setFlairSource(value)}>
                 {label}
@@ -294,7 +295,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                   const position = badges.indexOf(id);
                   const selected = position >= 0;
                   const ach = achievementForItem(id);
-                  const lockedHint = ach?.name ?? "Vault";
+                  const lockedHint = ach?.name ?? (PROFILE_BADGES[id].source === "tournament" ? "Daily Tournament" : "Vault");
                   const hint = !isOwned ? `Locked (${lockedHint})` : !selected && badgesFull ? "Remove a badge to wear this one" : PROFILE_BADGES[id].description;
                   return (
                     <label
@@ -342,7 +343,7 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                 .map((id) => {
                   const isOwned = id === null || cosmetics.owned.includes(id);
                   const ach = id ? achievementForItem(id) : undefined;
-                  const lockedHint = ach?.name ?? "Vault";
+                  const lockedHint = ach?.name ?? (id && PROFILE_TITLES[id].source === "tournament" ? "Daily Tournament" : "Vault");
                   return (
                     <label
                       key={id ?? "none"}

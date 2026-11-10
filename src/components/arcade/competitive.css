@@ -1,0 +1,604 @@
+/* Competitive arena (Wagers and Tournaments). --hue tints a game; --cx-accent tints a page. */
+
+.cx {
+  --cx-accent: #34d399;
+  --cx-gold: #fbbf24;
+  --cx-line: color-mix(in oklab, var(--foreground) 10%, transparent);
+  --cx-soft: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+/* Hero: a lit stage with the headline stats. */
+.cx-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid color-mix(in oklab, var(--cx-accent) 30%, transparent);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, var(--cx-accent) 22%, transparent), transparent 55%),
+    radial-gradient(90% 120% at 100% 100%, color-mix(in oklab, var(--amethyst) 24%, transparent), transparent 60%),
+    var(--card);
+  padding: 1.25rem;
+}
+.cx-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--cx-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cx-line) 1px, transparent 1px);
+  background-size: 2rem 2rem;
+  mask-image: radial-gradient(80% 90% at 70% 0%, black, transparent);
+  opacity: 0.6;
+}
+@media (min-width: 768px) {
+  .cx-hero {
+    padding: 1.75rem 2rem;
+  }
+}
+.cx-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cx-accent);
+}
+.cx-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+@media (min-width: 640px) {
+  .cx-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.cx-stat {
+  border-radius: 1rem;
+  border: 1px solid var(--cx-line);
+  background: color-mix(in oklab, var(--background) 55%, transparent);
+  padding: 0.7rem 0.85rem;
+  backdrop-filter: blur(6px);
+}
+.cx-stat dt {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+}
+.cx-stat dd {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+
+/* Panels and section titles. */
+.cx-panel {
+  border-radius: 1.25rem;
+  border: 1px solid var(--cx-line);
+  background: linear-gradient(180deg, var(--cx-soft), transparent 40%), var(--card);
+  padding: 1rem;
+}
+@media (min-width: 768px) {
+  .cx-panel {
+    padding: 1.25rem;
+  }
+}
+.cx-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.cx-step {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--cx-accent) 18%, transparent);
+  color: var(--cx-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* Game tiles: artwork with the cabinet light. */
+.cx-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.6rem;
+}
+.cx-tile {
+  --hue: var(--amethyst);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--cx-line);
+  background: var(--card);
+  text-align: left;
+  outline: none;
+  transition: transform 0.18s ease, border-color 0.18s, box-shadow 0.18s;
+}
+.cx-tile:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--hue) 60%, transparent);
+  box-shadow: 0 12px 28px -18px var(--hue);
+}
+.cx-tile:focus-visible {
+  box-shadow: 0 0 0 2px var(--hue);
+}
+.cx-tile:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cx-tile[data-picked="true"] {
+  border-color: var(--hue);
+  box-shadow: inset 0 0 0 1px var(--hue);
+}
+.cx-art {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom: 1px solid var(--cx-line);
+}
+.cx-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, color-mix(in oklab, var(--hue) 22%, transparent));
+}
+.cx-tile-body {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.cx-genre {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: color-mix(in oklab, var(--hue) 80%, var(--foreground));
+}
+.cx-count {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--hue);
+  color: #0b0b10;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+/* Round cards in the match builder. */
+.cx-round {
+  --hue: var(--amethyst);
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--hue) 35%, var(--cx-line));
+  background: linear-gradient(110deg, color-mix(in oklab, var(--hue) 10%, transparent), transparent 45%), var(--card);
+  padding: 0.85rem;
+}
+.cx-round[data-invalid="true"] {
+  border-color: var(--destructive);
+}
+.cx-thumb {
+  width: 4.5rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 0.65rem;
+  border: 1px solid var(--cx-line);
+  aspect-ratio: 16 / 10;
+}
+.cx-setting {
+  display: grid;
+  gap: 0.35rem;
+}
+.cx-setting-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+.cx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.cx-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.9rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--cx-line);
+  background: var(--cx-soft);
+  font-size: 0.75rem;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+.cx-chip:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--hue, var(--cx-accent)) 60%, transparent);
+}
+.cx-chip:focus-visible {
+  box-shadow: 0 0 0 2px var(--hue, var(--cx-accent));
+}
+.cx-chip[aria-checked="true"],
+.cx-chip[aria-pressed="true"] {
+  border-color: var(--hue, var(--cx-accent));
+  background: color-mix(in oklab, var(--hue, var(--cx-accent)) 20%, transparent);
+  color: var(--foreground);
+  font-weight: 700;
+}
+.cx-chip:disabled {
+  opacity: 0.4;
+}
+
+/* Stake: the big number, a log slider and presets. */
+.cx-stake-value {
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.cx-range {
+  width: 100%;
+  height: 0.5rem;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--cx-gold) var(--fill, 0%), var(--cx-line) var(--fill, 0%));
+  outline: none;
+  cursor: pointer;
+}
+.cx-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: var(--cx-gold);
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--cx-gold), 0 4px 14px -4px var(--cx-gold);
+}
+.cx-range::-moz-range-thumb {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: var(--cx-gold);
+  border: 3px solid var(--card);
+  box-shadow: 0 0 0 1px var(--cx-gold);
+}
+.cx-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.cx-range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.cx-pot {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in oklab, var(--cx-gold) 40%, transparent);
+  background: radial-gradient(120% 120% at 100% 0%, color-mix(in oklab, var(--cx-gold) 18%, transparent), transparent 60%), var(--cx-soft);
+  padding: 0.85rem 1rem;
+}
+
+/* Versus: two players and the round score between them. */
+.cx-versus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+.cx-player {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+}
+.cx-avatar {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  border: 2px solid var(--cx-line);
+  background: var(--cx-soft);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.cx-player[data-you="true"] .cx-avatar {
+  border-color: var(--cx-accent);
+  box-shadow: 0 0 22px -6px var(--cx-accent);
+}
+.cx-player[data-winner="true"] .cx-avatar {
+  border-color: var(--cx-gold);
+  box-shadow: 0 0 22px -4px var(--cx-gold);
+}
+.cx-score {
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.cx-pips {
+  display: flex;
+  gap: 0.25rem;
+}
+.cx-pip {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--cx-line);
+}
+.cx-pip[data-on="true"] {
+  background: var(--cx-accent);
+  box-shadow: 0 0 8px var(--cx-accent);
+}
+
+/* Match cards in lists. */
+.cx-match {
+  display: grid;
+  gap: 0.7rem;
+  border-radius: 1.1rem;
+  border: 1px solid var(--cx-line);
+  background: var(--card);
+  padding: 0.9rem;
+  transition: border-color 0.18s, transform 0.18s;
+}
+.cx-match:hover {
+  border-color: color-mix(in oklab, var(--cx-accent) 45%, transparent);
+}
+.cx-match[data-turn="true"] {
+  border-color: color-mix(in oklab, var(--cx-accent) 65%, transparent);
+  box-shadow: 0 10px 30px -22px var(--cx-accent);
+}
+.cx-dot {
+  --hue: var(--amethyst);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--hue) 40%, transparent);
+  background: color-mix(in oklab, var(--hue) 10%, transparent);
+  padding: 0.15rem 0.55rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cx-dot::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--hue);
+}
+.cx-coins {
+  color: var(--cx-gold);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Round timeline. */
+.cx-timeline {
+  display: grid;
+  gap: 0.5rem;
+}
+.cx-slot {
+  --hue: var(--amethyst);
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--cx-line);
+  background: var(--card);
+  padding: 0.6rem 0.75rem;
+}
+.cx-slot[data-state="upcoming"] {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.65;
+}
+.cx-slot[data-state="live"] {
+  border-color: color-mix(in oklab, var(--cx-accent) 60%, transparent);
+  box-shadow: inset 3px 0 0 var(--cx-accent);
+}
+.cx-slot[data-state="won"] {
+  box-shadow: inset 3px 0 0 var(--cx-accent);
+}
+.cx-slot[data-state="lost"] {
+  box-shadow: inset 3px 0 0 var(--destructive);
+}
+.cx-slot-num {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.7rem;
+  background: color-mix(in oklab, var(--hue) 16%, transparent);
+  color: color-mix(in oklab, var(--hue) 75%, var(--foreground));
+  font-weight: 800;
+}
+
+/* Tournament podium. */
+.cx-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.5rem;
+}
+.cx-podium-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  border-radius: 1rem 1rem 0.4rem 0.4rem;
+  border: 1px solid var(--cx-line);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--medal) 22%, transparent), var(--cx-soft));
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+}
+.cx-podium-step[data-place="1"] {
+  --medal: #fbbf24;
+  min-height: 9rem;
+}
+.cx-podium-step[data-place="2"] {
+  --medal: #cbd5e1;
+  min-height: 7.5rem;
+}
+.cx-podium-step[data-place="3"] {
+  --medal: #d97706;
+  min-height: 6.5rem;
+}
+.cx-podium-step[data-you="true"] {
+  border-color: var(--cx-accent);
+}
+.cx-medal {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--medal);
+  color: #1c1205;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+/* Hover polish: lift, glow and an artwork zoom, only on devices that really hover. */
+.cx-art svg,
+.cx-thumb svg {
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.cx-art::after {
+  transition: opacity 0.25s;
+}
+.cx-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in oklab, white 22%, transparent) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.cx-stat,
+.cx-slot,
+.cx-round,
+.cx-podium-step,
+.cx-dot,
+.cx-medal {
+  transition: transform 0.2s ease, border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.cx-chip {
+  transition: transform 0.15s ease, border-color 0.15s, background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.cx-range::-webkit-slider-thumb {
+  transition: transform 0.15s ease;
+}
+
+@media (hover: hover) {
+  .cx-tile:hover:not(:disabled) .cx-art svg {
+    transform: scale(1.08);
+  }
+  .cx-tile:hover:not(:disabled)::before {
+    transform: translateX(120%);
+    transition: transform 0.7s ease;
+  }
+  .cx-tile:hover:not(:disabled) .cx-count {
+    box-shadow: 0 0 12px var(--hue);
+  }
+  .cx-match:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px -22px var(--cx-accent);
+  }
+  .cx-round:hover {
+    border-color: color-mix(in oklab, var(--hue) 65%, transparent);
+    box-shadow: 0 12px 30px -24px var(--hue);
+  }
+  .cx-round:hover .cx-thumb svg,
+  .cx-panel:hover > .cx-thumb svg {
+    transform: scale(1.06);
+  }
+  .cx-chip:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--hue, var(--cx-accent)) 10%, transparent);
+  }
+  .cx-stat:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--cx-accent) 45%, transparent);
+    box-shadow: 0 10px 24px -18px var(--cx-accent);
+  }
+  .cx-slot:hover {
+    transform: translateX(3px);
+    border-color: color-mix(in oklab, var(--hue) 50%, transparent);
+  }
+  .cx-slot:hover .cx-slot-num {
+    background: color-mix(in oklab, var(--hue) 28%, transparent);
+  }
+  .cx-podium-step:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px -20px var(--medal);
+  }
+  .cx-podium-step:hover .cx-medal {
+    transform: scale(1.12) rotate(-6deg);
+    box-shadow: 0 0 16px var(--medal);
+  }
+  .cx-dot:hover {
+    background: color-mix(in oklab, var(--hue) 22%, transparent);
+    border-color: var(--hue);
+  }
+  .cx-range:hover::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+}
+.cx-tile:active:not(:disabled),
+.cx-chip:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cx-tile,
+  .cx-chip,
+  .cx-match {
+    transition: none;
+  }
+  .cx-tile:hover:not(:disabled) {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx :is(.cx-match, .cx-stat, .cx-slot, .cx-podium-step, .cx-medal, .cx-chip, .cx-tile, .cx-art svg, .cx-thumb svg):is(*, :hover) {
+    transform: none;
+  }
+  .cx-tile::before {
+    display: none;
+  }
+}
+:root[data-motion="off"] .cx :is(.cx-match, .cx-stat, .cx-slot, .cx-podium-step, .cx-medal, .cx-chip, .cx-tile, .cx-art svg, .cx-thumb svg):is(*, :hover) {
+  transform: none;
+}
+:root[data-motion="off"] .cx-tile::before {
+  display: none;
+}

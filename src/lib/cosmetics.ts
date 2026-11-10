@@ -17,7 +17,7 @@ export const AVATAR_DECORATION_IDS = ["laurel-wreath", "orbit-ring", "gem-crown"
 export type AvatarDecorationId = (typeof AVATAR_DECORATION_IDS)[number];
 export const isAvatarDecorationId = (value: unknown): value is AvatarDecorationId => AVATAR_DECORATION_IDS.includes(value as AvatarDecorationId);
 
-export type CosmeticSource = "shop" | "achievement" | "vault" | "case";
+export type CosmeticSource = "shop" | "achievement" | "vault" | "case" | "tournament";
 export type CosmeticKind = "frame" | "avatar_decoration" | "profile_banner" | "profile_frame";
 export type CosmeticId = UnlockableFrameId | AvatarDecorationId | ProfileBannerItemId | ProfileFrameId;
 export const COSMETIC_IDS: readonly CosmeticId[] = [...UNLOCKABLE_FRAME_IDS, ...AVATAR_DECORATION_IDS, ...PROFILE_BANNER_ITEM_IDS, ...PROFILE_FRAME_IDS];
@@ -47,6 +47,8 @@ export const PROFILE_BADGE_IDS = [
   "badge-needle",
   "badge-ouroboros",
   "badge-aegis",
+  "badge-daybreak-cup",
+  "badge-podium",
 ] as const;
 export type ProfileBadgeId = (typeof PROFILE_BADGE_IDS)[number];
 export const isProfileBadgeId = (value: unknown): value is ProfileBadgeId => PROFILE_BADGE_IDS.includes(value as ProfileBadgeId);
@@ -55,7 +57,7 @@ export const MAX_PROFILE_BADGES = 5;
 /** Known, unique badge ids in order, capped at MAX_PROFILE_BADGES. */
 export const toProfileBadges = (values: readonly unknown[] | null | undefined): ProfileBadgeId[] =>
   [...new Set((values ?? []).filter(isProfileBadgeId))].slice(0, MAX_PROFILE_BADGES);
-export const PROFILE_BADGES: Record<ProfileBadgeId, { name: string; description: string; source: "vault" | "achievement" }> = {
+export const PROFILE_BADGES: Record<ProfileBadgeId, { name: string; description: string; source: "vault" | "achievement" | "tournament" }> = {
   "badge-keyhole": { name: "Keyhole", description: "A brass keyhole with violet light behind it.", source: "vault" },
   "badge-comet": { name: "Comet", description: "A comet with a long amethyst tail.", source: "vault" },
   "badge-lantern": { name: "Lantern", description: "A small lantern for late nights in the archive.", source: "vault" },
@@ -63,6 +65,8 @@ export const PROFILE_BADGES: Record<ProfileBadgeId, { name: string; description:
   "badge-needle": { name: "Sky Threader", description: "Silver wings threading a twin crystal gate.", source: "achievement" },
   "badge-ouroboros": { name: "Ouroboros", description: "An emerald serpent coiled in an unbroken gold ring.", source: "achievement" },
   "badge-aegis": { name: "Broken Seal", description: "A crimson-lit vault iris cloven by a golden key.", source: "achievement" },
+  "badge-daybreak-cup": { name: "Daybreak Cup", description: "A gold trophy cup with a rising amethyst sun. Won by finishing first in a Daily Tournament.", source: "tournament" },
+  "badge-podium": { name: "Podium", description: "Three stepped plinths under a silver star. Won by placing second or third in a Daily Tournament.", source: "tournament" },
 };
 
 export const PROFILE_TITLE_IDS = [
@@ -77,10 +81,11 @@ export const PROFILE_TITLE_IDS = [
   "title-prism-walker",
   "title-exalted",
   "title-amethyst-sovereign",
+  "title-daily-champion",
 ] as const;
 export type ProfileTitleId = (typeof PROFILE_TITLE_IDS)[number];
 export const isProfileTitleId = (value: unknown): value is ProfileTitleId => PROFILE_TITLE_IDS.includes(value as ProfileTitleId);
-export const PROFILE_TITLES: Record<ProfileTitleId, { name: string; description: string; source: "vault" | "achievement" | "case" }> = {
+export const PROFILE_TITLES: Record<ProfileTitleId, { name: string; description: string; source: "vault" | "achievement" | "case" | "tournament" }> = {
   "title-vault-keeper": { name: "Vault Keeper", description: "A title from the Vault, shown under your name.", source: "vault" },
   "title-code-breaker": { name: "Code Breaker", description: "A title from the Vault, shown under your name.", source: "vault" },
   "title-night-archivist": { name: "Night Archivist", description: "A title from the Vault, shown under your name.", source: "vault" },
@@ -92,6 +97,7 @@ export const PROFILE_TITLES: Record<ProfileTitleId, { name: string; description:
   "title-prism-walker": { name: "Prism Walker", description: "A Prismatic title from cases, shown under your name.", source: "case" },
   "title-exalted": { name: "Exalted", description: "An Exalted title from cases, shown under your name.", source: "case" },
   "title-amethyst-sovereign": { name: "Amethyst Sovereign", description: "The Amethyst title, the rarest case reward, shown under your name.", source: "case" },
+  "title-daily-champion": { name: "Daily Champion", description: "Won by finishing first in a Daily Tournament.", source: "tournament" },
 };
 
 export type EquipItemId = CosmeticId | ProfileBadgeId | ProfileTitleId;

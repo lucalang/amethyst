@@ -9,6 +9,7 @@ import {
   isProfileBadgeId,
   isProfileTitleId,
   type AvatarDecorationId,
+  type CosmeticSource,
   type ProfileBadgeId,
   type ProfileTitleId,
 } from "@/lib/cosmetics";
@@ -65,7 +66,7 @@ export function describeItem(id: string): CollectibleItem | null {
 }
 
 /** How the registries say an item is obtained (the database's `cosmetic_items.source` is authoritative). */
-export function registrySource(id: string): "shop" | "achievement" | "vault" | "case" | null {
+export function registrySource(id: string): CosmeticSource | null {
   if (gameCosmetic(id)) return "shop";
   if (isProfileBadgeId(id)) return PROFILE_BADGES[id].source;
   if (isProfileTitleId(id)) return PROFILE_TITLES[id].source;

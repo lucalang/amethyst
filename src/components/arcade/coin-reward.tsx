@@ -8,6 +8,7 @@ import type { RunReward, ScoreGame } from "@/lib/arcade";
 import { announceCompleted, announcePlayed } from "@/lib/arcade-streaks";
 import { cn } from "@/lib/utils";
 import { useUiSound } from "@/components/layout/ui-sound";
+import { useCompetition } from "./competition";
 
 export type CoinState =
   | { status: "idle" }
@@ -31,22 +32,24 @@ export function useArcadeRun(game: ScoreGame) {
   const latest = useRef(0);
   const [coins, setCoins] = useState<CoinState>({ status: "idle" });
   const sound = useUiSound();
+  const competition = useCompetition();
 
   const begin = useCallback((board?: string) => {
     if (run.current) return;
     limited.current = false;
     latest.current += 1;
     setCoins({ status: "idle" });
-    run.current = apiFetch<{ runId: string }>("/api/arcade/runs", { method: "POST", json: { game, board } })
-      .then((body) => {
+    const started = competition ? competition.start() : apiFetch<{ runId: string }>("/api/arcade/runs", { method: "POST", json: { game, board } }).then((body) => body.runId);
+    run.current = started
+      .then((runId) => {
         announcePlayed();
-        return body.runId;
+        return runId;
       })
       .catch((error: unknown) => {
         if (error instanceof ApiError && error.status === 429) limited.current = true;
         return null;
       });
-  }, [game]);
+  }, [game, competition]);
 
   /** Whether a run is open (started and not yet finished). */
   const active = useCallback(() => run.current !== null, []);
@@ -66,6 +69,13 @@ export function useArcadeRun(game: ScoreGame) {
     };
     show({ status: "pending" });
     void (async () => {
+      try {
+        await report();
+      } finally {
+        competition?.onSettled?.();
+      }
+    })();
+    async function report() {
       const id = await pending;
       if (!id) {
         show({ status: limited.current ? "rate_limited" : "error" });
@@ -94,8 +104,8 @@ export function useArcadeRun(game: ScoreGame) {
         }
       }
       show({ status: "error" });
-    })();
-  }, [game, sound]);
+    }
+  }, [game, sound, competition]);
 
   return { begin, finish, active, coins };
 }

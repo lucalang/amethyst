@@ -9,6 +9,7 @@ import { fitWorld, observeCanvas, startLoop, withAlpha, type CanvasSize } from "
 import { GAP, GROUND, HEIGHT, PIPE_W, TIP, WIDTH, drawCharacter, drawGround, drawObstacle, drawSky, drawTrail, flutterTheme, sceneryOf, type FlutterTheme } from "./flutter-look";
 import { GAME_PALETTES } from "./palettes";
 import { CoinReward, useArcadeRun } from "./coin-reward";
+import { useCompetitionBoard } from "./competition";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { GameOverlay, GameShell, Stat, sendAchievementEvent, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import type { SoundName } from "./sound";
@@ -402,6 +403,8 @@ export default function GameFlutter({ records: initialRecords }: { records: Reco
   const [runDate, setRunDate] = useState<string | null>(null);
   const today = useDailyDate();
   const { begin: beginRun, finish: finishRun, coins } = useArcadeRun("flutter");
+  // Competitive play is always the Classic course.
+  const competing = useCompetitionBoard("flutter") !== null;
 
   useGameAchievementTracking("flutter", phase);
 
@@ -505,7 +508,7 @@ export default function GameFlutter({ records: initialRecords }: { records: Reco
         <>
           <Stat label="Score" value={score} />
           <Stat label={daily ? (shownDate === today ? "Today's best" : "Daily best") : "Best"} value={shownBest} highlight={score > 0 && score >= best} />
-          <div role="group" aria-label="Course" className="ml-auto flex items-center gap-1 self-center">
+          <div role="group" aria-label="Course" hidden={competing} className="ml-auto flex items-center gap-1 self-center">
             {([
               ["classic", "Classic", "A new course every run"],
               ["daily", "Daily", "Daily course: the same pillars for everyone, new every day at 00:00 UTC"],

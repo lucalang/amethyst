@@ -7,6 +7,7 @@ import { puzzleScore, type PuzzleGame } from "@/lib/arcade";
 import { dailyDate, dailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
 import { cn } from "@/lib/utils";
 import { CoinReward, useArcadeRun } from "./coin-reward";
+import { useCompetitionLock } from "./competition";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { GameOverlay, GameShell, Stat, focusQuietly, useArcade, useAway, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import { lookAttributes, PuzzleCelebration, type Celebration } from "./puzzle-looks";
@@ -19,9 +20,9 @@ type PuzzlePhase = "ready" | "playing" | "paused" | "solved";
 type Generated<P> = { puzzle: P; date: string | null; id: number; level: string };
 type Generate<P> = (random: () => number, mode: PuzzleMode, level: string) => P;
 
-function make<P>(game: PuzzleGame, generate: Generate<P>, mode: PuzzleMode, level: string, id: number): Generated<P> {
+function make<P>(game: PuzzleGame, generate: Generate<P>, mode: PuzzleMode, level: string, id: number, seed?: string): Generated<P> {
   const date = mode === "daily" ? dailyDate() : null;
-  const random = date ? seededRandom(seedFrom(`${game}:${date}`)) : Math.random;
+  const random = seed ? seededRandom(seedFrom(`${game}:${seed}`)) : date ? seededRandom(seedFrom(`${game}:${date}`)) : Math.random;
   return { puzzle: generate(random, mode, level), date, id, level };
 }
 
@@ -39,9 +40,11 @@ export function usePuzzleSession<P>(game: PuzzleGame, generate: Generate<P>, ini
   const { play } = useArcade();
   const { records, submit } = useRecords(game, initialRecords);
   const { begin, finish, coins } = useArcadeRun(game);
+  // Competitive play: one seeded puzzle at the locked level, the same for both players.
+  const lock = useCompetitionLock(game);
   const [mode, setMode] = useState<PuzzleMode>("practice");
-  const [level, setLevel] = useState("");
-  const [current, setCurrent] = useState(() => make(game, generate, "practice", "", 0));
+  const [level, setLevel] = useState(lock?.board ?? "");
+  const [current, setCurrent] = useState(() => make(game, generate, "practice", lock?.board ?? "", 0, lock?.seed));
   const [phase, setPhaseState] = useState<PuzzlePhase>("ready");
   const [seconds, setSeconds] = useState(0);
   const [score, setScore] = useState(0);
@@ -127,7 +130,7 @@ export function usePuzzleSession<P>(game: PuzzleGame, generate: Generate<P>, ini
     setScore(0);
     setHints(0);
     hintCount.current = 0;
-    setCurrent((previous) => make(game, generate, nextMode, nextLevel, previous.id + 1));
+    setCurrent((previous) => make(game, generate, nextMode, nextLevel, previous.id + 1, lock?.seed));
     setPhase("ready");
   }
 
@@ -155,6 +158,7 @@ export function usePuzzleSession<P>(game: PuzzleGame, generate: Generate<P>, ini
 
   return {
     game,
+    competing: lock !== null,
     mode,
     level,
     levels,
@@ -220,7 +224,7 @@ export function PuzzleFrame<P>({
         <>
           <Stat label="Time" value={formatClock(seconds)} />
           <Stat label={daily ? (date === today ? "Today's best" : "Daily best") : "Best"} value={best} highlight={phase === "solved" && score >= best} />
-          <div role="group" aria-label="Puzzle" className="ml-auto flex items-center gap-1 self-center">
+          <div role="group" aria-label="Puzzle" hidden={session.competing} className="ml-auto flex items-center gap-1 self-center">
             {([
               ["practice", "Practice", "A new random puzzle every time"],
               ["daily", "Daily", "The same puzzle for everyone, new every day at 00:00 UTC"],
@@ -242,7 +246,7 @@ export function PuzzleFrame<P>({
       }
     >
       <div className="mx-auto flex w-full max-w-[34rem] flex-col gap-3">
-        {levels.length > 0 && mode === "practice" ? (
+        {levels.length > 0 && mode === "practice" && !session.competing ? (
           <div role="group" aria-label="Difficulty" className="flex flex-wrap justify-center gap-1">
             {levels.map((option) => (
               <Button
@@ -266,7 +270,7 @@ export function PuzzleFrame<P>({
               {date === today ? <DailyCountdown label="Next puzzle in" /> : <span>This puzzle still counts for {formatDailyDate(date)}.</span>}
             </>
           ) : (
-            <span className="font-semibold text-foreground">Practice puzzle{levelLabel ? ` · ${levelLabel}` : ""}</span>
+            <span className="font-semibold text-foreground">{session.competing ? "Match puzzle" : "Practice puzzle"}{levelLabel ? ` · ${levelLabel}` : ""}</span>
           )}
           <span>{phase === "ready" ? "The clock starts with your first move." : "Press P to pause."}</span>
         </p>
@@ -293,10 +297,12 @@ export function PuzzleFrame<P>({
               {session.hints > 0 ? ` · ${session.hints} hint${session.hints === 1 ? "" : "s"}` : ""}
             </p>
             <CoinReward state={session.coins} className="text-sm" />
-            <Button size="sm" onClick={session.again} ref={focusQuietly}>
-              <RefreshCw aria-hidden />
-              {daily ? "Play again" : "New puzzle"}
-            </Button>
+            {session.competing ? null : (
+              <Button size="sm" onClick={session.again} ref={focusQuietly}>
+                <RefreshCw aria-hidden />
+                {daily ? "Play again" : "New puzzle"}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-center gap-2">
@@ -308,7 +314,7 @@ export function PuzzleFrame<P>({
                 <span className="text-xs text-muted-foreground">+{HINT_PENALTY}s</span>
               </Button>
             ) : null}
-            {mode === "practice" ? (
+            {mode === "practice" && !session.competing ? (
               <Button variant="outline" size="sm" onClick={session.again}>
                 <RefreshCw aria-hidden />
                 New puzzle

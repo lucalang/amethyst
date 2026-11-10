@@ -48,6 +48,8 @@ export const LazySudoku = wrap(
     daily: SudokuSave | null;
     dailyResult: SudokuDailyResult | null;
     records: Partial<Record<string, number>>;
+    wager?: SudokuSave | null;
+    onSettled?: () => void;
   }>(() => import("./game-sudoku"), {
     ssr: false,
     loading: Loading,

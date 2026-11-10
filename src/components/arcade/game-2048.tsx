@@ -7,6 +7,7 @@ import { dailyDate, dailyVariant, isRecentDailyVariant, seedFrom } from "@/lib/a
 import { cn } from "@/lib/utils";
 import { swipeDirection } from "./engine";
 import { CoinReward, useArcadeRun } from "./coin-reward";
+import { useCompetitionBoard } from "./competition";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { GameOverlay, GameShell, Stat, keyDirection, sendAchievementEvent, useArcade, useGameAchievementTracking, useGameKeys, useRecords } from "./game-shell";
 import { GOAL, fromSaved, hasMoves, highestTile, newBoard, slide, toSaved, type Board, type BoardSize, type Direction, type RoundPhase } from "./logic-2048";
@@ -95,7 +96,10 @@ const fontScale = (value: number) => {
 export default function Game2048({ records: initialRecords, userId }: { records: Record<string, number>; userId: string }) {
   const { play, effects, look } = useArcade();
   const { records, submit } = useRecords("2048", initialRecords);
-  const [round, setRound] = useState<Round>(() => loadRound(userId, lastMode(userId)));
+  const lockedBoard = useCompetitionBoard("2048");
+  // A competitive round starts fresh, isn't saved, and plays on past 2048 (the run ends with the board).
+  const fresh = (mode: Mode): Round => (lockedBoard === null ? freshRound(mode) : { ...freshRound(mode), celebrated: true });
+  const [round, setRound] = useState<Round>(() => (lockedBoard === null ? loadRound(userId, lastMode(userId)) : fresh(lockedBoard === "" ? "4x4" : (lockedBoard as Mode))));
   const roundRef = useRef(round);
   // Coins count only points scored since this round last paid: a win, or leaving and coming back.
   const baseline = useRef(round.board.score);
@@ -117,12 +121,13 @@ export default function Game2048({ records: initialRecords, userId }: { records:
 
   // Every change is saved at once, so a refresh or a later visit resumes exactly here.
   useEffect(() => {
+    if (lockedBoard !== null) return;
     try {
       window.localStorage.setItem(storageKey(userId, round.mode), JSON.stringify(toSaved(round.board, round.phase, round.celebrated, round.date)));
     } catch {
       // Storage full or blocked: the round still plays, it just won't resume.
     }
-  }, [round, userId]);
+  }, [round, userId, lockedBoard]);
 
   // Leaving mid-game still keeps a new best (and counts the run's coins).
   useEffect(() => {
@@ -246,7 +251,7 @@ export default function Game2048({ records: initialRecords, userId }: { records:
     submit(current.board.score, { variant: variantOf(current) });
     settle(current, { announce: true });
     baseline.current = 0;
-    commit(freshRound(current.mode));
+    commit(fresh(current.mode));
     setOverlay("hidden");
     setGain(null);
     boardRef.current?.focus({ preventScroll: true });
@@ -345,7 +350,7 @@ export default function Game2048({ records: initialRecords, userId }: { records:
             }
           />
           <Stat label={mode === "daily" ? (pastDaily ? "Daily best" : "Today's best") : "Best"} value={shownBest.toLocaleString("en")} highlight={newBest} />
-          <div role="group" aria-label="Board" className="ml-auto flex flex-wrap items-center gap-1 self-center">
+          <div role="group" aria-label="Board" hidden={lockedBoard !== null} className="ml-auto flex flex-wrap items-center gap-1 self-center">
             {MODES.map((option) => (
               <Button
                 key={option.id}

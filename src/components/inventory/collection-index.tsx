@@ -84,6 +84,8 @@ function SourceLine({ source }: { source: ItemSource }) {
         return [`The ${source.name} includes secret rewards it doesn’t name until you own them; this item may be one of them.`, `Open the ${source.name}`];
       case "vault":
         return ["Granted by secret codes in the Vault. Codes aren’t announced, so one may not be active right now.", "Open the Vault"];
+      case "tournament":
+        return ["Won by placing near the top of a Daily Tournament in the Arcade.", "Open Daily Tournaments"];
     }
   })();
   return (

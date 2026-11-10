@@ -10,7 +10,8 @@ import { dailyPuzzle, newPuzzle } from "@/lib/sudoku-puzzles";
 export async function GET(request: Request) {
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;
-  const slot = new URL(request.url).searchParams.get("slot") === "daily" ? "daily" : "regular";
+  const requestedSlot = new URL(request.url).searchParams.get("slot");
+  const slot = requestedSlot === "daily" || requestedSlot === "wager" ? requestedSlot : "regular";
   const requestedSize = new URL(request.url).searchParams.get("size") ?? "normal";
   if (!SUDOKU_SIZES.includes(requestedSize as SudokuSize)) return apiError(422, "invalid_size", "Unknown Sudoku size.");
   try {

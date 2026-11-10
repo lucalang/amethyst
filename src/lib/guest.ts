@@ -3,7 +3,7 @@ export const GUEST_HOME = "/arcade";
 export const GUEST_INFO = "/guest";
 
 // Arcade pages that spend or track account progress.
-const ACCOUNT_ARCADE_PAGES = new Set(["season"]);
+const ACCOUNT_ARCADE_PAGES = new Set(["season", "tournaments", "wagers"]);
 const GUEST_APIS = ["/api/arcade", "/api/preferences"];
 
 export function guestMayOpen(pathname: string) {

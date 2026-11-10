@@ -2,7 +2,7 @@ import "server-only";
 import { SCORE_GAMES, SUDOKU_DIFFICULTIES, type ArcadeRecords, type ScoreGame, type SudokuDailyResult, type SudokuDifficulty, type SudokuSave } from "@/lib/arcade";
 import { toArcadeStreaks, type ArcadeStreaks } from "@/lib/arcade-streaks";
 import type { AuthContext } from "@/lib/supabase/auth";
-import { SUDOKU_SIZES, sudokuVariant, type SudokuSize } from "@/lib/sudoku";
+import { SUDOKU_SIZES, sudokuVariant, type SudokuSize, type SudokuSlot } from "@/lib/sudoku";
 
 /** Daily play streaks for every registered game. */
 export async function loadArcadeStreaks(ctx: AuthContext): Promise<ArcadeStreaks> {
@@ -44,7 +44,7 @@ export const SUDOKU_COLUMNS = "id, size, slot, puzzle_date, hints, difficulty, p
 export function toSudokuSave(row: {
   id: string;
   size: SudokuSize;
-  slot: "regular" | "daily";
+  slot: SudokuSlot;
   puzzle_date: string | null;
   hints: number;
   difficulty: SudokuDifficulty;
@@ -70,7 +70,7 @@ export function toSudokuSave(row: {
 }
 
 /** The account's current (or last finished) Sudoku in a slot, without its solution. */
-export async function loadSudoku(ctx: AuthContext, slot: "regular" | "daily" = "regular", size: SudokuSize = "normal"): Promise<SudokuSave | null> {
+export async function loadSudoku(ctx: AuthContext, slot: SudokuSlot = "regular", size: SudokuSize = "normal"): Promise<SudokuSave | null> {
   const { data, error } = await ctx.supabase
     .from("sudoku_games")
     .select(SUDOKU_COLUMNS)

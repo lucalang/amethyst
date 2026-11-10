@@ -2,7 +2,7 @@ import * as z from "zod";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
 import { ZIP_LEVEL_VARIANTS } from "@/lib/minigames/zip";
 import { isSnakeVariant } from "@/lib/snake";
-import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize } from "@/lib/sudoku";
+import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize, type SudokuSlot } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
 export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens"] as const;
@@ -181,7 +181,7 @@ export type SudokuSave = {
   notes: number[];
   elapsedMs: number;
   completed: boolean;
-  slot: "regular" | "daily";
+  slot: SudokuSlot;
   /** The UTC date a daily puzzle belongs to (null for regular puzzles). */
   puzzleDate: string | null;
   /** Cells revealed with hints; any hint makes the solve "assisted". */

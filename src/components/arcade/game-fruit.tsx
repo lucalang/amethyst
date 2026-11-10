@@ -7,6 +7,7 @@ import { formatDuration } from "@/lib/arcade";
 import { dailyDate, dailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
 import type { MotionLevel } from "@/lib/preferences";
 import { CoinReward, useArcadeRun } from "./coin-reward";
+import { useCompetitionBoard } from "./competition";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "./daily";
 import { fitWorld, observeCanvas, random, startLoop, withAlpha, type CanvasSize } from "./engine";
 import {
@@ -643,8 +644,10 @@ export default function GameFruit({ records: initialRecords }: { records: Record
   const gameRef = useRef<FruitGame | null>(null);
   const pointer = useRef<{ id: number; x: number; y: number } | null>(null);
   const live = useRef({ play, effects, theme });
+  const lockedBoard = useCompetitionBoard("fruit-slice");
+  const lockedMode: Mode | null = lockedBoard === null ? null : lockedBoard === "arcade" || lockedBoard === "zen" ? lockedBoard : "classic";
   const [phase, setPhase] = useState<Phase>("ready");
-  const [mode, setMode] = useState<Mode>("classic");
+  const [mode, setMode] = useState<Mode>(lockedMode ?? "classic");
   const [runDate, setRunDate] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [misses, setMisses] = useState(0);
@@ -685,6 +688,7 @@ export default function GameFruit({ records: initialRecords }: { records: Record
       live: () => live.current,
     });
     gameRef.current = game;
+    if (lockedMode) game.setMode(lockedMode);
     return () => {
       const metrics = game.metrics;
       submit(game.score, { keepalive: true, variant: game.variant });
@@ -695,7 +699,7 @@ export default function GameFruit({ records: initialRecords }: { records: Record
       game.destroy();
       gameRef.current = null;
     };
-  }, [submit, finishRun]);
+  }, [submit, finishRun, lockedMode]);
 
   useAway(() => gameRef.current?.pause());
 
@@ -793,7 +797,7 @@ export default function GameFruit({ records: initialRecords }: { records: Record
           ) : (
             <Stat label="Time" value={formatDuration(timeLeft ?? 0)} className={timeLeft !== null && timeLeft <= 10 && active ? "border-destructive/50" : undefined} />
           )}
-          <div role="group" aria-label="Mode" className="ml-auto flex flex-wrap items-center gap-1 self-center">
+          <div role="group" aria-label="Mode" hidden={lockedMode !== null} className="ml-auto flex flex-wrap items-center gap-1 self-center">
             {(Object.keys(RULES) as Mode[]).map((id) => (
               <Button
                 key={id}

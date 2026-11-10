@@ -64,6 +64,27 @@ function BadgeArt({ badge }: { badge: ProfileBadgeId }) {
       </>
     );
   }
+  if (badge === "badge-daybreak-cup") {
+    return (
+      <>
+        <circle cx="16" cy="11.5" r="4.2" fill="#c084fc" opacity="0.85" />
+        <path d="M9.5,12 H22.5 L21.2,16.5 C20.4,19 18.4,20.4 16,20.4 C13.6,20.4 11.6,19 10.8,16.5 Z" fill="#ffd36b" stroke="#8a5a00" strokeWidth="0.8" />
+        <path d="M9.6,13 C7,13 7,17 10.6,16.8 M22.4,13 C25,13 25,17 21.4,16.8" fill="none" stroke="#e8b84a" strokeWidth="1" />
+        <rect x="14.8" y="20.2" width="2.4" height="2.4" fill="#b9862c" />
+        <rect x="11.8" y="22.4" width="8.4" height="2.2" rx="0.8" fill="#b9862c" />
+      </>
+    );
+  }
+  if (badge === "badge-podium") {
+    return (
+      <>
+        <rect x="12.6" y="15" width="6.8" height="9" rx="0.6" fill="#e2e8f0" stroke="#64748b" strokeWidth="0.6" />
+        <rect x="6.6" y="18" width="6" height="6" rx="0.6" fill="#a78bfa" stroke="#4c1d95" strokeWidth="0.6" />
+        <rect x="19.4" y="20" width="6" height="4" rx="0.6" fill="#a78bfa" stroke="#4c1d95" strokeWidth="0.6" />
+        <polygon points="16,7.4 17.2,10.4 20.2,10.6 17.9,12.5 18.6,15.4 16,13.8 13.4,15.4 14.1,12.5 11.8,10.6 14.8,10.4" fill="#f1f5f9" stroke="#94a3b8" strokeWidth="0.5" transform="translate(0 -1)" />
+      </>
+    );
+  }
   return (
     <>
       <circle cx="16" cy="17" r="8.5" fill="#ffd36b" opacity="0.2" />

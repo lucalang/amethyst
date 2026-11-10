@@ -247,9 +247,9 @@ export type Database = {
               Relationships: []
             },
             "sudoku_games": {
-              Row: { user_id: string; id: string; size: "mini" | "normal" | "xxl"; slot: "regular" | "daily"; puzzle_date: string | null; hints: number; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries: string; notes: number[]; elapsed_ms: number; completed_at: string | null; started_at: string; updated_at: string; reward_eligible: boolean }
-              Insert: { user_id?: string; id?: string; size?: "mini" | "normal" | "xxl"; slot?: "regular" | "daily"; puzzle_date?: string | null; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
-              Update: { user_id?: string; id?: string; size?: "mini" | "normal" | "xxl"; slot?: "regular" | "daily"; puzzle_date?: string | null; difficulty?: "easy" | "medium" | "hard"; puzzle?: string; solution?: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
+              Row: { user_id: string; id: string; size: "mini" | "normal" | "xxl"; slot: "regular" | "daily" | "wager"; puzzle_date: string | null; hints: number; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries: string; notes: number[]; elapsed_ms: number; completed_at: string | null; started_at: string; updated_at: string; reward_eligible: boolean }
+              Insert: { user_id?: string; id?: string; size?: "mini" | "normal" | "xxl"; slot?: "regular" | "daily" | "wager"; puzzle_date?: string | null; difficulty: "easy" | "medium" | "hard"; puzzle: string; solution: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
+              Update: { user_id?: string; id?: string; size?: "mini" | "normal" | "xxl"; slot?: "regular" | "daily" | "wager"; puzzle_date?: string | null; difficulty?: "easy" | "medium" | "hard"; puzzle?: string; solution?: string; entries?: string; notes?: number[]; elapsed_ms?: number; completed_at?: string | null; started_at?: string; updated_at?: string }
               Relationships: [{ foreignKeyName: "sudoku_games_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "sudoku_daily_results": {
@@ -669,6 +669,39 @@ isOneToOne: false
                            },
 "season_state":
 { Args: { "p_season"?: string | null }; Returns: Json
+                           },
+"tournament_state":
+{ Args: { "p_day"?: string | null }; Returns: Json
+                           },
+"join_tournament":
+{ Args: { "p_tournament": string }; Returns: Json
+                           },
+"start_tournament_run":
+{ Args: { "p_tournament": string,"p_game": string,"p_board": string }; Returns: string
+                           },
+"claim_tournament_reward":
+{ Args: { "p_tournament": string }; Returns: Json
+                           },
+"wager_list":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"create_wager":
+{ Args: { "p_request": string,"p_stake": number,"p_games": Json }; Returns: Json
+                           },
+"accept_wager":
+{ Args: { "p_wager": string,"p_expected_stake": number }; Returns: Json
+                           },
+"cancel_wager":
+{ Args: { "p_wager": string }; Returns: Json
+                           },
+"wager_state":
+{ Args: { "p_wager": string }; Returns: Json
+                           },
+"start_wager_attempt":
+{ Args: { "p_wager": string,"p_round": number,"p_game": string,"p_board": string }; Returns: string
+                           },
+"wager_sudoku_puzzle":
+{ Args: { "p_wager": string,"p_round": number,"p_puzzle": string,"p_solution": string }; Returns: Json
                            },
 "claim_season_quest":
 { Args: { "p_assignment": string }; Returns: Json
