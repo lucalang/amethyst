@@ -26,7 +26,8 @@ import { useCardTilt } from "@/components/showcase/card-tilt";
 import { webglAvailable } from "@/components/showcase/motion";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { MotionLevel } from "@/lib/preferences";
-import { VAULT_LOOKS, type VaultLookId } from "@/lib/vault-looks";
+import { paletteStyle } from "@/lib/palette-variants";
+import { VAULT_LOOKS, vaultLook, type VaultLookId } from "@/lib/vault-looks";
 import { PACE, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
 import { PlainChamber } from "./plain-vault";
 import { closeVaultAudio, hushVault, playVaultReveal, playVaultSound, playVaultSummon, setVaultAmbience, type VaultSound } from "./vault-audio";
@@ -230,8 +231,8 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const { sound, toggleSound, effects: motion } = useArcade();
   const settings = useSettings();
   const [look, setLook] = useState<VaultLookId>(settings.vaultLook);
-  /** Set once the look is changed here, so the console relights for it (and not on load). */
-  const [relit, setRelit] = useState(false);
+  /** Counts look changes made here, so the console relights for each (and not on load). */
+  const [relit, setRelit] = useState(0);
   const [code, setCode] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [outcome, setOutcome] = useState<Outcome | null>(null);
@@ -586,7 +587,7 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
   const chooseLook = async (next: VaultLookId) => {
     if (next === look) return;
     setLook(next);
-    setRelit(true);
+    setRelit((count) => count + 1);
     try {
       await apiFetch("/api/preferences", { method: "PATCH", json: { settings: { vaultLook: next } } });
       router.refresh();
@@ -606,9 +607,10 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
       data-summon={summon}
       data-scene={scene}
       data-look={look}
-      data-relit={relit ? "" : undefined}
+      data-relit={relit ? (relit % 2 ? "a" : "b") : undefined}
       style={
         {
+          ...paletteStyle(vaultLook(look).palette),
           "--vx-charge": (signal / PIPS.length).toFixed(3),
           "--vx-glyph": `${Math.round(TRANSMIT.glyph * PACE[motion])}ms`,
           "--vx-glyph-step": `${Math.round(TRANSMIT.glyphStep * PACE[motion])}ms`,
@@ -684,12 +686,15 @@ function Chamber({ initialFinds, looks }: { initialFinds: VaultFind[]; looks: Va
             <fieldset className="vx-look">
               <legend className="sr-only">Vault colours</legend>
               {VAULT_LOOKS.map((option) => (
-                <label key={option.id} className="vx-look-option">
+                <label key={option.id} className="vx-look-option" title={option.label}>
                   <input type="radio" name="vx-look" value={option.id} checked={look === option.id} onChange={() => void chooseLook(option.id)} className="sr-only" />
-                  <span aria-hidden className="vx-look-swatch" data-swatch={option.id} />
-                  {option.label}
+                  <span aria-hidden className="vx-look-swatch" style={{ "--swatch": option.swatch } as CSSProperties} />
+                  <span className="sr-only">{option.label}</span>
                 </label>
               ))}
+              <span aria-hidden className="vx-look-current">
+                {vaultLook(look).label}
+              </span>
             </fieldset>
             <button type="button" onClick={toggleSound} aria-pressed={sound} aria-label="Sound effects" title={sound ? "Sound on" : "Sound off"} className="vx-icon-button">
               {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}

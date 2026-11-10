@@ -1,7 +1,8 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { toast } from "sonner";
 import { Volume2, VolumeX } from "lucide-react";
 import { ArcadeProvider, useArcade } from "@/components/arcade/game-shell";
 import { PageContainer } from "@/components/layout/app-shell";
@@ -9,7 +10,9 @@ import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
 import { closeVaultAudio, playSanctumForge, playSanctumIntro, playSanctumSound, startSanctumCharge, type SanctumSound } from "@/components/vault/vault-audio";
 import type { VaultLooks } from "@/components/vault/vault-reveal";
+import { ADMIN_LOOKS, adminLook, type AdminLookId } from "@/lib/admin-looks";
 import { apiFetch } from "@/lib/api-client";
+import { BASE_PALETTE, paletteStyle, paletteUniform } from "@/lib/palette-variants";
 import type { AdminCodeDetail, AdminSnapshot } from "@/lib/vault-admin";
 import { cloneConfig } from "./admin-config";
 import { Codes } from "./admin-codes";
@@ -50,6 +53,33 @@ function introKind(): IntroKind {
   }
 }
 
+/** The colour picker in the header: the chosen colour on the button, every colour in its menu. */
+function LookPicker({ look, plain, onChoose }: { look: AdminLookId; plain: boolean; onChoose: (id: AdminLookId) => void }) {
+  const current = adminLook(look);
+  const swatch = (option: (typeof ADMIN_LOOKS)[number]) => ({ "--swatch": plain ? option.plain : option.swatch }) as CSSProperties;
+  return (
+    <details className="cs-look">
+      <summary className={plain ? "cs-button cs-button-small" : "cs-hud-button"}>
+        <span aria-hidden className="cs-look-swatch" style={swatch(current)} />
+        <span className="cs-look-name">
+          <span className="sr-only">Admin colour: </span>
+          {current.label}
+        </span>
+      </summary>
+      <fieldset className="cs-look-menu">
+        <legend className="cs-look-legend">Admin colours</legend>
+        {ADMIN_LOOKS.map((option) => (
+          <label key={option.id} className="cs-look-option">
+            <input type="radio" name="cs-look" value={option.id} checked={look === option.id} onChange={() => onChoose(option.id)} className="sr-only" />
+            <span aria-hidden className="cs-look-swatch" style={swatch(option)} />
+            {option.label}
+          </label>
+        ))}
+      </fieldset>
+    </details>
+  );
+}
+
 /** The admin dashboard: one persistent app for every /admin URL, flying between views inside one 3D scene. */
 export function AdminApp({ initial }: { initial: AdminInitial }) {
   return (
@@ -64,7 +94,39 @@ function Sanctum({ initial }: { initial: AdminInitial }) {
   const params = useSearchParams();
   const route = parseRoute(pathname);
   const motion = useMotionLevel();
-  const plain = !useSettings().specialPages;
+  const settings = useSettings();
+  const plain = !settings.specialPages;
+  const router = useRouter();
+  const [look, setLook] = useState<AdminLookId>(settings.adminLook);
+  const current = adminLook(look);
+  const chooseLook = useCallback(
+    async (next: AdminLookId) => {
+      setLook(next);
+      try {
+        await apiFetch("/api/preferences", { method: "PATCH", json: { settings: { adminLook: next } } });
+        router.refresh();
+      } catch {
+        toast.error("Could not save the Admin colours. They apply until you leave this page.");
+      }
+    },
+    [router],
+  );
+  // The scene and its stylesheet follow --look-*; the standard design takes the variant as its accent.
+  const lookContext = useMemo(() => {
+    const variant = adminLook(look);
+    const style = !plain
+      ? paletteStyle(variant.palette)
+      : variant.palette === BASE_PALETTE
+        ? undefined
+        : ({
+            "--amethyst": `color-mix(in oklab, ${variant.plain} 72%, var(--foreground))`,
+            "--primary": variant.plain,
+            "--primary-foreground": variant.palette.ink,
+            "--ring": variant.plain,
+          } as CSSProperties);
+    return { className: plain ? ("cs-plain" as const) : ("cs-fancy" as const), style };
+  }, [look, plain]);
+  const lookStyle = lookContext.style;
   const { rootRef, sound: soundOn, toggleSound } = useArcade();
   const [snapshot, setSnapshot] = useState(initial.snapshot);
   const context = useMemo<RewardContext>(() => ({ catalog: initial.catalog, looks: initial.looks }), [initial.catalog, initial.looks]);
@@ -137,6 +199,7 @@ function Sanctum({ initial }: { initial: AdminInitial }) {
           </NavLink>
         ))}
       </nav>
+      <LookPicker look={look} plain onChoose={(id) => void chooseLook(id)} />
       <button type="button" className="cs-button cs-button-small" aria-pressed={soundOn} onClick={() => void toggleSound()}>
         {soundOn ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}
         {soundOn ? "Sound on" : "Sound off"}
@@ -157,6 +220,7 @@ function Sanctum({ initial }: { initial: AdminInitial }) {
         ))}
       </nav>
       <div className="cs-hud-tools">
+        <LookPicker look={look} plain={false} onChoose={(id) => void chooseLook(id)} />
         <button type="button" className="cs-hud-button cs-hud-skip">
           Skip intro
         </button>
@@ -172,6 +236,7 @@ function Sanctum({ initial }: { initial: AdminInitial }) {
       plain={plain}
       station={route.station}
       motion={motion}
+      palette={paletteUniform(current.palette)}
       intro={motion === "off" ? null : intro}
       sound={sound}
       onStart={(kind) => {
@@ -212,15 +277,15 @@ function Sanctum({ initial }: { initial: AdminInitial }) {
 
   return (
     <NavigateProvider value={navigate}>
-      <AdminLookProvider value={plain ? "cs-plain" : "cs-fancy"}>
+      <AdminLookProvider value={lookContext}>
         {plain ? (
           <PageContainer>
-            <div ref={rootRef} tabIndex={-1} className="cs-plain outline-none">
+            <div ref={rootRef} tabIndex={-1} className="cs-plain outline-none" style={lookStyle}>
               {stage}
             </div>
           </PageContainer>
         ) : (
-          <div className="cs-fancy contents">
+          <div className="cs-fancy contents" style={lookStyle}>
             <div ref={rootRef} tabIndex={-1} className="cs-host -mb-24 h-[calc(100dvh-3.5rem-1px)] outline-none md:-mb-10">
               {stage}
             </div>

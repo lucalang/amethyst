@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
+import { shiftedColor } from "@/lib/palette-variants";
 import type { MotionLevel } from "@/lib/preferences";
 
 /** idle: rings drift · verifying: they spin up · align: they lock into line under the top marker · still: they coast to a stop. */
@@ -157,14 +158,14 @@ export function VaultSeal({ mode, level, phase, motion }: { mode: SealMode; leve
           <defs>
             <radialGradient id="vx-core-light" cx="0.5" cy="0.5" r="0.5">
               <stop offset="0" stopColor="#fff5f6" />
-              <stop offset="0.3" stopColor="#ff8a9a" stopOpacity="0.95" />
-              <stop offset="0.65" stopColor="#ff1f3d" stopOpacity="0.45" />
-              <stop offset="1" stopColor="#a10a1f" stopOpacity="0" />
+              <stop offset="0.3" style={{ stopColor: shiftedColor("#ff8a9a") }} stopOpacity="0.95" />
+              <stop offset="0.65" style={{ stopColor: shiftedColor("#ff1f3d") }} stopOpacity="0.45" />
+              <stop offset="1" style={{ stopColor: shiftedColor("#a10a1f") }} stopOpacity="0" />
             </radialGradient>
             <radialGradient id="vx-bloom" cx="0.5" cy="0.5" r="0.5">
-              <stop offset="0" stopColor="#ff1f3d" stopOpacity="0.3" />
-              <stop offset="0.6" stopColor="#a10a1f" stopOpacity="0.1" />
-              <stop offset="1" stopColor="#a10a1f" stopOpacity="0" />
+              <stop offset="0" style={{ stopColor: shiftedColor("#ff1f3d") }} stopOpacity="0.3" />
+              <stop offset="0.6" style={{ stopColor: shiftedColor("#a10a1f") }} stopOpacity="0.1" />
+              <stop offset="1" style={{ stopColor: shiftedColor("#a10a1f") }} stopOpacity="0" />
             </radialGradient>
             <linearGradient id="vx-plate" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0" stopColor="#1d0b0f" />
@@ -172,8 +173,8 @@ export function VaultSeal({ mode, level, phase, motion }: { mode: SealMode; leve
               <stop offset="1" stopColor="#050304" />
             </linearGradient>
             <linearGradient id="vx-trail" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#ff1f3d" stopOpacity="0" />
-              <stop offset="1" stopColor="#ff1f3d" stopOpacity="0.28" />
+              <stop offset="0" style={{ stopColor: shiftedColor("#ff1f3d") }} stopOpacity="0" />
+              <stop offset="1" style={{ stopColor: shiftedColor("#ff1f3d") }} stopOpacity="0.28" />
             </linearGradient>
             <clipPath id="vx-seal-clip">
               <circle r="147" />

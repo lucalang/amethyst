@@ -51,6 +51,33 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-10-vault-admin-colours",
+    date: "2026-11-10",
+    title: "New colours for the Vault and the Admin panel",
+    intro: "The Vault and the Admin panel each offer six new colour variants: Purple, Blue, Orange, Yellow, Light Blue and Rose. Each keeps its own choice, saved to your account.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Vault colours", text: "Next to Dark and Crimson, the Vault's colour picker now offers Purple, Blue, Orange, Yellow, Light Blue and Rose, recolouring the 3D chamber, the console glass, the seal and the controls." },
+      { kind: "new", feature: "Admin colours", text: "For admins, the Admin panel's header has a colour menu with Crimson and the same six variants, chosen separately from the Vault's." },
+      { kind: "improved", feature: "Readable in every colour", text: "Error and status colours stay as they were, and buttons on the brighter Yellow and Light Blue use dark text." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Vault colour variants",
+          body: "Pick a swatch in the Vault's header; its name shows next to the swatches. The 3D chamber, console glass, seal, buttons and panels switch to the colour, and so does the plain Vault when Special page designs are off. The status, code field and headline for rejected and locked codes keep their red warning. Your current Dark or Crimson choice stays selected until you change it.",
+          where: "The Vault, colour picker in the header",
+          link: { href: "/vault", label: "Open the Vault" },
+        },
+        {
+          title: "Admin panel colour variants",
+          body: "Admins can open the colour menu in the Admin panel's header and choose Crimson, Purple, Blue, Orange, Yellow, Light Blue or Rose. The 3D scene, panels and dialogs follow it; with Special page designs off, the standard dashboard uses it as its accent colour. The choice is separate from the Vault's, and Crimson stays the default.",
+          where: "Admin panel, colour menu in the header (admins only)",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-09-performance",
     date: "2026-11-09",
     title: "Faster loading and smoother visuals",

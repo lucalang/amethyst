@@ -4,6 +4,7 @@ import { CUTSCENE_RARITIES, type CutsceneRarity } from "@/lib/rarities";
 import { DEFAULT_SNAKE_SETUP, snakeSetupSchema, type SnakeSetup } from "@/lib/snake";
 import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
+import { ADMIN_LOOK_IDS, DEFAULT_ADMIN_LOOK, type AdminLookId } from "@/lib/admin-looks";
 import { DEFAULT_VAULT_LOOK, VAULT_LOOK_IDS, type VaultLookId } from "@/lib/vault-looks";
 import { BUILTIN_VIEWER_PRESET_IDS, DEFAULT_VIEWER_PRESET, viewerLookSchema, type ViewerLook } from "@/lib/viewer-looks";
 
@@ -141,6 +142,8 @@ export const DEFAULT_SETTINGS = {
   viewerTweaks: null as ViewerLook | null,
   /** The Vault's colour scheme, switched from the chamber itself. */
   vaultLook: DEFAULT_VAULT_LOOK as VaultLookId,
+  /** The Admin panel's colours, switched from its header (separate from the Vault's). */
+  adminLook: DEFAULT_ADMIN_LOOK as AdminLookId,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -246,6 +249,7 @@ const settingFields = {
   viewerPreset: z.union([z.enum(BUILTIN_VIEWER_PRESET_IDS), z.uuid()]),
   viewerTweaks: viewerLookSchema.nullable(),
   vaultLook: z.enum(VAULT_LOOK_IDS),
+  adminLook: z.enum(ADMIN_LOOK_IDS),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

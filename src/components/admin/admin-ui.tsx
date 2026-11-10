@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ComponentProps, type CSSProperties, type ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -141,8 +141,8 @@ export function Field({ id, label, hint, error, children, className }: { id: str
 /** aria-describedby for a Field's control. */
 export const describedBy = (id: string, hint: boolean, error: unknown) => [hint ? `${id}-hint` : "", error ? `${id}-error` : ""].filter(Boolean).join(" ") || undefined;
 
-/** The class that scopes the active look's stylesheet; dialogs portal out of it, so they carry it too. */
-const LookContext = createContext<"cs-fancy" | "cs-plain">("cs-fancy");
+/** The class that scopes the active look's stylesheet and the colour variant's custom properties; dialogs portal out of it, so they carry both. */
+const LookContext = createContext<{ className: "cs-fancy" | "cs-plain"; style?: CSSProperties }>({ className: "cs-fancy" });
 export const AdminLookProvider = LookContext.Provider;
 
 export function ConfirmAction({
@@ -164,7 +164,7 @@ export function ConfirmAction({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent className={`cs-dialog ${look}`}>
+      <AlertDialogContent className={`cs-dialog ${look.className}`} style={look.style}>
         <AlertDialogHeader>
           <AlertDialogTitle className="cs-dialog-title">{title}</AlertDialogTitle>
           <AlertDialogDescription className="cs-dialog-text">{description}</AlertDialogDescription>

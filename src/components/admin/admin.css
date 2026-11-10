@@ -19,22 +19,26 @@
 .cs-root,
 .cs-dialog {
   --vx-black: #030203;
-  --vx-red: #ff1f3d;
+  --vx-red: oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   --vx-text: #f3e9eb;
   --vx-ash: #8c7f82;
   --vx-mono: var(--font-jetbrains, ui-monospace), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --cs-red: #ff1f3d;
-  --cs-red-hi: #ff5a72;
-  --cs-red-pale: #ffb3bf;
+  --cs-red: oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --cs-red-hi: oklch(from #ff5a72 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --cs-red-pale: oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  /* Semantic colours stay put in every look; the rest follows --look-* (set from lib/admin-looks.ts). */
+  --cs-danger: #ff1f3d;
+  --cs-danger-pale: #ffb3bf;
+  --cs-active: #ff1f3d;
   --cs-ember: #ff7448;
   --cs-amber: #ffb24a;
   --cs-text: #f3e9eb;
   --cs-soft: #d2c4c7;
   --cs-dim: #ab9ca0;
-  --cs-line: rgb(255 60 90 / 0.2);
-  --cs-line-hi: rgb(255 90 114 / 0.6);
+  --cs-line: oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  --cs-line-hi: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   --cs-field: rgb(9 2 5 / 0.78);
-  --cs-well: rgb(16 3 8 / 0.62);
+  --cs-well: oklch(from rgb(16 3 8) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.62);
   --cs-display: var(--font-sanctum, Georgia), Georgia, ui-serif, serif;
   --cs-sans: var(--font-manrope, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
   color-scheme: dark;
@@ -42,13 +46,13 @@
 
 .cs-root ::selection,
 .cs-dialog ::selection {
-  background: rgb(255 31 61 / 0.45);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   color: #fff;
 }
 
 .cs-root :focus-visible,
 .cs-dialog :focus-visible {
-  outline: 2px solid #ff8a9c;
+  outline: 2px solid oklch(from #ff8a9c min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   outline-offset: 2px;
 }
 
@@ -63,7 +67,7 @@
   height: 100%;
   overflow: hidden;
   isolation: isolate;
-  background: radial-gradient(130% 90% at 50% 38%, #16030a 0%, #080104 52%, var(--vx-black) 100%);
+  background: radial-gradient(130% 90% at 50% 38%, oklch(from #16030a min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 0%, oklch(from #080104 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 52%, var(--vx-black) 100%);
   color: var(--cs-text);
   font-family: var(--cs-sans);
   font-size: 0.875rem;
@@ -77,7 +81,7 @@
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: rgb(255 31 61 / 0.4) transparent;
+  scrollbar-color: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4) transparent;
   transition: opacity 0.6s ease;
 }
 
@@ -140,7 +144,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
-  text-shadow: 0 0 18px rgb(255 31 61 / 0.6);
+  text-shadow: 0 0 18px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-hud-sub {
@@ -158,14 +162,14 @@
   height: 22px;
   border: 1.5px solid var(--cs-red);
   border-radius: 50%;
-  box-shadow: 0 0 12px var(--cs-red), inset 0 0 8px rgb(255 31 61 / 0.6);
+  box-shadow: 0 0 12px var(--cs-red), inset 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-hud-sigil::after {
   content: "";
   position: absolute;
   inset: 5px;
-  border: 1px solid rgb(255 130 150 / 0.85);
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
   rotate: 45deg;
 }
 
@@ -174,13 +178,13 @@
   gap: 0.2rem;
   margin-inline: auto;
   padding: 0.22rem;
-  border: 1px solid rgb(255 90 114 / 0.38);
+  border: 1px solid oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgb(36 7 15 / 0.92), rgb(14 3 7 / 0.92));
+  background: linear-gradient(180deg, oklch(from rgb(36 7 15) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92), oklch(from rgb(14 3 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92));
   box-shadow:
-    inset 0 1px 0 rgb(255 140 160 / 0.08),
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
     0 6px 18px -10px rgb(0 0 0 / 0.9),
-    0 0 24px -10px rgb(255 31 61 / 0.6);
+    0 0 24px -10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-hud-link {
@@ -197,8 +201,8 @@
 
 .cs-hud-link:hover {
   color: #fff;
-  background: rgb(255 31 61 / 0.2);
-  box-shadow: inset 0 0 0 1px rgb(255 90 114 / 0.35);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  box-shadow: inset 0 0 0 1px oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
 }
 
 .cs-hud-link:active {
@@ -207,8 +211,8 @@
 
 .cs-hud-link[aria-current="page"] {
   color: #fff;
-  background: linear-gradient(180deg, rgb(255 31 61 / 0.5), rgb(130 6 26 / 0.55));
-  box-shadow: inset 0 0 0 1px rgb(255 90 114 / 0.7), 0 0 18px rgb(255 31 61 / 0.4);
+  background: linear-gradient(180deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5), oklch(from rgb(130 6 26) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55));
+  box-shadow: inset 0 0 0 1px oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7), 0 0 18px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
 }
 
 .cs-hud-tools {
@@ -221,10 +225,10 @@
   align-items: center;
   height: 2rem;
   padding: 0 0.8rem;
-  border: 1px solid rgb(255 90 114 / 0.5);
+  border: 1px solid oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgb(60 12 24 / 0.94), rgb(26 5 11 / 0.94));
-  box-shadow: inset 0 1px 0 rgb(255 150 168 / 0.1), 0 4px 14px -6px rgb(0 0 0 / 0.9);
+  background: linear-gradient(180deg, oklch(from rgb(60 12 24) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94), oklch(from rgb(26 5 11) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 150 168) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1), 0 4px 14px -6px rgb(0 0 0 / 0.9);
   color: var(--cs-text);
   font: inherit;
   font-size: 0.72rem;
@@ -237,31 +241,110 @@
 
 .cs-hud-button:hover {
   color: #fff;
-  border-color: rgb(255 125 145 / 0.85);
-  background: linear-gradient(180deg, rgb(92 17 34 / 0.96), rgb(40 7 16 / 0.96));
-  box-shadow: inset 0 1px 0 rgb(255 150 168 / 0.14), 0 0 16px -4px rgb(255 31 61 / 0.6);
+  border-color: oklch(from rgb(255 125 145) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
+  background: linear-gradient(180deg, oklch(from rgb(92 17 34) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96), oklch(from rgb(40 7 16) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 150 168) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.14), 0 0 16px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-hud-button:active {
   scale: 0.96;
-  background: rgb(30 5 12 / 0.96);
+  background: oklch(from rgb(30 5 12) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96);
   box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.6);
 }
 
 .cs-hud-button[aria-pressed="true"] {
   color: #fff;
-  border-color: rgb(255 110 134 / 0.8);
-  background: linear-gradient(180deg, rgb(200 22 50 / 0.72), rgb(110 6 24 / 0.8));
-  box-shadow: inset 0 1px 0 rgb(255 190 200 / 0.18), 0 0 16px -4px rgb(255 31 61 / 0.55);
+  border-color: oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.8);
+  background: linear-gradient(180deg, oklch(from rgb(200 22 50) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.72), oklch(from rgb(110 6 24) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.8));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 190 200) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.18), 0 0 16px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55);
 }
 
 .cs-hud-button:disabled {
-  border-color: rgb(255 90 114 / 0.2);
-  background: rgb(22 8 12 / 0.85);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  background: oklch(from rgb(22 8 12) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
   box-shadow: none;
   color: var(--cs-dim);
   cursor: not-allowed;
   scale: 1;
+}
+
+/* The colour picker: a HUD button naming the colour, a menu of swatches under it. */
+.cs-look {
+  position: relative;
+}
+
+.cs-look > summary {
+  gap: 0.45rem;
+  list-style: none;
+}
+
+.cs-look > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cs-look-swatch {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 0.45);
+  border-radius: 50%;
+  background: var(--swatch);
+}
+
+.cs-hud .cs-look-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  display: grid;
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.35rem;
+  border: 1px solid var(--cs-line-hi);
+  border-radius: 12px;
+  background: linear-gradient(180deg, oklch(from rgb(36 7 15) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.97), oklch(from rgb(14 3 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.97));
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.95);
+}
+
+.cs-hud .cs-look-legend {
+  padding: 0.3rem 0.55rem 0.4rem;
+  font-family: var(--vx-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cs-dim);
+}
+
+.cs-hud .cs-look-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.25rem;
+  padding: 0 0.6rem;
+  border-radius: 8px;
+  color: var(--cs-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cs-hud .cs-look-option:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+
+.cs-hud .cs-look-option:has(:checked) {
+  color: #fff;
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.22);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4);
+}
+
+.cs-hud .cs-look-option:has(:checked)::after {
+  content: "✓" / "";
+  margin-left: auto;
+}
+
+.cs-hud .cs-look-option:has(:focus-visible) {
+  outline: 2px solid oklch(from #ff8a9c min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  outline-offset: -2px;
 }
 
 .cs-hud-skip {
@@ -303,14 +386,14 @@
   overflow: hidden;
   container-type: size;
   pointer-events: none;
-  background: radial-gradient(closest-side, rgb(255 31 61 / 0.16), rgb(110 6 24 / 0.08) 55%, transparent);
+  background: radial-gradient(closest-side, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16), oklch(from rgb(110 6 24) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08) 55%, transparent);
 }
 
 .cs-backdrop::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-conic-gradient(rgb(255 60 90 / 0.07) 0deg 0.35deg, transparent 0.35deg 5deg);
+  background: repeating-conic-gradient(oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.07) 0deg 0.35deg, transparent 0.35deg 5deg);
   mask: radial-gradient(closest-side, transparent 25%, #000 55%, transparent);
 }
 
@@ -319,10 +402,10 @@
   width: min(84vmin, 1000px);
   width: min(88cqw, 100cqh - 7rem, 1000px);
   aspect-ratio: 1;
-  border: 1.5px solid rgb(255 60 90 / 0.7);
+  border: 1.5px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(46 5 14 / 0.55), rgb(18 2 7 / 0.3) 72%, transparent);
-  box-shadow: 0 0 70px -8px rgb(255 31 61 / 0.5), inset 0 0 80px -12px rgb(255 31 61 / 0.4);
+  background: radial-gradient(closest-side, oklch(from rgb(46 5 14) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55), oklch(from rgb(18 2 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3) 72%, transparent);
+  box-shadow: 0 0 70px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5), inset 0 0 80px -12px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
   animation: cs-seal-in 0.9s ease-out backwards;
 }
 
@@ -330,7 +413,7 @@
   content: "";
   position: absolute;
   inset: 3.5%;
-  border: 1px dashed rgb(255 110 134 / 0.28);
+  border: 1px dashed oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
   border-radius: 50%;
 }
 
@@ -347,29 +430,29 @@
 
 .cs-seal-runes {
   inset: 7%;
-  background: repeating-conic-gradient(rgb(255 110 134 / 0.7) 0deg 0.6deg, transparent 0.6deg 4deg);
+  background: repeating-conic-gradient(oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7) 0deg 0.6deg, transparent 0.6deg 4deg);
   mask: radial-gradient(closest-side, transparent 88%, #000 89% 97%, transparent 98%);
   animation: cs-seal-spin 120s linear infinite;
 }
 
 .cs-seal-sweep {
   inset: 12%;
-  background: conic-gradient(transparent 0deg 250deg, rgb(255 31 61 / 0.12) 300deg, rgb(255 70 100 / 0.55) 356deg, rgb(255 200 210 / 0.9) 360deg);
+  background: conic-gradient(transparent 0deg 250deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12) 300deg, oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55) 356deg, oklch(from rgb(255 200 210) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9) 360deg);
   mask: radial-gradient(closest-side, transparent 62%, #000 63% 99%, transparent);
   animation: cs-seal-spin 3.6s linear infinite;
 }
 
 .cs-seal-inner {
   inset: 27%;
-  border: 1px solid rgb(255 120 140 / 0.6);
-  box-shadow: 0 0 34px -6px rgb(255 31 61 / 0.55), inset 0 0 28px -8px rgb(255 31 61 / 0.6);
+  border: 1px solid oklch(from rgb(255 120 140) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  box-shadow: 0 0 34px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55), inset 0 0 28px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-seal-mark {
   inset: 34.5%;
-  border: 1px solid rgb(255 130 150 / 0.75);
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75);
   rotate: 45deg;
-  box-shadow: 0 0 18px -4px rgb(255 31 61 / 0.7);
+  box-shadow: 0 0 18px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
   animation: cs-seal-spin 80s linear infinite reverse;
 }
 
@@ -377,14 +460,14 @@
   content: "";
   position: absolute;
   inset: -1px;
-  border: 1px solid rgb(255 130 150 / 0.35);
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
   rotate: 45deg;
 }
 
 .cs-seal-core {
   inset: 44%;
-  background: radial-gradient(closest-side, #fff, #ffb3bf 22%, #ff1f3d 52%, rgb(255 31 61 / 0));
-  box-shadow: 0 0 90px 14px rgb(255 31 61 / 0.4);
+  background: radial-gradient(closest-side, #fff, oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 22%, oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 52%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0));
+  box-shadow: 0 0 90px 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
   animation: cs-seal-pulse 2.6s ease-in-out infinite;
 }
 
@@ -395,7 +478,7 @@
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--cs-soft);
-  text-shadow: 0 0 14px rgb(255 31 61 / 0.7);
+  text-shadow: 0 0 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
 }
 
 .cs-root[data-mode="3d"] .cs-backdrop {
@@ -492,7 +575,7 @@
 .cs-options,
 .cs-account-results {
   scrollbar-width: thin;
-  scrollbar-color: rgb(255 31 61 / 0.45) transparent;
+  scrollbar-color: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45) transparent;
 }
 
 /* 2D: the flat layout, with CSS glass, tilt, glare and lift ------------------ */
@@ -533,12 +616,12 @@
   border-radius: 16px;
   background:
     radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), rgb(255 70 100 / calc(var(--glare) * 0.12)), transparent 60%),
-    linear-gradient(180deg, rgb(30 6 13 / 0.94), rgb(10 2 6 / 0.96));
+    linear-gradient(180deg, oklch(from rgb(30 6 13) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94), oklch(from rgb(10 2 6) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96));
   box-shadow:
-    inset 0 1px 0 rgb(255 130 150 / 0.12),
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
     0 0 0 1px rgb(0 0 0 / 0.45),
     0 calc(14px + var(--lift, 0px)) calc(36px + var(--lift, 0px) * 2) -18px rgb(0 0 0 / 0.95),
-    0 0 36px -14px rgb(255 31 61 / 0.4);
+    0 0 36px -14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
 }
 
 .cs-flat .cs-kind-tablet > .cs-pane {
@@ -548,10 +631,10 @@
 }
 
 .cs-flat .cs-kind-plate > .cs-pane {
-  border-color: rgb(255 90 114 / 0.45);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   background:
-    radial-gradient(70% 90% at 50% 0%, rgb(255 31 61 / 0.24), transparent 70%),
-    linear-gradient(180deg, rgb(32 6 13 / 0.96), rgb(8 2 5 / 0.98));
+    radial-gradient(70% 90% at 50% 0%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.24), transparent 70%),
+    linear-gradient(180deg, oklch(from rgb(32 6 13) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96), rgb(8 2 5 / 0.98));
 }
 
 .cs-flat [data-card] {
@@ -650,7 +733,7 @@
   line-height: 1.2;
   letter-spacing: 0.04em;
   color: #fff;
-  text-shadow: 0 0 22px rgb(255 31 61 / 0.4);
+  text-shadow: 0 0 22px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
   overflow-wrap: anywhere;
 }
 
@@ -690,11 +773,11 @@
 .cs-error {
   margin: 0;
   padding: 0.5rem 0.75rem;
-  border-left: 2px solid var(--cs-red);
+  border-left: 2px solid var(--cs-danger);
   border-radius: 0 8px 8px 0;
   background: rgb(255 31 61 / 0.12);
   font-size: 0.82rem;
-  color: var(--cs-red-pale);
+  color: var(--cs-danger-pale);
   animation: cs-glitch 0.45s steps(6) 1;
 }
 
@@ -710,16 +793,16 @@
   padding: 0.5rem 0.75rem;
   border-left: 2px solid var(--cs-red-hi);
   border-radius: 0 8px 8px 0;
-  background: rgb(255 90 114 / 0.1);
-  color: #ffd7dd;
+  background: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
+  color: oklch(from #ffd7dd min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 
 .cs-notice {
   margin: 0;
   padding: 0.6rem 0.8rem;
-  border: 1px solid rgb(255 90 114 / 0.4);
+  border: 1px solid oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
   border-radius: 10px;
-  background: rgb(255 31 61 / 0.09);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.09);
   color: var(--cs-soft);
 }
 
@@ -766,7 +849,7 @@ legend.cs-label {
   min-width: 0;
   height: 2.4rem;
   padding: 0 0.75rem;
-  border: 1px solid rgb(255 80 108 / 0.3);
+  border: 1px solid oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
   border-radius: 9px;
   background: var(--cs-field);
   box-shadow: inset 0 1px 6px rgb(0 0 0 / 0.5);
@@ -781,19 +864,19 @@ legend.cs-label {
 }
 
 .cs-input:hover {
-  border-color: rgb(255 90 114 / 0.5);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
 }
 
 .cs-root .cs-input:focus-visible,
 .cs-input:focus {
   outline: none;
   border-color: var(--cs-red-hi);
-  box-shadow: inset 0 1px 6px rgb(0 0 0 / 0.5), 0 0 0 3px rgb(255 31 61 / 0.25), 0 0 20px rgb(255 31 61 / 0.25);
+  box-shadow: inset 0 1px 6px rgb(0 0 0 / 0.5), 0 0 0 3px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25), 0 0 20px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25);
 }
 
 .cs-input[aria-invalid="true"],
 .cs-field[data-invalid] .cs-input {
-  border-color: var(--cs-red);
+  border-color: var(--cs-danger);
 }
 
 .cs-input:disabled {
@@ -825,7 +908,7 @@ legend.cs-label {
 }
 
 .cs-select option {
-  background: #12040a;
+  background: oklch(from #12040a min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   color: var(--cs-text);
 }
 
@@ -896,17 +979,17 @@ legend.cs-label {
 
 .cs-segment-option:hover {
   color: #fff;
-  background: rgb(255 31 61 / 0.1);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
 }
 
 .cs-segment-option:has(input:checked) {
   color: #fff;
-  background: linear-gradient(180deg, rgb(255 31 61 / 0.42), rgb(120 6 22 / 0.5));
-  box-shadow: inset 0 0 0 1px rgb(255 110 130 / 0.6), 0 0 16px -4px rgb(255 31 61 / 0.7);
+  background: linear-gradient(180deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.42), oklch(from rgb(120 6 22) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5));
+  box-shadow: inset 0 0 0 1px oklch(from rgb(255 110 130) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6), 0 0 16px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
 }
 
 .cs-segment-option:has(input:focus-visible) {
-  outline: 2px solid #ff8a9c;
+  outline: 2px solid oklch(from #ff8a9c min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   outline-offset: 2px;
 }
 
@@ -971,10 +1054,10 @@ legend.cs-label {
   gap: 0.45rem;
   height: 2.3rem;
   padding: 0 1rem;
-  border: 1px solid rgb(255 80 108 / 0.38);
+  border: 1px solid oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38);
   border-radius: 9px;
-  background: linear-gradient(180deg, rgb(42 8 17 / 0.92), rgb(18 3 8 / 0.92));
-  box-shadow: inset 0 1px 0 rgb(255 140 160 / 0.12), 0 4px 14px -6px rgb(0 0 0 / 0.8);
+  background: linear-gradient(180deg, oklch(from rgb(42 8 17) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92), oklch(from rgb(18 3 8) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12), 0 4px 14px -6px rgb(0 0 0 / 0.8);
   color: var(--cs-text);
   font: inherit;
   font-size: 0.82rem;
@@ -987,8 +1070,8 @@ legend.cs-label {
 }
 
 .cs-button:hover {
-  border-color: rgb(255 90 114 / 0.75);
-  box-shadow: inset 0 1px 0 rgb(255 140 160 / 0.2), 0 0 22px -4px rgb(255 31 61 / 0.6);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75);
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2), 0 0 22px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-button:active {
@@ -1002,17 +1085,17 @@ legend.cs-label {
 }
 
 .cs-button-primary {
-  border-color: rgb(255 120 140 / 0.85);
-  background: linear-gradient(180deg, #ff2a48, #b0001d);
-  box-shadow: inset 0 1px 0 rgb(255 200 210 / 0.45), 0 0 24px -6px rgb(255 31 61 / 0.9);
-  color: #fff;
-  text-shadow: 0 1px 0 rgb(80 0 10 / 0.6);
+  border-color: oklch(from rgb(255 120 140) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
+  background: linear-gradient(180deg, oklch(from #ff2a48 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from #b0001d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 200 210) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45), 0 0 24px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9);
+  color: var(--look-ink, #fff);
+  text-shadow: 0 1px 0 oklch(from rgb(80 0 10) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-button-primary:hover {
-  border-color: #ffb3bf;
-  background: linear-gradient(180deg, #ff4562, #c6041f);
-  box-shadow: inset 0 1px 0 rgb(255 210 218 / 0.5), 0 0 34px -4px rgb(255 31 61 / 1);
+  border-color: oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  background: linear-gradient(180deg, oklch(from #ff4562 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from #c6041f min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 210 218) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5), 0 0 34px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 1);
 }
 
 .cs-button-danger {
@@ -1065,17 +1148,17 @@ legend.cs-label {
   padding: 0;
   border: 0;
   background: none;
-  color: #ff9cad;
+  color: oklch(from #ff9cad min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   font: inherit;
   font-weight: 650;
   text-decoration: underline;
-  text-decoration-color: rgb(255 90 114 / 0.45);
+  text-decoration-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .cs-link:hover {
-  color: #ffd3da;
+  color: oklch(from #ffd3da min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   text-decoration-color: currentColor;
 }
 
@@ -1113,9 +1196,9 @@ legend.cs-label {
   gap: 0.4rem;
   height: 1.85rem;
   padding: 0 0.7rem;
-  border: 1px solid rgb(255 80 108 / 0.26);
+  border: 1px solid oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.26);
   border-radius: 999px;
-  background: rgb(14 3 7 / 0.72);
+  background: oklch(from rgb(14 3 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.72);
   color: var(--cs-soft);
   font: inherit;
   font-size: 0.76rem;
@@ -1126,7 +1209,7 @@ legend.cs-label {
 }
 
 .cs-chip:hover {
-  border-color: rgb(255 90 114 / 0.65);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.65);
   color: #fff;
 }
 
@@ -1136,8 +1219,8 @@ legend.cs-label {
 
 .cs-chip[aria-pressed="true"] {
   border-color: var(--cs-red-hi);
-  background: linear-gradient(180deg, rgb(255 31 61 / 0.38), rgb(120 6 22 / 0.5));
-  box-shadow: 0 0 14px -4px rgb(255 31 61 / 0.85);
+  background: linear-gradient(180deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38), oklch(from rgb(120 6 22) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5));
+  box-shadow: 0 0 14px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
   color: #fff;
 }
 
@@ -1162,12 +1245,12 @@ legend.cs-label {
 }
 
 .cs-chip[aria-pressed="true"] .cs-chip-count {
-  color: #ffd3da;
+  color: oklch(from #ffd3da min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 
 .cs-chip-remove {
-  border-color: rgb(255 90 114 / 0.5);
-  background: rgb(60 8 20 / 0.6);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
+  background: oklch(from rgb(60 8 20) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   color: var(--cs-text);
 }
 
@@ -1185,7 +1268,7 @@ legend.cs-label {
 
 .cs-root [data-status],
 .cs-dialog [data-status] {
-  --tone: var(--cs-red);
+  --tone: var(--cs-active);
 }
 
 .cs-root [data-status="scheduled"] {
@@ -1282,7 +1365,7 @@ legend.cs-label {
   height: 1.2rem;
   padding: 0 0.3rem;
   border-radius: 999px;
-  background: rgb(255 31 61 / 0.35);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
   color: #fff;
   font-family: var(--vx-mono);
   font-size: 0.64rem;
@@ -1313,7 +1396,7 @@ legend.cs-label {
   width: 100%;
   height: 100%;
   padding: 0.5rem 0.6rem;
-  border: 1px solid rgb(255 60 90 / 0.18);
+  border: 1px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.18);
   border-radius: 10px;
   background: var(--cs-well);
   color: inherit;
@@ -1324,14 +1407,14 @@ legend.cs-label {
 }
 
 .cs-option:hover {
-  border-color: rgb(255 90 114 / 0.6);
-  background: rgb(38 6 14 / 0.78);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  background: oklch(from rgb(38 6 14) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.78);
 }
 
 .cs-option[aria-pressed="true"] {
   border-color: var(--cs-red-hi);
-  background: linear-gradient(180deg, rgb(255 31 61 / 0.2), rgb(90 6 18 / 0.38));
-  box-shadow: inset 0 0 0 1px rgb(255 90 114 / 0.35), 0 0 18px -6px rgb(255 31 61 / 0.85);
+  background: linear-gradient(180deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2), oklch(from rgb(90 6 18) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38));
+  box-shadow: inset 0 0 0 1px oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35), 0 0 18px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
 }
 
 .cs-option:disabled {
@@ -1347,7 +1430,7 @@ legend.cs-label {
   height: 2.75rem;
   overflow: hidden;
   border-radius: 8px;
-  background: radial-gradient(circle at 50% 35%, rgb(255 31 61 / 0.2), rgb(0 0 0 / 0.45));
+  background: radial-gradient(circle at 50% 35%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2), rgb(0 0 0 / 0.45));
   color: var(--cs-red-hi);
 }
 
@@ -1382,7 +1465,7 @@ legend.cs-label {
   place-items: center;
   width: 1.3rem;
   height: 1.3rem;
-  border: 1px solid rgb(255 90 114 / 0.45);
+  border: 1px solid oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   border-radius: 50%;
   font-size: 0.75rem;
   line-height: 1;
@@ -1390,7 +1473,7 @@ legend.cs-label {
 }
 
 .cs-option[aria-pressed="true"] .cs-option-check {
-  border-color: #ff9cad;
+  border-color: oklch(from #ff9cad min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   background: var(--cs-red);
   box-shadow: 0 0 10px var(--cs-red);
   color: #fff;
@@ -1404,7 +1487,7 @@ legend.cs-label {
 
 .cs-flag {
   padding: 0.05rem 0.4rem;
-  border: 1px solid rgb(255 90 114 / 0.42);
+  border: 1px solid oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.42);
   border-radius: 4px;
   font-family: var(--vx-mono);
   font-size: 0.6rem;
@@ -1444,7 +1527,7 @@ legend.cs-label {
   gap: 0.6rem;
   width: 100%;
   padding: 0.4rem 0.55rem;
-  border: 1px solid rgb(255 60 90 / 0.18);
+  border: 1px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.18);
   border-radius: 9px;
   background: var(--cs-well);
   color: inherit;
@@ -1455,13 +1538,13 @@ legend.cs-label {
 }
 
 button.cs-account:hover {
-  border-color: rgb(255 90 114 / 0.6);
-  background: rgb(38 6 14 / 0.78);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  background: oklch(from rgb(38 6 14) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.78);
 }
 
 button.cs-account[aria-pressed="true"] {
   border-color: var(--cs-red-hi);
-  background: rgb(255 31 61 / 0.16);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16);
 }
 
 .cs-account-static {
@@ -1491,7 +1574,7 @@ button.cs-account[aria-pressed="true"] {
   font-weight: 700;
   line-height: 1.05;
   color: #fff;
-  text-shadow: 0 0 10px rgb(255 90 114 / 0.8), 0 0 34px rgb(255 31 61 / 0.6);
+  text-shadow: 0 0 10px oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.8), 0 0 34px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 .cs-counter-note {
@@ -1521,14 +1604,14 @@ button.cs-account[aria-pressed="true"] {
   width: 100%;
   height: max(2px, var(--h));
   border-radius: 3px 3px 1px 1px;
-  background: linear-gradient(to top, rgb(140 8 28 / 0.75), var(--cs-red));
-  box-shadow: 0 0 10px rgb(255 31 61 / 0.45);
+  background: linear-gradient(to top, oklch(from rgb(140 8 28) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75), var(--cs-red));
+  box-shadow: 0 0 10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   transition: height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .cs-bar[data-hot] .cs-bar-fill {
-  background: linear-gradient(to top, var(--cs-red), #ffd3da);
-  box-shadow: 0 0 16px rgb(255 90 114 / 0.9);
+  background: linear-gradient(to top, var(--cs-red), oklch(from #ffd3da min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
+  box-shadow: 0 0 16px oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9);
 }
 
 /* In 3D the bars are lit columns drawn by the scene, standing on this chart. */
@@ -1571,7 +1654,7 @@ button.cs-account[aria-pressed="true"] {
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0.7rem;
-  border: 1px solid rgb(255 60 90 / 0.15);
+  border: 1px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.15);
   border-radius: 10px;
   background: var(--cs-well);
   color: inherit;
@@ -1580,21 +1663,21 @@ button.cs-account[aria-pressed="true"] {
 }
 
 a.cs-list-row {
-  border-color: rgb(255 80 108 / 0.3);
-  background: linear-gradient(180deg, rgb(40 8 17 / 0.85), rgb(20 4 9 / 0.85));
-  box-shadow: inset 0 1px 0 rgb(255 140 160 / 0.06);
+  border-color: oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
+  background: linear-gradient(180deg, oklch(from rgb(40 8 17) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85), oklch(from rgb(20 4 9) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.06);
 }
 
 a.cs-list-row:hover,
 a.cs-list-row:focus-visible {
-  border-color: rgb(255 110 134 / 0.75);
-  background: linear-gradient(180deg, rgb(72 13 28 / 0.9), rgb(34 6 14 / 0.9));
-  box-shadow: 0 0 20px -6px rgb(255 31 61 / 0.6);
+  border-color: oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75);
+  background: linear-gradient(180deg, oklch(from rgb(72 13 28) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9), oklch(from rgb(34 6 14) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9));
+  box-shadow: 0 0 20px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 
 a.cs-list-row:active {
   scale: 0.985;
-  background: rgb(28 5 11 / 0.92);
+  background: oklch(from rgb(28 5 11) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92);
 }
 
 .cs-list-main {
@@ -1630,7 +1713,7 @@ a.cs-list-row:active {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #8c0a1e, var(--cs-red), #ff8a9c);
+  background: linear-gradient(90deg, oklch(from #8c0a1e min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), var(--cs-red), oklch(from #ff8a9c min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
   box-shadow: 0 0 8px var(--cs-red);
 }
 
@@ -1664,8 +1747,8 @@ a.cs-list-row:active {
   height: 9px;
   margin-top: 0.4rem;
   border: 1px solid var(--cs-red-hi);
-  background: rgb(255 31 61 / 0.4);
-  box-shadow: 0 0 8px rgb(255 31 61 / 0.65);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
+  box-shadow: 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.65);
   rotate: 45deg;
 }
 
@@ -1682,8 +1765,8 @@ a.cs-list-row:active {
 }
 
 .cs-feed-item[data-action="update"] .cs-feed-mark {
-  border-color: #ffc2cc;
-  background: rgb(255 194 204 / 0.2);
+  border-color: oklch(from #ffc2cc min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  background: oklch(from rgb(255 194 204) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
 }
 
 .cs-feed-text {
@@ -1699,7 +1782,7 @@ a.cs-list-row:active {
   margin: 0.25rem 0 0;
   padding: 0.4rem 0.6rem;
   border-left: 1px solid var(--cs-line-hi);
-  background: rgb(255 31 61 / 0.06);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.06);
   font-size: 0.78rem;
   color: var(--cs-soft);
   list-style: none;
@@ -1816,7 +1899,7 @@ a.cs-list-row:active {
   padding: 0.55rem 0.65rem;
   border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
   border-radius: 9px;
-  background: rgb(10 2 5 / 0.95);
+  background: oklch(from rgb(10 2 5) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95);
   box-shadow: 0 12px 26px -8px rgb(0 0 0 / 0.95), 0 0 20px -6px var(--tone);
   opacity: 0;
   translate: 0 8px;
@@ -1869,9 +1952,9 @@ a.cs-list-row:active {
   border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
   background:
     radial-gradient(110% 90% at var(--gx, 50%) var(--gy, 0%), rgb(255 110 130 / calc(var(--glare) * 0.16)), transparent 55%),
-    linear-gradient(165deg, color-mix(in srgb, var(--tone) 20%, #12040a), #070103 72%);
+    linear-gradient(165deg, color-mix(in srgb, var(--tone) 20%, oklch(from #12040a min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)))), #070103 72%);
   box-shadow:
-    inset 0 1px 0 rgb(255 140 160 / 0.12),
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
     0 calc(8px + var(--lift, 0px)) calc(20px + var(--lift, 0px) * 1.6) -10px rgb(0 0 0 / 0.95),
     0 0 26px -12px var(--tone);
 }
@@ -1896,7 +1979,7 @@ a.cs-list-row:active {
   display: grid;
   gap: 0.3rem;
   padding: 0.7rem 0.8rem;
-  border: 1px solid rgb(255 60 90 / 0.16);
+  border: 1px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16);
   border-radius: 10px;
   background: var(--cs-well);
 }
@@ -1906,7 +1989,7 @@ a.cs-list-row:active {
   font-size: 1.35rem;
   font-weight: 600;
   color: #fff;
-  text-shadow: 0 0 16px rgb(255 31 61 / 0.5);
+  text-shadow: 0 0 16px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
 }
 
 .cs-facts {
@@ -1919,7 +2002,7 @@ a.cs-list-row:active {
   grid-template-columns: minmax(6.5rem, 38%) 1fr;
   gap: 0.75rem;
   padding: 0.42rem 0;
-  border-bottom: 1px solid rgb(255 60 90 / 0.1);
+  border-bottom: 1px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
 }
 
 .cs-facts dt {
@@ -1948,7 +2031,7 @@ a.cs-list-row:active {
   align-items: center;
   gap: 0.65rem;
   padding: 0.5rem 0.6rem;
-  border: 1px solid rgb(255 60 90 / 0.16);
+  border: 1px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16);
   border-radius: 10px;
   background: var(--cs-well);
 }
@@ -1986,7 +2069,7 @@ a.cs-list-row:active {
   font-weight: 600;
   letter-spacing: 0.16em;
   color: #fff;
-  text-shadow: 0 0 6px #ff6a80, 0 0 22px var(--cs-red), 0 0 48px rgb(255 31 61 / 0.6);
+  text-shadow: 0 0 6px oklch(from #ff6a80 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), 0 0 22px var(--cs-red), 0 0 48px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   overflow-wrap: anywhere;
 }
 
@@ -2015,11 +2098,11 @@ a.cs-list-row:active {
   min-height: 4.1rem;
   padding: 0.8rem 1.2rem;
   overflow: hidden;
-  border: 1px solid rgb(255 120 140 / 0.75);
+  border: 1px solid oklch(from rgb(255 120 140) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75);
   border-radius: 14px;
-  background: linear-gradient(180deg, rgb(70 8 22 / 0.95), rgb(26 3 10 / 0.95));
+  background: linear-gradient(180deg, oklch(from rgb(70 8 22) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95), oklch(from rgb(26 3 10) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95));
   box-shadow:
-    inset 0 1px 0 rgb(255 180 192 / 0.25),
+    inset 0 1px 0 oklch(from rgb(255 180 192) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25),
     0 0 calc(18px + var(--charge) * 54px) rgb(255 31 61 / calc(0.35 + var(--charge) * 0.55));
   color: #fff;
   font: inherit;
@@ -2034,13 +2117,13 @@ a.cs-list-row:active {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgb(200 10 40 / 0.75), rgb(255 70 100 / 0.9));
+  background: linear-gradient(90deg, oklch(from rgb(200 10 40) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75), oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9));
   scale: var(--charge) 1;
   transform-origin: left center;
 }
 
 .cs-hold:hover {
-  border-color: #ffb3bf;
+  border-color: oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 
 .cs-hold[data-phase="charging"] {
@@ -2068,7 +2151,7 @@ a.cs-list-row:active {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  text-shadow: 0 0 14px rgb(255 31 61 / 0.9);
+  text-shadow: 0 0 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9);
 }
 
 .cs-draft-row {
@@ -2105,23 +2188,23 @@ a.cs-list-row:active {
   width: 124px;
   height: 170px;
   border-radius: 8px;
-  background: radial-gradient(circle at 50% 32%, rgb(255 31 61 / 0.28), #0b0206 72%);
+  background: radial-gradient(circle at 50% 32%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28), oklch(from #0b0206 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 72%);
 }
 
 .cs-token-medallion {
   width: 84px;
   height: 84px;
   border-radius: 50%;
-  background: radial-gradient(circle, #2c0911, #120307);
+  background: radial-gradient(circle, oklch(from #2c0911 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from #120307 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
 }
 
 /* Dialogs ---------------------------------------------------------------------- */
 
 .cs-dialog {
-  border: 1px solid rgb(255 90 114 / 0.45);
+  border: 1px solid oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   border-radius: 16px;
-  background: linear-gradient(180deg, #1c050d, #0a0205);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6), 0 30px 80px -20px rgb(0 0 0 / 0.95), 0 0 60px -18px rgb(255 31 61 / 0.6);
+  background: linear-gradient(180deg, oklch(from #1c050d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from #0a0205 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.6), 0 30px 80px -20px rgb(0 0 0 / 0.95), 0 0 60px -18px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   color: var(--cs-text);
   font-family: var(--cs-sans);
 }
@@ -2207,21 +2290,21 @@ a.cs-list-row:active {
 @keyframes cs-flare {
   0% {
     color: #fff;
-    text-shadow: 0 0 18px #fff, 0 0 46px #ff6a80, 0 0 90px var(--cs-red);
+    text-shadow: 0 0 18px #fff, 0 0 46px oklch(from #ff6a80 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), 0 0 90px var(--cs-red);
   }
   100% {
-    text-shadow: 0 0 6px #ff6a80, 0 0 22px var(--cs-red), 0 0 48px rgb(255 31 61 / 0.6);
+    text-shadow: 0 0 6px oklch(from #ff6a80 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), 0 0 22px var(--cs-red), 0 0 48px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   }
 }
 
 @keyframes cs-glitch {
   0% {
     translate: -4px 0;
-    text-shadow: 3px 0 rgb(255 31 61 / 0.9), -3px 0 rgb(255 255 255 / 0.5);
+    text-shadow: 3px 0 oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9), -3px 0 rgb(255 255 255 / 0.5);
   }
   30% {
     translate: 3px 0;
-    text-shadow: -2px 0 rgb(255 31 61 / 0.9), 2px 0 rgb(255 255 255 / 0.4);
+    text-shadow: -2px 0 oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9), 2px 0 rgb(255 255 255 / 0.4);
   }
   60% {
     translate: -1px 0;
@@ -2272,6 +2355,15 @@ a.cs-list-row:active {
   .cs-hud-button {
     padding: 0 0.55rem;
     font-size: 0.64rem;
+  }
+  /* The colour's name stays for screen readers; the swatch shows it. */
+  .cs-hud .cs-look-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .cs-panel-inner {
     padding: 1rem;

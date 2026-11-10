@@ -5,6 +5,8 @@
 .vp-stage {
 & {
   --vp-accent: var(--amethyst);
+  --vp-accent-ink: white;
+  --vp-accent-text: var(--vp-accent);
   --vp-ok: rgb(16 185 129);
   --vp-tone: var(--muted-foreground);
   display: grid;
@@ -51,38 +53,40 @@
 }
 .vp-look {
   display: flex;
-  gap: 0.2rem;
-  padding: 0.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.2rem;
   border: 1px solid var(--border);
   border-radius: calc(0.5rem * var(--radius-unit, 1));
 }
 .vp-look-option {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.6rem;
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
   border-radius: calc(0.375rem * var(--radius-unit, 1));
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
   cursor: pointer;
 }
-.vp-look-option:has(input:checked) {
-  color: var(--foreground);
-  background: color-mix(in oklab, var(--vp-accent) 14%, transparent);
+.vp-look-option:hover {
+  background: rgb(var(--ink-rgb) / 0.05);
+}
+.vp-look-option:has(input:checked) .vp-look-swatch {
+  box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--foreground);
 }
 .vp-look-option:has(input:focus-visible) {
   box-shadow: 0 0 0 2px var(--ring);
 }
 .vp-look-swatch {
-  width: 0.7rem;
-  height: 0.7rem;
+  width: 0.85rem;
+  height: 0.85rem;
   border-radius: 999px;
 }
-.vp-look-swatch[data-swatch="obsidian"] {
-  background: var(--amethyst);
-}
-.vp-look-swatch[data-swatch="crimson"] {
-  background: rgb(225 29 72);
+.vp-look-current {
+  min-width: 4.5rem;
+  margin-left: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--foreground);
 }
 .vp-icon-button {
   display: grid;
@@ -269,7 +273,7 @@
 .vp-button[data-variant="primary"] {
   border-color: transparent;
   background: var(--vp-accent);
-  color: white;
+  color: var(--vp-accent-ink);
 }
 .vp-button[data-variant="primary"]:hover:not(:disabled) {
   background: color-mix(in oklab, var(--vp-accent) 88%, black);
@@ -328,7 +332,7 @@
   gap: 0.35rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--vp-accent, var(--amethyst));
+  color: var(--vp-accent-text, var(--amethyst));
 }
 .vp-link:hover {
   text-decoration: underline;

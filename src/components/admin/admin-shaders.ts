@@ -3,6 +3,8 @@
  * or color-space chunks here: the OutputPass does both, and the finish pass works on its sRGB result.
  */
 
+import { PALETTE_SHIFT_GLSL } from "@/lib/palette-variants";
+
 const SDF = /* glsl */ `
 float sdChamfer(vec2 p, vec2 b, float c) {
   vec2 q = abs(p) - b;
@@ -471,6 +473,7 @@ export const FINISH_SHADER = {
     uRays: { value: 0.6 },
     uShock: { value: [0.5, 0.5, 0] },
     uShockStrength: { value: 0 },
+    uPalette: { value: [0, 0, 1] },
   },
   vertexShader: UV_VERTEX,
   fragmentShader: /* glsl */ `
@@ -488,6 +491,7 @@ uniform float uRays;
 uniform vec3 uShock;
 uniform float uShockStrength;
 varying vec2 vUv;
+${PALETTE_SHIFT_GLSL}
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 void main() {
   vec2 uv = vUv;
@@ -526,6 +530,7 @@ void main() {
   col += rays / float(RAYS) * uRays * vec3(1.0, 0.32, 0.38);
   #endif
   col += uFlash * vec3(1.0, 0.72, 0.76);
+  col = paletteShift(col);
   float v = smoothstep(0.9, 0.25, length((vUv - 0.5) * vec2(1.05, 1.0)));
   col *= mix(1.0 - uVignette, 1.0, v);
   col *= 1.0 - (uDistort * 0.1 + uGlitch * 0.2) * step(0.5, fract(gl_FragCoord.y * 0.5));

@@ -110,6 +110,8 @@ export type SanctumOptions = {
   spacer: HTMLElement;
   station: StationId;
   motion: Motion;
+  /** The colour variant, as `paletteUniform` gives it. */
+  palette: [number, number, number];
   hooks: SanctumHooks;
 };
 
@@ -120,6 +122,7 @@ export type Sanctum = {
   removePanel: (el: HTMLElement) => void;
   setStation: (station: StationId) => void;
   setMotion: (motion: Motion) => void;
+  setPalette: (palette: [number, number, number]) => void;
   start: (intro: IntroKind | null) => void;
   skipIntro: () => void;
   setTimeline: (values: number[], hover: number) => void;
@@ -777,7 +780,9 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     uShock: { value: number[] };
     uShockStrength: { value: number };
     uAberration: { value: number };
+    uPalette: { value: number[] };
   };
+  post.uPalette.value = [...options.palette];
 
   /* Sizing and quality -------------------------------------------------------- */
 
@@ -2100,6 +2105,11 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     invalidate();
   }
 
+  function setPalette(palette: [number, number, number]) {
+    post.uPalette.value = [...palette];
+    invalidate();
+  }
+
   function setTimeline(values: number[], hover: number) {
     timeline.values = values.slice(-30);
     timeline.hover = hover;
@@ -2206,6 +2216,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
     removePanel,
     setStation,
     setMotion,
+    setPalette,
     start,
     skipIntro,
     setTimeline,

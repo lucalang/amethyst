@@ -7448,9 +7448,9 @@ a.arcade-counter:hover {
  * ------------------------------------------------------------------------- */
 .vx-stage {
   --vx-black: #030304;
-  --vx-red: #ff1f3d;
-  --vx-rose: #ff5a72;
-  --vx-pale: #ffd6dd;
+  --vx-red: oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-rose: oklch(from #ff5a72 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-pale: oklch(from #ffd6dd min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   --vx-text: #f3e9eb;
   --vx-ash: #8c7f82;
   /* Obsidian and steel carry the chamber; red is the accent and the light. */
@@ -7458,18 +7458,21 @@ a.arcade-counter:hover {
   --vx-steel-dim: #8d939c;
   --vx-line: rgb(214 220 230 / 0.12);
   --vx-line-hi: rgb(214 220 230 / 0.28);
-  --vx-focus: #ff8a9c;
+  --vx-focus: oklch(from #ff8a9c min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  /* Errors and lockdown stay red whatever the colour variant (--look-*, set inline). */
+  --vx-danger: #ff1f3d;
+  --vx-danger-pale: #ffd6dd;
   /* Surfaces, built like the Admin panels; data-look="crimson" swaps them for the Admin reds. */
   --vx-bg: #030304;
   --vx-panel: linear-gradient(180deg, rgb(20 22 26 / 0.94), rgb(7 8 10 / 0.96));
   --vx-sheen: rgb(230 236 245 / 0.06);
   --vx-frame: rgb(214 220 230 / 0.09);
-  --vx-glow: rgb(255 31 61 / 0.28);
+  --vx-glow: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
   --vx-field: rgb(3 4 6 / 0.82);
   --vx-field-line: rgb(214 220 230 / 0.2);
   --vx-pill: linear-gradient(180deg, rgb(28 30 35 / 0.92), rgb(9 10 12 / 0.92));
   --vx-pill-line: rgb(214 220 230 / 0.26);
-  --vx-pill-on: linear-gradient(180deg, rgb(235 45 72 / 0.3), rgb(110 6 22 / 0.46));
+  --vx-pill-on: linear-gradient(180deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3), oklch(from rgb(110 6 22) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.46));
   --vx-haze: 120 132 150;
   --vx-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
   --vx-display: var(--font-cinzel), Georgia, "Times New Roman", serif;
@@ -7485,26 +7488,28 @@ a.arcade-counter:hover {
   background: var(--vx-bg);
   color-scheme: dark;
 }
-/* Crimson: the Admin panel's palette. */
-.vx-stage[data-look="crimson"] {
+/* Crimson: the Admin panel's palette. The colour variants are crimson, turned by --look-*. */
+.vx-stage:not([data-look="obsidian"]) {
+  --vx-danger: #eb2d48;
+  --vx-danger-pale: #ffb3bf;
   --vx-black: #070103;
-  --vx-red: #eb2d48;
-  --vx-pale: #ffb3bf;
+  --vx-red: oklch(from #eb2d48 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-pale: oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   --vx-text: #f3e9eb;
   --vx-steel: #d2c4c7;
   --vx-steel-dim: #ab9ca0;
-  --vx-line: rgb(255 60 90 / 0.2);
-  --vx-line-hi: rgb(255 90 114 / 0.6);
-  --vx-bg: radial-gradient(130% 90% at 50% 38%, #16030a 0%, #080104 52%, #030203 100%);
-  --vx-panel: linear-gradient(180deg, rgb(30 6 13 / 0.94), rgb(10 2 6 / 0.96));
-  --vx-sheen: rgb(255 70 100 / 0.1);
-  --vx-frame: rgb(255 90 114 / 0.2);
-  --vx-glow: rgb(255 31 61 / 0.45);
+  --vx-line: oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  --vx-line-hi: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  --vx-bg: radial-gradient(130% 90% at 50% 38%, oklch(from #16030a min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 0%, oklch(from #080104 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 52%, #030203 100%);
+  --vx-panel: linear-gradient(180deg, oklch(from rgb(30 6 13) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94), oklch(from rgb(10 2 6) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96));
+  --vx-sheen: oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
+  --vx-frame: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  --vx-glow: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   --vx-field: rgb(9 2 5 / 0.78);
-  --vx-field-line: rgb(255 80 108 / 0.32);
-  --vx-pill: linear-gradient(180deg, rgb(36 7 15 / 0.92), rgb(14 3 7 / 0.92));
-  --vx-pill-line: rgb(255 90 114 / 0.38);
-  --vx-pill-on: linear-gradient(180deg, rgb(235 45 72 / 0.34), rgb(130 6 26 / 0.5));
+  --vx-field-line: oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
+  --vx-pill: linear-gradient(180deg, oklch(from rgb(36 7 15) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92), oklch(from rgb(14 3 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92));
+  --vx-pill-line: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38);
+  --vx-pill-on: linear-gradient(180deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.34), oklch(from rgb(130 6 26) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5));
   --vx-haze: 200 30 62;
 }
 @media (min-width: 48rem) {
@@ -7515,7 +7520,7 @@ a.arcade-counter:hover {
 }
 .vx-stage ::selection {
   color: #fff;
-  background: rgb(255 31 61 / 0.45);
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
 }
 .vx-backdrop,
 .vx-backdrop > * {
@@ -7529,7 +7534,7 @@ a.arcade-counter:hover {
 }
 .vx-fog {
   background:
-    radial-gradient(34% 28% at 50% 30%, rgb(255 31 61 / 0.13), transparent 72%),
+    radial-gradient(34% 28% at 50% 30%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.13), transparent 72%),
     radial-gradient(70% 48% at 50% 28%, rgb(var(--vx-haze) / 0.13), transparent 72%),
     linear-gradient(180deg, rgb(var(--vx-haze) / 0.06), transparent 28%),
     radial-gradient(60% 26% at 50% 100%, rgb(var(--vx-haze) / 0.1), transparent 72%);
@@ -7539,7 +7544,7 @@ a.arcade-counter:hover {
 @media (min-width: 64rem) {
   .vx-fog {
     background:
-      radial-gradient(24% 34% at 30% 50%, rgb(255 31 61 / 0.14), transparent 72%),
+      radial-gradient(24% 34% at 30% 50%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.14), transparent 72%),
       radial-gradient(44% 60% at 30% 48%, rgb(var(--vx-haze) / 0.14), transparent 72%),
       linear-gradient(180deg, rgb(var(--vx-haze) / 0.06), transparent 28%),
       radial-gradient(60% 26% at 50% 100%, rgb(var(--vx-haze) / 0.1), transparent 72%);
@@ -7552,7 +7557,7 @@ a.arcade-counter:hover {
   background:
     repeating-linear-gradient(90deg, rgb(170 180 196 / 0.08) 0 1px, transparent 1px 72px),
     repeating-linear-gradient(0deg, rgb(170 180 196 / 0.08) 0 1px, transparent 1px 72px),
-    radial-gradient(50% 60% at 50% 0%, rgb(255 31 61 / 0.06), transparent 70%);
+    radial-gradient(50% 60% at 50% 0%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.06), transparent 70%);
   transform: perspective(28rem) rotateX(64deg);
   transform-origin: 50% 100%;
   mask-image: linear-gradient(to top, #000 10%, transparent 80%);
@@ -7573,7 +7578,7 @@ a.arcade-counter:hover {
   animation: vx-ember var(--d) linear var(--delay) infinite;
 }
 .vx-embers > span:nth-child(3n) {
-  background: radial-gradient(circle, #ffd9de, rgb(255 31 61 / 0.7) 45%, transparent 72%);
+  background: radial-gradient(circle, oklch(from #ffd9de min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7) 45%, transparent 72%);
 }
 @keyframes vx-ember {
   0% {
@@ -7634,7 +7639,7 @@ a.arcade-counter:hover {
   overflow: hidden;
   container-type: size;
   pointer-events: none;
-  background: radial-gradient(closest-side, rgb(255 31 61 / 0.16), rgb(110 6 24 / 0.08) 55%, transparent);
+  background: radial-gradient(closest-side, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16), oklch(from rgb(110 6 24) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08) 55%, transparent);
   /* Gives way on its own if scripts never arrive. */
   animation: vx-opening-out 600ms ease-in 4s forwards;
 }
@@ -7642,7 +7647,7 @@ a.arcade-counter:hover {
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-conic-gradient(rgb(255 60 90 / 0.07) 0deg 0.35deg, transparent 0.35deg 5deg);
+  background: repeating-conic-gradient(oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.07) 0deg 0.35deg, transparent 0.35deg 5deg);
   mask: radial-gradient(closest-side, transparent 25%, #000 55%, transparent);
 }
 .vx-stage[data-intro="summon"] .vx-opening {
@@ -7659,19 +7664,19 @@ a.arcade-counter:hover {
   position: relative;
   width: min(80cqw, 100cqh - 8rem, 760px);
   aspect-ratio: 1;
-  border: 1.5px solid rgb(255 60 90 / 0.7);
+  border: 1.5px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(46 5 14 / 0.55), rgb(18 2 7 / 0.3) 72%, transparent);
+  background: radial-gradient(closest-side, oklch(from rgb(46 5 14) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55), oklch(from rgb(18 2 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3) 72%, transparent);
   box-shadow:
-    0 0 70px -8px rgb(255 31 61 / 0.5),
-    inset 0 0 80px -12px rgb(255 31 61 / 0.4);
+    0 0 70px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5),
+    inset 0 0 80px -12px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
   animation: vx-opening-in 0.9s ease-out backwards;
 }
 .vx-opening-seal::after {
   content: "";
   position: absolute;
   inset: 3.5%;
-  border: 1px dashed rgb(255 110 134 / 0.28);
+  border: 1px dashed oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
   border-radius: 50%;
 }
 .vx-opening-seal > span {
@@ -7680,41 +7685,41 @@ a.arcade-counter:hover {
 }
 .vx-opening-runes {
   inset: 7%;
-  background: repeating-conic-gradient(rgb(255 110 134 / 0.7) 0deg 0.6deg, transparent 0.6deg 4deg);
+  background: repeating-conic-gradient(oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7) 0deg 0.6deg, transparent 0.6deg 4deg);
   mask: radial-gradient(closest-side, transparent 88%, #000 89% 97%, transparent 98%);
   animation: vx-spin 120s linear infinite;
 }
 .vx-opening-sweep {
   inset: 12%;
-  background: conic-gradient(transparent 0deg 250deg, rgb(255 31 61 / 0.12) 300deg, rgb(255 70 100 / 0.55) 356deg, rgb(255 200 210 / 0.9) 360deg);
+  background: conic-gradient(transparent 0deg 250deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12) 300deg, oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55) 356deg, oklch(from rgb(255 200 210) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9) 360deg);
   mask: radial-gradient(closest-side, transparent 62%, #000 63% 99%, transparent);
   animation: vx-spin 3.6s linear infinite;
 }
 .vx-opening-inner {
   inset: 27%;
-  border: 1px solid rgb(255 120 140 / 0.6);
+  border: 1px solid oklch(from rgb(255 120 140) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   box-shadow:
-    0 0 34px -6px rgb(255 31 61 / 0.55),
-    inset 0 0 28px -8px rgb(255 31 61 / 0.6);
+    0 0 34px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55),
+    inset 0 0 28px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 .vx-opening-seal > .vx-opening-mark {
   inset: 34.5%;
-  border: 1px solid rgb(255 130 150 / 0.75);
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75);
   border-radius: 0;
   rotate: 45deg;
-  box-shadow: 0 0 18px -4px rgb(255 31 61 / 0.7);
+  box-shadow: 0 0 18px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
 }
 .vx-opening-mark::before {
   content: "";
   position: absolute;
   inset: -1px;
-  border: 1px solid rgb(255 130 150 / 0.35);
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
   rotate: 45deg;
 }
 .vx-opening-core {
   inset: 44%;
-  background: radial-gradient(closest-side, #fff, #ffb3bf 22%, #ff1f3d 52%, rgb(255 31 61 / 0));
-  box-shadow: 0 0 90px 14px rgb(255 31 61 / 0.4);
+  background: radial-gradient(closest-side, #fff, oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 22%, oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 52%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0));
+  box-shadow: 0 0 90px 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
   animation: vx-opening-pulse 2.6s ease-in-out infinite;
 }
 .vx-opening-text {
@@ -7725,7 +7730,7 @@ a.arcade-counter:hover {
   letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--vx-rose);
-  text-shadow: 0 0 12px rgb(235 45 72 / 0.45);
+  text-shadow: 0 0 12px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
 }
 @keyframes vx-opening-in {
   from {
@@ -7862,7 +7867,7 @@ a.arcade-counter:hover {
   }
 }
 .vx-skip:hover {
-  border-color: rgb(255 90 114 / 0.6);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   color: #fff;
 }
 .vx-skip:focus-visible {
@@ -7902,7 +7907,7 @@ a.arcade-counter:hover {
   gap: 0.75rem 1rem;
   padding-bottom: 0.95rem;
   /* The Admin rule: red from the sigil, fading out across the page. */
-  background: linear-gradient(90deg, rgb(235 45 72 / 0.75), var(--vx-line) 40%, transparent 92%) 0 100% / 100% 1px no-repeat;
+  background: linear-gradient(90deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75), var(--vx-line) 40%, transparent 92%) 0 100% / 100% 1px no-repeat;
 }
 .vx-brand {
   display: flex;
@@ -7919,16 +7924,16 @@ a.arcade-counter:hover {
   border: 1.5px solid var(--vx-red);
   border-radius: 50%;
   box-shadow:
-    0 0 10px rgb(235 45 72 / 0.55),
-    inset 0 0 8px rgb(235 45 72 / 0.45);
+    0 0 10px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55),
+    inset 0 0 8px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
 }
 .vx-sigil::after {
   content: "";
   position: absolute;
   inset: 0.6rem;
-  border: 1px solid rgb(255 130 150 / 0.85);
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
   rotate: 45deg;
-  box-shadow: 0 0 6px rgb(255 31 61 / 0.5);
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
 }
 .vx-stage[data-phase="verifying"] .vx-sigil::after {
   animation: vx-spin 2.4s linear infinite;
@@ -7960,7 +7965,7 @@ a.arcade-counter:hover {
   text-transform: uppercase;
   color: #fff;
   text-shadow:
-    0 0 18px rgb(235 45 72 / 0.42),
+    0 0 18px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.42),
     0 1px 0 rgb(0 0 0 / 0.8);
 }
 .vx-hud-side {
@@ -7987,9 +7992,9 @@ a.arcade-counter:hover {
   color: var(--vx-steel);
   background: var(--vx-pill);
   box-shadow:
-    inset 0 1px 0 rgb(255 140 160 / 0.08),
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
     0 6px 18px -10px rgb(0 0 0 / 0.9),
-    0 0 24px -10px rgb(255 31 61 / 0.6);
+    0 0 24px -10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   transition:
     color 300ms ease,
     border-color 300ms ease;
@@ -8015,8 +8020,9 @@ a.arcade-counter:hover {
   color: #fff;
 }
 .vx-stage:is([data-phase="invalid"], [data-phase="locked"]) .vx-chip {
+  --tone: var(--vx-danger);
   border-color: rgb(255 90 114 / 0.5);
-  color: var(--vx-pale);
+  color: var(--vx-danger-pale);
 }
 .vx-stage:is([data-phase="granted"], [data-phase="already"]) .vx-chip {
   --tone: #fff;
@@ -8038,7 +8044,7 @@ a.arcade-counter:hover {
   color: var(--vx-steel);
   background: var(--vx-pill);
   box-shadow:
-    inset 0 1px 0 rgb(255 140 160 / 0.08),
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
     0 6px 18px -10px rgb(0 0 0 / 0.9);
   transition:
     color 150ms ease,
@@ -8052,61 +8058,55 @@ a.arcade-counter:hover {
   }
 }
 .vx-icon-button:hover {
-  border-color: rgb(255 90 114 / 0.7);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
   color: #fff;
   box-shadow:
-    inset 0 1px 0 rgb(255 140 160 / 0.1),
-    0 0 16px -4px rgb(255 31 61 / 0.6);
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1),
+    0 0 16px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 .vx-icon-button[aria-pressed="true"] {
   color: #fff;
   background: var(--vx-pill-on);
   box-shadow:
-    inset 0 0 0 1px rgb(255 90 114 / 0.45),
-    0 0 12px rgb(235 45 72 / 0.26);
+    inset 0 0 0 1px oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45),
+    0 0 12px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.26);
 }
-/* The look toggle: the Admin nav pill, one lit segment. */
+/* The colour picker: the Admin nav pill, a row of swatches and the chosen colour's name. */
 .vx-look {
   display: flex;
-  gap: 0.2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem;
   margin: 0;
-  padding: 0.22rem;
+  padding: 0.22rem 0.9rem 0.22rem 0.22rem;
   border: 1px solid var(--vx-pill-line);
   border-radius: 999px;
   background: var(--vx-pill);
   box-shadow:
-    inset 0 1px 0 rgb(255 140 160 / 0.08),
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
     0 6px 18px -10px rgb(0 0 0 / 0.9),
-    0 0 24px -10px rgb(255 31 61 / 0.6);
+    0 0 24px -10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 .vx-look-option {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2.5rem;
-  padding: 0 0.95rem 0 0.8rem;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
   border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--vx-steel-dim);
   cursor: pointer;
   transition:
-    color 150ms ease,
     background-color 150ms ease,
     box-shadow 150ms ease;
 }
 .vx-look-option:hover {
-  color: var(--vx-text);
+  background: rgb(255 255 255 / 0.06);
 }
 .vx-look-option:has(:checked) {
-  color: #fff;
   background: var(--vx-pill-on);
   box-shadow:
-    inset 0 0 0 1px rgb(255 90 114 / 0.6),
-    0 0 12px rgb(235 45 72 / 0.26);
+    inset 0 0 0 1px rgb(255 255 255 / 0.55),
+    0 0 12px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.26);
 }
 .vx-look-option:has(:focus-visible) {
   outline: 2px solid var(--vx-focus);
@@ -8114,24 +8114,27 @@ a.arcade-counter:hover {
 }
 .vx-look-swatch {
   flex: none;
-  width: 0.7rem;
-  height: 0.7rem;
-  border: 1px solid rgb(255 255 255 / 0.4);
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 1px solid rgb(255 255 255 / 0.45);
   border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--swatch) 55%, white), var(--swatch) 45%, color-mix(in oklab, var(--swatch) 45%, black) 80%);
 }
-.vx-look-swatch[data-swatch="obsidian"] {
-  background: radial-gradient(circle at 35% 30%, #9aa0a9, #1a1c20 70%);
+.vx-look-option:has(:checked) .vx-look-swatch {
+  box-shadow: 0 0 6px var(--swatch);
 }
-.vx-look-swatch[data-swatch="crimson"] {
-  border-color: rgb(255 150 165 / 0.7);
-  background: radial-gradient(circle at 35% 30%, #ff5a72, #6e0616 70%);
-  box-shadow: 0 0 6px rgb(255 31 61 / 0.7);
+.vx-look-current {
+  min-width: 5.5rem;
+  margin-left: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vx-text);
 }
 @media (max-width: 29.99rem) {
   .vx-look-option {
-    gap: 0.4rem;
-    padding: 0 0.7rem 0 0.6rem;
-    letter-spacing: 0.06em;
+    width: 1.9rem;
   }
   .vx-chip {
     padding: 0 0.8rem 0 0.7rem;
@@ -8140,7 +8143,8 @@ a.arcade-counter:hover {
 }
 @media (pointer: coarse) {
   .vx-look-option {
-    min-height: 2.75rem;
+    width: 2.4rem;
+    height: 2.4rem;
   }
 }
 .vx-icon-button:focus-visible,
@@ -8211,7 +8215,7 @@ a.arcade-counter:hover {
     scale 1200ms var(--ease-out-soft);
 }
 .vx-rays {
-  fill: rgb(255 220 226 / 0.09);
+  fill: oklch(from rgb(255 220 226) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.09);
   opacity: 0;
   scale: 0.6;
   transition:
@@ -8220,7 +8224,7 @@ a.arcade-counter:hover {
 }
 .vx-brackets {
   fill: none;
-  stroke: rgb(255 31 61 / 0.5);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
   stroke-width: 1.2;
 }
 .vx-marker,
@@ -8230,16 +8234,16 @@ a.arcade-counter:hover {
 }
 .vx-line {
   fill: none;
-  stroke: rgb(255 31 61 / 0.32);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
   stroke-width: 1;
 }
 .vx-dash {
-  stroke: rgb(255 31 61 / 0.45);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   stroke-dasharray: 1.5 4.5;
 }
 .vx-ticks {
   fill: none;
-  stroke: rgb(255 31 61 / 0.6);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   stroke-width: 1;
   stroke-dasharray: 1;
   animation: vx-draw 1400ms var(--ease-out-soft) 350ms backwards;
@@ -8250,16 +8254,16 @@ a.arcade-counter:hover {
   }
 }
 .vx-seg {
-  fill: rgb(255 31 61 / 0.06);
-  stroke: rgb(255 31 61 / 0.22);
+  fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.06);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.22);
   stroke-width: 0.6;
   transition:
     fill 220ms ease,
     stroke 220ms ease;
 }
 .vx-seg[data-on] {
-  fill: rgb(255 31 61 / 0.72);
-  stroke: #ff7186;
+  fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.72);
+  stroke: oklch(from #ff7186 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 .vx-seg-glow {
   fill: none;
@@ -8278,14 +8282,14 @@ a.arcade-counter:hover {
   stroke-width: 9;
 }
 .vx-sweep-tail {
-  stroke: rgb(255 31 61 / 0.3);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
 }
 .vx-sweep-head {
-  stroke: #ff8597;
+  stroke: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 .vx-runes {
   fill: none;
-  stroke: rgb(255 31 61 / 0.6);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   stroke-width: 0.9;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -8293,15 +8297,15 @@ a.arcade-counter:hover {
 }
 .vx-star {
   fill: none;
-  stroke: rgb(255 31 61 / 0.28);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
   stroke-width: 0.8;
 }
 .vx-vertex {
-  fill: rgb(255 31 61 / 0.6);
+  fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 .vx-tooth {
-  fill: #1c0a0f;
-  stroke: rgb(255 31 61 / 0.6);
+  fill: oklch(from #1c0a0f min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   stroke-width: 0.8;
   transition: translate 500ms cubic-bezier(0.7, 0, 0.2, 1);
 }
@@ -8326,7 +8330,7 @@ a.arcade-counter:hover {
 }
 .vx-rim {
   fill: none;
-  stroke: rgb(255 31 61 / 0.6);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   stroke-width: 1.2;
   transition: opacity 400ms ease;
 }
@@ -8335,7 +8339,7 @@ a.arcade-counter:hover {
   opacity: 0;
 }
 .vx-scan-line {
-  fill: #ff8597;
+  fill: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 .vx-shock {
   fill: none;
@@ -8385,7 +8389,7 @@ a.arcade-counter:hover {
   text-transform: uppercase;
   color: var(--vx-red);
   background: rgb(3 2 3 / 0.85);
-  box-shadow: 0 0 28px rgb(255 31 61 / 0.35);
+  box-shadow: 0 0 28px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
   rotate: -8deg;
   animation: vx-stamp 450ms cubic-bezier(0.2, 1.3, 0.4, 1) backwards;
 }
@@ -8410,7 +8414,7 @@ a.arcade-counter:hover {
     radial-gradient(90% 60% at 50% 0%, var(--vx-sheen), transparent 70%),
     var(--vx-panel);
   box-shadow:
-    inset 0 1px 0 rgb(255 130 150 / 0.12),
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
     0 0 0 1px rgb(0 0 0 / 0.45),
     0 24px 50px -24px rgb(0 0 0 / 0.95),
     0 0 40px -12px var(--vx-glow);
@@ -8429,10 +8433,10 @@ a.arcade-counter:hover {
 }
 .vx-window:focus-within {
   box-shadow:
-    inset 0 1px 0 rgb(255 130 150 / 0.16),
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16),
     0 0 0 1px rgb(0 0 0 / 0.45),
     0 24px 50px -24px rgb(0 0 0 / 0.95),
-    0 0 48px -10px rgb(255 31 61 / 0.5);
+    0 0 48px -10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
 }
 /* Without the 3D console: the Admin panels' CSS tilt, lift and glare (useCardTilt). */
 .vx-stage[data-scene="failed"] .vx-window[data-tilt] {
@@ -8447,8 +8451,8 @@ a.arcade-counter:hover {
   --beam: calc(50% + (var(--gx, 50%) - 50%) * 0.7 - (var(--gy, 50%) - 50%) * 0.3);
   border-radius: inherit;
   background:
-    linear-gradient(60deg, transparent calc(var(--beam) - 10%), rgb(255 205 214 / 0.12) var(--beam), transparent calc(var(--beam) + 10%)),
-    radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), rgb(255 70 100 / 0.16), transparent 60%);
+    linear-gradient(60deg, transparent calc(var(--beam) - 10%), oklch(from rgb(255 205 214) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12) var(--beam), transparent calc(var(--beam) + 10%)),
+    radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16), transparent 60%);
   opacity: var(--glare, 0);
   transition: opacity 300ms ease;
   pointer-events: none;
@@ -8460,9 +8464,10 @@ a.arcade-counter:hover {
     inset 0 1px 0 rgb(255 255 255 / 0.16),
     0 0 0 1px rgb(0 0 0 / 0.6),
     0 24px 50px -24px rgb(0 0 0 / 0.95),
-    0 0 56px -14px rgb(255 31 61 / 0.42);
+    0 0 56px -14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.42);
 }
 .vx-stage[data-phase="invalid"] .vx-window {
+  --c: var(--vx-danger);
   border-color: rgb(255 90 114 / 0.75);
   box-shadow:
     inset 0 1px 0 rgb(255 130 150 / 0.16),
@@ -8510,7 +8515,7 @@ a.arcade-counter:hover {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: radial-gradient(110% 70% at 50% 0%, rgb(255 255 255 / 0.28), rgb(255 31 61 / 0.2) 45%, transparent 75%);
+  background: radial-gradient(110% 70% at 50% 0%, rgb(255 255 255 / 0.28), oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2) 45%, transparent 75%);
   opacity: 0;
 }
 /* The Admin panel head: a mono kicker over a Cinzel title, status diamonds on the right. */
@@ -8537,7 +8542,7 @@ a.arcade-counter:hover {
   line-height: 1.2;
   letter-spacing: 0.04em;
   color: #fff;
-  text-shadow: 0 0 18px rgb(235 45 72 / 0.32);
+  text-shadow: 0 0 18px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
   animation: vx-type 450ms steps(12, end) backwards;
 }
 @keyframes vx-type {
@@ -8577,7 +8582,7 @@ a.arcade-counter:hover {
 @keyframes vx-led {
   0% {
     border-color: var(--vx-focus);
-    background: rgb(255 90 114 / 0.5);
+    background: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
     box-shadow: 0 0 6px var(--vx-red);
   }
   33% {
@@ -8590,7 +8595,7 @@ a.arcade-counter:hover {
   height: 1px;
   margin-inline: 1.25rem;
   background: linear-gradient(90deg, var(--c), var(--vx-line-hi) 30%, var(--vx-line) 70%, transparent);
-  box-shadow: 0 0 6px rgb(255 31 61 / 0.2);
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
   transform-origin: 0 50%;
   animation: vx-rule 800ms var(--ease-out-soft) 900ms backwards;
 }
@@ -8627,7 +8632,7 @@ a.arcade-counter:hover {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--vx-red);
-  text-shadow: 0 0 18px rgb(255 31 61 / 0.32);
+  text-shadow: 0 0 18px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
   outline: none;
 }
 /* Headings only receive programmatic focus (to move screen readers); no ring. */
@@ -8637,8 +8642,8 @@ a.arcade-counter:hover {
 .vx-stage[data-phase="granted"] h2.vx-headline {
   color: #fff;
   text-shadow:
-    0 0 14px rgb(255 31 61 / 0.6),
-    0 0 36px rgb(255 31 61 / 0.25);
+    0 0 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6),
+    0 0 36px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25);
 }
 .vx-stage[data-phase="already"] h2.vx-headline {
   color: var(--vx-text);
@@ -8755,7 +8760,7 @@ a.arcade-counter:hover {
   flex: none;
   height: 0.6rem;
   background: linear-gradient(180deg, #fff, var(--vx-pale));
-  box-shadow: 0 0 6px rgb(255 31 61 / 0.7);
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
   animation: vx-lock 360ms ease-out var(--at) backwards;
 }
 .vx-locks > i[data-kind="ring"] {
@@ -8808,8 +8813,8 @@ a.arcade-counter:hover {
   inset: auto 10px 0;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #b0001d, var(--vx-red) 70%, var(--vx-pale));
-  box-shadow: 0 0 10px rgb(255 31 61 / 0.6);
+  background: linear-gradient(90deg, oklch(from #b0001d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), var(--vx-red) 70%, var(--vx-pale));
+  box-shadow: 0 0 10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   transform-origin: 0 50%;
   scale: var(--vx-charge, 0) 1;
   pointer-events: none;
@@ -8818,7 +8823,7 @@ a.arcade-counter:hover {
 .vx-input {
   width: 100%;
   height: 3.25rem;
-  border: 1px solid color-mix(in oklab, rgb(255 90 114 / 0.75) calc(var(--vx-charge, 0) * 100%), var(--vx-field-line));
+  border: 1px solid color-mix(in oklab, oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75) calc(var(--vx-charge, 0) * 100%), var(--vx-field-line));
   border-radius: 10px;
   padding: 0 1.1rem;
   font-family: var(--vx-mono);
@@ -8829,17 +8834,17 @@ a.arcade-counter:hover {
   color: #fff;
   caret-color: var(--vx-rose);
   background: var(--vx-field);
-  text-shadow: 0 0 calc(3px + var(--vx-charge, 0) * 8px) rgb(255 31 61 / 0.45);
+  text-shadow: 0 0 calc(3px + var(--vx-charge, 0) * 8px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
   box-shadow:
     inset 0 1px 6px rgb(0 0 0 / 0.5),
-    inset 0 0 calc(var(--vx-charge, 0) * 22px) rgb(255 31 61 / 0.12);
+    inset 0 0 calc(var(--vx-charge, 0) * 22px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12);
   outline: none;
   transition:
     border-color 150ms ease,
     box-shadow 200ms ease;
 }
 .vx-input:hover:not(:focus-visible) {
-  border-color: color-mix(in oklab, rgb(255 90 114 / 0.75) calc(var(--vx-charge, 0) * 100%), rgb(255 90 114 / 0.45));
+  border-color: color-mix(in oklab, oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75) calc(var(--vx-charge, 0) * 100%), oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45));
 }
 .vx-input::placeholder {
   font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
@@ -8853,9 +8858,9 @@ a.arcade-counter:hover {
   border-color: var(--vx-rose);
   box-shadow:
     inset 0 1px 6px rgb(0 0 0 / 0.5),
-    inset 0 0 calc(var(--vx-charge, 0) * 22px) rgb(255 31 61 / 0.12),
-    0 0 0 3px rgb(255 31 61 / 0.25),
-    0 0 20px rgb(255 31 61 / 0.25);
+    inset 0 0 calc(var(--vx-charge, 0) * 22px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
+    0 0 0 3px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25),
+    0 0 20px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25);
 }
 .vx-input[readonly] {
   color: rgb(255 255 255 / 0.65);
@@ -8899,7 +8904,7 @@ a.arcade-counter:hover {
 }
 .vx-pips > span[data-on] {
   background: var(--vx-red);
-  box-shadow: 0 0 6px rgb(255 31 61 / 0.55);
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55);
 }
 .vx-pips > span[data-on]:nth-child(n + 10) {
   background: var(--vx-focus);
@@ -8911,7 +8916,7 @@ a.arcade-counter:hover {
   font-weight: 600;
   letter-spacing: 0.12em;
   color: #fff;
-  text-shadow: 0 0 calc(var(--vx-charge, 0) * 10px) rgb(255 31 61 / 0.7);
+  text-shadow: 0 0 calc(var(--vx-charge, 0) * 10px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
 }
 .vx-signal-count > small {
   margin-left: 0.15rem;
@@ -8938,23 +8943,23 @@ a.arcade-counter:hover {
   gap: 0.6rem;
   min-height: 3.25rem;
   padding: 0 1.5rem;
-  border: 1px solid rgb(255 120 140 / 0.85);
+  border: 1px solid oklch(from rgb(255 120 140) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
   border-radius: 9px;
   font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #fff;
-  text-shadow: 0 1px 0 rgb(70 0 10 / 0.6);
+  color: var(--look-ink, #fff);
+  text-shadow: 0 1px 0 oklch(from rgb(70 0 10) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   /* The Admin primary: a hot red plate with a sheen that crosses on hover, brighter as the signal charges. */
   background:
     linear-gradient(105deg, transparent 40%, rgb(255 236 239 / 0.26) 50%, transparent 60%) 160% 0 / 250% 100% no-repeat,
-    linear-gradient(180deg, #ff2a48, #b0001d);
+    linear-gradient(180deg, oklch(from #ff2a48 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from #b0001d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
   box-shadow:
-    inset 0 1px 0 rgb(255 200 210 / 0.5),
-    0 0 calc(24px + var(--vx-charge, 0) * 14px) -6px rgb(255 31 61 / 0.9),
-    0 12px 26px -14px rgb(255 31 61 / 0.9);
+    inset 0 1px 0 oklch(from rgb(255 200 210) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5),
+    0 0 calc(24px + var(--vx-charge, 0) * 14px) -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9),
+    0 12px 26px -14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9);
   filter: brightness(calc(0.92 + var(--vx-charge, 0) * 0.13));
   transition:
     filter 150ms ease,
@@ -8966,9 +8971,9 @@ a.arcade-counter:hover {
   filter: brightness(calc(1.04 + var(--vx-charge, 0) * 0.08));
   background-position: -60% 0, 0 0;
   box-shadow:
-    inset 0 1px 0 rgb(255 210 218 / 0.6),
-    0 0 34px -6px rgb(255 31 61 / 0.95),
-    0 14px 32px -12px rgb(255 31 61 / 0.95);
+    inset 0 1px 0 oklch(from rgb(255 210 218) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6),
+    0 0 34px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95),
+    0 14px 32px -12px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95);
 }
 .vx-button:active:not(:disabled) {
   scale: 0.98;
@@ -8978,11 +8983,11 @@ a.arcade-counter:hover {
   filter: saturate(0.6) brightness(0.8);
 }
 .vx-button-quiet {
-  border-color: rgb(255 80 108 / 0.38);
+  border-color: oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38);
   color: var(--vx-text);
   text-shadow: none;
-  background: linear-gradient(180deg, rgb(42 8 17 / 0.92), rgb(18 3 8 / 0.92));
-  box-shadow: inset 0 1px 0 rgb(255 130 150 / 0.1);
+  background: linear-gradient(180deg, oklch(from rgb(42 8 17) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92), oklch(from rgb(18 3 8) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
   filter: none;
 }
 .vx-stage[data-look="obsidian"] .vx-button-quiet {
@@ -8990,11 +8995,11 @@ a.arcade-counter:hover {
   background: var(--vx-pill);
 }
 .vx-button-quiet:hover:not(:disabled) {
-  border-color: rgb(255 90 114 / 0.7);
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
   filter: none;
   box-shadow:
-    inset 0 1px 0 rgb(255 130 150 / 0.14),
-    0 0 18px -6px rgb(255 31 61 / 0.7);
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.14),
+    0 0 18px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
 }
 
 /* Rewards, exactly as the server granted them. */
@@ -9012,7 +9017,7 @@ a.arcade-counter:hover {
   border-left: 2px solid var(--vx-red);
   border-radius: 8px;
   background:
-    linear-gradient(90deg, rgb(255 31 61 / 0.08), transparent 40%),
+    linear-gradient(90deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08), transparent 40%),
     linear-gradient(180deg, var(--vx-sheen), transparent);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
   animation: vx-slot-in 520ms var(--ease-out-soft) calc(var(--d, 0ms) + var(--i, 0) * 120ms) backwards;
@@ -9036,7 +9041,7 @@ a.arcade-counter:hover {
   border: 1px solid var(--vx-line-hi);
   border-radius: 8px;
   color: #fff;
-  background: radial-gradient(circle at 50% 35%, rgb(255 31 61 / 0.24), #050506 70%);
+  background: radial-gradient(circle at 50% 35%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.24), #050506 70%);
 }
 .vx-slot-kind {
   display: block;
@@ -9130,7 +9135,7 @@ a.arcade-counter:hover {
   color: rgb(243 233 235 / 0.85);
 }
 .vx-reveal-head .vx-eyebrow {
-  color: #ff9aa8;
+  color: oklch(from #ff9aa8 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 .vx-cards {
   display: grid;
@@ -9181,11 +9186,11 @@ a.arcade-counter:hover {
   border: 1px solid rgb(255 255 255 / 0.16);
   text-align: center;
   background:
-    radial-gradient(120% 70% at 50% 0%, rgb(255 31 61 / 0.26), transparent 70%),
+    radial-gradient(120% 70% at 50% 0%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.26), transparent 70%),
     rgb(7 3 5 / 0.92);
   box-shadow:
     0 18px 40px -18px #000,
-    0 0 30px -12px rgb(255 31 61 / 0.5);
+    0 0 30px -12px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
   transition:
     border-color 200ms ease,
     translate 200ms ease,
@@ -9193,10 +9198,10 @@ a.arcade-counter:hover {
 }
 .vx-card:hover {
   translate: 0 -3px;
-  border-color: rgb(255 31 61 / 0.7);
+  border-color: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
   box-shadow:
     0 22px 44px -18px #000,
-    0 0 36px -8px rgb(255 31 61 / 0.65);
+    0 0 36px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.65);
 }
 .vx-card:focus-visible {
   outline: 2px solid #fff;
@@ -9231,9 +9236,9 @@ a.arcade-counter:hover {
   padding: 1.25rem;
   border: 1px solid rgb(255 255 255 / 0.22);
   background:
-    radial-gradient(90% 60% at 50% 0%, rgb(255 31 61 / 0.24), transparent 70%),
+    radial-gradient(90% 60% at 50% 0%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.24), transparent 70%),
     rgb(7 3 5 / 0.94);
-  box-shadow: 0 0 50px -14px rgb(255 31 61 / 0.55);
+  box-shadow: 0 0 50px -14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55);
   animation: vx-inspect-in 450ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 @media (min-width: 40rem) {
@@ -9334,7 +9339,7 @@ a.arcade-counter:hover {
     radial-gradient(80% 60% at 50% 0%, var(--vx-sheen), transparent 70%),
     var(--vx-panel);
   box-shadow:
-    inset 0 1px 0 rgb(255 130 150 / 0.12),
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
     0 0 0 1px rgb(0 0 0 / 0.45),
     0 24px 48px -24px rgb(0 0 0 / 0.95),
     0 0 36px -14px var(--vx-glow);
@@ -9354,8 +9359,8 @@ a.arcade-counter:hover {
   position: absolute;
   inset: -1px 18% auto;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgb(255 90 114 / 0.75), transparent);
-  box-shadow: 0 0 8px rgb(255 31 61 / 0.35);
+  background: linear-gradient(90deg, transparent, oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75), transparent);
+  box-shadow: 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
 }
 .vx-log-head {
   display: flex;
@@ -9363,7 +9368,7 @@ a.arcade-counter:hover {
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.9rem;
-  background: linear-gradient(90deg, rgb(235 45 72 / 0.6), var(--vx-line) 35%, transparent) 0 100% / 100% 1px no-repeat;
+  background: linear-gradient(90deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6), var(--vx-line) 35%, transparent) 0 100% / 100% 1px no-repeat;
 }
 .vx-log-kicker {
   font-family: var(--vx-mono);
@@ -9381,7 +9386,7 @@ a.arcade-counter:hover {
   line-height: 1.2;
   letter-spacing: 0.04em;
   color: #fff;
-  text-shadow: 0 0 18px rgb(235 45 72 / 0.28);
+  text-shadow: 0 0 18px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
 }
 .vx-log-count,
 .vx-log-time {
@@ -9399,8 +9404,8 @@ a.arcade-counter:hover {
   color: var(--vx-steel);
   background: var(--vx-pill);
   box-shadow:
-    inset 0 1px 0 rgb(255 140 160 / 0.08),
-    0 0 18px -8px rgb(255 31 61 / 0.5);
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
+    0 0 18px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
 }
 .vx-log-list {
   display: grid;
@@ -9428,8 +9433,8 @@ a.arcade-counter:hover {
   height: 9px;
   rotate: 45deg;
   border: 1px solid var(--vx-rose);
-  background: rgb(255 90 114 / 0.3);
-  box-shadow: 0 0 8px rgb(255 31 61 / 0.6);
+  background: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
+  box-shadow: 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 .vx-log-list > li:not(:last-child)::after {
   content: "";
@@ -9441,7 +9446,7 @@ a.arcade-counter:hover {
   background: linear-gradient(var(--vx-line-hi), transparent);
 }
 .vx-log-list > li:hover {
-  background: rgb(255 90 114 / 0.05);
+  background: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.05);
 }
 .vx-log-index {
   font-family: var(--vx-mono);
@@ -9451,7 +9456,7 @@ a.arcade-counter:hover {
 }
 .vx-log-list > li:first-child .vx-log-index {
   color: var(--vx-rose);
-  text-shadow: 0 0 8px rgb(255 31 61 / 0.6);
+  text-shadow: 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
 }
 @media (max-width: 39.99rem) {
   .vx-log-list > li {
@@ -9479,7 +9484,7 @@ a.arcade-counter:hover {
 .vx-log-note a {
   color: var(--vx-text);
   text-decoration: underline;
-  text-decoration-color: rgb(255 90 114 / 0.6);
+  text-decoration-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
   text-underline-offset: 3px;
 }
 .vx-log-note a:hover {
@@ -9514,7 +9519,7 @@ a.arcade-counter:hover {
 }
 @keyframes vx-glyph {
   0% {
-    text-shadow: 0 0 6px rgb(255 31 61 / 0.6);
+    text-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
     animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
   }
   24% {
@@ -9522,7 +9527,7 @@ a.arcade-counter:hover {
     scale: 1.12;
     text-shadow:
       0 0 6px #fff,
-      0 0 14px rgb(255 31 61 / 0.85);
+      0 0 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
     animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.45);
   }
   100% {
@@ -9554,7 +9559,7 @@ a.arcade-counter:hover {
     text-shadow:
       3px 0 rgb(255 31 61 / 0.9),
       -3px 0 rgb(255 214 221 / 0.5),
-      0 0 14px var(--vx-red);
+      0 0 14px var(--vx-danger);
   }
   35% {
     color: #ffc2cc;
@@ -9587,7 +9592,7 @@ a.arcade-counter:hover {
   }
   8% {
     color: #fff;
-    border-color: var(--vx-red);
+    border-color: var(--vx-danger);
     text-shadow: 0 0 10px rgb(255 31 61 / 0.8);
   }
 }
@@ -9602,12 +9607,12 @@ a.arcade-counter:hover {
     color: rgb(200 190 192 / 0.7);
     text-shadow:
       2px 0 rgb(140 127 130 / 0.6),
-      -2px 0 rgb(255 31 61 / 0.3);
+      -2px 0 oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
   }
   60% {
     text-shadow:
       -1px 0 rgb(140 127 130 / 0.5),
-      1px 0 rgb(255 31 61 / 0.2);
+      1px 0 oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
   }
 }
 
@@ -9628,7 +9633,7 @@ a.arcade-counter:hover {
   animation: vx-pulse 900ms ease-in-out infinite alternate;
 }
 .vx-stage[data-phase="verifying"] .vx-keyhole {
-  stroke: #ff8597;
+  stroke: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
 }
 .vx-stage[data-phase="verifying"] .vx-pips > span {
   animation: vx-pip 900ms ease-in-out calc(var(--i) * 75ms - 900ms) infinite;
@@ -9644,13 +9649,13 @@ a.arcade-counter:hover {
 @keyframes vx-chase {
   0%,
   100% {
-    fill: rgb(255 31 61 / 0.1);
+    fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
   }
   8% {
-    fill: rgb(255 133 151 / 0.95);
+    fill: oklch(from rgb(255 133 151) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95);
   }
   35% {
-    fill: rgb(255 31 61 / 0.25);
+    fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25);
   }
 }
 @keyframes vx-pulse {
@@ -9664,10 +9669,10 @@ a.arcade-counter:hover {
 @keyframes vx-pip {
   0%,
   100% {
-    background-color: rgb(255 31 61 / 0.15);
+    background-color: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.15);
   }
   15% {
-    background-color: #ff8597;
+    background-color: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   }
 }
 
@@ -9682,7 +9687,7 @@ a.arcade-counter:hover {
   transition-delay: 450ms;
 }
 .vx-stage[data-phase="granted"] .vx-runes {
-  stroke: #ffd5dc;
+  stroke: oklch(from #ffd5dc min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
   transition-delay: 650ms;
 }
 .vx-stage[data-phase="granted"] .vx-tooth {
@@ -9769,13 +9774,13 @@ a.arcade-counter:hover {
   animation: vx-deny 800ms ease-in-out 2;
 }
 .vx-stage[data-phase="invalid"] .vx-keyhole {
-  stroke: var(--vx-red);
+  stroke: var(--vx-danger);
 }
 .vx-stage[data-phase="invalid"] h2.vx-headline {
   animation: vx-glitch 450ms steps(1, end) backwards;
 }
 .vx-stage[data-phase="invalid"] .vx-input {
-  border-color: var(--vx-red);
+  border-color: var(--vx-danger);
 }
 @keyframes vx-shake {
   10%,
@@ -9810,7 +9815,7 @@ a.arcade-counter:hover {
   0% {
     translate: -4px 0;
     text-shadow:
-      3px 0 var(--vx-red),
+      3px 0 var(--vx-danger),
       -3px 0 rgb(255 255 255 / 0.6);
   }
   25% {
@@ -9819,7 +9824,7 @@ a.arcade-counter:hover {
   50% {
     translate: -2px 0;
     text-shadow:
-      -2px 0 var(--vx-red),
+      -2px 0 var(--vx-danger),
       2px 0 rgb(255 255 255 / 0.5);
   }
   75% {
@@ -9842,17 +9847,17 @@ a.arcade-counter:hover {
 }
 
 /* A new look: the console's contents go dark while its 3D glass breaks away and rebuilds, then relight;
-   the log follows. One keyframe name per look, so every switch restarts it. */
-.vx-stage[data-relit][data-look="crimson"] .vx-window {
+   the log follows. Two keyframe names, alternated, so every switch restarts it. */
+.vx-stage[data-relit="a"] .vx-window {
   animation: vx-relight-a 1250ms ease;
 }
-.vx-stage[data-relit][data-look="obsidian"] .vx-window {
+.vx-stage[data-relit="b"] .vx-window {
   animation: vx-relight-b 1250ms ease;
 }
-.vx-stage[data-relit][data-look="crimson"] .vx-log {
+.vx-stage[data-relit="a"] .vx-log {
   animation: vx-relog-a 900ms ease 250ms;
 }
-.vx-stage[data-relit][data-look="obsidian"] .vx-log {
+.vx-stage[data-relit="b"] .vx-log {
   animation: vx-relog-b 900ms ease 250ms;
 }
 @keyframes vx-relight-a {
@@ -9894,7 +9899,7 @@ a.arcade-counter:hover {
   animation-duration: 500ms;
   animation-delay: 0ms;
 }
-.vx-stage[data-motion="subtle"][data-relit][data-look="obsidian"] :is(.vx-window, .vx-log) {
+.vx-stage[data-motion="subtle"][data-relit="b"] :is(.vx-window, .vx-log) {
   animation-name: vx-relog-b;
 }
 .vx-stage[data-motion="subtle"] .vx-scan {

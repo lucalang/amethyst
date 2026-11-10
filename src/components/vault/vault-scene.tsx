@@ -54,7 +54,8 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { SHARD_VERTEX } from "@/components/admin/admin-shaders";
 import { follow, radialTexture, spring, studioEnvironment } from "@/components/showcase/three-kit";
 import type { MotionLevel } from "@/lib/preferences";
-import type { VaultLookId } from "@/lib/vault-looks";
+import { paletteUniform } from "@/lib/palette-variants";
+import { vaultLook, type VaultLook, type VaultLookId } from "@/lib/vault-looks";
 import { LATE_ASSEMBLY, PACE, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
 import {
   BACKDROP_FRAGMENT,
@@ -133,7 +134,7 @@ type SchemeLevel = "wall" | "smoke" | "bloom" | "edgeGain";
 type Scheme = Record<SchemeColor, Color> & Record<SchemeLevel, number> & { env: [accent: number, fill: number] };
 const SCHEME_COLORS: SchemeColor[] = ["air", "haze", "rim", "ember", "hemi", "key", "edge", "metal", "iron", "trim", "glassLo", "glassHi", "glare"];
 const SCHEME_LEVELS: SchemeLevel[] = ["wall", "smoke", "bloom", "edgeGain"];
-const SCHEMES: Record<VaultLookId, Scheme> = {
+const SCHEMES: Record<VaultLook["base"], Scheme> = {
   obsidian: {
     air: new Color(0x030304),
     haze: HAZE,
@@ -176,6 +177,8 @@ const SCHEMES: Record<VaultLookId, Scheme> = {
     env: [0.6, 0x3a0d16],
   },
 };
+/** The colour variants are the crimson chamber turned in the finish pass. */
+const schemeOf = (id: VaultLookId) => SCHEMES[vaultLook(id).base];
 const FOV = 30;
 const TAN = Math.tan((FOV * Math.PI) / 360);
 /** Camera distance to the console plane; there one CSS pixel is one canvas pixel. */
@@ -528,7 +531,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   // Opaque: the chamber, its haze and the bloom are all drawn here, then finished like a lens.
   const renderer = new WebGLRenderer({ antialias: false, stencil: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(dpr);
-  renderer.setClearColor(SCHEMES[init.look].air, 1);
+  renderer.setClearColor(schemeOf(init.look).air, 1);
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = NeutralToneMapping;
   renderer.shadowMap.enabled = true;
@@ -536,7 +539,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   host.appendChild(renderer.domElement);
 
   const scene = new Scene();
-  const fog = new FogExp2(SCHEMES[init.look].air.getHex(), 0.018);
+  const fog = new FogExp2(schemeOf(init.look).air.getHex(), 0.018);
   scene.fog = fog;
   const camera = new PerspectiveCamera(FOV, 1, 0.5, 90);
   const owned: { dispose(): void }[] = [];
@@ -545,11 +548,11 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     return item;
   };
   // Reflections in the look's tint; the red stays mostly in the light the core gives off. Built once per look.
-  const environments: Partial<Record<VaultLookId, Texture>> = {};
-  const environmentFor = (id: VaultLookId) =>
-    (environments[id] ??= own(studioEnvironment(renderer, RED.clone().multiplyScalar(SCHEMES[id].env[0]), new Color(SCHEMES[id].env[1]), true, 0.35)));
-  let environmentLook = init.look;
-  scene.environment = environmentFor(init.look);
+  const environments: Partial<Record<VaultLook["base"], Texture>> = {};
+  const environmentFor = (base: VaultLook["base"]) =>
+    (environments[base] ??= own(studioEnvironment(renderer, RED.clone().multiplyScalar(SCHEMES[base].env[0]), new Color(SCHEMES[base].env[1]), true, 0.35)));
+  let environmentLook = vaultLook(init.look).base;
+  scene.environment = environmentFor(environmentLook);
 
   const composer = new EffectComposer(renderer, new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: [4, 2, 0][tier] }));
   composer.addPass(new RenderPass(scene, camera));
@@ -570,6 +573,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       uGrain: { value: 0.018 },
       uVignette: { value: 0.55 },
       uHot: { value: PALE.clone() },
+      uPalette: { value: new Vector3(...paletteUniform(vaultLook(init.look).palette)) },
     },
     vertexShader: UV_VERTEX,
     fragmentShader: FINISH_FRAGMENT,
@@ -603,8 +607,9 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
 
   /* Materials */
   // The look's colours as they are now; they ease toward a newly chosen look.
-  const hue = Object.fromEntries(SCHEME_COLORS.map((name) => [name, SCHEMES[init.look][name].clone()])) as Record<SchemeColor, Color>;
-  const amount = Object.fromEntries(SCHEME_LEVELS.map((name) => [name, SCHEMES[init.look][name]])) as Record<SchemeLevel, number>;
+  const hue = Object.fromEntries(SCHEME_COLORS.map((name) => [name, schemeOf(init.look)[name].clone()])) as Record<SchemeColor, Color>;
+  const amount = Object.fromEntries(SCHEME_LEVELS.map((name) => [name, schemeOf(init.look)[name]])) as Record<SchemeLevel, number>;
+  const paletteTarget = new Vector3();
   const iron = new MeshStandardMaterial({ color: hue.iron.clone(), metalness: 0.92, roughness: 0.4, roughnessMap: grainTex, envMapIntensity: 1.1 });
   const steel = new MeshStandardMaterial({ color: hue.metal.clone(), metalness: 1, roughness: 0.2, roughnessMap: grainTex, envMapIntensity: 1.5 });
   const blade = new MeshStandardMaterial({ color: 0x1c1d20, metalness: 0.88, roughness: 0.4, envMapIntensity: 1, emissive: RED.clone(), emissiveMap: doorTex, emissiveIntensity: 0 });
@@ -1269,11 +1274,13 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     const sw = still ? 1e9 : (now - lookAt) / pace;
     const blend = still ? 1 : sw < 180 ? 0 : 1 - Math.exp(-dt * 6);
     if (blend > 0) {
-      for (const name of SCHEME_COLORS) hue[name].lerp(SCHEMES[lookId][name], blend);
-      for (const name of SCHEME_LEVELS) amount[name] = lerp(amount[name], SCHEMES[lookId][name], blend);
-      if (environmentLook !== lookId) {
-        environmentLook = lookId;
-        scene.environment = environmentFor(lookId);
+      const next = vaultLook(lookId);
+      for (const name of SCHEME_COLORS) hue[name].lerp(SCHEMES[next.base][name], blend);
+      for (const name of SCHEME_LEVELS) amount[name] = lerp(amount[name], SCHEMES[next.base][name], blend);
+      fx.uPalette.value.lerp(paletteTarget.set(...paletteUniform(next.palette)), blend);
+      if (environmentLook !== next.base) {
+        environmentLook = next.base;
+        scene.environment = environmentFor(next.base);
       }
     }
     const bold = motion === "full";

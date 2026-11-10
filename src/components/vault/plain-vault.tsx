@@ -11,7 +11,8 @@ import { PageContainer } from "@/components/layout/app-shell";
 import { useSettings } from "@/components/layout/settings-context";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type { MotionLevel } from "@/lib/preferences";
-import { VAULT_LOOKS, type VaultLookId } from "@/lib/vault-looks";
+import { BASE_PALETTE } from "@/lib/palette-variants";
+import { VAULT_LOOKS, vaultLook, type VaultLookId } from "@/lib/vault-looks";
 import type { VaultFind } from "./secret-vault";
 import { CARD_STAGGER, PACE } from "./timing";
 import { closeVaultAudio, playVaultReveal, playVaultSound, type VaultSound } from "./vault-audio";
@@ -335,9 +336,16 @@ export function PlainChamber({ initialFinds, looks }: { initialFinds: VaultFind[
     }
   };
 
+  const current = vaultLook(look);
+  // The colour variants replace the accent; Dark and Crimson keep the stylesheet's.
+  const accent =
+    current.palette === BASE_PALETTE
+      ? undefined
+      : ({ "--vp-accent": current.plain, "--vp-accent-ink": current.palette.ink, "--vp-accent-text": `color-mix(in oklab, ${current.plain} 72%, var(--foreground))` } as CSSProperties);
+
   return (
     <PageContainer>
-      <section ref={stageRef} aria-labelledby="vp-title" className="vp-stage" data-phase={phase} data-motion={motion} data-look={look}>
+      <section ref={stageRef} aria-labelledby="vp-title" className="vp-stage" data-phase={phase} data-motion={motion} data-look={look} style={accent}>
         <header className="vp-hud">
           <div className="min-w-0">
             <h1 id="vp-title" className="vp-title">
@@ -349,12 +357,15 @@ export function PlainChamber({ initialFinds, looks }: { initialFinds: VaultFind[
             <fieldset className="vp-look">
               <legend className="sr-only">Vault colours</legend>
               {VAULT_LOOKS.map((option) => (
-                <label key={option.id} className="vp-look-option">
+                <label key={option.id} className="vp-look-option" title={option.label}>
                   <input type="radio" name="vp-look" value={option.id} checked={look === option.id} onChange={() => void chooseLook(option.id)} className="sr-only" />
-                  <span aria-hidden className="vp-look-swatch" data-swatch={option.id} />
-                  {option.label}
+                  <span aria-hidden className="vp-look-swatch" style={{ background: option.plain }} />
+                  <span className="sr-only">{option.label}</span>
                 </label>
               ))}
+              <span aria-hidden className="vp-look-current">
+                {current.label}
+              </span>
             </fieldset>
             <button type="button" onClick={toggleSound} aria-pressed={sound} aria-label="Sound effects" title={sound ? "Sound on" : "Sound off"} className="vp-icon-button">
               {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}

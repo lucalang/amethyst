@@ -9,6 +9,7 @@ import {
   SRGBColorSpace,
   Vector2,
 } from "three";
+import { PALETTE_SHIFT_GLSL } from "@/lib/palette-variants";
 import { GLYPHS } from "./vault-seal";
 
 /**
@@ -892,6 +893,7 @@ uniform float uGrain;
 uniform float uVignette;
 uniform vec3 uHot;
 varying vec2 vUv;
+${PALETTE_SHIFT_GLSL}
 float noise(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 void main() {
   vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
@@ -926,6 +928,7 @@ void main() {
   }
 #endif
   color += uHot * uFlash * (0.06 + 0.4 * exp(-dist * 2.4));
+  color = paletteShift(color);
   float luma = dot(color, vec3(0.299, 0.587, 0.114));
   color = mix(vec3(luma), color, 0.86);
   // Shadows lean cool, toward steel; highlights keep their colour.

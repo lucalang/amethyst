@@ -93,6 +93,7 @@ export function AdminStage({
   plain,
   station,
   motion,
+  palette,
   intro,
   sound,
   onStart,
@@ -105,6 +106,8 @@ export function AdminStage({
   plain: boolean;
   station: StationId;
   motion: MotionLevel;
+  /** The colour variant, as `paletteUniform` gives it. */
+  palette: [number, number, number];
   intro: IntroKind | null;
   sound: (name: SanctumSound) => void;
   onStart: (intro: IntroKind | null) => void;
@@ -124,9 +127,9 @@ export function AdminStage({
   const [introRunning, setIntroRunning] = useState(false);
 
   // Latest props for the scene's callbacks, which are created once.
-  const latest = useRef({ station, motion, intro, sound, onStart, onIntroDone, onArrived });
+  const latest = useRef({ station, motion, palette, intro, sound, onStart, onIntroDone, onArrived });
   useLayoutEffect(() => {
-    latest.current = { station, motion, intro, sound, onStart, onIntroDone, onArrived };
+    latest.current = { station, motion, palette, intro, sound, onStart, onIntroDone, onArrived };
   });
 
   const control = useMemo<StageControl>(() => {
@@ -190,6 +193,7 @@ export function AdminStage({
         spacer,
         station: latest.current.station,
         motion: engineMotion(latest.current.motion),
+        palette: latest.current.palette,
         hooks: {
           sound: (name) => latest.current.sound(name),
           fail: () => {
@@ -233,6 +237,11 @@ export function AdminStage({
   useEffect(() => {
     engineRef.current?.setMotion(engineMotion(motion));
   }, [motion]);
+
+  const [hue, lift, chroma] = palette;
+  useEffect(() => {
+    engineRef.current?.setPalette([hue, lift, chroma]);
+  }, [hue, lift, chroma]);
 
   // Any key or click skips the intro.
   useEffect(() => {
