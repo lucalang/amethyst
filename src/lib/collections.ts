@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { categoryNameSchema } from "@/lib/categories";
 import { ICON_NAME_PATTERN } from "@/lib/collection-identity";
 import { progressLabelSchema } from "@/lib/progress/label";

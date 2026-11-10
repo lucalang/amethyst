@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { BrandMark } from "@/components/layout/top-nav";
+import { BrandMark } from "@/components/layout/brand-mark";
 
 export function AuthShell({ title, description, children, footer }: { title: string; description: ReactNode; children: ReactNode; footer?: ReactNode }) {
   return (

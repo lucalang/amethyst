@@ -1,6 +1,6 @@
 import "server-only";
 import { Agent } from "node:https";
-import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client, S3ServiceException } from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, S3ServiceException } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { serverEnv } from "@/lib/env";
 
@@ -95,6 +95,20 @@ export async function headObject(key: string) {
     if (error instanceof S3ServiceException && error.$metadata.httpStatusCode === 404) return null;
     throw error;
   }
+}
+
+/** Keys under `prefix`, at most `maxPages` thousand; `complete` is false when more remain. */
+export async function listKeys(prefix: string, maxPages: number) {
+  const { client, bucket } = required();
+  const keys: string[] = [];
+  let token: string | undefined;
+  for (let page = 0; page < maxPages; page++) {
+    const result = await client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }));
+    for (const item of result.Contents ?? []) if (item.Key) keys.push(item.Key);
+    token = result.NextContinuationToken;
+    if (!result.IsTruncated || !token) return { keys, complete: true };
+  }
+  return { keys, complete: false };
 }
 
 export async function readObject(key: string, maxBytes: number): Promise<Buffer> {

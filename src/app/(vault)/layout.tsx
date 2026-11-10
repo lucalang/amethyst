@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { CollectionIcon } from "@/components/categories/collection-icon";
 import { AppShell } from "@/components/layout/app-shell";
+import { VaultErrorBoundary } from "@/components/layout/vault-error-boundary";
 import { isAdmin } from "@/lib/admin";
+import { LATEST_CHANGE_ID } from "@/lib/changelog";
 import { loadCollections } from "@/lib/data/collections";
 import { loadPreferences, loadProfile } from "@/lib/data/preferences";
 import { loadOwnBadges } from "@/lib/data/profiles";
@@ -51,8 +53,9 @@ export default async function VaultLayout({ children }: { children: ReactNode })
       introSeenOn={profile?.intro_seen_on ?? null}
       preferences={preferences}
       cosmetics={{ owned, avatarDecoration, badges, title }}
+      latestChangeId={LATEST_CHANGE_ID}
     >
-      {children}
+      <VaultErrorBoundary>{children}</VaultErrorBoundary>
     </AppShell>
   );
 }

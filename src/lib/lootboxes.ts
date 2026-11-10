@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { NO_BOOST, boostSchema } from "@/lib/boosters";
 import { INVENTORY_TYPES, INVENTORY_TYPE_LABELS, type InventoryType } from "@/lib/inventory";
 import { RARITY_IDS } from "@/lib/rarities";

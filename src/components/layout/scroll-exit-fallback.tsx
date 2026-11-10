@@ -27,11 +27,16 @@ export function ScrollExitFallback() {
     const update = () => {
       frame = 0;
       const line = window.scrollY + TOP_INSET;
-      for (const element of document.querySelectorAll<HTMLElement>(SELECTOR)) {
-        const progress = Math.min(1, Math.max(0, (line - documentTop(element)) / Math.max(1, element.offsetHeight)));
+      // Measure everything before writing anything: interleaving forces a layout per element.
+      const elements = [...document.querySelectorAll<HTMLElement>(SELECTOR)];
+      const values = elements.map((element) =>
+        Math.min(1, Math.max(0, (line - documentTop(element)) / Math.max(1, element.offsetHeight))).toFixed(3),
+      );
+      elements.forEach((element, index) => {
+        if (element.style.getPropertyValue("--exit-progress") === values[index]) return;
         element.setAttribute("data-exit-fallback", "");
-        element.style.setProperty("--exit-progress", progress.toFixed(3));
-      }
+        element.style.setProperty("--exit-progress", values[index]);
+      });
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(update);

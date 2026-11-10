@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ARCADE_GAMES } from "@/lib/arcade";
 import { INVENTORY_TYPES, type InventoryType } from "@/lib/inventory";
 import { RARITY_IDS } from "@/lib/rarities";

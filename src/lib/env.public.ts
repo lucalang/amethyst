@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 // NEXT_PUBLIC_* values must be referenced literally so Next inlines them.
 const schema = z.object({

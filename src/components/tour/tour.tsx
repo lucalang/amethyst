@@ -22,7 +22,7 @@ import {
   Vault,
   Worm,
 } from "lucide-react";
-import { BrandMark } from "@/components/layout/top-nav";
+import { BrandMark } from "@/components/layout/brand-mark";
 import type { MotionLevel } from "@/lib/preferences";
 import { TOUR_CHAPTERS, type TourChapterId } from "./chapters";
 import { buildTimeline, copyStage, locate, sectionFrames } from "./timeline";

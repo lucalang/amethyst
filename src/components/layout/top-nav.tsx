@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Award, Backpack, BookMarked, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, Gem, History, Info, KeyRound, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Award, Backpack, BookMarked, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Info, KeyRound, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -25,23 +25,13 @@ import { useCurrentCollectionId } from "./current-collection";
 import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { ProfileAvatar } from "./profile-avatar";
 import { ProfileFlair } from "./profile-flair";
+import { BrandMark } from "./brand-mark";
 
 /** Server-rendered collection icons keyed by collection id. */
 type CollectionIcons = Record<string, ReactNode>;
 
 export function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-export function BrandMark({ className }: { className?: string }) {
-  return (
-    <span className={cn("flex items-center gap-2 font-semibold tracking-tight", className)}>
-      <span aria-hidden className="brand-gem grid size-7 place-items-center rounded-md bg-amethyst/15 text-amethyst ring-1 ring-amethyst/40">
-        <Gem className="size-4" />
-      </span>
-      <span>Amethyst</span>
-    </span>
-  );
 }
 
 /** The signed-in account as shown in the private account menu. */
@@ -163,7 +153,7 @@ function ToolsPanel({ admin, onBack }: { admin: boolean; onBack: () => void }) {
   );
 }
 
-export function TopNav({ account, collections, icons = {} }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons }) {
+export function TopNav({ account, collections, icons = {}, latestChangeId }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons; latestChangeId: string }) {
   const currentId = useCurrentCollectionId(collections);
   const pathname = usePathname();
   const area = destinationFor(pathname);
@@ -174,7 +164,7 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
   const toolsRef = useRef<HTMLDivElement>(null);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-black/85 backdrop-blur-md">
+    <header className="app-bar sticky top-0 z-40 border-b border-border bg-black/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-[88rem] items-center gap-3 px-4 md:gap-6 md:px-6">
         <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-3">
           <Link href="/" className="shrink-0 rounded-md" aria-label="Amethyst home">
@@ -224,7 +214,7 @@ export function TopNav({ account, collections, icons = {} }: { account: AccountS
             <Crown aria-hidden className="size-4 text-amber-300 transition-transform duration-200 group-hover:-rotate-12 motion-reduce:transition-none" />
             <span aria-hidden className="hidden sm:inline">Season Pass</span>
           </Link>}
-          <WhatsNewButton />
+          <WhatsNewButton latestId={latestChangeId} />
 
           <DropdownMenu onOpenChange={(open) => open && setMenuView("main")}>
             <DropdownMenuTrigger asChild>

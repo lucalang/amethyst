@@ -1,3 +1,4 @@
+import { createFrameGovernor, renderPixelRatio } from "@/lib/render-budget";
 import {
   AdditiveBlending,
   BackSide,
@@ -589,10 +590,11 @@ export function createChrono(options: ChronoOptions): Chrono {
 
   let sizeKey = "";
   let composerDpr = renderer.getPixelRatio();
+  const governor = createFrameGovernor(() => resize());
   function resize() {
     W = Math.max(1, host.clientWidth);
     H = Math.max(1, host.clientHeight);
-    dpr = Math.min(window.devicePixelRatio || 1, tier.dpr);
+    dpr = renderPixelRatio(W, H, window.devicePixelRatio || 1, tier.dpr) * governor.scale;
     measure();
     const nextSize = `${W}|${H}|${dpr}`;
     if (sizeKey === nextSize) {
@@ -954,6 +956,7 @@ export function createChrono(options: ChronoOptions): Chrono {
         last = 0;
         return;
       }
+      governor.tick(nowMs);
       const busy = Boolean(intro || trip);
       const animated = motion !== "off";
       if (!animated && !busy && dirty <= 0) {

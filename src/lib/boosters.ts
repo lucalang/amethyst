@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 /**
  * Luck Boosters. The database owns prices, owned/active charges and the odds rule (`loot_boosters`,

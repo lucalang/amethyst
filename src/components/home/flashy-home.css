@@ -1,9 +1,15 @@
 /* Flashy Home: an alternative presentation of the same Home content (see flashy-hero.tsx). */
 
-@property --fh-angle {
-  syntax: "<angle>";
+/* Pointer parallax (-1..1), written by FlashyStage onto the two moving layers; non-inherited so moves don't restyle their subtrees. */
+@property --fh-mx {
+  syntax: "<number>";
   inherits: false;
-  initial-value: 0deg;
+  initial-value: 0;
+}
+@property --fh-my {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
 }
 
 .flashy-home {
@@ -22,13 +28,12 @@
   position: relative;
   isolation: isolate;
 }
-.fh-stage[data-fh-paused] :is(.fh-aurora, .fh-row, .fh-sparks, .fh-avatar, .fh-title, .fh-fan-halo),
-.fh-stage[data-fh-paused] .fh-fan::before {
+.fh-stage[data-fh-paused] :is(.fh-aurora, .fh-row, .fh-title, .fh-fan-halo),
+.fh-stage[data-fh-paused] :is(.fh-fan, .fh-sparks, .fh-avatar)::before,
+.fh-stage[data-fh-paused] .fh-sparks::after {
   animation-play-state: paused;
 }
 .fh-stage {
-  --mx: 0;
-  --my: 0;
   position: relative;
   isolation: isolate;
   display: flex;
@@ -46,20 +51,15 @@
   perspective: 1400px;
   pointer-events: none;
 }
+/* Soft radial blobs instead of a blurred conic: a blur filter would be re-run on this huge layer every frame. */
 .fh-aurora {
   position: absolute;
   inset: -35%;
-  background: conic-gradient(
-    from 0deg at 38% 46%,
-    rgb(var(--accent-rgb) / 0.6),
-    rgb(var(--rose-rgb) / 0.38) 18%,
-    transparent 38%,
-    rgb(var(--accent-rgb) / 0.42) 58%,
-    transparent 74%,
-    rgb(var(--rose-rgb) / 0.42) 90%,
-    rgb(var(--accent-rgb) / 0.6)
-  );
-  filter: blur(90px) saturate(1.2);
+  background:
+    radial-gradient(32% 38% at 34% 40%, rgb(var(--accent-rgb) / 0.66), transparent),
+    radial-gradient(28% 34% at 62% 32%, rgb(var(--rose-rgb) / 0.46), transparent),
+    radial-gradient(30% 32% at 60% 66%, rgb(var(--accent-rgb) / 0.48), transparent),
+    radial-gradient(26% 30% at 32% 70%, rgb(var(--rose-rgb) / 0.44), transparent);
   opacity: 0.6;
   animation: fh-spin calc(52s * var(--fh-speed)) linear infinite;
 }
@@ -73,7 +73,7 @@
   justify-content: center;
   gap: 1.1rem;
   opacity: 0.66;
-  transform: translate3d(calc(var(--mx) * -22px), calc(var(--my) * -14px), 0) rotateX(24deg) rotateZ(-9deg) scale(1.06);
+  transform: translate3d(calc(var(--fh-mx) * -22px), calc(var(--fh-my) * -14px), 0) rotateX(24deg) rotateZ(-9deg) scale(1.06);
   transform-origin: 55% 45%;
   transition: transform 700ms var(--ease-out-soft);
 }
@@ -124,6 +124,10 @@
     linear-gradient(180deg, color-mix(in srgb, var(--background) 60%, transparent), transparent 28%, transparent 64%, var(--background));
 }
 @media (max-width: 63.99rem) {
+  /* The mobile veil hides almost all of the wall, so skip its images, layers and animation there. */
+  .fh-wall {
+    display: none;
+  }
   .fh-veil {
     background: linear-gradient(
       180deg,
@@ -133,21 +137,27 @@
     );
   }
 }
+/* Two dot layers translated (composited) rather than animating background-position (a repaint per frame). */
 .fh-sparks {
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle, rgb(var(--accent-rgb) / 0.95) 0 1px, transparent 1.6px),
-    radial-gradient(circle, rgb(var(--rose-rgb) / 0.75) 0 1px, transparent 1.6px);
-  background-size:
-    150px 150px,
-    230px 230px;
-  background-position:
-    0 0,
-    70px 110px;
+  overflow: hidden;
   opacity: 0.55;
   mask-image: linear-gradient(to top, black, transparent 85%);
+}
+.fh-sparks::before,
+.fh-sparks::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 -600px;
+  background: radial-gradient(circle, rgb(var(--accent-rgb) / 0.95) 0 1px, transparent 1.6px) 0 0 / 150px 150px;
   animation: fh-sparks calc(36s * var(--fh-speed)) linear infinite;
+}
+.fh-sparks::after {
+  --fh-sparks-shift: -690px;
+  inset-block-end: -690px;
+  background: radial-gradient(circle, rgb(var(--rose-rgb) / 0.75) 0 1px, transparent 1.6px) 70px 110px / 230px 230px;
+  animation-duration: calc(30.7s * var(--fh-speed));
 }
 
 /* --- Copy ----------------------------------------------------------------- */
@@ -172,14 +182,13 @@
   gap: 0.5rem;
   border: 1px solid rgb(var(--accent-rgb) / 0.38);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--background) 60%, transparent);
+  background: color-mix(in srgb, var(--background) 78%, transparent);
   padding: 0.35rem 0.85rem;
   color: rgb(var(--accent-rgb));
   font-size: 0.72rem;
   font-weight: 650;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  backdrop-filter: blur(10px);
 }
 .fh-kicker-count {
   overflow: hidden;
@@ -193,19 +202,40 @@
   white-space: nowrap;
 }
 .fh-identity {
+  position: relative;
+  isolation: isolate;
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 1rem 1.25rem;
   margin-top: 1.25rem;
 }
+/* A gradient glow instead of a drop-shadow filter: the filtered layer delayed the first paint of the greeting by seconds. */
+.fh-identity::before {
+  content: "";
+  position: absolute;
+  inset: -30% -6% -40%;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgb(var(--accent-rgb) / 0.3), rgb(var(--accent-rgb) / 0.1) 60%, transparent);
+  translate: 0 8px;
+  pointer-events: none;
+}
 .fh-avatar {
   position: relative;
   flex: none;
   border-radius: 999px;
+  isolation: isolate;
   padding: 3px;
-  background: conic-gradient(from var(--fh-angle), rgb(var(--accent-rgb)), rgb(var(--rose-rgb)), transparent 55%, rgb(var(--accent-rgb)));
   box-shadow: 0 0 40px -8px rgb(var(--accent-rgb) / 0.8);
+}
+/* The ring spins as its own layer, so the gradient is painted once instead of every frame. */
+.fh-avatar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(rgb(var(--accent-rgb)), rgb(var(--rose-rgb)), transparent 55%, rgb(var(--accent-rgb)));
   animation: fh-ring calc(7s * var(--fh-speed)) linear infinite;
 }
 .fh-avatar > * {
@@ -234,7 +264,6 @@
   margin-block: -0.06em -0.16em;
   overflow-wrap: anywhere;
   text-wrap: balance;
-  filter: drop-shadow(0 8px 34px rgb(var(--accent-rgb) / 0.32));
   animation: fh-shine calc(10s * var(--fh-speed)) ease-in-out infinite;
 }
 .fh-continue > * {
@@ -256,7 +285,7 @@
   animation: fh-in 1100ms var(--ease-out-soft) 260ms backwards;
 }
 .fh-fan > .home-fan {
-  transform: rotateY(calc(var(--mx) * -9deg)) rotateX(calc(var(--my) * 6deg));
+  transform: rotateY(calc(var(--fh-mx) * -9deg)) rotateX(calc(var(--fh-my) * 6deg));
   transition: transform 600ms var(--ease-out-soft);
 }
 .fh-fan-halo {
@@ -269,7 +298,6 @@
   translate: -50% -50%;
   border-radius: 50%;
   background: radial-gradient(closest-side, rgb(var(--accent-rgb) / 0.5), rgb(var(--rose-rgb) / 0.18) 55%, transparent);
-  filter: blur(28px);
   pointer-events: none;
   animation: fh-pulse calc(7s * var(--fh-speed)) ease-in-out infinite;
 }
@@ -313,13 +341,12 @@
   gap: 0.55rem;
   border: 1px solid color-mix(in srgb, var(--ca, rgb(var(--accent-rgb))) 42%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--background) 62%, transparent);
+  background: color-mix(in srgb, var(--background) 80%, transparent);
   padding: 0.55rem 0.95rem 0.55rem 0.8rem;
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 550;
   outline: none;
-  backdrop-filter: blur(12px);
   transition:
     border-color 200ms,
     box-shadow 200ms,
@@ -439,14 +466,15 @@
 .flashy-home .home-section :is(ul, ol) > li:hover {
   z-index: 2;
 }
+/* Only the card under the pointer gets a 3D transform, so the grid isn't one compositing layer per card. */
 .flashy-home .home-section .poster-card {
-  transform: perspective(900px) rotateX(calc(var(--ty, 0) * -7deg)) rotateY(calc(var(--tx, 0) * 9deg));
   transition:
     translate 320ms var(--ease-spring),
     scale 320ms var(--ease-spring),
     transform 600ms var(--ease-out-soft);
 }
 .flashy-home .home-section .poster-card[data-spot] {
+  transform: perspective(900px) rotateX(calc(var(--ty, 0) * -7deg)) rotateY(calc(var(--tx, 0) * 9deg));
   transition-duration: 320ms, 320ms, 140ms;
 }
 .flashy-home .home-section .poster-frame::before,
@@ -490,28 +518,29 @@
 }
 @keyframes fh-sparks {
   to {
-    background-position:
-      0 -600px,
-      70px -810px;
+    translate: 0 var(--fh-sparks-shift, -600px);
   }
 }
 @keyframes fh-ring {
   to {
-    --fh-angle: 360deg;
+    rotate: 360deg;
   }
 }
+/* Brief sweeps with holds between them: a held value needs no repaint. */
 @keyframes fh-shine {
   0%,
+  30%,
   100% {
     background-position: 100% 0;
   }
-  50% {
+  50%,
+  80% {
     background-position: 0% 0;
   }
 }
 @keyframes fh-in {
+  /* No opacity fade: the greeting must count as painted from the first frame. */
   from {
-    opacity: 0;
     transform: translate3d(0, 28px, 0);
     filter: blur(10px);
   }
@@ -554,8 +583,9 @@
 :root[data-motion="subtle"] .flashy-home .fh-wall {
   transform: rotateX(24deg) rotateZ(-9deg) scale(1.06);
 }
-:root[data-motion="off"] .flashy-home :is(.fh-aurora, .fh-row, .fh-sparks, .fh-avatar, .fh-title, .fh-in, .fh-fan, .fh-fan-halo),
-:root[data-motion="off"] .flashy-home .fh-fan::before {
+:root[data-motion="off"] .flashy-home :is(.fh-aurora, .fh-row, .fh-title, .fh-in, .fh-fan, .fh-fan-halo),
+:root[data-motion="off"] .flashy-home :is(.fh-fan, .fh-sparks, .fh-avatar)::before,
+:root[data-motion="off"] .flashy-home .fh-sparks::after {
   animation: none !important;
 }
 :root[data-motion="off"] .flashy-home :is(.fh-wall, .fh-fan > .home-fan) {
@@ -566,8 +596,9 @@
   transform: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .flashy-home :is(.fh-aurora, .fh-row, .fh-sparks, .fh-avatar, .fh-title, .fh-in, .fh-fan, .fh-fan-halo),
-  .flashy-home .fh-fan::before {
+  .flashy-home :is(.fh-aurora, .fh-row, .fh-title, .fh-in, .fh-fan, .fh-fan-halo),
+  .flashy-home :is(.fh-fan, .fh-sparks, .fh-avatar)::before,
+  .flashy-home .fh-sparks::after {
     animation: none !important;
   }
   .flashy-home .fh-wall {

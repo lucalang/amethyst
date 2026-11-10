@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { COVER_SHAPES } from "@/lib/cover-shape";
 import { fanKey } from "@/lib/home-fan";
 import { artworkUrl } from "@/lib/validation/entries";

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 /**
  * How the 3D artwork viewer stages a card: backdrop, lighting, reflections, glow and motion.

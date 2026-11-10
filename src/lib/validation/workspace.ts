@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 // Matches the database checks on workspace_nodes / workspace_checklist_items.
 const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;

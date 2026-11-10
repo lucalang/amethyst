@@ -10,8 +10,8 @@ import { FlashyStage } from "@/components/home/flashy-stage";
 import { CustomizeHomeButton } from "@/components/home/home-customizer";
 import { ProfileAvatar } from "@/components/layout/profile-avatar";
 import { ProfileFlair } from "@/components/layout/profile-flair";
-import { MediaImage } from "@/components/media/media-image";
 import { accentStyle } from "@/lib/collection-identity";
+import { artworkSrc, artworkVariantSrc } from "@/lib/attachments";
 import { collectionPath } from "@/lib/collections";
 import type { CoverShape } from "@/lib/cover-shape";
 import type { HomeData, WallTile as Tile } from "@/lib/data/home";
@@ -37,6 +37,25 @@ function wallArt(home: HomeData): Tile[] {
   for (const entry of [...home.pinned, ...home.recent]) add(entry.coverUrl, entry.coverShape);
   for (const collection of home.collections) for (const preview of collection.previews) add(preview.coverUrl, preview.coverShape);
   return tiles;
+}
+
+const WALL_WIDTHS = [128, 256, 384];
+
+/** Dimmed backdrop art: small variants and no client component to hydrate. */
+function WallImage({ src }: { src: string }) {
+  if (!artworkSrc(src)) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- served by the authenticated artwork proxy, not next/image
+    <img
+      src={artworkVariantSrc(src, 256)}
+      srcSet={WALL_WIDTHS.map((width) => `${artworkVariantSrc(src, width)} ${width}w`).join(", ")}
+      sizes="(max-width: 63.99rem) 72px, 144px"
+      alt=""
+      loading="lazy"
+      decoding="async"
+      className="absolute inset-0 h-full w-full object-cover"
+    />
+  );
 }
 
 /** Splits the wall into rows long enough to loop seamlessly across a wide screen. */
@@ -69,7 +88,7 @@ export function FlashyHero({ home, hub, heading, subline }: { home: HomeData; hu
                     <div key={copy} className="fh-track">
                       {row.map((tile, index) => (
                         <span key={index} className="fh-tile" data-shape={tile.shape}>
-                          <MediaImage src={tile.src} alt="" sizes="160px" />
+                          <WallImage src={tile.src} />
                         </span>
                       ))}
                     </div>
@@ -112,7 +131,7 @@ export function FlashyHero({ home, hub, heading, subline }: { home: HomeData; hu
               {home.collections.length ? null : (
                 <NewCategoryButton label="Create your first collection" className="h-10 border-amethyst/50 bg-amethyst/15 px-4 text-foreground hover:bg-amethyst/25" />
               )}
-              <CustomizeHomeButton className="bg-background/60 backdrop-blur-md" />
+              <CustomizeHomeButton className="bg-background/80" />
             </div>
             {home.continueEntry ? (
               <div className="fh-in fh-continue mt-6" style={{ "--i": 4 } as CSSProperties}>

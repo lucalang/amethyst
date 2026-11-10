@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ARTWORK_FRAME_IDS, DEFAULT_ARTWORK_FRAME, type ArtworkFrameId } from "@/lib/frames";
 import { CUTSCENE_RARITIES, type CutsceneRarity } from "@/lib/rarities";
 import { DEFAULT_SNAKE_SETUP, snakeSetupSchema, type SnakeSetup } from "@/lib/snake";

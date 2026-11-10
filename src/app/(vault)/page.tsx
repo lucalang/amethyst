@@ -283,7 +283,7 @@ function FeaturedImage({ url, caption }: { url: string; caption: string }) {
   return (
     <figure className="overflow-hidden rounded-xl border border-white/[0.08] bg-surface/40">
       <div className="relative aspect-[16/9] md:aspect-[21/8]">
-        <MediaImage src={url} alt={caption || "Featured image"} sizes="auto, 100vw" />
+        <MediaImage src={url} alt={caption || "Featured image"} sizes="auto, 100vw" priority />
       </div>
       {caption ? <figcaption className="border-t border-white/[0.06] px-4 py-3 text-sm break-words text-foreground/80">{caption}</figcaption> : null}
     </figure>

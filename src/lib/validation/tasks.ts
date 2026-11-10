@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ICON_NAME_PATTERN } from "@/lib/collection-identity";
 import { dueDateSchema, itemLabelSchema, MAX_ITEMS_PER_REQUEST, MAX_TASK_NOTES_LENGTH } from "./workspace";
 

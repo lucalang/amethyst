@@ -1,3 +1,4 @@
+import { createFrameGovernor, renderPixelRatio } from "@/lib/render-budget";
 import {
   AdditiveBlending,
   AmbientLight,
@@ -783,10 +784,11 @@ export function createSanctum(options: SanctumOptions): Sanctum {
   let s = 1;
   let sizeKey = "";
   let composerDpr = renderer.getPixelRatio();
+  const governor = createFrameGovernor(() => resize());
   function resize() {
     W = Math.max(1, viewport.clientWidth);
     H = Math.max(1, viewport.clientHeight);
-    const dpr = Math.min(window.devicePixelRatio || 1, tier.dpr);
+    const dpr = renderPixelRatio(W, H, window.devicePixelRatio || 1, tier.dpr) * governor.scale;
     const nextSize = `${W}|${H}|${dpr}`;
     if (sizeKey === nextSize) {
       layoutDirty = true;
@@ -1566,6 +1568,7 @@ export function createSanctum(options: SanctumOptions): Sanctum {
         last = 0;
         return;
       }
+      governor.tick(now);
       const idle = now - lastInput;
       let animatingPanel = false;
       for (const entry of entries.values()) {

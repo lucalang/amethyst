@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
 import { ZIP_LEVEL_VARIANTS } from "@/lib/minigames/zip";
 import { isSnakeVariant } from "@/lib/snake";

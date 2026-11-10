@@ -1347,6 +1347,14 @@
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
+/* Firefox re-blurs a sticky bar's backdrop on every scroll frame; at 85% black the blur is barely visible anyway. */
+@supports (-moz-appearance: none) {
+  .app-bar {
+    backdrop-filter: none;
+    background-color: rgb(0 0 0 / 0.9);
+  }
+}
+
 /* ---------------------------------------------------------------------------
  * Motion. Keyframe names are prefixed: tw-animate-css already owns `enter`/`exit`.
  * Entrances are CSS animations on mount only, so rerenders never replay them.

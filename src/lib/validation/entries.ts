@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { isUploadedImagePath } from "@/lib/attachments";
 import { COVER_SHAPES } from "@/lib/cover-shape";
 import { ARTWORK_FRAME_IDS } from "@/lib/frames";

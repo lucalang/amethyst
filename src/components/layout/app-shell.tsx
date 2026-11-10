@@ -27,6 +27,7 @@ export function AppShell({
   introSeenOn,
   preferences,
   cosmetics,
+  latestChangeId,
 }: {
   children: ReactNode;
   account: AccountSummary;
@@ -38,6 +39,8 @@ export function AppShell({
   cosmetics: { owned: string[]; avatarDecoration: AvatarDecorationId | null; badges: ProfileBadgeId[]; title: ProfileTitleId | null };
   /** Server-rendered collection icons keyed by collection id. */
   collectionIcons?: Record<string, ReactNode>;
+  /** Newest update-log id, passed in so the log itself stays out of client bundles. */
+  latestChangeId: string;
 }) {
   const icons = collectionIcons;
   const guest = Boolean(account.guest);
@@ -62,7 +65,7 @@ export function AppShell({
         >
           Skip to content
         </a>
-        <TopNav account={account} collections={collections} icons={icons} />
+        <TopNav account={account} collections={collections} icons={icons} latestChangeId={latestChangeId} />
         {guest ? <GuestBar /> : null}
         <main id="main" tabIndex={-1} className="flex-1 overflow-x-clip pb-24 md:pb-10">
           {children}

@@ -25,7 +25,7 @@ export default async function ReleasePage({ params }: Props) {
   return (
     <EntranceScope>
       <PageContainer className="max-w-3xl">
-        {release.id === LATEST_CHANGE_ID ? <MarkUpdatesSeen /> : null}
+        {release.id === LATEST_CHANGE_ID ? <MarkUpdatesSeen latestId={LATEST_CHANGE_ID} /> : null}
         <Link href={`/whats-new#${release.id}`} className={navLink}>
           <ArrowLeft aria-hidden className="size-4" />
           All updates

@@ -5,7 +5,7 @@ import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { MarkUpdatesSeen } from "@/components/layout/whats-new";
 import { VersionHistoryLinkButton } from "@/components/version-history/version-history-browser";
-import { CHANGELOG, formatChangeDate, releasePath } from "@/lib/changelog";
+import { CHANGELOG, LATEST_CHANGE_ID, formatChangeDate, releasePath } from "@/lib/changelog";
 import { HighlightList, KindLegend, ReleaseGlyph, ReleaseNotice, kindCounts, previewHighlights } from "./release-ui";
 
 export const metadata: Metadata = { title: "What’s new" };
@@ -14,7 +14,7 @@ export default async function WhatsNewPage() {
   return (
     <EntranceScope>
       <PageContainer className="max-w-5xl">
-        <MarkUpdatesSeen />
+        <MarkUpdatesSeen latestId={LATEST_CHANGE_ID} />
         <PageHeader
           title="What’s new"
           icon={Megaphone}

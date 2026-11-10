@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ARCADE_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, type ArcadeGameId } from "@/lib/arcade";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 import { dailyDate, dailyVariant } from "@/lib/arcade-daily";

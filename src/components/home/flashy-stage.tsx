@@ -36,13 +36,16 @@ export function FlashyStage({ className, children }: { className?: string; child
     let x = 0;
     let y = 0;
     let inside = false;
+    const layers = [...stage.querySelectorAll<HTMLElement>(".fh-wall, .fh-fan > .home-fan")];
     const apply = () => {
       frame = 0;
       const rect = inside ? stage.getBoundingClientRect() : null;
       const mx = rect?.width ? Math.max(-1, Math.min(1, ((x - rect.left) / rect.width) * 2 - 1)) : 0;
       const my = rect?.height ? Math.max(-1, Math.min(1, ((y - rect.top) / rect.height) * 2 - 1)) : 0;
-      stage.style.setProperty("--mx", mx.toFixed(3));
-      stage.style.setProperty("--my", my.toFixed(3));
+      for (const layer of layers) {
+        layer.style.setProperty("--fh-mx", mx.toFixed(3));
+        layer.style.setProperty("--fh-my", my.toFixed(3));
+      }
     };
     const onMove = (event: PointerEvent) => {
       inside = true;
@@ -60,8 +63,10 @@ export function FlashyStage({ className, children }: { className?: string; child
       cancelAnimationFrame(frame);
       stage.removeEventListener("pointermove", onMove);
       stage.removeEventListener("pointerleave", onLeave);
-      stage.style.removeProperty("--mx");
-      stage.style.removeProperty("--my");
+      for (const layer of layers) {
+        layer.style.removeProperty("--fh-mx");
+        layer.style.removeProperty("--fh-my");
+      }
     };
   }, [motion]);
 

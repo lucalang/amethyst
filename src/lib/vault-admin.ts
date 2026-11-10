@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 /**
  * Shared by the admin code builder (client) and the admin API (server). Vault codes themselves never

@@ -25,6 +25,7 @@ import {
 } from "three";
 import { follow, radialTexture, spring, studioEnvironment, themeColors } from "@/components/showcase/three-kit";
 import type { MotionLevel } from "@/lib/preferences";
+import { createFrameGovernor } from "@/lib/render-budget";
 
 type Finish = { body: number; trim: number; roughness: number; clearcoat: number; facets: number; beam: number };
 /** Per showcase style; unknown styles use the gallery finish. */
@@ -224,6 +225,10 @@ export function createPedestal(
 
   let width = 0;
   let height = 0;
+  const governor = createFrameGovernor(() => {
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2) * governor.scale);
+    if (width && height) renderer.setSize(width, height, false);
+  });
   function resize() {
     const nextWidth = host.clientWidth;
     const nextHeight = host.clientHeight;
@@ -252,6 +257,7 @@ export function createPedestal(
     }
     const dt = last ? Math.min((now - last) / 1000, 0.05) : 1 / 60;
     last = now;
+    governor.tick(now);
     draw(dt);
     // With motion off, frames stop as soon as the springs settle.
     if (visible && !document.hidden && (motion !== "off" || !settled())) frame = requestAnimationFrame(tick);

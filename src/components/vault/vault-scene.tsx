@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, type Ref, type RefObject } from "react";
+import { createFrameGovernor, renderPixelRatio } from "@/lib/render-budget";
 import {
   AdditiveBlending,
   BackSide,
@@ -522,7 +523,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   const compact = !fine || window.innerWidth < 720;
   const cores = navigator.hardwareConcurrency || 8;
   const tier = cores <= 4 ? 1 : 0;
-  const dpr = Math.min(window.devicePixelRatio || 1, [1.75, 1.5][tier]);
+  let dpr = renderPixelRatio(host.clientWidth, host.clientHeight, window.devicePixelRatio || 1, [1.75, 1.5][tier]);
 
   // Opaque: the chamber, its haze and the bloom are all drawn here, then finished like a lens.
   const renderer = new WebGLRenderer({ antialias: false, stencil: false, powerPreference: "high-performance" });
@@ -1004,6 +1005,10 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   /* ------------------------------------------------------------------ layout */
   let W = 0;
   let H = 0;
+  let composerDpr = dpr;
+  const governor = createFrameGovernor(() => {
+    if (W > 0 && H > 0) resize();
+  });
   let f = 1;
   let k = 0.01;
   let hostHeight = 0;
@@ -1066,8 +1071,13 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   }
 
   function resize() {
+    dpr = renderPixelRatio(W, H, window.devicePixelRatio || 1, [1.75, 1.5][tier]) * governor.scale;
     if (renderer.getPixelRatio() !== dpr) renderer.setPixelRatio(dpr);
     renderer.setSize(W, H, false);
+    if (composerDpr !== dpr) {
+      composer.setPixelRatio(dpr);
+      composerDpr = dpr;
+    }
     composer.setSize(W, H);
     fx.uResolution.value.set(W * dpr, H * dpr);
     camera.aspect = W / H;
@@ -1164,6 +1174,8 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   let keyAt = -1e7;
   let typedAt = -1e7;
   let pressing = false;
+  // A finger held on the glass (not on a control) tilts the console like a hovering mouse.
+  let dragging = false;
   let releasedAt = -1e7;
   const pointer = { x: 0, y: 0, seen: false };
 
@@ -1279,8 +1291,8 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     trimMat.color.copy(hue.trim);
     vaporMat.uniforms.uColor.value.copy(hue.rim);
     // Pointer: as on an Admin panel, the console tilts toward the pointer over it, lifts and catches its glare;
-    // the camera drifts with the pointer and the vault watches it. Mouse only.
-    const stable = phase === "verifying" || now - typedAt < 1200 || pressing || now - releasedAt < 300;
+    // the camera drifts with the pointer and the vault watches it. A finger counts as a pointer too.
+    const stable = phase === "verifying" || now - typedAt < 1200 || (pressing && !dragging) || (!dragging && now - releasedAt < 300);
     const scale = motion === "subtle" ? 0.5 : 1;
     let over = false;
     let pu = 0.5;
@@ -1289,7 +1301,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     let py = 0;
     let lx = 0;
     let ly = 0;
-    if (fine && pointer.seen && !still) {
+    if (pointer.seen && !still) {
       const inside = pointer.x >= hostLeft && pointer.x <= hostLeft + W && pointer.y >= hostTop && pointer.y <= hostTop + H;
       if (inside) {
         px = soft((pointer.x - (hostLeft + W / 2)) / (W / 2)) * scale;
@@ -1718,6 +1730,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       last = 0;
       return;
     }
+    governor.tick(now);
     frame(now);
     if (running()) raf = requestAnimationFrame(loop);
   };
@@ -1733,10 +1746,18 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   };
 
   const onPointerMove = (event: PointerEvent) => {
-    if (event.pointerType !== "mouse") return;
+    if (event.pointerType !== "mouse" && !event.buttons) return;
     pointer.x = event.clientX;
     pointer.y = event.clientY;
     pointer.seen = true;
+  };
+  const onTouchDown = (event: PointerEvent) => {
+    if (event.pointerType === "mouse") return;
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.seen = true;
+    dragging = !(event.target instanceof Element && event.target.closest("button, a, input, textarea, select, label, [role=button], [contenteditable]"));
+    wake();
   };
   const onLeave = () => {
     pointer.seen = false;
@@ -1754,6 +1775,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
     wake();
   };
   const onUp = () => {
+    dragging = false;
     if (!pressing) return;
     pressing = false;
     releasedAt = performance.now();
@@ -1765,6 +1787,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
   };
   const panelEl = refs.panel.current;
   window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerdown", onTouchDown, { passive: true, capture: true });
   document.documentElement.addEventListener("mouseleave", onLeave);
   panelEl?.addEventListener("keydown", onKey);
   panelEl?.addEventListener("pointerdown", onDown);
@@ -1895,6 +1918,7 @@ function createVaultEngine(host: HTMLDivElement, refs: SceneRefs, init: Init, cb
       window.visualViewport?.removeEventListener("scroll", invalidateLayout);
       document.fonts.removeEventListener("loadingdone", invalidateLayout);
       window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onTouchDown, { capture: true });
       document.documentElement.removeEventListener("mouseleave", onLeave);
       panelEl?.removeEventListener("keydown", onKey);
       panelEl?.removeEventListener("pointerdown", onDown);

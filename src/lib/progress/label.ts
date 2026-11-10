@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 
 /** Wording used for aggregate progress when an entry has no custom name. */
 export const DEFAULT_PROGRESS_LABEL = "tasks";

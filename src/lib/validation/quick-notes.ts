@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { MAX_NOTE_LENGTH, nodeNameSchema } from "@/lib/validation/workspace";
 
 // Matches the checks on public.quick_notes.

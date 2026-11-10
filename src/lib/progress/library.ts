@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { parseCategoryIds } from "@/lib/categories";
 import type { CoverShape } from "@/lib/cover-shape";
 import { progressLabel } from "@/lib/progress/label";

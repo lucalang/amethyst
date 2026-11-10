@@ -1,43 +1,60 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, LibraryBig, RotateCcw, Search } from "lucide-react";
-import { DynamicIcon, iconNames, type IconName } from "lucide-react/dynamic";
+import type { IconName } from "lucide-react/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ACCENT_SWATCHES, accentStyle, readableAccent } from "@/lib/collection-identity";
 import { cn } from "@/lib/utils";
 
-const KNOWN = new Set<string>(iconNames);
-const SUGGESTED = [
+const SUGGESTED_NAMES = [
   "library-big", "book-open", "gamepad-2", "film", "tv", "music", "headphones", "camera", "palette", "pen-tool", "code", "rocket",
   "star", "heart", "sparkles", "gem", "crown", "trophy", "map", "compass", "plane", "utensils", "coffee", "dumbbell",
   "leaf", "flower-2", "sword", "shield", "ghost", "skull", "cat", "dog", "graduation-cap", "briefcase", "house", "globe",
-].filter((name) => KNOWN.has(name)) as IconName[];
+];
 const RESULT_LIMIT = 84;
+
+// The full icon set (its loader map alone is ~190 KB) is fetched only once an icon actually renders.
+type IconSet = { DynamicIcon: typeof import("lucide-react/dynamic").DynamicIcon; iconNames: IconName[]; known: Set<string> };
+let iconSet: IconSet | null = null;
+let iconSetPromise: Promise<IconSet> | null = null;
+const loadIconSet = () =>
+  (iconSetPromise ??= import("lucide-react/dynamic").then(({ DynamicIcon, iconNames }) => (iconSet = { DynamicIcon, iconNames, known: new Set<string>(iconNames) })));
+
+function useIconSet() {
+  const [icons, setIcons] = useState(iconSet);
+  useEffect(() => {
+    if (!icons) void loadIconSet().then(setIcons);
+  }, [icons]);
+  return icons;
+}
 
 /** A collection icon in client components (loads the icon on demand; library icon while loading or unknown). */
 export function ClientCollectionIcon({ icon, className }: { icon: string | null | undefined; className?: string }) {
-  if (!icon || !KNOWN.has(icon)) return <LibraryBig aria-hidden className={className} />;
-  return <DynamicIcon name={icon as IconName} aria-hidden className={className} fallback={() => <LibraryBig aria-hidden className={className} />} />;
+  const icons = useIconSet();
+  if (!icon || !icons?.known.has(icon)) return <LibraryBig aria-hidden className={className} />;
+  return <icons.DynamicIcon name={icon as IconName} aria-hidden className={className} fallback={() => <LibraryBig aria-hidden className={className} />} />;
 }
 
 /** Searchable picker over the full lucide icon set. `null` means the default icon. */
 export function IconPicker({ id, value, onChange, accent, disabled }: { id: string; value: string | null; onChange: (value: string | null) => void; accent: string | null; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const icons = useIconSet();
   const normalized = query.trim().toLowerCase().replace(/\s+/g, "-");
   const matches = useMemo(() => {
-    if (!normalized) return SUGGESTED;
+    if (!icons) return [];
+    if (!normalized) return SUGGESTED_NAMES.filter((name) => icons.known.has(name)) as IconName[];
     const starts: IconName[] = [];
     const contains: IconName[] = [];
-    for (const name of iconNames) {
+    for (const name of icons.iconNames) {
       if (name.startsWith(normalized)) starts.push(name);
       else if (name.includes(normalized)) contains.push(name);
     }
     return [...starts, ...contains];
-  }, [normalized]);
+  }, [icons, normalized]);
   const shown = matches.slice(0, RESULT_LIMIT);
   const style = accentStyle(accent);
 
@@ -67,14 +84,14 @@ export function IconPicker({ id, value, onChange, accent, disabled }: { id: stri
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Search ${iconNames.length.toLocaleString("en")} icons`}
+              placeholder={icons ? `Search ${icons.iconNames.length.toLocaleString("en")} icons` : "Search icons"}
               aria-label="Search icons"
               className="h-9 pl-9"
               autoFocus
             />
           </div>
           <p aria-live="polite" className="mt-2 text-[11px] text-muted-foreground">
-            {normalized ? (matches.length ? `${matches.length.toLocaleString("en")} ${matches.length === 1 ? "match" : "matches"}${matches.length > RESULT_LIMIT ? `, showing the first ${RESULT_LIMIT}` : ""}` : "No icons match.") : "Suggestions. Search for anything else."}
+            {!icons ? "Loading icons…" : normalized ? (matches.length ? `${matches.length.toLocaleString("en")} ${matches.length === 1 ? "match" : "matches"}${matches.length > RESULT_LIMIT ? `, showing the first ${RESULT_LIMIT}` : ""}` : "No icons match.") : "Suggestions. Search for anything else."}
           </p>
           <div role="group" aria-label="Icons" className="mt-2 grid max-h-64 grid-cols-7 gap-1 overflow-y-auto pr-1">
             {shown.map((name) => {
@@ -96,7 +113,7 @@ export function IconPicker({ id, value, onChange, accent, disabled }: { id: stri
                     selected ? "border-amethyst/60 bg-amethyst/15 text-amethyst" : "border-transparent",
                   )}
                 >
-                  <DynamicIcon name={name} aria-hidden className="size-4" fallback={() => <span className="size-4 rounded-sm bg-white/[0.06]" />} />
+                  {icons ? <icons.DynamicIcon name={name} aria-hidden className="size-4" fallback={() => <span className="size-4 rounded-sm bg-white/[0.06]" />} /> : null}
                 </button>
               );
             })}

@@ -8,17 +8,16 @@ import { PREVIEW_INTRO_EVENT } from "@/components/layout/opening-intro";
 import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { LATEST_CHANGE_ID } from "@/lib/changelog";
 import { cn } from "@/lib/utils";
 
 const SEEN_KEY = "archive:whats-new-seen";
 const SEEN_EVENT = "archive:whats-new-seen";
 
-function readSeen(): string | null {
+function readSeen(latestId: string): string | null {
   try {
     return localStorage.getItem(SEEN_KEY);
   } catch {
-    return LATEST_CHANGE_ID;
+    return latestId;
   }
 }
 
@@ -32,17 +31,17 @@ function subscribe(onChange: () => void) {
 }
 
 /** True when this device hasn't opened the latest update yet. False during server rendering. */
-function useUnread() {
+function useUnread(latestId: string) {
   return useSyncExternalStore(
     subscribe,
-    () => readSeen() !== LATEST_CHANGE_ID,
+    () => readSeen(latestId) !== latestId,
     () => false,
   );
 }
 
-/** Top-bar entry point to the update log, with a dot while there is something unread. */
-export function WhatsNewButton({ className }: { className?: string }) {
-  const unread = useUnread();
+/** Top-bar entry point to the update log, with a dot while there is something unread. `latestId` comes from the server so the log itself never ships to the browser. */
+export function WhatsNewButton({ latestId, className }: { latestId: string; className?: string }) {
+  const unread = useUnread(latestId);
   const active = usePathname().startsWith("/whats-new");
   const label = unread ? "What’s new (new update)" : "What’s new";
   return (
@@ -61,15 +60,15 @@ export function WhatsNewButton({ className }: { className?: string }) {
 }
 
 /** Marks the latest update as seen on this device once the log has been opened. */
-export function MarkUpdatesSeen() {
+export function MarkUpdatesSeen({ latestId }: { latestId: string }) {
   useEffect(() => {
     try {
-      localStorage.setItem(SEEN_KEY, LATEST_CHANGE_ID);
+      localStorage.setItem(SEEN_KEY, latestId);
     } catch {
       return;
     }
     window.dispatchEvent(new Event(SEEN_EVENT));
-  }, []);
+  }, [latestId]);
   return null;
 }
 

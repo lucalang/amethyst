@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ARCADE_GAMES, type ArcadeGameId } from "@/lib/arcade";
 
 /** A game's daily play streak (UTC days). Recovery prices come from the server. */

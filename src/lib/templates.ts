@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { MAX_NOTE_LENGTH, NODE_KINDS, itemLabelSchema, nodeNameSchema } from "@/lib/validation/workspace";
 import type { NodeKind, WorkspaceNode } from "@/lib/workspace/tree";
 

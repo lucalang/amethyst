@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { isRecentDailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
 
 /** Snake setup registries. Ids are stored in settings and record keys: never rename them. */

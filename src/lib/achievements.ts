@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { ARCADE_GAMES, type ArcadeGameId } from "@/lib/arcade";
 import { isCosmeticId, isProfileBadgeId, isProfileTitleId, rewardItemInfo, type EquipItemId } from "@/lib/cosmetics";
 

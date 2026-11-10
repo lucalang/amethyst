@@ -1,6 +1,6 @@
 import "server-only";
 import sharp from "sharp";
-import { headObject, writeDerivedObject } from "@/lib/r2";
+import { headObject, listKeys, writeDerivedObject } from "@/lib/r2";
 import { sniffImageType } from "./remote";
 
 type ImageSource = { body: Buffer; contentType: string };
@@ -9,13 +9,28 @@ const waiting: (() => void)[] = [];
 let active = 0;
 // Derived keys already confirmed in R2 (objects are write-once), so repeat requests skip the HEAD round trip.
 const known = new Set<string>();
+// One prefix listing per user after a restart replaces a HEAD per artwork (~160 ms each).
+const primed = new Map<string, Promise<void>>();
 // Recently loaded originals, so sibling widths of the same artwork don't download it again.
 const sources = new Map<string, { value: Promise<ImageSource>; expires: number }>();
 const SOURCE_TTL = 60_000;
 
 function remember(key: string) {
   known.add(key);
-  if (known.size > 4000) known.delete(known.values().next().value!);
+  if (known.size > 20_000) known.delete(known.values().next().value!);
+}
+
+function prime(prefix: string): Promise<void> {
+  let task = primed.get(prefix);
+  if (!task) {
+    task = listKeys(prefix, 5).then(
+      ({ keys }) => keys.forEach((key) => remember(key)),
+      () => { primed.delete(prefix); },
+    );
+    primed.set(prefix, task);
+    if (primed.size > 500) primed.delete(primed.keys().next().value!);
+  }
+  return task;
 }
 
 function sharedSource(id: string, load: () => Promise<ImageSource>): Promise<ImageSource> {
@@ -54,6 +69,8 @@ export async function resizeArtwork(source: ImageSource, width: number): Promise
 
 /** `sourceId` identifies the original (user + src + revision) so its download is shared across widths. */
 export async function cachedArtwork(key: string, width: number, sourceId: string, load: () => Promise<ImageSource>): Promise<string | null> {
+  if (known.has(key)) return key;
+  await prime(key.replace(/[^/]+\/[^/]+$/, ""));
   if (known.has(key)) return key;
   const existing = pending.get(key);
   if (existing) return existing;
