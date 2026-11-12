@@ -51,6 +51,33 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-12-mobile-fixes",
+    date: "2026-11-12",
+    title: "Admin Dashboard and Settings on phones",
+    intro: "The Admin Dashboard works on phones, and Settings and Customization fit the screen again.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "fixed", feature: "Admin Dashboard on phones", text: "Queuing overrides and changing admin access work on phones, and the page fits the screen without overlapping numbers." },
+      { kind: "fixed", feature: "Settings on phones", text: "Settings and Customization stack below each other on small screens instead of running off the edge." },
+    ],
+    details: {
+      fixed: [
+        {
+          title: "Admin Dashboard on phones",
+          body: "Actions failed in some mobile browsers before anything was sent. They now work everywhere, still with one request id per action so retries never apply twice. The page also no longer grows wider than the screen: the summary cards drop their icons on phones so the numbers have room, and the slot preview and buttons are sized for small screens.",
+          where: "Account menu → Tools → Administration → Dashboard",
+          link: { href: "/admin-dashboard", label: "Open the Admin Dashboard" },
+        },
+        {
+          title: "Settings on phones",
+          body: "The section strip at the top of Settings and Customization stretched the whole page to its own width, so options were cut off at the right. The strip now scrolls on its own and every setting stacks to the width of the screen.",
+          where: "Settings and Customization",
+          link: { href: "/settings", label: "Open Settings" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-12-admin-dashboard",
     date: "2026-11-12",
     title: "Admin Dashboard",

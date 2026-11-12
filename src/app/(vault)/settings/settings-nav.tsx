@@ -96,7 +96,7 @@ export function SettingsNav({ area = "settings" }: { area?: "settings" | "custom
   return (
     <nav
       aria-label={`${title} sections`}
-      className="enter sticky top-14 z-20 -mx-4 border-b border-white/[0.07] bg-background/95 px-4 py-2 backdrop-blur-md md:top-24 md:mx-0 md:self-start md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
+      className="enter sticky top-14 z-20 -mx-4 min-w-0 border-b border-white/[0.07] bg-background/95 px-4 py-2 backdrop-blur-md md:top-24 md:mx-0 md:self-start md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none"
     >
       <p className="mb-3 hidden px-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground/70 uppercase md:block">{title}</p>
       <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-1 md:overflow-visible md:px-0">

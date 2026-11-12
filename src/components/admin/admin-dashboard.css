@@ -10,6 +10,7 @@
   --ad-accent: var(--amethyst, #a57cff);
   --ad-queued: #fbbf24;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
 }
 .ad-label {
@@ -172,6 +173,8 @@
   background: color-mix(in oklab, var(--ad-accent) 13%, transparent);
 }
 .ad-stat-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: clamp(1.45rem, 1.1rem + 1vw, 1.9rem);
   font-weight: 750;
   font-variant-numeric: tabular-nums;
@@ -188,13 +191,54 @@
   background: color-mix(in oklab, var(--ad-queued) 13%, transparent);
 }
 .ad-stat-note {
+  min-width: 0;
   font-size: 0.75rem;
   color: var(--muted-foreground);
+}
+/* Phones: no icon column, so labels and numbers get the whole card and never overlap. */
+@media (max-width: 39.99rem) {
+  .ad-stats {
+    gap: 0.5rem;
+  }
+  .ad-stat {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.75rem 0.8rem;
+  }
+  .ad-stat-icon {
+    display: none;
+  }
+  .ad-stat-value {
+    font-size: 1.35rem;
+  }
+  .ad-hero {
+    padding: 1.1rem;
+  }
+  .ad-hero-title h1 {
+    font-size: 1.35rem;
+  }
+  .ad-hero-actions,
+  .ad-hero-actions > * {
+    flex: 1 1 auto;
+  }
+  .ad-panel {
+    padding: 0.95rem;
+  }
+  .ad-payline-cell {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+  .ad-payout-mult {
+    font-size: 1.3rem;
+  }
+  .ad-row-actions {
+    margin-left: 0;
+  }
 }
 
 /* Layout and panels */
 .ad-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
   align-items: start;
 }
@@ -208,6 +252,7 @@
 }
 .ad-panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   gap: 1rem;
   padding: 1.15rem;

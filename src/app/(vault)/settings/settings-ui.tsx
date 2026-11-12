@@ -54,7 +54,7 @@ export function SettingRow({
   children: ReactNode;
 }) {
   return (
-    <div id={labelId ? `${labelId}-setting` : undefined} className="grid scroll-mt-40 gap-4 border-t border-border pt-7 first:border-t-0 first:pt-0 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-8">
+    <div id={labelId ? `${labelId}-setting` : undefined} className="grid scroll-mt-40 grid-cols-1 gap-4 border-t border-border pt-7 first:border-t-0 first:pt-0 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:gap-8">
       <div className="min-w-0">
         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">
           <p id={labelId} className="text-sm font-medium text-foreground">{label}</p>

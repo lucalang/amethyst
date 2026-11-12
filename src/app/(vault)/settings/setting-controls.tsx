@@ -125,7 +125,7 @@ export function ChoiceCards<T extends string>({
   className?: string;
 }) {
   return (
-    <fieldset aria-labelledby={labelId} className={cn("grid gap-3 sm:grid-cols-3", className)}>
+    <fieldset aria-labelledby={labelId} className={cn("grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3", className)}>
       {options.map((option) => {
         const checked = value === option.value;
         return (

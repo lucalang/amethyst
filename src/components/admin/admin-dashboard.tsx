@@ -13,6 +13,7 @@ import { dashboardSchema, type AdminDashboardState, type AdminRole, type Dashboa
 import { describeItem, inventoryItemLabel } from "@/lib/inventory";
 import { lootCaseInfo } from "@/lib/lootboxes";
 import { RARITIES, isRarity } from "@/lib/rarities";
+import { createRequestId } from "@/lib/request-id";
 import { winningRule } from "@/lib/slots";
 import type { AdminAccount } from "@/lib/vault-admin";
 import { countdown, plural, useNow } from "./admin-ui";
@@ -189,7 +190,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
     }
   }
 
-  const ask: Ask = (next) => setConfirm({ ...next, key: crypto.randomUUID() });
+  const ask: Ask = (next) => setConfirm({ ...next, key: createRequestId() });
 
   const stats = [
     { key: "admins", label: "Admins", value: state.admins.length, note: plural(owners, "owner"), icon: <Users aria-hidden className="size-4" />, tone: undefined },
@@ -365,7 +366,7 @@ function LootOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
 
   function queue() {
     if (!box || !item) return;
-    const id = crypto.randomUUID();
+    const id = createRequestId();
     const caseName = lootCaseInfo(box.id).name;
     ask({
       title: "Queue this Lootbox override?",
@@ -517,7 +518,7 @@ function SlotOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
     if (!machine) return;
     const stops = picks.map((symbol, i) => machine.reels[i].indexOf(symbol));
     if (stops.some((stop) => stop < 0)) return;
-    const id = crypto.randomUUID();
+    const id = createRequestId();
     const names = picks.map(symbolName).join(" · ");
     const chosen = [...picks];
     ask({
