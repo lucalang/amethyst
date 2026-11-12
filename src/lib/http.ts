@@ -86,6 +86,13 @@ const HINTED: Record<string, number> = {
   wager_locked: 409,
   wager_round_closed: 409,
   wager_attempt_used: 409,
+  own_role: 409,
+  account_not_found: 404,
+  last_owner: 409,
+  override_queued: 409,
+  override_invalid: 422,
+  override_not_found: 404,
+  override_used: 409,
 };
 
 /** Map a PostgREST/Postgres error to a safe client response without leaking internals. */

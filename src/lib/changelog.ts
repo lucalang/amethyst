@@ -51,6 +51,28 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-12-admin-dashboard",
+    date: "2026-11-12",
+    title: "Admin Dashboard",
+    intro: "Admins get one place to manage admin access, test their own next Lootbox or Coin Slots result, and review an audit log of every change.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Admin access", text: "Owners grant, change and revoke admin access in the app, with a confirmation for every change and at least one owner always kept." },
+      { kind: "new", feature: "Personal test outcomes", text: "Admins can queue one result for their own next case opening or slot spin. Nobody else’s odds change." },
+      { kind: "new", feature: "Audit log", text: "Every access change and test outcome is recorded and can’t be edited or deleted." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Admin Dashboard",
+          body: "Only admins can open the dashboard. Owners manage who has admin access; nobody can change their own role, and the last owner can’t be removed. Any admin can queue one outcome for their own next standard case opening (an item from that case’s pool) or Coin Slots spin (a reel outcome, paid by the normal paytable). It applies once, only to that admin, and expires after 24 hours if unused, and it can be cancelled before then. Case prices, drop rates, bets, the paytable and everyone else’s results are unchanged. The existing Code Admin panel is one click away.",
+          where: "Account menu → Tools → Administration → Dashboard",
+          link: { href: "/admin-dashboard", label: "Open the Admin Dashboard" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-12-coin-slots-rework",
     date: "2026-11-12",
     title: "Coin Slots, reworked",

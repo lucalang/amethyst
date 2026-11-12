@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Info, KeyRound, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Info, KeyRound, LayoutDashboard, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -88,7 +88,7 @@ const TOOL_GROUPS: readonly ToolGroup[] = [
     ],
   },
   { id: "utilities", label: "Utilities", links: [{ href: "/lab", label: "The Lab", icon: FlaskConical }, { href: "/vault", label: "The Vault", icon: KeyRound }] },
-  { id: "administration", label: "Administration", adminOnly: true, links: [{ href: "/admin", label: "Admin", icon: ShieldCheck }] },
+  { id: "administration", label: "Administration", adminOnly: true, links: [{ href: "/admin-dashboard", label: "Dashboard", icon: LayoutDashboard }, { href: "/admin", label: "Code Admin", icon: ShieldCheck }] },
 ];
 
 /** One-click switcher between the main areas; the current one shows its name. */

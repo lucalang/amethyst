@@ -733,6 +733,21 @@ isOneToOne: false
 "admin_vault_accounts":
 { Args: { "p_query"?: string | null,"p_ids"?: string[] | null }; Returns: Json
                            },
+"admin_dashboard_state":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"admin_set_role":
+{ Args: { "p_user": string,"p_role": string | null }; Returns: Json
+                           },
+"admin_queue_loot_override":
+{ Args: { "p_id": string,"p_case": string,"p_item": string }; Returns: Json
+                           },
+"admin_queue_slot_override":
+{ Args: { "p_id": string,"p_stops": number[] }; Returns: Json
+                           },
+"admin_cancel_override":
+{ Args: { "p_kind": string,"p_id": string }; Returns: Json
+                           },
 "admin_vault_publish":
 { Args: { "p_code_hash": string,"p_loose_hash": string,"p_format": "compact" | "phrase","p_label": string,"p_coins": number,"p_items": string[],"p_achievements": string[],"p_starts_at": string | null,"p_expires_at": string | null,"p_max_redemptions": number | null,"p_per_account_limit": number,"p_audience": "everyone" | "allowlist","p_allowlist": string[],"p_confirm_repeat": boolean,"p_draft"?: string | null,"p_loot"?: Json }; Returns: string
                            },
