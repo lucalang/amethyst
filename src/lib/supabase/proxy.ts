@@ -5,7 +5,7 @@ import { isBrowserDemoPath } from "@/lib/browser-version-demos";
 import { GUEST_HOME, GUEST_INFO, guestMayCall, guestMayOpen } from "@/lib/guest";
 import type { Database } from "./database.types";
 
-const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/signout", "/auth/session-expired", "/tour"];
+const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/auth/confirm", "/auth/reset-password", "/auth/signout", "/auth/session-expired", "/tour"];
 // Signed-in visitors skip these and go straight to their library.
 const GUEST_ONLY_PATHS = new Set(["/login", "/register", "/forgot-password"]);
 

@@ -65,10 +65,10 @@ export async function continueAsGuest(): Promise<AuthState> {
     const { error } = await supabase.auth.signInAnonymously();
     if (error) {
       if (error.status === 429) return { status: "error", message: "Too many guest sessions were started from this network. Try again later or sign in." };
-      return { status: "error", message: "Guest play isn’t available right now. Sign in or create an account instead." };
+      return { status: "error", message: "Guest play isn't available right now. Sign in or create an account instead." };
     }
     const { error: profileError } = await supabase.rpc("ensure_profile");
-    if (profileError) return { status: "error", message: "The guest session couldn’t be set up. Try again." };
+    if (profileError) return { status: "error", message: "The guest session couldn't be set up. Try again." };
   }
   (await cookies()).set(STARTUP_COOKIE, "1", startupCookieOptions(serverEnv().APP_URL.startsWith("https:")));
   redirect(GUEST_HOME);
@@ -121,9 +121,32 @@ export async function requestPasswordReset(_prev: AuthState, formData: FormData)
   const parsed = emailSchema.safeParse(String(formData.get("email") ?? "").trim());
   if (!parsed.success) return { status: "error", message: "Enter a valid email address." };
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: confirmUrl("/settings/password") });
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: confirmUrl("/auth/reset-password") });
   if (error?.status === 429) return { status: "error", message: "Please wait a moment before requesting another email.", email: parsed.data };
   return { status: "success", message: "If an account exists for that address, a password reset link is on its way.", email: parsed.data };
+}
+
+export async function completePasswordReset(_prev: AuthState, formData: FormData): Promise<AuthState> {
+  const parsed = z
+    .object({ password: newPasswordSchema, confirm: z.string() })
+    .refine((value) => value.password === value.confirm, { message: "Passwords do not match.", path: ["confirm"] })
+    .safeParse({ password: formData.get("password"), confirm: formData.get("confirm") });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) fieldErrors[String(issue.path[0])] ??= issue.message;
+    return { status: "error", message: parsed.error.issues[0]?.message ?? "Check the highlighted fields.", fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) {
+    if (error.code === "same_password") return { status: "error", message: "That's your current password. Choose a different one." };
+    if (error.message.includes("different")) return { status: "error", message: error.message };
+    return { status: "error", message: "Could not update your password. Try again." };
+  }
+
+  (await cookies()).set(STARTUP_COOKIE, "1", startupCookieOptions(serverEnv().APP_URL.startsWith("https:")));
+  redirect(STARTUP_PATH);
 }
 
 export async function sendMagicLink(_prev: AuthState, formData: FormData): Promise<AuthState> {
