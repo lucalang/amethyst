@@ -51,6 +51,52 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-12-coin-slots-rework",
+    date: "2026-11-12",
+    title: "Coin Slots, reworked",
+    intro: "Bet from 10 to 10,000 coins with no daily caps, on a brighter machine with sound effects, celebrations that grow with every rarer win, and far less text.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Bigger bets", text: "Bets run from 10 to 10,000 coins. The only limit is your balance." },
+      { kind: "improved", feature: "No daily caps", text: "The 24-hour wager cap is gone, and slot wins no longer count toward the daily earning limit." },
+      { kind: "new", feature: "New machine", text: "A neon cabinet, a marquee that counts up your win, glowing winning reels, and a flash and shake on big wins." },
+      { kind: "improved", feature: "Less text", text: "A big Spin button with a +/− bet stepper and Min/Max, a compact paytable, and the exact odds tucked away." },
+      { kind: "new", feature: "Sound and celebrations", text: "Every spin clicks, lands and pays out with sound, and the rarer the win, the bigger the fanfare, flash and coin shower." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Bets and limits",
+          body: "Choose a bet of 10, 50, 100, 250, 500, 1,000, 2,500, 5,000 or 10,000 coins. The 24-hour wager cap is gone, and slot wins no longer count toward the 600-coin daily earning limit, which now covers game rewards only. The odds, the paytable and the limit of 30 spins a minute are unchanged.",
+          where: "Arcade → Coin Slots",
+          link: { href: "/arcade/slots", label: "Open Coin Slots" },
+        },
+        {
+          title: "Sharper reels",
+          body: "Symbols stay crisp while the reels spin. The blur over moving reels is gone.",
+          where: "Arcade → Coin Slots",
+        },
+      ],
+      new: [
+        {
+          title: "A new machine",
+          body: "The cabinet has a neon glow, a gold rim and two rows of lights that speed up while the reels spin and flash on a win. The marquee names the win and counts up the payout, and the winning reels glow. Big wins and jackpots add a screen flash, a short shake and a much bigger burst of coins. The paytable shows what each line pays at your current bet; the exact odds are under Odds and rules.",
+        },
+        {
+          title: "Sound and bigger celebrations",
+          body: "Coin Slots has a full set of sound effects: the lever, symbols clicking past, each reel thudding into place, coins counting up and a fanfare on every win. Wins come in five tiers (Win, Nice win, Big win, Mega win and Jackpot), and each rarer tier gets a longer fanfare, more coins and gems, faster lights and a bigger title. Big wins and up flash and shake the cabinet; Mega wins and jackpots add sparks, a second wave of coins and spinning light rays. When the first two reels match a paying symbol, the last reel holds on a little longer under a riser. That only depends on the two reels already showing, so the odds are unchanged.",
+          points: [
+            "Big wins, Mega wins and jackpots take over the machine with a giant title, the payout counting up and confetti. Tap to skip.",
+            "Each reel that matches the ones before it lights up and chimes as it lands, and a light sweeps along the winning line.",
+            "Two matching reels and a miss shows So close.",
+            "Sound follows the machine’s sound button and SFX Volume.", "With animations off, the reels land instantly and the flashes, shakes and rays are skipped; sound still plays."],
+          where: "Arcade → Coin Slots",
+          link: { href: "/arcade/slots", label: "Open Coin Slots" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-12-quality-of-life",
     date: "2026-11-12",
     title: "Quality-of-life update",

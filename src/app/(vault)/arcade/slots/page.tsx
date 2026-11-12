@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Coin Slots · Arcade" };
 export default async function SlotsPage() {
   const ctx = await requireUser();
   const [machineRes, statusRes, spinsRes] = await Promise.all([
-    ctx.supabase.from("slot_machines").select("id, reels, paytable, bets, daily_wager_limit, max_spins_per_minute").eq("id", "amethyst").maybeSingle(),
+    ctx.supabase.from("slot_machines").select("id, reels, paytable, bets, max_spins_per_minute").eq("id", "amethyst").maybeSingle(),
     ctx.supabase.rpc("slot_status"),
     ctx.supabase.from("slot_spins").select("id, bet, symbols, payout, created_at").eq("user_id", ctx.userId).order("created_at", { ascending: false }).limit(10),
   ]);

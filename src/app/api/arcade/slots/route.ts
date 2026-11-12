@@ -6,7 +6,8 @@ const spinSchema = z
   .object({
     /** Made by the client for each press of Spin; a retry reuses it and gets the same result back. */
     spinId: z.uuid(),
-    bet: z.number().int().positive().max(1000),
+    // The database only accepts the machine's listed bets; this just rejects absurd input early.
+    bet: z.number().int().positive().max(1_000_000),
   })
   .strict();
 

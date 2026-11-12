@@ -229,9 +229,9 @@ export type Database = {
               Relationships: [{ foreignKeyName: "secret_code_redemptions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
             "slot_machines": {
-              Row: { id: string; reels: Json; paytable: Json; bets: number[]; daily_wager_limit: number; max_spins_per_minute: number; updated_at: string }
-              Insert: { id: string; reels: Json; paytable: Json; bets: number[]; daily_wager_limit: number; max_spins_per_minute?: number; updated_at?: string }
-              Update: { id?: string; reels?: Json; paytable?: Json; bets?: number[]; daily_wager_limit?: number; max_spins_per_minute?: number; updated_at?: string }
+              Row: { id: string; reels: Json; paytable: Json; bets: number[]; max_spins_per_minute: number; updated_at: string }
+              Insert: { id: string; reels: Json; paytable: Json; bets: number[]; max_spins_per_minute?: number; updated_at?: string }
+              Update: { id?: string; reels?: Json; paytable?: Json; bets?: number[]; max_spins_per_minute?: number; updated_at?: string }
               Relationships: []
             },
             "slot_spins": {

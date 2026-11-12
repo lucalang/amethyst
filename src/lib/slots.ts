@@ -1,7 +1,8 @@
 /**
  * Coin Slots: shapes shared by the machine page, its API and the client. The machine itself (reel
- * strips, paytable, bets and limits) lives in the `slot_machines` table, which the database uses to
- * settle every spin; the page reads the same row to show the exact odds.
+ * strips, paytable, bets and spin rate) lives in the `slot_machines` table, which the database uses
+ * to settle every spin; the page reads the same row to show the exact odds. There are no daily caps:
+ * a bet only needs the coins in the balance.
  */
 
 export type SlotRule = { symbol: string; count: number; pays: number };
@@ -11,7 +12,6 @@ export type SlotMachine = {
   reels: string[][];
   paytable: SlotRule[];
   bets: number[];
-  dailyWagerLimit: number;
   maxSpinsPerMinute: number;
 };
 
@@ -31,16 +31,21 @@ export type SlotSpin = {
   createdAt: string;
 };
 
-/** What a spin request returns: the spin plus the account's limits right after it. */
-export type SlotSpinResult = SlotSpin & { replay: boolean; balance: number; wagered: number; room: number };
+/** What a spin request returns: the spin plus the balance right after it. */
+export type SlotSpinResult = SlotSpin & { replay: boolean; balance: number };
 
-/** The best rule whose symbol shows exactly `count` times on the payline (0 = no win). */
-export function lineMultiplier(paytable: SlotRule[], symbols: string[]) {
-  let best = 0;
+/** The best rule whose symbol shows exactly `count` times on the payline, or null for no win. */
+export function winningRule(paytable: SlotRule[], symbols: string[]): SlotRule | null {
+  let best: SlotRule | null = null;
   for (const rule of paytable) {
-    if (symbols.filter((symbol) => symbol === rule.symbol).length === rule.count) best = Math.max(best, rule.pays);
+    if (symbols.filter((symbol) => symbol === rule.symbol).length === rule.count && (!best || rule.pays > best.pays)) best = rule;
   }
   return best;
+}
+
+/** The payline's multiplier (0 = no win). */
+export function lineMultiplier(paytable: SlotRule[], symbols: string[]) {
+  return winningRule(paytable, symbols)?.pays ?? 0;
 }
 
 /** Exact odds, by settling every combination of stops (each stop on each reel is equally likely). */
@@ -51,11 +56,7 @@ export function slotOdds(machine: SlotMachine): SlotOdds {
   for (const x of a) {
     for (const y of b) {
       for (const z of c) {
-        const line = [x, y, z];
-        let best: SlotRule | null = null;
-        for (const rule of machine.paytable) {
-          if (line.filter((symbol) => symbol === rule.symbol).length === rule.count && (!best || rule.pays > best.pays)) best = rule;
-        }
+        const best = winningRule(machine.paytable, [x, y, z]);
         if (best) {
           ways.set(best, (ways.get(best) ?? 0) + 1);
           returned += best.pays;
@@ -74,7 +75,7 @@ export function slotOdds(machine: SlotMachine): SlotOdds {
 }
 
 /** Validates a `slot_machines` row; null if anything is off, so the page can close the machine instead of misreporting odds. */
-export function parseSlotMachine(row: { id: string; reels: unknown; paytable: unknown; bets: number[]; daily_wager_limit: number; max_spins_per_minute: number }): SlotMachine | null {
+export function parseSlotMachine(row: { id: string; reels: unknown; paytable: unknown; bets: number[]; max_spins_per_minute: number }): SlotMachine | null {
   const reels = row.reels;
   const paytable = row.paytable;
   if (!Array.isArray(reels) || reels.length !== 3 || !reels.every((reel) => Array.isArray(reel) && reel.length > 0 && reel.every((s) => typeof s === "string"))) return null;
@@ -89,7 +90,6 @@ export function parseSlotMachine(row: { id: string; reels: unknown; paytable: un
     reels: reels as string[][],
     paytable: rules.map(({ symbol, count, pays }) => ({ symbol, count, pays })),
     bets: [...row.bets].sort((x, y) => x - y),
-    dailyWagerLimit: row.daily_wager_limit,
     maxSpinsPerMinute: row.max_spins_per_minute,
   };
 }
