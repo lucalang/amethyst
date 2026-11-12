@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { loadPreferences } from "@/lib/data/preferences";
 import { DEFAULT_SETTINGS } from "@/lib/preferences";
 import { requireUser } from "@/lib/supabase/auth";
-import { DensitySetting, HoverScaleSetting, IntroFrequencySetting, MotionSetting } from "../appearance-controls";
+import { CollectionNavSetting, DensitySetting, HoverScaleSetting, IntroFrequencySetting, MotionSetting } from "../appearance-controls";
 import { CardInfoSetting } from "../card-info-setting";
 import { PinStyleSetting } from "../pin-style-setting";
 import { SwitchSetting } from "../setting-controls";
@@ -73,6 +73,14 @@ export default async function AppearancePage() {
 
       <SettingsGroup id="library" title="Library">
         <div className="space-y-8">
+          <SettingRow
+            labelId="collection-nav-label"
+            label="Collections in the top bar"
+            description="Show every collection as a tab, or switch between them from one dropdown. Phones keep the bottom tab bar either way."
+            reset={resetFor(preferences, ["collectionNav"], "Tabs")}
+          >
+            <CollectionNavSetting value={preferences.collectionNav} labelId="collection-nav-label" />
+          </SettingRow>
           <SettingRow
             labelId="density-label"
             label="Library density"

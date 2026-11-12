@@ -272,11 +272,9 @@ function Badges({ badges }: { badges: readonly ProfileBadgeId[] }) {
       </ul>
       <p id="pf-badge-caption" aria-live="polite" className="pf-badge-caption">
         {shown ? (
-          <>
-            <strong>{shown.name}</strong> · {shown.description}
-          </>
+          <strong>{shown.name}</strong>
         ) : (
-          <span className="pf-badge-hint">{badges.length === 1 ? "1 badge" : `${badges.length} badges`} — select one to read it</span>
+          <span className="pf-badge-hint">{badges.length === 1 ? "1 badge" : `${badges.length} badges`} — select one to see its name</span>
         )}
       </p>
     </div>

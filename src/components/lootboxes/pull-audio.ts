@@ -1,6 +1,7 @@
 "use client";
 
 import type { CutsceneRarity } from "@/lib/rarities";
+import { sfxLevel } from "@/lib/sfx-volume";
 
 /** Synthesized soundtrack for a pull cutscene, scheduled up front against the scene's build/burst timing. */
 type Kit = {
@@ -171,7 +172,7 @@ export function playPullAudio(rarity: CutsceneRarity, build: number, duration: n
   }
   void ctx.resume().catch(() => {});
   const master = ctx.createGain();
-  master.gain.value = 0.9;
+  master.gain.value = 0.9 * sfxLevel();
   const limiter = ctx.createDynamicsCompressor();
   limiter.threshold.value = -10;
   limiter.ratio.value = 8;

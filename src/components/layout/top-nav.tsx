@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Award, Backpack, BookMarked, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Info, KeyRound, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Info, KeyRound, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -22,6 +22,7 @@ import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { DESTINATIONS, destinationFor, type DestinationId } from "@/lib/destinations";
 import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
+import { useSettings } from "./settings-context";
 import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { ProfileAvatar } from "./profile-avatar";
 import { ProfileFlair } from "./profile-flair";
@@ -153,8 +154,54 @@ function ToolsPanel({ admin, onBack }: { admin: boolean; onBack: () => void }) {
   );
 }
 
+/** The Collections dropdown setting: one button showing the current collection, opening a list of all of them. */
+function CollectionSwitcher({ collections, currentId, icons }: { collections: LibraryCategory[]; currentId: string | null | undefined; icons: CollectionIcons }) {
+  const current = collections.find((item) => item.id === currentId);
+  const accent = current ? accentStyle(current.accent_color) : undefined;
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          style={accent}
+          aria-label={current ? `Collection: ${current.name}. Switch collection` : "Switch collection"}
+          className={cn(
+            "h-9 max-w-64 gap-2 border px-3 text-sm font-medium",
+            current ? (accent ? "border-[var(--ca-line)] bg-[var(--ca-soft)] text-foreground" : "border-amethyst/25 bg-amethyst/10 text-foreground") : "border-transparent text-muted-foreground",
+          )}
+        >
+          <span aria-hidden className={cn("size-3.5 shrink-0", accent ? "text-[var(--ca)]" : "text-amethyst")}>
+            {current ? (icons[current.id] ?? <LibraryBig className="size-full" />) : <LibraryBig className="size-full" />}
+          </span>
+          <span className="truncate">{current?.name ?? "Collections"}</span>
+          <ChevronDown aria-hidden className="size-4 shrink-0 opacity-70" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-[70dvh] w-64 overflow-y-auto">
+        <DropdownMenuLabel>Collections</DropdownMenuLabel>
+        {collections.map((item) => {
+          const active = item.id === currentId;
+          const itemAccent = accentStyle(item.accent_color);
+          return (
+            <DropdownMenuItem key={item.id} asChild>
+              <Link href={collectionPath(item)} aria-current={active ? "page" : undefined} style={itemAccent}>
+                <span aria-hidden className={cn("size-4 shrink-0", itemAccent ? "text-[var(--ca)]" : "text-muted-foreground")}>
+                  {icons[item.id] ?? <LibraryBig className="size-full" />}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                <Check aria-hidden className={cn("size-4", !active && "invisible")} />
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function TopNav({ account, collections, icons = {}, latestChangeId }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons; latestChangeId: string }) {
   const currentId = useCurrentCollectionId(collections);
+  const { collectionNav } = useSettings();
   const pathname = usePathname();
   const area = destinationFor(pathname);
   const seasonActive = isActive(pathname, "/arcade/season");
@@ -173,6 +220,11 @@ export function TopNav({ account, collections, icons = {}, latestChangeId }: { a
           <DestinationSwitcher current={area?.id ?? null} guest={guest} compact={inArchive} />
         </div>
 
+        {collectionNav === "dropdown" ? (
+          <nav aria-label="Collections" className={cn("hidden min-w-0 flex-1 items-center border-l border-white/[0.08] py-1 pl-4", inArchive && "md:flex")}>
+            {collections.length ? <CollectionSwitcher collections={collections} currentId={currentId} icons={icons} /> : null}
+          </nav>
+        ) : (
         <nav aria-label="Collections" className={cn("collection-nav-strip hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto border-l border-white/[0.08] py-1 pl-4", inArchive && "md:flex")}>
           {collections.map((item) => {
             const href = collectionPath(item);
@@ -198,6 +250,7 @@ export function TopNav({ account, collections, icons = {}, latestChangeId }: { a
             );
           })}
         </nav>
+        )}
 
         <div className="ml-auto flex items-center gap-2">
           {collections.length > 1 && inArchive ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}

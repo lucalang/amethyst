@@ -1,3 +1,4 @@
+import { sfxLevel } from "@/lib/sfx-volume";
 import { CARD_STAGGER, SUMMON, TRANSMIT, UNLOCK, type SummonKind } from "./timing";
 
 /**
@@ -25,6 +26,7 @@ function out() {
     master.gain.value = 0.22;
     master.connect(compressor).connect(ctx.destination);
   }
+  master!.gain.value = 0.22 * sfxLevel();
   if (ctx.state === "suspended") void ctx.resume();
   return { ctx, master: master! };
 }

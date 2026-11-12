@@ -21,6 +21,9 @@ export const EDITOR_WIDTHS = ["narrow", "medium", "wide", "full"] as const;
 export const LIBRARY_DENSITIES = ["comfortable", "compact", "large"] as const;
 export const CHECKLIST_MODES = ["bottom", "collapse", "keep"] as const;
 export const STARTUP_DESTINATIONS = ["home", "collection", "last"] as const;
+/** How the top bar lists collections: a row of tabs or a single switcher dropdown. */
+export const COLLECTION_NAV_STYLES = ["strip", "dropdown"] as const;
+export type CollectionNavStyle = (typeof COLLECTION_NAV_STYLES)[number];
 export const HEADING_LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
 export const SHORTCUT_ACTIONS = ["search", "newEntry", "newFile", "newChecklist", "newFolder", "toggleExplorer"] as const;
 /** How often the opening animation plays on a fresh load of the app. */
@@ -38,6 +41,7 @@ export type IntroFrequency = (typeof INTRO_FREQUENCIES)[number];
 
 export const HOVER_SCALE_RANGE = { min: 0, max: 12 } as const;
 export const FONT_SIZE_RANGE = { min: 14, max: 22 } as const;
+export const SFX_VOLUME_RANGE = { min: 0, max: 100, step: 5 } as const;
 /** Line spacing in hundredths (175 = 1.75). */
 export const LINE_SPACING_RANGE = { min: 130, max: 230, step: 5 } as const;
 
@@ -104,6 +108,7 @@ export const DEFAULT_SETTINGS = {
   editorWidth: "medium" as EditorWidth,
   headingColors: { h1: "#dccfff", h2: "#b36dff", h3: "#e24fd9", h4: "#ff7fae", h5: "#c6b9e8", h6: "#a39bbd" } as Record<HeadingLevel, string>,
   libraryDensity: "comfortable" as LibraryDensity,
+  collectionNav: "strip" as CollectionNavStyle,
   checklistMode: "bottom" as ChecklistMode,
   startup: "home" as StartupDestination,
   startupCollectionId: null as string | null,
@@ -131,6 +136,8 @@ export const DEFAULT_SETTINGS = {
   artworkFrame: DEFAULT_ARTWORK_FRAME as ArtworkFrameId,
   /** Sound effects in Arcade games (audio only starts after the player interacts). */
   arcadeSound: true,
+  /** Loudness of every sound effect, in percent. */
+  sfxVolume: 100,
   /** Snake's last chosen mode, fruit, fruit amount and board size. */
   arcadeSnake: DEFAULT_SNAKE_SETUP as SnakeSetup,
   achievementNotifications: true,
@@ -179,6 +186,7 @@ const settingFields = {
   editorWidth: z.enum(EDITOR_WIDTHS),
   headingColors: z.object(Object.fromEntries(HEADING_LEVELS.map((level) => [level, hexColor])) as Record<HeadingLevel, typeof hexColor>).strict(),
   libraryDensity: z.enum(LIBRARY_DENSITIES),
+  collectionNav: z.enum(COLLECTION_NAV_STYLES),
   checklistMode: z.enum(CHECKLIST_MODES),
   startup: z.enum(STARTUP_DESTINATIONS),
   startupCollectionId: z.uuid().nullable(),
@@ -243,6 +251,7 @@ const settingFields = {
     .strict(),
   artworkFrame: z.enum(ARTWORK_FRAME_IDS),
   arcadeSound: z.boolean(),
+  sfxVolume: z.number().int().min(SFX_VOLUME_RANGE.min).max(SFX_VOLUME_RANGE.max),
   arcadeSnake: snakeSetupSchema,
   achievementNotifications: z.boolean(),
   pullCutscenes: z.array(z.enum(CUTSCENE_RARITIES)).max(CUTSCENE_RARITIES.length).transform((ids) => [...new Set(ids)]),

@@ -6,6 +6,8 @@
  * sound is first played, which always follows a player action.
  */
 
+import { sfxLevel } from "@/lib/sfx-volume";
+
 type Tone = { freq: number; to?: number; duration: number; type?: OscillatorType; volume?: number; delay?: number };
 type Noise = { noise: true; duration: number; volume?: number; filter?: BiquadFilterType; freq?: number; delay?: number };
 type Part = Tone | Noise;
@@ -155,13 +157,15 @@ function noise(ctx: AudioContext) {
 
 /** Play a named effect; `pitch` raises or lowers every tone (1 = unchanged). */
 export function playSound(name: SoundName, pitch = 1) {
+  const level = sfxLevel();
+  if (level <= 0) return;
   const ctx = audio();
   if (!ctx || ctx.state === "closed") return;
   const start = ctx.currentTime + 0.005;
   for (const part of SOUNDS[name] as Part[]) {
     const at = start + (part.delay ?? 0);
     const gain = ctx.createGain();
-    const volume = part.volume ?? 0.08;
+    const volume = (part.volume ?? 0.08) * level;
     gain.gain.setValueAtTime(0.0001, at);
     gain.gain.exponentialRampToValueAtTime(volume, at + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, at + part.duration);

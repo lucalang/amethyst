@@ -146,7 +146,8 @@ export function TaskView() {
   const viewKey = view ? (view.kind === "list" ? "list" : view.kind === "search" ? "search" : view.id) : "none";
   const scopeKey = view?.kind === "list" ? `list:${view.id}` : viewKey;
 
-  const [sort, setSort] = useStoredSort(viewKey, view?.kind === "smart" && view.id === "important" ? "due" : "manual");
+  // Lists sort independently (keyed by list id); smart views and search keep one sort each.
+  const [sort, setSort] = useStoredSort(scopeKey, view?.kind === "smart" && view.id === "important" ? "due" : "manual");
   const [smartCompletedOpen, setSmartCompletedOpen] = useStoredFlag(`archive:tasks-completed-open:${viewKey}`, true);
   const [settling, addSettling] = useTransientIds(SETTLE_MS);
   const [celebrating, addCelebrating] = useTransientIds(CELEBRATE_MS);

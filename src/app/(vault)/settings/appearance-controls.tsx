@@ -5,7 +5,7 @@ import { Play } from "lucide-react";
 import { PREVIEW_INTRO_EVENT } from "@/components/layout/opening-intro";
 import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
-import { HOVER_SCALE_RANGE, type IntroFrequency, type LibraryDensity, type MotionLevel } from "@/lib/preferences";
+import { HOVER_SCALE_RANGE, type CollectionNavStyle, type IntroFrequency, type LibraryDensity, type MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { ChoiceSetting, RangeInput, useSetting, type Choice } from "./setting-controls";
 
@@ -70,6 +70,15 @@ const DENSITY_OPTIONS: Choice<LibraryDensity>[] = [
   { value: "compact", title: "Compact", description: "Smaller covers, more of your library at once.", preview: <DensityPreview columns={8} gap="gap-1" /> },
   { value: "large", title: "Large covers", description: "Fewer, bigger covers that show off the artwork.", preview: <DensityPreview columns={3} gap="gap-2" /> },
 ];
+
+const COLLECTION_NAV_OPTIONS: Choice<CollectionNavStyle>[] = [
+  { value: "strip", title: "Tabs", description: "Every collection in a row across the top bar." },
+  { value: "dropdown", title: "Dropdown", description: "One button showing the current collection; open it to switch." },
+];
+
+export function CollectionNavSetting({ value, labelId }: { value: CollectionNavStyle; labelId: string }) {
+  return <ChoiceSetting settingKey="collectionNav" value={value} labelId={labelId} options={COLLECTION_NAV_OPTIONS} className="sm:grid-cols-2" />;
+}
 
 export function DensitySetting({ value, labelId }: { value: LibraryDensity; labelId: string }) {
   return <ChoiceSetting settingKey="libraryDensity" value={value} labelId={labelId} options={DENSITY_OPTIONS} />;

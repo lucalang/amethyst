@@ -2,6 +2,8 @@
  * Coin Slots sound: its own small synth with a quiet master level and a compressor, so layered
  * sounds never stack into anything loud. Created on the first Spin press (a user gesture).
  */
+import { sfxLevel } from "@/lib/sfx-volume";
+
 export type SlotSound = "spin" | "stop" | "win" | "big" | "jackpot";
 
 let ctx: AudioContext | null = null;
@@ -17,6 +19,7 @@ function out() {
     master.gain.value = 0.22;
     master.connect(compressor).connect(ctx.destination);
   }
+  master!.gain.value = 0.22 * sfxLevel();
   if (ctx.state === "suspended") void ctx.resume();
   return { ctx, master: master! };
 }

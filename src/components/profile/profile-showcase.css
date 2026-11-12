@@ -316,14 +316,14 @@
 .pf-badge:focus-visible {
   box-shadow: 0 0 0 2px var(--ring);
 }
-/* Two reserved lines so naming a badge never moves anything. */
+/* One reserved line (badge name only) so naming a badge never moves anything. */
 .pf-badge-caption {
   display: -webkit-box;
   max-width: 22rem;
-  min-height: calc(2 * 1.4em);
+  min-height: 1.4em;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   font-size: 0.75rem;
   line-height: 1.4;
   color: var(--muted-foreground);

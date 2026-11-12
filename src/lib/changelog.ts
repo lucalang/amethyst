@@ -51,6 +51,57 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-12-quality-of-life",
+    date: "2026-11-12",
+    title: "Quality-of-life update",
+    intro: "An SFX Volume slider with louder sound effects, a collections dropdown, a separate sort for each To Do list, more room for tasks in entries and steadier profile badges.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "SFX Volume", text: "Set sound effects anywhere from muted to 100%. Every sound effect is also louder than before." },
+      { kind: "new", feature: "Collections dropdown", text: "Switch collections from one dropdown in the top bar instead of a row of tabs." },
+      { kind: "improved", feature: "Per-list sort", text: "Each To Do list remembers its own sort, so sorting one list no longer changes the others." },
+      { kind: "improved", feature: "More room for tasks", text: "A more compact entry header lets notes and checklists start much higher on the page." },
+      { kind: "fixed", feature: "Profile badges", text: "Selecting a profile badge shows just its name, so hovering badges no longer pushes the page around." },
+    ],
+    details: {
+      new: [
+        {
+          title: "SFX Volume",
+          body: "One level for every sound effect: Arcade games, interface sounds, Coin Slots, the Vault and Admin panel, and rare pull cutscenes. The slider plays a short preview while you drag it, and 0% mutes sound effects while leaving the Sound effects switch on. All sound effects are louder at 100% than they used to be.",
+          where: "Settings → General → Notifications",
+          link: { href: "/settings#sfx-volume-label-setting", label: "Open SFX Volume" },
+        },
+        {
+          title: "Collections dropdown",
+          body: "Choose Tabs (every collection in a row, as before) or Dropdown. The dropdown shows the current collection with its icon and colour and lists every collection in your saved order. Phones keep the bottom tab bar.",
+          where: "Customization → Appearance → Library",
+          link: { href: "/customization/appearance#collection-nav-label-setting", label: "Open the setting" },
+        },
+      ],
+      improved: [
+        {
+          title: "Per-list sort",
+          body: "The Sort menu applies only to the list you're viewing. Lists you haven't sorted use Custom order. Smart views such as My Day and Important keep their own sort.",
+          where: "To Do → any list → Sort",
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+        {
+          title: "Compact entry header",
+          body: "The banner behind an entry is shorter on every screen size and the cover is a little smaller, so the first tasks of a checklist are visible without scrolling. Artwork, title, labels and progress are unchanged.",
+          where: "Any entry workspace",
+        },
+      ],
+      fixed: [
+        {
+          title: "Badge hover on profiles",
+          body: "Hovering or selecting a profile badge now shows only its name. Longer descriptions used to resize the caption under the badges and push the page around, which made hovering very jumpy.",
+          where: "Profile → Badges",
+          link: { href: "/profile", label: "Open your profile" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-10-tournaments-wagers",
     date: "2026-11-10",
     title: "Daily Tournaments and Wagers in the Arcade",

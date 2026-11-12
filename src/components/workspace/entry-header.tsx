@@ -93,7 +93,7 @@ export function EntryHeader({
 
   return (
     <header data-testid="entry-header" className="header-scroll-exit relative border-b border-white/[0.06]" style={accent}>
-      <div aria-hidden className="relative h-48 overflow-hidden sm:h-60 md:h-76 lg:h-88">
+      <div aria-hidden className="relative h-36 overflow-hidden sm:h-44 md:h-56 lg:h-64">
         {banner ? (
           <MediaImage
             src={banner}
@@ -114,12 +114,12 @@ export function EntryHeader({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_75%_60%_at_18%_100%,rgb(var(--shadow-rgb)/calc(0.65*var(--shadow-alpha))),transparent_72%)]" />
       </div>
       <div className="mx-auto max-w-[88rem] px-4 md:px-6">
-        <div className="relative -mt-24 flex flex-col gap-4 pb-7 sm:-mt-28 md:-mt-40 md:flex-row md:items-end md:gap-7 lg:-mt-44 lg:gap-8">
+        <div className="relative -mt-20 flex flex-col gap-4 pb-5 sm:-mt-24 md:-mt-32 md:flex-row md:items-end md:gap-7 lg:-mt-36 lg:gap-8">
           <ArtworkFrame
             frame={resolvedFrame}
             className={cn(
               "enter enter-card shrink-0",
-              entry.cover_shape === "square" ? "w-32 sm:w-36 md:w-48 lg:w-56" : "w-28 sm:w-32 md:w-44 lg:w-48",
+              entry.cover_shape === "square" ? "w-28 sm:w-32 md:w-40 lg:w-44" : "w-24 sm:w-28 md:w-36 lg:w-40",
             )}
             style={{ "--enter-index": 0 } as React.CSSProperties}
           >
@@ -130,7 +130,7 @@ export function EntryHeader({
                 resolvedFrame === "none" && "ring-1 ring-white/12",
               )}
             >
-              <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} sizes="(min-width: 1024px) 224px, (min-width: 768px) 192px, 144px" priority fallbackLabel={entry.title} />
+              <MediaImage src={entry.cover_url} alt={`${entry.title} cover`} sizes="(min-width: 1024px) 176px, (min-width: 768px) 160px, 128px" priority fallbackLabel={entry.title} />
             </div>
           </ArtworkFrame>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>

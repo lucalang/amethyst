@@ -10,6 +10,7 @@ import { requireUser } from "@/lib/supabase/auth";
 import { SwitchSetting } from "./setting-controls";
 import { SettingRow, SettingsGroup, SettingsHeader, resetFor } from "./settings-ui";
 import { PullCutscenesSetting } from "./pull-cutscenes-setting";
+import { SfxVolumeSetting } from "./sfx-volume-setting";
 import { StartupSetting } from "./startup-setting";
 import { TimeZoneSetting } from "./time-zone-setting";
 
@@ -77,6 +78,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             reset={resetFor(preferences, ["arcadeSound"], "On")}
           >
             <SwitchSetting settingKey="arcadeSound" value={preferences.arcadeSound} labelId="sound-effects-label" onLabel="Sounds on" offLabel="Sounds off" />
+          </SettingRow>
+          <SettingRow
+            labelId="sfx-volume-label"
+            label="SFX Volume"
+            description="How loud every sound effect plays, from games and tasks to case openings and the Vault. 0% mutes them without turning Sound effects off."
+            reset={resetFor(preferences, ["sfxVolume"], "100%")}
+          >
+            <SfxVolumeSetting value={preferences.sfxVolume} labelId="sfx-volume-label" />
           </SettingRow>
           <SettingRow
             labelId="pull-cutscenes-label"

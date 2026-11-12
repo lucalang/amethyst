@@ -2,11 +2,13 @@
 
 import { createContext, useContext, useLayoutEffect, type ReactNode } from "react";
 import { DEFAULT_PIN_STYLE, DEFAULT_SETTINGS, type Preferences } from "@/lib/preferences";
+import { setSfxVolume } from "@/lib/sfx-volume";
 
 const SettingsContext = createContext<Preferences>({ ...DEFAULT_SETTINGS, pinStyle: DEFAULT_PIN_STYLE });
 
 export function SettingsProvider({ value, children }: { value: Preferences; children: ReactNode }) {
-  const { theme, motion } = value;
+  const { theme, motion, sfxVolume } = value;
+  useLayoutEffect(() => setSfxVolume(sfxVolume), [sfxVolume]);
   // Theme and motion CSS keys off <html> (`:root[data-…]`) rather than `:root:has(…)`, which made
   // every DOM change re-check the whole page. AppShell's inline script sets these before first paint.
   useLayoutEffect(() => {
