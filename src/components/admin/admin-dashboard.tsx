@@ -99,7 +99,7 @@ function Avatar({ account, id }: { account: Account | null; id: string }) {
   let hue = 0;
   for (const char of id) hue = (hue * 31 + char.charCodeAt(0)) % 360;
   return (
-    <span aria-hidden className="ad-avatar" style={{ "--hue": hue } as CSSProperties}>
+    <span aria-hidden className="dash-avatar" style={{ "--hue": hue } as CSSProperties}>
       {initials}
     </span>
   );
@@ -107,8 +107,8 @@ function Avatar({ account, id }: { account: Account | null; id: string }) {
 
 function StatusPill({ status }: { status: OverrideStatus }) {
   return (
-    <span className="ad-pill" data-status={status}>
-      <span className="ad-pill-dot" />
+    <span className="dash-pill" data-status={status}>
+      <span className="dash-pill-dot" />
       {STATUS_LABEL[status]}
     </span>
   );
@@ -116,7 +116,7 @@ function StatusPill({ status }: { status: OverrideStatus }) {
 
 function RarityPill({ rarity }: { rarity: string | null }) {
   return (
-    <span className="ad-pill ad-rarity" style={{ "--rarity": rarityColor(rarity) } as CSSProperties}>
+    <span className="dash-pill dash-rarity" style={{ "--rarity": rarityColor(rarity) } as CSSProperties}>
       {rarityLabel(rarity)}
     </span>
   );
@@ -124,7 +124,7 @@ function RarityPill({ rarity }: { rarity: string | null }) {
 
 function MiniSymbols({ symbols, size = "size-5" }: { symbols: string[]; size?: string }) {
   return (
-    <span className="ad-mini-symbols" aria-label={symbols.map(symbolName).join(", ")}>
+    <span className="dash-mini-symbols" aria-label={symbols.map(symbolName).join(", ")}>
       {symbols.map((symbol, i) => (
         <SlotSymbol key={i} id={symbol} className={size} />
       ))}
@@ -135,17 +135,17 @@ function MiniSymbols({ symbols, size = "size-5" }: { symbols: string[]; size?: s
 function Payline({ symbols, hit, multiplier, top, size = "size-10" }: { symbols: string[]; hit?: string | null; multiplier: number; top: number; size?: string }) {
   const tier = slotTier(multiplier, top);
   return (
-    <div className="ad-payline" data-tier={tier.key}>
-      <div className="ad-payline-cells">
+    <div className="dash-payline" data-tier={tier.key}>
+      <div className="dash-payline-cells">
         {symbols.map((symbol, i) => (
-          <span key={i} className="ad-payline-cell" data-hit={(hit && symbol === hit) || undefined}>
+          <span key={i} className="dash-payline-cell" data-hit={(hit && symbol === hit) || undefined}>
             <SlotSymbol id={symbol} className={size} />
           </span>
         ))}
       </div>
-      <div className="ad-payout">
-        <span className="ad-payout-mult">×{multiplier}</span>
-        <span className="ad-payout-tier">{tier.label}</span>
+      <div className="dash-payout">
+        <span className="dash-payout-mult">×{multiplier}</span>
+        <span className="dash-payout-tier">{tier.label}</span>
       </div>
     </div>
   );
@@ -153,14 +153,14 @@ function Payline({ symbols, hit, multiplier, top, size = "size-10" }: { symbols:
 
 function Panel({ title, description, icon, actions, children }: { title: string; description?: string; icon: ReactNode; actions?: ReactNode; children: ReactNode }) {
   return (
-    <section className="ad-panel">
-      <header className="ad-panel-head">
-        <span className="ad-panel-icon">{icon}</span>
+    <section className="dash-panel">
+      <header className="dash-panel-head">
+        <span className="dash-panel-icon">{icon}</span>
         <div className="min-w-0 flex-1">
-          <h2 className="ad-panel-title">{title}</h2>
-          {description ? <p className="ad-panel-desc">{description}</p> : null}
+          <h2 className="dash-panel-title">{title}</h2>
+          {description ? <p className="dash-panel-desc">{description}</p> : null}
         </div>
-        {actions ? <div className="ad-panel-actions">{actions}</div> : null}
+        {actions ? <div className="dash-panel-actions">{actions}</div> : null}
       </header>
       {children}
     </section>
@@ -200,22 +200,22 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
   ];
 
   return (
-    <div className="ad-root">
-      <header className="ad-hero">
-        <span className="ad-hero-mark">
+    <div className="dash-root">
+      <header className="dash-hero">
+        <span className="dash-hero-mark">
           <LayoutDashboard aria-hidden className="size-6" />
         </span>
-        <div className="ad-hero-title">
+        <div className="dash-hero-title">
           <h1>Admin Dashboard</h1>
           <p>
             Signed in as {who(state.me.account)}
-            <span className="ad-pill" data-role={state.me.role}>
+            <span className="dash-pill" data-role={state.me.role}>
               {state.me.role === "owner" ? <Crown aria-hidden className="size-3" /> : <ShieldCheck aria-hidden className="size-3" />}
               {ROLE_LABEL[state.me.role]}
             </span>
           </p>
         </div>
-        <div className="ad-hero-actions">
+        <div className="dash-hero-actions">
           <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={refreshing}>
             {refreshing ? <Loader2 aria-hidden className="animate-spin" /> : <RefreshCw aria-hidden />}
             Refresh
@@ -229,24 +229,24 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
         </div>
       </header>
 
-      <div className="ad-stats">
+      <div className="dash-stats">
         {stats.map((stat) => (
-          <div key={stat.key} className="ad-stat" data-tone={stat.tone}>
-            <p className="ad-label">{stat.label}</p>
-            <span className="ad-stat-icon">{stat.icon}</span>
-            <p className="ad-stat-value">{stat.value.toLocaleString("en")}</p>
-            <p className="ad-stat-note" suppressHydrationWarning>
+          <div key={stat.key} className="dash-stat" data-tone={stat.tone}>
+            <p className="dash-label">{stat.label}</p>
+            <span className="dash-stat-icon">{stat.icon}</span>
+            <p className="dash-stat-value">{stat.value.toLocaleString("en")}</p>
+            <p className="dash-stat-note" suppressHydrationWarning>
               {stat.note}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="ad-grid">
+      <div className="dash-grid">
         <LootOverridePanel state={state} ask={ask} />
         <SlotOverridePanel state={state} ask={ask} />
       </div>
-      <div className="ad-grid ad-grid-split">
+      <div className="dash-grid dash-grid-split">
         <AdminAccess state={state} owner={owner} ask={ask} />
         <OverrideHistory state={state} />
       </div>
@@ -308,10 +308,10 @@ function QueuedCard({ createdAt, expiresAt, onCancel, children }: { createdAt: s
   const now = useNow(Date.parse(createdAt));
   const left = Date.parse(expiresAt) - now;
   return (
-    <div className="ad-queued">
-      <div className="ad-queued-head">
+    <div className="dash-queued">
+      <div className="dash-queued-head">
         <StatusPill status="queued" />
-        <span className="ad-countdown" suppressHydrationWarning>
+        <span className="dash-countdown" suppressHydrationWarning>
           <Clock aria-hidden className="size-3.5" />
           {left > 0 ? `expires in ${countdown(left)}` : "expiring"}
         </span>
@@ -321,7 +321,7 @@ function QueuedCard({ createdAt, expiresAt, onCancel, children }: { createdAt: s
         </Button>
       </div>
       {children}
-      <p className="ad-hint">Not applied yet. It waits for your next eligible attempt and is used exactly once.</p>
+      <p className="dash-hint">Not applied yet. It waits for your next eligible attempt and is used exactly once.</p>
     </div>
   );
 }
@@ -373,7 +373,7 @@ function LootOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
       label: "Queue override",
       body: (
         <>
-          <dl className="ad-summary">
+          <dl className="dash-summary">
             <div>
               <dt>Case</dt>
               <dd>{caseName}</dd>
@@ -408,35 +408,35 @@ function LootOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
           expiresAt={queued.expiresAt}
           onCancel={() => cancelOverride(ask, "loot", queued.id, `${itemName(queued.item)} from ${lootCaseInfo(queued.case).name} won’t be applied.`)}
         >
-          <div className="ad-pick" style={{ "--rarity": rarityColor(queued.rarity) } as CSSProperties}>
-            <span className="ad-label">Your next {lootCaseInfo(queued.case).name} reveals</span>
-            <p className="ad-pick-name">{itemName(queued.item)}</p>
-            <p className="ad-pick-meta">
+          <div className="dash-pick" style={{ "--rarity": rarityColor(queued.rarity) } as CSSProperties}>
+            <span className="dash-label">Your next {lootCaseInfo(queued.case).name} reveals</span>
+            <p className="dash-pick-name">{itemName(queued.item)}</p>
+            <p className="dash-pick-meta">
               <RarityPill rarity={queued.rarity} /> {itemType(queued.item)}
             </p>
           </div>
-          <p className="ad-hint">Open it from Shop → Cases. The bulk-open tools don’t use overrides.</p>
+          <p className="dash-hint">Open it from Shop → Cases. The bulk-open tools don’t use overrides.</p>
         </QueuedCard>
       ) : state.cases.length === 0 ? (
-        <p className="ad-empty">No case can be opened right now.</p>
+        <p className="dash-empty">No case can be opened right now.</p>
       ) : (
         <>
-          <div className="ad-step">
-            <span className="ad-label">1 · Case</span>
-            <div className="ad-cases">
+          <div className="dash-step">
+            <span className="dash-label">1 · Case</span>
+            <div className="dash-cases">
               {state.cases.map((entry) => {
                 const info = lootCaseInfo(entry.id);
                 return (
                   <button
                     key={entry.id}
                     type="button"
-                    className="ad-case"
+                    className="dash-case"
                     aria-pressed={entry.id === caseId}
                     onClick={() => pickCase(entry.id)}
                     style={{ "--hue": info.hue, "--glow": info.glow } as CSSProperties}
                   >
-                    <span className="ad-case-name">{info.name}</span>
-                    <span className="ad-case-meta">
+                    <span className="dash-case-name">{info.name}</span>
+                    <span className="dash-case-meta">
                       {plural(entry.items.length, "item")}
                       {entry.available ? "" : " · not sold now"}
                     </span>
@@ -446,38 +446,38 @@ function LootOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
             </div>
           </div>
 
-          <div className="ad-step">
-            <span className="ad-label">2 · Item from this case’s pool</span>
-            <div className="ad-search">
+          <div className="dash-step">
+            <span className="dash-label">2 · Item from this case’s pool</span>
+            <div className="dash-search">
               <Search aria-hidden />
               <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search items" aria-label="Search items" />
             </div>
-            <div className="ad-chips" role="group" aria-label="Filter by rarity">
-              <button type="button" className="ad-chip" aria-pressed={rarity === "all"} onClick={() => setRarity("all")}>
-                All <span className="ad-chip-count">{pool.length}</span>
+            <div className="dash-chips" role="group" aria-label="Filter by rarity">
+              <button type="button" className="dash-chip" aria-pressed={rarity === "all"} onClick={() => setRarity("all")}>
+                All <span className="dash-chip-count">{pool.length}</span>
               </button>
               {rarities.map((value) => (
-                <button key={value} type="button" className="ad-chip" aria-pressed={rarity === value} onClick={() => setRarity(value)} style={{ "--rarity": rarityColor(value) } as CSSProperties}>
-                  <span className="ad-chip-dot" />
-                  {rarityLabel(value)} <span className="ad-chip-count">{pool.filter((entry) => entry.rarity === value).length}</span>
+                <button key={value} type="button" className="dash-chip" aria-pressed={rarity === value} onClick={() => setRarity(value)} style={{ "--rarity": rarityColor(value) } as CSSProperties}>
+                  <span className="dash-chip-dot" />
+                  {rarityLabel(value)} <span className="dash-chip-count">{pool.filter((entry) => entry.rarity === value).length}</span>
                 </button>
               ))}
             </div>
             {shown.length === 0 ? (
-              <p className="ad-empty">No item in this case matches.</p>
+              <p className="dash-empty">No item in this case matches.</p>
             ) : (
-              <div className="ad-items" role="group" aria-label="Items">
+              <div className="dash-items" role="group" aria-label="Items">
                 {shown.map((entry) => (
                   <button
                     key={entry.id}
                     type="button"
-                    className="ad-item"
+                    className="dash-item"
                     aria-pressed={entry.id === itemId}
                     onClick={() => setItemId(entry.id === itemId ? "" : entry.id)}
                     style={{ "--rarity": rarityColor(entry.rarity) } as CSSProperties}
                   >
-                    <span className="ad-item-name">{itemName(entry.id)}</span>
-                    <span className="ad-item-meta">
+                    <span className="dash-item-name">{itemName(entry.id)}</span>
+                    <span className="dash-item-meta">
                       {rarityLabel(entry.rarity)} · {itemType(entry.id)}
                     </span>
                   </button>
@@ -487,10 +487,10 @@ function LootOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
           </div>
 
           {item && box ? (
-            <div className="ad-pick" key={item.id} style={{ "--rarity": rarityColor(item.rarity) } as CSSProperties}>
-              <span className="ad-label">Your next {lootCaseInfo(box.id).name} would reveal</span>
-              <p className="ad-pick-name">{itemName(item.id)}</p>
-              <p className="ad-pick-meta">
+            <div className="dash-pick" key={item.id} style={{ "--rarity": rarityColor(item.rarity) } as CSSProperties}>
+              <span className="dash-label">Your next {lootCaseInfo(box.id).name} would reveal</span>
+              <p className="dash-pick-name">{itemName(item.id)}</p>
+              <p className="dash-pick-meta">
                 <RarityPill rarity={item.rarity} /> {itemType(item.id)}
               </p>
             </div>
@@ -548,34 +548,34 @@ function SlotOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
           <Payline symbols={queued.symbols} multiplier={queued.multiplier} top={top} size="size-9" />
         </QueuedCard>
       ) : !machine ? (
-        <p className="ad-empty">Coin Slots is closed right now.</p>
+        <p className="dash-empty">Coin Slots is closed right now.</p>
       ) : (
         <>
-          <div className="ad-step">
-            <span className="ad-label">Quick picks</span>
-            <div className="ad-presets">
+          <div className="dash-step">
+            <span className="dash-label">Quick picks</span>
+            <div className="dash-presets">
               {presets.map((preset) => (
-                <button key={preset.key} type="button" className="ad-preset" aria-pressed={same(preset.picks, picks)} onClick={() => setPicks(preset.picks)} title={preset.label}>
+                <button key={preset.key} type="button" className="dash-preset" aria-pressed={same(preset.picks, picks)} onClick={() => setPicks(preset.picks)} title={preset.label}>
                   <MiniSymbols symbols={preset.picks} size="size-4" />
                   {preset.pays ? `×${preset.pays}` : "Miss"}
                 </button>
               ))}
             </div>
           </div>
-          <div className="ad-step">
-            <span className="ad-label">Or pick each reel</span>
-            <div className="ad-reels">
+          <div className="dash-step">
+            <span className="dash-label">Or pick each reel</span>
+            <div className="dash-reels">
               {choices.map((list, i) => (
-                <div key={i} className="ad-reel" role="radiogroup" aria-label={`Reel ${i + 1}`}>
-                  <span className="ad-label">Reel {i + 1}</span>
-                  <div className="ad-reel-symbols">
+                <div key={i} className="dash-reel" role="radiogroup" aria-label={`Reel ${i + 1}`}>
+                  <span className="dash-label">Reel {i + 1}</span>
+                  <div className="dash-reel-symbols">
                     {list.map((symbol) => (
                       <button
                         key={symbol}
                         type="button"
                         role="radio"
                         aria-checked={picks[i] === symbol}
-                        className="ad-symbol"
+                        className="dash-symbol"
                         title={symbolName(symbol)}
                         onClick={() => setPicks((current) => current.map((value, j) => (j === i ? symbol : value)))}
                       >
@@ -612,7 +612,7 @@ function AdminAccess({ state, owner, ask }: { state: AdminDashboardState; owner:
       destructive: role === null,
       body: (
         <>
-          <dl className="ad-summary">
+          <dl className="dash-summary">
             <div>
               <dt>Account</dt>
               <dd>
@@ -645,33 +645,33 @@ function AdminAccess({ state, owner, ask }: { state: AdminDashboardState; owner:
       icon={<ShieldCheck aria-hidden className="size-4" />}
       description={owner ? "Grant, change or revoke access. You can’t change your own role, and there’s always at least one owner." : "Only owners can change admin access."}
     >
-      <ul className="ad-list">
+      <ul className="dash-list">
         {state.admins.map((admin) => {
           const self = admin.id === state.me.id;
           const lastOwner = admin.role === "owner" && owners <= 1;
           const account = admin.account ?? { id: admin.id, name: null, email: null, avatarUrl: null };
           const locked = lastOwner ? "Amethyst needs at least one owner." : undefined;
           return (
-            <li key={admin.id} className="ad-row">
-              <div className="ad-row-main">
+            <li key={admin.id} className="dash-row">
+              <div className="dash-row-main">
                 <Avatar account={admin.account} id={admin.id} />
-                <div className="ad-row-text">
-                  <p className="ad-row-title">
+                <div className="dash-row-text">
+                  <p className="dash-row-title">
                     {who(admin.account)}
                     {self ? <span className="font-normal text-muted-foreground">(you)</span> : null}
                   </p>
-                  <p className="ad-row-meta" suppressHydrationWarning>
+                  <p className="dash-row-meta" suppressHydrationWarning>
                     {admin.account?.email ?? admin.id} · since {when(admin.grantedAt)}
                     {admin.grantedBy ? ` · by ${who(admin.grantedBy)}` : ""}
                   </p>
                 </div>
               </div>
-              <span className="ad-pill" data-role={admin.role}>
+              <span className="dash-pill" data-role={admin.role}>
                 {admin.role === "owner" ? <Crown aria-hidden className="size-3" /> : null}
                 {ROLE_LABEL[admin.role]}
               </span>
               {owner && !self ? (
-                <div className="ad-row-actions">
+                <div className="dash-row-actions">
                   <Button variant="outline" size="sm" disabled={lastOwner} title={locked} onClick={() => change(account, admin.id, admin.role === "owner" ? "admin" : "owner", admin.role)}>
                     {admin.role === "owner" ? "Make admin" : "Make owner"}
                   </Button>
@@ -724,9 +724,9 @@ function GrantAccess({ admins, selfId, onGrant }: { admins: AdminDashboardState[
   const existing = picked ? admins.find((admin) => admin.id === picked.id) : undefined;
 
   return (
-    <div className="ad-step border-t border-border pt-4">
-      <span className="ad-label">Grant access</span>
-      <div className="ad-search">
+    <div className="dash-step border-t border-border pt-4">
+      <span className="dash-label">Grant access</span>
+      <div className="dash-search">
         <Search aria-hidden />
         <Input
           value={query}
@@ -738,28 +738,28 @@ function GrantAccess({ admins, selfId, onGrant }: { admins: AdminDashboardState[
           aria-label="Search accounts"
         />
       </div>
-      {q.length > 0 && q.length < 2 ? <p className="ad-hint">Type at least 2 characters.</p> : null}
+      {q.length > 0 && q.length < 2 ? <p className="dash-hint">Type at least 2 characters.</p> : null}
       {searching ? (
-        <p className="ad-hint flex items-center gap-2">
+        <p className="dash-hint flex items-center gap-2">
           <Loader2 aria-hidden className="size-4 animate-spin" /> Searching…
         </p>
       ) : null}
       {results === null ? <p className="text-sm text-destructive">Accounts couldn’t be searched. Try again.</p> : null}
-      {results && results.length === 0 ? <p className="ad-empty">No account matches. The person needs to sign in to Amethyst once before they can be granted access.</p> : null}
+      {results && results.length === 0 ? <p className="dash-empty">No account matches. The person needs to sign in to Amethyst once before they can be granted access.</p> : null}
       {results && results.length > 0 && !picked ? (
-        <ul className="ad-results">
+        <ul className="dash-results">
           {results.map((account) => {
             const current = admins.find((admin) => admin.id === account.id);
             return (
               <li key={account.id}>
-                <button type="button" onClick={() => setPicked(account)} className="ad-result w-full">
+                <button type="button" onClick={() => setPicked(account)} className="dash-result w-full">
                   <Avatar account={account} id={account.id} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{who(account)}</span>
                     <span className="block truncate text-xs text-muted-foreground">{account.email ?? account.id}</span>
                   </span>
                   {current ? (
-                    <span className="ad-pill" data-role={current.role}>
+                    <span className="dash-pill" data-role={current.role}>
                       {ROLE_LABEL[current.role]}
                     </span>
                   ) : null}
@@ -770,19 +770,19 @@ function GrantAccess({ admins, selfId, onGrant }: { admins: AdminDashboardState[
         </ul>
       ) : null}
       {picked ? (
-        <div className="ad-chosen">
+        <div className="dash-chosen">
           <Avatar account={picked} id={picked.id} />
           <div className="mr-auto min-w-0">
             <p className="truncate text-sm font-medium">{who(picked)}</p>
             <p className="truncate text-xs text-muted-foreground">{picked.email ?? picked.id}</p>
           </div>
           {picked.id === selfId ? (
-            <p className="ad-hint">That’s you. Ask another owner to change your access.</p>
+            <p className="dash-hint">That’s you. Ask another owner to change your access.</p>
           ) : existing ? (
-            <p className="ad-hint">Already {ROLE_LABEL[existing.role].toLowerCase()}; change it in the list above.</p>
+            <p className="dash-hint">Already {ROLE_LABEL[existing.role].toLowerCase()}; change it in the list above.</p>
           ) : (
             <>
-              <div className="ad-segment" role="group" aria-label="Role">
+              <div className="dash-segment" role="group" aria-label="Role">
                 {(["admin", "owner"] as const).map((value) => (
                   <button key={value} type="button" aria-pressed={role === value} onClick={() => setRole(value)}>
                     {ROLE_LABEL[value]}
@@ -811,28 +811,28 @@ function OverrideHistory({ state }: { state: AdminDashboardState }) {
   return (
     <Panel title="Your overrides" icon={<Clock aria-hidden className="size-4" />} description="Your last 10 of each kind. Used ones show what was actually recorded.">
       {rows.length === 0 ? (
-        <p className="ad-empty">You haven’t queued any overrides yet.</p>
+        <p className="dash-empty">You haven’t queued any overrides yet.</p>
       ) : (
-        <ul className="ad-list ad-scroll">
+        <ul className="dash-list dash-scroll">
           {rows.map((row) => (
-            <li key={row.id} className="ad-row">
-              <div className="ad-row-main">
-                <span className="ad-icon" data-kind={row.kind === "loot" ? "loot" : "slot"}>
+            <li key={row.id} className="dash-row">
+              <div className="dash-row-main">
+                <span className="dash-icon" data-kind={row.kind === "loot" ? "loot" : "slot"}>
                   {row.kind === "loot" ? <PackageOpen aria-hidden className="size-4" /> : <Coins aria-hidden className="size-4" />}
                 </span>
-                <div className="ad-row-text">
+                <div className="dash-row-text">
                   {row.kind === "loot" ? (
-                    <p className="ad-row-title">
-                      <span className="ad-chip-dot" style={{ "--rarity": rarityColor(row.rarity) } as CSSProperties} />
+                    <p className="dash-row-title">
+                      <span className="dash-chip-dot" style={{ "--rarity": rarityColor(row.rarity) } as CSSProperties} />
                       {itemName(row.item)}
                     </p>
                   ) : (
-                    <p className="ad-row-title">
+                    <p className="dash-row-title">
                       <MiniSymbols symbols={row.symbols} />
                       {row.status === "consumed" && row.bet !== null ? `bet ${row.bet.toLocaleString("en")} → ${(row.payout ?? 0).toLocaleString("en")}` : `×${row.multiplier}`}
                     </p>
                   )}
-                  <p className="ad-row-meta" suppressHydrationWarning>
+                  <p className="dash-row-meta" suppressHydrationWarning>
                     {row.kind === "loot" ? `${lootCaseInfo(row.case).name} · ` : "Coin Slots · "}
                     {row.resolvedAt ? when(row.resolvedAt) : `queued ${when(row.createdAt)}`}
                   </p>
@@ -870,9 +870,9 @@ function AuditLog({ state }: { state: AdminDashboardState }) {
       icon={<ScrollText aria-hidden className="size-4" />}
       description="Every access change and override, newest first. Entries can’t be edited or deleted."
       actions={
-        <div className="ad-chips" role="group" aria-label="Filter the audit log">
+        <div className="dash-chips" role="group" aria-label="Filter the audit log">
           {AUDIT_FILTERS.map((option) => (
-            <button key={option.id} type="button" className="ad-chip" aria-pressed={filter === option.id} onClick={() => setFilter(option.id)}>
+            <button key={option.id} type="button" className="dash-chip" aria-pressed={filter === option.id} onClick={() => setFilter(option.id)}>
               {option.label}
             </button>
           ))}
@@ -880,26 +880,26 @@ function AuditLog({ state }: { state: AdminDashboardState }) {
       }
     >
       {entries.length === 0 ? (
-        <p className="ad-empty">{state.audit.length ? "Nothing of this kind in the latest entries." : "Nothing recorded yet."}</p>
+        <p className="dash-empty">{state.audit.length ? "Nothing of this kind in the latest entries." : "Nothing recorded yet."}</p>
       ) : (
-        <ol className="ad-list ad-scroll">
+        <ol className="dash-list dash-scroll">
           {entries.map((entry) => {
             const kind = entry.action.split("_")[0];
             const self = entry.actor?.id && entry.actor.id === entry.target?.id;
             const detail = auditDetail(entry.action, entry.details);
             const symbols = Array.isArray(entry.details.symbols) ? entry.details.symbols.filter((s): s is string => typeof s === "string") : [];
             return (
-              <li key={entry.id} className="ad-row">
-                <div className="ad-row-main">
-                  <span className="ad-icon" data-kind={kind}>
+              <li key={entry.id} className="dash-row">
+                <div className="dash-row-main">
+                  <span className="dash-icon" data-kind={kind}>
                     {kind === "admin" ? <ShieldCheck aria-hidden className="size-4" /> : kind === "loot" ? <PackageOpen aria-hidden className="size-4" /> : <Coins aria-hidden className="size-4" />}
                   </span>
-                  <div className="ad-row-text">
-                    <p className="ad-row-title font-normal">
+                  <div className="dash-row-text">
+                    <p className="dash-row-title font-normal">
                       <span className="font-semibold">{who(entry.actor, "Deleted account")}</span> {ACTION_LABEL[entry.action] ?? entry.action}
                       {!self && entry.target ? ` for ${who(entry.target)}` : ""}
                     </p>
-                    <p className="ad-row-meta flex items-center gap-1.5" suppressHydrationWarning>
+                    <p className="dash-row-meta flex items-center gap-1.5" suppressHydrationWarning>
                       {symbols.length ? <MiniSymbols symbols={symbols} size="size-4" /> : null}
                       {detail ? `${detail} · ` : ""}
                       {when(entry.createdAt)}

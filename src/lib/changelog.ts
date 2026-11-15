@@ -51,6 +51,25 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-14-admin-dashboard-blockers",
+    date: "2026-11-14",
+    title: "Admin Dashboard with content blockers",
+    intro: "The Admin Dashboard no longer goes blank in browsers with an ad or content blocker.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "fixed", feature: "Admin Dashboard", text: "Override pickers, admin access, history and the audit log stay visible instead of disappearing a moment after the page loads." },
+    ],
+    details: {
+      fixed: [
+        {
+          title: "Admin Dashboard stays visible",
+          body: "Content blockers mistook parts of the dashboard for ads and hid them shortly after loading, leaving only the stats. The page now renders fully on every device and browser. Its layout and behavior are unchanged.",
+          where: "Admin Dashboard",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-12-mobile-fixes",
     date: "2026-11-12",
     title: "Admin Dashboard and Settings on phones",
