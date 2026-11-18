@@ -54,18 +54,22 @@ const RELEASES: readonly Release[] = [
     id: "2026-11-18-front-wars",
     date: "2026-11-18",
     title: "Front Wars",
-    intro: "A new Full Game: real-time territory strategy against bot nations. Hold 72% of the land to win.",
+    intro: "A new Full Game: conquer the world against 84 real-country Nations and up to 400 Bots. Hold 72% of the land to win.",
     icon: "gamepad",
     highlights: [
-      { kind: "new", feature: "Front Wars", text: "Grow your troops, send a share of them at neutral land or a neighbor, and push your borders until you hold 72% of the map." },
-      { kind: "new", feature: "Bot nations", text: "Up to seven bots (Settlers, Raiders, Wardens and Rivals) on Easy, Normal or Hard, playing by exactly your rules." },
+      { kind: "new", feature: "Front Wars", text: "Pick your spawn anywhere on Earth, flood outward across open land, then fight your neighbors border to border until you hold 72% of the world." },
+      { kind: "new", feature: "Nations and Bots", text: "Real countries start in their homelands and expand, build, fortify and sail; hundreds of small Bots grab land everywhere and are annexed when surrounded." },
     ],
     details: {
       new: [
         {
           title: "Front Wars",
-          body: "Each match is on a freshly generated continent. Troops grow fastest at about 40% of your cap; attacks take tiles until their troops run out; hills, mountains and Defense Posts make land costlier to take; Cities raise your troop cap; retreating costs 25% of an attack. Front Wars is solo only: it keeps your best score but has no Coin rewards, leaderboards, Tournaments or Wagers.",
-          points: ["Pick the map size, number of bots and difficulty before each match", "Play with mouse, keyboard or touch: tap to attack, drag to pan, pinch or scroll to zoom", "Pause any time; the match waits for you"],
+          body: "Play on the real world map or a random continent. Tap open land to push your whole border outward, or a neighbor to attack along your shared border; boats carry attacks across the sea. Troops grow fastest well below your cap, and land and Cities raise it; terrain and Defense Posts make land costlier to take; retreating costs 25% of an attack. Front Wars is solo only: it keeps your best score but has no Coin rewards, leaderboards, Tournaments or Wagers.",
+          points: [
+            "Choose the map, how many Bots (0–400), Nations on or off, and difficulty before each match",
+            "Play with mouse, keyboard or touch: tap to act, drag to pan, pinch or scroll to zoom",
+            "Pause any time; the match waits for you",
+          ],
           where: "Arcade → Full Games",
           link: { href: "/arcade/front-wars", label: "Play Front Wars" },
         },

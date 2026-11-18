@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
-import { Building2, Crosshair, Flag, Pause, Play, RotateCcw, Shield, Swords, Undo2 } from "lucide-react";
+import { Anchor, Building2, Crosshair, Flag, MapPin, Pause, Play, RotateCcw, Shield, Swords, Trophy, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GameOverlay, GameShell, Stat, useAway, useArcade, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import { observeCanvas, startLoop, type CanvasSize } from "./engine";
@@ -9,16 +9,21 @@ import {
   BOT_COUNTS,
   CITY_TROOPS,
   DIFFICULTIES,
-  MAP_SIZES,
-  PERSONALITIES,
+  MAPS,
+  MAX_BOATS,
   RETREAT_COST,
+  SPAWN_TICKS,
   TERRAIN_LABEL,
+  TICK_SECONDS,
   WATER,
   WIN_SHARE,
   build,
+  chooseSpawn,
   cityCost,
+  compactNumber as compact,
   createGame,
-  goldPerSecond,
+  goldPerTick,
+  immune,
   launchAttack,
   matchScore,
   maxTroops,
@@ -29,16 +34,20 @@ import {
   troopsAttacking,
   type Difficulty,
   type Game,
-  type MapSize,
-  type Personality,
+  type Kind,
+  type MapKind,
   type Settings,
 } from "./front-wars/engine";
-import { MapRenderer, compact, drawFrame, type Ping, type View } from "./front-wars/render";
+import { MapRenderer, drawFrame, type Ping, type View } from "./front-wars/render";
 import "./front-wars/front-wars.css";
 
 type Phase = "setup" | "playing" | "paused" | "over";
 type Mode = "attack" | "city" | "post";
 type Hud = {
+  stage: "spawn" | "battle";
+  spawnLeft: number;
+  protectedNow: boolean;
+  spawned: boolean;
   troops: number;
   cap: number;
   attacking: number;
@@ -48,22 +57,34 @@ type Hud = {
   time: number;
   cityCost: number;
   postCost: number;
-  nations: { id: number; name: string; color: string; personality: Personality | null; share: number; troops: number; alive: boolean }[];
+  rank: number;
+  alive: number;
+  leaders: { id: number; name: string; color: string; kind: Kind; share: number; troops: number }[];
   attacks: { id: number; target: string; troops: number }[];
+  boats: { id: number; troops: number }[];
 };
 type Result = { won: boolean; score: number; best: boolean; time: number; peak: number; message: string };
 
-const SETTINGS_KEY = "front-wars:settings";
-const DEFAULT_SETTINGS: Settings = { size: "medium", bots: 4, difficulty: "normal" };
-const MAX_SCALE = 28;
+const SETTINGS_KEY = "front-wars:settings:v2";
+const DEFAULT_SETTINGS: Settings = { map: "world", bots: 200, nations: true, difficulty: "normal" };
+const MAX_SCALE = 30;
 const percent = (value: number) => `${(value * 100).toFixed(value < 0.1 ? 1 : 0)}%`;
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
+const KIND_LABEL: Record<Kind, string> = { human: "You", nation: "Nation", bot: "Bot" };
 
 function loadSettings(): Settings {
   try {
     const saved = JSON.parse(window.localStorage.getItem(SETTINGS_KEY) ?? "null") as Partial<Settings> | null;
-    if (saved && saved.size && saved.size in MAP_SIZES && saved.difficulty && saved.difficulty in DIFFICULTIES && BOT_COUNTS.includes(saved.bots as (typeof BOT_COUNTS)[number])) {
-      return { size: saved.size, bots: saved.bots!, difficulty: saved.difficulty };
+    if (
+      saved &&
+      saved.map &&
+      saved.map in MAPS &&
+      saved.difficulty &&
+      saved.difficulty in DIFFICULTIES &&
+      typeof saved.nations === "boolean" &&
+      BOT_COUNTS.includes(saved.bots as (typeof BOT_COUNTS)[number])
+    ) {
+      return { map: saved.map, bots: saved.bots!, nations: saved.nations, difficulty: saved.difficulty };
     }
   } catch {
     // Private mode or bad data: the defaults are fine.
@@ -73,23 +94,28 @@ function loadSettings(): Settings {
 
 function snapshot(game: Game): Hud {
   const player = game.nations[1];
+  const alive = game.nations.filter((nation) => nation.alive && nation.tiles > 0).sort((a, b) => b.tiles - a.tiles);
   return {
+    stage: game.phase,
+    spawnLeft: Math.max(0, (SPAWN_TICKS - game.tick) * TICK_SECONDS),
+    protectedNow: immune(game),
+    spawned: player.spawned,
     troops: player.troops,
-    cap: maxTroops(player),
+    cap: maxTroops(game, player),
     attacking: troopsAttacking(game, 1),
     gold: player.gold,
-    income: goldPerSecond(player),
+    income: goldPerTick(player) / TICK_SECONDS,
     share: share(game, player),
     time: game.time,
     cityCost: cityCost(player.cities),
-    postCost: postCost(player.posts),
-    nations: game.nations
-      .slice(1)
-      .map((nation) => ({ id: nation.id, name: nation.name, color: nation.color, personality: nation.personality, share: share(game, nation), troops: nation.troops, alive: nation.alive }))
-      .sort((a, b) => Number(b.alive) - Number(a.alive) || b.share - a.share),
+    postCost: postCost(player.posts.length),
+    rank: alive.findIndex((nation) => nation.id === 1) + 1,
+    alive: alive.length,
+    leaders: alive.slice(0, 10).map((nation) => ({ id: nation.id, name: nation.name, color: nation.color, kind: nation.kind, share: share(game, nation), troops: nation.troops })),
     attacks: game.attacks
       .filter((attack) => attack.from === 1)
-      .map((attack) => ({ id: attack.id, target: attack.to ? game.nations[attack.to].name : "Neutral land", troops: attack.troops })),
+      .map((attack) => ({ id: attack.id, target: attack.to ? game.nations[attack.to].name : "Unclaimed land", troops: attack.troops })),
+    boats: game.boats.filter((boat) => boat.from === 1).map((boat) => ({ id: boat.id, troops: boat.troops })),
   };
 }
 
@@ -100,7 +126,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   const [settings, setSettings] = useState<Settings>(loadSettings);
   const [phase, setPhase] = useState<Phase>("setup");
   const [hud, setHud] = useState<Hud | null>(null);
-  const [ratio, setRatio] = useState(0.3);
+  const [ratio, setRatio] = useState(0.2);
   const [mode, setMode] = useState<Mode>("attack");
   const [notice, setNotice] = useState<{ text: string; ok: boolean; id: number } | null>(null);
   const [inspect, setInspect] = useState<string | null>(null);
@@ -109,7 +135,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<Game | null>(null);
   const rendererRef = useRef<MapRenderer | null>(null);
-  const viewRef = useRef<View>({ scale: 4, x: 0, y: 0 });
+  const viewRef = useRef<View>({ scale: 1, x: 0, y: 0 });
   const sizeRef = useRef<CanvasSize>({ width: 1, height: 1, dpr: 1 });
   const hoverRef = useRef(-1);
   const pingsRef = useRef<Ping[]>([]);
@@ -138,7 +164,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     renderer.update();
     const now = performance.now();
     pingsRef.current = pingsRef.current.filter((ping) => now - ping.at < 600);
-    drawFrame(ctx, renderer, game, viewRef.current, sizeRef.current, { hover: hoverRef.current, mode: modeRef.current, pings: pingsRef.current, now });
+    drawFrame(ctx, renderer, game, viewRef.current, sizeRef.current, { hover: hoverRef.current, mode: modeRef.current, pings: pingsRef.current, now, spawn: game.phase === "spawn" });
   }, []);
 
   /** Draw once on the next frame (while paused or between matches nothing runs continuously). */
@@ -165,7 +191,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     const { width, height } = sizeRef.current;
     const mapW = game.w * view.scale;
     const mapH = game.h * view.scale;
-    // Keep at least a third of the map on screen.
+    // Keep at least a third of the view on the map.
     view.x = Math.min(width - Math.min(mapW, width) / 3, Math.max(Math.min(mapW, width) / 3 - mapW, view.x));
     view.y = Math.min(height - Math.min(mapH, height) / 3, Math.max(Math.min(mapH, height) / 3 - mapH, view.y));
   }, []);
@@ -176,8 +202,8 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       if (!game) return;
       const view = viewRef.current;
       const { width, height } = sizeRef.current;
-      const fitScale = Math.min(width / game.w, height / game.h);
-      const scale = Math.min(MAX_SCALE, Math.max(fitScale * 0.9, view.scale * factor));
+      const smallest = Math.min(width / game.w, height / game.h) * 0.9;
+      const scale = Math.min(MAX_SCALE, Math.max(smallest, view.scale * factor));
       view.x = sx - ((sx - view.x) / view.scale) * scale;
       view.y = sy - ((sy - view.y) / view.scale) * scale;
       view.scale = scale;
@@ -191,11 +217,12 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     const game = gameRef.current;
     if (!game) return;
     const player = game.nations[1];
+    if (!player.tiles) return;
     const view = viewRef.current;
     const { width, height } = sizeRef.current;
-    view.scale = Math.max(view.scale, Math.min(MAX_SCALE, Math.min(width / game.w, height / game.h) * 2.4));
-    view.x = width / 2 - (player.cx + 0.5) * view.scale;
-    view.y = height / 2 - (player.cy + 0.5) * view.scale;
+    view.scale = Math.max(view.scale, Math.min(MAX_SCALE, Math.min(width / game.w, height / game.h) * 5));
+    view.x = width / 2 - (player.sx / player.tiles + 0.5) * view.scale;
+    view.y = height / 2 - (player.sy / player.tiles + 0.5) * view.scale;
     clampView();
     requestDraw();
   }, [clampView, requestDraw]);
@@ -253,14 +280,13 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       setSettings(next);
       setResult(null);
       setMode("attack");
-      setNotice(null);
       setHud(snapshot(game));
       setPhase("playing");
       fit();
-      requestAnimationFrame(() => centerOnHome());
+      say("Choose where to start: tap any unclaimed land.", true);
       play("tap");
     },
-    [fit, centerOnHome, play],
+    [fit, say, play],
   );
 
   // The match runs only while playing: ten simulation ticks a second, a frame per display refresh.
@@ -274,14 +300,26 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       () => {
         const game = gameRef.current;
         if (!game || game.outcome) return;
+        const before = game.phase;
         step(game);
         ticks += 1;
+        if (before === "spawn" && game.phase === "battle") {
+          say("The battle begins! Tap unclaimed land to expand. Everyone is protected for 5 seconds.", true);
+          play("power");
+          centerOnHome();
+        }
         for (const event of game.events) {
-          if (event.kind === "eliminated") {
+          if (event.kind === "eliminated" || event.kind === "annexed") {
             const fallen = game.nations[event.nation];
-            if (event.nation === 1) continue;
-            say(event.by === 1 ? `You conquered ${fallen.name}.` : `${fallen.name} was conquered by ${game.nations[event.by]?.name ?? "a rival"}.`, true);
-            play("crack");
+            if (event.by === 1) {
+              say(event.kind === "annexed" ? `${fallen.name} was surrounded and joined you.` : `You conquered ${fallen.name}.`, true);
+              play("crack");
+            } else if (fallen.kind === "nation" && event.nation !== 1) {
+              say(`${fallen.name} fell to ${game.nations[event.by]?.name ?? "a rival"}.`, true);
+            }
+          } else if (event.kind === "landed") {
+            if (event.from === 1) say(`Your boat landed${event.to ? ` on ${game.nations[event.to].name}'s shore` : ""}.`, true);
+            else if (event.to === 1) say(`${game.nations[event.from].name} landed on your shore!`, false);
           } else if (event.kind === "captured-building" && (event.to === 1 || event.from === 1)) {
             say(event.to === 1 ? `You captured a ${event.building === "city" ? "City" : "Defense Post"}.` : `You lost a ${event.building === "city" ? "City" : "Defense Post"}.`, event.to === 1);
           }
@@ -296,7 +334,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       () => draw(),
       10,
     );
-  }, [phase, draw, requestDraw, finish, say, play]);
+  }, [phase, draw, requestDraw, finish, say, play, centerOnHome]);
 
   const togglePause = useCallback(() => {
     setPhase((current) => (current === "playing" ? "paused" : current === "paused" ? "playing" : current));
@@ -323,14 +361,16 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       const game = gameRef.current;
       if (!game || tile < 0 || phaseRef.current !== "playing") return;
       const current = modeRef.current;
-      const outcome = current === "attack" ? launchAttack(game, 1, tile, ratioRef.current) : build(game, 1, tile, current);
+      const outcome =
+        game.phase === "spawn" ? chooseSpawn(game, tile) : current === "attack" ? launchAttack(game, 1, tile, ratioRef.current) : build(game, 1, tile, current);
       pingsRef.current.push({ tile, at: performance.now(), ok: outcome.ok });
       say(outcome.message, outcome.ok);
-      play(outcome.ok ? (current === "attack" ? "swoosh" : "place") : "invalid");
+      play(outcome.ok ? (game.phase === "spawn" ? "place" : current === "attack" ? "swoosh" : "place") : "invalid");
       if (outcome.ok && current !== "attack") setMode("attack");
       setHud(snapshot(game));
+      requestDraw();
     },
-    [say, play],
+    [say, play, requestDraw],
   );
 
   const retreatFrom = useCallback(
@@ -345,7 +385,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     [say, play],
   );
 
-  const changeRatio = useCallback((delta: number) => setRatio((value) => Math.round(Math.min(1, Math.max(0.05, value + delta)) * 100) / 100), []);
+  const changeRatio = useCallback((delta: number) => setRatio((value) => Math.round(Math.min(1, Math.max(0.01, value + delta)) * 100) / 100), []);
 
   const pan = useCallback(
     (dx: number, dy: number) => {
@@ -375,31 +415,35 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
         return true;
       case "w":
       case "arrowup":
-        pan(0, 60);
+        pan(0, 80);
         return true;
       case "s":
       case "arrowdown":
-        pan(0, -60);
+        pan(0, -80);
         return true;
       case "a":
       case "arrowleft":
-        pan(60, 0);
+        pan(80, 0);
         return true;
       case "d":
       case "arrowright":
-        pan(-60, 0);
+        pan(-80, 0);
         return true;
       case "e":
       case "+":
       case "=":
-        zoomAt(1.25, width / 2, height / 2);
+        zoomAt(1.3, width / 2, height / 2);
         return true;
       case "q":
       case "-":
-        zoomAt(0.8, width / 2, height / 2);
+        zoomAt(1 / 1.3, width / 2, height / 2);
         return true;
       case "h":
         centerOnHome();
+        return true;
+      case "m":
+        fit();
+        requestDraw();
         return true;
       case "c":
         setMode((current) => (current === "city" ? "attack" : "city"));
@@ -416,9 +460,8 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
         return true;
       }
       case "enter": {
-        // Keyboard attack: aim at the hovered tile, or at the map's center.
-        const tile = hoverRef.current >= 0 ? hoverRef.current : tileAt(width / 2, height / 2);
-        act(tile);
+        // Keyboard: act on the hovered tile, or on the middle of the view.
+        act(hoverRef.current >= 0 ? hoverRef.current : tileAt(width / 2, height / 2));
         return true;
       }
       default:
@@ -441,6 +484,17 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
 
+  function describe(tile: number) {
+    const game = gameRef.current;
+    if (!game || tile < 0) return setInspect(null);
+    const terrain = game.terrain[tile];
+    if (terrain === WATER) return setInspect("Water");
+    const owner = game.owner[tile];
+    const who = owner ? `${game.nations[owner].name}${owner === 1 ? "" : ` (${KIND_LABEL[game.nations[owner].kind]}) · ${compact(game.nations[owner].troops)} troops`}` : "Unclaimed land";
+    const building = game.building[tile] === 1 ? " · City" : game.building[tile] === 2 ? " · Defense Post" : "";
+    setInspect(`${TERRAIN_LABEL[terrain]} · ${who}${building}`);
+  }
+
   function onPointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = local(event);
@@ -457,7 +511,6 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     const point = local(event);
     const previous = pointers.current.get(event.pointerId);
     if (!previous) {
-      // Hover (mouse): outline the tile and describe it.
       const tile = tileAt(point.x, point.y);
       if (tile !== hoverRef.current) {
         hoverRef.current = tile;
@@ -492,17 +545,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     }
   }
 
-  function describe(tile: number) {
-    const game = gameRef.current;
-    if (!game || tile < 0) return setInspect(null);
-    const terrain = game.terrain[tile];
-    if (terrain === WATER) return setInspect("Water");
-    const owner = game.owner[tile];
-    const building = game.building[tile] === 1 ? " · City" : game.building[tile] === 2 ? " · Defense Post" : "";
-    setInspect(`${TERRAIN_LABEL[terrain]} · ${owner ? game.nations[owner].name : "Neutral land"}${building}`);
-  }
-
-  // Wheel zoom needs a non-passive listener so the page doesn't scroll.
+  // Wheel zoom needs a non-passive listener so the page doesn't scroll; Shift + wheel sets the ratio.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -511,7 +554,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       event.preventDefault();
       const rect = canvas.getBoundingClientRect();
       if (event.shiftKey) changeRatio(event.deltaY < 0 ? 0.05 : -0.05);
-      else zoomAt(event.deltaY < 0 ? 1.15 : 1 / 1.15, event.clientX - rect.left, event.clientY - rect.top);
+      else zoomAt(event.deltaY < 0 ? 1.18 : 1 / 1.18, event.clientX - rect.left, event.clientY - rect.top);
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
@@ -521,6 +564,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
 
   const inMatch = phase === "playing" || phase === "paused" || phase === "over";
   const player = hud;
+  const spawning = player?.stage === "spawn";
 
   return (
     <GameShell
@@ -530,12 +574,12 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       stats={
         inMatch && player ? (
           <>
-            <Stat label="Land" value={`${percent(player.share)} / ${percent(WIN_SHARE)}`} highlight={player.share >= 0.5} />
+            <Stat label="Land" value={`${percent(player.share)} / ${percent(WIN_SHARE)}`} highlight={player.share >= 0.4} />
             <Stat label="Troops" value={`${compact(player.troops)} / ${compact(player.cap)}`} />
             <Stat label="Gold" value={compact(player.gold)} />
-            <Stat label="Attack ratio" value={`${Math.round(ratio * 100)}%`} />
-            <Stat label="Time" value={clock(player.time)} className="hidden sm:flex" />
-            <Stat label="Best" value={best ? best.toLocaleString("en") : "—"} className="hidden md:flex" />
+            <Stat label="Attack" value={`${Math.round(ratio * 100)}%`} />
+            <Stat label="Rank" value={player.rank ? `#${player.rank} of ${player.alive}` : "—"} className="hidden sm:flex" />
+            <Stat label="Time" value={clock(player.time)} className="hidden md:flex" />
           </>
         ) : (
           <Stat label="Best" value={best ? best.toLocaleString("en") : "—"} />
@@ -555,7 +599,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
           <canvas
             ref={canvasRef}
             className="fw-canvas"
-            aria-label="Front Wars map. Click or tap land on your border to attack it; drag to pan, scroll or pinch to zoom."
+            aria-label="Front Wars map. Click or tap land to expand or attack; drag to pan, scroll or pinch to zoom."
             role="img"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -570,20 +614,26 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
             }}
             onContextMenu={(event) => event.preventDefault()}
           />
-          {inMatch ? (
+          {inMatch && player ? (
             <>
-              <div className="fw-mapbar" aria-hidden={!inspect}>
-                <span className="fw-mode" data-mode={mode}>
-                  {mode === "attack" ? <Crosshair aria-hidden className="size-3.5" /> : mode === "city" ? <Building2 aria-hidden className="size-3.5" /> : <Shield aria-hidden className="size-3.5" />}
-                  {mode === "attack" ? `Attack · ${Math.round(ratio * 100)}%` : mode === "city" ? "Place a City" : "Place a Defense Post"}
+              <div className="fw-mapbar">
+                <span className="fw-mode" data-mode={spawning ? "spawn" : mode}>
+                  {spawning ? <MapPin aria-hidden className="size-3.5" /> : mode === "attack" ? <Crosshair aria-hidden className="size-3.5" /> : mode === "city" ? <Building2 aria-hidden className="size-3.5" /> : <Shield aria-hidden className="size-3.5" />}
+                  {spawning
+                    ? `${player.spawned ? "Move your start" : "Pick your start"} · ${Math.ceil(player.spawnLeft)}s`
+                    : mode === "attack"
+                      ? `Attack · ${Math.round(ratio * 100)}%${player.protectedNow ? " · protected" : ""}`
+                      : mode === "city"
+                        ? "Place a City"
+                        : "Place a Defense Post"}
                 </span>
                 {inspect ? <span className="fw-inspect">{inspect}</span> : null}
               </div>
               <div className="fw-zoom">
-                <Button variant="outline" size="icon-sm" onClick={() => zoomAt(1.25, sizeRef.current.width / 2, sizeRef.current.height / 2)} aria-label="Zoom in">
+                <Button variant="outline" size="icon-sm" onClick={() => zoomAt(1.3, sizeRef.current.width / 2, sizeRef.current.height / 2)} aria-label="Zoom in">
                   +
                 </Button>
-                <Button variant="outline" size="icon-sm" onClick={() => zoomAt(0.8, sizeRef.current.width / 2, sizeRef.current.height / 2)} aria-label="Zoom out">
+                <Button variant="outline" size="icon-sm" onClick={() => zoomAt(1 / 1.3, sizeRef.current.width / 2, sizeRef.current.height / 2)} aria-label="Zoom out">
                   −
                 </Button>
                 <Button variant="outline" size="icon-sm" onClick={centerOnHome} aria-label="Center on your land" title="Center on your land (H)">
@@ -621,7 +671,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                 </>
               }
             >
-              The match is frozen: troops, gold and bots wait for you.
+              The match is frozen: troops, gold and every rival wait for you.
             </GameOverlay>
           ) : null}
           {phase === "over" && result ? (
@@ -665,12 +715,17 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                     {Math.round(ratio * 100)}% · {compact(player.troops * ratio)} troops
                   </span>
                 </span>
-                <input type="range" min={5} max={100} step={5} value={Math.round(ratio * 100)} onChange={(event) => setRatio(Number(event.target.value) / 100)} />
+                <input type="range" min={1} max={100} step={1} value={Math.round(ratio * 100)} onChange={(event) => setRatio(Number(event.target.value) / 100)} />
               </label>
               <p className="text-xs text-muted-foreground">
-                {phase === "playing" ? "Tap land on your border to attack it." : "Resume to give orders."} Keys: 1 / 2 ratio, X retreat.
+                {spawning
+                  ? "Tap the map to choose where you start."
+                  : phase === "playing"
+                    ? "Tap unclaimed land to expand, or a neighbor to attack. Across water, a boat sails."
+                    : "Resume to give orders."}{" "}
+                Keys: 1 / 2 ratio, X retreat.
               </p>
-              {player.attacks.length ? (
+              {player.attacks.length || player.boats.length ? (
                 <ul className="fw-attacks" aria-label="Your attacks">
                   {player.attacks.map((attack) => (
                     <li key={attack.id}>
@@ -681,6 +736,17 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                         <Undo2 aria-hidden />
                         Retreat
                       </Button>
+                    </li>
+                  ))}
+                  {player.boats.map((boat) => (
+                    <li key={`boat-${boat.id}`}>
+                      <span className="flex min-w-0 items-center gap-1.5 truncate">
+                        <Anchor aria-hidden className="size-3.5 shrink-0" />
+                        Boat at sea · <span className="tabular-nums">{compact(boat.troops)}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {player.boats.length}/{MAX_BOATS}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -698,9 +764,9 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                   size="sm"
                   variant={mode === "city" ? "default" : "outline"}
                   aria-pressed={mode === "city"}
-                  disabled={phase !== "playing"}
+                  disabled={phase !== "playing" || spawning}
                   onClick={() => setMode((current) => (current === "city" ? "attack" : "city"))}
-                  title={`+${CITY_TROOPS.toLocaleString("en")} troop cap (C)`}
+                  title={`+${compact(CITY_TROOPS)} troop cap (C)`}
                 >
                   <Building2 aria-hidden />
                   City · {compact(player.cityCost)}
@@ -709,45 +775,58 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                   size="sm"
                   variant={mode === "post" ? "default" : "outline"}
                   aria-pressed={mode === "post"}
-                  disabled={phase !== "playing"}
+                  disabled={phase !== "playing" || spawning}
                   onClick={() => setMode((current) => (current === "post" ? "attack" : "post"))}
-                  title="Nearby land costs attackers more and falls slower (F)"
+                  title="Attacks on land in its reach lose far more troops and slow to a crawl (F)"
                 >
                   <Shield aria-hidden />
                   Post · {compact(player.postCost)}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {mode === "attack" ? `Cities add ${compact(CITY_TROOPS)} troop cap; Defense Posts guard land nearby.` : "Tap your own land to place it. Esc cancels."}
+                {mode === "attack" ? `Cities add ${compact(CITY_TROOPS)} troop cap; Defense Posts guard the land around them.` : "Tap your own land to place it. Esc cancels."}
               </p>
             </section>
 
             <section className="fw-card">
               <h2 className="fw-card-title">
-                <Flag aria-hidden className="size-4" />
-                Nations
+                <Trophy aria-hidden className="size-4" />
+                Leaderboard
                 <span className="ml-auto text-xs font-medium text-muted-foreground">Goal {percent(WIN_SHARE)}</span>
               </h2>
               <ol className="fw-nations">
-                {player.nations.map((nation) => (
-                  <li key={nation.id} data-alive={nation.alive ? "true" : "false"} data-you={nation.id === 1 ? "true" : "false"}>
+                {player.leaders.map((nation, index) => (
+                  <li key={nation.id} data-you={nation.id === 1 ? "true" : "false"} data-alive="true">
+                    <span className="w-5 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{index + 1}</span>
                     <span aria-hidden className="fw-swatch" style={{ "--swatch": nation.color } as CSSProperties} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">
                         {nation.name}
-                        {nation.personality ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{PERSONALITIES[nation.personality].label}</span> : null}
+                        {nation.kind !== "human" ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{KIND_LABEL[nation.kind]}</span> : null}
                       </span>
                       <span className="fw-share" aria-hidden>
                         <span style={{ width: `${Math.min(100, (nation.share / WIN_SHARE) * 100)}%`, background: nation.color }} />
                       </span>
                     </span>
                     <span className="text-right text-xs tabular-nums">
-                      <span className="block font-semibold text-foreground">{nation.alive ? percent(nation.share) : "Fallen"}</span>
-                      {nation.alive ? <span className="block text-muted-foreground">{compact(nation.troops)}</span> : null}
+                      <span className="block font-semibold text-foreground">{percent(nation.share)}</span>
+                      <span className="block text-muted-foreground">{compact(nation.troops)}</span>
                     </span>
                   </li>
                 ))}
+                {player.rank > 10 ? (
+                  <li data-you="true" data-alive="true">
+                    <span className="w-5 shrink-0 text-right text-xs text-muted-foreground tabular-nums">{player.rank}</span>
+                    <span aria-hidden className="fw-swatch" style={{ "--swatch": "#3f7bff" } as CSSProperties} />
+                    <span className="min-w-0 flex-1 text-sm font-medium">You</span>
+                    <span className="text-right text-xs tabular-nums">
+                      <span className="block font-semibold text-foreground">{percent(player.share)}</span>
+                      <span className="block text-muted-foreground">{compact(player.troops)}</span>
+                    </span>
+                  </li>
+                ) : null}
               </ol>
+              <p className="text-xs text-muted-foreground">{player.alive.toLocaleString("en")} players still standing.</p>
             </section>
           </aside>
         ) : null}
@@ -756,40 +835,50 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   );
 }
 
-/** Match setup: map size, number of bots and difficulty, with the rules spelled out before you start. */
+/** Match setup: map, rivals and difficulty, with the rules spelled out before you start. */
 function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: (next: Settings) => void; onStart: () => void }) {
-  const bots = Array.from({ length: settings.bots }, (_, i) => (["settler", "raider", "rival", "warden", "raider", "settler", "rival"] as Personality[])[i]);
-  const kinds = [...new Set(bots)];
   return (
     <div className="fw-setup">
       <div className="fw-setup-card">
         <div>
-          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Solo match vs bots</p>
-          <h2 className="mt-0.5 text-xl font-bold tracking-tight">Plan your campaign</h2>
+          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Solo match</p>
+          <h2 className="mt-0.5 text-xl font-bold tracking-tight">Plan your conquest</h2>
         </div>
 
         <fieldset className="fw-options">
-          <legend>Map size</legend>
-          <div role="radiogroup" aria-label="Map size" className="fw-segment">
-            {(Object.keys(MAP_SIZES) as MapSize[]).map((size) => (
-              <button key={size} type="button" role="radio" aria-checked={settings.size === size} onClick={() => onChange({ ...settings, size })}>
-                {MAP_SIZES[size].label}
+          <legend>Map</legend>
+          <div role="radiogroup" aria-label="Map" className="fw-segment">
+            {(Object.keys(MAPS) as MapKind[]).map((map) => (
+              <button key={map} type="button" role="radio" aria-checked={settings.map === map} onClick={() => onChange({ ...settings, map })}>
+                {MAPS[map].label}
               </button>
             ))}
           </div>
-          <p>{MAP_SIZES[settings.size].hint}</p>
+          <p>{MAPS[settings.map].hint}</p>
         </fieldset>
 
         <fieldset className="fw-options">
-          <legend>Bot nations</legend>
-          <div role="radiogroup" aria-label="Bot nations" className="fw-segment">
+          <legend>Bots</legend>
+          <div role="radiogroup" aria-label="Bots" className="fw-segment">
             {BOT_COUNTS.map((count) => (
               <button key={count} type="button" role="radio" aria-checked={settings.bots === count} onClick={() => onChange({ ...settings, bots: count })}>
                 {count}
               </button>
             ))}
           </div>
-          <p>{kinds.map((kind) => `${PERSONALITIES[kind].label}: ${PERSONALITIES[kind].hint}`).join(" ")}</p>
+          <p>Small tribes scattered everywhere: weak alone, quick to grab land, and annexed when someone surrounds them.</p>
+        </fieldset>
+
+        <fieldset className="fw-options">
+          <legend>Nations</legend>
+          <div role="radiogroup" aria-label="Nations" className="fw-segment">
+            {[true, false].map((on) => (
+              <button key={String(on)} type="button" role="radio" aria-checked={settings.nations === on} onClick={() => onChange({ ...settings, nations: on })}>
+                {on ? "On" : "Off"}
+              </button>
+            ))}
+          </div>
+          <p>{settings.map === "world" ? "84 real countries start in their homelands" : "12 rival realms"}: real opponents that expand, build Cities and Defense Posts, sail, and attack the weak.</p>
         </fieldset>
 
         <fieldset className="fw-options">
@@ -801,32 +890,29 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
               </button>
             ))}
           </div>
-          <p>{DIFFICULTIES[settings.difficulty].hint} Bots play by your rules: same troops, gold and limits.</p>
+          <p>{DIFFICULTIES[settings.difficulty].hint} Everyone plays by the same rules.</p>
         </fieldset>
 
         <div className="fw-rules">
           <h3>Rules</h3>
           <ul>
             <li>
-              <strong>Win</strong> by holding {percent(WIN_SHARE)} of all land. You lose if your last land falls or a bot reaches {percent(WIN_SHARE)} first.
+              <strong>Win</strong> by holding {percent(WIN_SHARE)} of all land. You lose if your last land falls or a rival reaches {percent(WIN_SHARE)} first.
             </li>
             <li>
-              <strong>Troops</strong> grow on their own, fastest at about 40% of your cap. More land and Cities raise the cap.
+              <strong>Start:</strong> for 10 seconds, tap anywhere to choose your spawn. Then everyone is protected for 5 seconds.
             </li>
             <li>
-              <strong>Attack</strong> by tapping neutral land or an enemy on your border: you send your attack ratio of troops, and they take tiles until they run out. Leftovers come home.
+              <strong>Expand and attack</strong> by tapping unclaimed land or a neighbor: you send your attack ratio of troops and they push your whole shared border forward until they run out.
             </li>
             <li>
-              <strong>Terrain and defense:</strong> hills and mountains cost more troops and fall slower; so does land near a Defense Post.
+              <strong>Troops</strong> grow fastest well below your cap; more land and Cities raise the cap. Hills and mountains cost more, and land near a Defense Post costs far more.
             </li>
             <li>
-              <strong>Retreat</strong> calls an attack back, at the cost of {RETREAT_COST * 100}% of its troops.
-            </li>
-            <li>
-              <strong>Gold</strong> comes from your land. Spend it on Cities and Defense Posts.
+              <strong>Boats:</strong> tap land across the water to sail troops there (up to {MAX_BOATS} at sea). <strong>Retreat</strong> costs {RETREAT_COST * 100}% of an attack.
             </li>
           </ul>
-          <p className="text-xs text-muted-foreground">Controls: tap or click to attack · drag to pan · scroll or pinch to zoom · 1 / 2 ratio · C City · F Post · X retreat · H home · Space pause.</p>
+          <p className="text-xs text-muted-foreground">Controls: tap or click to act · drag to pan · scroll or pinch to zoom · 1 / 2 ratio · C City · F Post · X retreat · H home · M whole map · Space pause.</p>
         </div>
 
         <Button size="lg" onClick={onStart} className="w-full">

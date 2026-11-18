@@ -75,6 +75,20 @@
   background: #ffd36b;
 }
 
+/* The spawn phase: a bright, pulsing call to pick a start. */
+.fw-mode[data-mode="spawn"] {
+  color: #fff;
+  background: #3f7bff;
+  box-shadow: 0 0 0 0 rgb(63 123 255 / 0.6);
+  animation: fw-spawn 1.4s ease-out infinite;
+}
+
+@keyframes fw-spawn {
+  to {
+    box-shadow: 0 0 0 10px rgb(63 123 255 / 0);
+  }
+}
+
 .fw-zoom {
   position: absolute;
   top: 0.5rem;
