@@ -4,6 +4,7 @@ import { CUTSCENE_RARITIES, type CutsceneRarity } from "@/lib/rarities";
 import { DEFAULT_SNAKE_SETUP, snakeSetupSchema, type SnakeSetup } from "@/lib/snake";
 import { THEME_IDS, type ThemeId } from "@/lib/themes";
 import { artworkUrl } from "@/lib/validation/entries";
+import { ADMIN_GEM_IDS, DEFAULT_ADMIN_GEM, type AdminGemId } from "@/lib/admin-gems";
 import { ADMIN_LOOK_IDS, DEFAULT_ADMIN_LOOK, type AdminLookId } from "@/lib/admin-looks";
 import { DEFAULT_VAULT_LOOK, VAULT_LOOK_IDS, type VaultLookId } from "@/lib/vault-looks";
 import { BUILTIN_VIEWER_PRESET_IDS, DEFAULT_VIEWER_PRESET, viewerLookSchema, type ViewerLook } from "@/lib/viewer-looks";
@@ -156,6 +157,8 @@ export const DEFAULT_SETTINGS = {
   adminLook: DEFAULT_ADMIN_LOOK as AdminLookId,
   /** The Admin Dashboard's design, switched from the dashboard itself. Presentation only. */
   adminDashboardStyle: "standard" as AdminDashboardStyle,
+  /** The gem that lights the dashboard's Flashy design, chosen in its rail. */
+  adminDashboardGem: DEFAULT_ADMIN_GEM as AdminGemId,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -265,6 +268,7 @@ const settingFields = {
   vaultLook: z.enum(VAULT_LOOK_IDS),
   adminLook: z.enum(ADMIN_LOOK_IDS),
   adminDashboardStyle: z.enum(ADMIN_DASHBOARD_STYLES),
+  adminDashboardGem: z.enum(ADMIN_GEM_IDS),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

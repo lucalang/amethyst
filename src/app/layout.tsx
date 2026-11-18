@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bungee, Caveat, Cinzel, Fredoka, JetBrains_Mono, Literata, Manrope, Patrick_Hand, Permanent_Marker, Playfair_Display, Press_Start_2P, Special_Elite, VT323 } from "next/font/google";
+import { Bungee, Caveat, Cinzel, Fredoka, JetBrains_Mono, Literata, Manrope, Patrick_Hand, Permanent_Marker, Playfair_Display, Press_Start_2P, Special_Elite, Syne, VT323 } from "next/font/google";
 import { Providers } from "@/components/layout/providers";
 import "./globals.css";
 import "./surfaces.css";
@@ -26,8 +26,10 @@ const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], display: 
 const patrickHand = Patrick_Hand({ variable: "--font-patrick-hand", weight: "400", subsets: ["latin"], display: "swap", preload: false });
 // The Vault's engraved display face, only downloaded on the Vault.
 const cinzel = Cinzel({ variable: "--font-cinzel", subsets: ["latin"], display: "swap", preload: false });
+// The Admin Dashboard's Flashy (Geode) display face, only downloaded there.
+const syne = Syne({ variable: "--font-syne", subsets: ["latin"], display: "swap", preload: false });
 
-const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart, fredoka, specialElite, permanentMarker, bungee, caveat, patrickHand, cinzel]
+const FONT_VARIABLES = [manrope, literata, jetbrains, playfair, vt323, pressStart, fredoka, specialElite, permanentMarker, bungee, caveat, patrickHand, cinzel, syne]
   .map((font) => font.variable)
   .join(" ");
 

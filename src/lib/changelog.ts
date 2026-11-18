@@ -54,17 +54,17 @@ const RELEASES: readonly Release[] = [
     id: "2026-11-18-admin-dashboard-flashy",
     date: "2026-11-18",
     title: "Flashy Admin Dashboard",
-    intro: "The Admin Dashboard has a new cinematic Flashy design next to the Standard one, with the same tools and checks.",
+    intro: "The Admin Dashboard has a new Flashy design, Geode, next to the Standard one, with the same tools and checks.",
     icon: "palette",
     highlights: [
       { kind: "new", feature: "Standard / Flashy", text: "Switch the dashboard’s design from its header. Standard stays the default, and your choice is saved to your account." },
-      { kind: "new", feature: "Sanctum stage", text: "Flashy is built like Code Admin: the turning seal behind everything, a HUD with the views, Admin colours and sound, and views that fly in with their side panels angled toward you." },
+      { kind: "new", feature: "Geode", text: "A dark cave lit by a gem you pick: a turning crystal, faceted glass panels that catch the light, views that crystallize in behind a prism beam, and shards when an action succeeds." },
     ],
     details: {
       new: [
         {
-          title: "Flashy design",
-          body: "Flashy shares the Code Admin colours and sound setting (switch either from its HUD), follows your motion setting and reduced-motion preference, and needs no WebGL. Its Overview adds an admin roster, recent activity, what’s queued for you and two weeks of admin actions; Access and Audit get a summary panel beside them. Player lookup, overrides, admin access and the audit log work exactly as in Standard, with the same confirmations and access checks.",
+          title: "Flashy design: Geode",
+          body: "Pick Amethyst, Sapphire, Emerald, Citrine or Rose quartz in the rail; the gem is saved to your account. Geode has its own crystal chimes (using your sound setting), follows your motion setting and reduced-motion preference, and needs no WebGL. Its Overview adds an admin roster, recent activity, what’s queued for you and two weeks of admin actions; Access and Audit get a summary panel beside them. Player lookup, overrides, admin access and the audit log work exactly as in Standard, with the same confirmations and access checks.",
           where: "Admin Dashboard → Standard / Flashy",
           link: { href: "/admin-dashboard", label: "Open the Admin Dashboard" },
         },

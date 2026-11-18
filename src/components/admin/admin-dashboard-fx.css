@@ -1,404 +1,500 @@
 /* ---------------------------------------------------------------------------
- * Flashy Admin Dashboard (/admin-dashboard, style "flashy"), built in the
- * Crimson Sanctum's language (Code Admin, /admin): a full-height stage over
- * the turning seal, a HUD along the top, one view at a time flying in from
- * depth, side panels angled toward the middle and counters on a curve. CSS 3D
- * only (no WebGL). The tool panels are the Standard dashboard's own; this sheet
- * re-skins them through the theme tokens and a few scoped rules.
- * Colours follow the Code Admin colour choice via --look-* (lib/admin-looks).
- * Decoration is aria-hidden and never takes pointer events.
+ * Geode: the Flashy Admin Dashboard (/admin-dashboard, style "flashy").
+ * A dark cave lit by one gem (lib/admin-gems: --gem-a body, --gem-b refraction,
+ * --gem-c highlight, --gem-deep shadow). A faceted crystal turns in the cave
+ * and leans toward the pointer; panels are chamfered glass with refracting
+ * edges and light that follows the pointer; views crystallize in behind a
+ * prism beam; confirmed actions burst into shards. Navigation is a rail.
+ * CSS 3D only. Decoration is aria-hidden and never takes pointer events.
+ * The tool panels are the Standard dashboard's own, re-skinned here.
  * ------------------------------------------------------------------------- */
 
-.dash-fx,
-.dash-fx-dialog {
-  /* The look shift used throughout admin.css: a design colour, turned by the chosen Admin colour. */
-  --fx-red: oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
-  --fx-red-hi: oklch(from #ff5a72 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
-  --fx-red-pale: oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
-  --fx-red-deep: oklch(from #b0001d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
-  --fx-bg-1: oklch(from #16030a min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
-  --fx-bg-2: oklch(from #080104 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
-  --fx-glass-hi: oklch(from rgb(30 6 13) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94);
-  --fx-glass-lo: oklch(from rgb(10 2 6) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96);
-  --fx-btn-hi: oklch(from rgb(42 8 17) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92);
-  --fx-btn-lo: oklch(from rgb(18 3 8) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92);
-  --fx-hud-hi: oklch(from rgb(60 12 24) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94);
-  --fx-hud-lo: oklch(from rgb(26 5 11) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94);
-  --fx-nav-hi: oklch(from rgb(36 7 15) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92);
-  --fx-nav-lo: oklch(from rgb(14 3 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92);
-  --fx-well: oklch(from rgb(16 3 8) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.62);
-  --fx-field: rgb(9 2 5 / 0.78);
-  --fx-line: color-mix(in oklab, var(--fx-red) 22%, transparent);
-  --fx-line-hi: color-mix(in oklab, var(--fx-red-hi) 60%, transparent);
-  --fx-text: #f3e9eb;
-  --fx-soft: #d2c4c7;
-  --fx-dim: #ab9ca0;
-  --fx-amber: #ffb24a;
-  --fx-ember: #ff7448;
-  --fx-display: var(--font-sanctum, Georgia), Georgia, ui-serif, serif;
-  --fx-mono: var(--font-jetbrains, ui-monospace), ui-monospace, SFMono-Regular, Menlo, monospace;
-  --fx-sans: var(--font-manrope, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
-
-  /* The app's theme tokens, so every shared control (buttons, inputs, dialogs) takes the sanctum look. */
-  --background: #070205;
-  --foreground: var(--fx-text);
-  --card: #12050a;
-  --card-foreground: var(--fx-text);
-  --popover: #12050a;
-  --popover-foreground: var(--fx-text);
-  --muted: #1f0c13;
-  --muted-foreground: var(--fx-dim);
-  --secondary: #1f0c13;
-  --secondary-foreground: var(--fx-text);
-  --accent: color-mix(in oklab, var(--fx-red) 18%, transparent);
-  --accent-foreground: #fff;
-  --border: var(--fx-line);
-  --input: color-mix(in oklab, var(--fx-red) 30%, transparent);
-  --primary: var(--fx-red);
-  --primary-foreground: #fff;
-  --ring: var(--fx-red-hi);
-  --amethyst: var(--fx-red-hi);
-  --ink-rgb: 255 236 240;
-
-  /* The Standard panels' own tokens (they normally come from .dash-root). */
-  --dash-radius: 12px;
-  --dash-line: var(--fx-line);
-  --dash-soft: color-mix(in oklab, var(--fx-red) 6%, transparent);
-  --dash-accent: var(--fx-red-hi);
-  --dash-queued: var(--fx-amber);
-
-  color-scheme: dark;
-  color: var(--fx-text);
+@property --glare {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
 }
 
-.dash-fx ::selection,
-.dash-fx-dialog ::selection {
-  background: color-mix(in oklab, var(--fx-red) 45%, transparent);
+.geo,
+.geo-dialog {
+  --gem-a: #a774ff;
+  --gem-b: #ff6ad5;
+  --gem-c: #7ee8ff;
+  --gem-deep: #120a24;
+  --geo-ink: #0b0614;
+  --geo-text: #f2eefa;
+  --geo-soft: #cfc7df;
+  --geo-dim: #a39cb4;
+  --geo-amber: #ffd36b;
+  --geo-line: color-mix(in oklab, var(--gem-a) 24%, transparent);
+  --geo-line-hi: color-mix(in oklab, var(--gem-c) 62%, transparent);
+  --geo-fill: color-mix(in oklab, var(--gem-deep) 72%, rgb(12 10 20 / 0.86));
+  --geo-display: var(--font-syne, var(--font-manrope)), var(--font-manrope, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
+  --geo-sans: var(--font-manrope, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
+  --geo-mono: var(--font-jetbrains, ui-monospace), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --geo-iris: linear-gradient(100deg, #fff 0%, var(--gem-c) 22%, var(--gem-a) 48%, var(--gem-b) 74%, #fff 100%);
+  /* The chamfer every facet is cut with (top-left and bottom-right corners). */
+  --cut: 16px;
+  --facet: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut));
+
+  /* The app's theme tokens, so every shared control (buttons, inputs, dialogs) is cut from the same gem. */
+  --background: #07060c;
+  --foreground: var(--geo-text);
+  --card: var(--geo-fill);
+  --card-foreground: var(--geo-text);
+  --popover: #0e0c17;
+  --popover-foreground: var(--geo-text);
+  --muted: #15121f;
+  --muted-foreground: var(--geo-dim);
+  --secondary: #15121f;
+  --secondary-foreground: var(--geo-text);
+  --accent: color-mix(in oklab, var(--gem-a) 16%, transparent);
+  --accent-foreground: #fff;
+  --border: var(--geo-line);
+  --input: color-mix(in oklab, var(--gem-a) 30%, transparent);
+  --primary: var(--gem-a);
+  --primary-foreground: var(--geo-ink);
+  --ring: var(--gem-c);
+  --amethyst: var(--gem-a);
+  --ink-rgb: 242 238 250;
+
+  /* The Standard panels' own tokens (they normally come from .dash-root). */
+  --dash-radius: 10px;
+  --dash-line: var(--geo-line);
+  --dash-soft: rgb(255 255 255 / 0.035);
+  --dash-accent: var(--gem-c);
+  --dash-queued: var(--geo-amber);
+
+  color-scheme: dark;
+  color: var(--geo-text);
+}
+
+.geo ::selection,
+.geo-dialog ::selection {
+  background: color-mix(in oklab, var(--gem-a) 45%, transparent);
   color: #fff;
 }
 
-.dash-fx :focus-visible,
-.dash-fx-dialog :focus-visible {
-  outline: 2px solid var(--fx-red-pale);
+.geo :focus-visible,
+.geo-dialog :focus-visible {
+  outline: 2px solid var(--gem-c);
   outline-offset: 2px;
 }
 
-/* Stage ---------------------------------------------------------------------- */
+/* Frame: the rail on top (narrow) or at the side (wide), the views scrolling beside it ---------------- */
 
-.dash-fx {
+.geo {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   isolation: isolate;
-  container: dash-fx / inline-size;
-  background: radial-gradient(130% 90% at 50% 38%, var(--fx-bg-1) 0%, var(--fx-bg-2) 52%, #030203 100%);
-  font-family: var(--fx-sans);
+  background:
+    radial-gradient(110% 80% at 72% 8%, color-mix(in oklab, var(--gem-deep) 100%, transparent), transparent 70%),
+    radial-gradient(90% 70% at 0% 100%, color-mix(in oklab, var(--gem-deep) 70%, transparent), transparent 70%),
+    #050409;
+  font-family: var(--geo-sans);
   font-size: 0.875rem;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-.dash-fx-backdrop {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  container-type: size;
-  pointer-events: none;
-  background: radial-gradient(closest-side, color-mix(in oklab, var(--fx-red) 16%, transparent), color-mix(in oklab, var(--fx-red-deep) 8%, transparent) 55%, transparent);
+@media (min-width: 64rem) {
+  .geo {
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
 }
 
-.dash-fx-backdrop > span {
+/* The cave ------------------------------------------------------------------------------------------- */
+
+.geo-cave {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.geo-cave > span {
+  position: absolute;
+}
+
+.geo-aurora {
+  width: 70vmax;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: geo-aurora 38s ease-in-out infinite alternate;
+}
+
+.geo-aurora-a {
+  top: -30vmax;
+  right: -18vmax;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--gem-a) 38%, transparent), transparent);
+}
+
+.geo-aurora-b {
+  bottom: -38vmax;
+  left: -20vmax;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--gem-b) 26%, transparent), transparent);
+  animation-duration: 46s;
+  animation-direction: alternate-reverse;
+}
+
+.geo-aurora-c {
+  top: 20%;
+  left: 30%;
+  width: 46vmax;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--gem-c) 14%, transparent), transparent);
+  animation-duration: 52s;
+}
+
+/* Fine dust catching the light. */
+.geo-dust {
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgb(255 255 255 / 0.55) 0 1px, transparent 1.4px),
+    radial-gradient(circle, color-mix(in oklab, var(--gem-c) 70%, transparent) 0 1px, transparent 1.4px);
+  background-size:
+    137px 137px,
+    211px 211px;
+  background-position:
+    0 0,
+    60px 90px;
+  mask: radial-gradient(120% 90% at 60% 30%, #000 20%, transparent 80%);
+  opacity: 0.32;
+  animation: geo-twinkle 6s ease-in-out infinite alternate;
+}
+
+.geo-shard {
+  width: var(--size);
+  height: calc(var(--size) * 1.7);
+  clip-path: polygon(50% 0, 100% 34%, 50% 100%, 0 34%);
+  background: linear-gradient(160deg, #fff, var(--gem-c) 22%, var(--gem-a) 58%, var(--gem-b));
+  opacity: 0.5;
+  animation: geo-drift linear infinite;
+}
+
+/* The pointer's light in the cave. */
+.geo-spot {
+  inset: 0;
+  background: radial-gradient(520px circle at var(--mx, 75%) var(--my, 35%), color-mix(in oklab, var(--gem-c) 9%, transparent), transparent 65%);
+}
+
+/* The crystal ---------------------------------------------------------------------------------------- */
+/* A regular octahedron: each face an equilateral triangle hinged on the equator and tilted 35.26° in. */
+
+.geo-crystal {
+  --s: 60px;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: calc(var(--s) * 1.5);
+  height: calc(var(--s) * 1.7);
+  perspective: calc(var(--s) * 7);
+}
+
+.geo-crystal > * {
   grid-area: 1 / 1;
 }
 
-.dash-fx-rays {
-  width: 100%;
-  height: 100%;
-  background: repeating-conic-gradient(color-mix(in oklab, var(--fx-red) 7%, transparent) 0deg 0.35deg, transparent 0.35deg 5deg);
-  mask: radial-gradient(closest-side, transparent 25%, #000 55%, transparent);
+.geo-crystal-lean {
+  width: var(--s);
+  height: var(--s);
+  transform-style: preserve-3d;
+  transform: rotateX(calc(-14deg + var(--py, 0deg))) rotateY(var(--px, 0deg));
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* The seal: the same rings, runes, sweep and core as the sanctum's opening. */
-.dash-fx-seal {
+.geo-crystal-spin {
   position: relative;
-  width: min(84vmin, 1000px);
-  width: min(88cqw, 100cqh - 5rem, 1000px);
-  aspect-ratio: 1;
-  border: 1.5px solid color-mix(in oklab, var(--fx-red) 70%, transparent);
-  border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in oklab, var(--fx-red-deep) 22%, transparent), color-mix(in oklab, var(--fx-bg-1) 30%, transparent) 72%, transparent);
-  box-shadow:
-    0 0 70px -8px color-mix(in oklab, var(--fx-red) 50%, transparent),
-    inset 0 0 80px -12px color-mix(in oklab, var(--fx-red) 40%, transparent);
-  opacity: 0.55;
-  animation: dash-fx-seal-in 1.1s ease-out backwards;
-}
-
-.dash-fx-seal::after {
-  content: "";
-  position: absolute;
-  inset: 3.5%;
-  border: 1px dashed color-mix(in oklab, var(--fx-red-hi) 28%, transparent);
-  border-radius: 50%;
-}
-
-.dash-fx-seal > span {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.dash-fx-seal-runes {
-  inset: 7%;
-  background: repeating-conic-gradient(color-mix(in oklab, var(--fx-red-hi) 70%, transparent) 0deg 0.6deg, transparent 0.6deg 4deg);
-  mask: radial-gradient(closest-side, transparent 88%, #000 89% 97%, transparent 98%);
-  animation: dash-fx-spin 120s linear infinite;
-}
-
-.dash-fx-seal-sweep {
-  inset: 12%;
-  background: conic-gradient(transparent 0deg 250deg, color-mix(in oklab, var(--fx-red) 12%, transparent) 300deg, color-mix(in oklab, var(--fx-red-hi) 55%, transparent) 356deg, var(--fx-red-pale) 360deg);
-  mask: radial-gradient(closest-side, transparent 62%, #000 63% 99%, transparent);
-  animation: dash-fx-spin 9s linear infinite;
-}
-
-.dash-fx-seal-inner {
-  inset: 27%;
-  border: 1px solid color-mix(in oklab, var(--fx-red-hi) 60%, transparent);
-  box-shadow:
-    0 0 34px -6px color-mix(in oklab, var(--fx-red) 55%, transparent),
-    inset 0 0 28px -8px color-mix(in oklab, var(--fx-red) 60%, transparent);
-}
-
-.dash-fx-seal-mark {
-  inset: 34.5%;
-  border: 1px solid color-mix(in oklab, var(--fx-red-pale) 75%, transparent);
-  border-radius: 0 !important;
-  rotate: 45deg;
-  box-shadow: 0 0 18px -4px color-mix(in oklab, var(--fx-red) 70%, transparent);
-  animation: dash-fx-spin 80s linear infinite reverse;
-}
-
-.dash-fx-seal-mark::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border: 1px solid color-mix(in oklab, var(--fx-red-pale) 35%, transparent);
-  rotate: 45deg;
-}
-
-.dash-fx-seal-core {
-  inset: 44%;
-  background: radial-gradient(closest-side, #fff, var(--fx-red-pale) 22%, var(--fx-red) 52%, transparent);
-  box-shadow: 0 0 90px 14px color-mix(in oklab, var(--fx-red) 40%, transparent);
-  animation: dash-fx-core 2.6s ease-in-out infinite;
-}
-
-/* On every flight between views, a ring leaves the seal. */
-.dash-fx-pulse {
-  width: min(84vmin, 1000px);
-  width: min(88cqw, 100cqh - 5rem, 1000px);
-  aspect-ratio: 1;
-  border: 2px solid var(--fx-red-hi);
-  border-radius: 50%;
-  box-shadow:
-    0 0 40px var(--fx-red),
-    inset 0 0 40px color-mix(in oklab, var(--fx-red) 60%, transparent);
-  opacity: 0;
-  animation: dash-fx-pulse 1.2s cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-
-.dash-fx-vignette {
+  display: block;
   width: 100%;
   height: 100%;
-  background: radial-gradient(130% 100% at 50% 40%, transparent 50%, rgb(0 0 0 / 0.65));
+  transform-style: preserve-3d;
+  animation: geo-spin 30s linear infinite;
 }
 
-/* After a confirmed action: one light sweep down the stage. */
-.dash-fx-flash {
+.geo-face {
+  position: absolute;
+  left: 0;
+  width: var(--s);
+  height: calc(var(--s) * 0.866);
+  backface-visibility: visible;
+  background:
+    linear-gradient(to var(--edge, top), rgb(255 255 255 / 0.75) 0 1.5px, transparent 2px),
+    linear-gradient(calc(var(--k) * 70deg + 150deg), color-mix(in oklab, var(--gem-c) 85%, #fff), color-mix(in oklab, var(--gem-a) 75%, transparent) 46%, color-mix(in oklab, var(--gem-b) 60%, transparent));
+  opacity: 0.58;
+}
+
+.geo-face[data-half="top"] {
+  --edge: top;
+  bottom: 50%;
+  transform-origin: 50% 100%;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  transform: rotateY(calc(var(--k) * 90deg)) translateZ(calc(var(--s) / 2)) rotateX(35.26deg);
+}
+
+.geo-face[data-half="bottom"] {
+  --edge: bottom;
+  top: 50%;
+  transform-origin: 50% 0;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform: rotateY(calc(var(--k) * 90deg)) translateZ(calc(var(--s) / 2)) rotateX(-35.26deg);
+  filter: brightness(0.62) saturate(1.2);
+}
+
+.geo-face:nth-child(odd) {
+  opacity: 0.72;
+}
+
+.geo-crystal-core {
+  width: calc(var(--s) * 0.9);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #fff, color-mix(in oklab, var(--gem-c) 80%, transparent) 25%, color-mix(in oklab, var(--gem-a) 45%, transparent) 55%, transparent);
+  filter: blur(calc(var(--s) * 0.08));
+  animation: geo-core 4s ease-in-out infinite;
+}
+
+.geo-centerpiece {
+  --s: clamp(130px, 22vmin, 260px);
+  right: 7%;
+  top: 50%;
+  translate: 0 -50%;
+  filter: drop-shadow(0 0 40px color-mix(in oklab, var(--gem-a) 55%, transparent));
+  animation: geo-hover 8s ease-in-out infinite alternate;
+}
+
+@media (max-width: 63.99rem) {
+  .geo-centerpiece {
+    --s: 120px;
+    right: -6%;
+    top: 26%;
+    opacity: 0.4;
+  }
+}
+
+.geo-brand-gem {
+  --s: 18px;
+  flex: none;
+}
+
+.geo-brand-gem .geo-crystal-spin {
+  animation-duration: 9s;
+}
+
+/* Flights and bursts --------------------------------------------------------------------------------- */
+
+.geo-beam {
   position: absolute;
   inset: 0;
-  z-index: 30;
+  z-index: 15;
   pointer-events: none;
-  background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--fx-red-hi) 22%, transparent) 46%, color-mix(in oklab, var(--fx-red-pale) 45%, transparent) 50%, transparent 54%);
-  background-size: 100% 260%;
+  background:
+    linear-gradient(100deg, transparent 44%, rgb(255 40 90 / 0.14) 46.5%, rgb(255 200 40 / 0.14) 48.5%, rgb(40 255 170 / 0.14) 50.5%, rgb(40 150 255 / 0.14) 52.5%, rgb(170 60 255 / 0.14) 54.5%, transparent 57%),
+    linear-gradient(100deg, transparent 38%, color-mix(in oklab, var(--gem-b) 26%, transparent) 45%, rgb(255 255 255 / 0.4) 49.5%, color-mix(in oklab, var(--gem-c) 32%, transparent) 54%, transparent 62%);
+  background-size: 260% 100%;
+  background-position: 100% 0;
   mix-blend-mode: screen;
-  animation: dash-fx-sweep 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) forwards;
+  opacity: 0;
+  animation: geo-beam 1s cubic-bezier(0.3, 0.6, 0.2, 1);
 }
 
-/* HUD ------------------------------------------------------------------------ */
-/* Narrow: brand and tools on one row, the view pills under them. Wide: one 64px row, like Code Admin. */
-
-.dash-fx-hud,
-.dash-fx-scroller {
-  --hud-h: 6.6rem;
-}
-
-.dash-fx-hud {
+.geo-burst {
   position: absolute;
-  inset: 0 0 auto;
-  z-index: 20;
+  inset: 0;
+  z-index: 16;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "brand tools" "nav nav";
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  min-height: var(--hud-h);
-  padding: 0.55rem clamp(0.75rem, 2.5vw, 1.75rem) 0.75rem;
-  background: linear-gradient(to bottom, rgb(3 2 3 / 0.96), rgb(3 2 3 / 0.82) 70%, transparent);
+  place-items: center;
   pointer-events: none;
-  animation: dash-fx-hud-in 0.8s 0.15s ease-out backwards;
 }
 
-.dash-fx-hud > * {
-  pointer-events: auto;
+.geo-burst > span {
+  grid-area: 1 / 1;
 }
 
-.dash-fx-brand {
+.geo-burst-flash {
+  width: 60vmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--gem-c) 45%, transparent), color-mix(in oklab, var(--gem-a) 20%, transparent) 50%, transparent);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: geo-flash 0.9s ease-out;
+}
+
+.geo-burst-shard {
+  width: 11px;
+  height: 20px;
+  clip-path: polygon(50% 0, 100% 34%, 50% 100%, 0 34%);
+  background: linear-gradient(160deg, #fff, var(--gem-c) 25%, var(--gem-a) 60%, var(--gem-b));
+  opacity: 0;
+  animation: geo-shatter 1s cubic-bezier(0.15, 0.7, 0.3, 1);
+}
+
+/* Rail ----------------------------------------------------------------------------------------------- */
+/* Narrow: a top bar (brand, gems and tools, then the view tabs). Wide: a column down the left. */
+
+.geo-rail {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "brand gems tools" "nav nav nav";
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  padding: 0.7rem clamp(0.75rem, 3vw, 1.5rem) 0.6rem;
+  border-bottom: 1px solid var(--geo-line);
+  background: linear-gradient(180deg, rgb(8 6 14 / 0.86), rgb(8 6 14 / 0.68));
+  backdrop-filter: blur(18px) saturate(1.3);
+  animation: geo-rail-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.geo-rail-foot {
+  display: contents;
+}
+
+.geo-brand {
   grid-area: brand;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.55rem;
   min-width: 0;
-  margin: 0;
-  font-family: var(--fx-display);
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  text-shadow: 0 0 18px color-mix(in oklab, var(--fx-red) 60%, transparent);
 }
 
-.dash-fx-brand-name {
+.geo-brand-title {
+  display: block;
   overflow: hidden;
+  font-family: var(--geo-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
 }
 
-.dash-fx-brand-sub {
-  display: none;
-  font-family: var(--fx-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.22em;
-  color: var(--fx-dim);
-  text-shadow: none;
+.geo-brand-sub {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  background: var(--geo-iris);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: geo-shimmer 9s linear infinite;
 }
 
-.dash-fx-sigil {
-  position: relative;
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border: 1.5px solid var(--fx-red);
-  border-radius: 50%;
-  box-shadow:
-    0 0 12px var(--fx-red),
-    inset 0 0 8px color-mix(in oklab, var(--fx-red) 60%, transparent);
-}
-
-.dash-fx-sigil::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border: 1px solid color-mix(in oklab, var(--fx-red-pale) 85%, transparent);
-  rotate: 45deg;
-}
-
-.dash-fx-nav {
+.geo-nav {
   grid-area: nav;
-  justify-self: center;
   display: flex;
-  max-width: 100%;
-  gap: 0.2rem;
-  padding: 0.22rem;
+  gap: 0.3rem;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
-  border: 1px solid color-mix(in oklab, var(--fx-red-hi) 38%, transparent);
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--fx-nav-hi), var(--fx-nav-lo));
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 8%, transparent),
-    0 6px 18px -10px rgb(0 0 0 / 0.9),
-    0 0 24px -10px color-mix(in oklab, var(--fx-red) 60%, transparent);
+  margin-inline: -0.25rem;
+  padding: 0.1rem 0.25rem;
 }
 
-.dash-fx-nav::-webkit-scrollbar {
+.geo-nav::-webkit-scrollbar {
   display: none;
 }
 
-.dash-fx-nav-link {
+.geo-nav-link {
+  --cut: 8px;
+  position: relative;
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.38rem 0.9rem;
-  border-radius: 999px;
-  color: var(--fx-text);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  gap: 0.55rem;
+  height: 2.35rem;
+  padding: 0 0.85rem;
+  clip-path: var(--facet);
+  color: var(--geo-soft);
+  font-size: 0.8rem;
+  font-weight: 650;
   text-decoration: none;
   white-space: nowrap;
   transition:
     color 0.2s,
-    background-color 0.2s,
-    box-shadow 0.2s,
-    scale 0.1s;
+    background-color 0.25s;
 }
 
-.dash-fx-nav-link > svg {
-  opacity: 0.75;
+.geo-nav-icon {
+  display: grid;
+  color: color-mix(in oklab, var(--gem-c) 70%, var(--geo-soft));
+  transition:
+    color 0.2s,
+    scale 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
-.dash-fx-nav-link:hover {
+.geo-nav-link:hover {
   color: #fff;
-  background: color-mix(in oklab, var(--fx-red) 20%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fx-red-hi) 35%, transparent);
+  background: rgb(255 255 255 / 0.05);
 }
 
-.dash-fx-nav-link:active {
-  scale: 0.96;
+.geo-nav-link:hover .geo-nav-icon {
+  scale: 1.15;
 }
 
-.dash-fx-nav-link[aria-current="page"] {
+.geo-nav-link:active {
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* The current view: lit from inside, with a bright cut along its edge. */
+.geo-nav-link[aria-current="page"] {
   color: #fff;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--fx-red) 50%, transparent), color-mix(in oklab, var(--fx-red-deep) 55%, transparent));
-  box-shadow:
-    inset 0 0 0 1px color-mix(in oklab, var(--fx-red-hi) 70%, transparent),
-    0 0 18px color-mix(in oklab, var(--fx-red) 40%, transparent);
+  background:
+    radial-gradient(120% 140% at 0% 50%, color-mix(in oklab, var(--gem-a) 38%, transparent), transparent 70%),
+    linear-gradient(90deg, color-mix(in oklab, var(--gem-b) 14%, transparent), transparent);
 }
 
-.dash-fx-nav-link[aria-current="page"] > svg {
-  opacity: 1;
+.geo-nav-link[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  inset: auto 0.6rem 0 0.6rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--gem-c), var(--gem-a), var(--gem-b));
+  box-shadow: 0 0 10px var(--gem-a);
 }
 
-.dash-fx-badge {
+.geo-nav-link[aria-current="page"] .geo-nav-icon {
+  color: var(--gem-c);
+  filter: drop-shadow(0 0 6px var(--gem-c));
+}
+
+.geo-badge {
   display: inline-grid;
-  min-width: 1.1rem;
-  height: 1.1rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
   place-items: center;
   padding: 0 0.3rem;
-  border-radius: 999px;
-  font-family: var(--fx-mono);
+  margin-left: auto;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  font-family: var(--geo-mono);
   font-size: 0.62rem;
-  letter-spacing: 0;
-  color: #1f0d00;
-  background: var(--fx-amber);
-  box-shadow: 0 0 10px rgb(255 178 74 / 0.6);
+  font-weight: 700;
+  color: #1c1204;
+  background: linear-gradient(135deg, #fff1a8, var(--geo-amber));
 }
 
-.dash-fx-tools {
-  grid-area: tools;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.4rem;
+/* Gems: every choice in view, the chosen one raised and glowing. */
+.geo-gems {
+  grid-area: gems;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
-/* Labels the narrow HUD drops, kept for screen readers. */
-.dash-fx-tool-label,
-.dash-fx-style .dash-style-label {
+.geo-gems-legend {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -407,601 +503,728 @@
   white-space: nowrap;
 }
 
-.dash-fx-hud-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  min-width: 2rem;
-  height: 2rem;
-  padding: 0 0.6rem;
-  border: 1px solid color-mix(in oklab, var(--fx-red-hi) 50%, transparent);
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--fx-hud-hi), var(--fx-hud-lo));
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 10%, transparent),
-    0 4px 14px -6px rgb(0 0 0 / 0.9);
-  color: var(--fx-text);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-decoration: none;
-  white-space: nowrap;
+.geo-gems-name {
+  color: var(--gem-c);
+}
+
+.geo-gems-row {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.geo-gem {
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.85rem;
+  border-radius: 6px;
   cursor: pointer;
-  list-style: none;
+  transition:
+    scale 0.3s cubic-bezier(0.3, 1.6, 0.5, 1),
+    filter 0.3s;
+}
+
+.geo-gem-stone {
+  width: 15px;
+  height: 17px;
+  clip-path: polygon(50% 0, 100% 36%, 80% 100%, 20% 100%, 0 36%);
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.65) 0 2px, transparent 2px),
+    linear-gradient(160deg, #fff, var(--gc) 18%, var(--ga) 55%, var(--gb));
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.geo-gem:hover {
+  scale: 1.12;
+}
+
+.geo-gem:hover .geo-gem-stone {
+  opacity: 1;
+}
+
+.geo-gem:has(:checked) {
+  scale: 1.22;
+  filter: drop-shadow(0 0 6px var(--ga)) drop-shadow(0 0 2px #fff);
+}
+
+.geo-gem:has(:checked) .geo-gem-stone {
+  opacity: 1;
+}
+
+.geo-gem:has(:focus-visible) {
+  outline: 2px solid var(--gem-c);
+  outline-offset: 1px;
+}
+
+.geo-tools {
+  grid-area: tools;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.geo-tool {
+  display: inline-grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid color-mix(in oklab, var(--gem-a) 30%, transparent);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.04);
+  color: var(--geo-soft);
+  cursor: pointer;
   transition:
     color 0.2s,
     border-color 0.2s,
+    background-color 0.2s,
     box-shadow 0.2s,
     scale 0.1s;
 }
 
-.dash-fx-hud-button::-webkit-details-marker {
-  display: none;
-}
-
-.dash-fx-hud-button:hover {
+.geo-tool:hover {
   color: #fff;
-  border-color: color-mix(in oklab, var(--fx-red-pale) 70%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 14%, transparent),
-    0 0 16px -4px color-mix(in oklab, var(--fx-red) 60%, transparent);
+  border-color: color-mix(in oklab, var(--gem-c) 65%, transparent);
+  background: color-mix(in oklab, var(--gem-a) 14%, transparent);
+  box-shadow: 0 0 18px -6px var(--gem-a);
 }
 
-.dash-fx-hud-button:active {
-  scale: 0.96;
+.geo-tool:active {
+  scale: 0.93;
 }
 
-.dash-fx-hud-button[aria-pressed="true"],
-.dash-fx-hud-button[data-primary] {
-  color: #fff;
-  border-color: color-mix(in oklab, var(--fx-red-pale) 75%, transparent);
-  background: linear-gradient(180deg, color-mix(in oklab, var(--fx-red) 72%, transparent), color-mix(in oklab, var(--fx-red-deep) 80%, transparent));
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 18%, transparent),
-    0 0 16px -4px color-mix(in oklab, var(--fx-red) 55%, transparent);
+.geo-tool[aria-pressed="true"] {
+  color: var(--gem-c);
+  border-color: color-mix(in oklab, var(--gem-c) 45%, transparent);
 }
 
-.dash-fx-hud-button:disabled {
-  color: var(--fx-dim);
+.geo-tool:disabled {
   cursor: progress;
-  scale: 1;
+  opacity: 0.6;
 }
 
-/* Standard / Flashy: a small pill switch, the same shape as the view pills. */
-.dash-fx-style {
+/* Standard / Flashy */
+.geo-switch {
   display: inline-flex;
   padding: 0.18rem;
-  border: 1px solid color-mix(in oklab, var(--fx-red-hi) 38%, transparent);
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--fx-nav-hi), var(--fx-nav-lo));
+  border: 1px solid color-mix(in oklab, var(--gem-a) 30%, transparent);
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.3);
 }
 
-.dash-fx-style button {
+.geo-switch button {
   display: inline-flex;
+  flex: 1;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
-  height: 1.6rem;
+  height: 1.7rem;
   padding: 0 0.5rem;
-  border-radius: 999px;
-  color: var(--fx-dim);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  border-radius: 7px;
+  color: var(--geo-dim);
+  font-size: 0.74rem;
+  font-weight: 650;
   transition:
     color 0.2s,
     background-color 0.2s,
     box-shadow 0.2s;
 }
 
-.dash-fx-style button:hover {
+.geo-switch button:hover {
   color: #fff;
 }
 
-.dash-fx-style button[aria-pressed="true"] {
-  color: #fff;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--fx-red) 55%, transparent), color-mix(in oklab, var(--fx-red-deep) 55%, transparent));
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fx-red-hi) 60%, transparent);
+.geo-switch button[aria-pressed="true"] {
+  color: var(--geo-ink);
+  background: linear-gradient(120deg, var(--gem-c), var(--gem-a) 60%, var(--gem-b));
+  box-shadow: 0 0 14px -4px var(--gem-a);
 }
 
-/* Colour picker: a HUD button naming the colour, a menu of swatches under it (as in Code Admin). */
-.dash-fx-look {
+.geo-switch .dash-style-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 39.99rem) {
+  .geo-rail {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand tools" "nav gems";
+  }
+  .geo-tool {
+    width: 2rem;
+    height: 2rem;
+  }
+  .geo-gem {
+    width: 1.35rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .geo-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+    padding: 1.4rem 1rem 1.1rem;
+    border-bottom: 0;
+    border-right: 1px solid var(--geo-line);
+    background: linear-gradient(180deg, rgb(8 6 14 / 0.78), rgb(8 6 14 / 0.55));
+    overflow-y: auto;
+    scrollbar-width: none;
+    animation-name: geo-rail-in-side;
+  }
+  .geo-rail::after {
+    content: "";
+    position: absolute;
+    top: 12%;
+    right: -1px;
+    width: 1px;
+    height: 34%;
+    background: linear-gradient(transparent, var(--gem-c), var(--gem-a), transparent);
+    box-shadow: 0 0 12px var(--gem-a);
+    pointer-events: none;
+  }
+  .geo-brand {
+    gap: 0.7rem;
+    padding: 0 0.35rem;
+  }
+  .geo-brand-gem {
+    --s: 22px;
+  }
+  .geo-nav {
+    flex-direction: column;
+    gap: 0.2rem;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+  .geo-nav-link {
+    display: flex;
+    height: 2.75rem;
+    padding: 0 0.85rem;
+    animation: geo-nav-in 0.6s calc(var(--i) * 60ms + 200ms) cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .geo-nav-link[aria-current="page"]::before {
+    inset: 0.55rem auto 0.55rem 0;
+    width: 2px;
+    height: auto;
+    background: linear-gradient(var(--gem-c), var(--gem-a), var(--gem-b));
+  }
+  .geo-rail-foot {
+    display: grid;
+    gap: 1rem;
+    margin-top: auto;
+    padding: 1rem 0.35rem 0;
+    border-top: 1px solid var(--geo-line);
+  }
+  .geo-gems-legend {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    margin-bottom: 0.45rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--geo-dim);
+  }
+  .geo-gems-row {
+    justify-content: space-between;
+  }
+  .geo-tools {
+    flex-wrap: wrap;
+  }
+  .geo-switch {
+    flex-basis: 100%;
+    margin-bottom: 0.2rem;
+  }
+  .geo-switch .dash-style-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+}
+
+/* Views ---------------------------------------------------------------------------------------------- */
+
+.geo-main {
   position: relative;
-}
-
-.dash-fx-swatch {
-  flex: none;
-  width: 0.75rem;
-  height: 0.75rem;
-  border: 1px solid rgb(255 255 255 / 0.45);
-  border-radius: 50%;
-  background: var(--swatch);
-  box-shadow: 0 0 8px var(--swatch);
-}
-
-.dash-fx-look-menu {
-  position: absolute;
-  top: calc(100% + 0.4rem);
-  right: 0;
-  display: grid;
-  min-width: 11rem;
-  margin: 0;
-  padding: 0.35rem;
-  border: 1px solid var(--fx-line-hi);
-  border-radius: 12px;
-  background: linear-gradient(180deg, var(--fx-nav-hi), var(--fx-nav-lo));
-  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.95);
-  backdrop-filter: blur(10px);
-}
-
-.dash-fx-look-legend {
-  padding: 0.3rem 0.55rem 0.4rem;
-  font-family: var(--fx-mono);
-  font-size: 0.62rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fx-dim);
-}
-
-.dash-fx-look-option {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  min-height: 2.25rem;
-  padding: 0 0.6rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.dash-fx-look-option:hover {
-  background: rgb(255 255 255 / 0.06);
-}
-
-.dash-fx-look-option:has(:checked) {
-  color: #fff;
-  background: color-mix(in oklab, var(--fx-red) 22%, transparent);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.4);
-}
-
-.dash-fx-look-option:has(:checked)::after {
-  content: "✓" / "";
-  margin-left: auto;
-}
-
-.dash-fx-look-option:has(:focus-visible) {
-  outline: 2px solid var(--fx-red-pale);
-  outline-offset: -2px;
-}
-
-/* Views ---------------------------------------------------------------------- */
-
-.dash-fx-scroller {
-  position: absolute;
-  inset: 0;
   z-index: 1;
+  min-height: 0;
   overflow: hidden auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--fx-red) 40%, transparent) transparent;
-  padding: calc(var(--hud-h) + 0.5rem) clamp(0.75rem, 3vw, 2rem) calc(7rem + env(safe-area-inset-bottom));
+  scrollbar-color: color-mix(in oklab, var(--gem-a) 45%, transparent) transparent;
+  container: geo-main / inline-size;
+  padding: 1.4rem clamp(0.85rem, 3vw, 2.5rem) calc(7rem + env(safe-area-inset-bottom));
 }
 
-.dash-fx-view:not([hidden]) {
+@media (min-width: 48rem) {
+  .geo-main {
+    padding-bottom: 3rem;
+  }
+}
+
+.geo-view:not([hidden]) {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 1.1rem;
-  max-width: 1320px;
+  gap: 1.25rem;
+  max-width: 1280px;
   margin-inline: auto;
-  perspective: 1800px;
-  perspective-origin: 50% 18rem;
 }
 
-/* Arriving: every panel flies in from deep in the scene, one after another. */
-.dash-fx-view:not([hidden]) > * {
-  animation: dash-fx-arrive 0.85s calc(var(--i, 0) * 75ms + 40ms) cubic-bezier(0.16, 0.84, 0.3, 1) backwards;
+/* Arriving: each panel crystallizes, a refracted blur resolving into sharp glass, one after another. */
+.geo-view:not([hidden]) > .geo-viewhead,
+.geo-view:not([hidden]) > .geo-slot > * {
+  animation: geo-crystallize 0.95s calc(var(--i, 0) * 85ms) cubic-bezier(0.2, 0.75, 0.25, 1) backwards;
 }
 
-.dash-fx-slot {
+/* The glass casts light and shadow from its slot (the glass itself is clipped to its facets). */
+.geo-slot {
   display: grid;
-  gap: 1.1rem;
+  gap: 1.25rem;
   min-width: 0;
-  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+  filter: drop-shadow(0 18px 26px rgb(0 0 0 / 0.55)) drop-shadow(0 0 22px color-mix(in oklab, var(--gem-a) 16%, transparent));
 }
 
-.dash-fx-viewhead {
+.geo-viewhead {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 0.75rem 1.5rem;
-  padding: 0.25rem 0.1rem 0.15rem;
+  padding: 0.4rem 0.1rem 0.35rem;
 }
 
-.dash-fx-kicker {
+.geo-kicker {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   margin: 0;
-  font-family: var(--fx-mono);
   font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--gem-c) 85%, #fff);
+}
+
+.geo-viewhead-index {
+  font-family: var(--geo-mono);
   font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fx-red-hi);
-}
-
-.dash-fx-kicker-index {
-  padding: 0.05rem 0.35rem;
-  border: 1px solid var(--fx-line-hi);
-  border-radius: 4px;
-  color: var(--fx-red-pale);
-  box-shadow: 0 0 10px -2px color-mix(in oklab, var(--fx-red) 60%, transparent);
-}
-
-.dash-fx-viewtitle {
-  margin: 0.3rem 0 0;
-  font-family: var(--fx-display);
-  font-size: clamp(1.7rem, 1.2rem + 2vw, 2.5rem);
-  font-weight: 600;
-  line-height: 1.05;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: #fff;
-  text-shadow:
-    0 0 24px color-mix(in oklab, var(--fx-red) 55%, transparent),
-    0 0 2px color-mix(in oklab, var(--fx-red-pale) 80%, transparent);
 }
 
-.dash-fx-whoami {
+.geo-viewhead-index > span {
+  color: var(--geo-dim);
+}
+
+.geo-viewtitle {
+  margin: 0.35rem 0 0;
+  font-family: var(--geo-display);
+  font-size: clamp(2.1rem, 1.3rem + 3vw, 3.6rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  background: var(--geo-iris);
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 26px color-mix(in oklab, var(--gem-a) 40%, transparent));
+  animation: geo-shimmer 10s linear infinite;
+}
+
+.geo-whoami {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   margin: 0;
   font-size: 0.85rem;
-  color: var(--fx-dim);
+  color: var(--geo-dim);
 }
 
-.dash-fx-whoami strong {
+.geo-whoami strong {
   font-weight: 650;
-  color: var(--fx-text);
+  color: var(--geo-text);
   overflow-wrap: anywhere;
 }
 
-/* Panels: the sanctum's glass ---------------------------------------------- */
+/* Glass: facet, refracting edge, pointer light and a sheen that sweeps on hover ---------------------- */
+/* The element paints the edge; ::before is the glass inside it; ::after the sheen. */
 
-.dash-fx-pane,
-.dash-fx .dash-panel,
-.dash-fx-counter {
+.geo-pane,
+.geo .dash-panel,
+.geo-counter {
   position: relative;
-  border: 1px solid var(--fx-line);
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--fx-glass-hi), var(--fx-glass-lo));
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 12%, transparent),
-    0 0 0 1px rgb(0 0 0 / 0.45),
-    0 14px 36px -18px rgb(0 0 0 / 0.95),
-    0 0 36px -14px color-mix(in oklab, var(--fx-red) 40%, transparent);
-  transition:
-    border-color 0.25s,
-    box-shadow 0.25s;
+  isolation: isolate;
+  border: 0;
+  border-radius: 0;
+  clip-path: var(--facet);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--gem-c) 70%, transparent), color-mix(in oklab, var(--gem-a) 30%, transparent) 28%, rgb(255 255 255 / 0.07) 55%, color-mix(in oklab, var(--gem-b) 45%, transparent));
 }
 
-.dash-fx-pane:hover,
-.dash-fx .dash-panel:hover,
-.dash-fx-slot:focus-within > :is(.dash-fx-pane, .dash-panel) {
-  border-color: color-mix(in oklab, var(--fx-red-hi) 42%, transparent);
+:is(.geo-pane, .geo .dash-panel, .geo-counter)::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  clip-path: polygon(calc(var(--cut) - 0.4px) 0, 100% 0, 100% calc(100% - var(--cut) + 0.4px), calc(100% - var(--cut) + 0.4px) 100%, 0 100%, 0 calc(var(--cut) - 0.4px));
+  background:
+    radial-gradient(440px circle at var(--gx, 50%) var(--gy, 0%), color-mix(in oklab, var(--gem-c) calc(var(--glare) * 13%), transparent), transparent 70%),
+    linear-gradient(170deg, rgb(255 255 255 / 0.05), transparent 30%),
+    linear-gradient(160deg, var(--geo-fill), rgb(7 6 12 / 0.93) 75%);
+  /* No backdrop blur: the facet clip makes the panel a backdrop root, so there'd be nothing to blur. */
+  transition: --glare 0.4s ease;
 }
 
-.dash-fx-pane {
+:is(.geo-pane, .geo .dash-panel, .geo-counter)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 0.075) 47%, color-mix(in oklab, var(--gem-c) 10%, transparent) 50%, transparent 58%);
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  pointer-events: none;
+  transition: background-position 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:is(.geo-pane, .geo .dash-panel, .geo-counter):hover::after {
+  background-position: 0 0;
+}
+
+.geo-pane {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 0.9rem;
+  gap: 0.95rem;
   min-width: 0;
-  padding: 1.1rem 1.25rem 1.25rem;
+  padding: 1.2rem 1.35rem 1.35rem;
 }
 
-.dash-fx .dash-panel {
-  padding: 1.1rem 1.25rem 1.25rem;
+.geo .dash-panel {
+  padding: 1.2rem 1.35rem 1.35rem;
 }
 
-.dash-fx-head {
+.geo-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.dash-fx-head-actions {
+.geo-head-actions {
   flex: none;
-  padding-top: 0.15rem;
+  padding-top: 0.1rem;
 }
 
-.dash-fx-title,
-.dash-fx .dash-panel-title {
-  margin: 0.15rem 0 0;
-  font-family: var(--fx-display);
-  font-size: 1.3rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.04em;
+.geo-title,
+.geo .dash-panel-title {
+  margin: 0.2rem 0 0;
+  font-family: var(--geo-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: #fff;
-  text-shadow: 0 0 22px color-mix(in oklab, var(--fx-red) 40%, transparent);
   overflow-wrap: anywhere;
 }
 
-.dash-fx .dash-panel-desc,
-.dash-fx .dash-hint {
-  color: var(--fx-dim);
+.geo .dash-panel-desc,
+.geo .dash-hint {
+  color: var(--geo-dim);
 }
 
-.dash-fx .dash-panel-icon {
-  border: 1px solid var(--fx-line-hi);
-  border-radius: 10px;
-  color: var(--fx-red-pale);
-  background: linear-gradient(160deg, color-mix(in oklab, var(--fx-red) 30%, transparent), color-mix(in oklab, var(--fx-red) 6%, transparent));
-  box-shadow: 0 0 18px -6px var(--fx-red);
+/* Panel icons become little cut gems. */
+.geo .dash-panel-icon {
+  border-radius: 0;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  width: 2.5rem;
+  color: var(--geo-ink);
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.5) 0 1px, transparent 1px),
+    linear-gradient(135deg, var(--gem-c), var(--gem-a) 55%, var(--gem-b));
 }
 
-.dash-fx .dash-label {
-  font-family: var(--fx-mono);
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  color: var(--fx-red-hi);
+.geo .dash-label {
+  letter-spacing: 0.2em;
+  color: color-mix(in oklab, var(--gem-c) 85%, #fff);
 }
 
-.dash-fx .dash-row {
-  border-color: color-mix(in oklab, var(--fx-red) 15%, transparent);
-  background: var(--fx-well);
+.geo .dash-row {
+  border-color: color-mix(in oklab, var(--gem-a) 16%, transparent);
+  background: rgb(255 255 255 / 0.03);
 }
 
-.dash-fx :is(.dash-empty, .dash-fx-empty) {
+.geo :is(.dash-empty, .geo-empty) {
   margin: 0;
   padding: 0.9rem 1rem;
-  border: 1px dashed var(--fx-line);
+  border: 1px dashed var(--geo-line);
   border-radius: 10px;
-  color: var(--fx-dim);
+  color: var(--geo-dim);
   font-size: 0.82rem;
   text-align: center;
 }
 
-.dash-fx .dash-pill[data-role="owner"] {
-  box-shadow: 0 0 12px -3px var(--fx-amber);
+.geo .dash-pill[data-role="owner"] {
+  box-shadow: 0 0 12px -3px var(--geo-amber);
 }
 
-/* Controls in the panels: Code Admin's buttons and fields. */
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"] {
-  border-radius: 9px;
+/* Controls: cut from the gem ---------------------------------------------------------------------- */
+
+:is(.geo, .geo-dialog) [data-slot="button"] {
+  border-radius: 10px;
   font-weight: 650;
-  letter-spacing: 0.03em;
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"], [data-variant="ghost"]) {
-  border: 1px solid color-mix(in oklab, var(--fx-red-hi) 38%, transparent);
-  background: linear-gradient(180deg, var(--fx-btn-hi), var(--fx-btn-lo));
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 12%, transparent),
-    0 4px 14px -6px rgb(0 0 0 / 0.8);
-  color: var(--fx-text);
+:is(.geo, .geo-dialog) [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"]) {
+  border: 1px solid color-mix(in oklab, var(--gem-a) 34%, transparent);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  color: var(--geo-text);
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"][data-variant="ghost"] {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"], [data-variant="ghost"]):hover {
-  border-color: color-mix(in oklab, var(--fx-red-hi) 75%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 20%, transparent),
-    0 0 22px -4px color-mix(in oklab, var(--fx-red) 60%, transparent);
+:is(.geo, .geo-dialog) [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"], [data-variant="ghost"]):hover {
+  border-color: color-mix(in oklab, var(--gem-c) 65%, transparent);
+  background: color-mix(in oklab, var(--gem-a) 14%, transparent);
+  box-shadow: 0 0 20px -6px var(--gem-a);
   color: #fff;
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"][data-variant="default"] {
-  border: 1px solid color-mix(in oklab, var(--fx-red-pale) 75%, transparent);
-  background: linear-gradient(180deg, oklch(from #ff2a48 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), var(--fx-red-deep));
+:is(.geo, .geo-dialog) [data-slot="button"][data-variant="default"] {
+  border: 0;
+  background: linear-gradient(120deg, var(--gem-c), var(--gem-a) 48%, var(--gem-b));
+  background-size: 160% 100%;
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 45%, transparent),
-    0 0 24px -6px color-mix(in oklab, var(--fx-red) 90%, transparent);
-  color: var(--look-ink, #fff);
-  text-shadow: 0 1px 0 rgb(80 0 10 / 0.5);
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    0 8px 24px -10px var(--gem-a);
+  color: var(--geo-ink);
+  font-weight: 700;
+  transition:
+    background-position 0.5s ease,
+    box-shadow 0.25s,
+    translate 0.2s,
+    scale 0.1s;
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"][data-variant="default"]:hover {
-  border-color: var(--fx-red-pale);
+:is(.geo, .geo-dialog) [data-slot="button"][data-variant="default"]:hover {
+  background-position: 100% 0;
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 50%, transparent),
-    0 0 34px -4px var(--fx-red);
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    0 10px 30px -8px var(--gem-a),
+    0 0 0 1px color-mix(in oklab, var(--gem-c) 60%, transparent);
 }
 
-/* Taking things away reads amber, like Code Admin's danger buttons. */
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"][data-variant="destructive"] {
-  border: 1px solid rgb(255 200 120 / 0.85);
-  background: linear-gradient(180deg, #ffb24a, #c76a10);
-  box-shadow:
-    inset 0 1px 0 rgb(255 235 200 / 0.5),
-    0 0 22px -6px rgb(255 178 74 / 0.8);
-  color: #1f0d00;
+:is(.geo, .geo-dialog) [data-slot="button"][data-variant="destructive"] {
+  border: 1px solid rgb(255 92 122 / 0.55);
+  background: rgb(255 92 122 / 0.14);
+  color: #ffd0da;
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="button"][data-variant="destructive"]:hover {
-  border-color: #ffe0b0;
-  background: linear-gradient(180deg, #ffc266, #d87812);
+:is(.geo, .geo-dialog) [data-slot="button"][data-variant="destructive"]:hover {
+  background: rgb(255 92 122 / 0.24);
+  box-shadow: 0 0 22px -6px rgb(255 92 122 / 0.7);
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="input"] {
-  border: 1px solid color-mix(in oklab, var(--fx-red-hi) 30%, transparent);
-  border-radius: 9px;
-  background: var(--fx-field);
-  box-shadow: inset 0 1px 6px rgb(0 0 0 / 0.5);
-  color: var(--fx-text);
+:is(.geo, .geo-dialog) [data-slot="input"] {
+  border: 1px solid color-mix(in oklab, var(--gem-a) 30%, transparent);
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.35);
+  color: var(--geo-text);
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="input"]:hover {
-  border-color: color-mix(in oklab, var(--fx-red-hi) 50%, transparent);
+:is(.geo, .geo-dialog) [data-slot="input"]:hover {
+  border-color: color-mix(in oklab, var(--gem-a) 55%, transparent);
 }
 
-:is(.dash-fx, .dash-fx-dialog) [data-slot="input"]:focus {
+:is(.geo, .geo-dialog) [data-slot="input"]:focus {
   outline: none;
-  border-color: var(--fx-red-hi);
-  box-shadow:
-    inset 0 1px 6px rgb(0 0 0 / 0.5),
-    0 0 0 3px color-mix(in oklab, var(--fx-red) 25%, transparent),
-    0 0 20px color-mix(in oklab, var(--fx-red) 25%, transparent);
+  border-color: var(--gem-c);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--gem-a) 25%, transparent), 0 0 22px -4px color-mix(in oklab, var(--gem-c) 45%, transparent);
 }
 
-/* Counters ------------------------------------------------------------------- */
+/* Counters: cut gems ------------------------------------------------------------------------------- */
 
-.dash-fx-counters {
+.geo-counters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
-.dash-fx-counter {
-  --tone: var(--fx-red-hi);
+.geo-counter {
+  --cut: 12px;
+  --tone-a: var(--gem-a);
+  --tone-c: var(--gem-c);
   display: grid;
   gap: 0.3rem;
   padding: 1.05rem 1.2rem 1.1rem;
-  overflow: hidden;
-  transform: perspective(1100px) rotateY(calc(var(--curve, 0deg) + var(--ry, 0deg))) rotateX(var(--rx, 0deg)) translateZ(calc(var(--lift, 0px) + var(--sink, 0px)));
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--lift, 0px));
 }
 
-.dash-fx-counter:hover {
-  border-color: var(--fx-line-hi);
+.geo-counter[data-tone="queued"] {
+  --tone-a: #ff9f43;
+  --tone-c: var(--geo-amber);
+  background: linear-gradient(135deg, rgb(255 225 140 / 0.75), rgb(255 159 67 / 0.3) 30%, rgb(255 255 255 / 0.07) 55%, rgb(255 159 67 / 0.45));
 }
 
-.dash-fx-counter[data-tone="queued"] {
-  --tone: var(--fx-amber);
-  border-color: rgb(255 178 74 / 0.45);
-}
-
-.dash-fx-glare {
+.geo-glint {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  background: radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), color-mix(in oklab, var(--fx-red-pale) 18%, transparent), transparent 60%);
+  z-index: 1;
+  background: radial-gradient(160px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.16), transparent 70%);
   opacity: var(--glare, 0);
   transition: opacity 0.3s;
   pointer-events: none;
 }
 
-.dash-fx-counter-value {
-  margin: 0;
-  font-family: var(--fx-display);
-  font-size: clamp(1.9rem, 3vw, 2.6rem);
-  font-weight: 700;
-  line-height: 1.05;
-  color: #fff;
-  text-shadow:
-    0 0 10px color-mix(in oklab, var(--tone) 80%, transparent),
-    0 0 34px color-mix(in oklab, var(--tone) 55%, transparent);
+.geo-counter-icon {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.95rem;
+  display: grid;
+  width: 1.9rem;
+  height: 1.75rem;
+  place-items: center;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  color: var(--geo-ink);
+  background: linear-gradient(135deg, var(--tone-c), var(--tone-a) 60%, var(--gem-b));
 }
 
-.dash-fx-counter-note {
+.geo-counter .geo-kicker {
+  padding-right: 2.2rem;
+  color: var(--geo-soft);
+}
+
+.geo-counter-value {
+  margin: 0;
+  font-family: var(--geo-display);
+  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  background: linear-gradient(100deg, #fff 10%, var(--tone-c) 45%, var(--tone-a) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.geo-counter-note {
   margin: 0;
   font-size: 0.75rem;
-  color: var(--fx-dim);
+  color: var(--geo-dim);
 }
 
-.dash-fx-counter-icon {
-  position: absolute;
-  top: 0.95rem;
-  right: 1rem;
-  color: var(--tone);
-  opacity: 0.7;
-  filter: drop-shadow(0 0 6px var(--tone));
-}
+/* Chart: crystal pillars ---------------------------------------------------------------------------- */
 
-.dash-fx-counter[data-tone="queued"] .dash-fx-kicker {
-  color: var(--fx-amber);
-}
-
-/* Chart ---------------------------------------------------------------------- */
-
-.dash-fx-chart {
+.geo-chart {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(14, minmax(0, 1fr));
   align-items: end;
-  gap: 5px;
-  height: 140px;
+  gap: 6px;
+  height: 150px;
   padding-top: 0.5rem;
-  border-bottom: 1px solid var(--fx-line);
 }
 
-.dash-fx-bar {
+.geo-chart::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gem-c), var(--gem-a), var(--gem-b), transparent);
+  box-shadow: 0 0 10px var(--gem-a);
+}
+
+.geo-bar {
   display: flex;
   align-items: flex-end;
   height: 100%;
   cursor: crosshair;
+  transition: filter 0.25s;
 }
 
-.dash-fx-bar-fill {
+.geo-bar-fill {
   width: 100%;
-  height: max(2px, var(--h));
-  border-radius: 3px 3px 1px 1px;
-  background: linear-gradient(to top, color-mix(in oklab, var(--fx-red-deep) 75%, transparent), var(--fx-red));
-  box-shadow: 0 0 10px color-mix(in oklab, var(--fx-red) 45%, transparent);
-  transition: height 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  height: max(4px, var(--h));
+  clip-path: polygon(0 8px, 50% 0, 100% 8px, 100% 100%, 0 100%);
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.22) 0 50%, transparent 50%),
+    linear-gradient(to top, color-mix(in oklab, var(--gem-a) 20%, transparent), var(--gem-a) 60%, var(--gem-c));
+  opacity: 0.85;
+  transition:
+    height 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.2s;
 }
 
-.dash-fx-bar[data-hot] .dash-fx-bar-fill {
-  background: linear-gradient(to top, var(--fx-red), var(--fx-red-pale));
-  box-shadow: 0 0 16px color-mix(in oklab, var(--fx-red-hi) 90%, transparent);
+.geo-bar[data-hot] {
+  filter: drop-shadow(0 0 10px var(--gem-c));
 }
 
-.dash-fx-axis {
+.geo-bar[data-hot] .geo-bar-fill {
+  opacity: 1;
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.35) 0 50%, transparent 50%),
+    linear-gradient(to top, var(--gem-a), var(--gem-c) 70%, #fff);
+}
+
+.geo-axis {
   display: flex;
   justify-content: space-between;
-  margin-top: -0.5rem;
-  font-family: var(--fx-mono);
+  margin-top: -0.4rem;
+  font-family: var(--geo-mono);
   font-size: 0.62rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--fx-dim);
+  color: var(--geo-dim);
 }
 
-.dash-fx-readout {
+.geo-readout {
   min-height: 1.4em;
   margin: 0;
   font-size: 0.82rem;
-  color: var(--fx-soft);
+  color: var(--geo-soft);
 }
 
-.dash-fx-readout strong {
+.geo-readout strong {
   color: #fff;
 }
 
-/* Lists and feed ------------------------------------------------------------- */
+/* Lists and feed ----------------------------------------------------------------------------------- */
 
-.dash-fx-link {
-  font-family: var(--fx-mono);
-  font-size: 0.66rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+.geo-link {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: var(--fx-red-pale);
-  text-decoration: underline;
-  text-decoration-color: color-mix(in oklab, var(--fx-red-hi) 50%, transparent);
-  text-underline-offset: 4px;
-  transition: color 0.2s, text-decoration-color 0.2s;
+  color: var(--gem-c);
+  text-decoration: none;
+  transition:
+    color 0.2s,
+    text-shadow 0.2s;
 }
 
-.dash-fx-link:hover {
+.geo-link::after {
+  content: " →";
+  letter-spacing: 0;
+}
+
+.geo-link:hover {
   color: #fff;
-  text-decoration-color: var(--fx-red-pale);
+  text-shadow: 0 0 12px var(--gem-c);
 }
 
-.dash-fx-list {
+.geo-list {
   display: grid;
   gap: 0.4rem;
   margin: 0;
@@ -1009,25 +1232,33 @@
   list-style: none;
 }
 
-.dash-fx-row {
+.geo-row {
   display: flex;
   align-items: center;
   gap: 0.7rem;
   min-width: 0;
   padding: 0.55rem 0.7rem;
-  border: 1px solid color-mix(in oklab, var(--fx-red) 15%, transparent);
+  border: 1px solid color-mix(in oklab, var(--gem-a) 14%, transparent);
   border-radius: 10px;
-  background: var(--fx-well);
+  background: rgb(255 255 255 / 0.03);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
 }
 
-.dash-fx-row-main {
+.geo-row:hover {
+  border-color: color-mix(in oklab, var(--gem-c) 35%, transparent);
+  background: rgb(255 255 255 / 0.05);
+}
+
+.geo-row-main {
   display: grid;
   flex: 1;
   gap: 0.15rem;
   min-width: 0;
 }
 
-.dash-fx-row-title {
+.geo-row-title {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -1038,77 +1269,74 @@
   white-space: nowrap;
 }
 
-.dash-fx-row-meta {
+.geo-row-meta {
   display: block;
   overflow: hidden;
   font-size: 0.75rem;
-  color: var(--fx-dim);
+  color: var(--geo-dim);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dash-fx-row-side {
+.geo-row-side {
   flex: none;
   font-size: 0.78rem;
   text-align: right;
-  color: var(--fx-soft);
+  color: var(--geo-soft);
   font-variant-numeric: tabular-nums;
 }
 
-.dash-fx-feed {
+.geo-feed {
   display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.dash-fx-feed-item {
-  --mark: var(--fx-red-hi);
+.geo-feed-item {
+  --mark: var(--gem-a);
   position: relative;
   display: flex;
   gap: 0.75rem;
   padding: 0.45rem 0;
 }
 
-.dash-fx-feed-item:not(:last-child)::before {
+.geo-feed-item:not(:last-child)::before {
   content: "";
   position: absolute;
-  top: 1.35rem;
+  top: 1.4rem;
   bottom: -0.45rem;
-  left: 4px;
+  left: 5px;
   width: 1px;
-  background: linear-gradient(var(--fx-line-hi), transparent);
+  background: linear-gradient(color-mix(in oklab, var(--mark) 60%, transparent), transparent);
 }
 
-.dash-fx-feed-item[data-kind="loot"] {
-  --mark: var(--fx-red-pale);
+.geo-feed-item[data-kind="admin"] {
+  --mark: var(--gem-c);
 }
 
-.dash-fx-feed-item[data-kind="slot"] {
-  --mark: var(--fx-ember);
+.geo-feed-item[data-kind="loot"] {
+  --mark: var(--gem-b);
 }
 
-.dash-fx-feed-item[data-kind="player"] {
-  --mark: var(--fx-amber);
+.geo-feed-item[data-kind="player"] {
+  --mark: var(--geo-amber);
 }
 
-.dash-fx-feed-mark {
+.geo-feed-mark {
   flex: none;
-  width: 9px;
-  height: 9px;
-  margin-top: 0.4rem;
-  border: 1px solid var(--mark);
-  background: color-mix(in oklab, var(--mark) 40%, transparent);
-  box-shadow: 0 0 8px color-mix(in oklab, var(--mark) 65%, transparent);
-  rotate: 45deg;
+  width: 11px;
+  height: 10px;
+  margin-top: 0.38rem;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  background: linear-gradient(135deg, #fff, var(--mark) 45%);
 }
 
-.dash-fx-feed-item[data-tone="take"] .dash-fx-feed-mark {
-  background: transparent;
-  box-shadow: none;
+.geo-feed-item[data-tone="take"] .geo-feed-mark {
+  opacity: 0.45;
 }
 
-.dash-fx-feed-text {
+.geo-feed-text {
   display: grid;
   gap: 0.15rem;
   min-width: 0;
@@ -1116,407 +1344,348 @@
   overflow-wrap: anywhere;
 }
 
-.dash-fx-feed-text strong {
+.geo-feed-text strong {
   font-weight: 650;
   color: #fff;
 }
 
-.dash-fx-feed-text .dash-fx-row-meta {
+.geo-feed-text .geo-row-meta {
   white-space: normal;
 }
 
-.dash-fx-subtitle {
+.geo-subtitle {
   margin: 0.35rem 0 0;
-  padding-bottom: 0.35rem;
-  border-bottom: 1px solid var(--fx-line);
-  font-family: var(--fx-display);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--geo-line);
+  font-family: var(--geo-display);
   font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--fx-soft);
+  font-weight: 700;
+  color: var(--geo-soft);
 }
 
-.dash-fx-kinds {
+.geo-kinds {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.8rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.dash-fx-kind-head {
+.geo-kind-head {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.35rem;
   font-size: 0.82rem;
   font-weight: 600;
 }
 
-.dash-fx-meter {
+.geo-meter {
   display: block;
-  height: 4px;
+  height: 6px;
   overflow: hidden;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.08);
+  clip-path: polygon(3px 0, 100% 0, calc(100% - 3px) 100%, 0 100%);
+  background: rgb(255 255 255 / 0.07);
 }
 
-.dash-fx-meter > span {
+.geo-meter > span {
   display: block;
   height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--fx-red-deep), var(--fx-red), var(--fx-red-pale));
-  box-shadow: 0 0 8px var(--fx-red);
-  transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: linear-gradient(90deg, var(--gem-b), var(--gem-a), var(--gem-c));
+  transition: width 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* Dialog --------------------------------------------------------------------- */
-/* Dialogs portal to <body>, so they carry the tokens themselves. */
+/* Dialog ------------------------------------------------------------------------------------------- */
+/* Dialogs portal to <body>, so they carry the gem and tokens themselves. */
 
-.dash-fx-dialog {
-  border: 1px solid var(--fx-line-hi);
+.geo-dialog {
+  border: 1px solid color-mix(in oklab, var(--gem-a) 42%, transparent);
   border-radius: 16px;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--fx-bg-1) 90%, #12050a), #0a0306);
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in oklab, var(--gem-a) 16%, transparent), transparent 60%),
+    linear-gradient(160deg, color-mix(in oklab, var(--gem-deep) 85%, #0b0a12), #07060c);
   box-shadow:
-    inset 0 1px 0 color-mix(in oklab, var(--fx-red-pale) 14%, transparent),
-    0 0 0 1px rgb(0 0 0 / 0.5),
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
     0 30px 80px -20px #000,
-    0 0 60px -16px var(--fx-red);
-  font-family: var(--fx-sans);
+    0 0 60px -20px var(--gem-a);
+  font-family: var(--geo-sans);
 }
 
-.dash-fx-dialog [data-slot="alert-dialog-title"] {
-  font-family: var(--fx-display);
-  font-size: 1.2rem;
-  letter-spacing: 0.04em;
+.geo-dialog [data-slot="alert-dialog-title"] {
+  font-family: var(--geo-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: #fff;
-  text-shadow: 0 0 22px color-mix(in oklab, var(--fx-red) 40%, transparent);
 }
 
-/* Layouts -------------------------------------------------------------------- */
-/* Phones stack every view in reading order; wider stages place panels like Code Admin's stations. */
+/* Layouts ------------------------------------------------------------------------------------------ */
+/* Phones stack every view in reading order. Wider views set their panels like stones in a setting. */
 
-@container dash-fx (min-width: 34rem) {
-  .dash-fx-brand-name {
-    overflow: visible;
-  }
-}
-
-@container dash-fx (max-width: 33.99rem) {
-  .dash-fx-brand-name {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-  .dash-fx-nav-link {
-    padding: 0.36rem 0.65rem;
-    font-size: 0.68rem;
-    letter-spacing: 0.05em;
-  }
-  .dash-fx-pane,
-  .dash-fx .dash-panel {
-    padding: 1rem;
-  }
-  .dash-fx-title,
-  .dash-fx .dash-panel-title {
-    font-size: 1.15rem;
-  }
-}
-
-@container dash-fx (min-width: 48rem) {
-  .dash-fx-scroller {
-    padding-bottom: 3rem;
-  }
-  .dash-fx-counters {
-    gap: 1rem;
-  }
-  .dash-fx-view-overview:not([hidden]) {
+@container geo-main (min-width: 46rem) {
+  .geo-view-overview:not([hidden]) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas: "head head" "counters counters" "chart chart" "queue queue" "roster activity";
   }
-  .dash-fx-view-overview [data-fx-slot="counters"] {
+  .geo-view-overview > .geo-viewhead {
+    grid-area: head;
+  }
+  .geo-view-overview [data-geo-slot="counters"] {
     grid-area: counters;
   }
-  .dash-fx-view-overview [data-fx-slot="chart"] {
+  .geo-view-overview [data-geo-slot="chart"] {
     grid-area: chart;
   }
-  .dash-fx-view-overview [data-fx-slot="queue"] {
+  .geo-view-overview [data-geo-slot="queue"] {
     grid-area: queue;
   }
-  .dash-fx-view-overview [data-fx-slot="roster"] {
+  .geo-view-overview [data-geo-slot="roster"] {
     grid-area: roster;
   }
-  .dash-fx-view-overview [data-fx-slot="activity"] {
+  .geo-view-overview [data-geo-slot="activity"] {
     grid-area: activity;
-  }
-  /* Only views that define a "head" area at this width place the heading by name. */
-  .dash-fx-view-overview > .dash-fx-viewhead {
-    grid-area: head;
   }
 }
 
-@container dash-fx (min-width: 64rem) {
-  .dash-fx-counters {
+@container geo-main (min-width: 60rem) {
+  .geo-counters {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-
-  .dash-fx-view-overrides:not([hidden]) {
+  .geo-view-overrides:not([hidden]) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas: "head head" "loot slots" "history history";
   }
-  .dash-fx-view-overrides [data-fx-slot="loot"] {
+  .geo-view-overrides [data-geo-slot="loot"] {
     grid-area: loot;
   }
-  .dash-fx-view-overrides [data-fx-slot="slots"] {
+  .geo-view-overrides [data-geo-slot="slots"] {
     grid-area: slots;
   }
-  .dash-fx-view-overrides [data-fx-slot="history"] {
+  .geo-view-overrides [data-geo-slot="history"] {
     grid-area: history;
   }
-
-  .dash-fx-view-access:not([hidden]) {
-    grid-template-columns: minmax(0, 1.65fr) minmax(17rem, 1fr);
+  .geo-view-access:not([hidden]) {
+    grid-template-columns: minmax(0, 1.65fr) minmax(16rem, 1fr);
     grid-template-areas: "head head" "main side";
   }
-  .dash-fx-view-audit:not([hidden]) {
-    grid-template-columns: minmax(16rem, 21rem) minmax(0, 1fr);
+  .geo-view-audit:not([hidden]) {
+    grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr);
     grid-template-areas: "head head" "side main";
   }
-  .dash-fx-view-players:not([hidden]) {
-    max-width: 68rem;
+  .geo-view-players:not([hidden]) {
+    max-width: 64rem;
   }
-  .dash-fx-view:not(.dash-fx-view-players) > .dash-fx-viewhead {
+  .geo-view:not(.geo-view-players) > .geo-viewhead {
     grid-area: head;
   }
-  :is(.dash-fx-view-access, .dash-fx-view-audit) [data-fx-slot="main"] {
+  :is(.geo-view-access, .geo-view-audit) [data-geo-slot="main"] {
     grid-area: main;
   }
-  :is(.dash-fx-view-access, .dash-fx-view-audit) [data-fx-slot="side"] {
+  :is(.geo-view-access, .geo-view-audit) [data-geo-slot="side"] {
     grid-area: side;
   }
+}
 
-  /* Poses: side panels turn toward the middle, consoles lean back. Using one turns it to face you. */
-  .dash-fx-slot[data-pose="left"] {
-    transform: rotateY(9deg) translateZ(-24px);
-    transform-origin: 100% 50%;
+@container geo-main (min-width: 72rem) {
+  /* Overview: the readouts across the top, the console and queue set between the roster and the feed. */
+  .geo-view-overview:not([hidden]) {
+    grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr) minmax(15rem, 19rem);
+    grid-template-areas: "head head head" "counters counters counters" "roster chart activity" "roster queue activity";
   }
-  .dash-fx-slot[data-pose="right"] {
-    transform: rotateY(-9deg) translateZ(-24px);
-    transform-origin: 0% 50%;
+  /* The read-only side stones float gently in the cave (still while you point at them). */
+  .geo[data-motion="full"] .geo-view-overview :is([data-geo-slot="roster"], [data-geo-slot="activity"]) {
+    animation: geo-float 9s ease-in-out infinite alternate;
   }
-  .dash-fx-slot[data-pose="floor"] {
-    transform: rotateX(7deg);
-    transform-origin: 50% 0%;
+  .geo[data-motion="full"] .geo-view-overview [data-geo-slot="activity"] {
+    animation-delay: -4.5s;
   }
-  .dash-fx-slot[data-pose]:focus-within {
-    transform: none;
-  }
-
-  /* The counters stand on a gentle curve, the outer ones turned inward. */
-  .dash-fx-counter:nth-child(1) {
-    --curve: 9deg;
-    --sink: -18px;
-  }
-  .dash-fx-counter:nth-child(2) {
-    --curve: 3deg;
-  }
-  .dash-fx-counter:nth-child(3) {
-    --curve: -3deg;
-  }
-  .dash-fx-counter:nth-child(4) {
-    --curve: -9deg;
-    --sink: -18px;
+  .geo-view-overview :is([data-geo-slot="roster"], [data-geo-slot="activity"]):is(:hover, :focus-within) {
+    animation-play-state: paused;
   }
 }
 
-@container dash-fx (min-width: 75rem) {
-  /* One HUD row, as in Code Admin. */
-  .dash-fx-hud,
-  .dash-fx-scroller {
-    --hud-h: 64px;
-  }
-  .dash-fx-hud {
-    display: flex;
-    height: var(--hud-h);
-    padding-block: 0;
-    background: linear-gradient(to bottom, rgb(3 2 3 / 0.9), rgb(3 2 3 / 0.55) 65%, transparent);
-  }
-  .dash-fx-nav {
-    margin-inline: auto;
-  }
-  .dash-fx-scroller {
-    padding-top: calc(var(--hud-h) + 0.75rem);
-  }
+/* Motion ------------------------------------------------------------------------------------------- */
 
-  /* Overview: the counters and console in the middle, admins and activity angled at the sides. */
-  .dash-fx-view-overview:not([hidden]) {
-    grid-template-columns: minmax(15rem, 20rem) minmax(0, 1fr) minmax(15rem, 20rem);
-    grid-template-areas: "head head head" "roster counters activity" "roster chart activity" "roster queue activity";
-  }
-  .dash-fx-view-overview [data-fx-slot="roster"] {
-    transform: rotateY(14deg) translateZ(-40px);
-  }
-  .dash-fx-view-overview [data-fx-slot="activity"] {
-    transform: rotateY(-14deg) translateZ(-40px);
-  }
-  .dash-fx-view-overview [data-fx-slot]:is([data-pose="left"], [data-pose="right"]):focus-within {
-    transform: none;
-  }
-  .dash-fx-view-overview .dash-fx-counters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .dash-fx-view-overview .dash-fx-counter:nth-child(odd) {
-    --curve: 5deg;
-    --sink: 0px;
-  }
-  .dash-fx-view-overview .dash-fx-counter:nth-child(even) {
-    --curve: -5deg;
-    --sink: 0px;
-  }
-}
-
-@container dash-fx (min-width: 88rem) {
-  .dash-fx-brand-sub {
-    display: inline;
-  }
-  .dash-fx-view-overview .dash-fx-counters {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .dash-fx-view-overview .dash-fx-counter:nth-child(1) {
-    --curve: 10deg;
-    --sink: -16px;
-  }
-  .dash-fx-view-overview .dash-fx-counter:nth-child(2) {
-    --curve: 3.5deg;
-  }
-  .dash-fx-view-overview .dash-fx-counter:nth-child(3) {
-    --curve: -3.5deg;
-  }
-  .dash-fx-view-overview .dash-fx-counter:nth-child(4) {
-    --curve: -10deg;
-    --sink: -16px;
-  }
-}
-
-@container dash-fx (min-width: 100rem) {
-  .dash-fx-tool-label,
-  .dash-fx-style .dash-style-label {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
-  }
-  .dash-fx-hud-button {
-    padding: 0 0.8rem;
-  }
-  .dash-fx-style button {
-    padding: 0 0.65rem;
-  }
-}
-
-/* Motion --------------------------------------------------------------------- */
-
-.dash-fx[data-motion="subtle"] :is(.dash-fx-seal-runes, .dash-fx-seal-sweep, .dash-fx-seal-mark, .dash-fx-seal-core) {
+.geo[data-motion="subtle"] :is(.geo-shard, .geo-aurora, .geo-dust, .geo-centerpiece, .geo-viewtitle, .geo-brand-sub) {
   animation: none;
 }
 
-.dash-fx[data-motion="subtle"] .dash-fx-view:not([hidden]) > * {
-  animation-name: dash-fx-arrive-soft;
+.geo[data-motion="subtle"] .geo-crystal-spin {
+  animation-duration: 90s;
 }
 
-.dash-fx[data-motion="off"] *,
-.dash-fx[data-motion="off"] *::before,
-.dash-fx[data-motion="off"] *::after {
+.geo[data-motion="subtle"] :is(.geo-view:not([hidden]) > .geo-viewhead, .geo-view:not([hidden]) > .geo-slot > *) {
+  animation-name: geo-arrive-soft;
+}
+
+.geo[data-motion="subtle"] .geo-burst-shard {
+  display: none;
+}
+
+.geo[data-motion="off"] *,
+.geo[data-motion="off"] *::before,
+.geo[data-motion="off"] *::after {
   animation: none !important;
   transition: none !important;
 }
 
-.dash-fx[data-motion="off"] :is(.dash-fx-flash, .dash-fx-pulse, .dash-fx-seal-sweep) {
+.geo[data-motion="off"] :is(.geo-beam, .geo-burst) {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dash-fx *,
-  .dash-fx *::before,
-  .dash-fx *::after {
+  .geo *,
+  .geo *::before,
+  .geo *::after {
     animation: none !important;
     transition: none !important;
   }
-  :is(.dash-fx-flash, .dash-fx-pulse, .dash-fx-seal-sweep) {
+  :is(.geo-beam, .geo-burst) {
     display: none;
   }
 }
 
-@keyframes dash-fx-spin {
+@keyframes geo-spin {
   to {
-    transform: rotate(1turn);
+    transform: rotateY(360deg);
   }
 }
 
-@keyframes dash-fx-seal-in {
-  from {
-    opacity: 0;
-    scale: 0.9;
-  }
-}
-
-@keyframes dash-fx-core {
+@keyframes geo-core {
   0%,
   100% {
-    opacity: 0.75;
+    opacity: 0.7;
     scale: 0.9;
   }
   50% {
     opacity: 1;
-    scale: 1.06;
+    scale: 1.08;
   }
 }
 
-@keyframes dash-fx-pulse {
+@keyframes geo-hover {
   from {
-    opacity: 0.85;
-    scale: 0.25;
+    translate: 0 calc(-50% - 10px);
   }
   to {
-    opacity: 0;
-    scale: 1.35;
+    translate: 0 calc(-50% + 10px);
   }
 }
 
-@keyframes dash-fx-hud-in {
-  from {
-    opacity: 0;
-    translate: 0 -14px;
+@keyframes geo-aurora {
+  to {
+    translate: -8vmax 6vmax;
+    scale: 1.12;
   }
 }
 
-@keyframes dash-fx-arrive {
-  from {
-    opacity: 0;
-    translate: 0 30px -280px;
-    filter: blur(6px) brightness(1.6);
-  }
-  60% {
-    filter: blur(0) brightness(1.15);
+@keyframes geo-twinkle {
+  to {
+    opacity: 0.18;
   }
 }
 
-@keyframes dash-fx-arrive-soft {
-  from {
-    opacity: 0;
-    translate: 0 10px;
+@keyframes geo-drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(14px, -28px) rotate(170deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(360deg);
   }
 }
 
-@keyframes dash-fx-sweep {
+@keyframes geo-shimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+@keyframes geo-rail-in {
   from {
-    background-position: 0 100%;
+    opacity: 0;
+    translate: 0 -12px;
+  }
+}
+
+@keyframes geo-rail-in-side {
+  from {
+    opacity: 0;
+    translate: -18px 0;
+  }
+}
+
+@keyframes geo-nav-in {
+  from {
+    opacity: 0;
+    translate: -10px 0;
+  }
+}
+
+@keyframes geo-crystallize {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.97);
+    filter: blur(10px) saturate(2.2) hue-rotate(-50deg) brightness(1.7);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(0) saturate(1.35) hue-rotate(0deg) brightness(1.18);
+  }
+  to {
+    filter: blur(0) saturate(1) hue-rotate(0deg) brightness(1);
+  }
+}
+
+@keyframes geo-arrive-soft {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes geo-float {
+  from {
+    translate: 0 -4px;
+  }
+  to {
+    translate: 0 4px;
+  }
+}
+
+@keyframes geo-beam {
+  0% {
+    opacity: 1;
+    background-position: 100% 0;
+  }
+  80% {
     opacity: 1;
   }
-  to {
-    background-position: 0 0%;
+  100% {
     opacity: 0;
+    background-position: 0% 0;
+  }
+}
+
+@keyframes geo-flash {
+  from {
+    opacity: 0.9;
+    scale: 0.3;
+  }
+  to {
+    opacity: 0;
+    scale: 1.7;
+  }
+}
+
+@keyframes geo-shatter {
+  from {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(-10px) rotate(0deg) scale(0.5);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(var(--r)) scale(1.1);
   }
 }

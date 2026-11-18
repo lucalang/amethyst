@@ -233,6 +233,46 @@ export function playSanctumSound(name: SanctumSound, delay = 0) {
   }
 }
 
+export type GeodeSound = "hover" | "select" | "flight" | "confirm" | "error" | "gem";
+
+/**
+ * The Admin Dashboard's Flashy design ("Geode"): struck glass and crystal chimes, nothing like the Sanctum's
+ * drones, so the two admin tools never sound alike. Hover ticks share the Sanctum's throttle.
+ */
+export function playGeodeSound(name: GeodeSound) {
+  if (!allowed()) return;
+  switch (name) {
+    case "hover": {
+      const now = performance.now();
+      if (now - lastHover < 70) return;
+      lastHover = now;
+      tone(3136 + Math.random() * 420, 0, 0.07, "sine", 0.009);
+      break;
+    }
+    case "select":
+      tone(1568, 0, 0.28, "sine", 0.04);
+      tone(2349.3, 0.04, 0.34, "sine", 0.024);
+      break;
+    case "flight":
+      // A glissando up a pentatonic run, with a breath of air: light passing through the crystal.
+      [1046.5, 1174.7, 1318.5, 1568, 1760, 2093].forEach((freq, i) => tone(freq, i * 0.035, 0.55, "sine", 0.02));
+      noise(0, 0.7, 3000, 9000, 0.018, "highpass", undefined, 0.4);
+      break;
+    case "confirm":
+      [784, 987.8, 1174.7, 1568].forEach((freq, i) => tone(freq, i * 0.06, 0.95, "sine", 0.038));
+      tone(3136, 0.26, 0.6, "sine", 0.012);
+      break;
+    case "error":
+      tone(311.1, 0, 0.2, "triangle", 0.05, 233.1);
+      tone(207.7, 0.1, 0.28, "triangle", 0.045);
+      break;
+    case "gem":
+      tone(2637, 0, 0.5, "sine", 0.03);
+      tone(3951, 0.05, 0.6, "sine", 0.014);
+      break;
+  }
+}
+
 /**
  * The Sanctum's ignition, in step with the scene: a low drone as the sigil traces, a rising rush as the
  * ring spins up, a bright strike at the bloom flash and soft seats as the panels assemble. Silent before

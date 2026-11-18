@@ -11,10 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
-import { playSanctumSound } from "@/components/vault/vault-audio";
-import { adminLook, type AdminLookId } from "@/lib/admin-looks";
+import { playGeodeSound } from "@/components/vault/vault-audio";
+import { gemStyle, type AdminGemId } from "@/lib/admin-gems";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { paletteStyle } from "@/lib/palette-variants";
 import { ADMIN_DASHBOARD_STYLES, type AdminDashboardStyle, type Settings } from "@/lib/preferences";
 import { DASHBOARD_CONTAINER, dashboardSchema, type AdminDashboardState, type AdminRole, type DashboardAccount, type OverrideStatus } from "@/lib/admin-dashboard";
 import { describeItem, inventoryItemLabel } from "@/lib/inventory";
@@ -197,13 +196,13 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
   const [style, setStyle] = useState<AdminDashboardStyle>(settings.adminDashboardStyle);
   const [success, setSuccess] = useState(0);
   const flashy = style === "flashy";
-  // The same colours and sound setting as Code Admin (switched from either), so both admin tools feel like one place.
-  const [look, setLook] = useState<AdminLookId>(settings.adminLook);
+  // Flashy is lit by its own gem; sound is the account's one sound setting (shared with the Arcade and Code Admin).
+  const [gem, setGem] = useState<AdminGemId>(settings.adminDashboardGem);
   const [soundOn, setSoundOn] = useState(settings.arcadeSound);
-  const fxStyle = useMemo(() => paletteStyle(adminLook(look).palette), [look]);
+  const fxStyle = useMemo(() => gemStyle(gem), [gem]);
 
   /** Saves one setting; the choice applies right away and stays for this visit even if saving fails. */
-  async function save(patch: Partial<Pick<Settings, "adminDashboardStyle" | "adminLook" | "arcadeSound">>, failure: string) {
+  async function save(patch: Partial<Pick<Settings, "adminDashboardStyle" | "adminDashboardGem" | "arcadeSound">>, failure: string) {
     try {
       await apiFetch("/api/preferences", { method: "PATCH", json: { settings: patch } });
       router.refresh();
@@ -217,10 +216,10 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
     setStyle(next);
     await save({ adminDashboardStyle: next }, "Could not save the dashboard style. It applies until you leave this page.");
   }
-  async function chooseLook(next: AdminLookId) {
-    if (next === look) return;
-    setLook(next);
-    await save({ adminLook: next }, "Could not save the Admin colours. They apply until you leave this page.");
+  async function chooseGem(next: AdminGemId) {
+    if (next === gem) return;
+    setGem(next);
+    await save({ adminDashboardGem: next }, "Could not save the gem. It applies until you leave this page.");
   }
   async function toggleSound() {
     const next = !soundOn;
@@ -259,12 +258,13 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
     <ConfirmDialog
       key={confirm?.key ?? "none"}
       confirm={confirm}
-      className={flashy ? "dash-fx-dialog" : undefined}
+      className={flashy ? "geo-dialog" : undefined}
       style={flashy ? fxStyle : undefined}
       onResult={(ok) => {
         if (!flashy) return;
-        if (soundOn) playSanctumSound(ok ? "confirm" : "error");
+        // Success chimes with its shard burst (in the Flashy shell); a failure gets the dull glass knock here.
         if (ok) setSuccess((count) => count + 1);
+        else if (soundOn) playGeodeSound("error");
       }}
       onClose={() => setConfirm(null)}
       onDone={() => void refresh(true)}
@@ -278,23 +278,19 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
         motion={motion}
         sound={soundOn}
         onToggleSound={() => void toggleSound()}
-        look={look}
-        onChooseLook={(id) => void chooseLook(id)}
+        gem={gem}
+        onChooseGem={(id) => void chooseGem(id)}
         success={success}
         tools={
           <>
             <StylePicker value={style} onChange={(next) => void chooseStyle(next)} flashy />
-            <button type="button" className="dash-fx-hud-button" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh">
-              {refreshing ? <Loader2 aria-hidden className="size-3.5 animate-spin" /> : <RefreshCw aria-hidden className="size-3.5" />}
-              <span aria-hidden className="dash-fx-tool-label">
-                Refresh
-              </span>
+            <button type="button" className="geo-tool" onClick={() => void refresh()} disabled={refreshing} title="Refresh">
+              {refreshing ? <Loader2 aria-hidden className="size-4 animate-spin" /> : <RefreshCw aria-hidden className="size-4" />}
+              <span className="sr-only">Refresh</span>
             </button>
-            <Link href="/admin" className="dash-fx-hud-button" data-primary aria-label="Code Admin">
-              <span aria-hidden className="dash-fx-tool-label">
-                Code Admin
-              </span>
-              <ArrowUpRight aria-hidden className="size-3.5" />
+            <Link href="/admin" className="geo-tool" title="Open Code Admin">
+              <ArrowUpRight aria-hidden className="size-4" />
+              <span className="sr-only">Code Admin</span>
             </Link>
           </>
         }
@@ -306,7 +302,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
             kicker: "Amethyst command",
             title: "Overview",
             aside: (
-              <p className="dash-fx-whoami">
+              <p className="geo-whoami">
                 Signed in as <strong>{who(state.me.account)}</strong>
                 <span className="dash-pill" data-role={state.me.role}>
                   {owner ? <Crown aria-hidden className="size-3" /> : <ShieldCheck aria-hidden className="size-3" />}
@@ -435,7 +431,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
 /** Standard / Flashy. Presentation only: both render the same tools, data and checks. */
 function StylePicker({ value, onChange, flashy = false }: { value: AdminDashboardStyle; onChange: (next: AdminDashboardStyle) => void; flashy?: boolean }) {
   return (
-    <div className={flashy ? "dash-fx-style" : "dash-segment"} role="group" aria-label="Dashboard style">
+    <div className={flashy ? "geo-switch" : "dash-segment"} role="group" aria-label="Dashboard style">
       {ADMIN_DASHBOARD_STYLES.map((option) => (
         <button key={option} type="button" aria-pressed={value === option} onClick={() => onChange(option)}>
           {option === "flashy" ? <Sparkles aria-hidden className="size-3.5" /> : <LayoutDashboard aria-hidden className="size-3.5" />}
@@ -1159,18 +1155,18 @@ function FxChart({ state }: { state: AdminDashboardState }) {
 
   return (
     <FxPanel kicker={`Last 14 days · latest ${plural(state.audit.length, "entry", "entries")}`} title="Admin actions">
-      <div className="dash-fx-chart" aria-hidden onPointerLeave={() => setHover(-1)}>
+      <div className="geo-chart" aria-hidden onPointerLeave={() => setHover(-1)}>
         {days.map((day, i) => (
-          <div key={day.key} className="dash-fx-bar" data-hot={i === hover ? "" : undefined} style={{ "--h": `${(day.count / max) * 100}%` } as CSSProperties} onPointerEnter={() => setHover(i)}>
-            <span className="dash-fx-bar-fill" />
+          <div key={day.key} className="geo-bar" data-hot={i === hover ? "" : undefined} style={{ "--h": `${(day.count / max) * 100}%` } as CSSProperties} onPointerEnter={() => setHover(i)}>
+            <span className="geo-bar-fill" />
           </div>
         ))}
       </div>
-      <div className="dash-fx-axis" aria-hidden suppressHydrationWarning>
+      <div className="geo-axis" aria-hidden suppressHydrationWarning>
         <span suppressHydrationWarning>{days[0].label}</span>
         <span>Today</span>
       </div>
-      <p className="dash-fx-readout" suppressHydrationWarning>
+      <p className="geo-readout" suppressHydrationWarning>
         {focus ? (
           <>
             <strong>{focus.label}</strong> · {plural(focus.count, "action")}
@@ -1208,24 +1204,24 @@ function FxQueueRow({ row }: { row: AdminDashboardState["loot"][number] | AdminD
   const now = useNow(Date.parse(row.createdAt));
   const left = Date.parse(row.expiresAt) - now;
   return (
-    <li className="dash-fx-row">
+    <li className="geo-row">
       <span className="dash-icon" data-kind={row.kind === "loot" ? "loot" : "slot"}>
         {row.kind === "loot" ? <PackageOpen aria-hidden className="size-4" /> : <Coins aria-hidden className="size-4" />}
       </span>
-      <span className="dash-fx-row-main">
+      <span className="geo-row-main">
         {row.kind === "loot" ? (
-          <span className="dash-fx-row-title">
+          <span className="geo-row-title">
             <span className="dash-chip-dot" style={{ "--rarity": rarityColor(row.rarity) } as CSSProperties} />
             {itemName(row.item)}
           </span>
         ) : (
-          <span className="dash-fx-row-title">
+          <span className="geo-row-title">
             <MiniSymbols symbols={row.symbols} />×{row.multiplier}
           </span>
         )}
-        <span className="dash-fx-row-meta">{row.kind === "loot" ? lootCaseInfo(row.case).name : "Coin Slots"}</span>
+        <span className="geo-row-meta">{row.kind === "loot" ? lootCaseInfo(row.case).name : "Coin Slots"}</span>
       </span>
-      <span className="dash-fx-row-side" suppressHydrationWarning>
+      <span className="geo-row-side" suppressHydrationWarning>
         {left > 0 ? `expires in ${countdown(left)}` : "expiring"}
       </span>
     </li>
@@ -1240,19 +1236,19 @@ function FxQueue({ state }: { state: AdminDashboardState }) {
       kicker="Waiting for your next attempt"
       title="Queued for you"
       actions={
-        <a href="#overrides" className="dash-fx-link">
+        <a href="#overrides" className="geo-link">
           {rows.length ? "Manage" : "Queue one"}
         </a>
       }
     >
       {rows.length ? (
-        <ul className="dash-fx-list">
+        <ul className="geo-list">
           {rows.map((row) => (
             <FxQueueRow key={row.id} row={row} />
           ))}
         </ul>
       ) : (
-        <p className="dash-fx-empty">Nothing queued. Your next Lootbox opening and Coin Slots spin use the normal odds.</p>
+        <p className="geo-empty">Nothing queued. Your next Lootbox opening and Coin Slots spin use the normal odds.</p>
       )}
     </FxPanel>
   );
@@ -1266,21 +1262,21 @@ function FxRoster({ state }: { state: AdminDashboardState }) {
       kicker={`${plural(owners, "owner")} · ${plural(state.admins.length - owners, "admin")}`}
       title="Admins"
       actions={
-        <a href="#access" className="dash-fx-link">
+        <a href="#access" className="geo-link">
           Manage
         </a>
       }
     >
-      <ul className="dash-fx-list">
+      <ul className="geo-list">
         {admins.map((admin) => (
-          <li key={admin.id} className="dash-fx-row">
+          <li key={admin.id} className="geo-row">
             <Avatar account={admin.account} id={admin.id} />
-            <span className="dash-fx-row-main">
-              <span className="dash-fx-row-title">
+            <span className="geo-row-main">
+              <span className="geo-row-title">
                 {who(admin.account)}
                 {admin.id === state.me.id ? <span className="font-normal text-muted-foreground">(you)</span> : null}
               </span>
-              <span className="dash-fx-row-meta" suppressHydrationWarning>
+              <span className="geo-row-meta" suppressHydrationWarning>
                 since {when(admin.grantedAt)}
               </span>
             </span>
@@ -1297,21 +1293,21 @@ function FxRoster({ state }: { state: AdminDashboardState }) {
 
 /** Audit entries as Code Admin's activity feed: a diamond per entry on a fading thread. */
 function FxFeed({ entries, empty }: { entries: AuditEntry[]; empty: string }) {
-  if (!entries.length) return <p className="dash-fx-empty">{empty}</p>;
+  if (!entries.length) return <p className="geo-empty">{empty}</p>;
   return (
-    <ol className="dash-fx-feed">
+    <ol className="geo-feed">
       {entries.map((entry) => {
         const self = entry.actor?.id && entry.actor.id === entry.target?.id;
         const detail = auditDetail(entry.action, entry.details);
         return (
-          <li key={entry.id} className="dash-fx-feed-item" data-kind={auditGroup(entry.action)} data-tone={/_(revoke|take|cancel|end)$/.test(entry.action) ? "take" : undefined}>
-            <span aria-hidden className="dash-fx-feed-mark" />
-            <span className="dash-fx-feed-text">
+          <li key={entry.id} className="geo-feed-item" data-kind={auditGroup(entry.action)} data-tone={/_(revoke|take|cancel|end)$/.test(entry.action) ? "take" : undefined}>
+            <span aria-hidden className="geo-feed-mark" />
+            <span className="geo-feed-text">
               <span>
                 <strong>{who(entry.actor, "Deleted account")}</strong> {ACTION_LABEL[entry.action] ?? entry.action}
                 {!self && entry.target ? ` for ${who(entry.target)}` : ""}
               </span>
-              <span className="dash-fx-row-meta" suppressHydrationWarning>
+              <span className="geo-row-meta" suppressHydrationWarning>
                 {detail ? `${detail} · ` : ""}
                 {when(entry.createdAt)}
               </span>
@@ -1329,7 +1325,7 @@ function FxActivity({ state }: { state: AdminDashboardState }) {
       kicker="Audit log · latest"
       title="Activity"
       actions={
-        <a href="#audit" className="dash-fx-link">
+        <a href="#audit" className="geo-link">
           Full log
         </a>
       }
@@ -1361,34 +1357,34 @@ function FxKinds({ state }: { state: AdminDashboardState }) {
   const top = [...actors.entries()].sort(([, a], [, b]) => b.count - a.count).slice(0, 3);
   return (
     <FxPanel kicker={`Latest ${plural(total, "entry", "entries")}`} title="By kind">
-      <ul className="dash-fx-kinds">
+      <ul className="geo-kinds">
         {groups.map((group) => (
           <li key={group.id}>
-            <span className="dash-fx-kind-head">
+            <span className="geo-kind-head">
               <span>{group.label}</span>
               <span className="tabular-nums">{group.count.toLocaleString("en")}</span>
             </span>
-            <span className="dash-fx-meter" aria-hidden>
+            <span className="geo-meter" aria-hidden>
               <span style={{ width: `${total ? (group.count / total) * 100 : 0}%` }} />
             </span>
           </li>
         ))}
       </ul>
-      <p className="dash-fx-subtitle">Most active</p>
+      <p className="geo-subtitle">Most active</p>
       {top.length ? (
-        <ul className="dash-fx-list">
+        <ul className="geo-list">
           {top.map(([id, actor]) => (
-            <li key={id} className="dash-fx-row">
+            <li key={id} className="geo-row">
               <Avatar account={actor.account} id={id} />
-              <span className="dash-fx-row-main">
-                <span className="dash-fx-row-title">{who(actor.account, "Deleted account")}</span>
+              <span className="geo-row-main">
+                <span className="geo-row-title">{who(actor.account, "Deleted account")}</span>
               </span>
-              <span className="dash-fx-row-side tabular-nums">{plural(actor.count, "action")}</span>
+              <span className="geo-row-side tabular-nums">{plural(actor.count, "action")}</span>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="dash-fx-empty">Nothing recorded yet.</p>
+        <p className="geo-empty">Nothing recorded yet.</p>
       )}
     </FxPanel>
   );

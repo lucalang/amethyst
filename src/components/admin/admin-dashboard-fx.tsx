@@ -3,22 +3,21 @@
 import { useEffect, useId, useRef, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useCardTilt } from "@/components/showcase/card-tilt";
-import { playSanctumSound } from "@/components/vault/vault-audio";
-import { ADMIN_LOOKS, adminLook, type AdminLookId } from "@/lib/admin-looks";
+import { playGeodeSound } from "@/components/vault/vault-audio";
+import { ADMIN_GEMS, adminGem, type AdminGemId } from "@/lib/admin-gems";
 import type { MotionLevel } from "@/lib/preferences";
 import { CountUp } from "./admin-ui";
 import "./admin-dashboard-fx.css";
 
 /**
- * The Flashy Admin Dashboard, built like Code Admin's sanctum: a full-height stage over the turning seal, a HUD
- * along the top (sigil, view pills, colour and sound), and one view at a time that flies in from depth, with its
- * side panels angled toward the viewer and its counters set on a curve. Pure CSS 3D (no WebGL), so there's no
- * scene to compile or fall back from. Everything here is presentation: the panels inside are the same tools,
- * with the same checks, as the Standard design. Colours follow the Code Admin colour choice through `--look-*`.
+ * The Flashy Admin Dashboard: "Geode". A dark cave lit by one gem you choose. A faceted crystal turns beside the
+ * views and leans toward the pointer, light refracts across faceted glass panels, views crystallize in behind a
+ * prism beam, and a confirmed action bursts into shards, with struck-glass chimes. Pure CSS 3D (no WebGL).
+ * Everything here is presentation: the panels inside are the same tools, with the same checks, as Standard.
  */
 
 export type FxStat = { key: string; label: string; value: number; note: string; icon: ReactNode; tone?: string };
-/** A panel's place in its view. `left`/`right` angle toward the middle, `floor` leans back like a console. */
+/** Where a panel sits in its view; wide layouts lean `left`/`right` panels toward the middle. */
 export type FxPose = "left" | "right" | "floor";
 export type FxSlot = { id: string; pose?: FxPose; node: ReactNode };
 export type FxView = { id: string; label: string; icon: ReactNode; badge?: number; kicker: string; title: string; aside?: ReactNode; slots: FxSlot[] };
@@ -39,71 +38,97 @@ const useHash = () =>
     () => "",
   );
 
-/** A panel in the sanctum's language: mono kicker, engraved title, glass. */
+/** A regular octahedron in CSS 3D: eight translucent faces around a glowing core. */
+function Crystal({ className }: { className: string }) {
+  return (
+    <span aria-hidden className={`geo-crystal ${className}`}>
+      {/* The core glow stays flat behind the faces, so it reads as light from inside at every angle. */}
+      <span className="geo-crystal-core" />
+      <span className="geo-crystal-lean">
+        <span className="geo-crystal-spin">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <span key={i} className="geo-face" data-half={i < 4 ? "top" : "bottom"} style={{ "--k": i % 4 } as CSSProperties} />
+          ))}
+        </span>
+      </span>
+    </span>
+  );
+}
+
+/* Shards drifting in the dark: left %, top %, size px, drift duration s, delay s. */
+const SHARDS = [
+  [6, 18, 14, 19, 0],
+  [14, 72, 9, 23, -6],
+  [31, 8, 7, 17, -3],
+  [47, 88, 12, 26, -11],
+  [63, 30, 6, 21, -8],
+  [78, 64, 10, 18, -2],
+  [91, 12, 8, 24, -14],
+  [88, 90, 13, 28, -5],
+] as const;
+
+/* The burst after a confirmed action: one shard every ~26°, with a little spread. */
+const BURST = Array.from({ length: 14 }, (_, i) => ({ angle: i * 25.7 + ((i * 37) % 11), distance: 160 + ((i * 53) % 120), spin: ((i * 97) % 360) - 180 }));
+
+/** A panel cut from glass: chamfered corners, a refracting edge and light that follows the pointer. */
 export function FxPanel({ kicker, title, actions, children }: { kicker: string; title: string; actions?: ReactNode; children: ReactNode }) {
   const id = useId();
   return (
-    <section className="dash-fx-pane" aria-labelledby={id}>
-      <header className="dash-fx-head">
+    <section className="geo-pane" aria-labelledby={id}>
+      <header className="geo-head">
         <div className="min-w-0">
-          <p className="dash-fx-kicker">{kicker}</p>
-          <h2 id={id} className="dash-fx-title">
+          <p className="geo-kicker">{kicker}</p>
+          <h2 id={id} className="geo-title">
             {title}
           </h2>
         </div>
-        {actions ? <div className="dash-fx-head-actions">{actions}</div> : null}
+        {actions ? <div className="geo-head-actions">{actions}</div> : null}
       </header>
       {children}
     </section>
   );
 }
 
-/** The counters, as Code Admin shows them: big glowing figures on a slight curve, tilting under the mouse. */
+/** The counters as cut gems: iridescent figures that tilt and catch the light under the pointer. */
 export function FxCounters({ stats, animate }: { stats: FxStat[]; animate: boolean }) {
   return (
-    <div className="dash-fx-counters">
+    <div className="geo-counters">
       {stats.map((stat, i) => (
-        <div key={stat.key} className="dash-fx-counter" data-card data-tone={stat.tone} style={{ "--i": i } as CSSProperties}>
-          <span aria-hidden className="dash-fx-glare" />
-          <p className="dash-fx-kicker">{stat.label}</p>
-          <p className="dash-fx-counter-value">
-            <CountUp value={stat.value} animate={animate} delay={250 + i * 120} />
-          </p>
-          <p className="dash-fx-counter-note" suppressHydrationWarning>
-            {stat.note}
-          </p>
-          <span aria-hidden className="dash-fx-counter-icon">
+        <div key={stat.key} className="geo-counter" data-card data-tone={stat.tone} style={{ "--i": i } as CSSProperties}>
+          <span aria-hidden className="geo-glint" />
+          <span aria-hidden className="geo-counter-icon">
             {stat.icon}
           </span>
+          <p className="geo-kicker">{stat.label}</p>
+          <p className="geo-counter-value">
+            <CountUp value={stat.value} animate={animate} delay={200 + i * 110} />
+          </p>
+          <p className="geo-counter-note" suppressHydrationWarning>
+            {stat.note}
+          </p>
         </div>
       ))}
     </div>
   );
 }
 
-/** The colour picker in the HUD, shared with Code Admin (the same saved choice). */
-function LookPicker({ look, onChoose }: { look: AdminLookId; onChoose: (id: AdminLookId) => void }) {
-  const current = adminLook(look);
+/** The gem picker: every gem in view, the chosen one set in a ring. */
+function GemPicker({ gem, onChoose }: { gem: AdminGemId; onChoose: (id: AdminGemId) => void }) {
   return (
-    <details className="dash-fx-look">
-      <summary className="dash-fx-hud-button">
-        <span aria-hidden className="dash-fx-swatch" style={{ "--swatch": current.swatch } as CSSProperties} />
-        <span className="dash-fx-tool-label">
-          <span className="sr-only">Admin colour: </span>
-          {current.label}
-        </span>
-      </summary>
-      <fieldset className="dash-fx-look-menu">
-        <legend className="dash-fx-look-legend">Admin colours</legend>
-        {ADMIN_LOOKS.map((option) => (
-          <label key={option.id} className="dash-fx-look-option">
-            <input type="radio" name="dash-fx-look" value={option.id} checked={look === option.id} onChange={() => onChoose(option.id)} className="sr-only" />
-            <span aria-hidden className="dash-fx-swatch" style={{ "--swatch": option.swatch } as CSSProperties} />
-            {option.label}
+    <fieldset className="geo-gems">
+      <legend className="geo-gems-legend">
+        Gem <span className="geo-gems-name">{adminGem(gem).label}</span>
+      </legend>
+      <div className="geo-gems-row">
+        {ADMIN_GEMS.map((option) => (
+          <label key={option.id} className="geo-gem" title={option.label} style={{ "--ga": option.a, "--gb": option.b, "--gc": option.c } as CSSProperties}>
+            <input type="radio" name="geo-gem" value={option.id} checked={gem === option.id} onChange={() => onChoose(option.id)} className="sr-only" />
+            <span aria-hidden className="geo-gem-stone" />
+            <span className="sr-only">{option.label}</span>
           </label>
         ))}
-      </fieldset>
-    </details>
+      </div>
+    </fieldset>
   );
 }
 
@@ -112,44 +137,83 @@ export function FlashyDashboard({
   motion,
   sound,
   onToggleSound,
-  look,
-  onChooseLook,
+  gem,
+  onChooseGem,
   success,
   tools,
   views,
   children,
 }: {
+  /** The gem's custom properties (see gemStyle). */
   style: CSSProperties;
   motion: MotionLevel;
   /** The account's sound setting (shared with the Arcade and Code Admin). */
   sound: boolean;
   onToggleSound: () => void;
-  look: AdminLookId;
-  onChooseLook: (id: AdminLookId) => void;
-  /** Bumped after each confirmed action, for the success sweep. */
+  gem: AdminGemId;
+  onChooseGem: (id: AdminGemId) => void;
+  /** Bumped after each confirmed action, for the shard burst. */
   success: number;
-  /** HUD buttons placed before the colour and sound controls. */
+  /** Rail buttons placed before the sound toggle. */
   tools: ReactNode;
   views: FxView[];
   children: ReactNode;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const scrollerRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
   const hash = useHash();
   const view = views.find((item) => item.id === hash) ?? views[0];
-  const animate = motion !== "off";
+  const viewIndex = views.indexOf(view);
+  const full = motion === "full";
 
-  // Counters tilt under the mouse; the tool panels stay still so they're easy to operate.
-  useCardTilt(rootRef, motion === "full");
+  // Counters tilt under the pointer; panels only catch its light (they stay still to be easy to use).
+  useCardTilt(rootRef, full);
+  useCardTilt(rootRef, motion !== "off", ".geo-pane, .geo .dash-panel");
 
-  // Arriving at a view: back to its top, and the flight cue (the CSS does the flying).
+  // The cave's light follows the pointer: --mx/--my for the glow, --px/--py to lean the crystal.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || !full) return;
+    let frame = 0;
+    let x = 0;
+    let y = 0;
+    const apply = () => {
+      frame = 0;
+      const rect = root.getBoundingClientRect();
+      root.style.setProperty("--mx", `${(x - rect.left).toFixed(0)}px`);
+      root.style.setProperty("--my", `${(y - rect.top).toFixed(0)}px`);
+      root.style.setProperty("--px", `${(((x - rect.left) / rect.width - 0.5) * 24).toFixed(2)}deg`);
+      root.style.setProperty("--py", `${(-((y - rect.top) / rect.height - 0.5) * 18).toFixed(2)}deg`);
+    };
+    const move = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      x = event.clientX;
+      y = event.clientY;
+      if (!frame) frame = requestAnimationFrame(apply);
+    };
+    root.addEventListener("pointermove", move, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      root.removeEventListener("pointermove", move);
+      for (const name of ["--mx", "--my", "--px", "--py"]) root.style.removeProperty(name);
+    };
+  }, [full]);
+
+  // Arriving at a view: back to its top, and the chime (the CSS does the crystallizing).
   const previous = useRef(view.id);
   useEffect(() => {
     if (previous.current === view.id) return;
     previous.current = view.id;
-    scrollerRef.current?.scrollTo({ top: 0 });
-    if (sound && animate) playSanctumSound("flight");
-  }, [view.id, sound, animate]);
+    mainRef.current?.scrollTo({ top: 0 });
+    if (sound && motion !== "off") playGeodeSound("flight");
+  }, [view.id, sound, motion]);
+
+  const chimed = useRef(success);
+  useEffect(() => {
+    if (chimed.current === success) return;
+    chimed.current = success;
+    if (sound) playGeodeSound("confirm");
+  }, [success, sound]);
 
   function go(event: MouseEvent<HTMLAnchorElement>, id: string) {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -157,46 +221,63 @@ export function FlashyDashboard({
     if (id === view.id) return;
     window.history.pushState(null, "", id === views[0].id ? window.location.pathname + window.location.search : `#${id}`);
     window.dispatchEvent(new HashChangeEvent("hashchange"));
-    if (sound) playSanctumSound("select");
+    if (sound) playGeodeSound("select");
   }
 
   return (
-    <div ref={rootRef} className="dash-fx -mb-24 h-[calc(100dvh-3.5rem-1px)] md:-mb-10" style={style} data-motion={motion} data-view={view.id}>
-      <div aria-hidden className="dash-fx-backdrop">
-        <span className="dash-fx-rays" />
-        <span className="dash-fx-seal">
-          <span className="dash-fx-seal-runes" />
-          <span className="dash-fx-seal-sweep" />
-          <span className="dash-fx-seal-inner" />
-          <span className="dash-fx-seal-mark" />
-          <span className="dash-fx-seal-core" />
-        </span>
-        {/* A ring leaves the seal on every flight (and once on arrival). */}
-        <span key={view.id} className="dash-fx-pulse" />
-        <span className="dash-fx-vignette" />
+    <div ref={rootRef} className="geo -mb-24 h-[calc(100dvh-3.5rem-1px)] md:-mb-10" style={style} data-motion={motion} data-view={view.id}>
+      <div aria-hidden className="geo-cave">
+        <span className="geo-aurora geo-aurora-a" />
+        <span className="geo-aurora geo-aurora-b" />
+        <span className="geo-aurora geo-aurora-c" />
+        <span className="geo-dust" />
+        {SHARDS.map(([left, top, size, duration, delay], i) => (
+          <span
+            key={i}
+            className="geo-shard"
+            style={{ left: `${left}%`, top: `${top}%`, "--size": `${size}px`, animationDuration: `${duration}s`, animationDelay: `${delay}s` } as CSSProperties}
+          />
+        ))}
+        <Crystal className="geo-centerpiece" />
+        <span className="geo-spot" />
       </div>
-      {success > 0 ? <span key={success} aria-hidden className="dash-fx-flash" /> : null}
 
-      <header className="dash-fx-hud">
-        <p className="dash-fx-brand">
-          <span aria-hidden className="dash-fx-sigil" />
-          <span className="dash-fx-brand-name">Admin Dashboard</span>
-          <span className="dash-fx-brand-sub">Command</span>
-        </p>
-        <nav aria-label="Dashboard views" className="dash-fx-nav">
-          {views.map((item) => (
+      {/* Each flight between views sends a prism beam across; each confirmed action bursts into shards. */}
+      <span key={`beam-${view.id}`} aria-hidden className="geo-beam" />
+      {success > 0 ? (
+        <span key={`burst-${success}`} aria-hidden className="geo-burst">
+          <span className="geo-burst-flash" />
+          {BURST.map((shard, i) => (
+            <span key={i} className="geo-burst-shard" style={{ "--a": `${shard.angle}deg`, "--d": `${shard.distance}px`, "--r": `${shard.spin}deg` } as CSSProperties} />
+          ))}
+        </span>
+      ) : null}
+
+      <aside className="geo-rail">
+        <div className="geo-brand">
+          <Crystal className="geo-brand-gem" />
+          <span className="min-w-0">
+            <span className="geo-brand-title">Admin Dashboard</span>
+            <span className="geo-brand-sub">Geode</span>
+          </span>
+        </div>
+        <nav aria-label="Dashboard views" className="geo-nav">
+          {views.map((item, i) => (
             <a
               key={item.id}
               href={item.id === views[0].id ? "#" : `#${item.id}`}
-              className="dash-fx-nav-link"
+              className="geo-nav-link"
               aria-current={item.id === view.id ? "page" : undefined}
               onClick={(event) => go(event, item.id)}
-              onPointerEnter={(event) => sound && event.pointerType === "mouse" && playSanctumSound("hover")}
+              onPointerEnter={(event) => sound && event.pointerType === "mouse" && playGeodeSound("hover")}
+              style={{ "--i": i } as CSSProperties}
             >
-              {item.icon}
-              <span>{item.label}</span>
+              <span aria-hidden className="geo-nav-icon">
+                {item.icon}
+              </span>
+              <span className="geo-nav-label">{item.label}</span>
               {item.badge ? (
-                <span className="dash-fx-badge">
+                <span className="geo-badge">
                   {item.badge}
                   <span className="sr-only"> queued</span>
                 </span>
@@ -204,33 +285,44 @@ export function FlashyDashboard({
             </a>
           ))}
         </nav>
-        <div className="dash-fx-tools">
-          {tools}
-          <LookPicker look={look} onChoose={onChooseLook} />
-          <button type="button" className="dash-fx-hud-button" aria-pressed={sound} onClick={onToggleSound}>
-            {sound ? <Volume2 aria-hidden className="size-3.5" /> : <VolumeX aria-hidden className="size-3.5" />}
-            <span className="dash-fx-tool-label">{sound ? "Sound on" : "Sound off"}</span>
-          </button>
+        <div className="geo-rail-foot">
+          <GemPicker
+            gem={gem}
+            onChoose={(id) => {
+              onChooseGem(id);
+              if (sound) playGeodeSound("gem");
+            }}
+          />
+          <div className="geo-tools">
+            {tools}
+            <button type="button" className="geo-tool" aria-pressed={sound} onClick={onToggleSound} title={sound ? "Sound on" : "Sound off"}>
+              {sound ? <Volume2 aria-hidden className="size-4" /> : <VolumeX aria-hidden className="size-4" />}
+              <span className="sr-only">Sound</span>
+            </button>
+          </div>
         </div>
-      </header>
+      </aside>
 
-      <div ref={scrollerRef} className="dash-fx-scroller">
+      <div ref={mainRef} className="geo-main">
         {views.map((item, index) => (
-          <div key={item.id} className={`dash-fx-view dash-fx-view-${item.id}`} hidden={item.id !== view.id}>
-            <header className="dash-fx-viewhead">
+          <div key={item.id} className={`geo-view geo-view-${item.id}`} hidden={item.id !== view.id}>
+            <header className="geo-viewhead">
               <div className="min-w-0">
-                <p className="dash-fx-kicker">
-                  <span aria-hidden className="dash-fx-kicker-index">
+                <p className="geo-kicker">
+                  <span aria-hidden className="geo-viewhead-index">
                     {String(index + 1).padStart(2, "0")}
+                    <span> / {String(views.length).padStart(2, "0")}</span>
                   </span>
                   {item.kicker}
                 </p>
-                <h1 className="dash-fx-viewtitle">{item.title}</h1>
+                <h1 className="geo-viewtitle" data-text={item.title}>
+                  {item.title}
+                </h1>
               </div>
-              {item.aside ? <div className="dash-fx-viewaside">{item.aside}</div> : null}
+              {item.aside ? <div className="geo-viewaside">{item.aside}</div> : null}
             </header>
             {item.slots.map((slot, i) => (
-              <div key={slot.id} className="dash-fx-slot" data-fx-slot={slot.id} data-pose={slot.pose} style={{ "--i": i + 1 } as CSSProperties}>
+              <div key={slot.id} className="geo-slot" data-geo-slot={slot.id} data-pose={slot.pose} style={{ "--i": i + 1 } as CSSProperties}>
                 {slot.node}
               </div>
             ))}
@@ -238,7 +330,7 @@ export function FlashyDashboard({
         ))}
       </div>
       <p className="sr-only" aria-live="polite">
-        {view.label}
+        {view.label}, {viewIndex + 1} of {views.length}
       </p>
       {children}
     </div>
