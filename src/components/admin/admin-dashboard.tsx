@@ -12,10 +12,10 @@ import { Input } from "@/components/ui/input";
 import { useSettings } from "@/components/layout/settings-context";
 import { useMotionLevel } from "@/components/showcase/motion";
 import { playSanctumSound } from "@/components/vault/vault-audio";
-import { adminLook } from "@/lib/admin-looks";
+import { adminLook, type AdminLookId } from "@/lib/admin-looks";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { paletteStyle } from "@/lib/palette-variants";
-import { ADMIN_DASHBOARD_STYLES, type AdminDashboardStyle } from "@/lib/preferences";
+import { ADMIN_DASHBOARD_STYLES, type AdminDashboardStyle, type Settings } from "@/lib/preferences";
 import { DASHBOARD_CONTAINER, dashboardSchema, type AdminDashboardState, type AdminRole, type DashboardAccount, type OverrideStatus } from "@/lib/admin-dashboard";
 import { describeItem, inventoryItemLabel } from "@/lib/inventory";
 import { lootCaseInfo } from "@/lib/lootboxes";
@@ -24,8 +24,8 @@ import { createRequestId } from "@/lib/request-id";
 import { winningRule } from "@/lib/slots";
 import type { AdminAccount } from "@/lib/vault-admin";
 import { PlayerTools } from "./admin-players";
-import { FlashyDashboard } from "./admin-dashboard-fx";
-import { countdown, plural, useNow } from "./admin-ui";
+import { FlashyDashboard, FxCounters, FxPanel } from "./admin-dashboard-fx";
+import { countdown, plural, useMounted, useNow } from "./admin-ui";
 import "./admin-dashboard.css";
 
 /** A confirmation with its own key, so a retry from the same dialog reuses the same request id. */
@@ -197,19 +197,35 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
   const [style, setStyle] = useState<AdminDashboardStyle>(settings.adminDashboardStyle);
   const [success, setSuccess] = useState(0);
   const flashy = style === "flashy";
-  // The same colours and sound setting as Code Admin, so both admin tools feel like one place.
-  const fxStyle = useMemo(() => paletteStyle(adminLook(settings.adminLook).palette), [settings.adminLook]);
-  const soundOn = settings.arcadeSound;
+  // The same colours and sound setting as Code Admin (switched from either), so both admin tools feel like one place.
+  const [look, setLook] = useState<AdminLookId>(settings.adminLook);
+  const [soundOn, setSoundOn] = useState(settings.arcadeSound);
+  const fxStyle = useMemo(() => paletteStyle(adminLook(look).palette), [look]);
+
+  /** Saves one setting; the choice applies right away and stays for this visit even if saving fails. */
+  async function save(patch: Partial<Pick<Settings, "adminDashboardStyle" | "adminLook" | "arcadeSound">>, failure: string) {
+    try {
+      await apiFetch("/api/preferences", { method: "PATCH", json: { settings: patch } });
+      router.refresh();
+    } catch {
+      toast.error(failure);
+    }
+  }
 
   async function chooseStyle(next: AdminDashboardStyle) {
     if (next === style) return;
     setStyle(next);
-    try {
-      await apiFetch("/api/preferences", { method: "PATCH", json: { settings: { adminDashboardStyle: next } } });
-      router.refresh();
-    } catch {
-      toast.error("Could not save the dashboard style. It applies until you leave this page.");
-    }
+    await save({ adminDashboardStyle: next }, "Could not save the dashboard style. It applies until you leave this page.");
+  }
+  async function chooseLook(next: AdminLookId) {
+    if (next === look) return;
+    setLook(next);
+    await save({ adminLook: next }, "Could not save the Admin colours. They apply until you leave this page.");
+  }
+  async function toggleSound() {
+    const next = !soundOn;
+    setSoundOn(next);
+    await save({ arcadeSound: next }, "Could not save the sound setting. It applies until you leave this page.");
   }
   const owner = state.me.role === "owner";
   const overrides = [...state.loot, ...state.slots];
@@ -261,61 +277,93 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
         style={fxStyle}
         motion={motion}
         sound={soundOn}
+        onToggleSound={() => void toggleSound()}
+        look={look}
+        onChooseLook={(id) => void chooseLook(id)}
         success={success}
-        me={{ name: who(state.me.account), role: ROLE_LABEL[state.me.role], owner: state.me.role === "owner" }}
-        stats={stats}
-        toolbar={
+        tools={
           <>
             <StylePicker value={style} onChange={(next) => void chooseStyle(next)} flashy />
-            <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={refreshing}>
-              {refreshing ? <Loader2 aria-hidden className="animate-spin" /> : <RefreshCw aria-hidden />}
-              Refresh
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/admin">
+            <button type="button" className="dash-fx-hud-button" onClick={() => void refresh()} disabled={refreshing} aria-label="Refresh">
+              {refreshing ? <Loader2 aria-hidden className="size-3.5 animate-spin" /> : <RefreshCw aria-hidden className="size-3.5" />}
+              <span aria-hidden className="dash-fx-tool-label">
+                Refresh
+              </span>
+            </button>
+            <Link href="/admin" className="dash-fx-hud-button" data-primary aria-label="Code Admin">
+              <span aria-hidden className="dash-fx-tool-label">
                 Code Admin
-                <ArrowUpRight aria-hidden />
-              </Link>
-            </Button>
+              </span>
+              <ArrowUpRight aria-hidden className="size-3.5" />
+            </Link>
           </>
         }
-        sections={[
+        views={[
+          {
+            id: "overview",
+            label: "Overview",
+            icon: <LayoutDashboard aria-hidden className="size-3.5" />,
+            kicker: "Amethyst command",
+            title: "Overview",
+            aside: (
+              <p className="dash-fx-whoami">
+                Signed in as <strong>{who(state.me.account)}</strong>
+                <span className="dash-pill" data-role={state.me.role}>
+                  {owner ? <Crown aria-hidden className="size-3" /> : <ShieldCheck aria-hidden className="size-3" />}
+                  {ROLE_LABEL[state.me.role]}
+                </span>
+              </p>
+            ),
+            slots: [
+              { id: "counters", node: <FxCounters stats={stats} animate={motion !== "off"} /> },
+              { id: "chart", pose: "floor", node: <FxChart state={state} /> },
+              { id: "queue", node: <FxQueue state={state} /> },
+              { id: "roster", pose: "left", node: <FxRoster state={state} /> },
+              { id: "activity", pose: "right", node: <FxActivity state={state} /> },
+            ],
+          },
           {
             id: "overrides",
             label: "Overrides",
-            icon: <Sparkles aria-hidden className="size-4" />,
-            blurb: "Your own next Lootbox opening and Coin Slots spin, and what you queued before.",
+            icon: <Sparkles aria-hidden className="size-3.5" />,
             badge: queued || undefined,
-            content: (
-              <>
-                <div className="dash-grid">
-                  <LootOverridePanel state={state} ask={ask} />
-                  <SlotOverridePanel state={state} ask={ask} />
-                </div>
-                <OverrideHistory state={state} />
-              </>
-            ),
+            kicker: "Your next pulls",
+            title: "Overrides",
+            slots: [
+              { id: "loot", pose: "left", node: <LootOverridePanel state={state} ask={ask} /> },
+              { id: "slots", pose: "right", node: <SlotOverridePanel state={state} ask={ask} /> },
+              { id: "history", pose: "floor", node: <OverrideHistory state={state} /> },
+            ],
           },
           {
             id: "access",
             label: "Access",
-            icon: <ShieldCheck aria-hidden className="size-4" />,
-            blurb: "Who can open the admin tools, and in which role.",
-            content: <AdminAccess state={state} owner={owner} ask={ask} />,
+            icon: <ShieldCheck aria-hidden className="size-3.5" />,
+            kicker: "Who holds the keys",
+            title: "Access",
+            slots: [
+              { id: "main", node: <AdminAccess state={state} owner={owner} ask={ask} /> },
+              { id: "side", pose: "right", node: <FxAccessLog state={state} /> },
+            ],
           },
           {
             id: "players",
             label: "Players",
-            icon: <Users aria-hidden className="size-4" />,
-            blurb: "Look up a player and manage their Season Pass, coins, cosmetics and boosters.",
-            content: <PlayerTools ask={ask} />,
+            icon: <Users aria-hidden className="size-3.5" />,
+            kicker: "Season Pass, coins, cosmetics, boosters",
+            title: "Players",
+            slots: [{ id: "main", node: <PlayerTools ask={ask} /> }],
           },
           {
             id: "audit",
             label: "Audit",
-            icon: <ScrollText aria-hidden className="size-4" />,
-            blurb: "The append-only record of every admin action.",
-            content: <AuditLog state={state} />,
+            icon: <ScrollText aria-hidden className="size-3.5" />,
+            kicker: "Append-only record",
+            title: "Audit",
+            slots: [
+              { id: "main", node: <AuditLog state={state} /> },
+              { id: "side", pose: "left", node: <FxKinds state={state} /> },
+            ],
           },
         ]}
       >
@@ -391,7 +439,7 @@ function StylePicker({ value, onChange, flashy = false }: { value: AdminDashboar
       {ADMIN_DASHBOARD_STYLES.map((option) => (
         <button key={option} type="button" aria-pressed={value === option} onClick={() => onChange(option)}>
           {option === "flashy" ? <Sparkles aria-hidden className="size-3.5" /> : <LayoutDashboard aria-hidden className="size-3.5" />}
-          {option === "flashy" ? "Flashy" : "Standard"}
+          <span className="dash-style-label">{option === "flashy" ? "Flashy" : "Standard"}</span>
         </button>
       ))}
     </div>
@@ -1074,5 +1122,274 @@ function AuditLog({ state }: { state: AdminDashboardState }) {
         </ol>
       )}
     </Panel>
+  );
+}
+
+/* --------------------------------------------------------------------------- Flashy views */
+/* Panels only the Flashy design shows: summaries of data the dashboard already has, in Code Admin's style. */
+
+const DAY_MS = 86_400_000;
+const SHORT_DAY = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
+const localDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+type AuditEntry = AdminDashboardState["audit"][number];
+
+/** Admin actions per day over the last two weeks, from the entries the dashboard loaded. */
+function FxChart({ state }: { state: AdminDashboardState }) {
+  const mounted = useMounted();
+  const [hover, setHover] = useState(-1);
+  // Days are the viewer's local days, so they're counted in the browser only.
+  const days = useMemo(() => {
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    const list = Array.from({ length: 14 }, (_, i) => {
+      const day = new Date(noon.getTime() - (13 - i) * DAY_MS);
+      return { key: localDay(day), label: SHORT_DAY.format(day), count: 0 };
+    });
+    if (!mounted) return list;
+    const index = new Map(list.map((day, i) => [day.key, i]));
+    for (const entry of state.audit) {
+      const i = index.get(localDay(new Date(entry.createdAt)));
+      if (i !== undefined) list[i].count += 1;
+    }
+    return list;
+  }, [mounted, state.audit]);
+  const max = Math.max(1, ...days.map((day) => day.count));
+  const total = days.reduce((sum, day) => sum + day.count, 0);
+  const focus = hover >= 0 ? days[hover] : null;
+
+  return (
+    <FxPanel kicker={`Last 14 days · latest ${plural(state.audit.length, "entry", "entries")}`} title="Admin actions">
+      <div className="dash-fx-chart" aria-hidden onPointerLeave={() => setHover(-1)}>
+        {days.map((day, i) => (
+          <div key={day.key} className="dash-fx-bar" data-hot={i === hover ? "" : undefined} style={{ "--h": `${(day.count / max) * 100}%` } as CSSProperties} onPointerEnter={() => setHover(i)}>
+            <span className="dash-fx-bar-fill" />
+          </div>
+        ))}
+      </div>
+      <div className="dash-fx-axis" aria-hidden suppressHydrationWarning>
+        <span suppressHydrationWarning>{days[0].label}</span>
+        <span>Today</span>
+      </div>
+      <p className="dash-fx-readout" suppressHydrationWarning>
+        {focus ? (
+          <>
+            <strong>{focus.label}</strong> · {plural(focus.count, "action")}
+          </>
+        ) : (
+          <>
+            <strong>{total.toLocaleString("en")}</strong> {total === 1 ? "action" : "actions"} in 14 days. Point at a day for details.
+          </>
+        )}
+      </p>
+      {mounted ? (
+        <table className="sr-only">
+          <caption>Admin actions per day, last 14 days</caption>
+          <thead>
+            <tr>
+              <th scope="col">Day</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {days.map((day) => (
+              <tr key={day.key}>
+                <th scope="row">{day.label}</th>
+                <td>{day.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+    </FxPanel>
+  );
+}
+
+function FxQueueRow({ row }: { row: AdminDashboardState["loot"][number] | AdminDashboardState["slots"][number] }) {
+  const now = useNow(Date.parse(row.createdAt));
+  const left = Date.parse(row.expiresAt) - now;
+  return (
+    <li className="dash-fx-row">
+      <span className="dash-icon" data-kind={row.kind === "loot" ? "loot" : "slot"}>
+        {row.kind === "loot" ? <PackageOpen aria-hidden className="size-4" /> : <Coins aria-hidden className="size-4" />}
+      </span>
+      <span className="dash-fx-row-main">
+        {row.kind === "loot" ? (
+          <span className="dash-fx-row-title">
+            <span className="dash-chip-dot" style={{ "--rarity": rarityColor(row.rarity) } as CSSProperties} />
+            {itemName(row.item)}
+          </span>
+        ) : (
+          <span className="dash-fx-row-title">
+            <MiniSymbols symbols={row.symbols} />×{row.multiplier}
+          </span>
+        )}
+        <span className="dash-fx-row-meta">{row.kind === "loot" ? lootCaseInfo(row.case).name : "Coin Slots"}</span>
+      </span>
+      <span className="dash-fx-row-side" suppressHydrationWarning>
+        {left > 0 ? `expires in ${countdown(left)}` : "expiring"}
+      </span>
+    </li>
+  );
+}
+
+/** What's queued for the admin's own next opening and spin. */
+function FxQueue({ state }: { state: AdminDashboardState }) {
+  const rows = [...state.loot, ...state.slots].filter((row) => row.status === "queued").sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
+  return (
+    <FxPanel
+      kicker="Waiting for your next attempt"
+      title="Queued for you"
+      actions={
+        <a href="#overrides" className="dash-fx-link">
+          {rows.length ? "Manage" : "Queue one"}
+        </a>
+      }
+    >
+      {rows.length ? (
+        <ul className="dash-fx-list">
+          {rows.map((row) => (
+            <FxQueueRow key={row.id} row={row} />
+          ))}
+        </ul>
+      ) : (
+        <p className="dash-fx-empty">Nothing queued. Your next Lootbox opening and Coin Slots spin use the normal odds.</p>
+      )}
+    </FxPanel>
+  );
+}
+
+function FxRoster({ state }: { state: AdminDashboardState }) {
+  const owners = state.admins.filter((admin) => admin.role === "owner").length;
+  const admins = [...state.admins].sort((a, b) => (a.role === b.role ? 0 : a.role === "owner" ? -1 : 1));
+  return (
+    <FxPanel
+      kicker={`${plural(owners, "owner")} · ${plural(state.admins.length - owners, "admin")}`}
+      title="Admins"
+      actions={
+        <a href="#access" className="dash-fx-link">
+          Manage
+        </a>
+      }
+    >
+      <ul className="dash-fx-list">
+        {admins.map((admin) => (
+          <li key={admin.id} className="dash-fx-row">
+            <Avatar account={admin.account} id={admin.id} />
+            <span className="dash-fx-row-main">
+              <span className="dash-fx-row-title">
+                {who(admin.account)}
+                {admin.id === state.me.id ? <span className="font-normal text-muted-foreground">(you)</span> : null}
+              </span>
+              <span className="dash-fx-row-meta" suppressHydrationWarning>
+                since {when(admin.grantedAt)}
+              </span>
+            </span>
+            <span className="dash-pill" data-role={admin.role}>
+              {admin.role === "owner" ? <Crown aria-hidden className="size-3" /> : null}
+              {ROLE_LABEL[admin.role]}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </FxPanel>
+  );
+}
+
+/** Audit entries as Code Admin's activity feed: a diamond per entry on a fading thread. */
+function FxFeed({ entries, empty }: { entries: AuditEntry[]; empty: string }) {
+  if (!entries.length) return <p className="dash-fx-empty">{empty}</p>;
+  return (
+    <ol className="dash-fx-feed">
+      {entries.map((entry) => {
+        const self = entry.actor?.id && entry.actor.id === entry.target?.id;
+        const detail = auditDetail(entry.action, entry.details);
+        return (
+          <li key={entry.id} className="dash-fx-feed-item" data-kind={auditGroup(entry.action)} data-tone={/_(revoke|take|cancel|end)$/.test(entry.action) ? "take" : undefined}>
+            <span aria-hidden className="dash-fx-feed-mark" />
+            <span className="dash-fx-feed-text">
+              <span>
+                <strong>{who(entry.actor, "Deleted account")}</strong> {ACTION_LABEL[entry.action] ?? entry.action}
+                {!self && entry.target ? ` for ${who(entry.target)}` : ""}
+              </span>
+              <span className="dash-fx-row-meta" suppressHydrationWarning>
+                {detail ? `${detail} · ` : ""}
+                {when(entry.createdAt)}
+              </span>
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function FxActivity({ state }: { state: AdminDashboardState }) {
+  return (
+    <FxPanel
+      kicker="Audit log · latest"
+      title="Activity"
+      actions={
+        <a href="#audit" className="dash-fx-link">
+          Full log
+        </a>
+      }
+    >
+      <FxFeed entries={state.audit.slice(0, 8)} empty="Nothing has happened yet." />
+    </FxPanel>
+  );
+}
+
+function FxAccessLog({ state }: { state: AdminDashboardState }) {
+  return (
+    <FxPanel kicker="From the audit log" title="Access changes">
+      <FxFeed entries={state.audit.filter((entry) => auditGroup(entry.action) === "admin").slice(0, 10)} empty="No access changes in the latest entries." />
+    </FxPanel>
+  );
+}
+
+/** The loaded audit entries by kind, and who made the most of them. */
+function FxKinds({ state }: { state: AdminDashboardState }) {
+  const total = state.audit.length;
+  const groups = AUDIT_FILTERS.filter((filter) => filter.id !== "all").map((filter) => ({ ...filter, count: state.audit.filter((entry) => auditGroup(entry.action) === filter.id).length }));
+  const actors = new Map<string, { account: Account | null; count: number }>();
+  for (const entry of state.audit) {
+    const key = entry.actor?.id ?? "deleted";
+    const current = actors.get(key) ?? { account: entry.actor, count: 0 };
+    current.count += 1;
+    actors.set(key, current);
+  }
+  const top = [...actors.entries()].sort(([, a], [, b]) => b.count - a.count).slice(0, 3);
+  return (
+    <FxPanel kicker={`Latest ${plural(total, "entry", "entries")}`} title="By kind">
+      <ul className="dash-fx-kinds">
+        {groups.map((group) => (
+          <li key={group.id}>
+            <span className="dash-fx-kind-head">
+              <span>{group.label}</span>
+              <span className="tabular-nums">{group.count.toLocaleString("en")}</span>
+            </span>
+            <span className="dash-fx-meter" aria-hidden>
+              <span style={{ width: `${total ? (group.count / total) * 100 : 0}%` }} />
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="dash-fx-subtitle">Most active</p>
+      {top.length ? (
+        <ul className="dash-fx-list">
+          {top.map(([id, actor]) => (
+            <li key={id} className="dash-fx-row">
+              <Avatar account={actor.account} id={id} />
+              <span className="dash-fx-row-main">
+                <span className="dash-fx-row-title">{who(actor.account, "Deleted account")}</span>
+              </span>
+              <span className="dash-fx-row-side tabular-nums">{plural(actor.count, "action")}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="dash-fx-empty">Nothing recorded yet.</p>
+      )}
+    </FxPanel>
   );
 }

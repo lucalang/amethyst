@@ -1,211 +1,245 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
-import { Crown, Gauge, ShieldCheck } from "lucide-react";
+import { useEffect, useId, useRef, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { useCardTilt } from "@/components/showcase/card-tilt";
 import { playSanctumSound } from "@/components/vault/vault-audio";
+import { ADMIN_LOOKS, adminLook, type AdminLookId } from "@/lib/admin-looks";
 import type { MotionLevel } from "@/lib/preferences";
-import { DASHBOARD_CONTAINER } from "@/lib/admin-dashboard";
+import { CountUp } from "./admin-ui";
 import "./admin-dashboard-fx.css";
 
 /**
- * The Flashy Admin Dashboard: a cinematic command deck around the very same panels the Standard design shows.
- * Everything here is presentation (backdrop, HUD navigation, readouts, feedback); no action, check or data path
- * lives in this file. It's CSS-only (no WebGL), so it needs no scene and has nothing to fall back from, and the
- * backdrop never takes pointer events. Colours follow the Code Admin colour choice through `--look-*`.
+ * The Flashy Admin Dashboard, built like Code Admin's sanctum: a full-height stage over the turning seal, a HUD
+ * along the top (sigil, view pills, colour and sound), and one view at a time that flies in from depth, with its
+ * side panels angled toward the viewer and its counters set on a curve. Pure CSS 3D (no WebGL), so there's no
+ * scene to compile or fall back from. Everything here is presentation: the panels inside are the same tools,
+ * with the same checks, as the Standard design. Colours follow the Code Admin colour choice through `--look-*`.
  */
 
 export type FxStat = { key: string; label: string; value: number; note: string; icon: ReactNode; tone?: string };
-export type FxSection = { id: string; label: string; icon: ReactNode; blurb: string; badge?: number; content: ReactNode };
+/** A panel's place in its view. `left`/`right` angle toward the middle, `floor` leans back like a console. */
+export type FxPose = "left" | "right" | "floor";
+export type FxSlot = { id: string; pose?: FxPose; node: ReactNode };
+export type FxView = { id: string; label: string; icon: ReactNode; badge?: number; kicker: string; title: string; aside?: ReactNode; slots: FxSlot[] };
 
-const sectionId = (id: string) => `dash-${id}`;
+/* The view lives in the URL hash (#players), so views are linkable and Back works. */
+function subscribeHash(listener: () => void) {
+  window.addEventListener("hashchange", listener);
+  window.addEventListener("popstate", listener);
+  return () => {
+    window.removeEventListener("hashchange", listener);
+    window.removeEventListener("popstate", listener);
+  };
+}
+const useHash = () =>
+  useSyncExternalStore(
+    subscribeHash,
+    () => window.location.hash.slice(1),
+    () => "",
+  );
 
-/** Counts up to `value` on first show (and from the old value on change); instant with motion off. */
-function Readout({ value, animate }: { value: number; animate: boolean }) {
-  const [shown, setShown] = useState(animate ? 0 : value);
-  const from = useRef(animate ? 0 : value);
-  useEffect(() => {
-    if (!animate) {
-      from.current = value;
-      return;
-    }
-    const start = from.current;
-    const began = performance.now();
-    let frame = 0;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - began) / 900);
-      const eased = 1 - (1 - t) ** 3;
-      setShown(Math.round(start + (value - start) * eased));
-      if (t < 1) frame = requestAnimationFrame(tick);
-      else from.current = value;
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [value, animate]);
-  return <>{(animate ? shown : value).toLocaleString("en")}</>;
+/** A panel in the sanctum's language: mono kicker, engraved title, glass. */
+export function FxPanel({ kicker, title, actions, children }: { kicker: string; title: string; actions?: ReactNode; children: ReactNode }) {
+  const id = useId();
+  return (
+    <section className="dash-fx-pane" aria-labelledby={id}>
+      <header className="dash-fx-head">
+        <div className="min-w-0">
+          <p className="dash-fx-kicker">{kicker}</p>
+          <h2 id={id} className="dash-fx-title">
+            {title}
+          </h2>
+        </div>
+        {actions ? <div className="dash-fx-head-actions">{actions}</div> : null}
+      </header>
+      {children}
+    </section>
+  );
+}
+
+/** The counters, as Code Admin shows them: big glowing figures on a slight curve, tilting under the mouse. */
+export function FxCounters({ stats, animate }: { stats: FxStat[]; animate: boolean }) {
+  return (
+    <div className="dash-fx-counters">
+      {stats.map((stat, i) => (
+        <div key={stat.key} className="dash-fx-counter" data-card data-tone={stat.tone} style={{ "--i": i } as CSSProperties}>
+          <span aria-hidden className="dash-fx-glare" />
+          <p className="dash-fx-kicker">{stat.label}</p>
+          <p className="dash-fx-counter-value">
+            <CountUp value={stat.value} animate={animate} delay={250 + i * 120} />
+          </p>
+          <p className="dash-fx-counter-note" suppressHydrationWarning>
+            {stat.note}
+          </p>
+          <span aria-hidden className="dash-fx-counter-icon">
+            {stat.icon}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The colour picker in the HUD, shared with Code Admin (the same saved choice). */
+function LookPicker({ look, onChoose }: { look: AdminLookId; onChoose: (id: AdminLookId) => void }) {
+  const current = adminLook(look);
+  return (
+    <details className="dash-fx-look">
+      <summary className="dash-fx-hud-button">
+        <span aria-hidden className="dash-fx-swatch" style={{ "--swatch": current.swatch } as CSSProperties} />
+        <span className="dash-fx-tool-label">
+          <span className="sr-only">Admin colour: </span>
+          {current.label}
+        </span>
+      </summary>
+      <fieldset className="dash-fx-look-menu">
+        <legend className="dash-fx-look-legend">Admin colours</legend>
+        {ADMIN_LOOKS.map((option) => (
+          <label key={option.id} className="dash-fx-look-option">
+            <input type="radio" name="dash-fx-look" value={option.id} checked={look === option.id} onChange={() => onChoose(option.id)} className="sr-only" />
+            <span aria-hidden className="dash-fx-swatch" style={{ "--swatch": option.swatch } as CSSProperties} />
+            {option.label}
+          </label>
+        ))}
+      </fieldset>
+    </details>
+  );
 }
 
 export function FlashyDashboard({
   style,
   motion,
   sound,
+  onToggleSound,
+  look,
+  onChooseLook,
   success,
-  me,
-  stats,
-  toolbar,
-  sections,
+  tools,
+  views,
   children,
 }: {
   style: CSSProperties;
   motion: MotionLevel;
   /** The account's sound setting (shared with the Arcade and Code Admin). */
   sound: boolean;
+  onToggleSound: () => void;
+  look: AdminLookId;
+  onChooseLook: (id: AdminLookId) => void;
   /** Bumped after each confirmed action, for the success sweep. */
   success: number;
-  me: { name: string; role: string; owner: boolean };
-  stats: FxStat[];
-  toolbar: ReactNode;
-  sections: FxSection[];
+  /** HUD buttons placed before the colour and sound controls. */
+  tools: ReactNode;
+  views: FxView[];
   children: ReactNode;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const readoutsRef = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState("top");
-  const [arrived, setArrived] = useState<{ id: string; n: number } | null>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const hash = useHash();
+  const view = views.find((item) => item.id === hash) ?? views[0];
   const animate = motion !== "off";
-  const nav = [{ id: "top", label: "Overview", icon: <Gauge aria-hidden className="size-4" />, badge: undefined as number | undefined }, ...sections];
 
-  // Tilt only the summary readouts; data panels stay flat so they're easy to read and operate.
-  useCardTilt(readoutsRef, motion === "full");
+  // Counters tilt under the mouse; the tool panels stay still so they're easy to operate.
+  useCardTilt(rootRef, motion === "full");
 
-  // Scroll-spy: the section crossing the middle of the screen is the current one.
+  // Arriving at a view: back to its top, and the flight cue (the CSS does the flying).
+  const previous = useRef(view.id);
   useEffect(() => {
-    const targets = rootRef.current?.querySelectorAll<HTMLElement>(".dash-fx-section") ?? [];
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) if (entry.isIntersecting) setActive(entry.target.id.replace(/^dash-/, ""));
-      },
-      { rootMargin: "-40% 0px -55% 0px" },
-    );
-    for (const target of targets) observer.observe(target);
-    return () => observer.disconnect();
-  }, []);
+    if (previous.current === view.id) return;
+    previous.current = view.id;
+    scrollerRef.current?.scrollTo({ top: 0 });
+    if (sound && animate) playSanctumSound("flight");
+  }, [view.id, sound, animate]);
 
   function go(event: MouseEvent<HTMLAnchorElement>, id: string) {
-    const target = document.getElementById(sectionId(id));
-    if (!target) return;
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
-    target.scrollIntoView({ behavior: animate ? "smooth" : "auto", block: "start" });
-    target.querySelector<HTMLElement>("[data-fx-heading]")?.focus({ preventScroll: true });
-    window.history.replaceState(null, "", `#${sectionId(id)}`);
-    setActive(id);
-    setArrived((current) => ({ id, n: (current?.n ?? 0) + 1 }));
+    if (id === view.id) return;
+    window.history.pushState(null, "", id === views[0].id ? window.location.pathname + window.location.search : `#${id}`);
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
     if (sound) playSanctumSound("select");
   }
 
   return (
-    <div ref={rootRef} className="dash-fx -mb-24 md:-mb-10" style={style} data-motion={motion}>
-      <div aria-hidden className="dash-fx-sky">
-        <span className="dash-fx-grid" />
+    <div ref={rootRef} className="dash-fx -mb-24 h-[calc(100dvh-3.5rem-1px)] md:-mb-10" style={style} data-motion={motion} data-view={view.id}>
+      <div aria-hidden className="dash-fx-backdrop">
+        <span className="dash-fx-rays" />
         <span className="dash-fx-seal">
           <span className="dash-fx-seal-runes" />
           <span className="dash-fx-seal-sweep" />
+          <span className="dash-fx-seal-inner" />
           <span className="dash-fx-seal-mark" />
+          <span className="dash-fx-seal-core" />
         </span>
+        {/* A ring leaves the seal on every flight (and once on arrival). */}
+        <span key={view.id} className="dash-fx-pulse" />
         <span className="dash-fx-vignette" />
       </div>
       {success > 0 ? <span key={success} aria-hidden className="dash-fx-flash" /> : null}
 
-      <nav aria-label="Dashboard sections" className="dash-fx-hud">
-        <div className="dash-fx-hud-inner">
+      <header className="dash-fx-hud">
+        <p className="dash-fx-brand">
           <span aria-hidden className="dash-fx-sigil" />
-          <ul className="dash-fx-nav">
-            {nav.map((item) => (
-              <li key={item.id}>
-                <a
-                  href={`#${sectionId(item.id)}`}
-                  className="dash-fx-link"
-                  aria-current={active === item.id ? "location" : undefined}
-                  onClick={(event) => go(event, item.id)}
-                  onPointerEnter={(event) => sound && event.pointerType === "mouse" && playSanctumSound("hover")}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                  {item.badge ? <span className="dash-fx-badge">{item.badge}</span> : null}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </nav>
-
-      <div className={`${DASHBOARD_CONTAINER} dash-fx-stage`}>
-        <div className="dash-root dash-fx-root">
-          <section id={sectionId("top")} aria-labelledby="dash-fx-title" className="dash-fx-section" data-arrived={arrived?.id === "top" ? arrived.n : undefined}>
-            <header className="dash-fx-deck">
-              <div className="dash-fx-deck-title">
-                <p className="dash-fx-kicker">
-                  <span aria-hidden className="dash-fx-kicker-line" />
-                  Amethyst command
-                </p>
-                <h1 id="dash-fx-title" tabIndex={-1} data-fx-heading>
-                  Admin Dashboard
-                </h1>
-                <p className="dash-fx-whoami">
-                  Signed in as <strong>{me.name}</strong>
-                  <span className="dash-pill" data-role={me.owner ? "owner" : "admin"}>
-                    {me.owner ? <Crown aria-hidden className="size-3" /> : <ShieldCheck aria-hidden className="size-3" />}
-                    {me.role}
-                  </span>
-                </p>
-              </div>
-              <div className="dash-fx-toolbar">{toolbar}</div>
-            </header>
-
-            <div ref={readoutsRef} className="dash-fx-readouts">
-              {stats.map((stat, i) => (
-                <div key={stat.key} className="dash-fx-readout" data-card data-tone={stat.tone} style={{ "--i": i } as CSSProperties}>
-                  <span aria-hidden className="dash-fx-readout-glare" />
-                  <p className="dash-label">{stat.label}</p>
-                  <span className="dash-fx-readout-icon">{stat.icon}</span>
-                  <p className="dash-fx-readout-value">
-                    <Readout value={stat.value} animate={animate} />
-                  </p>
-                  <p className="dash-stat-note" suppressHydrationWarning>
-                    {stat.note}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {sections.map((section, i) => (
-            <section
-              key={section.id}
-              id={sectionId(section.id)}
-              aria-labelledby={`${sectionId(section.id)}-title`}
-              className="dash-fx-section"
-              style={{ "--i": i + 1 } as CSSProperties}
-              data-arrived={arrived?.id === section.id ? arrived.n : undefined}
+          <span className="dash-fx-brand-name">Admin Dashboard</span>
+          <span className="dash-fx-brand-sub">Command</span>
+        </p>
+        <nav aria-label="Dashboard views" className="dash-fx-nav">
+          {views.map((item) => (
+            <a
+              key={item.id}
+              href={item.id === views[0].id ? "#" : `#${item.id}`}
+              className="dash-fx-nav-link"
+              aria-current={item.id === view.id ? "page" : undefined}
+              onClick={(event) => go(event, item.id)}
+              onPointerEnter={(event) => sound && event.pointerType === "mouse" && playSanctumSound("hover")}
             >
-              <header className="dash-fx-heading" key={arrived?.id === section.id ? arrived.n : 0}>
-                <span aria-hidden className="dash-fx-index">{String(i + 1).padStart(2, "0")}</span>
-                <span aria-hidden className="dash-fx-heading-icon">
-                  {section.icon}
+              {item.icon}
+              <span>{item.label}</span>
+              {item.badge ? (
+                <span className="dash-fx-badge">
+                  {item.badge}
+                  <span className="sr-only"> queued</span>
                 </span>
-                <div className="min-w-0">
-                  <h2 id={`${sectionId(section.id)}-title`} tabIndex={-1} data-fx-heading>
-                    {section.label}
-                  </h2>
-                  <p>{section.blurb}</p>
-                </div>
-                <span aria-hidden className="dash-fx-rule" />
-              </header>
-              <div className="dash-fx-body">{section.content}</div>
-            </section>
+              ) : null}
+            </a>
           ))}
+        </nav>
+        <div className="dash-fx-tools">
+          {tools}
+          <LookPicker look={look} onChoose={onChooseLook} />
+          <button type="button" className="dash-fx-hud-button" aria-pressed={sound} onClick={onToggleSound}>
+            {sound ? <Volume2 aria-hidden className="size-3.5" /> : <VolumeX aria-hidden className="size-3.5" />}
+            <span className="dash-fx-tool-label">{sound ? "Sound on" : "Sound off"}</span>
+          </button>
         </div>
+      </header>
+
+      <div ref={scrollerRef} className="dash-fx-scroller">
+        {views.map((item, index) => (
+          <div key={item.id} className={`dash-fx-view dash-fx-view-${item.id}`} hidden={item.id !== view.id}>
+            <header className="dash-fx-viewhead">
+              <div className="min-w-0">
+                <p className="dash-fx-kicker">
+                  <span aria-hidden className="dash-fx-kicker-index">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  {item.kicker}
+                </p>
+                <h1 className="dash-fx-viewtitle">{item.title}</h1>
+              </div>
+              {item.aside ? <div className="dash-fx-viewaside">{item.aside}</div> : null}
+            </header>
+            {item.slots.map((slot, i) => (
+              <div key={slot.id} className="dash-fx-slot" data-fx-slot={slot.id} data-pose={slot.pose} style={{ "--i": i + 1 } as CSSProperties}>
+                {slot.node}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
+      <p className="sr-only" aria-live="polite">
+        {view.label}
+      </p>
       {children}
     </div>
   );

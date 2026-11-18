@@ -58,13 +58,13 @@ const RELEASES: readonly Release[] = [
     icon: "palette",
     highlights: [
       { kind: "new", feature: "Standard / Flashy", text: "Switch the dashboard’s design from its header. Standard stays the default, and your choice is saved to your account." },
-      { kind: "new", feature: "Command deck", text: "Flashy adds a dark Sanctum-style stage, a sticky section bar, animated readouts and a light sweep when an action succeeds." },
+      { kind: "new", feature: "Sanctum stage", text: "Flashy is built like Code Admin: the turning seal behind everything, a HUD with the views, Admin colours and sound, and views that fly in with their side panels angled toward you." },
     ],
     details: {
       new: [
         {
           title: "Flashy design",
-          body: "Flashy uses the Code Admin colours and the same sound setting, follows your motion setting and reduced-motion preference, and needs no 3D support. Player lookup, overrides, admin access and the audit log work exactly as in Standard, with the same confirmations and access checks.",
+          body: "Flashy shares the Code Admin colours and sound setting (switch either from its HUD), follows your motion setting and reduced-motion preference, and needs no WebGL. Its Overview adds an admin roster, recent activity, what’s queued for you and two weeks of admin actions; Access and Audit get a summary panel beside them. Player lookup, overrides, admin access and the audit log work exactly as in Standard, with the same confirmations and access checks.",
           where: "Admin Dashboard → Standard / Flashy",
           link: { href: "/admin-dashboard", label: "Open the Admin Dashboard" },
         },
