@@ -58,7 +58,8 @@ const RELEASES: readonly Release[] = [
     icon: "palette",
     highlights: [
       { kind: "new", feature: "Standard / Flashy", text: "Switch the dashboard’s design from its header. Standard stays the default, and your choice is saved to your account." },
-      { kind: "new", feature: "Geode", text: "A dark cave lit by a gem you pick: a turning crystal, faceted glass panels that catch the light, views that crystallize in behind a prism beam, and shards when an action succeeds." },
+      { kind: "new", feature: "Geode", text: "A dark cave lit by a gem you pick: a turning crystal, living motes that drift out of your pointer’s way, faceted glass panels that catch the light, and views that crystallize in behind a prism beam." },
+      { kind: "new", feature: "Moments", text: "Every action earns its own celebration: coins rain or drain into a vortex, a crown lands for Premium and new owners, a gem rises for cosmetics, energy surges for boosters, slot reels spin to your queued line, a key forges for new admins, and glass cracks when something is taken away." },
     ],
     details: {
       new: [

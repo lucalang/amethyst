@@ -9,10 +9,40 @@
  * The tool panels are the Standard dashboard's own, re-skinned here.
  * ------------------------------------------------------------------------- */
 
-@property --glare {
+/*
+ * The pointer light (written by useGeodeLight to the hovered counter, panel and control only). None of these
+ * inherit: a change restyles that one element, not the hundreds of controls inside a panel. The few children
+ * that read their parent's light say so with an explicit `inherit`. Registered, so they also transition.
+ */
+@property --geo-x {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@property --geo-y {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@property --geo-lit {
   syntax: "<number>";
-  inherits: true;
+  inherits: false;
   initial-value: 0;
+}
+@property --geo-rx {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --geo-ry {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --geo-lift {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
 }
 
 .geo,
@@ -243,7 +273,11 @@
   transform-origin: 50% 0;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   transform: rotateY(calc(var(--k) * 90deg)) translateZ(calc(var(--s) / 2)) rotateX(-35.26deg);
-  filter: brightness(0.62) saturate(1.2);
+  /* Shaded with a dark layer, not a filter: a filter here would re-render the turning crystal every frame. */
+  background:
+    linear-gradient(to var(--edge, top), rgb(255 255 255 / 0.75) 0 1.5px, transparent 2px),
+    linear-gradient(rgb(6 4 12 / 0.38), rgb(6 4 12 / 0.38)),
+    linear-gradient(calc(var(--k) * 70deg + 150deg), color-mix(in oklab, var(--gem-c) 85%, #fff), color-mix(in oklab, var(--gem-a) 75%, transparent) 46%, color-mix(in oklab, var(--gem-b) 60%, transparent));
 }
 
 .geo-face:nth-child(odd) {
@@ -254,8 +288,9 @@
   width: calc(var(--s) * 0.9);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(closest-side, #fff, color-mix(in oklab, var(--gem-c) 80%, transparent) 25%, color-mix(in oklab, var(--gem-a) 45%, transparent) 55%, transparent);
-  filter: blur(calc(var(--s) * 0.08));
+  /* A soft-edged gradient instead of a blur filter, and a wide faint halo instead of a drop-shadow on the
+     turning crystal: both look the same and cost nothing per frame. */
+  background: radial-gradient(closest-side, #fff, color-mix(in oklab, var(--gem-c) 75%, transparent) 22%, color-mix(in oklab, var(--gem-a) 40%, transparent) 50%, color-mix(in oklab, var(--gem-a) 12%, transparent) 75%, transparent);
   animation: geo-core 4s ease-in-out infinite;
 }
 
@@ -264,8 +299,11 @@
   right: 7%;
   top: 50%;
   translate: 0 -50%;
-  filter: drop-shadow(0 0 40px color-mix(in oklab, var(--gem-a) 55%, transparent));
   animation: geo-hover 8s ease-in-out infinite alternate;
+}
+
+.geo-centerpiece .geo-crystal-core {
+  width: calc(var(--s) * 1.9);
 }
 
 @media (max-width: 63.99rem) {
@@ -303,36 +341,80 @@
   animation: geo-beam 1s cubic-bezier(0.3, 0.6, 0.2, 1);
 }
 
-.geo-burst {
+/* A new gem floods the cave with its light, out from the crystal (also lights the cave on arrival). */
+.geo-wash {
   position: absolute;
   inset: 0;
-  z-index: 16;
-  display: grid;
-  place-items: center;
+  z-index: 14;
+  pointer-events: none;
+  background: radial-gradient(circle at 80% 50%, color-mix(in oklab, var(--gem-c) 42%, transparent), color-mix(in oklab, var(--gem-a) 26%, transparent) 30%, color-mix(in oklab, var(--gem-b) 10%, transparent) 55%, transparent 75%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: geo-wash 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* The motes canvas sits with the aurora, under the crystal. */
+.geo-motes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Prism ripples under every press. */
+.geo-ripples {
+  position: absolute;
+  inset: 0;
+  z-index: 18;
+  overflow: hidden;
   pointer-events: none;
 }
 
-.geo-burst > span {
-  grid-area: 1 / 1;
-}
-
-.geo-burst-flash {
-  width: 60vmin;
-  aspect-ratio: 1;
+.geo-ripple {
+  position: absolute;
+  width: 0;
+  height: 0;
   border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in oklab, var(--gem-c) 45%, transparent), color-mix(in oklab, var(--gem-a) 20%, transparent) 50%, transparent);
+  background:
+    radial-gradient(closest-side, color-mix(in oklab, var(--gem-c) 22%, transparent), transparent 70%),
+    conic-gradient(from 30deg, var(--gem-c), var(--gem-b), var(--gem-a), var(--gem-c));
+  mask: radial-gradient(closest-side, #000 0 55%, transparent 56% 84%, #000 85% 98%, transparent);
   mix-blend-mode: screen;
-  opacity: 0;
-  animation: geo-flash 0.9s ease-out;
+  animation: geo-ripple 0.65s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
 }
 
-.geo-burst-shard {
-  width: 11px;
-  height: 20px;
-  clip-path: polygon(50% 0, 100% 34%, 50% 100%, 0 34%);
-  background: linear-gradient(160deg, #fff, var(--gem-c) 25%, var(--gem-a) 60%, var(--gem-b));
-  opacity: 0;
-  animation: geo-shatter 1s cubic-bezier(0.15, 0.7, 0.3, 1);
+/* The confirm dialog: crystallizes open, and while the action runs its edge charges with light. */
+@property --geo-turn {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.geo-dialog[data-state="open"] {
+  animation: geo-dialog-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.geo-dialog[data-busy]::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--geo-turn), transparent 0 55%, var(--gem-b), var(--gem-a), var(--gem-c), #fff 99%, transparent);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: geo-charge 0.9s linear infinite;
+}
+
+.geo-dialog[data-busy] {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 30px 80px -20px #000,
+    0 0 80px -16px var(--gem-a);
 }
 
 /* Rail ----------------------------------------------------------------------------------------------- */
@@ -389,7 +471,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: geo-shimmer 9s linear infinite;
+  animation: geo-shimmer 2.6s 0.4s ease-out both;
 }
 
 .geo-nav {
@@ -782,18 +864,35 @@
   margin-inline: auto;
 }
 
-/* Arriving: each panel crystallizes, a refracted blur resolving into sharp glass, one after another. */
-.geo-view:not([hidden]) > .geo-viewhead,
-.geo-view:not([hidden]) > .geo-slot > * {
-  animation: geo-crystallize 0.95s calc(var(--i, 0) * 85ms) cubic-bezier(0.2, 0.75, 0.25, 1) backwards;
+/* Arriving: the title crystallizes out of a refracted blur; the panels rise into place one after another, behind
+   the prism beam. (Panels animate only opacity and transform: blurring a panel full of controls is too heavy.) */
+.geo-view:not([hidden]) > .geo-viewhead {
+  animation: geo-crystallize 0.95s cubic-bezier(0.2, 0.75, 0.25, 1) backwards;
 }
 
-/* The glass casts light and shadow from its slot (the glass itself is clipped to its facets). */
+.geo-view:not([hidden]) > .geo-slot {
+  animation: geo-rise 0.8s calc(var(--i, 0) * 85ms) cubic-bezier(0.2, 0.8, 0.25, 1) backwards;
+}
+
+/* The glass casts its shadow and glow from a plain box behind it (the glass itself is clipped to its facets).
+   A box-shadow is painted once; a drop-shadow filter here would re-run on every repaint inside the panel. */
 .geo-slot {
+  position: relative;
   display: grid;
   gap: 1.25rem;
   min-width: 0;
-  filter: drop-shadow(0 18px 26px rgb(0 0 0 / 0.55)) drop-shadow(0 0 22px color-mix(in oklab, var(--gem-a) 16%, transparent));
+}
+
+.geo-slot:not([data-geo-slot="counters"])::before {
+  content: "";
+  position: absolute;
+  inset: 10px 6px 4px;
+  z-index: -1;
+  border-radius: 18px;
+  box-shadow:
+    0 22px 40px -14px rgb(0 0 0 / 0.75),
+    0 0 46px -12px color-mix(in oklab, var(--gem-a) 30%, transparent);
+  pointer-events: none;
 }
 
 .geo-viewhead {
@@ -841,7 +940,7 @@
   background-clip: text;
   color: transparent;
   filter: drop-shadow(0 0 26px color-mix(in oklab, var(--gem-a) 40%, transparent));
-  animation: geo-shimmer 10s linear infinite;
+  animation: geo-shimmer 2.6s 0.25s ease-out both;
 }
 
 .geo-whoami {
@@ -871,7 +970,17 @@
   border: 0;
   border-radius: 0;
   clip-path: var(--facet);
-  background: linear-gradient(135deg, color-mix(in oklab, var(--gem-c) 70%, transparent), color-mix(in oklab, var(--gem-a) 30%, transparent) 28%, rgb(255 255 255 / 0.07) 55%, color-mix(in oklab, var(--gem-b) 45%, transparent));
+  /* The edge: the gem's refraction, plus a bright catch-light where the pointer is (only the 1px rim shows). */
+  background:
+    radial-gradient(240px circle at var(--geo-x, 50%) var(--geo-y, 0%), color-mix(in oklab, #fff calc(var(--geo-lit) * 90%), transparent), color-mix(in oklab, var(--gem-c) calc(var(--geo-lit) * 60%), transparent) 35%, transparent 70%),
+    linear-gradient(135deg, color-mix(in oklab, var(--gem-c) 70%, transparent), color-mix(in oklab, var(--gem-a) 30%, transparent) 28%, rgb(255 255 255 / 0.07) 55%, color-mix(in oklab, var(--gem-b) 45%, transparent));
+  /* --geo-lit eases, so the light (and everything reading it inside) fades in and out instead of snapping. */
+  transition: --geo-lit 0.45s ease;
+}
+
+/* Read-only panels lean a little toward the pointer; tool panels stay put so forms are easy to use. */
+.geo-pane {
+  transform: perspective(1600px) rotateX(calc(var(--geo-rx, 0deg) * 0.32)) rotateY(calc(var(--geo-ry, 0deg) * 0.32));
 }
 
 :is(.geo-pane, .geo .dash-panel, .geo-counter)::before {
@@ -881,27 +990,29 @@
   z-index: -1;
   clip-path: polygon(calc(var(--cut) - 0.4px) 0, 100% 0, 100% calc(100% - var(--cut) + 0.4px), calc(100% - var(--cut) + 0.4px) 100%, 0 100%, 0 calc(var(--cut) - 0.4px));
   background:
-    radial-gradient(440px circle at var(--gx, 50%) var(--gy, 0%), color-mix(in oklab, var(--gem-c) calc(var(--glare) * 13%), transparent), transparent 70%),
+    radial-gradient(440px circle at var(--geo-x, 50%) var(--geo-y, 0%), color-mix(in oklab, var(--gem-c) calc(var(--geo-lit) * 14%), transparent), transparent 70%),
+    radial-gradient(900px circle at var(--geo-x, 50%) var(--geo-y, 0%), color-mix(in oklab, var(--gem-a) calc(var(--geo-lit) * 7%), transparent), transparent 70%),
     linear-gradient(170deg, rgb(255 255 255 / 0.05), transparent 30%),
     linear-gradient(160deg, var(--geo-fill), rgb(7 6 12 / 0.93) 75%);
   /* No backdrop blur: the facet clip makes the panel a backdrop root, so there'd be nothing to blur. */
-  transition: --glare 0.4s ease;
 }
 
+/* The sheen: a narrow streak that slides across on hover. It moves with translate (done by the compositor), so
+   even a tall panel full of controls never repaints for it. */
 :is(.geo-pane, .geo .dash-panel, .geo-counter)::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 0 auto 0 0;
   z-index: -1;
-  background: linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 0.075) 47%, color-mix(in oklab, var(--gem-c) 10%, transparent) 50%, transparent 58%);
-  background-size: 260% 100%;
-  background-position: 100% 0;
+  width: 45%;
+  background: linear-gradient(115deg, transparent 10%, rgb(255 255 255 / 0.075) 42%, color-mix(in oklab, var(--gem-c) 10%, transparent) 52%, transparent 90%);
+  translate: -110% 0;
   pointer-events: none;
-  transition: background-position 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: translate 1.2s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 :is(.geo-pane, .geo .dash-panel, .geo-counter):hover::after {
-  background-position: 0 0;
+  translate: 330% 0;
 }
 
 .geo-pane {
@@ -989,14 +1100,19 @@
 
 :is(.geo, .geo-dialog) [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"]) {
   border: 1px solid color-mix(in oklab, var(--gem-a) 34%, transparent);
-  background: rgb(255 255 255 / 0.04);
+  background-color: rgb(255 255 255 / 0.04);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
   color: var(--geo-text);
 }
 
+/* Light pools under the pointer inside quiet buttons (the image layer survives every state's colour). */
+:is(.geo, .geo-dialog) [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"], [data-variant="ghost"]) {
+  background-image: radial-gradient(90px circle at var(--geo-x, 50%) var(--geo-y, 50%), color-mix(in oklab, var(--gem-c) calc(var(--geo-lit) * 32%), transparent), transparent 70%);
+}
+
 :is(.geo, .geo-dialog) [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"], [data-variant="ghost"]):hover {
   border-color: color-mix(in oklab, var(--gem-c) 65%, transparent);
-  background: color-mix(in oklab, var(--gem-a) 14%, transparent);
+  background-color: color-mix(in oklab, var(--gem-a) 14%, transparent);
   box-shadow: 0 0 20px -6px var(--gem-a);
   color: #fff;
 }
@@ -1068,23 +1184,45 @@
   display: grid;
   gap: 0.3rem;
   padding: 1.05rem 1.2rem 1.1rem;
-  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--lift, 0px));
+  transform: perspective(900px) rotateX(var(--geo-rx, 0deg)) rotateY(var(--geo-ry, 0deg)) translateZ(var(--geo-lift, 0px)) scale(calc(1 + var(--geo-lit) * 0.025));
 }
 
 .geo-counter[data-tone="queued"] {
   --tone-a: #ff9f43;
   --tone-c: var(--geo-amber);
-  background: linear-gradient(135deg, rgb(255 225 140 / 0.75), rgb(255 159 67 / 0.3) 30%, rgb(255 255 255 / 0.07) 55%, rgb(255 159 67 / 0.45));
+  background:
+    radial-gradient(240px circle at var(--geo-x, 50%) var(--geo-y, 0%), rgb(255 255 255 / calc(var(--geo-lit) * 0.9)), rgb(255 211 107 / calc(var(--geo-lit) * 0.6)) 35%, transparent 70%),
+    linear-gradient(135deg, rgb(255 225 140 / 0.75), rgb(255 159 67 / 0.3) 30%, rgb(255 255 255 / 0.07) 55%, rgb(255 159 67 / 0.45));
 }
 
+/* Under the pointer the gem catches a hot spot of light and a holographic foil that slides with the angle. */
 .geo-glint {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: radial-gradient(160px circle at var(--gx, 50%) var(--gy, 0%), rgb(255 255 255 / 0.16), transparent 70%);
-  opacity: var(--glare, 0);
-  transition: opacity 0.3s;
+  background:
+    radial-gradient(170px circle at var(--geo-x, 50%) var(--geo-y, 0%), rgb(255 255 255 / 0.2), transparent 65%),
+    linear-gradient(115deg, transparent 22%, rgb(255 60 150 / 0.2) 34%, rgb(255 210 60 / 0.18) 43%, rgb(60 255 180 / 0.18) 52%, rgb(60 170 255 / 0.2) 61%, rgb(180 90 255 / 0.18) 70%, transparent 82%);
+  background-size:
+    100% 100%,
+    320% 320%;
+  background-position:
+    0 0,
+    var(--geo-x, 50%) var(--geo-y, 50%);
+  mix-blend-mode: screen;
+  opacity: var(--geo-lit, 0);
   pointer-events: none;
+}
+
+/* Depth inside the gem: the figure drifts against the pointer, the icon with it, so layers seem to part. */
+.geo-counter-value {
+  translate: calc((var(--geo-x, 50%) - 50%) * -0.07 * var(--geo-lit)) calc((var(--geo-y, 50%) - 50%) * -0.12 * var(--geo-lit));
+}
+
+.geo-counter-icon {
+  translate: calc((var(--geo-x, 50%) - 50%) * 0.3 * var(--geo-lit)) calc((var(--geo-y, 50%) - 50%) * 0.3 * var(--geo-lit));
+  rotate: calc(var(--geo-lit) * 30deg);
+  filter: drop-shadow(0 0 calc(var(--geo-lit) * 10px) var(--tone-c));
 }
 
 .geo-counter-icon {
@@ -1112,7 +1250,10 @@
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.03em;
-  background: linear-gradient(100deg, #fff 10%, var(--tone-c) 45%, var(--tone-a) 90%);
+  /* The figure's gradient is wider than the text and follows the pointer, so its colour shifts as it tilts. */
+  background: linear-gradient(100deg, #fff 10%, var(--tone-c) 35%, var(--tone-a) 60%, var(--gem-b) 80%, #fff 95%);
+  background-size: 220% 100%;
+  background-position: calc(100% - var(--geo-x, 50%) * var(--geo-lit)) 0;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1492,15 +1633,218 @@
     grid-template-areas: "head head head" "counters counters counters" "roster chart activity" "roster queue activity";
   }
   /* The read-only side stones float gently in the cave (still while you point at them). */
-  .geo[data-motion="full"] .geo-view-overview :is([data-geo-slot="roster"], [data-geo-slot="activity"]) {
-    animation: geo-float 9s ease-in-out infinite alternate;
+  .geo[data-motion="full"] .geo-view-overview:not([hidden]) :is([data-geo-slot="roster"], [data-geo-slot="activity"]) {
+    animation:
+      geo-rise 0.8s calc(var(--i, 0) * 85ms) cubic-bezier(0.2, 0.8, 0.25, 1) backwards,
+      geo-float 9s 1s ease-in-out infinite alternate;
   }
-  .geo[data-motion="full"] .geo-view-overview [data-geo-slot="activity"] {
-    animation-delay: -4.5s;
+  .geo[data-motion="full"] .geo-view-overview:not([hidden]) [data-geo-slot="activity"] {
+    animation-delay: calc(var(--i, 0) * 85ms), -4.5s;
   }
   .geo-view-overview :is([data-geo-slot="roster"], [data-geo-slot="activity"]):is(:hover, :focus-within) {
     animation-play-state: paused;
   }
+}
+
+/* Hover and tilt ----------------------------------------------------------------------------------- */
+/*
+ * The pointer is a light source. Panels catch it on their rim and lean a little; counters tilt hard, part into
+ * layers and flash a holographic foil; controls get a pool of light where the pointer is and the small ones are
+ * pulled toward it. useGeodeLight writes --geo-x/--geo-y (pointer, %), --geo-lit (0 or 1) and, for counters
+ * and read-only panels, --geo-rx/--geo-ry/--geo-lift, to the hovered elements only. The properties don't
+ * inherit (see the @property rules at the top), so only these children read their parent's light:
+ */
+
+:is(.geo-pane, .geo .dash-panel, .geo-counter)::before,
+.geo-counter > *,
+.geo-nav-link::after,
+.geo-nav-link > *,
+.geo-tool > svg,
+.geo-gem > * {
+  --geo-x: inherit;
+  --geo-y: inherit;
+  --geo-lit: inherit;
+}
+
+/* Counters swing further than the panels, for a heavier, more physical gem. The registered properties ease,
+   so the tilt is smooth without springs in script. */
+.geo-counter {
+  transform: perspective(820px) rotateX(calc(var(--geo-rx, 0deg) * 1.5)) rotateY(calc(var(--geo-ry, 0deg) * 1.5)) translateZ(var(--geo-lift, 0px)) scale(calc(1 + var(--geo-lit) * 0.03));
+  transition:
+    --geo-lit 0.45s ease,
+    --geo-rx 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    --geo-ry 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    --geo-lift 0.4s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.geo-pane {
+  transition:
+    --geo-lit 0.45s ease,
+    --geo-rx 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    --geo-ry 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.geo-counter .geo-kicker {
+  translate: calc((var(--geo-x, 50%) - 50%) * -0.03 * var(--geo-lit)) 0;
+}
+
+/* View tabs: a pool of light follows the pointer along the tab; the label slides, the icon turns. */
+.geo-nav-link {
+  transition:
+    color 0.2s,
+    background-color 0.25s,
+    --geo-lit 0.35s ease;
+}
+
+.geo-nav-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(110px circle at var(--geo-x, 50%) var(--geo-y, 50%), color-mix(in oklab, var(--gem-c) 26%, transparent), transparent 70%);
+  opacity: var(--geo-lit);
+  pointer-events: none;
+}
+
+.geo-nav-label {
+  translate: calc(var(--geo-lit) * 3px) 0;
+}
+
+.geo-nav-link .geo-nav-icon {
+  rotate: calc(var(--geo-lit) * -8deg);
+}
+
+/* Rail tools and gems are magnetic: drawn toward the pointer, their icon a little further. */
+.geo-tool {
+  translate: calc((var(--geo-x, 50%) - 50%) * 0.28 * var(--geo-lit)) calc((var(--geo-y, 50%) - 50%) * 0.28 * var(--geo-lit));
+  background-image: radial-gradient(40px circle at var(--geo-x, 50%) var(--geo-y, 50%), color-mix(in oklab, var(--gem-c) calc(var(--geo-lit) * 30%), transparent), transparent 70%);
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s,
+    scale 0.1s,
+    --geo-lit 0.4s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.geo-tool > svg {
+  translate: calc((var(--geo-x, 50%) - 50%) * 0.25 * var(--geo-lit)) calc((var(--geo-y, 50%) - 50%) * 0.25 * var(--geo-lit));
+}
+
+.geo-gem {
+  translate: calc((var(--geo-x, 50%) - 50%) * 0.35 * var(--geo-lit)) calc((var(--geo-y, 50%) - 50%) * 0.3 * var(--geo-lit));
+  rotate: calc(var(--geo-lit) * 12deg);
+  transition:
+    scale 0.3s cubic-bezier(0.3, 1.6, 0.5, 1),
+    filter 0.3s,
+    --geo-lit 0.4s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.geo-gem:hover {
+  filter: drop-shadow(0 0 7px var(--ga));
+}
+
+.geo-gem:hover .geo-gem-stone {
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.65) 0 2px, transparent 2px),
+    radial-gradient(14px circle at var(--geo-x, 50%) var(--geo-y, 30%), #fff, transparent 70%),
+    linear-gradient(160deg, #fff, var(--gc) 18%, var(--ga) 55%, var(--gb));
+}
+
+/* Rows: light pools under the pointer, the row eases right, its marker turns. */
+:is(.geo-row, .geo .dash-row) {
+  background-image: radial-gradient(160px circle at var(--geo-x, 50%) var(--geo-y, 50%), color-mix(in oklab, var(--gem-c) calc(var(--geo-lit) * 12%), transparent), transparent 70%);
+  transition:
+    border-color 0.2s,
+    background-color 0.2s,
+    translate 0.3s cubic-bezier(0.3, 1.4, 0.5, 1),
+    --geo-lit 0.35s ease;
+}
+
+:is(.geo-row, .geo .dash-row):hover {
+  translate: 3px 0;
+  border-color: color-mix(in oklab, var(--gem-c) 38%, transparent);
+}
+
+.geo-row:hover :is(.dash-avatar, .dash-icon) {
+  scale: 1.08;
+  box-shadow: 0 0 14px -2px color-mix(in oklab, var(--gem-a) 70%, transparent);
+}
+
+:is(.geo-row, .geo .dash-row) :is(.dash-avatar, .dash-icon) {
+  transition:
+    scale 0.3s cubic-bezier(0.3, 1.6, 0.5, 1),
+    box-shadow 0.3s;
+}
+
+/* Feed: the hovered entry brightens and its hexagon spins and swells. */
+.geo-feed-item {
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.geo-feed-item:hover {
+  background: linear-gradient(90deg, color-mix(in oklab, var(--mark) 10%, transparent), transparent 70%);
+}
+
+.geo-feed-mark {
+  transition:
+    rotate 0.5s cubic-bezier(0.3, 1.6, 0.5, 1),
+    scale 0.3s cubic-bezier(0.3, 1.6, 0.5, 1),
+    filter 0.3s;
+}
+
+.geo-feed-item:hover .geo-feed-mark {
+  rotate: 120deg;
+  scale: 1.45;
+  filter: drop-shadow(0 0 5px var(--mark));
+}
+
+/* Chart: the pointed pillar rises and glows, the others dim back. */
+.geo-chart:hover .geo-bar:not([data-hot]) .geo-bar-fill {
+  opacity: 0.38;
+}
+
+.geo-bar-fill {
+  transition:
+    height 0.8s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.25s,
+    translate 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.geo-bar[data-hot] .geo-bar-fill {
+  translate: 0 -4px;
+}
+
+/* The tools inside the Standard panels lift toward you, glowing in the gem. */
+/* The tools inside the Standard panels lift toward you, glowing in the gem (box-shadows: cheap on a grid of
+   dozens of items, unlike filters). */
+.geo :is(.dash-case, .dash-item, .dash-preset, .dash-result, .dash-chip):hover {
+  translate: 0 -2px;
+  box-shadow:
+    0 8px 18px -8px color-mix(in oklab, var(--gem-a) 55%, transparent),
+    inset 0 0 0 1px color-mix(in oklab, var(--gem-c) 45%, transparent);
+}
+
+.geo :is(.dash-case, .dash-item, .dash-preset, .dash-result, .dash-chip) {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 200ms ease,
+    translate 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.geo .dash-symbol:hover {
+  box-shadow: 0 0 16px -2px color-mix(in oklab, var(--gem-c) 55%, transparent);
+}
+
+/* Main buttons: a bright edge follows the pointer across the gem gradient. */
+.geo [data-slot="button"][data-variant="default"] {
+  background-image:
+    radial-gradient(70px circle at var(--geo-x, 50%) var(--geo-y, 50%), rgb(255 255 255 / calc(var(--geo-lit) * 0.45)), transparent 70%),
+    linear-gradient(120deg, var(--gem-c), var(--gem-a) 48%, var(--gem-b));
+  background-size:
+    100% 100%,
+    160% 100%;
 }
 
 /* Motion ------------------------------------------------------------------------------------------- */
@@ -1513,11 +1857,11 @@
   animation-duration: 90s;
 }
 
-.geo[data-motion="subtle"] :is(.geo-view:not([hidden]) > .geo-viewhead, .geo-view:not([hidden]) > .geo-slot > *) {
+.geo[data-motion="subtle"] :is(.geo-view:not([hidden]) > .geo-viewhead, .geo-view:not([hidden]) > .geo-slot) {
   animation-name: geo-arrive-soft;
 }
 
-.geo[data-motion="subtle"] .geo-burst-shard {
+.geo[data-motion="subtle"] :is(.geo-wash, .geo-ripples) {
   display: none;
 }
 
@@ -1528,18 +1872,20 @@
   transition: none !important;
 }
 
-.geo[data-motion="off"] :is(.geo-beam, .geo-burst) {
+.geo[data-motion="off"] :is(.geo-beam, .geo-wash, .geo-ripples, .geo-motes) {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .geo *,
   .geo *::before,
-  .geo *::after {
+  .geo *::after,
+  .geo-dialog,
+  .geo-dialog::before {
     animation: none !important;
     transition: none !important;
   }
-  :is(.geo-beam, .geo-burst) {
+  :is(.geo-beam, .geo-wash, .geo-ripples, .geo-motes) {
     display: none;
   }
 }
@@ -1638,6 +1984,13 @@
   }
 }
 
+@keyframes geo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px) scale(0.975);
+  }
+}
+
 @keyframes geo-arrive-soft {
   from {
     opacity: 0;
@@ -1668,24 +2021,48 @@
   }
 }
 
-@keyframes geo-flash {
-  from {
-    opacity: 0.9;
-    scale: 0.3;
+@keyframes geo-wash {
+  0% {
+    opacity: 1;
+    clip-path: circle(0% at 80% 50%);
   }
-  to {
+  60% {
+    opacity: 0.8;
+  }
+  100% {
     opacity: 0;
-    scale: 1.7;
+    clip-path: circle(150% at 80% 50%);
   }
 }
 
-@keyframes geo-shatter {
+@keyframes geo-ripple {
   from {
+    width: 0;
+    height: 0;
+    margin: 0;
     opacity: 1;
-    transform: rotate(var(--a)) translateY(-10px) rotate(0deg) scale(0.5);
   }
   to {
+    width: 120px;
+    height: 120px;
+    margin: -60px 0 0 -60px;
     opacity: 0;
-    transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(var(--r)) scale(1.1);
+  }
+}
+
+@keyframes geo-dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.92;
+    filter: blur(8px) hue-rotate(-60deg) brightness(1.6);
+  }
+  60% {
+    filter: blur(0) hue-rotate(0deg) brightness(1.15);
+  }
+}
+
+@keyframes geo-charge {
+  to {
+    --geo-turn: 360deg;
   }
 }

@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api-client";
 import { playerSchema, type AdminPlayer, type PlayerActionResult } from "@/lib/admin-players";
 import { describeItem, inventoryItemLabel } from "@/lib/inventory";
+import { RARITIES, isRarity } from "@/lib/rarities";
 import { createRequestId } from "@/lib/request-id";
 import type { AdminAccount } from "@/lib/vault-admin";
+import type { GeodeMoment } from "./admin-dashboard-moments";
 
-type Ask = (confirm: { title: string; body: ReactNode; label: string; destructive?: boolean; run: () => Promise<string> }) => void;
+type Ask = (confirm: { title: string; body: ReactNode; label: string; destructive?: boolean; moment?: GeodeMoment; run: () => Promise<string> }) => void;
 type Change = (title: string, label: string, body: ReactNode, action: Record<string, unknown>, done: (result: PlayerActionResult) => string, destructive?: boolean) => void;
 type Tool = { player: AdminPlayer; name: string; change: Change };
 type Account = AdminPlayer["account"] | AdminAccount;
@@ -25,6 +27,27 @@ const itemType = (id: string) => {
   return item ? inventoryItemLabel(item) : "Cosmetic";
 };
 const matches = (id: string, term: string) => !term || id.includes(term) || itemName(id).toLowerCase().includes(term) || itemType(id).toLowerCase().includes(term);
+/** How the Flashy dashboard celebrates a player change, read from the action it sends. */
+function momentFor(action: Record<string, unknown>, player: AdminPlayer | null): GeodeMoment | undefined {
+  const name = player ? who(player.account) : "";
+  switch (action.action) {
+    case "premium":
+      return action.premium ? { kind: "crown", kicker: `${name} · Season Pass`, title: "Premium" } : { kind: "fracture", kicker: `${name} · Season Pass`, title: "Premium revoked" };
+    case "coins":
+      return { kind: "coins", amount: Number(action.amount) || 0 };
+    case "cosmetic": {
+      const id = String(action.item);
+      if (!action.owned) return { kind: "fracture", kicker: `Taken from ${name}`, title: itemName(id) };
+      const rarity = player?.catalog.find((item) => item.id === id)?.rarity;
+      return { kind: "gift", kicker: `Given to ${name}`, title: itemName(id), color: rarity && isRarity(rarity) ? RARITIES[rarity].color : "#c9a2ff" };
+    }
+    case "booster":
+      if (action.op === "give") return { kind: "surge", kicker: "Boosted openings", title: `+${Number(action.charges).toLocaleString("en")}` };
+      return { kind: "fracture", kicker: "Boosted openings", title: action.op === "end" ? "Booster ended" : `−${Number(action.charges).toLocaleString("en")}` };
+  }
+  return undefined;
+}
+
 const outcome = (result: PlayerActionResult, done: string) =>
   result.status === "unchanged" ? "Nothing changed. It was already that way." : result.status === "repeat" ? "That change was already made." : done;
 
@@ -91,6 +114,7 @@ export function PlayerTools({ ask }: { ask: Ask }) {
       label,
       body,
       destructive,
+      moment: momentFor(action, player),
       run: async () => {
         const result = await apiFetch<PlayerActionResult>(`/api/admin/dashboard/players/${id}`, { method: "POST", json: { ...action, id: request } });
         void load(id);

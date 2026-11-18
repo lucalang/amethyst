@@ -2,12 +2,15 @@
 
 import { useEffect, useId, useRef, useSyncExternalStore, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { Volume2, VolumeX } from "lucide-react";
-import { useCardTilt } from "@/components/showcase/card-tilt";
 import { playGeodeSound } from "@/components/vault/vault-audio";
 import { ADMIN_GEMS, adminGem, type AdminGemId } from "@/lib/admin-gems";
 import type { MotionLevel } from "@/lib/preferences";
+import { MomentOverlay, Motes, momentShakes, momentSound, useGeodeLight, useRipples, type GeodeMoment } from "./admin-dashboard-moments";
 import { CountUp } from "./admin-ui";
 import "./admin-dashboard-fx.css";
+
+/** The latest confirmed action: `n` counts them (so each one plays afresh), `moment` says how to celebrate it. */
+export type FxCelebration = { n: number; moment?: GeodeMoment };
 
 /**
  * The Flashy Admin Dashboard: "Geode". A dark cave lit by one gem you choose. A faceted crystal turns beside the
@@ -67,9 +70,6 @@ const SHARDS = [
   [88, 90, 13, 28, -5],
 ] as const;
 
-/* The burst after a confirmed action: one shard every ~26°, with a little spread. */
-const BURST = Array.from({ length: 14 }, (_, i) => ({ angle: i * 25.7 + ((i * 37) % 11), distance: 160 + ((i * 53) % 120), spin: ((i * 97) % 360) - 180 }));
-
 /** A panel cut from glass: chamfered corners, a refracting edge and light that follows the pointer. */
 export function FxPanel({ kicker, title, actions, children }: { kicker: string; title: string; actions?: ReactNode; children: ReactNode }) {
   const id = useId();
@@ -94,7 +94,7 @@ export function FxCounters({ stats, animate }: { stats: FxStat[]; animate: boole
   return (
     <div className="geo-counters">
       {stats.map((stat, i) => (
-        <div key={stat.key} className="geo-counter" data-card data-tone={stat.tone} style={{ "--i": i } as CSSProperties}>
+        <div key={stat.key} className="geo-counter" data-tone={stat.tone} style={{ "--i": i } as CSSProperties}>
           <span aria-hidden className="geo-glint" />
           <span aria-hidden className="geo-counter-icon">
             {stat.icon}
@@ -139,7 +139,7 @@ export function FlashyDashboard({
   onToggleSound,
   gem,
   onChooseGem,
-  success,
+  celebration,
   tools,
   views,
   children,
@@ -152,8 +152,7 @@ export function FlashyDashboard({
   onToggleSound: () => void;
   gem: AdminGemId;
   onChooseGem: (id: AdminGemId) => void;
-  /** Bumped after each confirmed action, for the shard burst. */
-  success: number;
+  celebration: FxCelebration;
   /** Rail buttons placed before the sound toggle. */
   tools: ReactNode;
   views: FxView[];
@@ -161,29 +160,39 @@ export function FlashyDashboard({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const rippleRef = useRef<HTMLDivElement>(null);
   const hash = useHash();
   const view = views.find((item) => item.id === hash) ?? views[0];
   const viewIndex = views.indexOf(view);
   const full = motion === "full";
+  const stone = adminGem(gem);
 
-  // Counters tilt under the pointer; panels only catch its light (they stay still to be easy to use).
-  useCardTilt(rootRef, full);
-  useCardTilt(rootRef, motion !== "off", ".geo-pane, .geo .dash-panel");
+  // The pointer is a light source for counters (tilt), panels (rim light; read-only ones lean) and controls
+  // (a pool of light; small ones are magnetic). Tool panels never move, so forms stay easy to use.
+  useGeodeLight(rootRef, motion !== "off", full);
+  useRipples(rootRef, rippleRef, motion !== "off");
 
-  // The cave's light follows the pointer: --mx/--my for the glow, --px/--py to lean the crystal.
+  // The cave's light follows the pointer, and the crystals lean toward it. The values go straight onto the few
+  // elements that read them (never the root, where every change would restyle the whole dashboard).
   useEffect(() => {
     const root = rootRef.current;
     if (!root || !full) return;
+    const spot = root.querySelector<HTMLElement>(".geo-spot");
+    const leans = [...root.querySelectorAll<HTMLElement>(".geo-crystal-lean")];
     let frame = 0;
     let x = 0;
     let y = 0;
     const apply = () => {
       frame = 0;
       const rect = root.getBoundingClientRect();
-      root.style.setProperty("--mx", `${(x - rect.left).toFixed(0)}px`);
-      root.style.setProperty("--my", `${(y - rect.top).toFixed(0)}px`);
-      root.style.setProperty("--px", `${(((x - rect.left) / rect.width - 0.5) * 24).toFixed(2)}deg`);
-      root.style.setProperty("--py", `${(-((y - rect.top) / rect.height - 0.5) * 18).toFixed(2)}deg`);
+      spot?.style.setProperty("--mx", `${(x - rect.left).toFixed(0)}px`);
+      spot?.style.setProperty("--my", `${(y - rect.top).toFixed(0)}px`);
+      const px = `${(((x - rect.left) / rect.width - 0.5) * 24).toFixed(2)}deg`;
+      const py = `${(-((y - rect.top) / rect.height - 0.5) * 18).toFixed(2)}deg`;
+      for (const lean of leans) {
+        lean.style.setProperty("--px", px);
+        lean.style.setProperty("--py", py);
+      }
     };
     const move = (event: PointerEvent) => {
       if (event.pointerType !== "mouse") return;
@@ -195,25 +204,39 @@ export function FlashyDashboard({
     return () => {
       cancelAnimationFrame(frame);
       root.removeEventListener("pointermove", move);
-      for (const name of ["--mx", "--my", "--px", "--py"]) root.style.removeProperty(name);
+      for (const el of [spot, ...leans]) for (const name of ["--mx", "--my", "--px", "--py"]) el?.style.removeProperty(name);
     };
   }, [full]);
 
-  // Arriving at a view: back to its top, and the chime (the CSS does the crystallizing).
+  // Arriving at a view: back to its top, the chime, and the crystal answers with a pulse (the CSS crystallizes).
   const previous = useRef(view.id);
   useEffect(() => {
     if (previous.current === view.id) return;
     previous.current = view.id;
     mainRef.current?.scrollTo({ top: 0 });
     if (sound && motion !== "off") playGeodeSound("flight");
-  }, [view.id, sound, motion]);
+    if (full) {
+      rootRef.current?.querySelector(".geo-centerpiece")?.animate([{ scale: 1 }, { scale: 1.12, filter: "brightness(1.6)" }, { scale: 1 }], { duration: 700, easing: "cubic-bezier(0.3, 1.4, 0.5, 1)" });
+    }
+  }, [view.id, sound, motion, full]);
 
-  const chimed = useRef(success);
+  // A confirmed action: its moment's sound, and for the heavy ones (a crown landing, glass cracking) a jolt.
+  const celebrated = useRef(celebration.n);
   useEffect(() => {
-    if (chimed.current === success) return;
-    chimed.current = success;
-    if (sound) playGeodeSound("confirm");
-  }, [success, sound]);
+    if (celebrated.current === celebration.n) return;
+    celebrated.current = celebration.n;
+    const { moment } = celebration;
+    if (sound) playGeodeSound(moment && motion !== "off" ? momentSound(moment) : "confirm");
+    if (full && momentShakes(moment)) {
+      const crack = moment?.kind === "fracture";
+      mainRef.current?.animate(
+        crack
+          ? [{ translate: "0 0" }, { translate: "-9px 4px" }, { translate: "7px -5px" }, { translate: "-5px 3px" }, { translate: "3px -1px" }, { translate: "0 0" }]
+          : [{ translate: "0 0" }, { translate: "0 9px" }, { translate: "0 -3px" }, { translate: "0 0" }],
+        { duration: crack ? 420 : 380, delay: crack ? 0 : 560, easing: "ease-out" },
+      );
+    }
+  }, [celebration, sound, motion, full]);
 
   function go(event: MouseEvent<HTMLAnchorElement>, id: string) {
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -231,6 +254,7 @@ export function FlashyDashboard({
         <span className="geo-aurora geo-aurora-b" />
         <span className="geo-aurora geo-aurora-c" />
         <span className="geo-dust" />
+        <Motes colors={[stone.a, stone.b, stone.c]} active={full} />
         {SHARDS.map(([left, top, size, duration, delay], i) => (
           <span
             key={i}
@@ -242,16 +266,12 @@ export function FlashyDashboard({
         <span className="geo-spot" />
       </div>
 
-      {/* Each flight between views sends a prism beam across; each confirmed action bursts into shards. */}
+      {/* Each flight between views sends a prism beam across; a new gem floods the cave with its light;
+          each confirmed action plays its moment. */}
       <span key={`beam-${view.id}`} aria-hidden className="geo-beam" />
-      {success > 0 ? (
-        <span key={`burst-${success}`} aria-hidden className="geo-burst">
-          <span className="geo-burst-flash" />
-          {BURST.map((shard, i) => (
-            <span key={i} className="geo-burst-shard" style={{ "--a": `${shard.angle}deg`, "--d": `${shard.distance}px`, "--r": `${shard.spin}deg` } as CSSProperties} />
-          ))}
-        </span>
-      ) : null}
+      <span key={`wash-${gem}`} aria-hidden className="geo-wash" />
+      {celebration.n > 0 ? <MomentOverlay key={celebration.n} moment={celebration.moment} /> : null}
+      <div ref={rippleRef} aria-hidden className="geo-ripples" />
 
       <aside className="geo-rail">
         <div className="geo-brand">

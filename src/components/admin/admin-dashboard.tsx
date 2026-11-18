@@ -23,12 +23,14 @@ import { createRequestId } from "@/lib/request-id";
 import { winningRule } from "@/lib/slots";
 import type { AdminAccount } from "@/lib/vault-admin";
 import { PlayerTools } from "./admin-players";
-import { FlashyDashboard, FxCounters, FxPanel } from "./admin-dashboard-fx";
+import { FlashyDashboard, FxCounters, FxPanel, type FxCelebration } from "./admin-dashboard-fx";
+import type { GeodeMoment } from "./admin-dashboard-moments";
 import { countdown, plural, useMounted, useNow } from "./admin-ui";
 import "./admin-dashboard.css";
 
 /** A confirmation with its own key, so a retry from the same dialog reuses the same request id. */
-type Confirm = { key: string; title: string; body: ReactNode; label: string; destructive?: boolean; run: () => Promise<string> };
+/** `moment` is how the Flashy design celebrates the action once it succeeds (ignored by Standard). */
+type Confirm = { key: string; title: string; body: ReactNode; label: string; destructive?: boolean; moment?: GeodeMoment; run: () => Promise<string> };
 type Ask = (confirm: Omit<Confirm, "key">) => void;
 type Machine = NonNullable<AdminDashboardState["machine"]>;
 type CaseItem = AdminDashboardState["cases"][number]["items"][number];
@@ -194,7 +196,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
   const router = useRouter();
   const motion = useMotionLevel();
   const [style, setStyle] = useState<AdminDashboardStyle>(settings.adminDashboardStyle);
-  const [success, setSuccess] = useState(0);
+  const [celebration, setCelebration] = useState<FxCelebration>({ n: 0 });
   const flashy = style === "flashy";
   // Flashy is lit by its own gem; sound is the account's one sound setting (shared with the Arcade and Code Admin).
   const [gem, setGem] = useState<AdminGemId>(settings.adminDashboardGem);
@@ -263,7 +265,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
       onResult={(ok) => {
         if (!flashy) return;
         // Success chimes with its shard burst (in the Flashy shell); a failure gets the dull glass knock here.
-        if (ok) setSuccess((count) => count + 1);
+        if (ok) setCelebration((current) => ({ n: current.n + 1, moment: confirm?.moment }));
         else if (soundOn) playGeodeSound("error");
       }}
       onClose={() => setConfirm(null)}
@@ -280,7 +282,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
         onToggleSound={() => void toggleSound()}
         gem={gem}
         onChooseGem={(id) => void chooseGem(id)}
-        success={success}
+        celebration={celebration}
         tools={
           <>
             <StylePicker value={style} onChange={(next) => void chooseStyle(next)} flashy />
@@ -479,7 +481,7 @@ function ConfirmDialog({
 
   return (
     <AlertDialog open={Boolean(confirm)} onOpenChange={(open) => !open && !busy && onClose()}>
-      <AlertDialogContent className={className} style={style}>
+      <AlertDialogContent className={className} style={style} data-busy={busy || undefined}>
         <AlertDialogHeader>
           <AlertDialogTitle>{confirm?.title}</AlertDialogTitle>
           <AlertDialogDescription asChild>
@@ -532,6 +534,7 @@ function cancelOverride(ask: Ask, kind: "loot" | "slots", id: string, summary: s
     title: "Cancel this override?",
     label: "Cancel override",
     destructive: true,
+    moment: { kind: "fracture", kicker: kind === "loot" ? "Lootbox override" : "Coin Slots override", title: "Cancelled" },
     body: (
       <p>
         {summary} Your next {kind === "loot" ? "opening" : "spin"} uses the normal odds.
@@ -572,6 +575,7 @@ function LootOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
     ask({
       title: "Queue this Lootbox override?",
       label: "Queue override",
+      moment: { kind: "gift", kicker: `Next ${caseName} reveals`, title: itemName(item.id), color: rarityColor(item.rarity) },
       body: (
         <>
           <dl className="dash-summary">
@@ -725,6 +729,7 @@ function SlotOverridePanel({ state, ask }: { state: AdminDashboardState; ask: As
     ask({
       title: "Queue this Coin Slots override?",
       label: "Queue override",
+      moment: { kind: "reels", symbols: chosen, kicker: "Next spin queued", title: multiplier > 0 ? `×${multiplier}` : "No win" },
       body: (
         <>
           <Payline symbols={chosen} hit={rule?.symbol} multiplier={multiplier} top={top} size="size-9" />
@@ -811,6 +816,13 @@ function AdminAccess({ state, owner, ask }: { state: AdminDashboardState; owner:
       title: `${verb}?`,
       label: role === null ? "Revoke access" : current === null ? "Grant access" : "Change role",
       destructive: role === null,
+      // Revoking cracks the glass, making an owner crowns them, any other grant forges a key.
+      moment:
+        role === null
+          ? { kind: "fracture", kicker: `${name} · admin access`, title: "Revoked" }
+          : role === "owner"
+            ? { kind: "crown", kicker: name, title: "Owner" }
+            : { kind: "key", kicker: current === null ? "Access granted" : "Now admin", title: name },
       body: (
         <>
           <dl className="dash-summary">

@@ -233,7 +233,9 @@ export function playSanctumSound(name: SanctumSound, delay = 0) {
   }
 }
 
-export type GeodeSound = "hover" | "select" | "flight" | "confirm" | "error" | "gem";
+export type GeodeSound = "hover" | "select" | "flight" | "confirm" | "error" | "gem" | GeodeMomentSound;
+/** One cue per Geode moment (see admin-dashboard-moments), timed to its animation. */
+export type GeodeMomentSound = "coins" | "drain" | "crown" | "gift" | "surge" | "reels" | "key" | "fracture";
 
 /**
  * The Admin Dashboard's Flashy design ("Geode"): struck glass and crystal chimes, nothing like the Sanctum's
@@ -269,6 +271,54 @@ export function playGeodeSound(name: GeodeSound) {
     case "gem":
       tone(2637, 0, 0.5, "sine", 0.03);
       tone(3951, 0.05, 0.6, "sine", 0.014);
+      break;
+    case "coins":
+      // A shower of bright clinks as the coins land.
+      for (let i = 0; i < 10; i += 1) {
+        const at = 0.35 + i * 0.07 + Math.random() * 0.03;
+        tone(2300 + Math.random() * 1100, at, 0.12, "triangle", 0.022);
+        tone(4200 + Math.random() * 600, at + 0.008, 0.05, "sine", 0.008);
+      }
+      break;
+    case "drain":
+      for (let i = 0; i < 7; i += 1) tone(2700 - i * 260, i * 0.07, 0.11, "triangle", 0.02);
+      noise(0, 0.8, 5000, 300, 0.035, "bandpass", undefined, 0.5);
+      tone(160, 0.65, 0.3, "sine", 0.08, 70);
+      break;
+    case "crown":
+      // A small fanfare as the crown lands, then a sparkle.
+      [523.25, 659.25, 783.99].forEach((freq, i) => tone(freq, 0.42 + i * 0.09, 1.3, "sine", 0.045));
+      [1046.5, 1318.5].forEach((freq, i) => tone(freq, 0.7 + i * 0.05, 1.1, "sine", 0.03));
+      [2637, 3136, 3951].forEach((freq, i) => tone(freq, 0.85 + i * 0.07, 0.5, "sine", 0.012));
+      noise(0, 0.45, 600, 5000, 0.03, "bandpass", undefined, 0.8);
+      break;
+    case "gift":
+      noise(0, 0.7, 1500, 9000, 0.022, "highpass", undefined, 0.7);
+      [1318.5, 1760, 2637, 3520].forEach((freq, i) => tone(freq, 0.62 + i * 0.06, 0.9, "sine", 0.03));
+      break;
+    case "surge":
+      tone(110, 0, 0.7, "sawtooth", 0.028, 880);
+      noise(0, 0.6, 700, 7000, 0.04, "bandpass", undefined, 0.6);
+      [0.55, 0.68, 0.8].forEach((at) => tone(1760, at, 0.12, "square", 0.012, 3520));
+      tone(1046.5, 0.85, 0.8, "sine", 0.04);
+      break;
+    case "reels":
+      // Ticking reels, three stops (in step with the CSS: 0.75 s, 0.95 s, 1.15 s), then a ding.
+      for (let t = 0; t < 1.1; t += 0.055) tone(1500, t, 0.02, "square", 0.008);
+      [0.75, 0.95, 1.15].forEach((at) => tone(880, at, 0.16, "triangle", 0.045, 660));
+      [1318.5, 1975.5].forEach((freq, i) => tone(freq, 1.3 + i * 0.07, 0.8, "sine", 0.035));
+      break;
+    case "key":
+      // Six pieces seat (one per shard), the lock turns, a bright chime.
+      for (let i = 0; i < 6; i += 1) tone(1200 + i * 120, 0.18 + i * 0.07, 0.07, "triangle", 0.02);
+      tone(180, 0.68, 0.14, "square", 0.04, 90);
+      noise(0.68, 0.1, 3000, 900, 0.04, "bandpass", undefined, 0.05);
+      [1568, 2093, 3136].forEach((freq, i) => tone(freq, 0.82 + i * 0.07, 0.9, "sine", 0.03));
+      break;
+    case "fracture":
+      noise(0, 0.5, 7000, 700, 0.07, "highpass", undefined, 0.02);
+      tone(82, 0, 0.5, "sine", 0.14, 38);
+      for (let i = 0; i < 5; i += 1) noise(0.08 + i * 0.06 + Math.random() * 0.03, 0.05, 5000, 2500, 0.03, "bandpass", undefined, 0.05);
       break;
   }
 }
