@@ -51,8 +51,29 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-15-admin-player-tools",
+    date: "2026-11-15",
+    title: "Admin Dashboard player tools",
+    intro: "Admins can look up a player and manage their Season Pass Premium, coins, cosmetics and luck boosters.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Player lookup", text: "Search a player to see their coins and recent coin history, Season Pass tier and Premium, cosmetics and boosters." },
+      { kind: "new", feature: "Season Pass Premium", text: "Grant or revoke Premium for the running season, with an optional refund when it was bought." },
+      { kind: "new", feature: "Coins, cosmetics and boosters", text: "Give or take coins with a required reason, give or take cosmetics, and give, take or end luck boosters." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Players panel",
+          body: "Every change asks for confirmation, is safe to retry and is recorded in the audit log, which has a new Players filter. Revoking Premium keeps premium rewards already claimed. Taking a cosmetic also takes it off wherever it is worn. Coins can never go below zero.",
+          where: "Admin Dashboard → Players",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-14-admin-dashboard-blockers",
-    date: "2026-11-14",
+    date: "2026-11-15",
     title: "Admin Dashboard with content blockers",
     intro: "The Admin Dashboard no longer goes blank in browsers with an ad or content blocker.",
     icon: "sparkles",

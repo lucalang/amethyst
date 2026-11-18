@@ -16,6 +16,7 @@ import { RARITIES, isRarity } from "@/lib/rarities";
 import { createRequestId } from "@/lib/request-id";
 import { winningRule } from "@/lib/slots";
 import type { AdminAccount } from "@/lib/vault-admin";
+import { PlayerTools } from "./admin-players";
 import { countdown, plural, useNow } from "./admin-ui";
 import "./admin-dashboard.css";
 
@@ -51,13 +52,24 @@ const ACTION_LABEL: Record<string, string> = {
   slot_override_create: "queued a Coin Slots override",
   slot_override_cancel: "cancelled a Coin Slots override",
   slot_override_use: "used a Coin Slots override",
+  season_premium_grant: "granted Season Pass Premium",
+  season_premium_revoke: "revoked Season Pass Premium",
+  coins_grant: "gave coins",
+  coins_take: "took coins",
+  cosmetic_grant: "gave a cosmetic",
+  cosmetic_take: "took a cosmetic",
+  booster_grant: "gave boosted openings",
+  booster_take: "took boosted openings",
+  booster_end: "ended an active luck booster",
 };
 const AUDIT_FILTERS = [
   { id: "all", label: "All" },
   { id: "admin", label: "Access" },
   { id: "loot", label: "Lootbox" },
   { id: "slot", label: "Coin Slots" },
+  { id: "player", label: "Players" },
 ] as const;
+const auditGroup = (action: string) => (/^(admin|loot|slot)_/.test(action) ? action.split("_")[0] : "player");
 
 /** The same win tiers as the machine, so the preview names a win the way the reels will. */
 function slotTier(multiplier: number, top: number) {
@@ -250,6 +262,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
         <AdminAccess state={state} owner={owner} ask={ask} />
         <OverrideHistory state={state} />
       </div>
+      <PlayerTools ask={ask} />
       <AuditLog state={state} />
 
       <ConfirmDialog key={confirm?.key ?? "none"} confirm={confirm} onClose={() => setConfirm(null)} onDone={() => void refresh(true)} />
@@ -858,12 +871,17 @@ function auditDetail(action: string, details: Record<string, unknown>) {
     return [item && itemName(item), box && lootCaseInfo(box).name].filter(Boolean).join(" from ");
   }
   if (action === "slot_override_use") return `bet ${String(details.bet)} → paid ${String(details.payout)}`;
+  const count = (key: string) => Number(details[key] ?? 0).toLocaleString("en");
+  if (action.startsWith("season_premium_")) return [text("season"), Number(details.refund) > 0 ? `refunded ${count("refund")} coins` : ""].filter(Boolean).join(" · ");
+  if (action.startsWith("coins_")) return [`${count("amount")} coins`, text("reason")].filter(Boolean).join(" · ");
+  if (action.startsWith("cosmetic_")) return itemName(text("item") ?? "");
+  if (action.startsWith("booster_")) return `${count("charges")} openings · ${text("booster") ?? ""}`;
   return "";
 }
 
 function AuditLog({ state }: { state: AdminDashboardState }) {
   const [filter, setFilter] = useState<(typeof AUDIT_FILTERS)[number]["id"]>("all");
-  const entries = state.audit.filter((entry) => filter === "all" || entry.action.startsWith(`${filter}_`));
+  const entries = state.audit.filter((entry) => filter === "all" || auditGroup(entry.action) === filter);
   return (
     <Panel
       title="Audit log"

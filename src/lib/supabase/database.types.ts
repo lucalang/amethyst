@@ -745,6 +745,21 @@ isOneToOne: false
 "admin_queue_slot_override":
 { Args: { "p_id": string,"p_stops": number[] }; Returns: Json
                            },
+"admin_player_state":
+{ Args: { "p_user": string }; Returns: Json
+                           },
+"admin_set_season_premium":
+{ Args: { "p_request": string,"p_user": string,"p_premium": boolean,"p_refund": boolean }; Returns: Json
+                           },
+"admin_adjust_coins":
+{ Args: { "p_request": string,"p_user": string,"p_amount": number,"p_reason": string }; Returns: Json
+                           },
+"admin_set_cosmetic":
+{ Args: { "p_request": string,"p_user": string,"p_item": string,"p_owned": boolean }; Returns: Json
+                           },
+"admin_adjust_booster":
+{ Args: { "p_request": string,"p_user": string,"p_booster": string,"p_action": string,"p_charges"?: number }; Returns: Json
+                           },
 "admin_cancel_override":
 { Args: { "p_kind": string,"p_id": string }; Returns: Json
                            },
