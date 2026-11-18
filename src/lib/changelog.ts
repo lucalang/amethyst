@@ -51,6 +51,27 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-18-arcade-categories",
+    date: "2026-11-18",
+    title: "Arcade: Full Games and Minigames",
+    intro: "The Arcade now has two tabs: Minigames for a quick break and Full Games for longer sessions.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Two categories", text: "Switch between Minigames and Full Games from the tabs beside the search; each tab shows its game count and the search counts matches on both." },
+      { kind: "improved", feature: "Space Blaster", text: "Space Blaster is now a Full Game. Its link, records, streak, leaderboards, look and shop are unchanged." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Full Games and Minigames",
+          body: "Full Games are bigger games built for longer sessions; Minigames are the quick puzzles and casual games. Both keep the same records, streaks, leaderboards, Tournaments, Wagers and cosmetics as before.",
+          where: "Arcade",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-18-admin-dashboard-flashy",
     date: "2026-11-18",
     title: "Flashy Admin Dashboard",

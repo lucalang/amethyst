@@ -13,8 +13,9 @@ import { requireUser } from "@/lib/supabase/auth";
 
 export const metadata: Metadata = { title: "Arcade" };
 
-export default async function ArcadePage() {
+export default async function ArcadePage({ searchParams }: { searchParams: Promise<{ shelf?: string | string[] }> }) {
   const ctx = await requireUser();
+  const { shelf } = await searchParams;
   const [records, balance, streaks] = await Promise.all([
     loadArcadeRecords(ctx),
     loadCoinBalance(ctx).catch(() => null),
@@ -27,7 +28,7 @@ export default async function ArcadePage() {
         <PageHeader
           title="Arcade"
           icon={Gamepad2}
-          description="Quick games and daily puzzles for a break. Your personal records and Sudoku progress are saved to your account."
+          description="Full Games for a longer session and Minigames for a quick break. Your personal records and Sudoku progress are saved to your account."
           actions={
             <div className="flex items-center gap-2">
               <Link href="/achievements" className="arcade-trophy-door">
@@ -118,7 +119,7 @@ export default async function ArcadePage() {
             </span>
           </Link>
         </div>
-        <ArcadeGames records={records} streaks={streaks ? { date: dailyDate(), streaks } : null} />
+        <ArcadeGames records={records} streaks={streaks ? { date: dailyDate(), streaks } : null} initialShelf={typeof shelf === "string" ? shelf : undefined} />
       </PageContainer>
     </EntranceScope>
   );

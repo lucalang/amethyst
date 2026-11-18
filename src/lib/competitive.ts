@@ -118,7 +118,7 @@ export function compactCoins(value: number) {
 export type CompetitionLock = { game: CompetitiveGame; board: string; seed: string };
 
 export const TOURNAMENT_GAMES_NOTE =
-  "Tournaments rotate through Flutter, Snake, Fruit Slice and Tower Stacker. Wagers can use every minigame.";
+  "Tournaments rotate through Flutter, Snake, Fruit Slice and Tower Stacker. Wagers can use every Arcade game.";
 
 export const TOURNAMENT_RULES = [
   "One tournament a day, 00:00–24:00 UTC. Every eligible game takes a turn before any game repeats.",

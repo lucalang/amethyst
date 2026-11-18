@@ -5,7 +5,7 @@ import { MarqueeArt } from "@/components/home/arcade-marquee";
 import { CaseArt } from "@/components/lootboxes/parts";
 import { MediaImage } from "@/components/media/media-image";
 import { MyDaySummary } from "@/components/tasks/home-my-day";
-import { ARCADE_GAMES } from "@/lib/arcade";
+import { ARCADE_GAMES, arcadeShelfSummary } from "@/lib/arcade";
 import type { HomePreview } from "@/lib/data/home";
 import { DESTINATIONS, type DestinationId } from "@/lib/destinations";
 import type { Task } from "@/lib/tasks/model";
@@ -75,7 +75,7 @@ const CARDS: Record<DestinationId, { art: (data: HubData) => ReactNode; status: 
     ),
     status: ({ arcade }) =>
       arcade.balance === null ? (
-        `${ARCADE_GAMES.length} quick games`
+        arcadeShelfSummary()
       ) : (
         <span className="inline-flex items-center gap-1.5">
           <Coins aria-hidden className="coin-ink size-3.5" />

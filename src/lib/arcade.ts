@@ -13,6 +13,24 @@ export const SUDOKU_DIFFICULTIES = ["easy", "medium", "hard"] as const;
 export type SudokuDifficulty = (typeof SUDOKU_DIFFICULTIES)[number];
 export const SUDOKU_LABELS: Record<SudokuDifficulty, string> = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
+/**
+ * The Arcade's two shelves. A game's category only decides where the hub shows it: ids, routes, records,
+ * leaderboards, streaks and cosmetics are the same in both. Add a game to a shelf by giving it that `category`.
+ */
+export const ARCADE_CATEGORIES = [
+  {
+    id: "full",
+    title: "Full Games",
+    description: "Bigger games built for longer sessions, with progression, upgrades and runs that build on each other.",
+  },
+  {
+    id: "minigames",
+    title: "Minigames",
+    description: "Quick puzzles and casual games for a break: pick one up, set a record, play again.",
+  },
+] as const;
+export type ArcadeCategoryId = (typeof ARCADE_CATEGORIES)[number]["id"];
+
 export type ArcadeGame = {
   id: ArcadeGameId;
   title: string;
@@ -20,22 +38,45 @@ export type ArcadeGame = {
   blurb: string;
   /** What the record measures, shown next to it. */
   recordLabel: string;
+  category: ArcadeCategoryId;
+  /** Full Games only: a few things the game offers, shown as tags on its card. */
+  features?: readonly string[];
 };
 
+/** Every game, in the order other lists (leaderboards, streaks, wagers) show them. The hub groups by category. */
 export const ARCADE_GAMES: readonly ArcadeGame[] = [
-  { id: "2048", title: "2048", href: "/arcade/2048", blurb: "Slide matching tiles together and build up to 2048.", recordLabel: "Best score" },
-  { id: "flutter", title: "Flutter", href: "/arcade/flutter", blurb: "Tap to keep a little gem-bird aloft through the crystal pillars.", recordLabel: "Best score" },
-  { id: "snake", title: "Snake", href: "/arcade/snake", blurb: "Eat, grow longer and never bite your own tail.", recordLabel: "Best score" },
-  { id: "sudoku", title: "Sudoku", href: "/arcade/sudoku", blurb: "Mini 4×4, Normal 9×9 and XXL 16×16 logic puzzles. Pick up where you left off.", recordLabel: "Fastest times" },
-  { id: "fruit-slice", title: "Fruit Slice", href: "/arcade/fruit-slice", blurb: "Swipe through flying fruit, chain combos and steer clear of bombs.", recordLabel: "Best score" },
-  { id: "stacker", title: "Tower Stacker", href: "/arcade/stacker", blurb: "Drop each sliding block right on top. Only the overlap stays.", recordLabel: "Highest tower" },
-  { id: "gem-chase", title: "Gem Chase", href: "/arcade/gem-chase", blurb: "Collect every glimmer in the maze while four shades give chase. Prisms turn the tables.", recordLabel: "Best score" },
-  { id: "space-blaster", title: "Space Blaster", href: "/arcade/space-blaster", blurb: "A roguelite shooter: clear waves, stack upgrades and outgun ever tougher enemies and bosses.", recordLabel: "Best score" },
-  { id: "zip", title: "Zip", href: "/arcade/zip", blurb: "Draw one path through every cell, passing the numbers in order.", recordLabel: "Best score" },
-  { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Best score" },
-  { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Best score" },
-  { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Best score" },
+  { id: "2048", title: "2048", href: "/arcade/2048", blurb: "Slide matching tiles together and build up to 2048.", recordLabel: "Best score", category: "minigames" },
+  { id: "flutter", title: "Flutter", href: "/arcade/flutter", blurb: "Tap to keep a little gem-bird aloft through the crystal pillars.", recordLabel: "Best score", category: "minigames" },
+  { id: "snake", title: "Snake", href: "/arcade/snake", blurb: "Eat, grow longer and never bite your own tail.", recordLabel: "Best score", category: "minigames" },
+  { id: "sudoku", title: "Sudoku", href: "/arcade/sudoku", blurb: "Mini 4×4, Normal 9×9 and XXL 16×16 logic puzzles. Pick up where you left off.", recordLabel: "Fastest times", category: "minigames" },
+  { id: "fruit-slice", title: "Fruit Slice", href: "/arcade/fruit-slice", blurb: "Swipe through flying fruit, chain combos and steer clear of bombs.", recordLabel: "Best score", category: "minigames" },
+  { id: "stacker", title: "Tower Stacker", href: "/arcade/stacker", blurb: "Drop each sliding block right on top. Only the overlap stays.", recordLabel: "Highest tower", category: "minigames" },
+  { id: "gem-chase", title: "Gem Chase", href: "/arcade/gem-chase", blurb: "Collect every glimmer in the maze while four shades give chase. Prisms turn the tables.", recordLabel: "Best score", category: "minigames" },
+  {
+    id: "space-blaster",
+    title: "Space Blaster",
+    href: "/arcade/space-blaster",
+    blurb: "A roguelite shooter: clear waves, stack upgrades and outgun ever tougher enemies and bosses.",
+    recordLabel: "Best score",
+    category: "full",
+    features: ["Roguelite runs", "Upgrades", "Boss waves"],
+  },
+  { id: "zip", title: "Zip", href: "/arcade/zip", blurb: "Draw one path through every cell, passing the numbers in order.", recordLabel: "Best score", category: "minigames" },
+  { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Best score", category: "minigames" },
+  { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Best score", category: "minigames" },
+  { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Best score", category: "minigames" },
 ];
+
+/** The games on one shelf, in registry order. */
+export const arcadeGamesIn = (category: ArcadeCategoryId, games: readonly ArcadeGame[] = ARCADE_GAMES) => games.filter((game) => game.category === category);
+
+/** "11 minigames and 1 full game": the Arcade in a phrase, for links into it. */
+export function arcadeShelfSummary() {
+  const minis = arcadeGamesIn("minigames").length;
+  const full = arcadeGamesIn("full").length;
+  const part = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+  return full ? `${part(minis, "minigame", "minigames")} and ${part(full, "full game", "full games")}` : part(minis, "minigame", "minigames");
+}
 
 /** Logic puzzles with a Practice board ("") and a daily puzzle; scored by solve speed. */
 export const PUZZLE_GAMES = ["zip", "patches", "tango", "queens"] as const;

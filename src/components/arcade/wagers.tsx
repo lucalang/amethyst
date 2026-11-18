@@ -350,7 +350,7 @@ export function WagerHub({ initial: initialState }: { initial: WagerList | null 
             <p className="cx-kicker"><Swords aria-hidden className="size-3.5" />The arena</p>
             <h2 id="w-hero" className="mt-1 text-2xl font-extrabold tracking-tight md:text-3xl">Put your Coins on the line</h2>
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-              Pick any minigames, tune their settings and set a stake up to {compactCoins(rules.maxStake)} Coins. First to {rules.winsNeeded} round wins takes the pot.
+              Pick any Arcade games, tune their settings and set a stake up to {compactCoins(rules.maxStake)} Coins. First to {rules.winsNeeded} round wins takes the pot.
             </p>
           </div>
           <Button asChild size="lg">

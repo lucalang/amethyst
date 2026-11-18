@@ -1,14 +1,16 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { ArrowRight, Coins } from "lucide-react";
+import { arcadeShelfSummary } from "@/lib/arcade";
 
 const LETTERS = ["A", "R", "C", "A", "D", "E"];
 
 /** Home's way into the Arcade: a small self-lit marquee sign (styles: `.arcade-marquee` in globals.css). */
 export function ArcadeMarquee({ balance }: { balance: number | null }) {
   const coins = balance === null ? null : `${balance.toLocaleString("en")} coin${balance === 1 ? "" : "s"}`;
+  const summary = arcadeShelfSummary();
   return (
-    <Link href="/arcade" prefetch={false} className="arcade-marquee" aria-label={coins ? `Arcade: six quick games. You have ${coins}.` : "Arcade: six quick games"}>
+    <Link href="/arcade" prefetch={false} className="arcade-marquee" aria-label={coins ? `Arcade: ${summary}. You have ${coins}.` : `Arcade: ${summary}`}>
       <span aria-hidden className="arcade-marquee-bulbs" />
       <span aria-hidden className="arcade-marquee-art">
         <MarqueeArt />
@@ -22,7 +24,7 @@ export function ArcadeMarquee({ balance }: { balance: number | null }) {
           ))}
         </span>
         <span className="arcade-marquee-sub">
-          <span className="truncate">Six games</span>
+          <span className="truncate">Minigames &amp; Full Games</span>
           {coins ? (
             <span className="arcade-marquee-coins">
               <Coins className="size-3" />

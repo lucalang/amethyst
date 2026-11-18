@@ -33,7 +33,7 @@ export const DESTINATIONS: Destination[] = [
   {
     id: "arcade",
     label: "Arcade",
-    tagline: "Quick games, records and earning coins",
+    tagline: "Minigames, Full Games, records and earning coins",
     href: "/arcade",
     icon: Gamepad2,
     prefixes: ["/arcade"],
