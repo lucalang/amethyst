@@ -51,6 +51,27 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-18-admin-dashboard-flashy",
+    date: "2026-11-18",
+    title: "Flashy Admin Dashboard",
+    intro: "The Admin Dashboard has a new cinematic Flashy design next to the Standard one, with the same tools and checks.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Standard / Flashy", text: "Switch the dashboard’s design from its header. Standard stays the default, and your choice is saved to your account." },
+      { kind: "new", feature: "Command deck", text: "Flashy adds a dark Sanctum-style stage, a sticky section bar, animated readouts and a light sweep when an action succeeds." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Flashy design",
+          body: "Flashy uses the Code Admin colours and the same sound setting, follows your motion setting and reduced-motion preference, and needs no 3D support. Player lookup, overrides, admin access and the audit log work exactly as in Standard, with the same confirmations and access checks.",
+          where: "Admin Dashboard → Standard / Flashy",
+          link: { href: "/admin-dashboard", label: "Open the Admin Dashboard" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-15-admin-player-tools",
     date: "2026-11-15",
     title: "Admin Dashboard player tools",

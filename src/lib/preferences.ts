@@ -28,6 +28,9 @@ export const HEADING_LEVELS = ["h1", "h2", "h3", "h4", "h5", "h6"] as const;
 export const SHORTCUT_ACTIONS = ["search", "newEntry", "newFile", "newChecklist", "newFolder", "toggleExplorer"] as const;
 /** How often the opening animation plays on a fresh load of the app. */
 export const INTRO_FREQUENCIES = ["every", "daily", "weekly", "never"] as const;
+/** The Admin Dashboard's presentation: the standard page or the cinematic one. Ids are stored; never rename them. */
+export const ADMIN_DASHBOARD_STYLES = ["standard", "flashy"] as const;
+export type AdminDashboardStyle = (typeof ADMIN_DASHBOARD_STYLES)[number];
 
 export type MotionLevel = (typeof MOTION_LEVELS)[number];
 export type EditorFont = (typeof EDITOR_FONTS)[number];
@@ -151,6 +154,8 @@ export const DEFAULT_SETTINGS = {
   vaultLook: DEFAULT_VAULT_LOOK as VaultLookId,
   /** The Admin panel's colours, switched from its header (separate from the Vault's). */
   adminLook: DEFAULT_ADMIN_LOOK as AdminLookId,
+  /** The Admin Dashboard's design, switched from the dashboard itself. Presentation only. */
+  adminDashboardStyle: "standard" as AdminDashboardStyle,
 };
 export type Settings = typeof DEFAULT_SETTINGS;
 
@@ -259,6 +264,7 @@ const settingFields = {
   viewerTweaks: viewerLookSchema.nullable(),
   vaultLook: z.enum(VAULT_LOOK_IDS),
   adminLook: z.enum(ADMIN_LOOK_IDS),
+  adminDashboardStyle: z.enum(ADMIN_DASHBOARD_STYLES),
 } satisfies { [K in keyof Settings]: z.ZodType };
 
 /** Any subset of settings; nested groups (heading colors, shortcuts) are replaced whole. */

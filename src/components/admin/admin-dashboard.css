@@ -808,3 +808,10 @@
     scale: none !important;
   }
 }
+
+/* Standard / Flashy picker (shares the segment look; icons sit beside the labels). */
+.dash-segment button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

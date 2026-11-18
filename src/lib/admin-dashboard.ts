@@ -76,3 +76,6 @@ export type AdminDashboardState = z.infer<typeof dashboardSchema>;
 export type DashboardAccount = AdminDashboardState["me"]["account"];
 export type LootOverride = z.infer<typeof lootOverrideSchema>;
 export type SlotOverride = z.infer<typeof slotOverrideSchema>;
+
+/** The dashboard's page width (Standard, loading and error states); Flashy sets the same width inside its full-bleed stage. */
+export const DASHBOARD_CONTAINER = "mx-auto w-full max-w-6xl px-4 py-7 md:px-6 md:py-10";

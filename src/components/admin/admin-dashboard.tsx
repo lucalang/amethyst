@@ -1,15 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { toast } from "sonner";
 import { ArrowUpRight, Clock, Coins, Crown, LayoutDashboard, Loader2, PackageOpen, RefreshCw, ScrollText, Search, ShieldCheck, Sparkles, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { SlotSymbol, symbolName } from "@/components/arcade/slots/symbols";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSettings } from "@/components/layout/settings-context";
+import { useMotionLevel } from "@/components/showcase/motion";
+import { playSanctumSound } from "@/components/vault/vault-audio";
+import { adminLook } from "@/lib/admin-looks";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { dashboardSchema, type AdminDashboardState, type AdminRole, type DashboardAccount, type OverrideStatus } from "@/lib/admin-dashboard";
+import { paletteStyle } from "@/lib/palette-variants";
+import { ADMIN_DASHBOARD_STYLES, type AdminDashboardStyle } from "@/lib/preferences";
+import { DASHBOARD_CONTAINER, dashboardSchema, type AdminDashboardState, type AdminRole, type DashboardAccount, type OverrideStatus } from "@/lib/admin-dashboard";
 import { describeItem, inventoryItemLabel } from "@/lib/inventory";
 import { lootCaseInfo } from "@/lib/lootboxes";
 import { RARITIES, isRarity } from "@/lib/rarities";
@@ -17,6 +24,7 @@ import { createRequestId } from "@/lib/request-id";
 import { winningRule } from "@/lib/slots";
 import type { AdminAccount } from "@/lib/vault-admin";
 import { PlayerTools } from "./admin-players";
+import { FlashyDashboard } from "./admin-dashboard-fx";
 import { countdown, plural, useNow } from "./admin-ui";
 import "./admin-dashboard.css";
 
@@ -183,6 +191,26 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
   const [state, setState] = useState(initial);
   const [confirm, setConfirm] = useState<Confirm | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const settings = useSettings();
+  const router = useRouter();
+  const motion = useMotionLevel();
+  const [style, setStyle] = useState<AdminDashboardStyle>(settings.adminDashboardStyle);
+  const [success, setSuccess] = useState(0);
+  const flashy = style === "flashy";
+  // The same colours and sound setting as Code Admin, so both admin tools feel like one place.
+  const fxStyle = useMemo(() => paletteStyle(adminLook(settings.adminLook).palette), [settings.adminLook]);
+  const soundOn = settings.arcadeSound;
+
+  async function chooseStyle(next: AdminDashboardStyle) {
+    if (next === style) return;
+    setStyle(next);
+    try {
+      await apiFetch("/api/preferences", { method: "PATCH", json: { settings: { adminDashboardStyle: next } } });
+      router.refresh();
+    } catch {
+      toast.error("Could not save the dashboard style. It applies until you leave this page.");
+    }
+  }
   const owner = state.me.role === "owner";
   const overrides = [...state.loot, ...state.slots];
   const queued = overrides.filter((row) => row.status === "queued").length;
@@ -211,8 +239,93 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
     { key: "audit", label: "Audit entries", value: state.audit.length, note: state.audit[0] ? `latest ${when(state.audit[0].createdAt)}` : "nothing recorded yet", icon: <ScrollText aria-hidden className="size-4" />, tone: undefined },
   ];
 
+  const confirmDialog = (
+    <ConfirmDialog
+      key={confirm?.key ?? "none"}
+      confirm={confirm}
+      className={flashy ? "dash-fx-dialog" : undefined}
+      style={flashy ? fxStyle : undefined}
+      onResult={(ok) => {
+        if (!flashy) return;
+        if (soundOn) playSanctumSound(ok ? "confirm" : "error");
+        if (ok) setSuccess((count) => count + 1);
+      }}
+      onClose={() => setConfirm(null)}
+      onDone={() => void refresh(true)}
+    />
+  );
+
+  if (flashy) {
+    return (
+      <FlashyDashboard
+        style={fxStyle}
+        motion={motion}
+        sound={soundOn}
+        success={success}
+        me={{ name: who(state.me.account), role: ROLE_LABEL[state.me.role], owner: state.me.role === "owner" }}
+        stats={stats}
+        toolbar={
+          <>
+            <StylePicker value={style} onChange={(next) => void chooseStyle(next)} flashy />
+            <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={refreshing}>
+              {refreshing ? <Loader2 aria-hidden className="animate-spin" /> : <RefreshCw aria-hidden />}
+              Refresh
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/admin">
+                Code Admin
+                <ArrowUpRight aria-hidden />
+              </Link>
+            </Button>
+          </>
+        }
+        sections={[
+          {
+            id: "overrides",
+            label: "Overrides",
+            icon: <Sparkles aria-hidden className="size-4" />,
+            blurb: "Your own next Lootbox opening and Coin Slots spin, and what you queued before.",
+            badge: queued || undefined,
+            content: (
+              <>
+                <div className="dash-grid">
+                  <LootOverridePanel state={state} ask={ask} />
+                  <SlotOverridePanel state={state} ask={ask} />
+                </div>
+                <OverrideHistory state={state} />
+              </>
+            ),
+          },
+          {
+            id: "access",
+            label: "Access",
+            icon: <ShieldCheck aria-hidden className="size-4" />,
+            blurb: "Who can open the admin tools, and in which role.",
+            content: <AdminAccess state={state} owner={owner} ask={ask} />,
+          },
+          {
+            id: "players",
+            label: "Players",
+            icon: <Users aria-hidden className="size-4" />,
+            blurb: "Look up a player and manage their Season Pass, coins, cosmetics and boosters.",
+            content: <PlayerTools ask={ask} />,
+          },
+          {
+            id: "audit",
+            label: "Audit",
+            icon: <ScrollText aria-hidden className="size-4" />,
+            blurb: "The append-only record of every admin action.",
+            content: <AuditLog state={state} />,
+          },
+        ]}
+      >
+        {confirmDialog}
+      </FlashyDashboard>
+    );
+  }
+
   return (
-    <div className="dash-root">
+    <div className={`${DASHBOARD_CONTAINER} dash-root`}>
       <header className="dash-hero">
         <span className="dash-hero-mark">
           <LayoutDashboard aria-hidden className="size-6" />
@@ -228,6 +341,7 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
           </p>
         </div>
         <div className="dash-hero-actions">
+          <StylePicker value={style} onChange={(next) => void chooseStyle(next)} />
           <Button variant="outline" size="sm" onClick={() => void refresh()} disabled={refreshing}>
             {refreshing ? <Loader2 aria-hidden className="animate-spin" /> : <RefreshCw aria-hidden />}
             Refresh
@@ -265,12 +379,40 @@ export function AdminDashboard({ initial }: { initial: AdminDashboardState }) {
       <PlayerTools ask={ask} />
       <AuditLog state={state} />
 
-      <ConfirmDialog key={confirm?.key ?? "none"} confirm={confirm} onClose={() => setConfirm(null)} onDone={() => void refresh(true)} />
+      {confirmDialog}
     </div>
   );
 }
 
-function ConfirmDialog({ confirm, onClose, onDone }: { confirm: Confirm | null; onClose: () => void; onDone: () => void }) {
+/** Standard / Flashy. Presentation only: both render the same tools, data and checks. */
+function StylePicker({ value, onChange, flashy = false }: { value: AdminDashboardStyle; onChange: (next: AdminDashboardStyle) => void; flashy?: boolean }) {
+  return (
+    <div className={flashy ? "dash-fx-style" : "dash-segment"} role="group" aria-label="Dashboard style">
+      {ADMIN_DASHBOARD_STYLES.map((option) => (
+        <button key={option} type="button" aria-pressed={value === option} onClick={() => onChange(option)}>
+          {option === "flashy" ? <Sparkles aria-hidden className="size-3.5" /> : <LayoutDashboard aria-hidden className="size-3.5" />}
+          {option === "flashy" ? "Flashy" : "Standard"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ConfirmDialog({
+  confirm,
+  className,
+  style,
+  onResult,
+  onClose,
+  onDone,
+}: {
+  confirm: Confirm | null;
+  className?: string;
+  style?: CSSProperties;
+  onResult?: (ok: boolean) => void;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -280,9 +422,11 @@ function ConfirmDialog({ confirm, onClose, onDone }: { confirm: Confirm | null; 
     setError(null);
     try {
       toast.success(await confirm.run());
+      onResult?.(true);
       onClose();
     } catch (failure) {
       setError(message(failure));
+      onResult?.(false);
     } finally {
       setBusy(false);
       onDone();
@@ -291,7 +435,7 @@ function ConfirmDialog({ confirm, onClose, onDone }: { confirm: Confirm | null; 
 
   return (
     <AlertDialog open={Boolean(confirm)} onOpenChange={(open) => !open && !busy && onClose()}>
-      <AlertDialogContent>
+      <AlertDialogContent className={className} style={style}>
         <AlertDialogHeader>
           <AlertDialogTitle>{confirm?.title}</AlertDialogTitle>
           <AlertDialogDescription asChild>

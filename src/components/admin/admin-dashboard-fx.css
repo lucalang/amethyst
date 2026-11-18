@@ -1,0 +1,822 @@
+/* ---------------------------------------------------------------------------
+ * Flashy Admin Dashboard (/admin-dashboard, style "flashy"). A cinematic shell
+ * in the Crimson Sanctum's language (the /admin panel): dark glass, crimson
+ * hairlines, a slow seal and a receding grid. The tools inside are the
+ * Standard dashboard's own panels; this sheet only re-skins them through the
+ * theme tokens and a few scoped rules, so they stay flat and easy to scan.
+ * Colours follow the Code Admin colour choice via --look-* (lib/admin-looks).
+ * Everything decorative is aria-hidden and pointer-events: none. No WebGL.
+ * ------------------------------------------------------------------------- */
+
+.dash-fx,
+.dash-fx-dialog {
+  --fx-red: oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --fx-red-hi: oklch(from #ff5a72 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --fx-red-pale: oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --fx-deep: oklch(from #16030a min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --fx-line: color-mix(in oklab, var(--fx-red) 24%, transparent);
+  --fx-line-hi: color-mix(in oklab, var(--fx-red-hi) 60%, transparent);
+  --fx-glass: linear-gradient(180deg, color-mix(in oklab, var(--fx-deep) 70%, rgb(30 8 14 / 0.84)), rgb(10 3 6 / 0.88));
+  --fx-amber: #ffb24a;
+  --fx-display: var(--font-sanctum, Georgia), Georgia, ui-serif, serif;
+  --fx-mono: var(--font-jetbrains, ui-monospace), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* The app's theme tokens, so every shared control (buttons, inputs, dialogs) takes the Sanctum look. */
+  --background: #070205;
+  --foreground: #f3e9eb;
+  --card: #12050a;
+  --card-foreground: #f3e9eb;
+  --popover: #12050a;
+  --popover-foreground: #f3e9eb;
+  --muted: #1f0c13;
+  --muted-foreground: #b6a6aa;
+  --secondary: #1f0c13;
+  --secondary-foreground: #f3e9eb;
+  --accent: color-mix(in oklab, var(--fx-red) 18%, transparent);
+  --accent-foreground: #fff;
+  --border: var(--fx-line);
+  --input: color-mix(in oklab, var(--fx-red) 30%, transparent);
+  --primary: var(--fx-red);
+  --primary-foreground: #fff;
+  --ring: var(--fx-red-hi);
+  --amethyst: var(--fx-red-hi);
+  --ink-rgb: 255 236 240;
+  color-scheme: dark;
+  color: var(--foreground);
+}
+
+.dash-fx ::selection,
+.dash-fx-dialog ::selection {
+  background: color-mix(in oklab, var(--fx-red) 45%, transparent);
+  color: #fff;
+}
+
+/* Stage ---------------------------------------------------------------------- */
+
+.dash-fx {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100dvh - 3.5rem - 1px);
+  padding-bottom: 6rem;
+  overflow-x: clip;
+  background: radial-gradient(120% 80% at 50% 0%, var(--fx-deep), #080104 55%, #030203 100%);
+}
+
+@media (min-width: 48rem) {
+  .dash-fx {
+    padding-bottom: 2.5rem;
+  }
+}
+
+.dash-fx-sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dash-fx-sky > span {
+  position: absolute;
+}
+
+/* A floor grid receding into the distance, for depth without a scene. */
+.dash-fx-grid {
+  left: -40%;
+  right: -40%;
+  bottom: -6%;
+  height: 58%;
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--fx-red) 26%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--fx-red) 20%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  transform: perspective(520px) rotateX(64deg);
+  transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+  opacity: 0.55;
+  animation: dash-fx-floor 7s linear infinite;
+}
+
+/* The Sanctum seal, smaller and off to the side. */
+.dash-fx-seal {
+  top: 46%;
+  right: -14vmin;
+  width: min(86vmin, 820px);
+  aspect-ratio: 1;
+  translate: 0 -50%;
+  border: 1.5px solid color-mix(in oklab, var(--fx-red) 55%, transparent);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--fx-red) 14%, transparent), transparent 75%);
+  box-shadow: 0 0 80px -12px color-mix(in oklab, var(--fx-red) 45%, transparent), inset 0 0 90px -20px color-mix(in oklab, var(--fx-red) 40%, transparent);
+  opacity: 0.5;
+  animation: dash-fx-seal-in 1.2s ease-out backwards;
+}
+
+.dash-fx-seal::after {
+  content: "";
+  position: absolute;
+  inset: 4%;
+  border: 1px dashed color-mix(in oklab, var(--fx-red-hi) 30%, transparent);
+  border-radius: 50%;
+}
+
+.dash-fx-seal > span {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.dash-fx-seal-runes {
+  inset: 8%;
+  background: repeating-conic-gradient(color-mix(in oklab, var(--fx-red-hi) 65%, transparent) 0deg 0.6deg, transparent 0.6deg 4deg);
+  mask: radial-gradient(closest-side, transparent 88%, #000 89% 97%, transparent 98%);
+  animation: dash-fx-spin 140s linear infinite;
+}
+
+.dash-fx-seal-sweep {
+  inset: 14%;
+  background: conic-gradient(transparent 0deg 260deg, color-mix(in oklab, var(--fx-red) 14%, transparent) 310deg, color-mix(in oklab, var(--fx-red-hi) 55%, transparent) 358deg, var(--fx-red-pale) 360deg);
+  mask: radial-gradient(closest-side, transparent 62%, #000 63% 99%, transparent);
+  animation: dash-fx-spin 7s linear infinite;
+}
+
+.dash-fx-seal-mark {
+  inset: 34%;
+  border: 1px solid color-mix(in oklab, var(--fx-red-hi) 60%, transparent);
+  border-radius: 0 !important;
+  rotate: 45deg;
+  box-shadow: 0 0 22px -4px color-mix(in oklab, var(--fx-red) 70%, transparent);
+  animation: dash-fx-spin 90s linear infinite reverse;
+}
+
+.dash-fx-vignette {
+  inset: 0;
+  background: radial-gradient(130% 100% at 50% 30%, transparent 45%, rgb(0 0 0 / 0.7));
+}
+
+/* After a confirmed action: one light sweep down the screen. */
+.dash-fx-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--fx-red-hi) 22%, transparent) 46%, color-mix(in oklab, var(--fx-red-pale) 45%, transparent) 50%, transparent 54%);
+  background-size: 100% 260%;
+  mix-blend-mode: screen;
+  animation: dash-fx-sweep 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) forwards;
+}
+
+/* HUD navigation ------------------------------------------------------------- */
+
+.dash-fx-hud {
+  position: sticky;
+  top: calc(3.5rem + 1px);
+  z-index: 20;
+  border-bottom: 1px solid var(--fx-line);
+  background: linear-gradient(180deg, rgb(18 4 9 / 0.9), rgb(8 2 5 / 0.82));
+  backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: 0 10px 30px -18px #000, 0 1px 0 color-mix(in oklab, var(--fx-red) 18%, transparent);
+}
+
+.dash-fx-hud-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: 0.45rem 1rem;
+}
+
+@media (min-width: 48rem) {
+  .dash-fx-hud-inner {
+    padding-inline: 1.5rem;
+  }
+}
+
+.dash-fx-sigil {
+  position: relative;
+  flex-shrink: 0;
+  width: 0.8rem;
+  height: 0.8rem;
+  rotate: 45deg;
+  border: 1px solid var(--fx-red-hi);
+  box-shadow: 0 0 12px var(--fx-red), inset 0 0 6px color-mix(in oklab, var(--fx-red) 60%, transparent);
+}
+
+.dash-fx-sigil::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  background: var(--fx-red-pale);
+  box-shadow: 0 0 8px var(--fx-red-hi);
+}
+
+.dash-fx-nav {
+  display: flex;
+  min-width: 0;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-block: 0.15rem;
+}
+
+.dash-fx-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.dash-fx-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.25rem;
+  padding: 0 0.8rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #cbbcc0;
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.dash-fx-link:hover {
+  color: #fff;
+  background: color-mix(in oklab, var(--fx-red) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fx-red-hi) 30%, transparent);
+}
+
+.dash-fx-link:focus-visible {
+  outline: 2px solid var(--fx-red-hi);
+  outline-offset: -2px;
+}
+
+.dash-fx-link[aria-current] {
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--fx-red) 46%, transparent), color-mix(in oklab, var(--fx-red) 18%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fx-red-hi) 65%, transparent), 0 0 18px -2px color-mix(in oklab, var(--fx-red) 45%, transparent);
+  text-shadow: 0 0 10px color-mix(in oklab, var(--fx-red-hi) 80%, transparent);
+}
+
+.dash-fx-link[aria-current]::after {
+  content: "";
+  position: absolute;
+  left: 0.8rem;
+  right: 0.8rem;
+  bottom: -0.5rem;
+  height: 2px;
+  background: var(--fx-red-hi);
+  box-shadow: 0 0 10px var(--fx-red);
+}
+
+.dash-fx-badge {
+  display: inline-grid;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  place-items: center;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  font-family: var(--fx-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0;
+  color: #1a0d00;
+  background: var(--fx-amber);
+  box-shadow: 0 0 10px rgb(255 178 74 / 0.6);
+}
+
+/* Deck (title, toolbar, readouts) -------------------------------------------- */
+
+.dash-fx .dash-root {
+  --dash-accent: var(--fx-red-hi);
+  --dash-line: var(--fx-line);
+  --dash-radius: 8px;
+  --dash-soft: rgb(255 236 240 / 0.035);
+  gap: 2.75rem;
+}
+
+.dash-fx-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
+  scroll-margin-top: calc(3.5rem + 4rem);
+  animation: dash-fx-rise 0.7s calc(var(--i, 0) * 90ms + 120ms) cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+[data-fx-heading]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+[data-fx-heading]:focus-visible {
+  outline: 2px solid var(--fx-red-hi);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.dash-fx-deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+}
+
+.dash-fx-deck-title {
+  min-width: 0;
+}
+
+.dash-fx-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+  font-family: var(--fx-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--fx-red-pale);
+  text-shadow: 0 0 12px color-mix(in oklab, var(--fx-red) 70%, transparent);
+}
+
+.dash-fx-kicker-line {
+  width: 2.25rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--fx-red-hi));
+  box-shadow: 0 0 8px var(--fx-red);
+}
+
+.dash-fx-deck-title h1 {
+  font-family: var(--fx-display);
+  font-size: clamp(2rem, 1.4rem + 2.6vw, 3.25rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  color: #fff4f6;
+  text-shadow:
+    0 0 24px color-mix(in oklab, var(--fx-red) 55%, transparent),
+    0 0 2px color-mix(in oklab, var(--fx-red-pale) 80%, transparent);
+}
+
+.dash-fx-whoami {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.dash-fx-whoami strong {
+  font-weight: 650;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.dash-fx-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dash-fx-toolbar [data-slot="button"][data-variant="default"],
+.dash-fx-toolbar a[data-slot="button"]:not([data-variant]) {
+  box-shadow: 0 0 22px -6px var(--fx-red);
+}
+
+/* Standard / Flashy */
+.dash-fx-style {
+  display: inline-flex;
+  padding: 0.2rem;
+  border: 1px solid var(--fx-line);
+  border-radius: 7px;
+  background: rgb(8 2 5 / 0.7);
+}
+
+.dash-fx-style button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 1.85rem;
+  padding: 0 0.7rem;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--muted-foreground);
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.dash-fx-style button:hover {
+  color: #fff;
+}
+
+.dash-fx-style button[aria-pressed="true"] {
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--fx-red) 55%, transparent), color-mix(in oklab, var(--fx-red) 25%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fx-red-hi) 60%, transparent), 0 0 14px -4px var(--fx-red);
+}
+
+.dash-fx-style button:focus-visible {
+  outline: 2px solid var(--fx-red-hi);
+  outline-offset: 2px;
+}
+
+.dash-fx-readouts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 64rem) {
+  .dash-fx-readouts {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+.dash-fx-readout {
+  --tone: var(--fx-red-hi);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.1rem 0.75rem;
+  padding: 1rem 1.1rem 0.95rem;
+  border: 1px solid var(--fx-line);
+  border-radius: 8px;
+  background: var(--fx-glass);
+  box-shadow:
+    inset 0 1px 0 rgb(255 200 210 / 0.07),
+    0 18px 40px -24px #000;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(calc(var(--lift, 0px) * -1));
+  transition:
+    border-color 0.25s,
+    box-shadow 0.25s;
+  animation: dash-fx-rise 0.7s calc(var(--i, 0) * 70ms + 200ms) cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.dash-fx-readout:hover {
+  border-color: var(--fx-line-hi);
+  box-shadow:
+    inset 0 1px 0 rgb(255 200 210 / 0.1),
+    0 24px 50px -24px #000,
+    0 0 26px -10px var(--tone);
+}
+
+/* Corner brackets, like a targeting frame. */
+.dash-fx-readout::before,
+.dash-fx-readout::after {
+  content: "";
+  position: absolute;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-color: var(--tone);
+  border-style: solid;
+  filter: drop-shadow(0 0 4px var(--tone));
+  pointer-events: none;
+}
+
+.dash-fx-readout::before {
+  top: -1px;
+  left: -1px;
+  border-width: 2px 0 0 2px;
+  border-top-left-radius: 8px;
+}
+
+.dash-fx-readout::after {
+  right: -1px;
+  bottom: -1px;
+  border-width: 0 2px 2px 0;
+  border-bottom-right-radius: 8px;
+}
+
+.dash-fx-readout[data-tone="queued"] {
+  --tone: var(--fx-amber);
+  border-color: rgb(255 178 74 / 0.4);
+}
+
+.dash-fx-readout-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 0%), rgb(255 220 228 / 0.16), transparent 55%);
+  opacity: var(--glare, 0);
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.dash-fx-readout-icon {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--tone) 45%, transparent);
+  border-radius: 6px;
+  color: var(--tone);
+  background: color-mix(in oklab, var(--tone) 12%, transparent);
+  box-shadow: 0 0 14px -4px var(--tone);
+}
+
+.dash-fx-readout-value {
+  grid-column: 1;
+  font-family: var(--fx-display);
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  text-shadow: 0 0 18px color-mix(in oklab, var(--tone) 60%, transparent);
+}
+
+.dash-fx-readout .dash-stat-note {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 39.99rem) {
+  .dash-fx-readouts {
+    gap: 0.5rem;
+  }
+  .dash-fx-readout {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0.8rem 0.85rem;
+  }
+  .dash-fx-readout-icon {
+    display: none;
+  }
+}
+
+/* Section headings ----------------------------------------------------------- */
+
+.dash-fx-heading {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.dash-fx-index {
+  font-family: var(--fx-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: color-mix(in oklab, var(--fx-red-pale) 75%, transparent);
+}
+
+.dash-fx-heading-icon {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border: 1px solid var(--fx-line-hi);
+  border-radius: 6px;
+  color: var(--fx-red-pale);
+  background: linear-gradient(160deg, color-mix(in oklab, var(--fx-red) 30%, transparent), color-mix(in oklab, var(--fx-red) 8%, transparent));
+  box-shadow: 0 0 18px -6px var(--fx-red);
+}
+
+.dash-fx-heading h2 {
+  font-family: var(--fx-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: #fff4f6;
+  text-shadow: 0 0 16px color-mix(in oklab, var(--fx-red) 45%, transparent);
+}
+
+.dash-fx-heading p {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+
+.dash-fx-rule {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--fx-red-hi), color-mix(in oklab, var(--fx-red) 30%, transparent) 30%, transparent);
+}
+
+.dash-fx-rule::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, var(--fx-red-pale), transparent);
+  translate: -100% 0;
+}
+
+/* Arriving from the HUD: the heading flares and a light runs along its rule. */
+.dash-fx-section[data-arrived] .dash-fx-heading-icon {
+  animation: dash-fx-flare 0.9s ease-out;
+}
+
+.dash-fx-section[data-arrived] .dash-fx-rule::after {
+  animation: dash-fx-run 1s cubic-bezier(0.3, 0.6, 0.2, 1);
+}
+
+.dash-fx-section[data-arrived] .dash-fx-body {
+  animation: dash-fx-settle 0.6s ease-out;
+}
+
+.dash-fx-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+/* The shared panels, as Sanctum glass. Flat (no tilt), so data stays easy to scan. */
+.dash-fx .dash-panel {
+  position: relative;
+  border-color: var(--fx-line);
+  background: var(--fx-glass);
+  box-shadow:
+    inset 0 1px 0 rgb(255 200 210 / 0.06),
+    0 26px 60px -34px #000;
+  backdrop-filter: blur(6px);
+}
+
+.dash-fx .dash-panel::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 1.1rem;
+  width: 4.5rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--fx-red-hi), transparent);
+  box-shadow: 0 0 10px var(--fx-red);
+  pointer-events: none;
+}
+
+.dash-fx .dash-panel-icon {
+  border: 1px solid var(--fx-line);
+  border-radius: 6px;
+  color: var(--fx-red-pale);
+  background: color-mix(in oklab, var(--fx-red) 14%, transparent);
+}
+
+.dash-fx .dash-panel-title {
+  letter-spacing: 0.01em;
+  color: #fff4f6;
+}
+
+.dash-fx .dash-pill[data-role="owner"] {
+  box-shadow: 0 0 12px -3px var(--fx-amber);
+}
+
+/* Dialogs portal to <body>, so they carry the tokens themselves. */
+.dash-fx-dialog {
+  border: 1px solid var(--fx-line-hi);
+  background-image: linear-gradient(180deg, color-mix(in oklab, var(--fx-deep) 85%, #12050a), #0a0306);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.5),
+    0 30px 80px -20px #000,
+    0 0 50px -16px var(--fx-red);
+}
+
+.dash-fx-dialog [data-slot="alert-dialog-title"] {
+  font-family: var(--fx-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+}
+
+/* Motion --------------------------------------------------------------------- */
+
+.dash-fx[data-motion="subtle"] :is(.dash-fx-grid, .dash-fx-seal-sweep, .dash-fx-seal-runes, .dash-fx-seal-mark) {
+  animation: none;
+}
+
+.dash-fx[data-motion="off"] *,
+.dash-fx[data-motion="off"] *::before,
+.dash-fx[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+.dash-fx[data-motion="off"] .dash-fx-flash,
+.dash-fx[data-motion="off"] .dash-fx-seal-sweep {
+  display: none;
+}
+
+.dash-fx[data-motion="off"] .dash-fx-readout {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-fx *,
+  .dash-fx *::before,
+  .dash-fx *::after {
+    animation: none !important;
+  }
+  .dash-fx-flash {
+    display: none;
+  }
+}
+
+/* Phones and small tablets */
+@media (max-width: 47.99rem) {
+  .dash-fx .dash-root {
+    gap: 2rem;
+  }
+  .dash-fx-seal {
+    right: -40vmin;
+    top: 30%;
+    opacity: 0.32;
+  }
+  .dash-fx-grid {
+    opacity: 0.35;
+  }
+  .dash-fx-heading h2 {
+    font-size: 1.2rem;
+  }
+  .dash-fx-heading-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+  .dash-fx-link {
+    padding: 0 0.65rem;
+    letter-spacing: 0.1em;
+  }
+  .dash-fx .dash-panel {
+    backdrop-filter: none;
+  }
+}
+
+@keyframes dash-fx-floor {
+  to {
+    background-position: 0 56px;
+  }
+}
+
+@keyframes dash-fx-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes dash-fx-seal-in {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+
+@keyframes dash-fx-rise {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+@keyframes dash-fx-sweep {
+  from {
+    background-position: 0 100%;
+    opacity: 1;
+  }
+  to {
+    background-position: 0 0%;
+    opacity: 0;
+  }
+}
+
+@keyframes dash-fx-flare {
+  0% {
+    box-shadow: 0 0 0 0 var(--fx-red-hi);
+    scale: 1;
+  }
+  35% {
+    box-shadow: 0 0 34px 4px var(--fx-red);
+    scale: 1.12;
+  }
+  100% {
+    box-shadow: 0 0 18px -6px var(--fx-red);
+    scale: 1;
+  }
+}
+
+@keyframes dash-fx-run {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 400% 0;
+  }
+}
+
+@keyframes dash-fx-settle {
+  from {
+    opacity: 0.4;
+    translate: 0 8px;
+  }
+}
