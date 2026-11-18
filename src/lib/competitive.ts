@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ARCADE_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type ArcadeGameId } from "@/lib/arcade";
+import { RANKED_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type RankedGameId } from "@/lib/arcade";
 import { LEADERBOARD_GAMES, isLeaderboardBoard, parseSnakeBoard, snakeBoardLabel, snakeBoardOf } from "@/lib/leaderboards";
 import { SNAKE_MODE_IDS, SNAKE_MODES, SNAKE_SIZE_IDS, SNAKE_SIZES, SNAKE_SPEED_IDS, SNAKE_SPEEDS, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant, type SudokuSize } from "@/lib/sudoku";
@@ -9,8 +9,8 @@ import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant, type SudokuSize } from "@/l
  * settings (a board id, as on the leaderboards); tournaments rotate through the games in the
  * `competitive_boards` table. `_wager_board_direction` in the database checks the same boards.
  */
-export type CompetitiveGame = ArcadeGameId;
-export const COMPETITIVE_GAME_IDS: readonly CompetitiveGame[] = ARCADE_GAMES.map((game) => game.id);
+export type CompetitiveGame = RankedGameId;
+export const COMPETITIVE_GAME_IDS: readonly CompetitiveGame[] = RANKED_GAMES.map((game) => game.id);
 export const isCompetitiveGame = (value: unknown): value is CompetitiveGame =>
   typeof value === "string" && COMPETITIVE_GAME_IDS.includes(value as CompetitiveGame);
 
@@ -89,7 +89,7 @@ export const lowerWins = (game: string) => game === "sudoku";
 export const formatScore = (game: string, score: number) => (lowerWins(game) ? formatDuration(score) : score.toLocaleString("en"));
 
 export function gameTitle(game: string) {
-  return ARCADE_GAMES.find((g) => g.id === game)?.title ?? game;
+  return RANKED_GAMES.find((g) => g.id === game)?.title ?? game;
 }
 /** The chosen settings, e.g. "No Borders · Large · 3 fruit · Fast"; empty for games without settings. */
 export function boardLabel(game: string, board: string) {

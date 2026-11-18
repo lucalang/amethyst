@@ -5,9 +5,20 @@ import { isSnakeVariant } from "@/lib/snake";
 import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize, type SudokuSlot } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
-export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens"] as const;
+export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "front-wars"] as const;
 export type ScoreGame = (typeof SCORE_GAMES)[number];
 export type ArcadeGameId = ScoreGame | "sudoku";
+
+/**
+ * Games that keep only a personal record. They have no coin runs, so they also have no leaderboards, streaks,
+ * Tournaments or Wagers (all of which are built on runs). Everything that lists those reads `RankedGameId`.
+ */
+export const RECORD_ONLY_GAMES = ["front-wars"] as const;
+export type RecordOnlyGame = (typeof RECORD_ONLY_GAMES)[number];
+export type RankedGameId = Exclude<ArcadeGameId, RecordOnlyGame>;
+export type RankedScoreGame = Exclude<ScoreGame, RecordOnlyGame>;
+export const isRankedGame = (id: ArcadeGameId): id is RankedGameId => !(RECORD_ONLY_GAMES as readonly string[]).includes(id);
+export const RANKED_SCORE_GAMES = SCORE_GAMES.filter((game): game is RankedScoreGame => isRankedGame(game)) as [RankedScoreGame, ...RankedScoreGame[]];
 
 export const SUDOKU_DIFFICULTIES = ["easy", "medium", "hard"] as const;
 export type SudokuDifficulty = (typeof SUDOKU_DIFFICULTIES)[number];
@@ -61,11 +72,23 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
     category: "full",
     features: ["Roguelite runs", "Upgrades", "Boss waves"],
   },
+  {
+    id: "front-wars",
+    title: "Front Wars",
+    href: "/arcade/front-wars",
+    blurb: "Territory strategy against bot nations: grow your troops, push your borders and hold 72% of the land to win.",
+    recordLabel: "Best score",
+    category: "full",
+    features: ["Solo vs bots", "Real-time strategy", "Procedural maps"],
+  },
   { id: "zip", title: "Zip", href: "/arcade/zip", blurb: "Draw one path through every cell, passing the numbers in order.", recordLabel: "Best score", category: "minigames" },
   { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Best score", category: "minigames" },
   { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Best score", category: "minigames" },
   { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Best score", category: "minigames" },
 ];
+
+/** Games with coin runs: the ones leaderboards, streaks, Tournaments and Wagers list. */
+export const RANKED_GAMES = ARCADE_GAMES.filter((game): game is ArcadeGame & { id: RankedGameId } => isRankedGame(game.id));
 
 /** The games on one shelf, in registry order. */
 export const arcadeGamesIn = (category: ArcadeCategoryId, games: readonly ArcadeGame[] = ARCADE_GAMES) => games.filter((game) => game.category === category);
@@ -133,7 +156,7 @@ export const DAILY_COIN_LIMIT = 600;
 
 /** `board` tags the run for a leaderboard (a record variant, "" = the main board). */
 export const startRunSchema = z
-  .object({ game: z.enum(SCORE_GAMES), board: z.string().max(40).optional() })
+  .object({ game: z.enum(RANKED_SCORE_GAMES), board: z.string().max(40).optional() })
   .strict()
   .refine((value) => value.board === undefined || value.board === "" || isKnownVariant(value.game, value.board), {
     message: "Unknown board.",

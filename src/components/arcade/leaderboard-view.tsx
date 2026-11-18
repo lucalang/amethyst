@@ -7,13 +7,13 @@ import { ARCADE_CABINETS } from "@/components/arcade/previews";
 import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { ARCADE_GAMES, formatDuration, type ArcadeGameId } from "@/lib/arcade";
+import { ARCADE_GAMES, formatDuration, type RankedGameId } from "@/lib/arcade";
 import { LEADERBOARD_GAMES, LEADERBOARD_GAME_IDS, boardLabel, dailyBoards, leaderboardHref, parseSnakeBoard, snakeBoardLabel, snakeBoardOf, type Leaderboard, type LeaderboardRow, type SnakeBoardParts } from "@/lib/leaderboards";
 import { FRUIT_COUNT, SNAKE_MODES, SNAKE_MODE_IDS, SNAKE_SIZES, SNAKE_SIZE_IDS, SNAKE_SPEEDS, SNAKE_SPEED_IDS, snakeVariant, isSnakeLeaderboardVariant, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 
 type Load = { key: string } & ({ status: "ready"; data: Leaderboard } | { status: "error"; unavailable: boolean });
 
-const titleOf = (game: ArcadeGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
+const titleOf = (game: RankedGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
 const dateFormat = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
 
 function Score({ row, fast }: { row: LeaderboardRow; fast: boolean }) {
@@ -43,7 +43,7 @@ function Row({ row, fast, index = 0 }: { row: LeaderboardRow; fast: boolean; ind
 }
 
 /** Snake boards offer the player's current setup first. */
-export function LeaderboardView({ game: initialGame, board: initialBoard }: { game: ArcadeGameId; board: string }) {
+export function LeaderboardView({ game: initialGame, board: initialBoard }: { game: RankedGameId; board: string }) {
   const snakeSetup = useSettings().arcadeSnake;
   const snakeBoard = snakeSetup.mode === "blender" ? "" : snakeVariant(snakeSetup);
   const [game, setGame] = useState(initialGame);
@@ -75,7 +75,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
     };
   }, [game, board, key]);
 
-  function pickGame(next: ArcadeGameId) {
+  function pickGame(next: RankedGameId) {
     setGame(next);
     setBoard(next === "snake" ? snakeBoard : LEADERBOARD_GAMES[next].boards[0].id);
   }

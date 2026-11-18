@@ -24,7 +24,7 @@ import { useMotionLevel } from "@/components/showcase/motion";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api-client";
 import { ARCADE_EXPLORER_GAME_IDS, type AchievementEvent } from "@/lib/achievements";
-import type { ArcadeGameId, ScoreGame } from "@/lib/arcade";
+import { isRankedGame, type ArcadeGameId, type ScoreGame } from "@/lib/arcade";
 import { isShopGame, type GameLook } from "@/lib/game-cosmetics";
 import { leaderboardHref } from "@/lib/leaderboards";
 import type { MotionLevel } from "@/lib/preferences";
@@ -180,11 +180,12 @@ export function GameShell({
           </nav>
           <div className="flex min-w-0 items-center gap-1.5">
             <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
-            <GameStreak game={game} />
+            {/* Streaks and ranks come from coin runs; record-only games (see RECORD_ONLY_GAMES) have neither. */}
+            {isRankedGame(game) ? <GameStreak game={game} /> : null}
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             {actions}
-            {leaderboard !== null ? <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
+            {leaderboard !== null && isRankedGame(game) ? <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
               <Link href={leaderboardHref(game, leaderboard)} prefetch={false} aria-label={`${title} leaderboard`} title={`${title} leaderboard`}>
                 <Trophy aria-hidden />
                 <span aria-hidden className="hidden sm:inline">Ranks</span>

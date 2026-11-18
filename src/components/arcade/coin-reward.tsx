@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Coins, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import type { RunReward, ScoreGame } from "@/lib/arcade";
+import type { RankedScoreGame, RunReward } from "@/lib/arcade";
 import { announceCompleted, announcePlayed } from "@/lib/arcade-streaks";
 import { cn } from "@/lib/utils";
 import { useUiSound } from "@/components/layout/ui-sound";
@@ -25,7 +25,7 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * the payout. Finishing again, retrying or reloading never pays twice: the server answers with
  * the original result. Starting a run is quiet: if it fails, the game plays on without coins.
  */
-export function useArcadeRun(game: ScoreGame) {
+export function useArcadeRun(game: RankedScoreGame) {
   const run = useRef<Promise<string | null> | null>(null);
   const limited = useRef(false);
   // Only the latest run's result is shown; an older answer arriving late is ignored.

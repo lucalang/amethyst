@@ -16,6 +16,7 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   patches: { hue: "#5fd0a0", genre: "Logic" },
   tango: { hue: "#ffc93d", genre: "Logic" },
   queens: { hue: "#e86bff", genre: "Logic" },
+  "front-wars": { hue: "#ff6b4a", genre: "Strategy" },
 };
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
@@ -290,6 +291,37 @@ const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
       {[[1, 0], [4, 1], [2, 2], [0, 3], [3, 4]].map(([x, y]) => (
         <path key={`${x}-${y}`} d={`M${x * 12 + 2.5} ${y * 15 + 11}l1-6 2.5 3 2.5-4 2.5 4 2.5-3 1 6z`} className="fill-foreground" />
       ))}
+    </g>
+  ),
+  "front-wars": (
+    <g>
+      <rect width="160" height="100" fill="#0d2a3f" opacity="0.55" />
+      <clipPath id="fw-preview-land">
+        <path d="M22 30 Q30 12 56 14 Q74 6 96 14 Q122 10 136 26 Q150 40 140 58 Q146 78 124 86 Q100 96 78 88 Q52 94 34 82 Q14 70 18 52 Q12 40 22 30Z" />
+      </clipPath>
+      <g clipPath="url(#fw-preview-land)">
+        <rect width="160" height="100" fill="#3b4a2e" />
+        <path d="M0 0H70L64 22L72 40L58 52L40 50L0 56Z" fill="#4b7bff" />
+        <path d="M70 0H160V36L132 40L112 32L92 38L72 40L64 22Z" fill="#ff6b4a" />
+        <path d="M0 56L40 50L58 52L66 70L60 100H0Z" fill="#2fcf8f" />
+        <path d="M132 40L160 36V100H96L92 76L104 60L118 56Z" fill="#c78bff" />
+        <path d="M58 52L72 40L92 38L112 32L132 40L118 56L104 60L92 76L66 70Z" fill="#5c6b44" />
+        <g fill="none" stroke="#0b0614" strokeOpacity="0.55" strokeWidth="1.4">
+          <path d="M70 0L64 22L72 40L58 52L40 50L0 56" />
+          <path d="M72 40L92 38L112 32L132 40L160 36" />
+          <path d="M58 52L66 70L60 100" />
+          <path d="M132 40L118 56L104 60L92 76L96 100" />
+        </g>
+      </g>
+      <path d="M22 30 Q30 12 56 14 Q74 6 96 14 Q122 10 136 26 Q150 40 140 58 Q146 78 124 86 Q100 96 78 88 Q52 94 34 82 Q14 70 18 52 Q12 40 22 30Z" fill="none" stroke="#e8f4ff" strokeOpacity="0.35" strokeWidth="1" />
+      <path d="M44 34 Q66 26 88 26" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeDasharray="4 3" />
+      <path d="M86 21 L95 26 L86 31 Z" fill="#fff" />
+      <g fontFamily="ui-sans-serif, system-ui" fontWeight="700" textAnchor="middle" fill="#fff">
+        <text x="36" y="40" fontSize="7">12.4K</text>
+        <text x="112" y="22" fontSize="7">9.8K</text>
+        <text x="26" y="74" fontSize="6">7.1K</text>
+        <text x="126" y="74" fontSize="6">8.3K</text>
+      </g>
     </g>
   ),
 };

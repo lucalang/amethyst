@@ -38,6 +38,7 @@ export const LazyFruit = wrap(dynamic<RecordProps>(() => import("./game-fruit"),
 export const LazyStacker = wrap(dynamic<RecordProps>(() => import("./game-stacker"), { ssr: false, loading: Loading }));
 export const LazyGemChase = wrap(dynamic<RecordProps>(() => import("./game-gem-chase"), { ssr: false, loading: Loading }));
 export const LazySpaceBlaster = wrap(dynamic<RecordProps>(() => import("./game-space-blaster"), { ssr: false, loading: Loading }));
+export const LazyFrontWars = wrap(dynamic<RecordProps>(() => import("./game-front-wars"), { ssr: false, loading: Loading }));
 export const LazyZip = wrap(dynamic<RecordProps>(() => import("./game-zip"), { ssr: false, loading: Loading }));
 export const LazyPatches = wrap(dynamic<RecordProps>(() => import("./game-patches"), { ssr: false, loading: Loading }));
 export const LazyTango = wrap(dynamic<RecordProps>(() => import("./game-tango"), { ssr: false, loading: Loading }));

@@ -1,9 +1,9 @@
 import * as z from "zod";
-import { ARCADE_GAMES, type ArcadeGameId } from "@/lib/arcade";
+import { RANKED_GAMES, type RankedGameId } from "@/lib/arcade";
 
 /** A game's daily play streak (UTC days). Recovery prices come from the server. */
 export type ArcadeStreak = {
-  game: ArcadeGameId;
+  game: RankedGameId;
   current: number;
   best: number;
   playedToday: boolean;
@@ -11,7 +11,7 @@ export type ArcadeStreak = {
   recovery: { date: string; streak: number; cost: number; ready: boolean } | null;
 };
 
-export type ArcadeStreaks = Record<ArcadeGameId, ArcadeStreak>;
+export type ArcadeStreaks = Record<RankedGameId, ArcadeStreak>;
 
 type StreakRow = {
   game: string;
@@ -28,7 +28,7 @@ type StreakRow = {
 export function toArcadeStreaks(rows: readonly StreakRow[]): ArcadeStreaks {
   const byGame = new Map(rows.map((row) => [row.game, row]));
   return Object.fromEntries(
-    ARCADE_GAMES.map(({ id }) => {
+    RANKED_GAMES.map(({ id }) => {
       const row = byGame.get(id);
       const streak: ArcadeStreak = {
         game: id,
@@ -45,7 +45,7 @@ export function toArcadeStreaks(rows: readonly StreakRow[]): ArcadeStreaks {
   ) as ArcadeStreaks;
 }
 
-const gameSchema = z.enum(ARCADE_GAMES.map((game) => game.id) as [ArcadeGameId, ...ArcadeGameId[]]);
+const gameSchema = z.enum(RANKED_GAMES.map((game) => game.id) as [RankedGameId, ...RankedGameId[]]);
 
 export const recoverStreakSchema = z
   .object({
@@ -71,8 +71,8 @@ export function announcePlayed() {
 /** Fired after the server confirmed a successfully finished round (detail: the game id). */
 export const ARCADE_COMPLETED_EVENT = "archive:arcade-completed";
 
-export function announceCompleted(game: ArcadeGameId) {
-  window.dispatchEvent(new CustomEvent<ArcadeGameId>(ARCADE_COMPLETED_EVENT, { detail: game }));
+export function announceCompleted(game: RankedGameId) {
+  window.dispatchEvent(new CustomEvent<RankedGameId>(ARCADE_COMPLETED_EVENT, { detail: game }));
 }
 
 export const dayWord = (count: number) => `${count} day${count === 1 ? "" : "s"}`;

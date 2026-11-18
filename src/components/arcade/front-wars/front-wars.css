@@ -1,0 +1,351 @@
+/* ---------------------------------------------------------------------------
+ * Front Wars (/arcade/front-wars): the map stage, its overlays and the command
+ * panel. Map colors live in the canvas (front-wars/render.ts); everything here
+ * follows the app theme. Phones: map above, panel below. Wide: panel beside it.
+ * ------------------------------------------------------------------------- */
+
+.fw-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+@media (min-width: 64rem) {
+  .fw-layout:not([data-phase="setup"]) {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+    align-items: start;
+  }
+}
+
+.fw-stage {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(0.75rem * var(--radius-unit, 1));
+  background: #0e263e;
+}
+
+.fw-canvas {
+  display: block;
+  width: 100%;
+  height: clamp(320px, 64dvh, 760px);
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-phase="setup"] .fw-canvas {
+  height: clamp(420px, 72dvh, 760px);
+}
+
+:fullscreen .fw-canvas {
+  height: calc(100dvh - 11rem);
+}
+
+/* Map chrome: the current order and the hovered tile (top left), zoom (top right), a notice (bottom). */
+.fw-mapbar {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  max-width: calc(100% - 7rem);
+  pointer-events: none;
+}
+
+.fw-mode,
+.fw-inspect {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgb(8 6 14 / 0.7);
+  backdrop-filter: blur(6px);
+}
+
+.fw-mode[data-mode="city"],
+.fw-mode[data-mode="post"] {
+  color: #1c1204;
+  background: #ffd36b;
+}
+
+.fw-zoom {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.fw-zoom [data-slot="button"] {
+  background: rgb(8 6 14 / 0.65);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+
+.fw-notice {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  max-width: min(32rem, calc(100% - 1.5rem));
+  translate: -50% 0;
+  border-radius: 0.6rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  color: #fff;
+  background: rgb(8 6 14 / 0.78);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
+  pointer-events: none;
+  animation: fw-notice 3.2s ease forwards;
+}
+
+.fw-notice[data-ok="false"] {
+  box-shadow: inset 0 0 0 1px rgb(255 92 92 / 0.6);
+}
+
+@keyframes fw-notice {
+  0% {
+    opacity: 0;
+    translate: -50% 6px;
+  }
+  8%,
+  80% {
+    opacity: 1;
+    translate: -50% 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Setup: a card over the empty sea. */
+.fw-setup {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 1rem;
+  background:
+    radial-gradient(80% 60% at 50% 40%, rgb(91 140 255 / 0.18), transparent 70%),
+    rgb(8 6 14 / 0.35);
+}
+
+.fw-setup-card {
+  display: grid;
+  gap: 1rem;
+  width: min(34rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: calc(0.9rem * var(--radius-unit, 1));
+  padding: 1.1rem;
+  background: color-mix(in oklab, var(--background) 92%, transparent);
+  box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.fw-options {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.fw-options legend {
+  margin-bottom: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.fw-options p {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.fw-segment {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+.fw-segment button {
+  min-height: 2.25rem;
+  border-radius: calc(0.45rem * var(--radius-unit, 1));
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.fw-segment button:hover {
+  color: var(--foreground);
+}
+
+.fw-segment button[aria-checked="true"] {
+  color: var(--foreground);
+  background: var(--surface-raised, var(--background));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--amethyst) 45%, transparent);
+}
+
+.fw-segment button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.fw-rules {
+  display: grid;
+  gap: 0.5rem;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.75rem 0.85rem;
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+.fw-rules h3 {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.fw-rules ul {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1rem;
+  font-size: 0.8125rem;
+  list-style: disc;
+  color: var(--muted-foreground);
+}
+
+.fw-rules strong {
+  color: var(--foreground);
+}
+
+/* Command panel */
+.fw-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 40rem) and (max-width: 63.99rem) {
+  .fw-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .fw-panel > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.fw-card {
+  display: grid;
+  gap: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: calc(0.75rem * var(--radius-unit, 1));
+  padding: 0.75rem 0.85rem;
+  background: var(--surface);
+}
+
+.fw-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.fw-ratio {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.fw-ratio input[type="range"] {
+  width: 100%;
+  accent-color: var(--amethyst);
+}
+
+.fw-attacks {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.fw-attacks li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.3rem 0.3rem 0.6rem;
+  font-size: 0.8125rem;
+  background: color-mix(in oklab, var(--foreground) 5%, transparent);
+}
+
+.fw-nations {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fw-nations li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fw-nations li[data-alive="false"] {
+  opacity: 0.5;
+}
+
+.fw-nations li[data-you="true"] .text-sm {
+  font-weight: 700;
+}
+
+.fw-swatch {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.2rem;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25);
+}
+
+.fw-share {
+  display: block;
+  height: 4px;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+.fw-share > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 400ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-notice {
+    animation: none;
+  }
+}

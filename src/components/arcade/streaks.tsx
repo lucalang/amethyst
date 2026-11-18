@@ -19,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { ARCADE_GAMES, type ArcadeGameId } from "@/lib/arcade";
+import { ARCADE_GAMES, type RankedGameId } from "@/lib/arcade";
 import { dailyDate } from "@/lib/arcade-daily";
 import {
   ARCADE_COMPLETED_EVENT,
@@ -34,7 +34,7 @@ import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { useUiSound } from "@/components/layout/ui-sound";
 
-const gameTitle = (game: ArcadeGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
+const gameTitle = (game: RankedGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
 
 type StreakState = { date: string; streaks: ArcadeStreaks; celebrated?: boolean };
 
@@ -46,7 +46,7 @@ const fetchStreaks = () =>
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
 /** Claims today's celebration, retrying connection and server errors; `retried` means an earlier attempt may have landed. */
-async function claimCelebration(game: ArcadeGameId): Promise<{ celebration: StreakCelebration; retried: boolean } | null> {
+async function claimCelebration(game: RankedGameId): Promise<{ celebration: StreakCelebration; retried: boolean } | null> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const body = await apiFetch<{ celebration: StreakCelebration }>("/api/arcade/streaks/celebrate", { method: "POST", json: { game } });
@@ -241,7 +241,7 @@ export function StreakLine({ streak, onRecover }: { streak: ArcadeStreak; onReco
 }
 
 /** The current game's streak beside its title, with details and recovery in a popover. */
-export function GameStreak({ game }: { game: ArcadeGameId }) {
+export function GameStreak({ game }: { game: RankedGameId }) {
   const { effects } = useArcade();
   const sound = useUiSound();
   const { streaks, celebrated, replace, markCelebrated, refresh } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));

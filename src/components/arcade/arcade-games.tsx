@@ -16,10 +16,11 @@ import {
   SUDOKU_LABELS,
   arcadeGamesIn,
   formatDuration,
+  isRankedGame,
   type ArcadeCategoryId,
   type ArcadeGame,
-  type ArcadeGameId,
   type ArcadeRecords,
+  type RankedGameId,
 } from "@/lib/arcade";
 import type { ArcadeStreak, ArcadeStreaks } from "@/lib/arcade-streaks";
 import { catalogMatcher } from "@/lib/catalog-search";
@@ -109,7 +110,7 @@ export function ArcadeGames({
   const [query, setQuery] = useState("");
   const [shelf, setShelf] = useState<ArcadeCategoryId>(isShelf(initialShelf) ? initialShelf : DEFAULT_SHELF);
   const { streaks, replace } = useArcadeStreaks(initialStreaks, () => false);
-  const [recovering, setRecovering] = useState<ArcadeGameId | null>(null);
+  const [recovering, setRecovering] = useState<RankedGameId | null>(null);
   const match = catalogMatcher(query);
   const games = match ? ARCADE_GAMES.filter((game) => match(game.title, ARCADE_CABINETS[game.id].genre, game.blurb, ...(game.features ?? []))) : ARCADE_GAMES;
   const counts = Object.fromEntries(ARCADE_CATEGORIES.map((category) => [category.id, arcadeGamesIn(category.id, games).length])) as Record<ArcadeCategoryId, number>;
@@ -170,7 +171,7 @@ export function ArcadeGames({
             <ul aria-label={category.title} className={full ? "grid grid-cols-1 gap-5" : "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"}>
               {list.map((game, index) => {
                 const cabinet = ARCADE_CABINETS[game.id];
-                const streak = streaks?.[game.id];
+                const streak = isRankedGame(game.id) ? streaks?.[game.id] : undefined;
                 return (
                   <li key={game.id} className="enter enter-card min-w-0" style={{ "--enter-index": index + 1, "--cab": cabinet.hue } as CSSProperties}>
                     {full ? (
@@ -187,7 +188,7 @@ export function ArcadeGames({
                         </header>
                         <div className="arcade-cab-feature">
                           <CabinetScreen game={game} />
-                          <CabinetBody game={game} records={records} streak={streak} onRecover={() => setRecovering(game.id)}>
+                          <CabinetBody game={game} records={records} streak={streak} onRecover={() => streak && setRecovering(streak.game)}>
                             {game.features?.length ? (
                               <ul aria-label={`${game.title} features`} className="arcade-cab-tags">
                                 {game.features.map((feature) => (
@@ -210,7 +211,7 @@ export function ArcadeGames({
                           <i className="arcade-cab-button" />
                           <i className="arcade-cab-button" />
                         </span>
-                        <CabinetBody game={game} records={records} streak={streak} onRecover={() => setRecovering(game.id)} />
+                        <CabinetBody game={game} records={records} streak={streak} onRecover={() => streak && setRecovering(streak.game)} />
                       </article>
                     )}
                   </li>
