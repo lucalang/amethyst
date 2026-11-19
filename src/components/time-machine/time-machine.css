@@ -361,6 +361,88 @@
   }
 }
 
+/* Scope: what this rewind covers, shown on the chooser and through the whole player. */
+.rw-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  margin-right: 0.6rem;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.25);
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  letter-spacing: 0.14em;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rw-scope[data-collection] {
+  border-color: rgb(var(--rose-rgb) / 0.7);
+  background: linear-gradient(120deg, rgb(var(--rose-rgb) / 0.3), rgb(var(--accent-rgb) / 0.25));
+  box-shadow: 0 0 18px rgb(var(--rose-rgb) / 0.35);
+}
+.tm-scope-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.tm-scope-line .rw-scope {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+}
+.tm-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: rgb(255 255 255 / 0.8);
+  background: rgb(255 255 255 / 0.06);
+  transition: background 160ms;
+}
+.tm-change:hover {
+  background: rgb(255 255 255 / 0.14);
+}
+.tm-scope-all {
+  width: 100%;
+  max-width: 44rem;
+  min-height: 11rem;
+  background: linear-gradient(140deg, rgb(var(--accent-rgb) / 0.32), rgb(var(--rose-rgb) / 0.12) 60%, rgb(10 8 20 / 0.7));
+}
+.tm-scope-all b {
+  font-size: 1.8rem;
+}
+.tm-tiles-small {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+}
+.tm-tile-small {
+  min-height: 7.5rem;
+  border-color: color-mix(in srgb, var(--tm-c, rgb(255 255 255 / 0.12)) 55%, transparent);
+}
+.tm-tile-small .tm-covers {
+  width: 4.4rem;
+  height: 5.6rem;
+}
+.tm-tile-small .tm-cover {
+  width: 3rem;
+  left: calc(var(--i) * 0.7rem);
+}
+.tm-tile-small b {
+  font-size: 1.1rem;
+}
+
 /* ------------------------------------------------------------------------------------------- Player */
 
 .rw-player {
@@ -381,27 +463,41 @@
   display: grid;
   padding: 9.5rem clamp(1rem, 5vw, 4.5rem) 7.5rem;
   transform-style: preserve-3d;
-  animation: rw-exit 700ms cubic-bezier(0.55, 0, 0.9, 0.45) both;
-  animation-delay: calc(var(--dur, 999) * 1s - 750ms);
+  /* Arriving: the whole scene comes up out of the tunnel while its own pieces stagger in. */
+  animation: rw-enter 1s cubic-bezier(0.16, 0.9, 0.2, 1) both;
 }
 .rw-scene.rw-k-end {
-  animation: none;
   overflow-y: auto;
 }
-.rw-scene.is-ghost {
+/* Leaving: the same element flies past the camera from wherever it is, while the next scene arrives. */
+.rw-scene.is-leaving {
+  z-index: 3;
   pointer-events: none;
-  animation: rw-exit 600ms cubic-bezier(0.55, 0, 0.9, 0.45) both;
+  animation: rw-exit 850ms cubic-bezier(0.5, 0, 0.75, 0.35) both;
 }
-.rw-scene.is-ghost *,
-.rw-scene.is-ghost *::before,
-.rw-scene.is-ghost *::after {
-  animation: none !important;
+.rw-scene:not(.is-leaving) {
+  z-index: 2;
+}
+@keyframes rw-enter {
+  from {
+    opacity: 0;
+    transform: translateZ(-420px);
+    filter: blur(14px);
+  }
+  55% {
+    opacity: 1;
+  }
 }
 @keyframes rw-exit {
+  from {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
   to {
     opacity: 0;
-    transform: translateZ(520px) scale(1.04);
-    filter: blur(10px);
+    transform: translateZ(560px) scale(1.06);
+    filter: blur(12px);
   }
 }
 .rw-player.is-paused *,
@@ -499,6 +595,12 @@
   justify-content: space-between;
   gap: 1rem;
   margin-top: 0.6rem;
+}
+.rw-top-row .rw-kicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 0.3rem;
 }
 .rw-chapter {
   overflow: hidden;

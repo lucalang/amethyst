@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowUpRight, ChevronLeft, ChevronRight, Pause, Play, RotateCcw, Rewind, X } from "lucide-react";
-import { useUiSound } from "@/components/layout/ui-sound";
+import { ArrowUpRight, ChevronLeft, ChevronRight, Library, Pause, Play, RotateCcw, Rewind, Volume2, VolumeX, X } from "lucide-react";
 import { collectionPath, entryPath } from "@/lib/collections";
 import {
   dayNumber,
@@ -21,12 +20,12 @@ import {
 import { cn } from "@/lib/utils";
 import { StoryArt, preloadArt } from "./story-art";
 import { TunnelCanvas } from "./tunnel-canvas";
+import type { RewindAudio } from "./rewind-audio";
 import type { Tunnel } from "./tunnel";
 
 /** Seconds the clock takes to roll to a scene's date (and the tunnel surges). */
 const ROLL = 1.5;
 const IDLE_MS = 2800;
-const GHOST_MS = 650;
 
 const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
@@ -223,7 +222,9 @@ const artOf = (scene: Scene | undefined): Moment[] => (!scene ? [] : scene.kind 
 /**
  * Plays a Story: one scene at a time, with the clock rolling back to each scene's date while the tunnel surges.
  * Scene motion is CSS; the clock and tunnel are driven from one animation loop without re-rendering React.
- * Pausing freezes all of it. A scene that leaves stays mounted briefly as a "ghost" so its exit always finishes.
+ * Pausing freezes all of it. Scenes crossfade through depth: the one
+ * leaving keeps its own element (so it leaves from exactly where it is) and flies past the camera while the next one
+ * rises out of the tunnel; it is removed only when its exit animation has actually ended.
  */
 export function RewindPlayer({
   story,
@@ -231,6 +232,9 @@ export function RewindPlayer({
   zone,
   collections,
   calm,
+  audio,
+  muted,
+  onMute,
   onExit,
   onChooseAnother,
 }: {
@@ -239,16 +243,20 @@ export function RewindPlayer({
   zone: string;
   collections: Map<string, TimeCollection>;
   calm: boolean;
+  /** The rewind's sound (null when the browser has no Web Audio). */
+  audio: RewindAudio | null;
+  muted: boolean;
+  onMute: () => void;
   onExit: () => void;
   onChooseAnother: () => void;
 }) {
-  const play = useUiSound();
   const scenes = story.scenes;
   const last = scenes.length - 1;
   const [at, setAt] = useState(0);
   const [round, setRound] = useState(0);
   const [playing, setPlaying] = useState(!calm);
-  const [ghost, setGhost] = useState<{ at: number; key: string } | null>(null);
+  /** Mounted scenes, oldest first: the last is the current one, any before it are leaving. Order never changes. */
+  const [stack, setStack] = useState<{ key: string; at: number }[]>([{ key: "0-0", at: 0 }]);
   const [idle, setIdle] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const clockDate = useRef<HTMLParagraphElement>(null);
@@ -257,7 +265,6 @@ export function RewindPlayer({
   const elapsed = useRef(0);
   const roll = useRef({ from: dayNumber(index.today), to: dayNumber(index.today), surge: true });
   const idleTimer = useRef(0);
-  const ghostTimer = useRef(0);
   const swipe = useRef<{ x: number; y: number } | null>(null);
   const scene = scenes[at];
   const ended = at === last;
@@ -271,14 +278,27 @@ export function RewindPlayer({
     [index],
   );
 
-  /** Enters scene `next`: the old one becomes a ghost, the clock aims at the new date. */
+  /** The sound of arriving at a scene, timed to its animation (the visuals carry the same cues when muted). */
+  function cue(next: Scene, chapter: number, moved: boolean) {
+    if (!audio) return;
+    if (next.kind === "title") audio.title();
+    else if (next.kind === "end") audio.home(ROLL);
+    else if (moved) audio.travel(ROLL, chapter);
+    else audio.arrive(chapter);
+    if (calm) return;
+    if (next.kind === "entries") next.entries.slice(0, 5).forEach((_, i) => audio.reveal(i, (moved ? ROLL * 0.4 : 0) + 0.5 + i * 0.26 + 0.55));
+    else if (next.kind === "collection" && next.first) audio.reveal(2, 1.05);
+    else if (next.kind === "fact") audio.fact(0.4);
+  }
+
+  /** Enters scene `next`: the current one starts leaving, the clock aims at the new date. */
   const goTo = useCallback(
     (next: number) => {
       const target = Math.max(0, Math.min(last, next));
       if (target === at) return;
-      window.clearTimeout(ghostTimer.current);
-      setGhost({ at, key: `${round}-${at}-${Date.now()}` });
-      ghostTimer.current = window.setTimeout(() => setGhost(null), GHOST_MS);
+      // With motion off nothing animates out, so the old scene goes at once.
+      const key = `${round}-${target}-${Date.now()}`;
+      setStack((previous) => (calm ? [{ key, at: target }] : [...previous.slice(-2), { key, at: target }]));
       const nextScene = scenes[target];
       const from = roll.current.to;
       const to = nextScene.date ? dayNumber(nextScene.date) : from;
@@ -286,16 +306,15 @@ export function RewindPlayer({
       elapsed.current = 0;
       if (calm) paintClock(to);
       tunnel.current?.setDirection(nextScene.kind === "end" ? -1 : 1);
-      if (to !== from) play("swoosh");
-      if (nextScene.kind === "end") play("reveal");
+      cue(nextScene, target, to !== from);
       setAt(target);
     },
-    [at, calm, last, paintClock, play, round, scenes],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cue only reads the audio prop
+    [at, calm, last, paintClock, round, scenes],
   );
 
   const replay = useCallback(() => {
-    window.clearTimeout(ghostTimer.current);
-    setGhost(null);
+    setStack([{ key: `${round + 1}-0`, at: 0 }]);
     roll.current = { from: dayNumber(index.today), to: dayNumber(index.today), surge: true };
     elapsed.current = 0;
     paintClock(dayNumber(index.today));
@@ -303,8 +322,9 @@ export function RewindPlayer({
     setRound((n) => n + 1);
     setAt(0);
     setPlaying(!calm);
-    play("power");
-  }, [calm, index.today, paintClock, play]);
+    cue(scenes[0], 0, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cue only reads the audio prop
+  }, [calm, index.today, paintClock, scenes]);
 
   const toggle = useCallback(() => {
     if (ended) {
@@ -347,6 +367,14 @@ export function RewindPlayer({
     preloadArt([...artOf(scenes[at + 1]), ...artOf(scenes[at + 2])]);
   }, [at, scenes]);
 
+  // The sound bed breathes only while the rewind plays.
+  useEffect(() => {
+    // Reduced motion steps through by hand: chapter sounds still play, the bed stays off.
+    audio?.setPaused(!playing && !calm);
+    audio?.setBed(playing && !calm);
+  }, [audio, playing, calm]);
+  useEffect(() => () => audio?.setBed(false), [audio]);
+
   // A hidden tab pauses (the CSS and the clock stay in step).
   useEffect(() => {
     const onVisibility = () => {
@@ -358,18 +386,17 @@ export function RewindPlayer({
 
   useEffect(() => {
     rootRef.current?.focus({ preventScroll: true });
-    play("power");
+    cue(scenes[0], 0, false);
     return () => {
       window.clearTimeout(idleTimer.current);
-      window.clearTimeout(ghostTimer.current);
     };
     // Entering plays once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const keys = useRef({ toggle, goTo, at, onExit, replay });
+  const keys = useRef({ toggle, goTo, at, onExit, replay, onMute });
   useEffect(() => {
-    keys.current = { toggle, goTo, at, onExit, replay };
+    keys.current = { toggle, goTo, at, onExit, replay, onMute };
   });
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
@@ -382,6 +409,7 @@ export function RewindPlayer({
       else if (key === "ArrowRight" || key === "l") k.goTo(k.at + 1);
       else if (key === "ArrowLeft" || key === "j") k.goTo(k.at - 1);
       else if (key === "r" || key === "Home") k.replay();
+      else if (key === "m") k.onMute();
       else return;
       event.preventDefault();
       wake();
@@ -418,7 +446,7 @@ export function RewindPlayer({
       className={cn("rw-player", !playing && "is-paused", calm && "is-calm", idle && playing && !ended && "is-idle")}
       role="region"
       aria-roledescription="rewind"
-      aria-label={`Rewind: ${story.title}`}
+      aria-label={`Rewind of ${story.scope ?? "your whole archive"}: ${story.title}`}
       tabIndex={-1}
       onPointerMove={wake}
       onPointerDown={wake}
@@ -441,19 +469,25 @@ export function RewindPlayer({
           else if (Math.hypot(dx, dy) < 8 && !ended) toggle();
         }}
       >
-        {ghost ? (
-          <section key={ghost.key} className={`rw-scene rw-k-${scenes[ghost.at].kind} is-ghost`} aria-hidden>
-            <SceneView scene={scenes[ghost.at]} {...sceneProps} />
-          </section>
-        ) : null}
-        <section
-          key={`${round}-${at}`}
-          className={`rw-scene rw-k-${scene.kind}`}
-          style={{ "--dur": scene.kind === "end" ? 999 : sceneDuration(scene) } as CSSProperties}
-          aria-label={label}
-        >
-          <SceneView scene={scene} {...sceneProps} />
-        </section>
+        {stack.map((item, i) => {
+          const leaving = i < stack.length - 1;
+          const shown = scenes[item.at];
+          return (
+            <section
+              key={item.key}
+              className={cn("rw-scene", `rw-k-${shown.kind}`, leaving && "is-leaving")}
+              style={{ "--dur": shown.kind === "end" ? 999 : sceneDuration(shown) } as CSSProperties}
+              aria-label={leaving ? undefined : label}
+              aria-hidden={leaving || undefined}
+              inert={leaving}
+              onAnimationEnd={(event) => {
+                if (leaving && event.target === event.currentTarget && event.animationName === "rw-exit") setStack((previous) => previous.filter((entry) => entry.key !== item.key));
+              }}
+            >
+              <SceneView scene={shown} {...sceneProps} />
+            </section>
+          );
+        })}
       </div>
 
       <div className="rw-clock" aria-hidden>
@@ -480,13 +514,24 @@ export function RewindPlayer({
         <div className="rw-top-row">
           <div className="min-w-0">
             <p className="rw-kicker">
-              Amethyst Time Machine · Chapter {at + 1} of {scenes.length}
+              <span className="rw-scope" data-collection={story.scope ? "" : undefined}>
+                <Library aria-hidden className="size-3" />
+                {story.scope ?? "All archive"}
+              </span>
+              Chapter {at + 1} of {scenes.length}
             </p>
             <p className="rw-chapter">{label}</p>
           </div>
-          <button type="button" className="rw-btn" onClick={onExit} aria-label="Exit rewind" title="Exit (Esc)">
-            <X aria-hidden />
-          </button>
+          <div className="flex items-center gap-2">
+            {audio ? (
+              <button type="button" className="rw-btn" onClick={onMute} aria-pressed={muted} aria-label={muted ? "Turn sound on" : "Mute"} title={muted ? "Sound off (M)" : "Sound on (M)"}>
+                {muted ? <VolumeX aria-hidden /> : <Volume2 aria-hidden />}
+              </button>
+            ) : null}
+            <button type="button" className="rw-btn" onClick={onExit} aria-label="Exit rewind" title="Exit (Esc)">
+              <X aria-hidden />
+            </button>
+          </div>
         </div>
       </header>
 

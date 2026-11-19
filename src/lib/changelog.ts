@@ -54,22 +54,23 @@ const RELEASES: readonly Release[] = [
     id: "2026-11-19-time-machine",
     date: "2026-11-19",
     title: "Amethyst Time Machine",
-    intro: "A personal rewind: pick a memory and watch your archive play back from today into the past, then return to the present.",
+    intro: "A personal rewind of your whole archive or a single collection: pick a memory and watch it play back from today into the past, then return to the present.",
     icon: "sparkles",
     highlights: [
-      { kind: "new", feature: "Rewinds", text: "On This Day, one month ago, one year ago, any year, any date range or everything. Each plays as a full-screen story through a time tunnel while the clock rolls back to every date." },
-      { kind: "new", feature: "Your real memories", text: "Your own covers rise out of the past with the day each entry was added and its collection. Facts like your busiest month only appear when they're true, and new collections get their own moment." },
+      { kind: "new", feature: "All archive or one collection", text: "Rewind everything, or pick one collection. A collection rewind only ever shows that collection's entries, artwork and facts, and its name stays on screen the whole time." },
+      { kind: "new", feature: "Rewinds", text: "On This Day, one month ago, one year ago, any year, any date range or everything, each played as a full-screen story through a time tunnel while the clock rolls back to every date." },
+      { kind: "new", feature: "Sound design", text: "An original, soft score made for the journey: a quiet bed, airy rolls back in time that land on a bell, gentle notes as memories appear and a warm chord home. Follows your Sound effects setting, with a mute button (M)." },
       { kind: "new", feature: "Back to the present", text: "The story ends back at today with Replay, another rewind, and links to every entry and collection it showed. Pause, skip chapters or leave any time." },
     ],
     details: {
       new: [
         {
           title: "Amethyst Time Machine",
-          body: "Choose a rewind and it plays like a short film: a title, then chapters from the most recent back to the earliest, each with its date on a rolling clock, then a return to today. Every date is when an entry was added to your archive, never a release date, shown in your time zone. Rewinds with nothing to show are not offered, and nothing is made up.",
+          body: "First choose All archive or a collection, then a rewind. It plays like a short film: a title, then chapters from the most recent back to the earliest, each with its date on a rolling clock, then a return to today. Every date is when an entry was added, never a release date, shown in your time zone. Facts like your busiest month only appear when they're true, rewinds with nothing to show are not offered, and nothing is made up.",
           points: [
-            "Space pauses, arrow keys or swipes skip chapters, R replays, Esc leaves",
+            "Space pauses, arrow keys or swipes skip chapters, R replays, M mutes, Esc goes back",
             "The chapter bar at the top jumps to any chapter",
-            "With reduced motion the story holds still and you step through chapters yourself; sound effects follow your setting",
+            "Sound starts only after you choose a rewind; with reduced motion the story holds still and you step through it yourself",
             "Only the artwork for the next chapters is loaded while it plays",
           ],
           where: "Explore menu → Time Machine, or the Archive page",

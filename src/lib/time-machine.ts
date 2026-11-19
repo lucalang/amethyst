@@ -154,7 +154,8 @@ export function onThisDay(index: TimeIndex) {
 const withCovers = (entries: Moment[]) => [...entries].sort((a, b) => Number(Boolean(b.coverUrl)) - Number(Boolean(a.coverUrl)) || b.at - a.at).slice(0, 3);
 
 /** The rewinds this archive can actually play, with what each would feature. Unavailable ones are left out. */
-export function buildOptions(index: TimeIndex): RewindOption[] {
+/** `scope`: the collection's name when only that collection is rewound (the index then holds only its entries). */
+export function buildOptions(index: TimeIndex, scope: string | null = null): RewindOption[] {
   const options: RewindOption[] = [];
   if (!index.total) return options;
 
@@ -205,7 +206,7 @@ export function buildOptions(index: TimeIndex): RewindOption[] {
     options.push({
       id: "all",
       spec: { kind: "all" },
-      title: "Everything",
+      title: scope ? `All of ${scope}` : "Everything",
       detail: `All ${index.total.toLocaleString("en")} ${index.total === 1 ? "entry" : "entries"}, back to ${formatDay(index.days[0], { month: "long", year: "numeric" })}`,
       count: index.total,
       covers: withCovers(index.moments),
@@ -228,6 +229,8 @@ export type Scene =
   | { kind: "end"; id: string; date: string; summary: string[] };
 
 export type Story = {
+  /** The collection rewound, or null for the whole archive. */
+  scope: string | null;
   id: string;
   title: string;
   scenes: Scene[];
@@ -279,7 +282,7 @@ type Dated = { date: string; rank: number; scene: Scene };
  * A period rewind: the scenes of `entries` (all added within [from, to]) from the most recent back to the
  * earliest, with facts only where they hold. `grain` decides whether scenes are months or single days.
  */
-function periodScenes(index: TimeIndex, collections: TimeCollection[], entries: Moment[], from: string, to: string, zone: string, prefix: string) {
+function periodScenes(index: TimeIndex, collections: TimeCollection[], entries: Moment[], from: string, to: string, zone: string, prefix: string, scope: string | null) {
   const dated: Dated[] = [];
   const undated: Scene[] = [];
   const span = dayNumber(to) - dayNumber(from);
@@ -317,7 +320,7 @@ function periodScenes(index: TimeIndex, collections: TimeCollection[], entries: 
     kind: "fact",
     id: `${prefix}-total`,
     date: null,
-    eyebrow: "Added to your archive",
+    eyebrow: scope ? `Added to ${scope}` : "Added to your archive",
     big: entries.length.toLocaleString("en"),
     unit: entries.length === 1 ? "entry" : "entries",
     text: `between ${formatDay(from, { month: "long", day: "numeric", year: "numeric" })} and ${formatDay(to, { month: "long", day: "numeric", year: "numeric" })}`,
@@ -378,12 +381,15 @@ function periodScenes(index: TimeIndex, collections: TimeCollection[], entries: 
   return { scenes: [...undated, ...dated.map((item) => item.scene)], featured: dated.flatMap((item) => (item.scene.kind === "entries" ? item.scene.entries : [])) };
 }
 
-/** Builds a rewind, or null when the archive has nothing to rewind through for it. */
-export function buildStory(index: TimeIndex, collections: TimeCollection[], spec: RewindSpec, zone: string): Story | null {
+/**
+ * Builds a rewind, or null when there is nothing to rewind through. For a collection rewind, pass only that
+ * collection's entries (in `index`) and the collection itself (in `collections`), plus its name as `scope`.
+ */
+export function buildStory(index: TimeIndex, collections: TimeCollection[], spec: RewindSpec, zone: string, scope: string | null = null): Story | null {
   const today = index.today;
   let title = "";
   let subtitle = "";
-  let eyebrow = "Rewind";
+  let eyebrow = scope ? `Rewind · ${scope}` : "Rewind";
   let note = "";
   let id: string = spec.kind;
   let scenes: Scene[] = [];
@@ -411,7 +417,7 @@ export function buildStory(index: TimeIndex, collections: TimeCollection[], spec
     title = spec.months === 1 ? "One month ago" : "One year ago";
     subtitle = formatDay(target, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     note = `${plural(entries.length, "entry", "entries")} added within ${WINDOW} days of this date`;
-    const built = periodScenes(index, collections, entries, isoOfNumber(dayNumber(target) - WINDOW), isoOfNumber(dayNumber(target) + WINDOW), zone, spec.months === 1 ? "month" : "yearago");
+    const built = periodScenes(index, collections, entries, isoOfNumber(dayNumber(target) - WINDOW), isoOfNumber(dayNumber(target) + WINDOW), zone, spec.months === 1 ? "month" : "yearago", scope);
     // The window's total is already in the opening note; keep the day scenes and any collection that began then.
     scenes = built.scenes.filter((scene) => !(scene.kind === "fact" && scene.date === null));
     featured = built.featured;
@@ -422,15 +428,15 @@ export function buildStory(index: TimeIndex, collections: TimeCollection[], spec
     const entries = momentsBetween(index, from, to);
     if (!entries.length) return null;
     if (spec.kind === "all") {
-      title = "Everything";
+      title = scope ? `All of ${scope}` : "Everything";
       subtitle = `${formatDay(from, { month: "long", year: "numeric" })} to today`;
-      note = `${plural(entries.length, "entry", "entries")} in your archive`;
+      note = `${plural(entries.length, "entry", "entries")} in ${scope ?? "your archive"}`;
       id = "all";
       // Each year, most recent first, then the very first entry.
       const years = new Map<number, Moment[]>();
       for (const entry of entries) years.set(yearOf(entry.day), [...(years.get(yearOf(entry.day)) ?? []), entry]);
       const kept = [...years.keys()].sort((a, b) => (years.get(b)!.length - years.get(a)!.length) || b - a).slice(0, 8).sort((a, b) => b - a);
-      scenes.push({ kind: "fact", id: "all-total", date: null, eyebrow: "Added to your archive", big: entries.length.toLocaleString("en"), unit: entries.length === 1 ? "entry" : "entries", text: `across ${plural(years.size, "year", "years")}`, bars: null });
+      scenes.push({ kind: "fact", id: "all-total", date: null, eyebrow: scope ? `Added to ${scope}` : "Added to your archive", big: entries.length.toLocaleString("en"), unit: entries.length === 1 ? "entry" : "entries", text: `across ${plural(years.size, "year", "years")}`, bars: null });
       for (const year of kept) {
         const list = years.get(year)!;
         const shown = featuredOf(list, Math.min(4, list.length));
@@ -445,14 +451,14 @@ export function buildStory(index: TimeIndex, collections: TimeCollection[], spec
         scenes.splice(anchor + 1, 0, { kind: "fact", id: "all-top-year", date, eyebrow: "Your most active year", big: String(peak[0]), unit: "", text: `${plural(peak[1], "entry", "entries")} added, more than any other year`, bars: [...years.keys()].sort().slice(-12).map((year) => ({ label: String(year), value: years.get(year)!.length, peak: year === peak[0] })) });
       }
       const first = entries[0];
-      scenes.push({ kind: "entries", id: "all-first", date: first.day, label: "Where it began", sub: `Your first entry, added ${formatDay(first.day, { month: "long", day: "numeric", year: "numeric" })}`, entries: [first], more: 0 });
+      scenes.push({ kind: "entries", id: "all-first", date: first.day, label: "Where it began", sub: `${scope ? `The first entry in ${scope}` : "Your first entry"}, added ${formatDay(first.day, { month: "long", day: "numeric", year: "numeric" })}`, entries: [first], more: 0 });
       featured.push(first);
     } else {
       title = spec.label;
       subtitle = `${formatDay(from, { month: "long", day: "numeric", year: "numeric" })} to ${formatDay(to, { month: "long", day: "numeric", year: "numeric" })}`;
-      eyebrow = "Rewind to";
+      eyebrow = scope ? `Rewind · ${scope}` : "Rewind to";
       id = `range-${from}-${to}`;
-      const built = periodScenes(index, collections, entries, from, to, zone, "range");
+      const built = periodScenes(index, collections, entries, from, to, zone, "range", scope);
       scenes = built.scenes;
       featured = built.featured;
     }
@@ -469,8 +475,8 @@ export function buildStory(index: TimeIndex, collections: TimeCollection[], spec
       kind: "end",
       id: `${id}-end`,
       date: today,
-      summary: [`You went back ${distanceFromToday(index, reached).replace(" ago", "")}`, `${plural(unique.length, "memory", "memories")} on the way${featuredCollections.length ? `, ${plural(featuredCollections.length, "collection", "collections")} begun` : ""}`],
+      summary: [...(scope ? [`Only from ${scope}`] : []), `You went back ${distanceFromToday(index, reached).replace(" ago", "")}`, `${plural(unique.length, "memory", "memories")} on the way${featuredCollections.length ? `, ${plural(featuredCollections.length, "collection", "collections")} begun` : ""}`],
     },
   ];
-  return { id, title, scenes: all, featured: { entries: unique, collections: featuredCollections } };
+  return { id, scope, title, scenes: all, featured: { entries: unique, collections: featuredCollections } };
 }
