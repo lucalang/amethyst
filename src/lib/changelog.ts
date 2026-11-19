@@ -51,6 +51,33 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-time-machine",
+    date: "2026-11-19",
+    title: "Amethyst Time Machine",
+    intro: "Travel through your archive on a glowing 3D timeline and rediscover what you added in the past.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Time Machine", text: "A 3D path through your archive with one lane per year. Days with entries rise as glowing pillars with your artwork above them. Drag to travel, scroll to zoom from all time down to a single day, or click an entry to fly to it." },
+      { kind: "new", feature: "Rediscover", text: "Entries added a month ago and a year ago, On This Day across earlier years, notable moments such as your first entry and busiest day, and when each collection was created. Empty days are shown as empty." },
+      { kind: "new", feature: "Calendar and keyboard", text: "A calendar and list view reaches the same memories without 3D, and the timeline works with arrow keys, a scrubber and touch. Opening an entry and going back returns you to the same point in time." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Amethyst Time Machine",
+          body: "Every date shown is when an entry was added to your archive, not a release date or any date about the entry itself. The timeline only uses your own entries and collections; nothing is made up, and days, months and years without entries say so and point to the closest ones.",
+          points: [
+            "Zoom levels: All time, Year, Month and Day, plus a dive into a single entry",
+            "Arrow keys step through time, + and − zoom, PageUp/PageDown jump between entries, T returns to today",
+            "Respects your motion and sound settings; with motion off the camera moves instantly, and without WebGL you get the calendar view",
+          ],
+          where: "Explore menu → Time Machine, or the Archive page",
+          link: { href: "/time-machine", label: "Open the Time Machine" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-puzzle-levels",
     date: "2026-11-19",
     title: "Puzzle levels",

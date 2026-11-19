@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import { LibraryBig } from "lucide-react";
+import Link from "next/link";
+import { Hourglass, LibraryBig } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { CollectionCard, ContinueCard } from "@/components/home/archive-cards";
@@ -38,6 +40,14 @@ export default async function ArchivePage() {
           </div>
           {collections ? (
             <div className="flex flex-wrap items-center gap-2.5">
+              {entries ? (
+                <Button asChild variant="outline" className="h-10 px-4">
+                  <Link href="/time-machine">
+                    <Hourglass aria-hidden />
+                    Time Machine
+                  </Link>
+                </Button>
+              ) : null}
               {collections > 1 ? <ArrangeCollectionsButton collections={categories} /> : null}
               <NewCategoryButton className="h-10 px-4" />
               <NewEntryButton collections={categories} className="h-10 px-4" />

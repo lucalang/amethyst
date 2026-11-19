@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Info, KeyRound, LayoutDashboard, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Hourglass, Info, KeyRound, LayoutDashboard, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -82,6 +82,7 @@ const TOOL_GROUPS: readonly ToolGroup[] = [
     id: "explore",
     label: "Explore",
     links: [
+      { href: "/time-machine", label: "Time Machine", icon: Hourglass },
       { href: "/tour", label: "The Tour", icon: Clapperboard },
       { href: "/version-history", label: "Version History", icon: History },
       { href: "/whats-new", label: "What’s New", icon: Megaphone },

@@ -20,7 +20,7 @@ export const DESTINATIONS: Destination[] = [
     tagline: "Collections, entries and their workspaces",
     href: "/collections",
     icon: LibraryBig,
-    prefixes: ["/collections", "/entries", "/franchise"],
+    prefixes: ["/collections", "/entries", "/franchise", "/time-machine"],
   },
   {
     id: "todo",
