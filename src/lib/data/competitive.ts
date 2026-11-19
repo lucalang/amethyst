@@ -2,11 +2,13 @@ import "server-only";
 import type { CompetitiveGame, TournamentState, WagerList, WagerState } from "@/lib/competitive";
 import { loadArcadeRecords } from "@/lib/data/arcade";
 import { loadGameLoadout } from "@/lib/data/shop";
+import { isShopGame } from "@/lib/game-cosmetics";
 import type { AuthContext } from "@/lib/supabase/auth";
 
 /** A game's personal records keyed by board ("" = default) and the equipped look, for a competitive play page. */
 export async function loadCompetitivePlay(ctx: AuthContext, game: CompetitiveGame) {
-  const [all, look] = await Promise.all([loadArcadeRecords(ctx), loadGameLoadout(ctx, game)]);
+  // Games without a shop (Sumbreak) play with the default look.
+  const [all, look] = await Promise.all([loadArcadeRecords(ctx), isShopGame(game) ? loadGameLoadout(ctx, game) : Promise.resolve({})]);
   const records: Record<string, number> = {};
   for (const [key, score] of Object.entries(all)) {
     if (score === undefined) continue;

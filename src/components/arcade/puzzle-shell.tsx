@@ -110,7 +110,8 @@ export function usePuzzleSession<P>(game: PuzzleGame, generate: Generate<P>, ini
     play("power");
   }
 
-  function solve(metrics: Record<string, number> = {}) {
+  /** `proof` goes to the server with the score, for games whose solves it checks (Sumbreak). */
+  function solve(metrics: Record<string, number> = {}, proof?: unknown) {
     if (phaseRef.current !== "playing") return;
     const ms = elapsed();
     const final = puzzleScore(ms / 1000);
@@ -118,8 +119,8 @@ export function usePuzzleSession<P>(game: PuzzleGame, generate: Generate<P>, ini
     setSeconds(Math.floor(ms / 1000));
     setScore(final);
     setPhase("solved");
-    submit(final, { variant });
-    finish(final, { seconds: Math.round(ms / 1000), hints: hintCount.current, ...metrics });
+    submit(final, { variant, proof });
+    finish(final, { seconds: Math.round(ms / 1000), hints: hintCount.current, ...metrics }, { proof });
     play("win");
   }
 

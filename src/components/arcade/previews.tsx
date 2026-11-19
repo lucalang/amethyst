@@ -16,6 +16,7 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   patches: { hue: "#5fd0a0", genre: "Logic" },
   tango: { hue: "#ffc93d", genre: "Logic" },
   queens: { hue: "#e86bff", genre: "Logic" },
+  sumbreak: { hue: "#7ad7f0", genre: "Math" },
   "front-wars": { hue: "#ff6b4a", genre: "Strategy" },
 };
 
@@ -291,6 +292,26 @@ const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
       {[[1, 0], [4, 1], [2, 2], [0, 3], [3, 4]].map(([x, y]) => (
         <path key={`${x}-${y}`} d={`M${x * 12 + 2.5} ${y * 15 + 11}l1-6 2.5 3 2.5-4 2.5 4 2.5-3 1 6z`} className="fill-foreground" />
       ))}
+    </g>
+  ),
+  sumbreak: (
+    <g transform="translate(47 10)">
+      {[
+        [0, 0, 6], [1, 0, 6], [2, 0, 12],
+        [0, 1, 3], [1, 1, 0], [2, 1, 12],
+        [0, 2, 3], [1, 2, 6], [2, 2, 24],
+      ].map(([x, y, n]) =>
+        n ? (
+          <g key={`${x}-${y}`}>
+            <rect x={x * 22 + 2} y={y * 27 + 2} width="18" height="23" rx="5" className={n >= 12 ? "fill-amethyst/45" : "fill-foreground/[0.12]"} />
+            <text x={x * 22 + 11} y={y * 27 + 17} textAnchor="middle" fontSize="9" fontWeight="800" className="fill-foreground">{n}</text>
+          </g>
+        ) : (
+          <rect key={`${x}-${y}`} x={x * 22 + 6} y={y * 27 + 9} width="10" height="10" rx="5" className="fill-none stroke-foreground/20" strokeDasharray="2 2" />
+        ),
+      )}
+      <path d="M11 59v-9" className="stroke-rose" strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M7.5 53.5 11 49.5l3.5 4" className="fill-none stroke-rose" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </g>
   ),
   "front-wars": (

@@ -153,6 +153,12 @@ export type Database = {
               Update: { user_id?: string; game?: string; variant?: string; score?: number; achieved_at?: string }
               Relationships: [{ foreignKeyName: "arcade_records_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
+            "arcade_runs": {
+              Row: { id: string; user_id: string; game: string; variant: string; board: string | null; started_at: string; finished_at: string | null; score: number | null; outcome: string }
+              Insert: { [_ in never]: never }
+              Update: { [_ in never]: never }
+              Relationships: []
+            },
             "coin_wallets": {
               Row: { user_id: string; balance: number; earned: number; spent: number; updated_at: string }
               Insert: { user_id: string; balance?: number; earned?: number; spent?: number; updated_at?: string }

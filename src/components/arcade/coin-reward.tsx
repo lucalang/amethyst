@@ -58,7 +58,7 @@ export function useArcadeRun(game: RankedScoreGame) {
    * Report the run's score. `keepalive` is for leaving the page (no retries, nothing shown);
    * `announce` shows a brief toast for coins earned by a run that ended without a result card.
    */
-  const finish = useCallback((score: number, metrics: Record<string, number> = {}, options: { keepalive?: boolean; announce?: boolean } = {}) => {
+  const finish = useCallback((score: number, metrics: Record<string, number> = {}, options: { keepalive?: boolean; announce?: boolean; proof?: unknown } = {}) => {
     const pending = run.current;
     run.current = null;
     if (!pending) return;
@@ -86,7 +86,7 @@ export function useArcadeRun(game: RankedScoreGame) {
         try {
           const body = await apiFetch<{ reward: RunReward }>(`/api/arcade/runs/${id}`, {
             method: "POST",
-            json: { score: Math.max(0, Math.floor(score)), metrics },
+            json: options.proof === undefined ? { score: Math.max(0, Math.floor(score)), metrics } : { score: Math.max(0, Math.floor(score)), metrics, proof: options.proof },
             keepalive: options.keepalive,
           });
           show({ status: "done", reward: body.reward });

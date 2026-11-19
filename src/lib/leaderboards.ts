@@ -2,6 +2,7 @@ import * as z from "zod";
 import { RANKED_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, type RankedGameId } from "@/lib/arcade";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 import { dailyDate, dailyVariant } from "@/lib/arcade-daily";
+import { SUMBREAK_LEVELS } from "@/lib/minigames/sumbreak";
 import { ZIP_LEVELS } from "@/lib/minigames/zip";
 import { BLEND_MODE_IDS, SNAKE_MODES, SNAKE_SIZES, SNAKE_SPEEDS, isSnakeLeaderboardVariant, type SnakeMode, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 
@@ -71,6 +72,7 @@ export const LEADERBOARD_GAMES: Record<RankedGameId, LeaderboardGame> = {
   patches: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
   tango: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
   queens: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
+  sumbreak: { order: "high", scoreLabel: "Score", boards: SUMBREAK_LEVELS.map((level) => ({ id: level.id, label: level.label })), daily: true },
 };
 
 export const LEADERBOARD_GAME_IDS = RANKED_GAMES.map((game) => game.id);

@@ -51,6 +51,31 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-sumbreak",
+    date: "2026-11-19",
+    title: "Sumbreak",
+    intro: "A new puzzle minigame: merge equal neighbours into their sum until a single tile is left.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Sumbreak", text: "Drag a number onto an equal neighbour above, below or beside it: they merge into their sum and leave a gap. Plan the order so no number is left without a partner." },
+      { kind: "new", feature: "Daily and practice", text: "A daily puzzle for everyone plus Easy (3×3), Medium (4×4) and Hard (5×5) practice boards, each with its own record and leaderboard." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Sumbreak",
+          body: "Every board is generated to have a solution. Drag a tile onto a matching neighbour or tap one tile and then the other; the sum lands where you dropped it and the tile you moved from stays empty, since nothing slides. Undo, Restart and Hint (+15 seconds) help when you get stuck: a hint steps back to a position that can still be solved and shows the next merge. Faster solves score more, like the other puzzles, and every scored solve is checked by the server.",
+          points: [
+            "Mouse, touch and keyboard: arrows move, Space picks a tile, an arrow merges it that way",
+            "Daily puzzle, practice records, leaderboards, coins and Wagers work like the other puzzles",
+          ],
+          where: "Arcade → Minigames",
+          link: { href: "/arcade/sumbreak", label: "Play Sumbreak" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-front-wars-battles",
     date: "2026-11-19",
     title: "Front Wars: readable battles, smarter rivals",

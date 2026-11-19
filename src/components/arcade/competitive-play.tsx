@@ -17,6 +17,7 @@ import {
   LazyGemChase,
   LazyPatches,
   LazyQueens,
+  LazySumbreak,
   LazySnake,
   LazySpaceBlaster,
   LazyStacker,
@@ -41,6 +42,7 @@ const GAMES: Record<Exclude<CompetitiveGame, "sudoku">, (props: GameProps) => Re
   patches: ({ records, look }) => <LazyPatches records={records} look={look} />,
   tango: ({ records, look }) => <LazyTango records={records} look={look} />,
   queens: ({ records, look }) => <LazyQueens records={records} look={look} />,
+  sumbreak: ({ records, look }) => <LazySumbreak records={records} look={look} />,
 };
 
 /** A tournament or wager run: the game locked to one board, with runs started through the competition. */

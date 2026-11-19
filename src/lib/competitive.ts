@@ -75,6 +75,7 @@ export const GAME_SETTINGS: Record<CompetitiveGame, SettingsSpec> = {
   patches: NO_SETTINGS,
   tango: NO_SETTINGS,
   queens: NO_SETTINGS,
+  sumbreak: boardPicker("sumbreak", "level", "Difficulty"),
 };
 
 /** Whether a wager can use this game and board (mirrors `_wager_board_direction`). */

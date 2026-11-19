@@ -352,13 +352,15 @@ export function useRecords(game: ScoreGame, initial: Record<string, number>) {
   const saved = useRef(initial);
 
   const submit = useCallback(
-    (score: number, options: { keepalive?: boolean; variant?: string } = {}) => {
+    (score: number, options: { keepalive?: boolean; variant?: string; proof?: unknown } = {}) => {
       const variant = options.variant ?? "";
       const previous = saved.current[variant] ?? 0;
       if (score <= previous) return false;
       saved.current = { ...saved.current, [variant]: score };
       setRecords((current) => ({ ...current, [variant]: Math.max(current[variant] ?? 0, score) }));
-      apiFetch("/api/arcade/records", { method: "POST", json: { game, variant, score }, keepalive: options.keepalive }).catch(() => {
+      // A game the server verifies (Sumbreak) sends the proof of its solve along with the score.
+      const json = options.proof === undefined ? { game, variant, score } : { game, variant, score, proof: options.proof };
+      apiFetch("/api/arcade/records", { method: "POST", json, keepalive: options.keepalive }).catch(() => {
         if (saved.current[variant] === score) saved.current = { ...saved.current, [variant]: previous };
         if (!options.keepalive) toast.error("Your new best could not be saved. It will be retried after your next run.");
       });

@@ -1,11 +1,12 @@
 import * as z from "zod";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
+import { SUMBREAK_LEVEL_VARIANTS } from "@/lib/minigames/sumbreak";
 import { ZIP_LEVEL_VARIANTS } from "@/lib/minigames/zip";
 import { isSnakeVariant } from "@/lib/snake";
 import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize, type SudokuSlot } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
-export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "front-wars"] as const;
+export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "sumbreak", "front-wars"] as const;
 export type ScoreGame = (typeof SCORE_GAMES)[number];
 export type ArcadeGameId = ScoreGame | "sudoku";
 
@@ -85,6 +86,7 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Best score", category: "minigames" },
   { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Best score", category: "minigames" },
   { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Best score", category: "minigames" },
+  { id: "sumbreak", title: "Sumbreak", href: "/arcade/sumbreak", blurb: "Merge equal neighbours into their sum until a single tile is left. Order is everything.", recordLabel: "Best score", category: "minigames" },
 ];
 
 /** Games with coin runs: the ones leaderboards, streaks, Tournaments and Wagers list. */
@@ -102,7 +104,7 @@ export function arcadeShelfSummary() {
 }
 
 /** Logic puzzles with a Practice board ("") and a daily puzzle; scored by solve speed. */
-export const PUZZLE_GAMES = ["zip", "patches", "tango", "queens"] as const;
+export const PUZZLE_GAMES = ["zip", "patches", "tango", "queens", "sumbreak"] as const;
 export type PuzzleGame = (typeof PUZZLE_GAMES)[number];
 
 /** Puzzle score: 1,000 for an instant solve, 4 fewer per second, never below 100. */
@@ -130,6 +132,7 @@ function isKnownVariant(game: ScoreGame, variant: string) {
   if (game === "fruit-slice") return (FRUIT_MODE_VARIANTS as readonly string[]).includes(variant) || isRecentDailyVariant(variant);
   if (game === "stacker") return variant === STACKER_CLASSIC || isRecentDailyVariant(variant);
   if (game === "zip") return ZIP_LEVEL_VARIANTS.includes(variant) || isRecentDailyVariant(variant);
+  if (game === "sumbreak") return SUMBREAK_LEVEL_VARIANTS.includes(variant) || isRecentDailyVariant(variant);
   if ((PUZZLE_GAMES as readonly string[]).includes(game)) return isRecentDailyVariant(variant);
   return false;
 }
@@ -142,6 +145,8 @@ export const recordScoreSchema = z
     /** "" is a game's main record; Snake setups, 2048 sizes and daily challenges keep their own. */
     variant: z.string().max(40).default(""),
     score: z.number().int().min(0).max(MAX_ARCADE_SCORE),
+    /** A verified game's solve (Sumbreak), replayed by the server before the record is saved. */
+    proof: z.unknown().optional(),
   })
   .strict()
   .refine((value) => value.variant === "" || isKnownVariant(value.game, value.variant), {
@@ -171,6 +176,8 @@ export const finishRunSchema = z
       .record(z.string().regex(/^[a-zA-Z]{1,24}$/), z.number().finite().min(0).max(MAX_ARCADE_SCORE))
       .refine((metrics) => Object.keys(metrics).length <= 8, "Too many metrics.")
       .default({}),
+    /** A verified game's solve (Sumbreak), replayed by the server before the run can pay. */
+    proof: z.unknown().optional(),
   })
   .strict();
 

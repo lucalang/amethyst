@@ -43,6 +43,7 @@ export const LazyZip = wrap(dynamic<RecordProps>(() => import("./game-zip"), { s
 export const LazyPatches = wrap(dynamic<RecordProps>(() => import("./game-patches"), { ssr: false, loading: Loading }));
 export const LazyTango = wrap(dynamic<RecordProps>(() => import("./game-tango"), { ssr: false, loading: Loading }));
 export const LazyQueens = wrap(dynamic<RecordProps>(() => import("./game-queens"), { ssr: false, loading: Loading }));
+export const LazySumbreak = wrap(dynamic<RecordProps>(() => import("./game-sumbreak"), { ssr: false, loading: Loading }));
 export const LazySudoku = wrap(
   dynamic<{
     regular: Partial<Record<SudokuSize, SudokuSave | null>>;
