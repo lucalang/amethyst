@@ -51,6 +51,27 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-workspace-themes",
+    date: "2026-11-19",
+    title: "Workspace Themes, reimagined",
+    intro: "An entry's Workspace Theme now dresses the whole workspace, from the header to the explorer and the frame around your files, instead of tinting the page.",
+    icon: "palette",
+    highlights: [
+      { kind: "improved", feature: "Full art direction", text: "All 20 themes have their own materials, seams and corner pieces that grip the workspace, plus themed explorer selection, file bar and header artwork." },
+      { kind: "improved", feature: "Higanbana", text: "Black lacquer veined with red, bone-white thread seams, the explorer stitched to your files like a mask, and spider lilies holding the corners." },
+      { kind: "new", feature: "Live previews", text: "The Workspace theme dialog shows each theme on a miniature of your workspace, with the entry's own cover, before you pick it." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Workspace Themes",
+          body: "Each theme now has a complete look: Amethyst's geode facets and gem clasps, Paper & Ink's margin rule and photo corners, Retro Terminal's CRT scanlines and block cursor, Neon Arcade's grid and neon tubes, Ocean Glass's frosted panels, Crimson Night's riveted steel, Soft Sakura's blossoms, Monochrome OLED's crop marks, Mint Paper's herbarium, Higanbana's lacquer and lilies, Koi Bridge's vermilion railing, Petal Diary's washi tape, Spring Sonata's staff and piano keys, Sabbath Neon's brush slash, Chrome Runner's hazard stripes, Menacing Gold's Art Deco fans, Hell Butterfly's embers, Quintet Bloom's five-colour ribbon and Snow Glam's frost. Decorations never cover content or catch clicks, text and focus rings keep their contrast, and the theme stays inside that entry's workspace.",
+          where: "An entry → More actions → Workspace theme",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-ui-pass",
     date: "2026-11-19",
     title: "Clearer setup, shops and buttons",

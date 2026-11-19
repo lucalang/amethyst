@@ -92,8 +92,8 @@ export function EntryHeader({
   );
 
   return (
-    <header data-testid="entry-header" className="header-scroll-exit relative border-b border-white/[0.06]" style={accent}>
-      <div aria-hidden className="relative h-36 overflow-hidden sm:h-44 md:h-56 lg:h-64">
+    <header data-testid="entry-header" data-ws="header" className="header-scroll-exit relative border-b border-white/[0.06]" style={accent}>
+      <div aria-hidden data-ws="banner" className="relative h-36 overflow-hidden sm:h-44 md:h-56 lg:h-64">
         {banner ? (
           <MediaImage
             src={banner}

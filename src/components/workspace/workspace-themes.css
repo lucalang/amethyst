@@ -1,0 +1,731 @@
+/*
+ * Workspace Themes: the art direction an entry's workspace gets when the entry has its own theme
+ * (`data-workspace-theme` on .entry-workspace; the palette itself comes from the app theme blocks in globals.css).
+ *
+ * Every rule here is scoped to `.entry-workspace[data-workspace-theme]`, so the app bar, other entries and every
+ * other route are untouched, and an entry that follows the app theme keeps the plain workspace. The structure
+ * hooks are `data-ws` attributes on the workspace's own parts:
+ *
+ *   header  · the entry header (title, cover, actions)     banner  · its artwork backdrop
+ *   frame   · the bordered workspace (explorer + file)     explorer · the file tree rail
+ *   toolbar · the file's sticky path bar
+ *
+ * A theme is a block of --ws-* tokens (material, seams, clasps, states) plus, where it earns it, one or two
+ * signature details. Clasps are the frame-like pieces that grip the workspace's corners; like custom frames they
+ * sit on the border with a contact shadow, never over content, and they ignore the pointer.
+ */
+
+.entry-workspace[data-workspace-theme] {
+  /* Material of the page around the workspace, the workspace panel and the explorer rail. */
+  --ws-bg: none;
+  --ws-bg-size: auto;
+  --ws-bg-pos: 0 0;
+  --ws-bg-repeat: no-repeat;
+  --ws-panel: none;
+  --ws-panel-size: auto;
+  --ws-rail: none;
+  --ws-rail-size: auto;
+  --ws-bar: color-mix(in oklab, var(--background) 88%, transparent);
+  /* Lines and depth. */
+  --ws-line: var(--border);
+  --ws-frame-line: color-mix(in oklab, var(--amethyst) 30%, var(--border));
+  --ws-depth: 0 30px 80px -42px rgb(var(--shadow-rgb) / calc(0.9 * var(--shadow-alpha)));
+  /* Seams: the structural strip under the header and the file bar. */
+  --ws-seam: linear-gradient(90deg, transparent, rgb(var(--accent-rgb) / 0.75), transparent);
+  --ws-seam-size: 2px;
+  --ws-bar-seam: var(--ws-seam);
+  --ws-bar-seam-size: min(3px, var(--ws-seam-size));
+  /* Clasps gripping the frame's top-left and bottom-right corners. */
+  --ws-clasp: rgb(var(--accent-rgb) / 0.85);
+  --ws-clasp-fill: linear-gradient(var(--ws-clasp), var(--ws-clasp));
+  --ws-clasp-w: 3px;
+  --ws-clasp-size: 3.25rem;
+  --ws-clasp-art: none;
+  --ws-art-size: 1.25rem 1.25rem;
+  --ws-art-pos: 0 0;
+  --ws-clasp-shadow: drop-shadow(0 1px 1px rgb(0 0 0 / 0.45)) drop-shadow(0 4px 8px rgb(0 0 0 / 0.25));
+  /* The header artwork's overlay. */
+  --ws-banner: none;
+  --ws-banner-size: cover;
+  --ws-banner-pos: center;
+  /* States. */
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.24), rgb(var(--accent-rgb) / 0.05));
+  --ws-mark: var(--amethyst);
+  --ws-mark-w: 2px;
+  --ws-hover: rgb(var(--ink-rgb) / 0.055);
+  --ws-title-shadow: 0 2px 18px rgb(var(--shadow-rgb) / calc(0.75 * var(--shadow-alpha)));
+  --ws-control-line: color-mix(in oklab, var(--amethyst) 32%, var(--border));
+
+  background-color: var(--background);
+  background-image: var(--ws-bg);
+  background-size: var(--ws-bg-size);
+  background-position: var(--ws-bg-pos);
+  background-repeat: var(--ws-bg-repeat);
+}
+
+/* Header: artwork overlay, title presence and a seam where it meets the workspace. */
+.entry-workspace[data-workspace-theme] [data-ws="header"] {
+  border-bottom-color: transparent;
+}
+.entry-workspace[data-workspace-theme] [data-ws="header"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px;
+  z-index: 1;
+  height: var(--ws-seam-size);
+  background: var(--ws-seam);
+  pointer-events: none;
+}
+.entry-workspace[data-workspace-theme] [data-ws="banner"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: var(--ws-banner);
+  background-size: var(--ws-banner-size);
+  background-position: var(--ws-banner-pos);
+  background-repeat: no-repeat;
+}
+.entry-workspace[data-workspace-theme] [data-ws="header"] h1 {
+  text-shadow: var(--ws-title-shadow);
+}
+
+/* The workspace frame: its material, edge and depth. */
+.entry-workspace[data-workspace-theme] [data-ws="frame"] {
+  border-color: var(--ws-frame-line);
+  background-color: var(--background);
+  background-image: var(--ws-panel);
+  background-size: var(--ws-panel-size);
+  box-shadow: var(--ws-depth);
+}
+.entry-workspace[data-workspace-theme] [data-ws="explorer"] {
+  border-color: var(--ws-line);
+  background-color: var(--surface);
+  background-image: var(--ws-rail);
+  background-size: var(--ws-rail-size);
+}
+.entry-workspace[data-workspace-theme] [data-ws="toolbar"] {
+  border-bottom-color: var(--ws-line);
+  background-color: var(--ws-bar);
+}
+.entry-workspace[data-workspace-theme] [data-ws="toolbar"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px;
+  height: var(--ws-bar-seam-size);
+  background: var(--ws-bar-seam);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+/* Clasps: on wider screens only, where the frame has a margin around it to grip. */
+@media (min-width: 768px) {
+  .entry-workspace[data-workspace-theme] [data-ws="frame"]::before,
+  .entry-workspace[data-workspace-theme] [data-ws="frame"]::after {
+    content: "";
+    position: absolute;
+    z-index: 30;
+    width: var(--ws-clasp-size);
+    height: var(--ws-clasp-size);
+    pointer-events: none;
+    background:
+      var(--ws-clasp-art) var(--ws-art-pos) / var(--ws-art-size) no-repeat,
+      var(--ws-clasp-fill) 0 0 / 100% var(--ws-clasp-w) no-repeat,
+      var(--ws-clasp-fill) 0 0 / var(--ws-clasp-w) 100% no-repeat;
+    border-top-left-radius: calc(0.9rem * var(--radius-unit, 1));
+    filter: var(--ws-clasp-shadow);
+  }
+  .entry-workspace[data-workspace-theme] [data-ws="frame"]::before {
+    top: -7px;
+    left: -7px;
+  }
+  .entry-workspace[data-workspace-theme] [data-ws="frame"]::after {
+    right: -7px;
+    bottom: -7px;
+    rotate: 180deg;
+  }
+}
+
+/* Explorer states. */
+.entry-workspace[data-workspace-theme] .tree-row[data-selected="true"] {
+  background: var(--ws-selected);
+}
+.entry-workspace[data-workspace-theme] .tree-row[data-selected="false"]:hover {
+  background: var(--ws-hover);
+}
+.entry-workspace[data-workspace-theme] .tree-row::before {
+  width: var(--ws-mark-w);
+  background: var(--ws-mark);
+}
+
+/* Controls keep their affordance but share the theme's edge. */
+.entry-workspace[data-workspace-theme] [data-slot="button"][data-variant="outline"] {
+  border-color: var(--ws-control-line);
+}
+
+/* ===================================================================================== Themes */
+
+/* Amethyst: a geode. Dark stone, crystal facets catching violet light, faceted gem clasps. */
+.entry-workspace[data-workspace-theme="amethyst"] {
+  --ws-bg: radial-gradient(70rem 30rem at 85% -8%, rgb(var(--accent-rgb) / 0.12), transparent 70%), radial-gradient(50rem 26rem at 0% 110%, rgb(var(--rose-rgb) / 0.06), transparent 70%);
+  --ws-panel:
+    conic-gradient(from 210deg at 100% 0%, rgb(var(--accent-rgb) / 0.07) 0 12deg, transparent 12deg 26deg, rgb(var(--accent-rgb) / 0.05) 26deg 34deg, transparent 34deg),
+    linear-gradient(160deg, rgb(var(--accent-rgb) / 0.04), transparent 40%);
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.07), transparent 30%);
+  --ws-seam: linear-gradient(90deg, transparent, rgb(var(--accent-rgb)) 25%, rgb(var(--rose-rgb)) 75%, transparent);
+  --ws-clasp-fill: linear-gradient(135deg, #e3d2ff, rgb(var(--accent-rgb)) 55%, #5b2fa6);
+  --ws-clasp-art: conic-gradient(from 45deg, #f3e9ff, #b48cff, #6a3bc0, #d9c2ff, #f3e9ff);
+  --ws-art-size: 0.9rem 0.9rem;
+  --ws-art-pos: 2px 2px;
+  --ws-banner: linear-gradient(120deg, transparent 55%, rgb(var(--accent-rgb) / 0.16) 55.3% 56%, transparent 56.5%), linear-gradient(140deg, transparent 68%, rgb(var(--rose-rgb) / 0.12) 68.3% 69%, transparent 69.5%);
+  --ws-title-shadow: 0 2px 18px rgb(0 0 0 / 0.8), 0 0 30px rgb(var(--accent-rgb) / 0.35);
+}
+.entry-workspace[data-workspace-theme="amethyst"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="amethyst"]) *)::before,
+.entry-workspace[data-workspace-theme="amethyst"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="amethyst"]) *)::after {
+  background:
+    conic-gradient(from 45deg, #f3e9ff, #b48cff, #6a3bc0, #d9c2ff, #f3e9ff) 0 0 / 0.95rem 0.95rem no-repeat,
+    linear-gradient(90deg, #d9c2ff, rgb(var(--accent-rgb)) 40%, transparent) 0 0 / 100% 3px no-repeat,
+    linear-gradient(180deg, #d9c2ff, rgb(var(--accent-rgb)) 40%, transparent) 0 0 / 3px 100% no-repeat;
+  border-radius: 0;
+  clip-path: polygon(0 0, 100% 0, 100% 3px, 3px 3px, 3px 100%, 0 100%);
+}
+
+/* Rose Noir: velvet and champagne. Deep velvet nap, gilded double rules, small gold corner rosettes. */
+.entry-workspace[data-workspace-theme="rose-noir"] {
+  --ws-bg: radial-gradient(80rem 40rem at 85% -10%, rgb(var(--accent-rgb) / 0.1), transparent 70%), radial-gradient(60rem 30rem at 0% 110%, rgb(var(--rose-rgb) / 0.06), transparent 70%);
+  --ws-panel: radial-gradient(120% 60% at 50% 0%, rgb(var(--accent-rgb) / 0.07), transparent 70%), repeating-linear-gradient(90deg, rgb(255 255 255 / 0.012) 0 1px, transparent 1px 3px);
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.08), rgb(var(--accent-rgb) / 0.02) 40%, transparent);
+  --ws-frame-line: rgb(var(--rose-rgb) / 0.4);
+  --ws-seam: linear-gradient(rgb(var(--rose-rgb) / 0.9), rgb(var(--rose-rgb) / 0.9)) 0 0 / 100% 1px no-repeat, linear-gradient(rgb(var(--rose-rgb) / 0.45), rgb(var(--rose-rgb) / 0.45)) 0 100% / 100% 1px no-repeat;
+  --ws-seam-size: 4px;
+  --ws-clasp-fill: linear-gradient(135deg, #fbe7c2, rgb(var(--rose-rgb)) 50%, #8a6a35);
+  --ws-clasp-w: 2px;
+  --ws-clasp-art: radial-gradient(circle, #fff4dc 0 18%, rgb(var(--rose-rgb)) 22% 40%, transparent 44%);
+  --ws-art-size: 1.1rem 1.1rem;
+  --ws-art-pos: -0.15rem -0.15rem;
+  --ws-banner: radial-gradient(70% 90% at 100% 0%, rgb(var(--accent-rgb) / 0.22), transparent 70%);
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.22), rgb(var(--rose-rgb) / 0.06));
+  --ws-mark: rgb(var(--rose-rgb));
+  --ws-title-shadow: 0 2px 18px rgb(0 0 0 / 0.8), 0 0 26px rgb(var(--accent-rgb) / 0.3);
+}
+
+/* Paper & Ink: a bound notebook. Paper fibre, a red margin rule, ink double rules and photo-corner mounts. */
+.entry-workspace[data-workspace-theme="paper"] {
+  --ws-bg: repeating-linear-gradient(0deg, rgb(var(--ink-rgb) / 0.012) 0 1px, transparent 1px 4px), radial-gradient(70rem 30rem at 50% -10%, rgb(255 255 255 / 0.5), transparent 70%);
+  --ws-bg-size: auto;
+  --ws-panel: linear-gradient(90deg, transparent 2.6rem, rgb(var(--rose-rgb) / 0.22) 2.6rem calc(2.6rem + 1px), transparent calc(2.6rem + 1px)), repeating-linear-gradient(0deg, rgb(var(--ink-rgb) / 0.018) 0 1px, transparent 1px 5px);
+  --ws-rail: linear-gradient(90deg, rgb(var(--ink-rgb) / 0.03), transparent 70%);
+  --ws-frame-line: rgb(var(--ink-rgb) / 0.22);
+  --ws-depth: 0 1px 0 rgb(var(--ink-rgb) / 0.06), 0 18px 40px -24px rgb(60 40 20 / 0.35);
+  --ws-seam: linear-gradient(rgb(var(--accent-rgb) / 0.75), rgb(var(--accent-rgb) / 0.75)) 0 0 / 100% 1px no-repeat, linear-gradient(rgb(var(--accent-rgb) / 0.35), rgb(var(--accent-rgb) / 0.35)) 0 100% / 100% 1px no-repeat;
+  --ws-seam-size: 4px;
+  --ws-clasp-shadow: drop-shadow(0 1px 1px rgb(60 40 20 / 0.3));
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.13), rgb(var(--accent-rgb) / 0.03));
+  --ws-mark: rgb(var(--rose-rgb));
+  --ws-hover: rgb(var(--ink-rgb) / 0.05);
+  --ws-title-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+}
+.entry-workspace[data-workspace-theme="paper"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="paper"]) *)::before,
+.entry-workspace[data-workspace-theme="paper"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="paper"]) *)::after {
+  width: 2.1rem;
+  height: 2.1rem;
+  background: linear-gradient(135deg, #2b2620 0 49%, transparent 50%);
+  border-radius: 0;
+  opacity: 0.85;
+}
+
+/* Retro Terminal: a CRT bezel. Scanlines on the screen, phosphor seams, square block cursor for selection. */
+.entry-workspace[data-workspace-theme="terminal"] {
+  --ws-bg: radial-gradient(70rem 30rem at 50% -10%, rgb(var(--accent-rgb) / 0.08), transparent 70%);
+  --ws-panel: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px), radial-gradient(120% 90% at 50% 40%, rgb(var(--accent-rgb) / 0.05), transparent 70%);
+  --ws-rail: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.22) 0 1px, transparent 1px 3px);
+  --ws-frame-line: rgb(var(--accent-rgb) / 0.45);
+  --ws-depth: 0 0 0 4px #0b130d, 0 0 0 5px rgb(var(--accent-rgb) / 0.2), 0 0 40px -8px rgb(var(--accent-rgb) / 0.25);
+  --ws-seam: repeating-linear-gradient(90deg, rgb(var(--accent-rgb) / 0.8) 0 8px, transparent 8px 12px);
+  --ws-clasp: rgb(var(--accent-rgb));
+  --ws-clasp-w: 2px;
+  --ws-clasp-size: 1.4rem;
+  --ws-clasp-shadow: drop-shadow(0 0 4px rgb(var(--accent-rgb) / 0.7));
+  --ws-banner: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.3) 0 1px, transparent 1px 3px), radial-gradient(80% 80% at 50% 50%, transparent 50%, rgb(0 0 0 / 0.5));
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.26), rgb(var(--accent-rgb) / 0.08));
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-mark-w: 6px;
+  --ws-title-shadow: 0 0 12px rgb(var(--accent-rgb) / 0.55), 0 2px 10px rgb(0 0 0 / 0.8);
+}
+.entry-workspace[data-workspace-theme="terminal"] .tree-row:not(.ws-mini:not([data-workspace-theme="terminal"]) *)::before {
+  top: 6px;
+  bottom: 6px;
+  border-radius: 0;
+}
+
+/* Neon Arcade: a cabinet. A perspective grid in the marquee, neon tube seams in magenta and cyan, glowing corners. */
+.entry-workspace[data-workspace-theme="arcade"] {
+  --ws-bg: linear-gradient(rgb(var(--accent-rgb) / 0.04) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--rose-rgb) / 0.035) 1px, transparent 1px);
+  --ws-bg-size: 34px 34px;
+  --ws-bg-repeat: repeat;
+  --ws-panel: linear-gradient(rgb(var(--accent-rgb) / 0.03) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--rose-rgb) / 0.03) 1px, transparent 1px);
+  --ws-panel-size: 26px 26px;
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.1), transparent 40%);
+  --ws-frame-line: rgb(var(--rose-rgb) / 0.55);
+  --ws-depth: 0 0 0 1px rgb(var(--accent-rgb) / 0.35), 0 0 30px -6px rgb(var(--accent-rgb) / 0.45), 0 0 60px -20px rgb(var(--rose-rgb) / 0.5);
+  --ws-seam: linear-gradient(90deg, rgb(var(--accent-rgb)), rgb(var(--rose-rgb)));
+  --ws-seam-size: 3px;
+  --ws-clasp: rgb(var(--rose-rgb));
+  --ws-clasp-shadow: drop-shadow(0 0 3px rgb(var(--rose-rgb))) drop-shadow(0 0 8px rgb(var(--rose-rgb) / 0.6));
+  --ws-banner:
+    linear-gradient(to top, rgb(var(--accent-rgb) / 0.22), transparent 45%),
+    repeating-linear-gradient(90deg, rgb(var(--rose-rgb) / 0.18) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(0deg, rgb(var(--accent-rgb) / 0.16) 0 1px, transparent 1px 24px);
+  --ws-banner-size: auto;
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.28), rgb(var(--rose-rgb) / 0.08));
+  --ws-mark: rgb(var(--rose-rgb));
+  --ws-title-shadow: 2px 2px 0 rgb(var(--accent-rgb) / 0.6), 0 0 22px rgb(var(--rose-rgb) / 0.35);
+}
+
+/* Ocean Glass: a dive window. Frosted panels with caustic light, aqua seams, coral bubble clasps. */
+.entry-workspace[data-workspace-theme="ocean"] {
+  --ws-bg: radial-gradient(70rem 36rem at 10% -10%, rgb(var(--accent-rgb) / 0.12), transparent 70%), radial-gradient(60rem 30rem at 100% 110%, rgb(var(--rose-rgb) / 0.07), transparent 70%);
+  --ws-panel: radial-gradient(30rem 12rem at 20% 0%, rgb(var(--accent-rgb) / 0.08), transparent 70%), radial-gradient(24rem 10rem at 90% 30%, rgb(var(--accent-rgb) / 0.05), transparent 70%);
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.1), transparent 50%);
+  --ws-bar: color-mix(in srgb, var(--surface) 60%, transparent);
+  --ws-frame-line: rgb(var(--accent-rgb) / 0.35);
+  --ws-depth: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 30px 80px -40px rgb(0 0 0 / 0.9), 0 0 50px -20px rgb(var(--accent-rgb) / 0.35);
+  --ws-seam: linear-gradient(90deg, transparent, rgb(var(--accent-rgb)) 30%, rgb(255 255 255 / 0.8) 50%, rgb(var(--accent-rgb)) 70%, transparent);
+  --ws-clasp: rgb(var(--accent-rgb) / 0.75);
+  --ws-clasp-w: 2px;
+  --ws-clasp-art: radial-gradient(circle at 35% 35%, #fff 0 12%, rgb(var(--rose-rgb)) 30% 55%, transparent 60%);
+  --ws-art-size: 1.2rem 1.2rem;
+  --ws-art-pos: -0.2rem -0.2rem;
+  --ws-banner: radial-gradient(60% 50% at 30% 0%, rgb(var(--accent-rgb) / 0.2), transparent 70%), repeating-radial-gradient(circle at 80% 120%, transparent 0 22px, rgb(var(--accent-rgb) / 0.06) 22px 23px);
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.22), rgb(var(--accent-rgb) / 0.04));
+  --ws-mark: rgb(var(--rose-rgb));
+}
+.entry-workspace[data-workspace-theme="ocean"] [data-ws="explorer"]:not(.ws-mini:not([data-workspace-theme="ocean"]) *),
+.entry-workspace[data-workspace-theme="ocean"] [data-ws="toolbar"]:not(.ws-mini:not([data-workspace-theme="ocean"]) *) {
+  backdrop-filter: blur(14px) saturate(160%);
+}
+
+/* Crimson Night: armour. Brushed steel plates with rivets, a hot red edge glow under every seam. */
+.entry-workspace[data-workspace-theme="crimson"] {
+  --ws-bg: radial-gradient(90rem 34rem at 50% -14%, rgb(var(--accent-rgb) / 0.12), transparent 70%);
+  --ws-panel: repeating-linear-gradient(90deg, rgb(var(--rose-rgb) / 0.018) 0 1px, transparent 1px 4px), linear-gradient(180deg, rgb(var(--rose-rgb) / 0.04), transparent 30%);
+  --ws-rail: repeating-linear-gradient(90deg, rgb(var(--rose-rgb) / 0.03) 0 1px, transparent 1px 3px), linear-gradient(180deg, #160a0c, transparent);
+  --ws-frame-line: rgb(var(--rose-rgb) / 0.3);
+  --ws-depth: inset 0 1px 0 rgb(var(--rose-rgb) / 0.12), 0 0 0 1px rgb(0 0 0 / 0.6), 0 30px 70px -36px rgb(var(--accent-rgb) / 0.4);
+  --ws-seam: linear-gradient(rgb(var(--rose-rgb) / 0.5), rgb(var(--rose-rgb) / 0.5)) 0 0 / 100% 1px no-repeat, linear-gradient(90deg, transparent, rgb(var(--accent-rgb)), transparent) 0 100% / 100% 2px no-repeat;
+  --ws-seam-size: 3px;
+  --ws-clasp-fill: linear-gradient(135deg, #e7ecf5, rgb(var(--rose-rgb)) 40%, #4d5566);
+  --ws-clasp-w: 5px;
+  --ws-clasp-art: radial-gradient(circle at 40% 40%, #fff 0 15%, #9aa3b5 35%, #3b4250 60%, transparent 64%);
+  --ws-art-size: 0.8rem 0.8rem;
+  --ws-art-pos: 0.55rem 0.55rem;
+  --ws-banner: linear-gradient(180deg, transparent 50%, rgb(var(--accent-rgb) / 0.2)), radial-gradient(50% 70% at 50% 0%, rgb(var(--accent-rgb) / 0.18), transparent 70%);
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-title-shadow: 0 2px 18px rgb(0 0 0 / 0.85), 0 0 24px rgb(var(--accent-rgb) / 0.35);
+}
+
+/* Soft Sakura: a spring sketchbook. Blossom washes, a branch of petals along the seam, round blossom clasps. */
+.entry-workspace[data-workspace-theme="sakura"] {
+  --ws-bg: radial-gradient(70rem 34rem at 90% -10%, rgb(var(--accent-soft-rgb) / 0.16), transparent 70%), radial-gradient(50rem 26rem at 0% 110%, rgb(var(--rose-rgb) / 0.08), transparent 70%);
+  --ws-panel: radial-gradient(26rem 14rem at 100% 0%, rgb(var(--accent-soft-rgb) / 0.1), transparent 70%);
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-soft-rgb) / 0.12), transparent 60%);
+  --ws-frame-line: rgb(var(--accent-rgb) / 0.22);
+  --ws-depth: 0 18px 44px -26px rgb(var(--accent-rgb) / 0.35);
+  --ws-seam: radial-gradient(circle, rgb(var(--accent-rgb) / 0.6) 0 2px, transparent 2.5px) 0 50% / 18px 6px repeat-x, linear-gradient(rgb(var(--rose-rgb) / 0.4), rgb(var(--rose-rgb) / 0.4)) 0 50% / 100% 1px no-repeat;
+  --ws-seam-size: 6px;
+  --ws-bar-seam: linear-gradient(90deg, transparent, rgb(var(--accent-rgb) / 0.5), transparent);
+  --ws-clasp: rgb(var(--rose-rgb) / 0.55);
+  --ws-clasp-w: 2px;
+  --ws-clasp-art: radial-gradient(circle, #fff 0 14%, rgb(var(--accent-soft-rgb)) 18% 46%, rgb(var(--accent-rgb)) 50% 56%, transparent 60%);
+  --ws-art-size: 1.4rem 1.4rem;
+  --ws-art-pos: -0.35rem -0.35rem;
+  --ws-clasp-shadow: drop-shadow(0 2px 3px rgb(var(--accent-rgb) / 0.3));
+  --ws-banner: radial-gradient(60% 80% at 100% 0%, rgb(var(--accent-soft-rgb) / 0.3), transparent 70%);
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.14), rgb(var(--accent-soft-rgb) / 0.06));
+  --ws-mark: rgb(var(--rose-rgb));
+  --ws-title-shadow: 0 1px 12px rgb(255 255 255 / 0.6);
+}
+
+/* Monochrome OLED: a print proof. True black, hairline rules and white crop marks at the corners. */
+.entry-workspace[data-workspace-theme="oled"] {
+  --ws-frame-line: rgb(255 255 255 / 0.2);
+  --ws-depth: none;
+  --ws-seam: linear-gradient(rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.55));
+  --ws-seam-size: 1px;
+  --ws-clasp: #fff;
+  --ws-clasp-w: 1px;
+  --ws-clasp-size: 1.6rem;
+  --ws-clasp-shadow: none;
+  --ws-selected: rgb(255 255 255 / 0.1);
+  --ws-mark: #fff;
+  --ws-hover: rgb(255 255 255 / 0.05);
+  --ws-control-line: rgb(255 255 255 / 0.25);
+}
+.entry-workspace[data-workspace-theme="oled"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="oled"]) *)::before {
+  top: -12px;
+  left: -12px;
+}
+.entry-workspace[data-workspace-theme="oled"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="oled"]) *)::after {
+  right: -12px;
+  bottom: -12px;
+}
+
+/* Mint Paper: a herbarium. Cool paper grain, pressed-leaf veins in the rail, green photo corners. */
+.entry-workspace[data-workspace-theme="mint"] {
+  --ws-bg: radial-gradient(70rem 30rem at 0% -10%, rgb(var(--accent-rgb) / 0.08), transparent 70%), repeating-linear-gradient(0deg, rgb(var(--ink-rgb) / 0.012) 0 1px, transparent 1px 4px);
+  --ws-panel: repeating-linear-gradient(0deg, rgb(var(--ink-rgb) / 0.015) 0 1px, transparent 1px 5px);
+  --ws-rail: repeating-linear-gradient(60deg, transparent 0 22px, rgb(var(--accent-rgb) / 0.05) 22px 23px), linear-gradient(180deg, rgb(var(--accent-rgb) / 0.06), transparent 60%);
+  --ws-frame-line: rgb(var(--accent-rgb) / 0.28);
+  --ws-depth: 0 18px 40px -26px rgb(16 60 40 / 0.35);
+  --ws-seam: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.7), rgb(var(--rose-rgb) / 0.5));
+  --ws-clasp-shadow: drop-shadow(0 1px 1px rgb(16 60 40 / 0.3));
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.15), rgb(var(--accent-rgb) / 0.03));
+  --ws-mark: rgb(var(--rose-rgb));
+  --ws-title-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
+}
+.entry-workspace[data-workspace-theme="mint"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="mint"]) *)::before,
+.entry-workspace[data-workspace-theme="mint"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="mint"]) *)::after {
+  width: 2.1rem;
+  height: 2.1rem;
+  background: linear-gradient(135deg, rgb(var(--accent-rgb)) 0 49%, transparent 50%);
+  border-radius: 0;
+  opacity: 0.9;
+}
+
+/*
+ * Higanbana: black lacquer and spider lilies. The panel is veined lacquer with red pooling in its corners, seams
+ * are bone-white thread, the explorer is stitched to the file like a mask, and lily blooms grip the frame.
+ */
+.entry-workspace[data-workspace-theme="higanbana"] {
+  --ws-bg:
+    radial-gradient(60rem 30rem at 100% 105%, rgb(var(--accent-rgb) / 0.12), transparent 70%),
+    radial-gradient(50rem 24rem at 0% -10%, rgb(122 10 22 / 0.18), transparent 70%);
+  --ws-panel:
+    radial-gradient(40% 30% at 0% 0%, rgb(200 16 46 / 0.16), transparent 70%),
+    radial-gradient(45% 35% at 100% 100%, rgb(200 16 46 / 0.14), transparent 70%),
+    repeating-linear-gradient(115deg, transparent 0 46px, rgb(160 12 36 / 0.07) 46px 47px, transparent 47px 101px),
+    linear-gradient(150deg, #160b0d, #0a0607 45%, #120809);
+  --ws-rail: repeating-linear-gradient(115deg, transparent 0 30px, rgb(160 12 36 / 0.08) 30px 31px, transparent 31px 67px), linear-gradient(180deg, #1a0d10, #0e0809);
+  --ws-bar: rgb(14 8 9 / 0.9);
+  --ws-line: rgb(221 211 201 / 0.12);
+  --ws-frame-line: rgb(200 16 46 / 0.55);
+  --ws-depth: 0 0 0 1px rgb(0 0 0 / 0.7), inset 0 0 24px rgb(200 16 46 / 0.12), 0 34px 80px -40px rgb(200 16 46 / 0.45);
+  --ws-seam: repeating-linear-gradient(90deg, rgb(239 230 220 / 0.85) 0 9px, transparent 9px 15px) 0 50% / 100% 1.5px no-repeat, linear-gradient(90deg, transparent, rgb(200 16 46 / 0.9) 20%, rgb(200 16 46 / 0.9) 80%, transparent) 0 100% / 100% 1px no-repeat;
+  --ws-seam-size: 5px;
+  --ws-clasp-fill: linear-gradient(135deg, #c8102e, #5a0612);
+  --ws-clasp-w: 2px;
+  --ws-clasp-size: 4.5rem;
+  --ws-clasp-art: var(--lily-motif);
+  --ws-art-size: 3.4rem 3.4rem;
+  --ws-art-pos: -1.1rem -1.1rem;
+  --ws-clasp-shadow: drop-shadow(0 1px 2px rgb(0 0 0 / 0.7)) drop-shadow(0 0 6px rgb(220 30 50 / 0.45));
+  --ws-banner:
+    radial-gradient(70% 90% at 100% 100%, rgb(200 16 46 / 0.35), transparent 70%),
+    repeating-linear-gradient(115deg, transparent 0 60px, rgb(200 16 46 / 0.12) 60px 61px, transparent 61px 130px),
+    var(--lily-motif);
+  --ws-banner-size: auto, auto, min(26rem, 60%) auto;
+  --ws-banner-pos: 0 0, 0 0, calc(100% + 4rem) 40%;
+  --ws-selected: linear-gradient(90deg, rgb(200 16 46 / 0.34), rgb(200 16 46 / 0.06) 70%, transparent);
+  --ws-mark: repeating-linear-gradient(180deg, rgb(239 230 220) 0 3px, transparent 3px 5px);
+  --ws-hover: rgb(200 16 46 / 0.1);
+  --ws-title-shadow: 0 2px 18px rgb(0 0 0 / 0.9), 0 0 28px rgb(200 16 46 / 0.45);
+  --ws-control-line: rgb(221 211 201 / 0.22);
+}
+/* The mask stitches: short bone-thread crossings over the seam between the explorer and the file. */
+.entry-workspace[data-workspace-theme="higanbana"] [data-ws="explorer"]:not(.ws-mini:not([data-workspace-theme="higanbana"]) *) {
+  position: relative;
+}
+.entry-workspace[data-workspace-theme="higanbana"] [data-ws="explorer"]:not(.ws-mini:not([data-workspace-theme="higanbana"]) *)::after {
+  content: "";
+  position: absolute;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  right: -5px;
+  z-index: 1;
+  width: 9px;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, transparent 0 14px, rgb(239 230 220 / 0.7) 14px 16px, transparent 16px 34px);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.8));
+}
+.entry-workspace[data-workspace-theme="higanbana"] .tree-row[data-selected="true"]:not(.ws-mini:not([data-workspace-theme="higanbana"]) *) {
+  box-shadow: inset 0 -1px 0 rgb(200 16 46 / 0.4);
+}
+
+/* Koi Bridge: a river crossing. Ripples in the water, a vermilion railing as the seam, koi drifting at the corners. */
+.entry-workspace[data-workspace-theme="koi-bridge"] {
+  --ws-bg: radial-gradient(70rem 34rem at 10% -10%, rgb(var(--rose-rgb) / 0.1), transparent 70%);
+  --ws-panel: repeating-radial-gradient(circle at 100% 100%, transparent 0 34px, rgb(var(--rose-rgb) / 0.05) 34px 35px), linear-gradient(180deg, rgb(var(--rose-rgb) / 0.03), transparent 40%);
+  --ws-rail: repeating-radial-gradient(circle at 0% 100%, transparent 0 22px, rgb(var(--rose-rgb) / 0.06) 22px 23px);
+  --ws-frame-line: rgb(var(--rose-rgb) / 0.3);
+  --ws-depth: 0 22px 50px -30px rgb(20 70 80 / 0.4);
+  /* A lacquered railing: a top rail with posts. */
+  --ws-seam:
+    linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))) 0 0 / 100% 3px no-repeat,
+    repeating-linear-gradient(90deg, rgb(var(--accent-rgb)) 0 4px, transparent 4px 64px) 0 100% / 100% 6px no-repeat;
+  --ws-seam-size: 9px;
+  --ws-bar-seam: linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb)));
+  --ws-clasp: rgb(var(--accent-rgb));
+  --ws-clasp-art: var(--koi-motif);
+  --ws-clasp-size: 4rem;
+  --ws-art-size: 3rem 3rem;
+  --ws-art-pos: -0.8rem -0.8rem;
+  --ws-clasp-shadow: drop-shadow(0 2px 2px rgb(20 70 80 / 0.35));
+  --ws-banner: repeating-radial-gradient(circle at 85% 110%, transparent 0 26px, rgb(255 255 255 / 0.12) 26px 27px), radial-gradient(60% 70% at 0% 0%, rgb(var(--rose-rgb) / 0.22), transparent 70%);
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.15), rgb(var(--rose-rgb) / 0.05));
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-title-shadow: 0 1px 12px rgb(255 255 255 / 0.55);
+}
+
+/* Petal Diary: a scrapbook. Ruled pages, a pressed blossom in the header, washi tape holding the corners down. */
+.entry-workspace[data-workspace-theme="petal-diary"] {
+  --ws-bg: repeating-linear-gradient(to bottom, transparent 0 31px, rgb(var(--rose-rgb) / 0.06) 31px 32px);
+  --ws-panel: repeating-linear-gradient(to bottom, transparent 0 27px, rgb(var(--rose-rgb) / 0.08) 27px 28px), linear-gradient(90deg, transparent 2.4rem, rgb(var(--accent-rgb) / 0.2) 2.4rem calc(2.4rem + 1px), transparent calc(2.4rem + 1px));
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.05), transparent 50%);
+  --ws-frame-line: rgb(var(--ink-rgb) / 0.16);
+  --ws-depth: 0 1px 0 rgb(var(--ink-rgb) / 0.05), 0 20px 40px -26px rgb(90 50 40 / 0.35);
+  --ws-seam: repeating-linear-gradient(90deg, rgb(var(--accent-rgb) / 0.7) 0 7px, transparent 7px 12px);
+  --ws-banner: var(--petal-motif), radial-gradient(60% 80% at 100% 0%, rgb(var(--accent-rgb) / 0.12), transparent 70%);
+  --ws-banner-size: min(18rem, 45%) auto, auto;
+  --ws-banner-pos: calc(100% + 2rem) -2rem, 0 0;
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.14), rgb(var(--rose-rgb) / 0.05));
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-title-shadow: 0 1px 0 rgb(255 255 255 / 0.7);
+}
+.entry-workspace[data-workspace-theme="petal-diary"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="petal-diary"]) *)::before,
+.entry-workspace[data-workspace-theme="petal-diary"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="petal-diary"]) *)::after {
+  width: 5.5rem;
+  height: 1.5rem;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.25) 0 6px, transparent 6px 12px),
+    rgb(var(--accent-rgb) / 0.32);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 4px calc(100% - 4px), transparent);
+  mask: linear-gradient(90deg, transparent, #000 4px calc(100% - 4px), transparent);
+  filter: drop-shadow(0 1px 1px rgb(90 50 40 / 0.25));
+}
+.entry-workspace[data-workspace-theme="petal-diary"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="petal-diary"]) *)::before {
+  top: 0.4rem;
+  left: -1.4rem;
+  rotate: -38deg;
+}
+.entry-workspace[data-workspace-theme="petal-diary"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="petal-diary"]) *)::after {
+  right: -1.4rem;
+  bottom: 0.4rem;
+  rotate: -38deg;
+}
+
+/* Spring Sonata: a score. A five-line staff under the header, piano keys along the explorer edge, sonata motifs at the corners. */
+.entry-workspace[data-workspace-theme="spring-sonata"] {
+  --ws-bg: radial-gradient(70rem 30rem at 100% -10%, rgb(var(--rose-rgb) / 0.08), transparent 70%);
+  --ws-panel: radial-gradient(30rem 14rem at 0% 0%, rgb(var(--accent-rgb) / 0.05), transparent 70%);
+  --ws-frame-line: rgb(var(--ink-rgb) / 0.2);
+  --ws-depth: 0 20px 44px -28px rgb(30 30 40 / 0.35);
+  /* A five-line staff. */
+  --ws-seam: repeating-linear-gradient(to bottom, rgb(var(--ink-rgb) / 0.4) 0 1px, transparent 1px 3px);
+  --ws-seam-size: 13px;
+  --ws-bar-seam: linear-gradient(rgb(var(--ink-rgb) / 0.35), rgb(var(--ink-rgb) / 0.35));
+  --ws-bar-seam-size: 1px;
+  --ws-clasp: rgb(var(--ink-rgb) / 0.75);
+  --ws-clasp-w: 2px;
+  --ws-clasp-art: radial-gradient(ellipse 45% 35% at 50% 70%, rgb(var(--ink-rgb)) 0 95%, transparent 100%);
+  --ws-art-size: 0.9rem 0.8rem;
+  --ws-art-pos: 0.5rem 0.5rem;
+  --ws-banner: var(--sonata-motif), radial-gradient(60% 80% at 100% 0%, rgb(var(--rose-rgb) / 0.14), transparent 70%);
+  --ws-banner-size: min(34rem, 80%) auto, auto;
+  --ws-banner-pos: calc(100% + 2rem) 1.5rem, 0 0;
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.13), rgb(var(--rose-rgb) / 0.05));
+  --ws-mark: rgb(var(--ink-rgb));
+  --ws-title-shadow: 0 1px 0 rgb(255 255 255 / 0.7);
+}
+.entry-workspace[data-workspace-theme="spring-sonata"] [data-ws="explorer"]:not(.ws-mini:not([data-workspace-theme="spring-sonata"]) *) {
+  position: relative;
+}
+.entry-workspace[data-workspace-theme="spring-sonata"] [data-ws="explorer"]:not(.ws-mini:not([data-workspace-theme="spring-sonata"]) *)::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgb(var(--ink-rgb) / 0.75) 0 10px, transparent 10px 14px, rgb(var(--ink-rgb) / 0.75) 14px 24px, transparent 24px 34px);
+  opacity: 0.6;
+}
+
+/* Sabbath Neon: a poster wall. Grain, a torn red brush slash across the header, neon pink and teal tubes. */
+.entry-workspace[data-workspace-theme="sabbath-neon"] {
+  --ws-bg: radial-gradient(70rem 30rem at 15% -12%, rgb(var(--accent-rgb) / 0.14), transparent 70%), radial-gradient(60rem 28rem at 100% 112%, rgb(var(--rose-rgb) / 0.09), transparent 70%);
+  --ws-panel: repeating-linear-gradient(45deg, rgb(255 255 255 / 0.012) 0 2px, transparent 2px 5px), radial-gradient(40% 30% at 100% 0%, rgb(var(--accent-rgb) / 0.08), transparent 70%);
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.1), transparent 40%);
+  --ws-frame-line: rgb(var(--accent-rgb) / 0.4);
+  --ws-depth: 0 0 0 1px rgb(var(--rose-rgb) / 0.2), 0 0 40px -14px rgb(var(--accent-rgb) / 0.55);
+  --ws-seam: linear-gradient(90deg, rgb(var(--accent-rgb)) 0 60%, rgb(var(--rose-rgb)) 60%);
+  --ws-seam-size: 3px;
+  --ws-clasp: rgb(var(--accent-rgb));
+  --ws-clasp-shadow: drop-shadow(0 0 4px rgb(var(--accent-rgb))) drop-shadow(0 0 10px rgb(var(--accent-rgb) / 0.5));
+  --ws-banner: linear-gradient(170deg, transparent 58%, rgb(209 16 47 / 0.45) 58.6% 62%, rgb(209 16 47 / 0.25) 62.4% 63%, transparent 63.5%), radial-gradient(60% 80% at 0% 0%, rgb(var(--accent-rgb) / 0.25), transparent 70%);
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.28), rgb(var(--rose-rgb) / 0.06));
+  --ws-mark: rgb(var(--rose-rgb));
+  --ws-title-shadow: 0 0 16px rgb(var(--accent-rgb) / 0.55), 0 2px 12px rgb(0 0 0 / 0.8);
+}
+
+/* Chrome Runner: a street machine. Chrome bevels, hazard-striped seams, signal-yellow bolt clasps. */
+.entry-workspace[data-workspace-theme="chrome-runner"] {
+  --ws-bg: radial-gradient(60rem 30rem at 100% -10%, rgb(255 63 210 / 0.12), transparent 70%), radial-gradient(60rem 30rem at 0% 110%, rgb(var(--rose-rgb) / 0.1), transparent 70%);
+  --ws-panel: repeating-linear-gradient(to bottom, rgb(var(--rose-rgb) / 0.025) 0 1px, transparent 1px 4px);
+  --ws-rail: linear-gradient(180deg, #1a2032, #0c1020 30%, transparent);
+  --ws-frame-line: #8b95ad;
+  --ws-depth: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.6), 0 0 0 1px #2c3346, 0 24px 60px -30px rgb(var(--rose-rgb) / 0.4);
+  --ws-seam: repeating-linear-gradient(-45deg, rgb(var(--accent-rgb)) 0 8px, #0b0d14 8px 16px);
+  --ws-seam-size: 5px;
+  --ws-clasp-fill: linear-gradient(135deg, #f4f7ff, #8b95ad 45%, #2c3346);
+  --ws-clasp-w: 5px;
+  --ws-clasp-art: radial-gradient(circle at 40% 40%, #fff 0 14%, rgb(var(--accent-rgb)) 30% 50%, transparent 54%);
+  --ws-art-size: 0.85rem 0.85rem;
+  --ws-art-pos: 0.6rem 0.6rem;
+  --ws-banner: linear-gradient(180deg, transparent 40%, rgb(255 63 210 / 0.18)), repeating-linear-gradient(to bottom, rgb(var(--rose-rgb) / 0.06) 0 1px, transparent 1px 4px);
+  --ws-banner-size: auto;
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.2), rgb(var(--rose-rgb) / 0.05));
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-mark-w: 4px;
+  --ws-title-shadow: 2px 0 0 rgb(255 63 210 / 0.5), -2px 0 0 rgb(var(--rose-rgb) / 0.45), 0 2px 14px rgb(0 0 0 / 0.8);
+}
+
+/* Menacing Gold: an Art Deco hall. Gold sunburst rays, stepped double rules, fan-shaped corner pieces. */
+.entry-workspace[data-workspace-theme="menacing-gold"] {
+  --ws-bg: repeating-conic-gradient(from 0deg at 50% -20rem, rgb(var(--accent-rgb) / 0.04) 0 2deg, transparent 2deg 9deg);
+  --ws-panel: repeating-conic-gradient(from 90deg at 0% 0%, rgb(var(--accent-rgb) / 0.035) 0 1.5deg, transparent 1.5deg 7deg);
+  --ws-rail: linear-gradient(180deg, rgb(var(--accent-rgb) / 0.08), transparent 40%);
+  --ws-frame-line: rgb(var(--accent-rgb) / 0.55);
+  --ws-depth: 0 0 0 3px #140a22, 0 0 0 4px rgb(var(--accent-rgb) / 0.35), 0 30px 70px -36px rgb(0 0 0 / 0.9);
+  --ws-seam: linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))) 0 0 / 100% 2px no-repeat, linear-gradient(rgb(var(--accent-rgb) / 0.5), rgb(var(--accent-rgb) / 0.5)) 0 100% / 100% 1px no-repeat;
+  --ws-seam-size: 5px;
+  --ws-clasp-fill: linear-gradient(135deg, #fff0bf, rgb(var(--accent-rgb)) 50%, #7a5a14);
+  --ws-clasp-art: repeating-conic-gradient(from 90deg at 0 0, rgb(var(--accent-rgb)) 0 6deg, transparent 6deg 15deg);
+  --ws-art-size: 2.6rem 2.6rem;
+  --ws-art-pos: 0 0;
+  --ws-banner: repeating-conic-gradient(from 0deg at 50% 120%, rgb(var(--accent-rgb) / 0.08) 0 2deg, transparent 2deg 8deg), var(--menace-motif);
+  --ws-banner-size: auto, min(20rem, 45%) auto;
+  --ws-banner-pos: 0 0, calc(100% + 1rem) 60%;
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.2), rgb(var(--rose-rgb) / 0.05));
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-title-shadow: 0 2px 16px rgb(0 0 0 / 0.85), 0 0 24px rgb(var(--accent-rgb) / 0.35);
+}
+
+/* Hell Butterfly: ink and ember. Ink-wash paper, an ember glow rising from below, butterflies at rest on the corners. */
+.entry-workspace[data-workspace-theme="hell-butterfly"] {
+  --ws-bg: radial-gradient(80rem 30rem at 50% 115%, rgb(var(--accent-rgb) / 0.12), transparent 70%);
+  --ws-panel: radial-gradient(50% 30% at 50% 100%, rgb(var(--accent-rgb) / 0.08), transparent 70%), radial-gradient(40% 40% at 0% 0%, rgb(var(--rose-rgb) / 0.03), transparent 70%);
+  --ws-rail: linear-gradient(0deg, rgb(var(--accent-rgb) / 0.08), transparent 40%);
+  --ws-frame-line: rgb(var(--rose-rgb) / 0.25);
+  --ws-depth: 0 30px 70px -38px rgb(var(--accent-rgb) / 0.4);
+  --ws-seam: linear-gradient(90deg, transparent, rgb(var(--accent-rgb)) 30%, #ffd08a 50%, rgb(var(--accent-rgb)) 70%, transparent);
+  --ws-clasp: rgb(var(--rose-rgb) / 0.8);
+  --ws-clasp-w: 2px;
+  --ws-clasp-art: var(--butterfly-motif);
+  --ws-clasp-size: 4rem;
+  --ws-art-size: 3rem 2rem;
+  --ws-art-pos: -0.7rem -0.5rem;
+  --ws-clasp-shadow: drop-shadow(0 1px 2px rgb(0 0 0 / 0.7)) drop-shadow(0 0 6px rgb(var(--accent-rgb) / 0.35));
+  --ws-banner: radial-gradient(70% 80% at 50% 120%, rgb(var(--accent-rgb) / 0.35), transparent 70%), var(--butterfly-motif);
+  --ws-banner-size: auto, min(18rem, 40%) auto;
+  --ws-banner-pos: 0 0, calc(100% - 2rem) 1rem;
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.22), rgb(var(--accent-rgb) / 0.04));
+  --ws-mark: rgb(var(--accent-rgb));
+}
+
+/* Quintet Bloom: five sisters. Five soft washes, a five-colour ribbon seam and a five-petal flower at each corner. */
+.entry-workspace[data-workspace-theme="quintet-bloom"] {
+  --ws-bg:
+    radial-gradient(circle at 0% 0%, rgb(246 195 68 / 0.14), transparent 30%),
+    radial-gradient(circle at 100% 0%, rgb(232 99 143 / 0.14), transparent 30%),
+    radial-gradient(circle at 0% 100%, rgb(79 179 107 / 0.12), transparent 30%),
+    radial-gradient(circle at 100% 100%, rgb(61 114 184 / 0.12), transparent 30%),
+    radial-gradient(circle at 50% 120%, rgb(180 91 209 / 0.12), transparent 35%);
+  --ws-panel: radial-gradient(24rem 12rem at 100% 0%, rgb(232 99 143 / 0.06), transparent 70%);
+  --ws-frame-line: rgb(var(--accent-rgb) / 0.22);
+  --ws-depth: 0 20px 44px -26px rgb(150 60 100 / 0.3);
+  --ws-seam: linear-gradient(90deg, #f6c344 0 20%, #e8638f 20% 40%, #4fb36b 40% 60%, #3d72b8 60% 80%, #b45bd1 80%);
+  --ws-seam-size: 3px;
+  --ws-clasp: rgb(var(--accent-rgb) / 0.5);
+  --ws-clasp-w: 2px;
+  --ws-clasp-art:
+    radial-gradient(circle at 50% 22%, #f6c344 0 18%, transparent 20%),
+    radial-gradient(circle at 80% 44%, #e8638f 0 18%, transparent 20%),
+    radial-gradient(circle at 68% 78%, #4fb36b 0 18%, transparent 20%),
+    radial-gradient(circle at 32% 78%, #3d72b8 0 18%, transparent 20%),
+    radial-gradient(circle at 20% 44%, #b45bd1 0 18%, transparent 20%);
+  --ws-art-size: 1.6rem 1.6rem;
+  --ws-art-pos: -0.45rem -0.45rem;
+  --ws-clasp-shadow: drop-shadow(0 1px 2px rgb(150 60 100 / 0.3));
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.13), rgb(var(--rose-rgb) / 0.05));
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-title-shadow: 0 1px 12px rgb(255 255 255 / 0.6);
+}
+
+/* Snow Glam: an ice palace. Frosted glass, snowflakes caught in the panel, a sparkle seam and crystal clasps. */
+.entry-workspace[data-workspace-theme="snow-glam"] {
+  --ws-bg: radial-gradient(70rem 30rem at 100% -10%, rgb(var(--accent-rgb) / 0.08), transparent 70%), var(--snow-motif);
+  --ws-bg-size: auto, 15rem 12.5rem;
+  --ws-bg-repeat: no-repeat, repeat;
+  --ws-panel: var(--snow-motif), linear-gradient(180deg, rgb(255 255 255 / 0.5), transparent 30%);
+  --ws-panel-size: 12rem 10rem, auto;
+  --ws-rail: linear-gradient(180deg, rgb(var(--rose-rgb) / 0.08), transparent 50%);
+  --ws-bar: color-mix(in srgb, var(--background) 70%, transparent);
+  --ws-frame-line: rgb(var(--rose-rgb) / 0.3);
+  --ws-depth: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 20px 44px -26px rgb(60 90 140 / 0.35);
+  --ws-seam: radial-gradient(circle, rgb(var(--accent-rgb)) 0 1.5px, transparent 2px) 0 50% / 14px 4px repeat-x, linear-gradient(90deg, rgb(var(--rose-rgb) / 0.5), rgb(var(--accent-rgb) / 0.5));
+  --ws-seam-size: 3px;
+  --ws-clasp-fill: linear-gradient(135deg, #fff, rgb(var(--rose-rgb) / 0.7));
+  --ws-clasp-art: conic-gradient(from 45deg, #fff, #cfe3ff, rgb(var(--accent-rgb) / 0.6), #fff);
+  --ws-art-size: 0.8rem 0.8rem;
+  --ws-art-pos: 1px 1px;
+  --ws-clasp-shadow: drop-shadow(0 1px 2px rgb(60 90 140 / 0.35));
+  --ws-banner: var(--snow-motif), radial-gradient(60% 80% at 100% 0%, rgb(var(--accent-rgb) / 0.14), transparent 70%);
+  --ws-banner-size: 10rem 8rem, auto;
+  --ws-selected: linear-gradient(90deg, rgb(var(--accent-rgb) / 0.12), rgb(var(--rose-rgb) / 0.06));
+  --ws-mark: rgb(var(--accent-rgb));
+  --ws-title-shadow: 0 1px 12px rgb(255 255 255 / 0.7);
+}
+.entry-workspace[data-workspace-theme="snow-glam"] [data-ws="banner"]:not(.ws-mini:not([data-workspace-theme="snow-glam"]) *)::after {
+  background-repeat: repeat, no-repeat;
+}
+.entry-workspace[data-workspace-theme="snow-glam"] [data-ws="frame"]:not(.ws-mini:not([data-workspace-theme="snow-glam"]) *) {
+  background-repeat: repeat, no-repeat;
+}
+
+/* ============================================================================ Mini preview (theme dialog) */
+
+.ws-mini.entry-workspace {
+  min-height: 0;
+  overflow: hidden;
+  border-radius: calc(0.7rem * var(--radius-unit, 1));
+  border: 1px solid var(--border);
+}
+.ws-mini [data-ws="frame"]::before,
+.ws-mini [data-ws="frame"]::after {
+  top: -3px;
+  left: -3px;
+  scale: 0.45;
+  transform-origin: 0 0;
+}
+.ws-mini [data-ws="frame"]::after {
+  top: auto;
+  left: auto;
+  right: -3px;
+  bottom: -3px;
+  transform-origin: 100% 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-motion="off"]) .entry-workspace[data-workspace-theme] [data-ws="frame"]::before,
+  :root:not([data-motion="off"]) .entry-workspace[data-workspace-theme] [data-ws="frame"]::after {
+    animation: ws-clasp-in 700ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+  }
+}
+@keyframes ws-clasp-in {
+  from {
+    opacity: 0;
+    scale: 0.85;
+  }
+}

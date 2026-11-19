@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { ThemePreview } from "@/app/(vault)/settings/theme-settings";
 import { CatalogEmpty, CatalogSearch } from "@/components/catalog/catalog-search";
 import { useSettings } from "@/components/layout/settings-context";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +11,7 @@ import type { Tables } from "@/lib/supabase/database.types";
 import { THEME_IDS, THEMES, type ThemeId } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "./client-utils";
+import { WorkspaceThemePreview } from "./workspace-theme-preview";
 
 type Entry = Tables<"entries">;
 
@@ -49,23 +49,37 @@ export function WorkspaceThemeDialog({ open, onOpenChange, entry, onEntryChange 
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!pending) onOpenChange(next); }}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>Workspace theme</DialogTitle>
-          <DialogDescription>{entry.title}</DialogDescription>
+          <DialogDescription>
+            Dress {entry.title}&apos;s workspace in a theme: its header, explorer, file bar, panels and corners take on the theme. Only this entry changes.
+          </DialogDescription>
         </DialogHeader>
         <CatalogSearch value={query} onChange={setQuery} label="Search workspace themes" placeholder="Search themes" className="sm:w-full" />
-        <fieldset aria-busy={pending} className="grid gap-3 sm:grid-cols-2">
-          <label className={cn("flex cursor-pointer items-center gap-3 rounded-lg border p-3 sm:col-span-2", entry.workspace_theme === null ? "border-amethyst bg-amethyst/10" : "border-border")}>
+        <fieldset aria-busy={pending} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <legend className="sr-only">Workspace theme</legend>
+          <label className={cn("flex cursor-pointer items-center gap-3 rounded-lg border p-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring sm:col-span-2 lg:col-span-3", entry.workspace_theme === null ? "border-amethyst bg-amethyst/10" : "border-border")}>
             <input type="radio" name="workspace-theme" checked={entry.workspace_theme === null} aria-disabled={pending} onChange={() => void selectTheme(null)} className="accent-amethyst" />
-            <span className="text-sm font-medium">Use app theme <span className="font-normal text-muted-foreground">({THEMES[appTheme].name})</span></span>
+            <span className="text-sm">
+              <span className="font-medium">Use app theme</span> <span className="text-muted-foreground">({THEMES[appTheme].name}): the plain workspace in your app colors.</span>
+            </span>
           </label>
           {shown.map((id) => (
-            <label key={id} className={cn("grid cursor-pointer gap-2 rounded-lg border p-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring", entry.workspace_theme === id ? "border-amethyst bg-amethyst/10" : "border-border")}>
-              <ThemePreview id={id} />
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <input type="radio" name="workspace-theme" checked={entry.workspace_theme === id} aria-disabled={pending} onChange={() => void selectTheme(id)} className="accent-amethyst" />
-                {THEMES[id].name}
+            <label
+              key={id}
+              className={cn(
+                "grid cursor-pointer content-start gap-2.5 rounded-xl border p-2.5 transition-[border-color,box-shadow] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+                entry.workspace_theme === id ? "border-amethyst shadow-[0_0_0_1px_var(--amethyst)]" : "border-border hover:border-amethyst/50",
+              )}
+            >
+              <WorkspaceThemePreview id={id} title={entry.title} coverUrl={entry.cover_url} />
+              <span className="flex items-start gap-2 px-0.5">
+                <input type="radio" name="workspace-theme" checked={entry.workspace_theme === id} aria-disabled={pending} onChange={() => void selectTheme(id)} className="mt-1 accent-amethyst" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{THEMES[id].name}</span>
+                  <span className="line-clamp-2 block text-xs text-muted-foreground">{THEMES[id].description}</span>
+                </span>
               </span>
             </label>
           ))}

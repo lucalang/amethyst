@@ -49,6 +49,7 @@ import { EntryHeader } from "./entry-header";
 import { Explorer, KIND_ICON, focusTreeRow, type EditState } from "./explorer";
 import { MoveDialog } from "./move-dialog";
 import { NoteEditor, clearDraftBackup } from "./note-editor";
+import "./workspace-themes.css";
 
 type Entry = Tables<"entries">;
 
@@ -376,13 +377,14 @@ function Workspace({
   return (
     <section aria-label="Workspace" className="enter mx-auto w-full max-w-[88rem] md:px-6" style={{ "--enter-index": 2 } as React.CSSProperties}>
       <div
+        data-ws="frame"
         className={cn(
-          "grid min-h-[calc(100dvh-3.5rem)] grid-cols-1 border-y border-border bg-black md:rounded-xl md:border",
+          "relative grid min-h-[calc(100dvh-3.5rem)] grid-cols-1 border-y border-border bg-black md:rounded-xl md:border",
           !explorerHidden && "md:grid-cols-[15rem_minmax(0,1fr)] lg:grid-cols-[17rem_minmax(0,1fr)]",
         )}
       >
         {!explorerHidden ? (
-          <aside aria-label="Explorer" className="hidden border-r border-border bg-surface md:block md:rounded-l-xl">
+          <aside aria-label="Explorer" data-ws="explorer" className="hidden border-r border-border bg-surface md:block md:rounded-l-xl">
             {/* Leaves room for main's bottom padding so the panel never slides under the top bar. */}
             <div className="sticky top-14 h-[calc(100dvh-6rem)]">
               <Explorer scope="desktop" {...explorerProps} onHide={() => setHidden(true)} />
@@ -417,6 +419,7 @@ function Workspace({
         <SheetContent
           side="left"
           showCloseButton={false}
+          data-ws="explorer"
           className="w-[88vw] max-w-sm gap-0 p-0"
           onOpenAutoFocus={(event) => {
             const input = (event.currentTarget as HTMLElement).querySelector<HTMLInputElement>("[data-name-input]");
@@ -553,7 +556,7 @@ function FilePane({
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="sticky top-14 z-20 flex h-11 items-center gap-1.5 border-b border-border bg-black/90 px-2 backdrop-blur md:rounded-tr-xl md:px-4">
+      <div data-ws="toolbar" className="sticky top-14 z-20 flex h-11 items-center gap-1.5 border-b border-border bg-black/90 px-2 backdrop-blur md:rounded-tr-xl md:px-4">
         <Button variant="ghost" size="sm" className="md:hidden" onClick={onOpenFiles}>
           <PanelLeft aria-hidden /> Files
         </Button>
