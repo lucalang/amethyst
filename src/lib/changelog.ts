@@ -51,6 +51,28 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-slim-amethyst",
+    date: "2026-11-19",
+    title: "Slim Amethyst",
+    intro: "A lighter, faster edition of Amethyst with just your archive: same account, same data, open it whenever you like.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Just the archive", text: "Your collections, entries and their full workspaces, with search, a Continue shortcut, pinned and recently changed entries. No games, shops, rewards or experiments." },
+      { kind: "new", feature: "Same account, same data", text: "Everything you change in Slim is the same archive you see in the full app, and nothing outside the archive is touched." },
+      { kind: "new", feature: "Switch any time", text: "Open it from your account menu, and switch back with Full Amethyst in its top bar. Both open the same page where they can." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Slim Amethyst",
+          body: "A separate, simpler app shell that loads only the archive, so it starts quickly even on slower devices. Collections show a fast list with search, label filters and sorting; entries open their real workspace, including notes, checklists, files and Workspace Themes. Your settings are read, never changed, and the full app stays exactly as it was.",
+          where: "Account menu → Open Slim Amethyst",
+          link: { href: "/slim", label: "Open Slim Amethyst" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-workspace-themes",
     date: "2026-11-19",
     title: "Workspace Themes, reimagined",

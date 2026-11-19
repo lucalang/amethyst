@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { collectionPath, type LibraryCategory } from "@/lib/collections";
+import type { LibraryCategory } from "@/lib/collections";
+import { useArchivePaths } from "@/components/layout/edition-context";
 import type { Category } from "@/lib/categories";
 import type { CoverShape } from "@/lib/cover-shape";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
@@ -31,6 +32,7 @@ export function NewEntryForm({
   defaultCoverShape: CoverShape;
 }) {
   const [state, action, pending] = useActionState(createEntry, initial);
+  const paths = useArchivePaths();
   const [, startTransition] = useTransition();
   const errors = state.fieldErrors ?? {};
   const values = state.values ?? {};
@@ -56,6 +58,7 @@ export function NewEntryForm({
       noValidate
     >
       <input type="hidden" name="collection" value={collection.id} />
+      <input type="hidden" name="edition" value={paths.edition} />
       <div className="space-y-6 p-5 md:p-7">
         <div className="space-y-2">
           <Label htmlFor="title" className="text-sm">
@@ -171,7 +174,7 @@ export function NewEntryForm({
       <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-3 border-t border-border bg-[rgb(var(--ink-rgb)/0.02)] px-5 py-4 md:px-7">
         <div className="flex items-center gap-2">
           <Button asChild variant="ghost" className="h-10 px-3.5">
-            <Link href={collectionPath(collection)}>Cancel</Link>
+            <Link href={paths.collection(collection)}>Cancel</Link>
           </Button>
           <Button type="submit" disabled={pending || shapeBusy} className="h-10 px-4">
             {pending ? <Loader2 aria-hidden className="animate-spin" /> : <Plus aria-hidden />}

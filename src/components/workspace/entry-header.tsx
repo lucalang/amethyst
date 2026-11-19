@@ -33,7 +33,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { apiFetch } from "@/lib/api-client";
 import { CATEGORY_PARAM, parseCategoryIds, sortCategories, type Category } from "@/lib/categories";
 import { accentStyle } from "@/lib/collection-identity";
-import { collectionPath, entryPath, type LibraryCategory } from "@/lib/collections";
+import type { LibraryCategory } from "@/lib/collections";
+import { useArchivePaths } from "@/components/layout/edition-context";
 import type { CoverShape } from "@/lib/cover-shape";
 import { resolveFrame, type ArtworkFrameId } from "@/lib/frames";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
@@ -68,6 +69,7 @@ export function EntryHeader({
   onEntryChange: (entry: Entry) => void;
 }) {
   const router = useRouter();
+  const paths = useArchivePaths();
   const { artworkFrame } = useSettings();
   const [editOpen, setEditOpen] = useState(false);
   const [frameOpen, setFrameOpen] = useState(false);
@@ -135,7 +137,7 @@ export function EntryHeader({
           </ArtworkFrame>
           <div className="enter min-w-0 flex-1 pb-1" style={{ "--enter-index": 1 } as React.CSSProperties}>
             <Link
-              href={collectionPath(collection)}
+              href={paths.collection(collection)}
               className={cn(
                 "text-[11px] font-semibold tracking-[0.16em] break-words uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.85*var(--shadow-alpha)))]",
                 accent ? "text-[var(--ca)]" : "text-amethyst",
@@ -150,7 +152,7 @@ export function EntryHeader({
                 {assigned.map((category) => (
                   <li key={category.id} className="min-w-0">
                     <Link
-                      href={`${collectionPath(collection)}?${CATEGORY_PARAM}=${category.id}`}
+                      href={`${paths.collection(collection)}?${CATEGORY_PARAM}=${category.id}`}
                       title={`Show entries in “${category.name}”`}
                       className={cn(
                         "group/cat inline-flex h-7 max-w-full items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-foreground/90 ring-1 backdrop-blur-sm transition-[background-color,box-shadow,color,translate] duration-200 outline-none hover:-translate-y-px hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
@@ -224,7 +226,7 @@ export function EntryHeader({
             });
             onEntryChange(updated);
             // A rename gives the entry a new readable address; the old one keeps redirecting.
-            if (updated.slug !== entry.slug) router.replace(`${entryPath(updated)}${window.location.search}`);
+            if (updated.slug !== entry.slug) router.replace(`${paths.entry(updated)}${window.location.search}`);
           }
           const before = assigned.map((category) => category.id).sort().join();
           if (selected.map((category) => category.id).sort().join() !== before) {
@@ -283,7 +285,7 @@ export function EntryHeader({
                 onEntryChange(updated);
                 setSavedCategories(null);
                 setMoveOpen(false);
-                router.replace(`${entryPath(updated)}${window.location.search}`);
+                router.replace(`${paths.entry(updated)}${window.location.search}`);
                 router.refresh();
                 toast.success("Entry moved.");
               } catch (error) { setMoveError(errorMessage(error)); }
@@ -305,7 +307,7 @@ export function EntryHeader({
               onClick={async () => {
                 try {
                   await apiFetch(`/api/entries/${entry.id}`, { method: "DELETE" });
-                  router.push(collectionPath(collection));
+                  router.push(paths.collection(collection));
                   router.refresh();
                 } catch (error) {
                   toast.error(errorMessage(error));

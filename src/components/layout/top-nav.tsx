@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Hourglass, Info, KeyRound, LayoutDashboard, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, Feather, FlaskConical, History, Hourglass, Info, KeyRound, LayoutDashboard, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -20,6 +20,7 @@ import {
 import { accentStyle } from "@/lib/collection-identity";
 import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { DESTINATIONS, destinationFor, type DestinationId } from "@/lib/destinations";
+import { SLIM_NAME, slimPathFor } from "@/lib/edition";
 import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
 import { useSettings } from "./settings-context";
@@ -343,6 +344,11 @@ export function TopNav({ account, collections, icons = {}, latestChangeId }: { a
               <DropdownMenuItem asChild>
                 <Link href="/settings">
                   <Settings aria-hidden /> Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={slimPathFor(pathname)} title={`Open this archive page in ${SLIM_NAME}, a lighter app with just your archive`}>
+                  <Feather aria-hidden /> Open {SLIM_NAME}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
