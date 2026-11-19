@@ -51,6 +51,48 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-front-wars-battles",
+    date: "2026-11-19",
+    title: "Front Wars: readable battles, smarter rivals",
+    intro: "Every battle now shows on its front, attacks on you stay in view until they end, and rivals plan their wars instead of attacking nonstop.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Live fronts", text: "Troop counts sit on the front itself (white for your attacks, red for attacks on you), with troops streaming forward, tiles flashing as they fall, and clear marks for landings, clashes, stalls, retreats and conquests." },
+      { kind: "new", feature: "Threats and battle log", text: "Attacks on you are listed by urgency with who, how strong, where and how it's going. Focus jumps to any front, Counter meets an attack head-on, and a battle log keeps the important events." },
+      { kind: "improved", feature: "Strategic rivals", text: "Bots and Nations weigh cost against gain, keep a reserve, fortify, retreat from lost fights and spread their wars instead of piling onto you. Each has a personality you can see." },
+      { kind: "new", feature: "Presets", text: "Quick Battle, Crowded World and Few Strong Rivals next to the unchanged Standard setup and your custom options." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Battles you can read",
+          body: "Everything on the map comes from the battle itself: the land each attack is about to take pulses, chevrons march toward it (faster when it's advancing, frozen amber when it's stalling) and captured tiles flash. Attacks show when they start, are reinforced, clash, land from a boat, falter, retreat, are held off or conquer. Other players' battles appear as you zoom in, so a map with hundreds of rivals stays readable.",
+          points: [
+            "Attacks on you that are off screen get an arrow at the edge of the map",
+            "Your buildings an enemy front reaches get a red alarm ring",
+            "Pick a battle (Focus, or T to step through fronts) for its troops, losses, pace and how long its troops will last",
+          ],
+          where: "Arcade → Full Games → Front Wars",
+          link: { href: "/arcade/front-wars", label: "Play Front Wars" },
+        },
+        {
+          title: "Rivals with a plan",
+          body: "Bots and Nations now share one strategy: survey the border, manage running battles, defend, invest in Cities and Defense Posts, then expand or attack with what's left over a reserve, and sail only when a landing is worth it. They see exactly what you see (land, troops, terrain, buildings and attacks), never your gold. Expansionist, Defensive, Opportunist and Warlike rivals pick different fights; hover their land to see their personality and what they're doing.",
+        },
+        {
+          title: "Difficulty for every rival",
+          body: "Easy, Normal and Hard now change how Bots and Nations think: how often they decide, how well they read terrain and Defense Posts, how they size attacks, whether they retreat, counterattack and fortify in advance, and how far they look across the sea. Nations keep their smaller troop cap and growth below Hard, as before.",
+        },
+      ],
+      new: [
+        {
+          title: "Match presets",
+          body: "Quick Battle (a random continent, 100 Bots), Crowded World (400 Bots) and Few Strong Rivals (no Bots, Nations on Hard) sit beside Standard, which is still the default. Customize keeps every option.",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-18-front-wars",
     date: "2026-11-18",
     title: "Front Wars",

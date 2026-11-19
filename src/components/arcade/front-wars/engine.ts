@@ -8,28 +8,59 @@
  * water, surrounded Bots are annexed, retreating costs 25% of an attack, and holding 72% of the land wins.
  * The implementation is our own.
  *
- * Pure simulation, no DOM. Nations and Bots act only through `launchAttack` and `build` (the calls the player
- * uses) and read only what every player can see: the map, each player's land and troops, and their own gold.
+ * Pure simulation, no DOM. Nations and Bots act only through `launchAttack`, `retreat` and `build` (the calls the
+ * player uses) and read only what every player can see: the map, buildings, each player's land and troops, the
+ * attacks and boats on the map, and their own gold. Their decisions live in ./ai.ts.
  */
 
 import { WORLD_H, WORLD_LAND, WORLD_NORTH, WORLD_W } from "./world-map";
 import { WORLD_NATIONS } from "./nations";
+import { think, thinkInterval } from "./ai";
 
 export type MapKind = "world" | "continent";
 export type Difficulty = "easy" | "normal" | "hard";
 export type Kind = "human" | "nation" | "bot";
 export type Building = "city" | "post";
+export type Personality = "expansionist" | "defensive" | "opportunist" | "warlike";
 export type Settings = { map: MapKind; bots: number; nations: boolean; difficulty: Difficulty };
 
 export const MAPS: Record<MapKind, { label: string; hint: string }> = {
-  world: { label: "World", hint: "Earth's real coastlines: cross oceans by boat. Real countries play as Nations." },
-  continent: { label: "Random continent", hint: "One freshly generated landmass, a tighter fight." },
+  world: { label: "World", hint: "Earth's real coastlines: oceans split the fronts and boats matter. Real countries play as Nations." },
+  continent: { label: "Random continent", hint: "One freshly generated landmass: every rival is reachable by land, so borders close fast." },
 };
 export const BOT_COUNTS = [0, 100, 200, 400] as const;
-export const DIFFICULTIES: Record<Difficulty, { label: string; hint: string; cap: number; growth: number; start: number; think: number }> = {
-  easy: { label: "Easy", hint: "Nations grow slower, hold fewer troops and react slowly.", cap: 0.5, growth: 0.9, start: 12_500, think: 2.2 },
-  normal: { label: "Normal", hint: "Nations grow steadily and pick sensible fights.", cap: 0.75, growth: 0.95, start: 18_750, think: 1.4 },
-  hard: { label: "Hard", hint: "Nations match your strength and strike quickly.", cap: 1, growth: 1, start: 25_000, think: 0.8 },
+/**
+ * Difficulty changes how every rival (Bots and Nations) thinks: see AI_LEVELS in ./ai.ts. Nations, the strong
+ * rivals, also get a smaller troop cap, slower growth and a smaller start below Hard; Bots' economy is fixed.
+ */
+export const DIFFICULTIES: Record<Difficulty, { label: string; hint: string; cap: number; growth: number; start: number }> = {
+  easy: {
+    label: "Easy",
+    hint: "Rivals think every ~3 s, treat all land as open plains (so they walk into Defense Posts), keep extra troops idle, fight one war at a time, never retreat and rarely counterattack; only Nations fortify, and only once attacked. Nations also hold half your troop cap and grow 10% slower.",
+    cap: 0.5,
+    growth: 0.9,
+    start: 12_500,
+  },
+  normal: {
+    label: "Normal",
+    hint: "Rivals think every ~2 s, read terrain and Defense Posts, size attacks to the target, Nations fortify when attacked (Defensive ones in advance), retreat from clearly lost fights and sometimes counterattack. Nations also hold 75% of your troop cap and grow 5% slower.",
+    cap: 0.75,
+    growth: 0.95,
+    start: 18_750,
+  },
+  hard: {
+    label: "Hard",
+    hint: "Rivals react every ~1 s, size every attack precisely, fight on up to three fronts, fortify before they're attacked, often counterattack, Bots build a City (and a Post if Defensive), retreat as soon as a fight turns and look farther across the sea. Nations play with your full troop cap and growth.",
+    cap: 1,
+    growth: 1,
+    start: 25_000,
+  },
+};
+export const PERSONALITIES: Record<Personality, { label: string; hint: string }> = {
+  expansionist: { label: "Expansionist", hint: "grabs land and builds Cities, fights only when it's cheap" },
+  defensive: { label: "Defensive", hint: "keeps a big reserve, fortifies and strikes back at whoever attacks it" },
+  opportunist: { label: "Opportunist", hint: "waits for a neighbor to get weak or busy elsewhere, then pounces" },
+  warlike: { label: "Warlike", hint: "picks fights often, but still avoids walls and stronger armies" },
 };
 
 /** Win by holding this share of all land (FrontWars.io). */
@@ -49,28 +80,40 @@ export const HIGHLAND = 2;
 export const MOUNTAIN = 3;
 export const TERRAIN_LABEL = ["Water", "Plains", "Highland", "Mountains"];
 /** Per tile: how hard a tile is to take (troops) and how slow (time). */
-const MAGNITUDE = [0, 80, 100, 120];
+export const MAGNITUDE = [0, 80, 100, 120];
 const TILE_COST = [0, 16.5, 20, 25];
 /**
  * Our tiles are coarse (the world is ~240k land tiles), so each stands for this much ground at the genre's
  * usual scale: per-tile losses and slowness, and the land in the troop cap, are multiplied by it.
  */
-const AREA = 6;
+export const AREA = 6;
 
 export const CITY_TROOPS = 250_000;
 export const POST_RADIUS = 30;
 export const cityCost = (cities: number) => Math.min(1_000_000, 125_000 * 2 ** cities);
 export const postCost = (posts: number) => Math.min(250_000, 50_000 * (posts + 1));
 
+/** One stretch of a front (a coarse grid cell of it): its center and the direction it advances, in tiles. */
+export type FrontCell = { x: number; y: number; n: number; dx: number; dy: number };
+
+/** What a rival knows about its surroundings, rebuilt every few seconds (./ai.ts). */
+export type Contact = { id: number; shared: number; tile: number; mx: number; my: number; terrain: number; fortified: number };
+export type Intel = { at: number; contacts: Contact[] };
+
 export type Nation = {
   id: number;
   name: string;
   color: string;
   kind: Kind;
+  /** Rivals only: what drives their choices. */
+  personality: Personality | null;
   troops: number;
   gold: number;
   tiles: number;
+  /** The most land ever held, in tiles. */
+  peakTiles: number;
   cities: number;
+  citySpots: number[];
   posts: number[];
   alive: boolean;
   spawned: boolean;
@@ -81,10 +124,32 @@ export type Nation = {
   sy: number;
   /** Owned tiles that touch land owned by someone else (or nobody). */
   border: Set<number>;
+  /** Owned tiles on a coast, and owned tiles on a coast or the map's edge (an enclosed Bot has none). */
+  coast: number;
+  exposed: number;
+  /** Something next to this player's land changed hands since the last annexation check. */
+  touched: boolean;
   nextThink: number;
   /** Where a Nation wants to start (world map), or -1. */
   home: number;
+  /** Rivals: what they're doing now, in a few words (shown when you hover their land). */
+  plan: string;
+  intel: Intel | null;
+  /** The last player to attack this one, remembered for a while (attacks are public). */
+  grudge: number;
+  grudgeUntil: number;
+  /** A defender this rival recently failed against, left alone for a while. */
+  avoid: number;
+  avoidUntil: number;
+  navalAt: number;
+  /** Land at the last loss check, when it was taken, and until when a heavy loss keeps this rival rebuilding. */
+  lossCheckTiles: number;
+  lossCheckAt: number;
+  recoverUntil: number;
 };
+
+/** Why a rival started an attack, in words the player can act on. */
+export type AttackReason = "expansion" | "weak-border" | "busy" | "retaliation" | "finish" | "counter" | "opportunity" | "overseas";
 
 export type Attack = {
   id: number;
@@ -95,15 +160,62 @@ export type Attack = {
   /** Target tiles on the shared border, bucketed by how many of the attacker's tiles touch them (1–4). */
   buckets: number[][];
   front: Set<number>;
+  done: boolean;
+  reason: AttackReason | null;
+  /** Ticks: when it started and when it was last reinforced, clashed or reinforced by a landing (or -1000). */
+  started: number;
+  reinforcedAt: number;
+  reinforcedBy: number;
+  clashAt: number;
+  landedAt: number;
+  landing: number;
+  /** Totals: troops sent, tiles taken, attacking troops lost and defending troops killed. */
+  sent: number;
+  gained: number;
+  spent: number;
+  killed: number;
+  /** Tiles taken and troops lost per second (smoothed), and this second's running counts. */
+  rate: number;
+  burn: number;
+  windowGain: number;
+  windowSpent: number;
+  /** Running out of troops against a defender: about to stop. */
+  stalling: boolean;
+  /** The defender (a rival) has decided whether to meet this attack head-on. */
+  judged: boolean;
+  /** The front: its stretches (largest first), the main one's center and advance direction, and its size. */
+  cells: FrontCell[];
+  ax: number;
+  ay: number;
+  dx: number;
+  dy: number;
+  frontSize: number;
+  /** The defender's buildings near the front, and the ones already reported. */
+  near: number[];
+  warned: Set<number>;
+  /** The last captured tiles and when (a ring buffer), for capture flashes. */
+  trail: Int32Array;
+  trailTick: Int32Array;
+  trailHead: number;
 };
 
-export type Boat = { id: number; from: number; troops: number; path: number[]; index: number; landing: number };
+export type EndReason = "complete" | "spent" | "retreat" | "clash" | "gone";
+/** An attack that just ended, kept for a couple of seconds so its end can be shown where it happened. */
+export type EndedAttack = { id: number; from: number; to: number; x: number; y: number; dx: number; dy: number; reason: EndReason; tick: number; troops: number; gained: number; eliminated: boolean };
+
+export type Boat = { id: number; from: number; to: number; troops: number; path: number[]; index: number; landing: number; reason: AttackReason | null };
 
 export type GameEvent =
   | { kind: "eliminated"; nation: number; by: number }
   | { kind: "annexed"; nation: number; by: number }
-  | { kind: "landed"; boat: number; from: number; to: number }
-  | { kind: "captured-building"; from: number; to: number; building: Building };
+  | { kind: "landed"; boat: number; from: number; to: number; tile: number; troops: number }
+  | { kind: "sailing"; from: number; to: number; troops: number; tile: number }
+  | { kind: "captured-building"; from: number; to: number; building: Building; tile: number }
+  | { kind: "attack"; attack: number; from: number; to: number; troops: number; reason: AttackReason | null; tile: number }
+  | { kind: "ended"; attack: number; from: number; to: number; reason: EndReason; troops: number; gained: number; tile: number }
+  | { kind: "stalling"; attack: number; from: number; to: number; troops: number; tile: number }
+  | { kind: "threatened"; attack: number; from: number; to: number; building: Building; tile: number }
+  | { kind: "clash"; a: number; b: number; troops: number; tile: number };
 
 export type Outcome = { winner: number | null; reason: "share" | "conquered" };
 
@@ -112,13 +224,21 @@ export type Game = {
   h: number;
   settings: Settings;
   terrain: Uint8Array;
+  /** Per tile: 1 = touches water, 2 = on the map's edge. */
+  flags: Uint8Array;
   owner: Uint16Array;
   /** 0 none, 1 city, 2 defense post. */
   building: Uint8Array;
   landTiles: number;
   nations: Nation[];
   attacks: Attack[];
+  ended: EndedAttack[];
   boats: Boat[];
+  /** Refreshed every tick: troops each player has out in attacks and boats, and attacks aimed at each player. */
+  committed: Float64Array;
+  targeted: Uint16Array;
+  /** The last tick a rival planned a boat route (at most one long route search per tick). */
+  navalTick: number;
   nextId: number;
   tick: number;
   /** Seconds of battle (the spawn phase doesn't count). */
@@ -281,8 +401,66 @@ function botName(rng: () => number) {
   return name[0].toUpperCase() + name.slice(1);
 }
 
-function newNation(id: number, name: string, kind: Kind, color: string, troops: number, home = -1): Nation {
-  return { id, name, color, kind, troops, gold: 0, tiles: 0, cities: 0, posts: [], alive: true, spawned: false, peak: 0, sx: 0, sy: 0, border: new Set(), nextThink: 0, home };
+function newNation(id: number, name: string, kind: Kind, color: string, troops: number, home = -1, personality: Personality | null = null): Nation {
+  return {
+    id,
+    name,
+    color,
+    kind,
+    personality,
+    troops,
+    gold: 0,
+    tiles: 0,
+    peakTiles: 0,
+    cities: 0,
+    citySpots: [],
+    posts: [],
+    alive: true,
+    spawned: false,
+    peak: 0,
+    sx: 0,
+    sy: 0,
+    border: new Set(),
+    coast: 0,
+    exposed: 0,
+    touched: true,
+    nextThink: 0,
+    home,
+    plan: "",
+    intel: null,
+    grudge: 0,
+    grudgeUntil: 0,
+    avoid: 0,
+    avoidUntil: 0,
+    navalAt: 0,
+    lossCheckTiles: 0,
+    lossCheckAt: 0,
+    recoverUntil: 0,
+  };
+}
+
+/** A personality by weight: Nations lean bigger and bolder, Bots lean toward growing and holding. */
+function pickPersonality(rng: () => number, kind: Kind): Personality {
+  const weights: [Personality, number][] =
+    kind === "nation"
+      ? [
+          ["expansionist", 0.3],
+          ["defensive", 0.25],
+          ["opportunist", 0.25],
+          ["warlike", 0.2],
+        ]
+      : [
+          ["expansionist", 0.4],
+          ["defensive", 0.3],
+          ["opportunist", 0.24],
+          ["warlike", 0.06],
+        ];
+  let roll = rng();
+  for (const [personality, weight] of weights) {
+    roll -= weight;
+    if (roll < 0) return personality;
+  }
+  return "expansionist";
 }
 
 export function createGame(settings: Settings, seed: number): Game {
@@ -301,7 +479,14 @@ export function createGame(settings: Settings, seed: number): Game {
   }
   const terrain = addRelief(land, w, h, rng);
   let landTiles = 0;
-  for (let t = 0; t < w * h; t += 1) if (terrain[t]) landTiles += 1;
+  const flags = new Uint8Array(w * h);
+  for (let t = 0; t < w * h; t += 1) {
+    if (!terrain[t]) continue;
+    landTiles += 1;
+    const x = t % w;
+    if (x === 0 || x === w - 1 || t < w || t >= w * (h - 1)) flags[t] |= 2;
+    for (const n of neighbors(t, w, h)) if (terrain[n] === WATER) flags[t] |= 1;
+  }
 
   const difficulty = DIFFICULTIES[settings.difficulty];
   const nations: Nation[] = [newNation(0, "Unclaimed land", "bot", "#000000", 0)];
@@ -317,12 +502,12 @@ export function createGame(settings: Settings, seed: number): Game {
         : CONTINENT_NATIONS.map((name) => ({ name, home: -1 }));
     list.forEach((entry, i) => {
       const hue = (i * 137.508 + 20) % 360;
-      nations.push(newNation(nations.length, entry.name, "nation", hsl(hue, 62, 52), difficulty.start, entry.home));
+      nations.push(newNation(nations.length, entry.name, "nation", hsl(hue, 62, 52), difficulty.start, entry.home, pickPersonality(rng, "nation")));
     });
   }
   for (let i = 0; i < settings.bots; i += 1) {
     const hue = (i * 97.3 + 200) % 360;
-    nations.push(newNation(nations.length, botName(rng), "bot", hsl(hue, 22 + rng() * 14, 40 + rng() * 14), 10_000));
+    nations.push(newNation(nations.length, botName(rng), "bot", hsl(hue, 22 + rng() * 14, 40 + rng() * 14), 10_000, -1, pickPersonality(rng, "bot")));
   }
 
   const game: Game = {
@@ -330,12 +515,17 @@ export function createGame(settings: Settings, seed: number): Game {
     h,
     settings,
     terrain,
+    flags,
     owner: new Uint16Array(w * h),
     building: new Uint8Array(w * h),
     landTiles,
     nations,
     attacks: [],
+    ended: [],
     boats: [],
+    committed: new Float64Array(nations.length),
+    targeted: new Uint16Array(nations.length),
+    navalTick: -1,
     nextId: 1,
     tick: 0,
     time: 0,
@@ -391,7 +581,7 @@ function spawnNear(game: Game, nation: Nation, target: number, radius: number) {
   }
   claimDisc(game, nation.id, center, radius);
   nation.spawned = true;
-  nation.nextThink = SPAWN_TICKS * TICK_SECONDS + game.rng() * 3;
+  nation.nextThink = 0.5 + game.rng() * 2;
 }
 
 function claimDisc(game: Game, id: number, center: number, radius: number) {
@@ -437,8 +627,7 @@ export function maxTroops(game: Game, nation: Nation) {
 }
 
 /** Troops gained per tick: fastest well below the cap, nothing at it. */
-export function troopGrowth(game: Game, nation: Nation) {
-  const cap = maxTroops(game, nation);
+export function troopGrowth(game: Game, nation: Nation, cap = maxTroops(game, nation)) {
   const raw = (10 + Math.pow(Math.max(0, nation.troops), 0.73) / 4) * (1 - nation.troops / cap);
   const multiplier = nation.kind === "bot" ? 0.5 : nation.kind === "nation" ? DIFFICULTIES[game.settings.difficulty].growth : 1;
   return Math.max(0, raw * multiplier);
@@ -449,6 +638,19 @@ export const share = (game: Game, nation: Nation) => nation.tiles / game.landTil
 export const troopsAttacking = (game: Game, id: number) =>
   game.attacks.reduce((sum, attack) => (attack.from === id ? sum + attack.troops : sum), 0) + game.boats.reduce((sum, boat) => (boat.from === id ? sum + boat.troops : sum), 0);
 export const immune = (game: Game) => game.phase === "spawn" || game.tick < game.immuneUntil;
+
+/**
+ * Troops an attack loses per tile it takes from a player (the public rule every player can work out from what's
+ * on the map): terrain, Defense Posts, the defender's troops against the attack's and their troops per tile.
+ */
+export function lossPerTile(attacker: Nation, defender: Nation, attackTroops: number, terrain: number, fortified: boolean) {
+  const ratio = defender.troops / Math.max(1, attackTroops);
+  const density = defender.troops / Math.max(1, defender.tiles);
+  return MAGNITUDE[terrain] * AREA * (fortified ? 5 : 1) * clamp(ratio, 0.6, 2) * (0.463 + (0.0039 * density) / AREA) * (defender.kind === "bot" && attacker.kind !== "bot" ? 0.7 : 1);
+}
+
+/** Troops lost per tile of unclaimed land. */
+export const expansionLoss = (attacker: Nation, terrain: number) => (MAGNITUDE[terrain] / (attacker.kind === "bot" ? 10 : 5)) * AREA;
 
 function landNeighborNotOwnedBy(game: Game, t: number, id: number) {
   for (const n of neighbors(t, game.w, game.h)) if (game.terrain[n] !== WATER && game.owner[n] !== id) return true;
@@ -468,34 +670,54 @@ function setOwner(game: Game, t: number, id: number) {
   const { nations, w } = game;
   const x = t % w;
   const y = (t / w) | 0;
+  const flag = game.flags[t];
   game.owner[t] = id;
   if (before) {
     const loser = nations[before];
     loser.tiles -= 1;
     loser.sx -= x;
     loser.sy -= y;
+    loser.coast -= flag & 1;
+    if (flag) loser.exposed -= 1;
+    loser.touched = true;
     loser.border.delete(t);
-    if (game.building[t] === 1) loser.cities -= 1;
+    if (game.building[t] === 1) {
+      loser.cities -= 1;
+      loser.citySpots = loser.citySpots.filter((spot) => spot !== t);
+    }
     if (game.building[t] === 2) loser.posts = loser.posts.filter((post) => post !== t);
     for (const n of neighbors(t, w, game.h)) if (game.owner[n] === before) loser.border.add(n);
   }
   if (id) {
     const gainer = nations[id];
     gainer.tiles += 1;
+    if (gainer.tiles > gainer.peakTiles) gainer.peakTiles = gainer.tiles;
     gainer.sx += x;
     gainer.sy += y;
-    if (game.building[t] === 1) gainer.cities += 1;
+    gainer.coast += flag & 1;
+    if (flag) gainer.exposed += 1;
+    gainer.touched = true;
+    if (game.building[t] === 1) {
+      gainer.cities += 1;
+      gainer.citySpots.push(t);
+    }
     if (game.building[t] === 2) gainer.posts.push(t);
-    if (before && game.building[t]) game.events.push({ kind: "captured-building", from: before, to: id, building: game.building[t] === 1 ? "city" : "post" });
+    if (before && game.building[t]) game.events.push({ kind: "captured-building", from: before, to: id, building: game.building[t] === 1 ? "city" : "post", tile: t });
     if (landNeighborNotOwnedBy(game, t, id)) gainer.border.add(t);
     for (const n of neighbors(t, w, game.h)) if (game.owner[n] === id && !landNeighborNotOwnedBy(game, n, id)) gainer.border.delete(n);
   } else if (game.building[t]) {
     game.building[t] = 0;
   }
+  // Whoever owns the land around this tile may now be enclosed (see annexSurrounded).
+  for (const n of neighbors(t, w, game.h)) {
+    const o = game.owner[n];
+    if (o) nations[o].touched = true;
+  }
   game.dirty.push(t);
 }
 
-function defended(game: Game, t: number) {
+/** Whether a tile lies within reach of one of its owner's Defense Posts. */
+export function defended(game: Game, t: number) {
   const owner = game.owner[t];
   if (!owner) return false;
   const posts = game.nations[owner].posts;
@@ -554,10 +776,62 @@ function takeFront(game: Game, attack: Attack) {
   return -1;
 }
 
-function newAttack(game: Game, from: number, to: number, troops: number): Attack {
-  const attack: Attack = { id: game.nextId++, from, to, troops, buckets: [[], [], [], [], []], front: new Set() };
+const TRAIL = 24;
+
+function newAttack(game: Game, from: number, to: number, troops: number, reason: AttackReason | null, landing = -1): Attack {
+  const attack: Attack = {
+    id: game.nextId++,
+    from,
+    to,
+    troops,
+    buckets: [[], [], [], [], []],
+    front: new Set(),
+    done: false,
+    reason,
+    started: game.tick,
+    reinforcedAt: -1000,
+    reinforcedBy: 0,
+    clashAt: -1000,
+    landedAt: landing >= 0 ? game.tick : -1000,
+    landing,
+    sent: troops,
+    gained: 0,
+    spent: 0,
+    killed: 0,
+    rate: 0,
+    burn: 0,
+    windowGain: 0,
+    windowSpent: 0,
+    stalling: false,
+    judged: false,
+    cells: [],
+    ax: -1,
+    ay: -1,
+    dx: 0,
+    dy: 0,
+    frontSize: 0,
+    near: [],
+    warned: new Set(),
+    trail: new Int32Array(TRAIL).fill(-1),
+    trailTick: new Int32Array(TRAIL),
+    trailHead: 0,
+  };
   game.attacks.push(attack);
+  if (to) {
+    // Attacks are public: the defender remembers who hit it.
+    const defender = game.nations[to];
+    defender.grudge = from;
+    defender.grudgeUntil = game.time + 45;
+  }
   return attack;
+}
+
+/** A newly started attack: map its front now (so it shows at once) and report it if it involves the player. */
+function announce(game: Game, attack: Attack) {
+  surveyFront(game, attack);
+  if (attack.from === 1 || attack.to === 1) {
+    game.events.push({ kind: "attack", attack: attack.id, from: attack.from, to: attack.to, troops: attack.troops, reason: attack.reason, tile: anchorTile(game, attack) });
+  }
 }
 
 /** Queue every target tile touching the attacker's border. */
@@ -576,11 +850,14 @@ function touches(game: Game, from: number, to: number) {
   return false;
 }
 
+/** Rivals' extras: why they attack (for the player's log), land only, and how far a boat route may be searched. */
+export type LaunchOptions = { reason?: AttackReason; landOnly?: boolean; searchLimit?: number };
+
 /**
  * Send `ratio` of a player's troops at whoever owns `target` (or at unclaimed land). Bordering land: the attack
  * takes your whole shared border. Across water: a boat sails to the nearest shore and attacks from there.
  */
-export function launchAttack(game: Game, from: number, target: number, ratio: number): ActionResult {
+export function launchAttack(game: Game, from: number, target: number, ratio: number, options: LaunchOptions = {}): ActionResult {
   const attacker = game.nations[from];
   if (game.outcome || !attacker.alive) return { ok: false, message: "The match is over." };
   if (game.phase === "spawn") return { ok: false, message: "Wait for the spawn phase to end." };
@@ -591,8 +868,12 @@ export function launchAttack(game: Game, from: number, target: number, ratio: nu
   const troops = Math.floor(attacker.troops * clamp(ratio, 0, 1));
   if (troops < 1) return { ok: false, message: "Not enough troops. Wait for them to grow." };
   const name = to ? game.nations[to].name : "unclaimed land";
+  const reason = options.reason ?? null;
 
-  if (!touches(game, from, to)) return sendBoat(game, from, target, troops);
+  if (!touches(game, from, to)) {
+    if (options.landOnly) return { ok: false, message: `You don't border ${name}.` };
+    return sendBoat(game, from, target, troops, reason, options.searchLimit);
+  }
 
   attacker.troops -= troops;
   let force = troops;
@@ -601,18 +882,31 @@ export function launchAttack(game: Game, from: number, target: number, ratio: nu
   if (opposing) {
     const clash = Math.min(opposing.troops, force);
     opposing.troops -= clash;
+    opposing.clashAt = game.tick;
     force -= clash;
-    if (opposing.troops <= 0) endAttack(game, opposing, 0);
-    if (force <= 0) return { ok: true, message: `Your troops met ${name}'s attack and stopped it.` };
+    if (from === 1 || to === 1) game.events.push({ kind: "clash", a: from, b: to, troops: clash, tile: anchorTile(game, opposing) });
+    if (opposing.troops <= 0) endAttack(game, opposing, 0, "clash");
+    if (force <= 0) {
+      if (opposing.done) return { ok: true, message: `Your troops met ${name}'s attack and stopped it.` };
+      return { ok: true, message: `Your troops met ${name}'s attack: ${compactNumber(opposing.troops)} of theirs are still coming.` };
+    }
   }
   const existing = game.attacks.find((attack) => attack.from === from && attack.to === to);
   if (existing) {
     existing.troops += force;
+    existing.sent += force;
+    existing.reinforcedAt = game.tick;
+    existing.reinforcedBy = force;
+    existing.stalling = false;
+    if (opposing) existing.clashAt = game.tick;
     seedFront(game, existing);
+    surveyFront(game, existing);
     return { ok: true, message: `Reinforced: ${compactNumber(force)} more troops against ${name}.` };
   }
-  const attack = newAttack(game, from, to, force);
+  const attack = newAttack(game, from, to, force, reason);
+  if (opposing) attack.clashAt = game.tick;
   seedFront(game, attack);
+  announce(game, attack);
   return { ok: true, message: to ? `Attacking ${name} with ${compactNumber(force)} troops.` : `Expanding with ${compactNumber(force)} troops.` };
 }
 
@@ -620,14 +914,35 @@ export function retreat(game: Game, attackId: number, from: number): ActionResul
   const attack = game.attacks.find((entry) => entry.id === attackId && entry.from === from);
   if (!attack) return { ok: false, message: "That attack has already ended." };
   const returned = Math.floor(attack.troops * (1 - RETREAT_COST));
-  endAttack(game, attack, returned);
+  endAttack(game, attack, returned, "retreat");
   return { ok: true, message: `Retreated: ${compactNumber(returned)} troops came home (25% were lost).` };
 }
 
-function endAttack(game: Game, attack: Attack, returned: number) {
+function endAttack(game: Game, attack: Attack, returned: number, reason: EndReason, eliminated = false) {
+  if (attack.done) return;
+  attack.done = true;
   game.attacks = game.attacks.filter((entry) => entry !== attack);
   const nation = game.nations[attack.from];
   if (nation.alive && returned > 0) nation.troops += returned;
+  // A rival that ran dry against a defender leaves it alone for a while instead of throwing more at it.
+  if (reason === "spent" && attack.to && nation.kind !== "human") {
+    nation.avoid = attack.to;
+    nation.avoidUntil = game.time + 20;
+  }
+  if (reason === "gone") return;
+  if (attack.ax >= 0) {
+    game.ended.push({ id: attack.id, from: attack.from, to: attack.to, x: attack.ax, y: attack.ay, dx: attack.dx, dy: attack.dy, reason, tick: game.tick, troops: attack.troops, gained: attack.gained, eliminated });
+    if (game.ended.length > 120) game.ended.splice(0, game.ended.length - 120);
+  }
+  if (attack.from === 1 || attack.to === 1) {
+    game.events.push({ kind: "ended", attack: attack.id, from: attack.from, to: attack.to, reason, troops: attack.troops, gained: attack.gained, tile: anchorTile(game, attack) });
+  }
+}
+
+/** The tile under an attack's main front (or -1 before it has one). */
+export function anchorTile(game: Game, attack: Attack) {
+  if (attack.ax < 0) return -1;
+  return clamp(Math.floor(attack.ay), 0, game.h - 1) * game.w + clamp(Math.floor(attack.ax), 0, game.w - 1);
 }
 
 /** One tick of an attack: take tiles until this tick's time is used up or the troops run out. */
@@ -638,7 +953,7 @@ function advanceAttack(game: Game, attack: Attack) {
   for (let guard = 0; guard < 5000 && time > 0; guard += 1) {
     const t = takeFront(game, attack);
     if (t < 0) {
-      endAttack(game, attack, attack.troops);
+      endAttack(game, attack, attack.troops, "complete");
       return;
     }
     const terrain = game.terrain[t];
@@ -647,24 +962,37 @@ function advanceAttack(game: Game, attack: Attack) {
     let cost: number;
     let defenderLoss = 0;
     if (!defender) {
-      loss = (MAGNITUDE[terrain] / (attacker.kind === "bot" ? 10 : 5)) * AREA;
+      loss = expansionLoss(attacker, terrain);
       cost = (clamp((2000 * TILE_COST[terrain] * AREA) / Math.max(1, attack.troops), 5, 100) / (2 * border)) * AREA;
     } else {
       const fortified = defended(game, t);
       const ratio = defender.troops / Math.max(1, attack.troops);
       // Troops per tile at the genre's scale (each of our tiles is AREA of theirs); the defender loses ours.
       const density = defender.troops / Math.max(1, defender.tiles);
-      loss = MAGNITUDE[terrain] * AREA * (fortified ? 5 : 1) * clamp(ratio, 0.6, 2) * (0.463 + (0.0039 * density) / AREA) * (defender.kind === "bot" && attacker.kind !== "bot" ? 0.7 : 1);
+      loss = lossPerTile(attacker, defender, attack.troops, terrain, fortified);
       cost = (((clamp(ratio, 0.82, 7.5) * clamp(ratio / 20, 1, 50)) / 8.55) * TILE_COST[terrain] * (fortified ? 3 : 1) * AREA) / border;
       defenderLoss = density;
     }
     if (attack.troops < loss) {
       // Spent: the last troops fall at the border.
-      endAttack(game, attack, 0);
+      attack.spent += attack.troops;
+      attack.windowSpent += attack.troops;
+      endAttack(game, attack, 0, "spent");
       return;
     }
     attack.troops -= loss;
-    if (defender) defender.troops = Math.max(0, defender.troops - defenderLoss);
+    attack.spent += loss;
+    attack.windowSpent += loss;
+    attack.gained += 1;
+    attack.windowGain += 1;
+    attack.trail[attack.trailHead] = t;
+    attack.trailTick[attack.trailHead] = game.tick;
+    attack.trailHead = (attack.trailHead + 1) % TRAIL;
+    if (defender) {
+      const killed = Math.min(defender.troops, defenderLoss);
+      defender.troops -= killed;
+      attack.killed += killed;
+    }
     setOwner(game, t, attack.from);
     for (const n of neighbors(t, game.w, game.h)) if (game.owner[n] === attack.to && game.terrain[n] !== WATER) addFront(game, attack, n);
     time -= cost;
@@ -672,6 +1000,122 @@ function advanceAttack(game: Game, attack: Attack) {
       eliminate(game, defender, attack.from);
       return;
     }
+  }
+}
+
+const CELL = 12;
+
+/**
+ * Where an attack is fighting: its front tiles grouped into coarse cells, each with the direction the attacker
+ * pushes from (its own neighbors). The main cell anchors the troop count; it stays put unless the front moves on.
+ */
+function surveyFront(game: Game, attack: Attack) {
+  const { w, h, owner } = game;
+  const cells = new Map<number, FrontCell>();
+  let count = 0;
+  for (const t of attack.front) {
+    if (owner[t] !== attack.to) continue;
+    const x = t % w;
+    const y = (t / w) | 0;
+    let dx = 0;
+    let dy = 0;
+    let own = 0;
+    if (x > 0 && owner[t - 1] === attack.from) {
+      dx += 1;
+      own += 1;
+    }
+    if (x < w - 1 && owner[t + 1] === attack.from) {
+      dx -= 1;
+      own += 1;
+    }
+    if (t >= w && owner[t - w] === attack.from) {
+      dy += 1;
+      own += 1;
+    }
+    if (t < w * (h - 1) && owner[t + w] === attack.from) {
+      dy -= 1;
+      own += 1;
+    }
+    if (!own) continue;
+    const key = ((y / CELL) | 0) * 4096 + ((x / CELL) | 0);
+    let cell = cells.get(key);
+    if (!cell) {
+      cell = { x: 0, y: 0, n: 0, dx: 0, dy: 0 };
+      cells.set(key, cell);
+    }
+    cell.x += x;
+    cell.y += y;
+    cell.n += 1;
+    cell.dx += dx;
+    cell.dy += dy;
+    count += 1;
+  }
+  attack.frontSize = count;
+  if (!count) return;
+  const list = [...cells.values()];
+  let biggest = 0;
+  for (const cell of list) {
+    cell.x = cell.x / cell.n + 0.5;
+    cell.y = cell.y / cell.n + 0.5;
+    const length = Math.hypot(cell.dx, cell.dy);
+    if (length > 0) {
+      cell.dx /= length;
+      cell.dy /= length;
+    }
+    if (cell.n > biggest) biggest = cell.n;
+  }
+  list.sort((a, b) => b.n - a.n);
+  attack.cells = list.slice(0, 16);
+  // The anchor: the big stretch nearest the last one, so the troop count doesn't hop along a long front.
+  let main = list[0];
+  if (attack.ax >= 0) {
+    let best = Infinity;
+    for (const cell of list) {
+      if (cell.n < biggest * 0.5) break;
+      const d = (cell.x - attack.ax) ** 2 + (cell.y - attack.ay) ** 2;
+      if (d < best) {
+        best = d;
+        main = cell;
+      }
+    }
+  }
+  attack.ax = main.x;
+  attack.ay = main.y;
+  if (main.dx || main.dy) {
+    attack.dx = main.dx;
+    attack.dy = main.dy;
+  }
+  // The defender's buildings within reach of the front: threatened (reported once each to the player).
+  attack.near = [];
+  if (attack.to) {
+    const defender = game.nations[attack.to];
+    for (const spot of [...defender.citySpots, ...defender.posts]) {
+      const sx = (spot % w) + 0.5;
+      const sy = ((spot / w) | 0) + 0.5;
+      for (const cell of attack.cells) {
+        if ((cell.x - sx) ** 2 + (cell.y - sy) ** 2 > 14 * 14) continue;
+        attack.near.push(spot);
+        if (attack.to === 1 && !attack.warned.has(spot)) {
+          attack.warned.add(spot);
+          game.events.push({ kind: "threatened", attack: attack.id, from: attack.from, to: attack.to, building: game.building[spot] === 1 ? "city" : "post", tile: spot });
+        }
+        break;
+      }
+    }
+  }
+}
+
+/** Once a second per attack: smooth its pace and losses, and tell whether it's about to run dry. */
+function measureAttack(game: Game, attack: Attack) {
+  attack.rate = attack.rate * 0.5 + attack.windowGain * 0.5;
+  attack.burn = attack.burn * 0.5 + attack.windowSpent * 0.5;
+  attack.windowGain = 0;
+  attack.windowSpent = 0;
+  const age = game.tick - attack.started;
+  const was = attack.stalling;
+  attack.stalling = attack.to !== 0 && age >= 20 && game.tick - attack.reinforcedAt >= 20 && attack.burn > 0 && attack.troops / attack.burn < 3;
+  if (attack.stalling && !was && (attack.from === 1 || attack.to === 1)) {
+    game.events.push({ kind: "stalling", attack: attack.id, from: attack.from, to: attack.to, troops: attack.troops, tile: anchorTile(game, attack) });
   }
 }
 
@@ -684,8 +1128,8 @@ function eliminate(game: Game, nation: Nation, by: number) {
   nation.gold = 0;
   game.boats = game.boats.filter((boat) => boat.from !== nation.id);
   for (const attack of [...game.attacks]) {
-    if (attack.from === nation.id) game.attacks = game.attacks.filter((entry) => entry !== attack);
-    else if (attack.to === nation.id) endAttack(game, attack, attack.troops);
+    if (attack.from === nation.id) endAttack(game, attack, 0, "gone");
+    else if (attack.to === nation.id) endAttack(game, attack, attack.troops, "complete", true);
   }
   game.events.push({ kind: "eliminated", nation: nation.id, by });
 }
@@ -711,7 +1155,7 @@ function landingNear(game: Game, tile: number) {
         if (x < 0 || y < 0 || x >= w || y >= h) continue;
         const t = y * w + x;
         if (game.terrain[t] === WATER || game.owner[t] !== owner) continue;
-        for (const n of neighbors(t, w, h)) if (game.terrain[n] === WATER) return t;
+        if (game.flags[t] & 1) return t;
       }
     }
   }
@@ -758,16 +1202,18 @@ function boatRoute(game: Game, from: number, landing: number, limit = 350_000): 
   return null;
 }
 
-function sendBoat(game: Game, from: number, target: number, troops: number): ActionResult {
+function sendBoat(game: Game, from: number, target: number, troops: number, reason: AttackReason | null, searchLimit?: number): ActionResult {
   const attacker = game.nations[from];
-  const name = game.owner[target] ? game.nations[game.owner[target]].name : "unclaimed land";
+  const to = game.owner[target];
+  const name = to ? game.nations[to].name : "unclaimed land";
   if (game.boats.filter((boat) => boat.from === from).length >= MAX_BOATS) return { ok: false, message: `You already have ${MAX_BOATS} boats at sea.` };
   const landing = landingNear(game, target);
   if (landing < 0) return { ok: false, message: `You don't border ${name}, and there's no coast near there to land on.` };
-  const path = boatRoute(game, from, landing);
+  const path = boatRoute(game, from, landing, searchLimit);
   if (!path) return { ok: false, message: `You don't border ${name}, and no boat route reaches it from your coast.` };
   attacker.troops -= troops;
-  game.boats.push({ id: game.nextId++, from, troops, path, index: 0, landing });
+  game.boats.push({ id: game.nextId++, from, to, troops, path, index: 0, landing, reason });
+  if (from === 1 || to === 1) game.events.push({ kind: "sailing", from, to, troops, tile: landing });
   return { ok: true, message: `A boat with ${compactNumber(troops)} troops sails for ${name}.` };
 }
 
@@ -788,11 +1234,17 @@ function advanceBoat(game: Game, boat: Boat) {
   }
   // Storm the beach, then fight inland from it.
   setOwner(game, boat.landing, boat.from);
-  game.events.push({ kind: "landed", boat: boat.id, from: boat.from, to });
+  game.events.push({ kind: "landed", boat: boat.id, from: boat.from, to, tile: boat.landing, troops: boat.troops });
   const existing = game.attacks.find((attack) => attack.from === boat.from && attack.to === to);
-  const attack = existing ?? newAttack(game, boat.from, to, 0);
+  const attack = existing ?? newAttack(game, boat.from, to, 0, boat.reason, boat.landing);
   attack.troops += boat.troops;
+  attack.sent += boat.troops;
+  attack.landedAt = game.tick;
+  attack.landing = boat.landing;
+  attack.stalling = false;
   for (const n of neighbors(boat.landing, game.w, game.h)) if (game.owner[n] === to && game.terrain[n] !== WATER) addFront(game, attack, n);
+  if (existing) surveyFront(game, attack);
+  else announce(game, attack);
 }
 
 /* ------------------------------------------------------------------------------------------- Buildings */
@@ -807,8 +1259,10 @@ export function build(game: Game, id: number, t: number, kind: Building): Action
   if (nation.gold < cost) return { ok: false, message: `Not enough gold: ${kind === "city" ? "a City" : "a Defense Post"} costs ${compactNumber(cost)}.` };
   nation.gold -= cost;
   game.building[t] = kind === "city" ? 1 : 2;
-  if (kind === "city") nation.cities += 1;
-  else nation.posts.push(t);
+  if (kind === "city") {
+    nation.cities += 1;
+    nation.citySpots.push(t);
+  } else nation.posts.push(t);
   game.dirty.push(t);
   return { ok: true, message: kind === "city" ? `City built: +${compactNumber(CITY_TROOPS)} troop cap.` : "Defense Post built: attacks on land within its reach cost far more and slow to a crawl." };
 }
@@ -833,32 +1287,54 @@ export function step(game: Game) {
   game.time += TICK_SECONDS;
   for (const nation of game.nations) {
     if (!nation.alive) continue;
-    nation.troops = Math.min(maxTroops(game, nation), nation.troops + troopGrowth(game, nation));
+    const cap = maxTroops(game, nation);
+    nation.troops = Math.min(cap, nation.troops + troopGrowth(game, nation, cap));
     nation.gold += goldPerTick(nation);
   }
 
-  for (const attack of [...game.attacks]) if (game.attacks.includes(attack)) advanceAttack(game, attack);
-  for (const boat of [...game.boats]) advanceBoat(game, boat);
+  for (const attack of game.attacks.slice()) if (!attack.done) advanceAttack(game, attack);
+  // Staggered bookkeeping: each attack measures its pace once a second and remaps its front twice a second.
+  for (const attack of game.attacks) {
+    if ((attack.id + game.tick) % 10 === 0) measureAttack(game, attack);
+    if ((attack.id + game.tick) % 5 === 0) surveyFront(game, attack);
+  }
+  for (const boat of game.boats.slice()) advanceBoat(game, boat);
 
+  // What every rival can see this tick: troops out in the field, and how many attacks each player is under.
+  game.committed.fill(0);
+  game.targeted.fill(0);
+  for (const attack of game.attacks) {
+    game.committed[attack.from] += attack.troops;
+    if (attack.to) game.targeted[attack.to] += 1;
+  }
+  for (const boat of game.boats) {
+    game.committed[boat.from] += boat.troops;
+    const to = game.owner[boat.landing];
+    if (to) game.targeted[to] += 1;
+  }
+
+  // Rivals think on their own staggered schedules (difficulty sets the pace), never all on one tick.
   for (const nation of game.nations) {
     if (!nation.alive || nation.kind === "human" || game.time < nation.nextThink) continue;
-    if (nation.kind === "bot") {
-      nation.nextThink = game.time + 1.5 + game.rng() * 3;
-      thinkBot(game, nation);
-    } else {
-      nation.nextThink = game.time + DIFFICULTIES[game.settings.difficulty].think * (0.7 + game.rng() * 0.6);
-      thinkNation(game, nation);
-    }
+    nation.nextThink = game.time + thinkInterval(game);
+    think(game, nation);
   }
 
   if (game.tick % 10 === 0) annexSurrounded(game);
+  if (game.ended.length && game.tick - game.ended[0].tick > 40) game.ended = game.ended.filter((entry) => game.tick - entry.tick <= 40);
   checkOutcome(game);
 }
 
-/** A Bot whose land touches only one other player (no coast, no unclaimed land) joins that player. */
+/**
+ * A Bot whose land touches only one other player (no coast, no map edge, no unclaimed land) joins that player.
+ * Only Bots whose surroundings changed since the last check are looked at, and the coast and edge are counted as
+ * tiles change hands, so an unchanged Bot costs nothing.
+ */
 function annexSurrounded(game: Game) {
   for (const bot of game.nations) {
-    if (!bot.alive || bot.kind !== "bot" || bot.tiles > 4000) continue;
+    if (!bot.alive || bot.kind !== "bot" || !bot.touched) continue;
+    bot.touched = false;
+    if (bot.tiles > 4000 || bot.exposed > 0) continue;
     let surrounder = -1;
     let enclosed = true;
     for (const b of bot.border) {
@@ -872,25 +1348,23 @@ function annexSurrounded(game: Game) {
       if (!enclosed) break;
     }
     if (!enclosed || surrounder <= 0) continue;
-    // Flood the Bot's land: any coast or map edge means it isn't enclosed.
-    const start = bot.border.values().next().value;
-    if (start === undefined) continue;
-    const tiles: number[] = [start];
-    const seen = new Set(tiles);
-    let open = false;
-    for (let i = 0; i < tiles.length && !open; i += 1) {
-      const t = tiles[i];
-      const x = t % game.w;
-      if (x === 0 || x === game.w - 1 || t < game.w || t >= game.w * (game.h - 1)) open = true;
-      for (const n of neighbors(t, game.w, game.h)) {
-        if (game.terrain[n] === WATER) open = true;
-        else if (game.owner[n] === bot.id && !seen.has(n)) {
-          seen.add(n);
-          tiles.push(n);
+    // Every patch of the Bot's land is walled in by the same player: it all goes to them.
+    const tiles: number[] = [];
+    const seen = new Set<number>();
+    for (const start of bot.border) {
+      if (seen.has(start)) continue;
+      seen.add(start);
+      tiles.push(start);
+      for (let i = tiles.length - 1; i < tiles.length; i += 1) {
+        for (const n of neighbors(tiles[i], game.w, game.h)) {
+          if (game.owner[n] === bot.id && !seen.has(n)) {
+            seen.add(n);
+            tiles.push(n);
+          }
         }
       }
     }
-    if (open || tiles.length !== bot.tiles) continue;
+    if (tiles.length !== bot.tiles) continue;
     for (const t of tiles) setOwner(game, t, surrounder);
     eliminate(game, bot, surrounder);
     game.events.pop();
@@ -914,130 +1388,41 @@ function checkOutcome(game: Game) {
   }
 }
 
-/* ------------------------------------------------------------------------------------------- AI */
-
-/** What a player sees along its border: neighbors by land (with one tile of theirs to aim at). */
-function survey(game: Game, nation: Nation, samples: number) {
-  const seen = new Map<number, number>();
-  const size = nation.border.size;
-  if (!size) return seen;
-  const stride = Math.max(1, Math.floor(size / samples));
-  let i = Math.floor(game.rng() * stride);
-  let index = 0;
-  for (const b of nation.border) {
-    if (index++ !== i) continue;
-    i += stride;
-    for (const n of neighbors(b, game.w, game.h)) {
-      if (game.terrain[n] === WATER) continue;
-      const o = game.owner[n];
-      if (o !== nation.id && !seen.has(o)) seen.set(o, n);
-    }
-  }
-  return seen;
-}
-
-/** Bots: grow, take open land in small bites, and pick on much weaker neighbors. */
-function thinkBot(game: Game, bot: Nation) {
-  if (bot.troops < maxTroops(game, bot) * 0.3) return;
-  const around = survey(game, bot, 12);
-  const open = around.get(0);
-  if (open !== undefined) {
-    launchAttack(game, bot.id, open, 0.05);
-    return;
-  }
-  if (immune(game)) return;
-  for (const [o, tile] of around) {
-    const other = game.nations[o];
-    if (other.troops < bot.troops * 0.5 && game.rng() < 0.5) {
-      launchAttack(game, bot.id, tile, 0.05);
-      return;
-    }
-  }
-}
-
-/** A tile deep in a player's land, for a City out of harm's way. */
-function interiorTile(game: Game, id: number) {
-  for (let tries = 0; tries < 400; tries += 1) {
-    const t = Math.floor(game.rng() * game.owner.length);
-    if (game.owner[t] !== id || game.building[t]) continue;
-    if (!landNeighborNotOwnedBy(game, t, id) && !game.nations[id].border.has(t)) return t;
-  }
-  return -1;
-}
-
-/** Nations: expand while there's open land, then go after the weakest neighbor; build, fortify and sail. */
-function thinkNation(game: Game, nation: Nation) {
-  const difficulty = game.settings.difficulty;
-  const cap = maxTroops(game, nation);
-  const fill = nation.troops / cap;
-  const threatened = game.attacks.some((attack) => attack.to === nation.id);
-
-  if (nation.gold >= cityCost(nation.cities) && fill > 0.75) {
-    const spot = interiorTile(game, nation.id);
-    if (spot >= 0) build(game, nation.id, spot, "city");
-  }
-  if (threatened && nation.gold >= postCost(nation.posts.length) && nation.posts.length < 1 + nation.tiles / 5000) {
-    const attacker = game.attacks.find((attack) => attack.to === nation.id)!.from;
-    for (const b of nation.border) {
-      if (game.building[b]) continue;
-      if (neighbors(b, game.w, game.h).some((n) => game.owner[n] === attacker)) {
-        build(game, nation.id, b, "post");
-        break;
+/** A tile deep in a player's land (near its middle), for a City out of harm's way, or -1. */
+export function interiorTile(game: Game, id: number) {
+  const nation = game.nations[id];
+  if (!nation.tiles) return -1;
+  const { w, h } = game;
+  const cx = Math.round(nation.sx / nation.tiles);
+  const cy = Math.round(nation.sy / nation.tiles);
+  for (let r = 0; r <= 16; r += 1) {
+    for (let dy = -r; dy <= r; dy += 1) {
+      for (let dx = -r; dx <= r; dx += 1) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || (dx + dy) % 3) continue;
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x < 0 || y < 0 || x >= w || y >= h) continue;
+        const t = y * w + x;
+        if (game.owner[t] === id && !game.building[t] && !nation.border.has(t)) return t;
       }
     }
   }
-
-  const threshold = { easy: 0.6, normal: 0.45, hard: 0.35 }[difficulty];
-  if (fill < threshold || game.attacks.filter((attack) => attack.from === nation.id).length >= 3) return;
-
-  const around = survey(game, nation, 40);
-  const open = around.get(0);
-  if (open !== undefined) {
-    launchAttack(game, nation.id, open, { easy: 0.15, normal: 0.22, hard: 0.3 }[difficulty]);
-    return;
-  }
-  if (immune(game)) return;
-  // The weakest neighbor by troops per tile; Bots are easy pickings, and on Hard the player gets no slack.
-  let target = -1;
-  let tile = -1;
-  let weakest = Infinity;
-  for (const [o, t] of around) {
-    if (o === 0) continue;
-    const other = game.nations[o];
-    const density = other.troops / Math.max(1, other.tiles) / (other.kind === "bot" ? 2 : 1);
-    const winnable = other.troops < nation.troops * (difficulty === "hard" ? 1.1 : 0.8);
-    if (winnable && density < weakest) {
-      weakest = density;
-      target = o;
-      tile = t;
-    }
-  }
-  if (target >= 0) {
-    launchAttack(game, nation.id, tile, { easy: 0.2, normal: 0.28, hard: 0.35 }[difficulty]);
-    return;
-  }
-  // Nothing to take by land: look across the water now and then.
-  if (game.rng() < 0.15 && game.boats.every((boat) => boat.from !== nation.id)) {
-    const destination = overseasTarget(game, nation);
-    if (destination >= 0) launchAttack(game, nation.id, destination, 0.25);
-  }
-}
-
-/** Some unclaimed or weaker land a short sail from this Nation's coast, or -1. */
-function overseasTarget(game: Game, nation: Nation) {
-  const { w } = game;
-  for (let tries = 0; tries < 40; tries += 1) {
+  for (let tries = 0; tries < 200; tries += 1) {
     const t = Math.floor(game.rng() * game.owner.length);
-    if (game.terrain[t] === WATER) continue;
-    const o = game.owner[t];
-    if (o === nation.id || (o && game.nations[o].troops > nation.troops * 0.8)) continue;
-    // Close enough: within 120 tiles of the Nation's center.
-    const dx = (t % w) - nation.sx / Math.max(1, nation.tiles);
-    const dy = ((t / w) | 0) - nation.sy / Math.max(1, nation.tiles);
-    if (dx * dx + dy * dy > 120 * 120) continue;
-    return t;
+    if (game.owner[t] === id && !game.building[t] && !nation.border.has(t)) return t;
   }
   return -1;
+}
+
+/** The state an attack is in right now, as the map and the panel show it. */
+export type FrontState = "landing" | "clash" | "stalling" | "reinforced" | "starting" | "advancing";
+export function attackState(game: Game, attack: Attack): FrontState {
+  if (game.tick - attack.landedAt < 15) return "landing";
+  if (game.tick - attack.clashAt < 15) return "clash";
+  if (attack.stalling) return "stalling";
+  if (game.tick - attack.reinforcedAt < 12) return "reinforced";
+  if (game.tick - attack.started < 10) return "starting";
+  return "advancing";
 }
 
 /* ------------------------------------------------------------------------------------------- Score */

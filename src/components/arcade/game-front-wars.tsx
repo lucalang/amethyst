@@ -1,22 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
-import { Anchor, Building2, Crosshair, Flag, MapPin, Pause, Play, RotateCcw, Shield, Swords, Trophy, Undo2 } from "lucide-react";
+import { Anchor, Building2, Crosshair, Flag, LocateFixed, MapPin, Pause, Play, RotateCcw, ScrollText, Shield, ShieldAlert, Swords, Trophy, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GameOverlay, GameShell, Stat, useAway, useArcade, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import { observeCanvas, startLoop, type CanvasSize } from "./engine";
 import {
+  BOAT_SPEED,
   BOT_COUNTS,
   CITY_TROOPS,
   DIFFICULTIES,
   MAPS,
   MAX_BOATS,
+  PERSONALITIES,
   RETREAT_COST,
   SPAWN_TICKS,
   TERRAIN_LABEL,
   TICK_SECONDS,
   WATER,
   WIN_SHARE,
+  attackState,
   build,
   chooseSpawn,
   cityCost,
@@ -32,10 +35,16 @@ import {
   share,
   step,
   troopsAttacking,
+  type Attack,
+  type AttackReason,
   type Difficulty,
+  type FrontState,
   type Game,
+  type GameEvent,
   type Kind,
   type MapKind,
+  type Nation,
+  type Personality,
   type Settings,
 } from "./front-wars/engine";
 import { MapRenderer, drawFrame, type Ping, type View } from "./front-wars/render";
@@ -43,6 +52,43 @@ import "./front-wars/front-wars.css";
 
 type Phase = "setup" | "playing" | "paused" | "over";
 type Mode = "attack" | "city" | "post";
+type Level = "critical" | "high" | "watch";
+/** One front in the panel: an attack (or a boat at sea) between you and someone else. */
+type Front = {
+  key: string;
+  attack: number;
+  boat: number;
+  other: { id: number; name: string; color: string; kind: Kind; personality: Personality | null };
+  troops: number;
+  otherTroops: number;
+  state: FrontState | "sailing";
+  expansion: boolean;
+  gained: number;
+  rate: number;
+  area: string;
+  urgency: number;
+  level: Level;
+  signals: string[];
+  eta: number;
+};
+type Detail = {
+  id: number;
+  title: string;
+  mine: boolean;
+  state: FrontState;
+  troops: number;
+  sent: number;
+  gained: number;
+  spent: number;
+  killed: number;
+  rate: number;
+  secondsLeft: number | null;
+  defender: number | null;
+  frontSize: number;
+  reason: AttackReason | null;
+};
+type Tone = "bad" | "warn" | "good" | "info";
+type FeedEntry = { id: number; time: number; tone: Tone; text: string; tile: number; count: number };
 type Hud = {
   stage: "spawn" | "battle";
   spawnLeft: number;
@@ -59,18 +105,57 @@ type Hud = {
   postCost: number;
   rank: number;
   alive: number;
-  leaders: { id: number; name: string; color: string; kind: Kind; share: number; troops: number }[];
-  attacks: { id: number; target: string; troops: number }[];
-  boats: { id: number; troops: number }[];
+  leaders: { id: number; name: string; color: string; kind: Kind; personality: Personality | null; share: number; troops: number }[];
+  outgoing: Front[];
+  incoming: Front[];
+  selected: Detail | null;
+  feed: FeedEntry[];
 };
 type Result = { won: boolean; score: number; best: boolean; time: number; peak: number; message: string };
 
 const SETTINGS_KEY = "front-wars:settings:v2";
 const DEFAULT_SETTINGS: Settings = { map: "world", bots: 200, nations: true, difficulty: "normal" };
+/** Ready-made setups from the same options; "Standard" is the unchanged default. */
+const PRESETS: { id: string; label: string; hint: string; settings: Settings }[] = [
+  { id: "standard", label: "Standard", hint: "The default: the world, 84 Nations and 200 Bots on Normal.", settings: DEFAULT_SETTINGS },
+  { id: "quick", label: "Quick Battle", hint: "One random continent with 12 realms and 100 Bots: everyone is reachable by land, so wars start early and matches run short.", settings: { map: "continent", bots: 100, nations: true, difficulty: "normal" } },
+  { id: "crowded", label: "Crowded World", hint: "The world packed with 400 Bots: open land vanishes in seconds, borders are busy and surrounded tribes get annexed.", settings: { map: "world", bots: 400, nations: true, difficulty: "normal" } },
+  { id: "rivals", label: "Few Strong Rivals", hint: "No Bots, only the 84 Nations on Hard: more open land early, then fewer, larger wars against sharp opponents.", settings: { map: "world", bots: 0, nations: true, difficulty: "hard" } },
+];
+const BOT_HINTS: Record<number, string> = {
+  0: "No Bots: open land lasts longer and Nations meet each other sooner.",
+  100: "A scattering of Bots: some early targets, still room to expand.",
+  200: "Bots in most regions: open land goes quickly and small borders are everywhere.",
+  400: "Bots everywhere: land fills in seconds, expect many small fights and annexations.",
+};
 const MAX_SCALE = 30;
 const percent = (value: number) => `${(value * 100).toFixed(value < 0.1 ? 1 : 0)}%`;
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 const KIND_LABEL: Record<Kind, string> = { human: "You", nation: "Nation", bot: "Bot" };
+const LEVEL_LABEL: Record<Level, string> = { critical: "Critical", high: "High", watch: "Watch" };
+const STATE_LABEL: Record<FrontState | "sailing", string> = {
+  landing: "Landing",
+  clash: "Clash",
+  stalling: "Stalling",
+  reinforced: "Reinforced",
+  starting: "Starting",
+  advancing: "Advancing",
+  sailing: "At sea",
+};
+/** Why a rival attacked you, from your side. */
+const REASON_TEXT: Record<AttackReason, string> = {
+  expansion: "it's grabbing land",
+  "weak-border": "your border looks thinly held",
+  busy: "your troops are busy on another front",
+  retaliation: "payback for your attack",
+  finish: "it thinks it can finish you",
+  counter: "a counterattack",
+  opportunity: "you were its best target nearby",
+  overseas: "a landing across the water",
+};
+const COMPASS = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"];
+const who = (nation: Nation) => (nation.id === 1 ? "you" : nation.name);
+const buildingName = (building: "city" | "post") => (building === "city" ? "City" : "Defense Post");
 
 function loadSettings(): Settings {
   try {
@@ -92,9 +177,123 @@ function loadSettings(): Settings {
   return DEFAULT_SETTINGS;
 }
 
-function snapshot(game: Game): Hud {
+/** Where on your land a front is: the compass side of your territory, and your buildings it's near. */
+function areaOf(game: Game, x: number, y: number, near: number[]) {
+  const player = game.nations[1];
+  if (!player.tiles || x < 0) return "";
+  const angle = Math.atan2(y - player.sy / player.tiles, x - player.sx / player.tiles);
+  const side = COMPASS[(((Math.round(angle / (Math.PI / 4)) % 8) + 8) % 8)];
+  const buildings = near.filter((spot) => game.owner[spot] === 1).map((spot) => (game.building[spot] === 1 ? "City" : "Post"));
+  const close = buildings.includes("City") ? " · near your City" : buildings.length ? " · near your Post" : "";
+  return `${side} border${close}`;
+}
+
+function otherOf(game: Game, id: number): Front["other"] {
+  const nation = game.nations[id];
+  return id ? { id, name: nation.name, color: nation.color, kind: nation.kind, personality: nation.personality } : { id: 0, name: "Open land", color: "#7c8a6a", kind: "bot", personality: null };
+}
+
+/** How urgent an attack on you is: its force against yours, how fast it's taking land, and what it's near. */
+function rateThreat(game: Game, attack: Attack): Pick<Front, "urgency" | "level" | "signals"> {
+  const player = game.nations[1];
+  const force = attack.troops / Math.max(1, player.troops);
+  const lossPerMinute = (attack.rate * 60) / Math.max(1, player.tiles);
+  const nearCity = attack.near.some((spot) => game.building[spot] === 1 && game.owner[spot] === 1);
+  const near = attack.near.some((spot) => game.owner[spot] === 1);
+  const state = attackState(game, attack);
+  const signals: string[] = [];
+  if (force >= 1) signals.push("outnumbers your army");
+  else if (force >= 0.35) signals.push(`${Math.round(force * 100)}% of your troops`);
+  if (lossPerMinute >= 0.05) signals.push("taking land fast");
+  if (near) signals.push(nearCity ? "at your City" : "at your Post");
+  if (attack.stalling) signals.push("faltering");
+  const urgency = Math.min(2, force) * 45 + Math.min(1, lossPerMinute) * 120 + (nearCity ? 30 : near ? 15 : 0) + (state === "landing" ? 10 : 0) - (attack.stalling ? 25 : 0);
+  return { urgency, level: urgency >= 70 ? "critical" : urgency >= 35 ? "high" : "watch", signals };
+}
+
+function snapshot(game: Game, selected: number, feed: FeedEntry[]): Hud {
   const player = game.nations[1];
   const alive = game.nations.filter((nation) => nation.alive && nation.tiles > 0).sort((a, b) => b.tiles - a.tiles);
+  const outgoing: Front[] = [];
+  const incoming: Front[] = [];
+  for (const attack of game.attacks) {
+    if (attack.from !== 1 && attack.to !== 1) continue;
+    const mine = attack.from === 1;
+    const other = otherOf(game, mine ? attack.to : attack.from);
+    const front: Front = {
+      key: `a${attack.id}`,
+      attack: attack.id,
+      boat: -1,
+      other,
+      troops: attack.troops,
+      otherTroops: other.id ? game.nations[other.id].troops : 0,
+      state: attackState(game, attack),
+      expansion: attack.to === 0,
+      gained: attack.gained,
+      rate: attack.rate,
+      area: mine ? "" : areaOf(game, attack.ax, attack.ay, attack.near),
+      urgency: 0,
+      level: "watch",
+      signals: [],
+      eta: 0,
+    };
+    if (mine) outgoing.push(front);
+    else incoming.push({ ...front, ...rateThreat(game, attack) });
+  }
+  for (const boat of game.boats) {
+    const target = game.owner[boat.landing];
+    const mine = boat.from === 1;
+    if (!mine && target !== 1) continue;
+    const other = otherOf(game, mine ? target : boat.from);
+    const eta = Math.max(0, (boat.path.length - 1 - boat.index) / BOAT_SPEED) * TICK_SECONDS;
+    const force = boat.troops / Math.max(1, player.troops);
+    const landingAt = Math.floor(boat.landing / game.w);
+    const front: Front = {
+      key: `b${boat.id}`,
+      attack: -1,
+      boat: boat.id,
+      other,
+      troops: boat.troops,
+      otherTroops: other.id ? game.nations[other.id].troops : 0,
+      state: "sailing",
+      expansion: !target,
+      gained: 0,
+      rate: 0,
+      area: mine ? "" : areaOf(game, boat.landing % game.w, landingAt, []).replace(" border", " coast"),
+      urgency: Math.min(2, force) * 45 + (eta < 5 ? 15 : 0),
+      level: "watch",
+      signals: [`lands in ${Math.ceil(eta)}s`],
+      eta,
+    };
+    if (mine) outgoing.push(front);
+    else incoming.push({ ...front, level: front.urgency >= 70 ? "critical" : front.urgency >= 35 ? "high" : "watch" });
+  }
+  incoming.sort((a, b) => b.urgency - a.urgency);
+  outgoing.sort((a, b) => b.troops - a.troops);
+
+  let detail: Detail | null = null;
+  const chosen = game.attacks.find((attack) => attack.id === selected);
+  if (chosen) {
+    const from = game.nations[chosen.from];
+    const to = chosen.to ? game.nations[chosen.to] : null;
+    detail = {
+      id: chosen.id,
+      title: `${from.id === 1 ? "You" : from.name} → ${to ? who(to) : "open land"}`,
+      mine: chosen.from === 1,
+      state: attackState(game, chosen),
+      troops: chosen.troops,
+      sent: chosen.sent,
+      gained: chosen.gained,
+      spent: chosen.spent,
+      killed: chosen.killed,
+      rate: chosen.rate,
+      secondsLeft: chosen.burn > 0 ? chosen.troops / chosen.burn : null,
+      defender: to ? to.troops : null,
+      frontSize: chosen.frontSize,
+      reason: chosen.reason,
+    };
+  }
+
   return {
     stage: game.phase,
     spawnLeft: Math.max(0, (SPAWN_TICKS - game.tick) * TICK_SECONDS),
@@ -111,12 +310,95 @@ function snapshot(game: Game): Hud {
     postCost: postCost(player.posts.length),
     rank: alive.findIndex((nation) => nation.id === 1) + 1,
     alive: alive.length,
-    leaders: alive.slice(0, 10).map((nation) => ({ id: nation.id, name: nation.name, color: nation.color, kind: nation.kind, share: share(game, nation), troops: nation.troops })),
-    attacks: game.attacks
-      .filter((attack) => attack.from === 1)
-      .map((attack) => ({ id: attack.id, target: attack.to ? game.nations[attack.to].name : "Unclaimed land", troops: attack.troops })),
-    boats: game.boats.filter((boat) => boat.from === 1).map((boat) => ({ id: boat.id, troops: boat.troops })),
+    leaders: alive.slice(0, 10).map((nation) => ({ id: nation.id, name: nation.name, color: nation.color, kind: nation.kind, personality: nation.personality, share: share(game, nation), troops: nation.troops })),
+    outgoing,
+    incoming,
+    selected: detail,
+    feed: feed.slice(0, 8),
   };
+}
+
+/** A match event as a line in the battle log (and whether it deserves a toast and a sound), or null. */
+function describe(game: Game, event: GameEvent): { tone: Tone; text: string; tile: number; toast?: boolean } | null {
+  const name = (id: number) => (id ? game.nations[id].name : "open land");
+  switch (event.kind) {
+    case "attack":
+      if (event.to !== 1) return null;
+      return {
+        tone: "bad",
+        text: `${name(event.from)} attacks you with ${compact(event.troops)}${event.reason ? `: ${REASON_TEXT[event.reason]}` : ""}.`,
+        tile: event.tile,
+        toast: event.troops >= game.nations[1].troops * 0.2,
+      };
+    case "sailing":
+      if (event.to !== 1) return null;
+      return { tone: "warn", text: `${name(event.from)}'s boat (${compact(event.troops)}) is sailing for your coast.`, tile: event.tile, toast: true };
+    case "landed":
+      if (event.from === 1) return { tone: "good", text: `Your boat landed ${compact(event.troops)} troops${event.to ? ` on ${name(event.to)}'s shore` : ""}.`, tile: event.tile };
+      if (event.to === 1) return { tone: "bad", text: `${name(event.from)} landed ${compact(event.troops)} troops on your shore!`, tile: event.tile, toast: true };
+      return null;
+    case "ended": {
+      const tiles = `${event.gained.toLocaleString("en")} tiles`;
+      if (event.from === 1) {
+        if (event.reason === "retreat") return null;
+        // A counter that stopped your attack is already logged as the clash.
+        if (event.reason === "clash") return null;
+        if (!event.to) return event.reason === "complete" ? { tone: "info", text: `No open land left in reach of your expansion (+${tiles}).`, tile: event.tile } : null;
+        if (event.reason === "spent") return { tone: "warn", text: `Your attack on ${name(event.to)} ran out of troops (+${tiles}).`, tile: event.tile };
+        return { tone: "good", text: `Your attack on ${name(event.to)} took everything in reach (+${tiles}).`, tile: event.tile };
+      }
+      if (event.reason === "spent") return { tone: "good", text: `You held off ${name(event.from)} (lost ${tiles}).`, tile: event.tile };
+      if (event.reason === "retreat") return { tone: "good", text: `${name(event.from)} pulled back (you lost ${tiles}).`, tile: event.tile };
+      if (event.reason === "clash") return { tone: "good", text: `Your counterattack stopped ${name(event.from)}.`, tile: event.tile };
+      if (event.reason === "complete") return { tone: "bad", text: `${name(event.from)} broke through (you lost ${tiles}).`, tile: event.tile };
+      return null;
+    }
+    case "stalling":
+      if (event.from === 1) return { tone: "warn", text: `Your attack on ${name(event.to)} is stalling: ${compact(event.troops)} troops left. Reinforce or retreat.`, tile: event.tile, toast: true };
+      return { tone: "good", text: `${name(event.from)}'s attack on you is faltering.`, tile: event.tile };
+    case "threatened":
+      return { tone: "bad", text: `${name(event.from)}'s front reached your ${buildingName(event.building)}.`, tile: event.tile, toast: true };
+    case "clash":
+      if (event.b === 1) return { tone: "warn", text: `${name(event.a)} met your attack head-on: ${compact(event.troops)} troops fell on each side.`, tile: event.tile };
+      return null;
+    case "captured-building":
+      if (event.to === 1) return { tone: "good", text: `You captured ${name(event.from)}'s ${buildingName(event.building)}.`, tile: event.tile, toast: true };
+      if (event.from === 1) return { tone: "bad", text: `You lost a ${buildingName(event.building)} to ${name(event.to)}.`, tile: event.tile, toast: true };
+      return null;
+    case "eliminated": {
+      if (event.nation === 1) return null;
+      const fallen = game.nations[event.nation];
+      if (event.by === 1) return { tone: "good", text: `You conquered ${fallen.name}.`, tile: -1, toast: true };
+      if (fallen.kind === "nation") return { tone: "info", text: `${fallen.name} fell to ${event.by ? name(event.by) : "a rival"}.`, tile: -1 };
+      return null;
+    }
+    case "annexed":
+      if (event.by === 1) return { tone: "good", text: `${game.nations[event.nation].name} was surrounded and joined you.`, tile: -1, toast: true };
+      return null;
+  }
+}
+
+/** A tile of the attacker's land next to an attack's front (for a counterattack), or -1. */
+function attackerTile(game: Game, attack: Attack) {
+  const { w, h } = game;
+  if (attack.ax >= 0) {
+    const x0 = Math.floor(attack.ax);
+    const y0 = Math.floor(attack.ay);
+    for (let r = 0; r <= 4; r += 1) {
+      for (let dy = -r; dy <= r; dy += 1) {
+        for (let dx = -r; dx <= r; dx += 1) {
+          const x = x0 + dx;
+          const y = y0 + dy;
+          if (x < 0 || y < 0 || x >= w || y >= h) continue;
+          if (game.owner[y * w + x] === attack.from && game.terrain[y * w + x] !== WATER) return y * w + x;
+        }
+      }
+    }
+  }
+  for (const b of game.nations[1].border) {
+    for (const n of [b - 1, b + 1, b - w, b + w]) if (n >= 0 && n < w * h && game.owner[n] === attack.from && game.terrain[n] !== WATER) return n;
+  }
+  return -1;
 }
 
 export default function FrontWarsGame({ records }: { records: Record<string, number> }) {
@@ -143,6 +425,11 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   const modeRef = useRef(mode);
   const phaseRef = useRef(phase);
   const drawRequest = useRef(0);
+  const alphaRef = useRef(0);
+  /** The attack picked in the panel (or with T): outlined on the map, its numbers in the Battle card. */
+  const selectedRef = useRef(-1);
+  const feedRef = useRef<FeedEntry[]>([]);
+  const feedId = useRef(0);
   useEffect(() => {
     ratioRef.current = ratio;
     modeRef.current = mode;
@@ -152,19 +439,32 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   useGameAchievementTracking("front-wars", phase);
 
   const say = useCallback((text: string, ok: boolean) => setNotice({ text, ok, id: Date.now() }), []);
+  const refresh = useCallback((game: Game) => {
+    if (selectedRef.current >= 0 && !game.attacks.some((attack) => attack.id === selectedRef.current)) selectedRef.current = -1;
+    setHud(snapshot(game, selectedRef.current, feedRef.current));
+  }, []);
 
   /* ----------------------------------------------------------------------------------------- Drawing */
 
-  const draw = useCallback(() => {
+  const draw = useCallback((alpha?: number) => {
     const canvas = canvasRef.current;
     const game = gameRef.current;
     const renderer = rendererRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !game || !renderer || !ctx) return;
+    if (alpha !== undefined) alphaRef.current = alpha;
     renderer.update();
     const now = performance.now();
     pingsRef.current = pingsRef.current.filter((ping) => now - ping.at < 600);
-    drawFrame(ctx, renderer, game, viewRef.current, sizeRef.current, { hover: hoverRef.current, mode: modeRef.current, pings: pingsRef.current, now, spawn: game.phase === "spawn" });
+    drawFrame(ctx, renderer, game, viewRef.current, sizeRef.current, {
+      hover: hoverRef.current,
+      mode: modeRef.current,
+      pings: pingsRef.current,
+      now,
+      spawn: game.phase === "spawn",
+      selected: selectedRef.current,
+      tick: game.tick + (phaseRef.current === "playing" ? alphaRef.current : 0),
+    });
   }, []);
 
   /** Draw once on the next frame (while paused or between matches nothing runs continuously). */
@@ -213,19 +513,66 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     [clampView, requestDraw],
   );
 
+  /** Center the map on a spot (in tiles), zooming in far enough to see the fighting. */
+  const lookAt = useCallback(
+    (x: number, y: number, zoom: number) => {
+      const game = gameRef.current;
+      if (!game) return;
+      const view = viewRef.current;
+      const { width, height } = sizeRef.current;
+      view.scale = Math.max(view.scale, Math.min(MAX_SCALE, Math.min(width / game.w, height / game.h) * zoom));
+      view.x = width / 2 - x * view.scale;
+      view.y = height / 2 - y * view.scale;
+      clampView();
+      requestDraw();
+    },
+    [clampView, requestDraw],
+  );
+
   const centerOnHome = useCallback(() => {
     const game = gameRef.current;
     if (!game) return;
     const player = game.nations[1];
     if (!player.tiles) return;
-    const view = viewRef.current;
-    const { width, height } = sizeRef.current;
-    view.scale = Math.max(view.scale, Math.min(MAX_SCALE, Math.min(width / game.w, height / game.h) * 5));
-    view.x = width / 2 - (player.sx / player.tiles + 0.5) * view.scale;
-    view.y = height / 2 - (player.sy / player.tiles + 0.5) * view.scale;
-    clampView();
+    lookAt(player.sx / player.tiles + 0.5, player.sy / player.tiles + 0.5, 5);
+  }, [lookAt]);
+
+  /** Jump to a front from the panel: select an attack (outlined, with details) or follow a boat. */
+  const focusFront = useCallback(
+    (front: { attack: number; boat: number }) => {
+      const game = gameRef.current;
+      if (!game) return;
+      if (front.attack >= 0) {
+        const attack = game.attacks.find((entry) => entry.id === front.attack);
+        if (!attack || attack.ax < 0) return;
+        selectedRef.current = attack.id;
+        lookAt(attack.ax, attack.ay, 8);
+      } else {
+        const boat = game.boats.find((entry) => entry.id === front.boat);
+        if (!boat) return;
+        const tile = boat.path[Math.min(boat.path.length - 1, boat.index)];
+        lookAt((tile % game.w) + 0.5, Math.floor(tile / game.w) + 0.5, 6);
+      }
+      refresh(game);
+    },
+    [lookAt, refresh],
+  );
+
+  const focusTile = useCallback(
+    (tile: number) => {
+      const game = gameRef.current;
+      if (!game || tile < 0) return;
+      lookAt((tile % game.w) + 0.5, Math.floor(tile / game.w) + 0.5, 8);
+    },
+    [lookAt],
+  );
+
+  const clearSelection = useCallback(() => {
+    selectedRef.current = -1;
+    const game = gameRef.current;
+    if (game) refresh(game);
     requestDraw();
-  }, [clampView, requestDraw]);
+  }, [refresh, requestDraw]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -256,13 +603,14 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
         : game.outcome?.reason === "conquered"
           ? "Your last land fell."
           : `${winner?.name ?? "A rival"} took ${percent(winner ? share(game, winner) : WIN_SHARE)} of the land first.`;
+      selectedRef.current = -1;
       setResult({ won, score, best: improved, time: game.time, peak: game.nations[1].peak, message });
-      setHud(snapshot(game));
+      refresh(game);
       setPhase("over");
       setMode("attack");
       play(won ? "win" : "over");
     },
-    [play, submit],
+    [play, submit, refresh],
   );
 
   const start = useCallback(
@@ -277,17 +625,33 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       rendererRef.current = new MapRenderer(game);
       pingsRef.current = [];
       hoverRef.current = -1;
+      selectedRef.current = -1;
+      feedRef.current = [];
       setSettings(next);
       setResult(null);
       setMode("attack");
-      setHud(snapshot(game));
+      refresh(game);
       setPhase("playing");
       fit();
       say("Choose where to start: tap any unclaimed land.", true);
       play("tap");
     },
-    [fit, say, play],
+    [fit, say, play, refresh],
   );
+
+  /** Log an event once (a repeat within a few seconds bumps a counter instead of a new line). */
+  const log = useCallback((game: Game, entry: { tone: Tone; text: string; tile: number }) => {
+    const feed = feedRef.current;
+    const last = feed[0];
+    if (last && last.text === entry.text && game.time - last.time < 10) {
+      last.count += 1;
+      last.time = game.time;
+      return;
+    }
+    feedId.current += 1;
+    feed.unshift({ ...entry, id: feedId.current, time: game.time, count: 1 });
+    if (feed.length > 40) feed.length = 40;
+  }, []);
 
   // The match runs only while playing: ten simulation ticks a second, a frame per display refresh.
   useEffect(() => {
@@ -308,33 +672,28 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
           play("power");
           centerOnHome();
         }
+        let toast: { tone: Tone; text: string } | null = null;
         for (const event of game.events) {
-          if (event.kind === "eliminated" || event.kind === "annexed") {
-            const fallen = game.nations[event.nation];
-            if (event.by === 1) {
-              say(event.kind === "annexed" ? `${fallen.name} was surrounded and joined you.` : `You conquered ${fallen.name}.`, true);
-              play("crack");
-            } else if (fallen.kind === "nation" && event.nation !== 1) {
-              say(`${fallen.name} fell to ${game.nations[event.by]?.name ?? "a rival"}.`, true);
-            }
-          } else if (event.kind === "landed") {
-            if (event.from === 1) say(`Your boat landed${event.to ? ` on ${game.nations[event.to].name}'s shore` : ""}.`, true);
-            else if (event.to === 1) say(`${game.nations[event.from].name} landed on your shore!`, false);
-          } else if (event.kind === "captured-building" && (event.to === 1 || event.from === 1)) {
-            say(event.to === 1 ? `You captured a ${event.building === "city" ? "City" : "Defense Post"}.` : `You lost a ${event.building === "city" ? "City" : "Defense Post"}.`, event.to === 1);
-          }
+          const line = describe(game, event);
+          if (!line) continue;
+          log(game, line);
+          if (line.toast && (!toast || (line.tone === "bad" && toast.tone !== "bad"))) toast = line;
+        }
+        if (toast) {
+          say(toast.text, toast.tone === "good" || toast.tone === "info");
+          play(toast.tone === "good" ? "crack" : toast.tone === "bad" ? "penalty" : "tick");
         }
         game.events.length = 0;
         if (game.outcome) {
           finish(game);
           return;
         }
-        if (ticks % 3 === 0) setHud(snapshot(game));
+        if (ticks % 3 === 0) refresh(game);
       },
-      () => draw(),
+      (alpha) => draw(alpha),
       10,
     );
-  }, [phase, draw, requestDraw, finish, say, play, centerOnHome]);
+  }, [phase, draw, requestDraw, finish, say, play, centerOnHome, refresh, log]);
 
   const togglePause = useCallback(() => {
     setPhase((current) => (current === "playing" ? "paused" : current === "paused" ? "playing" : current));
@@ -367,10 +726,10 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       say(outcome.message, outcome.ok);
       play(outcome.ok ? (game.phase === "spawn" ? "place" : current === "attack" ? "swoosh" : "place") : "invalid");
       if (outcome.ok && current !== "attack") setMode("attack");
-      setHud(snapshot(game));
+      refresh(game);
       requestDraw();
     },
-    [say, play, requestDraw],
+    [say, play, requestDraw, refresh],
   );
 
   const retreatFrom = useCallback(
@@ -380,9 +739,28 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       const outcome = retreat(game, id, 1);
       say(outcome.message, outcome.ok);
       play(outcome.ok ? "erase" : "invalid");
-      setHud(snapshot(game));
+      refresh(game);
+      requestDraw();
     },
-    [say, play],
+    [say, play, refresh, requestDraw],
+  );
+
+  /** Meet an attack on you head-on: your attack ratio at the attacker's land beside the front. */
+  const counter = useCallback(
+    (id: number) => {
+      const game = gameRef.current;
+      if (!game || phaseRef.current !== "playing") return;
+      const attack = game.attacks.find((entry) => entry.id === id && entry.to === 1);
+      if (!attack) return say("That attack has already ended.", false);
+      const tile = attackerTile(game, attack);
+      if (tile < 0) return say(`You don't border ${game.nations[attack.from].name} by land.`, false);
+      const outcome = launchAttack(game, 1, tile, ratioRef.current);
+      say(outcome.message, outcome.ok);
+      play(outcome.ok ? "swoosh" : "invalid");
+      refresh(game);
+      requestDraw();
+    },
+    [say, play, refresh, requestDraw],
   );
 
   const changeRatio = useCallback((delta: number) => setRatio((value) => Math.round(Math.min(1, Math.max(0.01, value + delta)) * 100) / 100), []);
@@ -396,6 +774,17 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     },
     [clampView, requestDraw],
   );
+
+  /** T: step through the fronts, the most urgent threats first, then your own attacks. */
+  const cycleFronts = useCallback(() => {
+    const game = gameRef.current;
+    if (!game) return;
+    const hudNow = snapshot(game, selectedRef.current, feedRef.current);
+    const list = [...hudNow.incoming, ...hudNow.outgoing].filter((front) => front.attack >= 0);
+    if (!list.length) return say("No battles on your fronts right now.", true);
+    const index = list.findIndex((front) => front.attack === selectedRef.current);
+    focusFront(list[(index + 1) % list.length]);
+  }, [focusFront, say]);
 
   useGameKeys((event) => {
     const key = event.key.toLowerCase();
@@ -451,12 +840,18 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       case "f":
         setMode((current) => (current === "post" ? "attack" : "post"));
         return true;
+      case "t":
+        cycleFronts();
+        return true;
       case "escape":
         setMode("attack");
+        if (selectedRef.current >= 0) clearSelection();
         return true;
       case "x": {
-        const latest = gameRef.current?.attacks.filter((attack) => attack.from === 1).at(-1);
-        if (latest) retreatFrom(latest.id);
+        // Retreat the selected attack of yours, or else your latest.
+        const mine = gameRef.current?.attacks.filter((attack) => attack.from === 1) ?? [];
+        const target = mine.find((attack) => attack.id === selectedRef.current) ?? mine.at(-1);
+        if (target) retreatFrom(target.id);
         return true;
       }
       case "enter": {
@@ -484,15 +879,24 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
 
-  function describe(tile: number) {
+  function describeTile(tile: number) {
     const game = gameRef.current;
     if (!game || tile < 0) return setInspect(null);
     const terrain = game.terrain[tile];
     if (terrain === WATER) return setInspect("Water");
     const owner = game.owner[tile];
-    const who = owner ? `${game.nations[owner].name}${owner === 1 ? "" : ` (${KIND_LABEL[game.nations[owner].kind]}) · ${compact(game.nations[owner].troops)} troops`}` : "Unclaimed land";
+    let text = "Unclaimed land";
+    if (owner) {
+      const nation = game.nations[owner];
+      if (owner === 1) text = nation.name;
+      else {
+        const traits = [KIND_LABEL[nation.kind], nation.personality ? PERSONALITIES[nation.personality].label : ""].filter(Boolean).join(" · ");
+        const plan = nation.plan ? ` · ${nation.plan.replace(/\bYou\b/, "you")}` : "";
+        text = `${nation.name} (${traits}) · ${compact(nation.troops)} troops${plan}`;
+      }
+    }
     const building = game.building[tile] === 1 ? " · City" : game.building[tile] === 2 ? " · Defense Post" : "";
-    setInspect(`${TERRAIN_LABEL[terrain]} · ${who}${building}`);
+    setInspect(`${TERRAIN_LABEL[terrain]} · ${text}${building}`);
   }
 
   function onPointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
@@ -514,7 +918,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       const tile = tileAt(point.x, point.y);
       if (tile !== hoverRef.current) {
         hoverRef.current = tile;
-        describe(tile);
+        describeTile(tile);
         requestDraw();
       }
       return;
@@ -539,7 +943,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       const tile = tileAt(point.x, point.y);
       if (event.pointerType !== "mouse") {
         hoverRef.current = tile;
-        describe(tile);
+        describeTile(tile);
       }
       act(tile);
     }
@@ -565,6 +969,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   const inMatch = phase === "playing" || phase === "paused" || phase === "over";
   const player = hud;
   const spawning = player?.stage === "spawn";
+  const live = phase === "playing";
 
   return (
     <GameShell
@@ -599,7 +1004,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
           <canvas
             ref={canvasRef}
             className="fw-canvas"
-            aria-label="Front Wars map. Click or tap land to expand or attack; drag to pan, scroll or pinch to zoom."
+            aria-label="Front Wars map. Click or tap land to expand or attack; drag to pan, scroll or pinch to zoom. Your attacks show white troop counts on their fronts, attacks on you red ones."
             role="img"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -629,6 +1034,19 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                 </span>
                 {inspect ? <span className="fw-inspect">{inspect}</span> : null}
               </div>
+              {player.incoming.length && phase !== "over" ? (
+                <div className="fw-threats" role="group" aria-label="Attacks on you">
+                  {player.incoming.slice(0, 3).map((front) => (
+                    <button key={front.key} type="button" data-level={front.level} onClick={() => focusFront(front)} title={`Show this front on the map${front.area ? ` (${front.area})` : ""}`}>
+                      <ShieldAlert aria-hidden className="size-3.5 shrink-0" />
+                      <span className="truncate">{front.other.name}</span>
+                      <span className="tabular-nums">{compact(front.troops)}</span>
+                      <span className="fw-threat-level">{front.state === "sailing" ? `boat · ${Math.ceil(front.eta)}s` : LEVEL_LABEL[front.level]}</span>
+                    </button>
+                  ))}
+                  {player.incoming.length > 3 ? <span className="fw-threats-more">+{player.incoming.length - 3} more</span> : null}
+                </div>
+              ) : null}
               <div className="fw-zoom">
                 <Button variant="outline" size="icon-sm" onClick={() => zoomAt(1.3, sizeRef.current.width / 2, sizeRef.current.height / 2)} aria-label="Zoom in">
                   +
@@ -703,6 +1121,112 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
 
         {inMatch && player ? (
           <aside className="fw-panel" aria-label="Command">
+            <section className="fw-card" data-alert={player.incoming.some((front) => front.level !== "watch") ? "true" : "false"}>
+              <h2 className="fw-card-title">
+                <ShieldAlert aria-hidden className="size-4" />
+                Threats
+                <span className="ml-auto text-xs font-medium text-muted-foreground">{player.incoming.length ? `${player.incoming.length} incoming` : "None"}</span>
+              </h2>
+              {player.incoming.length ? (
+                <ul className="fw-fronts" aria-label="Attacks on you, most urgent first">
+                  {player.incoming.map((front) => (
+                    <li key={front.key} data-level={front.level}>
+                      <div className="fw-front-head">
+                        <span aria-hidden className="fw-swatch" style={{ "--swatch": front.other.color } as CSSProperties} />
+                        <span className="min-w-0 flex-1 truncate font-semibold">
+                          {front.other.name}
+                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            {KIND_LABEL[front.other.kind]}
+                            {front.other.personality ? ` · ${PERSONALITIES[front.other.personality].label}` : ""}
+                          </span>
+                        </span>
+                        <span className="fw-level" data-level={front.level}>
+                          {LEVEL_LABEL[front.level]}
+                        </span>
+                      </div>
+                      <p className="fw-front-meta">
+                        <strong className="fw-red tabular-nums">{compact(front.troops)}</strong> vs your <span className="tabular-nums">{compact(player.troops)}</span>
+                        {" · "}
+                        {front.state === "stalling" ? "Faltering" : STATE_LABEL[front.state]}
+                        {front.gained ? <span className="tabular-nums"> · −{front.gained.toLocaleString("en")} tiles</span> : null}
+                      </p>
+                      {front.area || front.signals.length ? <p className="fw-front-meta">{[front.area, ...front.signals].filter(Boolean).join(" · ")}</p> : null}
+                      <div className="fw-front-actions">
+                        <Button size="xs" variant="outline" onClick={() => focusFront(front)} title="Show this front on the map (T cycles fronts)">
+                          <LocateFixed aria-hidden />
+                          Focus
+                        </Button>
+                        {front.attack >= 0 ? (
+                          <Button size="xs" variant="outline" onClick={() => counter(front.attack)} disabled={!live} title={`Send your attack ratio (${Math.round(ratio * 100)}%) at ${front.other.name}: your troops meet theirs head-on`}>
+                            <Swords aria-hidden />
+                            Counter
+                          </Button>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-muted-foreground">No one is attacking you. Rivals&apos; troop counts appear red on your border the moment they do.</p>
+              )}
+            </section>
+
+            {player.selected ? (
+              <section className="fw-card" aria-label="Selected battle">
+                <h2 className="fw-card-title">
+                  <Crosshair aria-hidden className="size-4" />
+                  <span className="min-w-0 truncate">{player.selected.title}</span>
+                  <Button size="icon-xs" variant="ghost" className="ml-auto" onClick={clearSelection} aria-label="Close battle details">
+                    <X aria-hidden />
+                  </Button>
+                </h2>
+                <dl className="fw-detail">
+                  <dt>State</dt>
+                  <dd>{player.selected.state === "stalling" && !player.selected.mine ? "Faltering" : STATE_LABEL[player.selected.state]}</dd>
+                  <dt>Troops at the front</dt>
+                  <dd className={player.selected.mine ? "" : "fw-red"}>
+                    {compact(player.selected.troops)} <span className="text-muted-foreground">of {compact(player.selected.sent)} sent</span>
+                  </dd>
+                  {player.selected.defender !== null ? (
+                    <>
+                      <dt>Defender&apos;s troops</dt>
+                      <dd>{compact(player.selected.defender)}</dd>
+                    </>
+                  ) : null}
+                  <dt>Land taken</dt>
+                  <dd>
+                    {player.selected.gained.toLocaleString("en")} tiles · {player.selected.rate.toFixed(1)}/s
+                  </dd>
+                  <dt>Losses</dt>
+                  <dd>
+                    {compact(player.selected.spent)} attackers{player.selected.defender !== null ? ` · ${compact(player.selected.killed)} defenders` : ""}
+                  </dd>
+                  <dt>Front</dt>
+                  <dd>
+                    {player.selected.frontSize.toLocaleString("en")} tiles wide
+                    {player.selected.secondsLeft !== null && player.selected.secondsLeft < 60 ? ` · troops last ~${Math.ceil(player.selected.secondsLeft)}s` : ""}
+                  </dd>
+                  {!player.selected.mine && player.selected.reason ? (
+                    <>
+                      <dt>Why</dt>
+                      <dd>{REASON_TEXT[player.selected.reason]}</dd>
+                    </>
+                  ) : null}
+                </dl>
+                {player.selected.mine ? (
+                  <Button size="sm" variant="outline" onClick={() => retreatFrom(player.selected!.id)} disabled={!live} title={`Retreat: lose ${RETREAT_COST * 100}% of these troops (X)`}>
+                    <Undo2 aria-hidden />
+                    Retreat
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => counter(player.selected!.id)} disabled={!live}>
+                    <Swords aria-hidden />
+                    Counter with {Math.round(ratio * 100)}%
+                  </Button>
+                )}
+              </section>
+            ) : null}
+
             <section className="fw-card">
               <h2 className="fw-card-title">
                 <Swords aria-hidden className="size-4" />
@@ -720,33 +1244,37 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
               <p className="text-xs text-muted-foreground">
                 {spawning
                   ? "Tap the map to choose where you start."
-                  : phase === "playing"
+                  : live
                     ? "Tap unclaimed land to expand, or a neighbor to attack. Across water, a boat sails."
                     : "Resume to give orders."}{" "}
-                Keys: 1 / 2 ratio, X retreat.
+                Keys: 1 / 2 ratio, T next front, X retreat.
               </p>
-              {player.attacks.length || player.boats.length ? (
-                <ul className="fw-attacks" aria-label="Your attacks">
-                  {player.attacks.map((attack) => (
-                    <li key={attack.id}>
-                      <span className="min-w-0 truncate">
-                        {attack.target} · <span className="tabular-nums">{compact(attack.troops)}</span>
-                      </span>
-                      <Button size="xs" variant="outline" onClick={() => retreatFrom(attack.id)} disabled={phase !== "playing"} title={`Retreat: lose ${RETREAT_COST * 100}% of these troops`}>
-                        <Undo2 aria-hidden />
-                        Retreat
-                      </Button>
-                    </li>
-                  ))}
-                  {player.boats.map((boat) => (
-                    <li key={`boat-${boat.id}`}>
-                      <span className="flex min-w-0 items-center gap-1.5 truncate">
-                        <Anchor aria-hidden className="size-3.5 shrink-0" />
-                        Boat at sea · <span className="tabular-nums">{compact(boat.troops)}</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {player.boats.length}/{MAX_BOATS}
-                      </span>
+              {player.outgoing.length ? (
+                <ul className="fw-fronts" aria-label="Your attacks">
+                  {player.outgoing.map((front) => (
+                    <li key={front.key} data-mine="true" data-selected={front.attack >= 0 && front.attack === player.selected?.id ? "true" : "false"}>
+                      <div className="fw-front-head">
+                        {front.boat >= 0 ? <Anchor aria-hidden className="size-3.5 shrink-0" /> : <span aria-hidden className="fw-swatch" style={{ "--swatch": front.other.color } as CSSProperties} />}
+                        <span className="min-w-0 flex-1 truncate font-semibold">{front.boat >= 0 ? `Boat to ${front.other.name}` : front.other.name}</span>
+                        <span className="text-xs font-semibold tabular-nums">{compact(front.troops)}</span>
+                      </div>
+                      <p className="fw-front-meta">
+                        {front.state === "sailing" ? `At sea · lands in ${Math.ceil(front.eta)}s · ${player.outgoing.filter((entry) => entry.boat >= 0).length}/${MAX_BOATS} boats` : STATE_LABEL[front.state]}
+                        {front.gained ? <span className="tabular-nums"> · +{front.gained.toLocaleString("en")} tiles</span> : null}
+                        {!front.expansion && front.otherTroops ? <span className="tabular-nums"> · they have {compact(front.otherTroops)}</span> : null}
+                      </p>
+                      <div className="fw-front-actions">
+                        <Button size="xs" variant="outline" onClick={() => focusFront(front)} title="Show this front on the map">
+                          <LocateFixed aria-hidden />
+                          Focus
+                        </Button>
+                        {front.attack >= 0 ? (
+                          <Button size="xs" variant="outline" onClick={() => retreatFrom(front.attack)} disabled={!live} title={`Retreat: lose ${RETREAT_COST * 100}% of these troops`}>
+                            <Undo2 aria-hidden />
+                            Retreat
+                          </Button>
+                        ) : null}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -764,7 +1292,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                   size="sm"
                   variant={mode === "city" ? "default" : "outline"}
                   aria-pressed={mode === "city"}
-                  disabled={phase !== "playing" || spawning}
+                  disabled={!live || spawning}
                   onClick={() => setMode((current) => (current === "city" ? "attack" : "city"))}
                   title={`+${compact(CITY_TROOPS)} troop cap (C)`}
                 >
@@ -775,7 +1303,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                   size="sm"
                   variant={mode === "post" ? "default" : "outline"}
                   aria-pressed={mode === "post"}
-                  disabled={phase !== "playing" || spawning}
+                  disabled={!live || spawning}
                   onClick={() => setMode((current) => (current === "post" ? "attack" : "post"))}
                   title="Attacks on land in its reach lose far more troops and slow to a crawl (F)"
                 >
@@ -786,6 +1314,32 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
               <p className="text-xs text-muted-foreground">
                 {mode === "attack" ? `Cities add ${compact(CITY_TROOPS)} troop cap; Defense Posts guard the land around them.` : "Tap your own land to place it. Esc cancels."}
               </p>
+            </section>
+
+            <section className="fw-card">
+              <h2 className="fw-card-title">
+                <ScrollText aria-hidden className="size-4" />
+                Battle log
+              </h2>
+              {player.feed.length ? (
+                <ol className="fw-feed" aria-label="Recent events, newest first">
+                  {player.feed.map((entry) => (
+                    <li key={entry.id} data-tone={entry.tone}>
+                      <span className="fw-feed-time tabular-nums">{clock(entry.time)}</span>
+                      {entry.tile >= 0 ? (
+                        <button type="button" onClick={() => focusTile(entry.tile)} title="Show where this happened">
+                          {entry.text}
+                        </button>
+                      ) : (
+                        <span>{entry.text}</span>
+                      )}
+                      {entry.count > 1 ? <span className="fw-feed-count tabular-nums">×{entry.count}</span> : null}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-xs text-muted-foreground">Battles, landings, lost and captured buildings and fallen rivals show up here.</p>
+              )}
             </section>
 
             <section className="fw-card">
@@ -802,7 +1356,12 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">
                         {nation.name}
-                        {nation.kind !== "human" ? <span className="ml-1.5 text-xs font-normal text-muted-foreground">{KIND_LABEL[nation.kind]}</span> : null}
+                        {nation.kind !== "human" ? (
+                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            {KIND_LABEL[nation.kind]}
+                            {nation.personality ? ` · ${PERSONALITIES[nation.personality].label}` : ""}
+                          </span>
+                        ) : null}
                       </span>
                       <span className="fw-share" aria-hidden>
                         <span style={{ width: `${Math.min(100, (nation.share / WIN_SHARE) * 100)}%`, background: nation.color }} />
@@ -826,7 +1385,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                   </li>
                 ) : null}
               </ol>
-              <p className="text-xs text-muted-foreground">{player.alive.toLocaleString("en")} players still standing.</p>
+              <p className="text-xs text-muted-foreground">{player.alive.toLocaleString("en")} players still standing. Hover a rival&apos;s land to see its personality and plan.</p>
             </section>
           </aside>
         ) : null}
@@ -835,8 +1394,14 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   );
 }
 
-/** Match setup: map, rivals and difficulty, with the rules spelled out before you start. */
+const sameSettings = (a: Settings, b: Settings) => a.map === b.map && a.bots === b.bots && a.nations === b.nations && a.difficulty === b.difficulty;
+
+/** Match setup: a preset or your own map, rivals and difficulty, with the rules spelled out before you start. */
 function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: (next: Settings) => void; onStart: () => void }) {
+  const preset = PRESETS.find((entry) => sameSettings(entry.settings, settings));
+  // Open when the saved setup is custom; after that it stays however the player left it.
+  const [customOpen, setCustomOpen] = useState(!preset);
+  const rivals = settings.bots + (settings.nations ? (settings.map === "world" ? 84 : 12) : 0);
   return (
     <div className="fw-setup">
       <div className="fw-setup-card">
@@ -846,52 +1411,75 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
         </div>
 
         <fieldset className="fw-options">
-          <legend>Map</legend>
-          <div role="radiogroup" aria-label="Map" className="fw-segment">
-            {(Object.keys(MAPS) as MapKind[]).map((map) => (
-              <button key={map} type="button" role="radio" aria-checked={settings.map === map} onClick={() => onChange({ ...settings, map })}>
-                {MAPS[map].label}
+          <legend>Preset</legend>
+          <div role="radiogroup" aria-label="Preset" className="fw-presets">
+            {PRESETS.map((entry) => (
+              <button key={entry.id} type="button" role="radio" aria-checked={preset?.id === entry.id} onClick={() => onChange(entry.settings)}>
+                <span className="font-semibold">{entry.label}</span>
+                <span className="text-xs text-muted-foreground">
+                  {MAPS[entry.settings.map].label} · {entry.settings.bots} Bots · {DIFFICULTIES[entry.settings.difficulty].label}
+                </span>
               </button>
             ))}
           </div>
-          <p>{MAPS[settings.map].hint}</p>
+          <p>{preset ? preset.hint : "Custom setup: your own mix of the options below."}</p>
         </fieldset>
 
-        <fieldset className="fw-options">
-          <legend>Bots</legend>
-          <div role="radiogroup" aria-label="Bots" className="fw-segment">
-            {BOT_COUNTS.map((count) => (
-              <button key={count} type="button" role="radio" aria-checked={settings.bots === count} onClick={() => onChange({ ...settings, bots: count })}>
-                {count}
-              </button>
-            ))}
-          </div>
-          <p>Small tribes scattered everywhere: weak alone, quick to grab land, and annexed when someone surrounds them.</p>
-        </fieldset>
+        <details className="fw-custom" open={customOpen} onToggle={(event) => setCustomOpen(event.currentTarget.open)}>
+          <summary>Customize{preset ? "" : " (custom)"}</summary>
+          <div className="grid gap-4 pt-3">
+            <fieldset className="fw-options">
+              <legend>Map</legend>
+              <div role="radiogroup" aria-label="Map" className="fw-segment">
+                {(Object.keys(MAPS) as MapKind[]).map((map) => (
+                  <button key={map} type="button" role="radio" aria-checked={settings.map === map} onClick={() => onChange({ ...settings, map })}>
+                    {MAPS[map].label}
+                  </button>
+                ))}
+              </div>
+              <p>{MAPS[settings.map].hint}</p>
+            </fieldset>
 
-        <fieldset className="fw-options">
-          <legend>Nations</legend>
-          <div role="radiogroup" aria-label="Nations" className="fw-segment">
-            {[true, false].map((on) => (
-              <button key={String(on)} type="button" role="radio" aria-checked={settings.nations === on} onClick={() => onChange({ ...settings, nations: on })}>
-                {on ? "On" : "Off"}
-              </button>
-            ))}
-          </div>
-          <p>{settings.map === "world" ? "84 real countries start in their homelands" : "12 rival realms"}: real opponents that expand, build Cities and Defense Posts, sail, and attack the weak.</p>
-        </fieldset>
+            <fieldset className="fw-options">
+              <legend>Bots</legend>
+              <div role="radiogroup" aria-label="Bots" className="fw-segment">
+                {BOT_COUNTS.map((count) => (
+                  <button key={count} type="button" role="radio" aria-checked={settings.bots === count} onClick={() => onChange({ ...settings, bots: count })}>
+                    {count}
+                  </button>
+                ))}
+              </div>
+              <p>Small tribes with a third of your troop cap and half your growth, annexed when one player surrounds them. {BOT_HINTS[settings.bots]}</p>
+            </fieldset>
 
-        <fieldset className="fw-options">
-          <legend>Difficulty</legend>
-          <div role="radiogroup" aria-label="Difficulty" className="fw-segment">
-            {(Object.keys(DIFFICULTIES) as Difficulty[]).map((difficulty) => (
-              <button key={difficulty} type="button" role="radio" aria-checked={settings.difficulty === difficulty} onClick={() => onChange({ ...settings, difficulty })}>
-                {DIFFICULTIES[difficulty].label}
-              </button>
-            ))}
+            <fieldset className="fw-options">
+              <legend>Nations</legend>
+              <div role="radiogroup" aria-label="Nations" className="fw-segment">
+                {[true, false].map((on) => (
+                  <button key={String(on)} type="button" role="radio" aria-checked={settings.nations === on} onClick={() => onChange({ ...settings, nations: on })}>
+                    {on ? "On" : "Off"}
+                  </button>
+                ))}
+              </div>
+              <p>
+                {settings.map === "world" ? "84 real countries start in their homelands" : "12 rival realms"}: the strong rivals. They expand, build Cities and Defense Posts, sail, and
+                pick their wars. Off: only Bots, a gentler, more open match.
+              </p>
+            </fieldset>
+
+            <fieldset className="fw-options">
+              <legend>Difficulty</legend>
+              <div role="radiogroup" aria-label="Difficulty" className="fw-segment">
+                {(Object.keys(DIFFICULTIES) as Difficulty[]).map((difficulty) => (
+                  <button key={difficulty} type="button" role="radio" aria-checked={settings.difficulty === difficulty} onClick={() => onChange({ ...settings, difficulty })}>
+                    {DIFFICULTIES[difficulty].label}
+                  </button>
+                ))}
+              </div>
+              <p>{DIFFICULTIES[settings.difficulty].hint} It applies to Bots and Nations alike; nobody sees more than you or gets hidden bonuses.</p>
+            </fieldset>
           </div>
-          <p>{DIFFICULTIES[settings.difficulty].hint} Everyone plays by the same rules.</p>
-        </fieldset>
+        </details>
 
         <div className="fw-rules">
           <h3>Rules</h3>
@@ -906,18 +1494,24 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
               <strong>Expand and attack</strong> by tapping unclaimed land or a neighbor: you send your attack ratio of troops and they push your whole shared border forward until they run out.
             </li>
             <li>
+              <strong>Fronts:</strong> your attacks show white troop counts on the map, attacks on you red ones. The Threats list keeps every attack on you, most urgent first; Focus jumps to it, Counter meets it head-on.
+            </li>
+            <li>
               <strong>Troops</strong> grow fastest well below your cap; more land and Cities raise the cap. Hills and mountains cost more, and land near a Defense Post costs far more.
+            </li>
+            <li>
+              <strong>Rivals</strong> are Expansionist, Defensive, Opportunist or Warlike: hover their land to see which, and what they&apos;re doing.
             </li>
             <li>
               <strong>Boats:</strong> tap land across the water to sail troops there (up to {MAX_BOATS} at sea). <strong>Retreat</strong> costs {RETREAT_COST * 100}% of an attack.
             </li>
           </ul>
-          <p className="text-xs text-muted-foreground">Controls: tap or click to act · drag to pan · scroll or pinch to zoom · 1 / 2 ratio · C City · F Post · X retreat · H home · M whole map · Space pause.</p>
+          <p className="text-xs text-muted-foreground">Controls: tap or click to act · drag to pan · scroll or pinch to zoom · 1 / 2 ratio · C City · F Post · T next front · X retreat · H home · M whole map · Space pause.</p>
         </div>
 
         <Button size="lg" onClick={onStart} className="w-full">
           <Swords aria-hidden />
-          Start match
+          Start match · {rivals.toLocaleString("en")} rivals
         </Button>
       </div>
     </div>
