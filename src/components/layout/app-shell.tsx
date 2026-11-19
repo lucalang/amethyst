@@ -4,7 +4,7 @@ import { settingsStyle } from "@/lib/appearance";
 import type { AvatarDecorationId, ProfileBadgeId, ProfileTitleId } from "@/lib/cosmetics";
 import type { LibraryCategory } from "@/lib/collections";
 import type { Preferences } from "@/lib/preferences";
-import { AchievementNotifications } from "@/components/achievements/achievement-notifications";
+import { LazyAchievementNotifications } from "@/components/achievements/lazy-achievement-notifications";
 import { CosmeticsProvider } from "./cosmetics-context";
 import { CurrentCollectionProvider } from "./current-collection";
 import { GuestBar } from "./guest-bar";
@@ -70,7 +70,7 @@ export function AppShell({
         <main id="main" tabIndex={-1} className="flex-1 overflow-x-clip pb-24 md:pb-10">
           {children}
         </main>
-        {guest ? null : <AchievementNotifications enabled={preferences.achievementNotifications} />}
+        {guest || preferences.slimMode ? null : <LazyAchievementNotifications enabled={preferences.achievementNotifications} />}
         <MobileTabBar collections={collections} icons={icons} />
         <ScrollExitFallback />
       </div>

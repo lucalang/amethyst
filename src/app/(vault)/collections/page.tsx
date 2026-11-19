@@ -9,6 +9,7 @@ import { CollectionCard, ContinueCard } from "@/components/home/archive-cards";
 import { NewEntryButton } from "@/components/home/new-entry-button";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { loadHome } from "@/lib/data/home";
+import { loadPreferences } from "@/lib/data/preferences";
 import { requireUser } from "@/lib/supabase/auth";
 
 export const metadata: Metadata = { title: "Archive" };
@@ -17,7 +18,7 @@ const enterIndex = (index: number) => ({ "--enter-index": index }) as CSSPropert
 
 export default async function ArchivePage() {
   const ctx = await requireUser();
-  const home = await loadHome(ctx, null);
+  const [home, preferences] = await Promise.all([loadHome(ctx, null), loadPreferences(ctx)]);
   const categories = home.collections.map(({ id, slug, name, description }) => ({ id, slug, name, description }));
   const { collections, entries } = home.counts;
 
@@ -40,7 +41,7 @@ export default async function ArchivePage() {
           </div>
           {collections ? (
             <div className="flex flex-wrap items-center gap-2.5">
-              {entries ? (
+              {entries && !preferences.slimMode ? (
                 <Button asChild variant="outline" className="h-10 px-4">
                   <Link href="/time-machine">
                     <Hourglass aria-hidden />

@@ -1,0 +1,2525 @@
+/* The Vault (/vault), moved out of globals.css so no other page downloads it. */
+/* ---------------------------------------------------------------------------
+ * The Vault (/vault): a black-and-red system chamber that looks the same on
+ * every theme. The seal's rings turn from script; everything else is CSS and
+ * pauses offscreen ([data-paused]). Entrances sit on wrappers and phase effects
+ * on inner elements, so a phase change never restarts an entrance. Motion off
+ * and reduced motion keep only plain state changes.
+ * ------------------------------------------------------------------------- */
+.vx-stage {
+  --vx-black: #030304;
+  --vx-red: oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-rose: oklch(from #ff5a72 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-pale: oklch(from #ffd6dd min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-text: #f3e9eb;
+  --vx-ash: #8c7f82;
+  /* Obsidian and steel carry the chamber; red is the accent and the light. */
+  --vx-steel: #c9ced6;
+  --vx-steel-dim: #8d939c;
+  --vx-line: rgb(214 220 230 / 0.12);
+  --vx-line-hi: rgb(214 220 230 / 0.28);
+  --vx-focus: oklch(from #ff8a9c min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  /* Errors and lockdown stay red whatever the colour variant (--look-*, set inline). */
+  --vx-danger: #ff1f3d;
+  --vx-danger-pale: #ffd6dd;
+  /* Surfaces, built like the Admin panels; data-look="crimson" swaps them for the Admin reds. */
+  --vx-bg: #030304;
+  --vx-panel: linear-gradient(180deg, rgb(20 22 26 / 0.94), rgb(7 8 10 / 0.96));
+  --vx-sheen: rgb(230 236 245 / 0.06);
+  --vx-frame: rgb(214 220 230 / 0.09);
+  --vx-glow: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
+  --vx-field: rgb(3 4 6 / 0.82);
+  --vx-field-line: rgb(214 220 230 / 0.2);
+  --vx-pill: linear-gradient(180deg, rgb(28 30 35 / 0.92), rgb(9 10 12 / 0.92));
+  --vx-pill-line: rgb(214 220 230 / 0.26);
+  --vx-pill-on: linear-gradient(180deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3), oklch(from rgb(110 6 22) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.46));
+  --vx-haze: 120 132 150;
+  --vx-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --vx-display: var(--font-cinzel), Georgia, "Times New Roman", serif;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: calc(100dvh - 3.5rem - 1px);
+  /* Reaches under the mobile tab bar; the padding keeps the content clear of it. */
+  margin-bottom: -6rem;
+  padding: 1.25rem 1rem calc(7rem + env(safe-area-inset-bottom));
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  color: var(--vx-text);
+  background: var(--vx-bg);
+  color-scheme: dark;
+}
+/* Crimson: the Admin panel's palette. The colour variants are crimson, turned by --look-*. */
+.vx-stage:not([data-look="obsidian"]) {
+  --vx-danger: #eb2d48;
+  --vx-danger-pale: #ffb3bf;
+  --vx-black: #070103;
+  --vx-red: oklch(from #eb2d48 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-pale: oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  --vx-text: #f3e9eb;
+  --vx-steel: #d2c4c7;
+  --vx-steel-dim: #ab9ca0;
+  --vx-line: oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  --vx-line-hi: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  --vx-bg: radial-gradient(130% 90% at 50% 38%, oklch(from #16030a min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 0%, oklch(from #080104 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 52%, #030203 100%);
+  --vx-panel: linear-gradient(180deg, oklch(from rgb(30 6 13) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.94), oklch(from rgb(10 2 6) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.96));
+  --vx-sheen: oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
+  --vx-frame: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  --vx-glow: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
+  --vx-field: rgb(9 2 5 / 0.78);
+  --vx-field-line: oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
+  --vx-pill: linear-gradient(180deg, oklch(from rgb(36 7 15) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92), oklch(from rgb(14 3 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92));
+  --vx-pill-line: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38);
+  --vx-pill-on: linear-gradient(180deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.34), oklch(from rgb(130 6 26) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5));
+  --vx-haze: 200 30 62;
+}
+@media (min-width: 48rem) {
+  .vx-stage {
+    margin-bottom: -2.5rem;
+    padding: 2rem 2rem 3.5rem;
+  }
+}
+.vx-stage ::selection {
+  color: #fff;
+  background: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
+}
+.vx-backdrop,
+.vx-backdrop > * {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.vx-backdrop {
+  z-index: -1;
+  overflow: hidden;
+}
+.vx-fog {
+  background:
+    radial-gradient(34% 28% at 50% 30%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.13), transparent 72%),
+    radial-gradient(70% 48% at 50% 28%, rgb(var(--vx-haze) / 0.13), transparent 72%),
+    linear-gradient(180deg, rgb(var(--vx-haze) / 0.06), transparent 28%),
+    radial-gradient(60% 26% at 50% 100%, rgb(var(--vx-haze) / 0.1), transparent 72%);
+  opacity: calc(0.7 + var(--vx-charge, 0) * 0.3);
+  transition: opacity 700ms ease;
+}
+@media (min-width: 64rem) {
+  .vx-fog {
+    background:
+      radial-gradient(24% 34% at 30% 50%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.14), transparent 72%),
+      radial-gradient(44% 60% at 30% 48%, rgb(var(--vx-haze) / 0.14), transparent 72%),
+      linear-gradient(180deg, rgb(var(--vx-haze) / 0.06), transparent 28%),
+      radial-gradient(60% 26% at 50% 100%, rgb(var(--vx-haze) / 0.1), transparent 72%);
+  }
+}
+.vx-floor {
+  top: auto;
+  height: 50%;
+  opacity: 0.6;
+  background:
+    repeating-linear-gradient(90deg, rgb(170 180 196 / 0.08) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(0deg, rgb(170 180 196 / 0.08) 0 1px, transparent 1px 72px),
+    radial-gradient(50% 60% at 50% 0%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.06), transparent 70%);
+  transform: perspective(28rem) rotateX(64deg);
+  transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, #000 10%, transparent 80%);
+}
+.vx-vignette {
+  background:
+    radial-gradient(130% 95% at 50% 40%, transparent 50%, rgb(0 0 0 / 0.9)),
+    repeating-linear-gradient(0deg, rgb(255 255 255 / 0.02) 0 1px, transparent 1px 3px);
+}
+.vx-embers > span {
+  position: absolute;
+  inset: auto auto -1rem var(--x);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 999px;
+  background: radial-gradient(circle, #f4f6fa, rgb(200 208 222 / 0.5) 45%, transparent 72%);
+  opacity: 0;
+  animation: vx-ember var(--d) linear var(--delay) infinite;
+}
+.vx-embers > span:nth-child(3n) {
+  background: radial-gradient(circle, oklch(from #ffd9de min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7) 45%, transparent 72%);
+}
+@keyframes vx-ember {
+  0% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  15%,
+  70% {
+    opacity: var(--o);
+  }
+  100% {
+    translate: var(--sway) -105vh;
+    opacity: 0;
+  }
+}
+/* The 3D vault: one canvas over the hero (script sets its height); the camera frames the vault on
+   .vx-artifact and builds the console around .vx-window. */
+.vx-scene {
+  position: absolute;
+  inset: 0 0 auto;
+  height: min(100%, 100lvh);
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 6rem), transparent);
+}
+.vx-scene > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: vx-fade 900ms ease backwards;
+}
+.vx-stage[data-scene="ready"] :is(.vx-floor, .vx-embers) {
+  display: none;
+}
+
+/*
+ * The summon. dark: before the first frame (the hold lets the page show itself anyway if scripts never
+ * arrive). summon: the interface arrives with the vault, timed by the --vx-*-at variables. done:
+ * everything at rest, with no entrance left to replay.
+ */
+.vx-stage[data-intro="dark"] .vx-inner {
+  animation: vx-hold 2.5s step-end;
+}
+@keyframes vx-hold {
+  from {
+    opacity: 0;
+  }
+}
+/* The Admin panel's seal holds the dark while the 3D vault compiles, then gives way to the ignition. */
+.vx-opening {
+  position: absolute;
+  inset: 0 0 auto;
+  height: min(100%, 100svh);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1.1rem;
+  overflow: hidden;
+  container-type: size;
+  pointer-events: none;
+  background: radial-gradient(closest-side, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16), oklch(from rgb(110 6 24) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08) 55%, transparent);
+  /* Gives way on its own if scripts never arrive. */
+  animation: vx-opening-out 600ms ease-in 4s forwards;
+}
+.vx-opening::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-conic-gradient(oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.07) 0deg 0.35deg, transparent 0.35deg 5deg);
+  mask: radial-gradient(closest-side, transparent 25%, #000 55%, transparent);
+}
+.vx-stage[data-intro="summon"] .vx-opening {
+  animation: vx-opening-out 900ms ease-in forwards;
+}
+@keyframes vx-opening-out {
+  to {
+    opacity: 0;
+    scale: 1.12;
+    filter: brightness(1.8);
+  }
+}
+.vx-opening-seal {
+  position: relative;
+  width: min(80cqw, 100cqh - 8rem, 760px);
+  aspect-ratio: 1;
+  border: 1.5px solid oklch(from rgb(255 60 90) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, oklch(from rgb(46 5 14) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55), oklch(from rgb(18 2 7) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3) 72%, transparent);
+  box-shadow:
+    0 0 70px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5),
+    inset 0 0 80px -12px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
+  animation: vx-opening-in 0.9s ease-out backwards;
+}
+.vx-opening-seal::after {
+  content: "";
+  position: absolute;
+  inset: 3.5%;
+  border: 1px dashed oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
+  border-radius: 50%;
+}
+.vx-opening-seal > span {
+  position: absolute;
+  border-radius: 50%;
+}
+.vx-opening-runes {
+  inset: 7%;
+  background: repeating-conic-gradient(oklch(from rgb(255 110 134) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7) 0deg 0.6deg, transparent 0.6deg 4deg);
+  mask: radial-gradient(closest-side, transparent 88%, #000 89% 97%, transparent 98%);
+  animation: vx-spin 120s linear infinite;
+}
+.vx-opening-sweep {
+  inset: 12%;
+  background: conic-gradient(transparent 0deg 250deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12) 300deg, oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55) 356deg, oklch(from rgb(255 200 210) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9) 360deg);
+  mask: radial-gradient(closest-side, transparent 62%, #000 63% 99%, transparent);
+  animation: vx-spin 3.6s linear infinite;
+}
+.vx-opening-inner {
+  inset: 27%;
+  border: 1px solid oklch(from rgb(255 120 140) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  box-shadow:
+    0 0 34px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55),
+    inset 0 0 28px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+}
+.vx-opening-seal > .vx-opening-mark {
+  inset: 34.5%;
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75);
+  border-radius: 0;
+  rotate: 45deg;
+  box-shadow: 0 0 18px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+}
+.vx-opening-mark::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
+  rotate: 45deg;
+}
+.vx-opening-core {
+  inset: 44%;
+  background: radial-gradient(closest-side, #fff, oklch(from #ffb3bf min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 22%, oklch(from #ff1f3d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))) 52%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0));
+  box-shadow: 0 0 90px 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.4);
+  animation: vx-opening-pulse 2.6s ease-in-out infinite;
+}
+.vx-opening-text {
+  position: relative;
+  margin: 0;
+  font-family: var(--vx-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--vx-rose);
+  text-shadow: 0 0 12px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
+}
+@keyframes vx-opening-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+  }
+}
+@keyframes vx-opening-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+    scale: 0.9;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.06;
+  }
+}
+.vx-stage {
+  --vx-step: 80ms;
+}
+.vx-stage[data-summon="short"] {
+  --vx-step: 30ms;
+}
+.vx-stage[data-intro="summon"] .vx-fog {
+  animation: vx-fade 1600ms ease backwards;
+}
+.vx-stage[data-intro="summon"] .vx-hud {
+  animation: vx-hud-in 800ms var(--ease-out-soft) var(--vx-hud-at) backwards;
+}
+@keyframes vx-hud-in {
+  from {
+    opacity: 0;
+    translate: 0 -10px;
+    clip-path: inset(0 50% 0 50%);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.vx-stage[data-intro="summon"] .vx-artifact > .vx-seal {
+  animation: vx-seal-summon 1300ms cubic-bezier(0.2, 0.8, 0.2, 1) 150ms backwards;
+}
+.vx-stage[data-summon="short"][data-intro="summon"] .vx-artifact > .vx-seal {
+  animation-duration: 800ms;
+  animation-delay: 0ms;
+}
+@keyframes vx-seal-summon {
+  from {
+    opacity: 0;
+    translate: 0 30%;
+    scale: 0.7;
+    filter: brightness(2.5) blur(6px);
+  }
+}
+/* The screen powers on as the console locks: a bright line that opens from the centre. Only opacity,
+   clip and filter animate, because the 3D console owns the panel's transform. */
+.vx-stage[data-intro="summon"] .vx-window {
+  animation: vx-activate 700ms cubic-bezier(0.7, 0, 0.2, 1) var(--vx-panel-at) backwards;
+}
+@keyframes vx-activate {
+  0% {
+    opacity: 0;
+    clip-path: inset(50% 0 50% 0);
+    filter: brightness(3);
+  }
+  40% {
+    opacity: 1;
+    clip-path: inset(49% 0 49% 0);
+  }
+  100% {
+    clip-path: inset(0);
+    filter: none;
+  }
+}
+.vx-lede,
+.vx-label {
+  --n: 0;
+}
+.vx-field {
+  --n: 1;
+}
+.vx-signal {
+  --n: 2;
+}
+.vx-help {
+  --n: 3;
+}
+.vx-form > .vx-actions {
+  --n: 4;
+}
+.vx-stage[data-intro="summon"] :is(.vx-lede, .vx-label, .vx-field, .vx-signal, .vx-help, .vx-form > .vx-actions) {
+  animation: vx-detail 450ms var(--ease-out-soft) calc(var(--vx-panel-at) + 250ms + var(--n) * var(--vx-step)) backwards;
+}
+@keyframes vx-detail {
+  from {
+    opacity: 0;
+    translate: -8px 0;
+    filter: brightness(2.2);
+  }
+}
+/* The lock-in: the panel flares as the vault settles. */
+.vx-stage[data-intro="summon"] .vx-window-flare {
+  animation: vx-flare 520ms ease-out var(--vx-settle-at) backwards;
+}
+.vx-stage[data-intro="summon"] .vx-log {
+  animation: vx-rise 600ms var(--ease-out-soft) calc(var(--vx-settle-at) - 250ms) backwards;
+}
+.vx-skip {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 2.5rem;
+  padding: 0 0.9rem;
+  border: 1px solid var(--vx-line-hi);
+  border-radius: 999px;
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vx-steel);
+  background: rgb(5 6 8 / 0.78);
+  backdrop-filter: blur(6px);
+  animation: vx-fade 400ms ease 300ms backwards;
+}
+@media (min-width: 48rem) {
+  .vx-skip {
+    right: 2rem;
+    bottom: 1.75rem;
+  }
+}
+.vx-skip:hover {
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  color: #fff;
+}
+.vx-skip:focus-visible {
+  outline: 2px solid var(--vx-focus);
+  outline-offset: 2px;
+}
+@keyframes vx-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vx-rise {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+@keyframes vx-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+.vx-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 76rem;
+  margin: 0 auto;
+}
+.vx-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding-bottom: 0.95rem;
+  /* The Admin rule: red from the sigil, fading out across the page. */
+  background: linear-gradient(90deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75), var(--vx-line) 40%, transparent 92%) 0 100% / 100% 1px no-repeat;
+}
+.vx-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+/* The Admin sigil: a ring with a diamond inside. */
+.vx-sigil {
+  position: relative;
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1.5px solid var(--vx-red);
+  border-radius: 50%;
+  box-shadow:
+    0 0 10px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55),
+    inset 0 0 8px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
+}
+.vx-sigil::after {
+  content: "";
+  position: absolute;
+  inset: 0.6rem;
+  border: 1px solid oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
+  rotate: 45deg;
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
+}
+.vx-stage[data-phase="verifying"] .vx-sigil::after {
+  animation: vx-spin 2.4s linear infinite;
+}
+@media (min-width: 48rem) {
+  .vx-sigil {
+    width: 2.9rem;
+    height: 2.9rem;
+  }
+  .vx-sigil::after {
+    inset: 0.75rem;
+  }
+}
+.vx-eyebrow {
+  font-family: var(--vx-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vx-rose);
+}
+.vx-stage h1.vx-title {
+  margin-top: 0.3rem;
+  font-family: var(--vx-display);
+  font-size: clamp(1.85rem, 1.3rem + 2.2vw, 3rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow:
+    0 0 18px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.42),
+    0 1px 0 rgb(0 0 0 / 0.8);
+}
+.vx-hud-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* The status chip: an Admin pill with a lit dot; --tone comes from the phase registry below. */
+.vx-chip {
+  --tone: var(--vx-red);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 2.5rem;
+  padding: 0 1rem 0 0.85rem;
+  border: 1px solid var(--vx-pill-line);
+  border-radius: 999px;
+  font-family: var(--vx-mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--vx-steel);
+  background: var(--vx-pill);
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
+    0 6px 18px -10px rgb(0 0 0 / 0.9),
+    0 0 24px -10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  transition:
+    color 300ms ease,
+    border-color 300ms ease;
+}
+.vx-chip::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--tone) 20%, transparent),
+    0 0 8px var(--tone);
+  animation: vx-breathe 2.4s ease-in-out infinite;
+}
+@keyframes vx-breathe {
+  50% {
+    opacity: 0.35;
+  }
+}
+.vx-stage[data-phase="verifying"] .vx-chip {
+  --tone: var(--vx-focus);
+  color: #fff;
+}
+.vx-stage:is([data-phase="invalid"], [data-phase="locked"]) .vx-chip {
+  --tone: var(--vx-danger);
+  border-color: rgb(255 90 114 / 0.5);
+  color: var(--vx-danger-pale);
+}
+.vx-stage:is([data-phase="granted"], [data-phase="already"]) .vx-chip {
+  --tone: #fff;
+  border-color: rgb(255 255 255 / 0.5);
+  color: #fff;
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="lost"]) .vx-chip {
+  --tone: var(--vx-ash);
+  border-color: rgb(140 127 130 / 0.45);
+  color: #a69c9e;
+}
+.vx-icon-button {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--vx-pill-line);
+  border-radius: 999px;
+  color: var(--vx-steel);
+  background: var(--vx-pill);
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
+    0 6px 18px -10px rgb(0 0 0 / 0.9);
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+@media (pointer: coarse) {
+  .vx-icon-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+.vx-icon-button:hover {
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1),
+    0 0 16px -4px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+}
+.vx-icon-button[aria-pressed="true"] {
+  color: #fff;
+  background: var(--vx-pill-on);
+  box-shadow:
+    inset 0 0 0 1px oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45),
+    0 0 12px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.26);
+}
+/* The colour picker: the Admin nav pill, a row of swatches and the chosen colour's name. */
+.vx-look {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0.22rem 0.9rem 0.22rem 0.22rem;
+  border: 1px solid var(--vx-pill-line);
+  border-radius: 999px;
+  background: var(--vx-pill);
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
+    0 6px 18px -10px rgb(0 0 0 / 0.9),
+    0 0 24px -10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+}
+.vx-look-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.vx-look-option:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+.vx-look-option:has(:checked) {
+  background: var(--vx-pill-on);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.55),
+    0 0 12px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.26);
+}
+.vx-look-option:has(:focus-visible) {
+  outline: 2px solid var(--vx-focus);
+  outline-offset: 2px;
+}
+.vx-look-swatch {
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 1px solid rgb(255 255 255 / 0.45);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, color-mix(in oklab, var(--swatch) 55%, white), var(--swatch) 45%, color-mix(in oklab, var(--swatch) 45%, black) 80%);
+}
+.vx-look-option:has(:checked) .vx-look-swatch {
+  box-shadow: 0 0 6px var(--swatch);
+}
+.vx-look-current {
+  min-width: 5.5rem;
+  margin-left: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--vx-text);
+}
+@media (max-width: 29.99rem) {
+  .vx-look-option {
+    width: 1.9rem;
+  }
+  .vx-chip {
+    padding: 0 0.8rem 0 0.7rem;
+    letter-spacing: 0.14em;
+  }
+}
+@media (pointer: coarse) {
+  .vx-look-option {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+}
+.vx-icon-button:focus-visible,
+.vx-button:focus-visible,
+.vx-link:focus-visible {
+  outline: 2px solid var(--vx-focus);
+  outline-offset: 3px;
+}
+.vx-main {
+  display: grid;
+  justify-items: center;
+  gap: 1.5rem;
+}
+@media (min-width: 64rem) {
+  .vx-main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 34rem);
+    align-items: center;
+    gap: 3rem;
+    min-height: min(34rem, calc(100dvh - 14rem));
+  }
+}
+
+/* Where the vault stands. The 3D scene frames itself on this box; the drawn seal fills it otherwise. */
+.vx-artifact {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(20rem, 84vw, 44svh);
+  aspect-ratio: 1;
+}
+@media (min-width: 64rem) {
+  .vx-artifact {
+    width: min(34rem, 42vw, 62svh);
+  }
+}
+.vx-artifact > .vx-seal {
+  width: 100%;
+}
+
+/* The seal. SVG transforms turn around the centre of the viewBox. */
+.vx-seal {
+  position: relative;
+  width: min(19rem, 78vw);
+  aspect-ratio: 1;
+}
+@media (min-width: 64rem) {
+  .vx-seal {
+    width: min(30rem, 38vw, 60dvh);
+  }
+}
+.vx-seal-shake,
+.vx-seal-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.vx-seal-svg {
+  overflow: visible;
+  transition: filter 700ms ease;
+}
+.vx-seal-svg * {
+  transform-origin: 0 0;
+}
+.vx-bloom {
+  opacity: calc(0.55 + var(--vx-charge, 0) * 0.45);
+  transition:
+    opacity 700ms ease,
+    scale 1200ms var(--ease-out-soft);
+}
+.vx-rays {
+  fill: oklch(from rgb(255 220 226) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.09);
+  opacity: 0;
+  scale: 0.6;
+  transition:
+    opacity 1000ms ease,
+    scale 1600ms var(--ease-out-soft);
+}
+.vx-brackets {
+  fill: none;
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
+  stroke-width: 1.2;
+}
+.vx-marker,
+.vx-notch {
+  fill: var(--vx-red);
+  transition: fill 400ms ease;
+}
+.vx-line {
+  fill: none;
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
+  stroke-width: 1;
+}
+.vx-dash {
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
+  stroke-dasharray: 1.5 4.5;
+}
+.vx-ticks {
+  fill: none;
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  animation: vx-draw 1400ms var(--ease-out-soft) 350ms backwards;
+}
+@keyframes vx-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+.vx-seg {
+  fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.06);
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.22);
+  stroke-width: 0.6;
+  transition:
+    fill 220ms ease,
+    stroke 220ms ease;
+}
+.vx-seg[data-on] {
+  fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.72);
+  stroke: oklch(from #ff7186 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+}
+.vx-seg-glow {
+  fill: none;
+  stroke: var(--vx-red);
+  stroke-width: 14;
+  opacity: calc(var(--vx-charge, 0) * 0.16);
+  transition: opacity 300ms ease;
+}
+.vx-sweep {
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.vx-sweep-tail,
+.vx-sweep-head {
+  fill: none;
+  stroke-width: 9;
+}
+.vx-sweep-tail {
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
+}
+.vx-sweep-head {
+  stroke: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+}
+.vx-runes {
+  fill: none;
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 500ms ease;
+}
+.vx-star {
+  fill: none;
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
+  stroke-width: 0.8;
+}
+.vx-vertex {
+  fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+}
+.vx-tooth {
+  fill: oklch(from #1c0a0f min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  stroke-width: 0.8;
+  transition: translate 500ms cubic-bezier(0.7, 0, 0.2, 1);
+}
+.vx-core {
+  opacity: calc(0.18 + var(--vx-charge, 0) * 0.4);
+  scale: 0.6;
+  transition:
+    opacity 500ms ease,
+    scale 900ms var(--ease-out-soft);
+}
+.vx-gate {
+  transition:
+    translate 1000ms cubic-bezier(0.7, 0, 0.2, 1),
+    opacity 1000ms ease;
+}
+.vx-keyhole {
+  fill: none;
+  stroke: color-mix(in oklab, var(--vx-red) calc(25% + var(--vx-charge, 0) * 75%), transparent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: stroke 200ms ease;
+}
+.vx-rim {
+  fill: none;
+  stroke: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  stroke-width: 1.2;
+  transition: opacity 400ms ease;
+}
+.vx-scan,
+.vx-shock {
+  opacity: 0;
+}
+.vx-scan-line {
+  fill: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+}
+.vx-shock {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+}
+.vx-shards {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+}
+.vx-shards > span {
+  position: absolute;
+  top: -1px;
+  left: -7px;
+  width: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff 40%, var(--vx-red));
+  opacity: 0;
+  animation: vx-shard 1100ms cubic-bezier(0.15, 0.7, 0.3, 1) calc(900ms + var(--delay)) forwards;
+}
+@keyframes vx-shard {
+  from {
+    transform: rotate(var(--a)) translateX(36px) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--a)) translateX(var(--r)) rotate(var(--spin));
+    opacity: 0;
+  }
+}
+.vx-lockdown {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.vx-lockdown > span {
+  padding: 0.5rem 0.9rem;
+  border: 2px solid var(--vx-red);
+  font-family: var(--vx-mono);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--vx-red);
+  background: rgb(3 2 3 / 0.85);
+  box-shadow: 0 0 28px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
+  rotate: -8deg;
+  animation: vx-stamp 450ms cubic-bezier(0.2, 1.3, 0.4, 1) backwards;
+}
+@keyframes vx-stamp {
+  from {
+    opacity: 0;
+    scale: 1.7;
+  }
+}
+
+/* The console, built like an Admin panel: tinted glass, a lit rim, an inner frame line and a glow.
+   --c is its accent: red, white once open, ash when dormant. */
+.vx-window {
+  --c: var(--vx-red);
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 34rem;
+  border: 1px solid var(--vx-line-hi);
+  border-radius: 16px;
+  background:
+    radial-gradient(90% 60% at 50% 0%, var(--vx-sheen), transparent 70%),
+    var(--vx-panel);
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
+    0 0 0 1px rgb(0 0 0 / 0.45),
+    0 24px 50px -24px rgb(0 0 0 / 0.95),
+    0 0 40px -12px var(--vx-glow);
+  transition:
+    border-color 500ms ease,
+    box-shadow 700ms ease;
+}
+.vx-window::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  z-index: -1;
+  border: 1px solid var(--vx-frame);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.vx-window:focus-within {
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16),
+    0 0 0 1px rgb(0 0 0 / 0.45),
+    0 24px 50px -24px rgb(0 0 0 / 0.95),
+    0 0 48px -10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
+}
+/* Without the 3D console: the Admin panels' CSS tilt, lift and glare (useCardTilt). */
+.vx-stage[data-scene="failed"] .vx-window[data-tilt] {
+  transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(var(--lift, 0px));
+}
+.vx-stage[data-scene="failed"] .vx-window[data-tilt]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* The Admin glass's light beam: a diagonal band that slides with the pointer. */
+  --beam: calc(50% + (var(--gx, 50%) - 50%) * 0.7 - (var(--gy, 50%) - 50%) * 0.3);
+  border-radius: inherit;
+  background:
+    linear-gradient(60deg, transparent calc(var(--beam) - 10%), oklch(from rgb(255 205 214) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12) var(--beam), transparent calc(var(--beam) + 10%)),
+    radial-gradient(90% 120% at var(--gx, 50%) var(--gy, 0%), oklch(from rgb(255 70 100) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.16), transparent 60%);
+  opacity: var(--glare, 0);
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+.vx-stage:is([data-phase="granted"], [data-phase="already"]) .vx-window {
+  --c: #fff;
+  border-color: rgb(255 255 255 / 0.4);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 24px 50px -24px rgb(0 0 0 / 0.95),
+    0 0 56px -14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.42);
+}
+.vx-stage[data-phase="invalid"] .vx-window {
+  --c: var(--vx-danger);
+  border-color: rgb(255 90 114 / 0.75);
+  box-shadow:
+    inset 0 1px 0 rgb(255 130 150 / 0.16),
+    0 0 0 1px rgb(0 0 0 / 0.6),
+    0 0 50px -10px rgb(255 31 61 / 0.5);
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="lost"]) .vx-window {
+  --c: var(--vx-ash);
+  border-color: rgb(140 127 130 / 0.4);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 1px rgb(0 0 0 / 0.6);
+}
+/* On the 3D console the panel is an Admin panel's DOM: glass, slab, rim and glare are drawn by the scene,
+   so the page draws nothing behind the text. Its head floats a little above the glass while it tilts;
+   the form stays flat so presses land where they look. */
+.vx-stage[data-scene="ready"][data-phase] .vx-window {
+  isolation: auto;
+  transform-style: preserve-3d;
+  border-color: transparent;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.vx-stage[data-scene="ready"] .vx-window::before {
+  content: none;
+}
+.vx-stage[data-scene="ready"] .vx-window-bar {
+  transform: translateZ(16px);
+}
+.vx-stage[data-scene="ready"] .vx-window-body {
+  isolation: isolate;
+}
+.vx-stage[data-scene="ready"][data-intro="summon"] .vx-window {
+  animation-name: vx-activate-plate;
+}
+@keyframes vx-activate-plate {
+  from {
+    opacity: 0;
+    filter: brightness(2) blur(2px);
+  }
+}
+.vx-window-flare {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(110% 70% at 50% 0%, rgb(255 255 255 / 0.28), oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2) 45%, transparent 75%);
+  opacity: 0;
+}
+/* The Admin panel head: a mono kicker over a Cinzel title, status diamonds on the right. */
+.vx-window-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem 0.95rem;
+}
+.vx-window-kicker {
+  font-family: var(--vx-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--vx-rose);
+}
+.vx-window-title {
+  margin-top: 0.2rem;
+  font-family: var(--vx-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow: 0 0 18px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
+  animation: vx-type 450ms steps(12, end) backwards;
+}
+@keyframes vx-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+/* Three status diamonds; the first carries the accent, all three light when the vault answers. */
+.vx-leds {
+  display: flex;
+  flex: none;
+  gap: 7px;
+  padding-top: 0.35rem;
+}
+.vx-leds > i {
+  width: 7px;
+  height: 7px;
+  rotate: 45deg;
+  border: 1px solid var(--vx-line-hi);
+  background: rgb(255 255 255 / 0.04);
+}
+.vx-leds > i:first-child,
+.vx-stage:is([data-phase="granted"], [data-phase="already"], [data-phase="invalid"], [data-phase="locked"]) .vx-leds > i {
+  border-color: var(--c);
+  background: color-mix(in oklab, var(--c) 45%, transparent);
+  box-shadow: 0 0 6px var(--c);
+}
+.vx-stage[data-phase="verifying"] .vx-leds > i {
+  animation: vx-led 900ms steps(1, end) infinite;
+}
+.vx-leds > i:nth-child(2) {
+  animation-delay: 300ms;
+}
+.vx-leds > i:nth-child(3) {
+  animation-delay: 600ms;
+}
+@keyframes vx-led {
+  0% {
+    border-color: var(--vx-focus);
+    background: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
+    box-shadow: 0 0 6px var(--vx-red);
+  }
+  33% {
+    border-color: var(--vx-line-hi);
+    background: rgb(255 255 255 / 0.04);
+    box-shadow: none;
+  }
+}
+.vx-rule {
+  height: 1px;
+  margin-inline: 1.25rem;
+  background: linear-gradient(90deg, var(--c), var(--vx-line-hi) 30%, var(--vx-line) 70%, transparent);
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  transform-origin: 0 50%;
+  animation: vx-rule 800ms var(--ease-out-soft) 900ms backwards;
+}
+@keyframes vx-rule {
+  from {
+    scale: 0 1;
+  }
+}
+.vx-window-body {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.15rem 1.25rem 1.4rem;
+}
+@media (min-width: 40rem) {
+  .vx-window-bar {
+    padding-inline: 1.6rem;
+  }
+  .vx-rule {
+    margin-inline: 1.6rem;
+  }
+  .vx-window-body {
+    padding: 1.35rem 1.6rem 1.7rem;
+  }
+}
+.vx-result {
+  display: grid;
+  gap: 0.65rem;
+}
+.vx-stage h2.vx-headline {
+  font-family: var(--vx-display);
+  font-size: clamp(1.55rem, 1.15rem + 1.6vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vx-red);
+  text-shadow: 0 0 18px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.32);
+  outline: none;
+}
+/* Headings only receive programmatic focus (to move screen readers); no ring. */
+.vx-stage :is(h2.vx-headline, h3.vx-inspect-name):focus-visible {
+  outline: none;
+}
+.vx-stage[data-phase="granted"] h2.vx-headline {
+  color: #fff;
+  text-shadow:
+    0 0 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6),
+    0 0 36px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25);
+}
+.vx-stage[data-phase="already"] h2.vx-headline {
+  color: var(--vx-text);
+  text-shadow: 0 0 18px rgb(255 255 255 / 0.2);
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="lost"]) h2.vx-headline {
+  color: #c9bdc0;
+  text-shadow: none;
+}
+.vx-copy,
+.vx-lede {
+  max-width: 34rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: color-mix(in oklab, var(--vx-text) 82%, transparent);
+}
+.vx-result > .vx-copy {
+  animation: vx-fade 400ms ease 120ms backwards;
+}
+.vx-trace {
+  display: grid;
+  gap: 0.4rem;
+  font-family: var(--vx-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vx-steel);
+}
+.vx-trace > li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  animation: vx-line-in 240ms ease calc(var(--i) * 280ms) backwards;
+}
+.vx-trace > li::before {
+  content: ">";
+  color: var(--vx-red);
+}
+.vx-trace > li:last-child::after {
+  content: "";
+  width: 0.5rem;
+  height: 0.9rem;
+  background: var(--vx-red);
+  animation: vx-caret 1s steps(1) infinite;
+}
+@keyframes vx-line-in {
+  from {
+    opacity: 0;
+    translate: -6px 0;
+  }
+}
+@keyframes vx-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.vx-progress {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background: var(--vx-line);
+}
+.vx-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, var(--vx-red), transparent);
+  animation: vx-progress 1000ms ease-in-out infinite;
+}
+@keyframes vx-progress {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 250% 0;
+  }
+}
+/* The opening: every step passed, the bar full. */
+.vx-trace[data-done] {
+  color: #fff;
+}
+.vx-trace[data-done] > li:last-child::after {
+  content: none;
+}
+.vx-progress[data-done]::after {
+  width: 100%;
+  background: linear-gradient(90deg, var(--vx-red), #fff);
+  animation: none;
+}
+/* The unlock: lines, rings and bolts light on the scene's beat (--at); the bar fills until the cards take over. */
+.vx-window[data-opening] .vx-trace > li {
+  animation: vx-line-in 240ms ease var(--at) backwards;
+}
+.vx-window[data-opening] .vx-progress::after {
+  transform-origin: 0 50%;
+  animation: vx-fill var(--at) linear backwards;
+}
+@keyframes vx-fill {
+  from {
+    scale: 0 1;
+  }
+}
+.vx-locks {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--vx-line);
+  background: rgb(0 0 0 / 0.4);
+  box-shadow: inset 0 1px 8px rgb(0 0 0 / 0.6);
+}
+.vx-locks > i {
+  flex: none;
+  height: 0.6rem;
+  background: linear-gradient(180deg, #fff, var(--vx-pale));
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+  animation: vx-lock 360ms ease-out var(--at) backwards;
+}
+.vx-locks > i[data-kind="ring"] {
+  width: 0.6rem;
+  margin-right: 3px;
+  rotate: 45deg;
+  scale: 0.8;
+}
+.vx-locks > i[data-kind="ring"] + i[data-kind="bolt"] {
+  margin-left: 0.6rem;
+}
+.vx-locks > i[data-kind="bolt"] {
+  flex: 1;
+  max-width: 1.75rem;
+  height: 0.35rem;
+}
+@keyframes vx-lock {
+  0% {
+    background: rgb(214 220 230 / 0.14);
+    box-shadow: none;
+  }
+  1% {
+    background: #fff;
+    box-shadow:
+      0 0 12px var(--vx-rose),
+      0 0 3px #fff;
+  }
+}
+
+/* Code entry. */
+.vx-form {
+  display: grid;
+  gap: 0.65rem;
+}
+.vx-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vx-steel);
+}
+/* The code field as an Admin input, with a charge line along its base. */
+.vx-field {
+  position: relative;
+}
+.vx-field::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: auto 10px 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, oklch(from #b0001d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), var(--vx-red) 70%, var(--vx-pale));
+  box-shadow: 0 0 10px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  transform-origin: 0 50%;
+  scale: var(--vx-charge, 0) 1;
+  pointer-events: none;
+  transition: scale 200ms var(--ease-out-soft);
+}
+.vx-input {
+  width: 100%;
+  height: 3.25rem;
+  border: 1px solid color-mix(in oklab, oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75) calc(var(--vx-charge, 0) * 100%), var(--vx-field-line));
+  border-radius: 10px;
+  padding: 0 1.1rem;
+  font-family: var(--vx-mono);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #fff;
+  caret-color: var(--vx-rose);
+  background: var(--vx-field);
+  text-shadow: 0 0 calc(3px + var(--vx-charge, 0) * 8px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45);
+  box-shadow:
+    inset 0 1px 6px rgb(0 0 0 / 0.5),
+    inset 0 0 calc(var(--vx-charge, 0) * 22px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12);
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 200ms ease;
+}
+.vx-input:hover:not(:focus-visible) {
+  border-color: color-mix(in oklab, oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75) calc(var(--vx-charge, 0) * 100%), oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.45));
+}
+.vx-input::placeholder {
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: rgb(205 190 195 / 0.62);
+  text-shadow: none;
+}
+.vx-input:focus-visible {
+  border-color: var(--vx-rose);
+  box-shadow:
+    inset 0 1px 6px rgb(0 0 0 / 0.5),
+    inset 0 0 calc(var(--vx-charge, 0) * 22px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
+    0 0 0 3px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25),
+    0 0 20px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25);
+}
+.vx-input[readonly] {
+  color: rgb(255 255 255 / 0.65);
+}
+.vx-stage[data-phase="unavailable"] .vx-input {
+  border-color: rgb(140 127 130 / 0.6);
+}
+.vx-signal {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.vx-signal-label {
+  font-family: var(--vx-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--vx-steel-dim);
+}
+/* Pips read as a level meter: a major tick every fourth, the top of the range runs hot. */
+.vx-pips {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  gap: 3px;
+  max-width: 15rem;
+  height: 10px;
+}
+.vx-pips > span {
+  flex: 1;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--vx-line);
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.vx-pips > span:nth-child(4n) {
+  height: 10px;
+}
+.vx-pips > span[data-on] {
+  background: var(--vx-red);
+  box-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55);
+}
+.vx-pips > span[data-on]:nth-child(n + 10) {
+  background: var(--vx-focus);
+}
+.vx-signal-count {
+  margin-left: auto;
+  font-family: var(--vx-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #fff;
+  text-shadow: 0 0 calc(var(--vx-charge, 0) * 10px) oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+}
+.vx-signal-count > small {
+  margin-left: 0.15rem;
+  font-size: 0.625rem;
+  color: var(--vx-steel-dim);
+  text-shadow: none;
+}
+.vx-help {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--vx-steel-dim);
+}
+.vx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+.vx-button {
+  display: inline-flex;
+  flex: 1 1 12rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3.25rem;
+  padding: 0 1.5rem;
+  border: 1px solid oklch(from rgb(255 120 140) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
+  border-radius: 9px;
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--look-ink, #fff);
+  text-shadow: 0 1px 0 oklch(from rgb(70 0 10) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  /* The Admin primary: a hot red plate with a sheen that crosses on hover, brighter as the signal charges. */
+  background:
+    linear-gradient(105deg, transparent 40%, rgb(255 236 239 / 0.26) 50%, transparent 60%) 160% 0 / 250% 100% no-repeat,
+    linear-gradient(180deg, oklch(from #ff2a48 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))), oklch(from #b0001d min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0))));
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 200 210) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5),
+    0 0 calc(24px + var(--vx-charge, 0) * 14px) -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9),
+    0 12px 26px -14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.9);
+  filter: brightness(calc(0.92 + var(--vx-charge, 0) * 0.13));
+  transition:
+    filter 150ms ease,
+    box-shadow 150ms ease,
+    background-position 650ms var(--ease-out-soft),
+    scale 100ms ease;
+}
+.vx-button:hover:not(:disabled) {
+  filter: brightness(calc(1.04 + var(--vx-charge, 0) * 0.08));
+  background-position: -60% 0, 0 0;
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 210 218) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6),
+    0 0 34px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95),
+    0 14px 32px -12px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95);
+}
+.vx-button:active:not(:disabled) {
+  scale: 0.98;
+}
+.vx-button:disabled {
+  cursor: progress;
+  filter: saturate(0.6) brightness(0.8);
+}
+.vx-button-quiet {
+  border-color: oklch(from rgb(255 80 108) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.38);
+  color: var(--vx-text);
+  text-shadow: none;
+  background: linear-gradient(180deg, oklch(from rgb(42 8 17) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92), oklch(from rgb(18 3 8) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.92));
+  box-shadow: inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
+  filter: none;
+}
+.vx-stage[data-look="obsidian"] .vx-button-quiet {
+  border-color: var(--vx-line-hi);
+  background: var(--vx-pill);
+}
+.vx-button-quiet:hover:not(:disabled) {
+  border-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+  filter: none;
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.14),
+    0 0 18px -6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+}
+
+/* Rewards, exactly as the server granted them. */
+.vx-rewards {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.vx-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--vx-line);
+  border-left: 2px solid var(--vx-red);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08), transparent 40%),
+    linear-gradient(180deg, var(--vx-sheen), transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  animation: vx-slot-in 520ms var(--ease-out-soft) calc(var(--d, 0ms) + var(--i, 0) * 120ms) backwards;
+}
+@keyframes vx-slot-in {
+  from {
+    opacity: 0;
+    translate: 14px 0;
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.vx-slot-art {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--vx-line-hi);
+  border-radius: 8px;
+  color: #fff;
+  background: radial-gradient(circle at 50% 35%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.24), #050506 70%);
+}
+.vx-slot-kind {
+  display: block;
+  font-family: var(--vx-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--vx-rose);
+}
+.vx-slot-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+.vx-slot-coins {
+  font-family: var(--vx-mono);
+  font-size: 1.15rem;
+}
+.vx-slot-desc {
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgb(243 233 235 / 0.62);
+}
+.vx-slot-plate {
+  padding: 0.1rem 0.3rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  font-family: var(--vx-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.vx-tag {
+  padding: 0.05rem 0.45rem;
+  font-family: var(--vx-mono);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #030203;
+  background: var(--vx-red);
+}
+.vx-tag[data-muted] {
+  color: var(--vx-text);
+  background: rgb(255 255 255 / 0.1);
+}
+.vx-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  animation: vx-fade 500ms ease var(--d, 0ms) backwards;
+}
+.vx-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--vx-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vx-rose);
+  text-underline-offset: 4px;
+  min-height: 2.5rem;
+}
+.vx-link:hover {
+  text-decoration: underline;
+}
+
+/* The reveal: confirmed rewards fly out of the open vault as cards, and open up close. */
+.vx-reveal {
+  position: relative;
+  display: grid;
+  gap: 1.1rem;
+  width: 100%;
+  max-width: 34rem;
+}
+.vx-reveal-head {
+  /* Stays legible over the open vault's light. */
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.9),
+    0 0 18px rgb(0 0 0 / 0.9);
+  animation: vx-fade 500ms ease backwards;
+}
+.vx-reveal-sub {
+  margin-top: 0.4rem;
+  font-size: 0.875rem;
+  color: rgb(243 233 235 / 0.85);
+}
+.vx-reveal-head .vx-eyebrow {
+  color: oklch(from #ff9aa8 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+}
+.vx-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.vx-cards[data-count="1"] {
+  grid-template-columns: minmax(0, 15rem);
+  justify-content: center;
+}
+@media (min-width: 40rem) {
+  .vx-cards[data-count="3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.vx-cards > li {
+  animation: vx-card-out 950ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--d, 0ms) + var(--i, 0) * var(--stagger, 110ms)) backwards;
+}
+/* --fx/--fy/--fz: from the vault's core to the card's place, through the scene's own perspective
+   (set on the list when the reveal opens). */
+@keyframes vx-card-out {
+  0% {
+    opacity: 0;
+    translate: var(--fx, 0) var(--fy, 0) var(--fz, 0);
+    scale: 0.2;
+    rotate: x 55deg;
+    filter: brightness(3) blur(4px);
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    filter: brightness(1.35);
+  }
+}
+.vx-reveal[data-settled] .vx-cards > li {
+  animation: none;
+}
+.vx-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.9rem 0.75rem 1rem;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  text-align: center;
+  background:
+    radial-gradient(120% 70% at 50% 0%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.26), transparent 70%),
+    rgb(7 3 5 / 0.92);
+  box-shadow:
+    0 18px 40px -18px #000,
+    0 0 30px -12px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
+  transition:
+    border-color 200ms ease,
+    translate 200ms ease,
+    box-shadow 200ms ease;
+}
+.vx-card:hover {
+  translate: 0 -3px;
+  border-color: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.7);
+  box-shadow:
+    0 22px 44px -18px #000,
+    0 0 36px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.65);
+}
+.vx-card:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.vx-card-art {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 7.25rem;
+  margin-bottom: 0.35rem;
+}
+.vx-card-kind {
+  font-family: var(--vx-mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vx-red);
+}
+.vx-card-name {
+  font-weight: 700;
+  line-height: 1.25;
+  color: #fff;
+}
+.vx-card .vx-tag {
+  margin-top: auto;
+}
+.vx-inspect {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background:
+    radial-gradient(90% 60% at 50% 0%, oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.24), transparent 70%),
+    rgb(7 3 5 / 0.94);
+  box-shadow: 0 0 50px -14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.55);
+  animation: vx-inspect-in 450ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@media (min-width: 40rem) {
+  .vx-inspect {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+}
+@keyframes vx-inspect-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    filter: brightness(1.8);
+  }
+}
+.vx-inspect-art {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  min-height: 11rem;
+}
+.vx-inspect-copy {
+  display: grid;
+  justify-items: start;
+  gap: 0.55rem;
+}
+.vx-stage h3.vx-inspect-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+  outline: none;
+}
+.vx-coin {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  color: #4a2c00;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #f5b83d 45%, #a8650f);
+  box-shadow:
+    0 0 0 2px rgb(255 214 120 / 0.35),
+    0 0 26px rgb(255 190 80 / 0.45);
+}
+.vx-coin[data-size="slot"] {
+  width: 1.9rem;
+}
+.vx-coin[data-size="large"] {
+  width: 8rem;
+}
+.vx-coin > svg {
+  width: 55%;
+  height: 55%;
+}
+.vx-nameplate {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  text-align: left;
+  background: rgb(255 255 255 / 0.04);
+}
+.vx-nameplate[data-size="large"] {
+  padding: 0.85rem 1.1rem;
+  font-size: 1.1rem;
+}
+.vx-nameplate-name {
+  display: block;
+  overflow: hidden;
+  font-weight: 700;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vx-game-art {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+}
+.vx-game-art[data-size="card"] {
+  max-height: 7.25rem;
+}
+
+/* Access log: an Admin panel with an activity feed, a lit diamond and a fading thread per entry. */
+.vx-log {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1.15rem 1.35rem 1.25rem;
+  border: 1px solid var(--vx-line);
+  border-radius: 16px;
+  background:
+    radial-gradient(80% 60% at 50% 0%, var(--vx-sheen), transparent 70%),
+    var(--vx-panel);
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 130 150) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.12),
+    0 0 0 1px rgb(0 0 0 / 0.45),
+    0 24px 48px -24px rgb(0 0 0 / 0.95),
+    0 0 36px -14px var(--vx-glow);
+  backdrop-filter: blur(8px);
+}
+.vx-log::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  z-index: -1;
+  border: 1px solid var(--vx-frame);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.vx-log::after {
+  content: "";
+  position: absolute;
+  inset: -1px 18% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.75), transparent);
+  box-shadow: 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.35);
+}
+.vx-log-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  background: linear-gradient(90deg, oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6), var(--vx-line) 35%, transparent) 0 100% / 100% 1px no-repeat;
+}
+.vx-log-kicker {
+  font-family: var(--vx-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--vx-rose);
+}
+.vx-stage h2.vx-log-title {
+  margin-top: 0.2rem;
+  font-family: var(--vx-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow: 0 0 18px oklch(from rgb(235 45 72) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.28);
+}
+.vx-log-count,
+.vx-log-time {
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vx-steel-dim);
+}
+.vx-log-count {
+  flex: none;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--vx-pill-line);
+  border-radius: 999px;
+  color: var(--vx-steel);
+  background: var(--vx-pill);
+  box-shadow:
+    inset 0 1px 0 oklch(from rgb(255 140 160) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.08),
+    0 0 18px -8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.5);
+}
+.vx-log-list {
+  display: grid;
+  margin-top: 0.6rem;
+}
+.vx-log-list > li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2rem 7.5rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.6rem 0.5rem 0.6rem 1.6rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--vx-text);
+  transition: background-color 150ms ease;
+}
+/* The feed: a diamond per entry and a thread running down to the next. */
+.vx-log-list > li::before {
+  content: "";
+  position: absolute;
+  top: 1.05rem;
+  left: 0.35rem;
+  width: 9px;
+  height: 9px;
+  rotate: 45deg;
+  border: 1px solid var(--vx-rose);
+  background: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
+  box-shadow: 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+}
+.vx-log-list > li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 1.65rem;
+  bottom: -0.45rem;
+  left: calc(0.35rem + 4px);
+  width: 1px;
+  background: linear-gradient(var(--vx-line-hi), transparent);
+}
+.vx-log-list > li:hover {
+  background: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.05);
+}
+.vx-log-index {
+  font-family: var(--vx-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  color: var(--vx-steel-dim);
+}
+.vx-log-list > li:first-child .vx-log-index {
+  color: var(--vx-rose);
+  text-shadow: 0 0 8px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+}
+@media (max-width: 39.99rem) {
+  .vx-log-list > li {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    row-gap: 0.2rem;
+  }
+  .vx-log-list > li > :last-child {
+    grid-column: 2;
+  }
+}
+.vx-log-note {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--vx-steel-dim);
+}
+.vx-log-head + .vx-log-note {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed var(--vx-line-hi);
+  border-radius: 10px;
+  text-align: center;
+  color: var(--vx-steel);
+  background: rgb(0 0 0 / 0.25);
+}
+.vx-log-note a {
+  color: var(--vx-text);
+  text-decoration: underline;
+  text-decoration-color: oklch(from rgb(255 90 114) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+  text-underline-offset: 3px;
+}
+.vx-log-note a:hover {
+  color: #fff;
+  text-decoration-color: var(--vx-rose);
+}
+.vx-log-note a:focus-visible {
+  border-radius: 0;
+  outline: 2px solid var(--vx-focus);
+  outline-offset: 2px;
+}
+
+/* Sending a code: its glyphs lift off the field and stream to the console's edge, where the link takes them. */
+.vx-stream {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  padding: 0 calc(1.1rem + 1px);
+  font-family: var(--vx-mono);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: pre;
+  color: #fff;
+  pointer-events: none;
+}
+.vx-stream > span {
+  display: block;
+  animation: vx-glyph var(--vx-glyph) linear calc(min(var(--i, 0), 12) * var(--vx-glyph-step)) both;
+}
+@keyframes vx-glyph {
+  0% {
+    text-shadow: 0 0 6px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.6);
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  24% {
+    translate: 0 -6px;
+    scale: 1.12;
+    text-shadow:
+      0 0 6px #fff,
+      0 0 14px oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.85);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.9, 0.45);
+  }
+  100% {
+    translate: var(--dx) var(--dy);
+    scale: 0.15;
+    opacity: 0;
+    color: var(--vx-pale);
+    text-shadow:
+      0 0 8px #fff,
+      0 0 18px var(--vx-red);
+  }
+}
+.vx-input[data-sending] {
+  color: transparent;
+  text-shadow: none;
+  caret-color: transparent;
+}
+/* A rejected code flies back down the link and lands in the field, torn red for a moment. */
+.vx-stage[data-phase="invalid"] .vx-input {
+  animation: vx-recoil 650ms ease-out var(--vx-recoil-at) backwards;
+}
+@keyframes vx-recoil {
+  0% {
+    color: transparent;
+    text-shadow: none;
+  }
+  1% {
+    color: #fff;
+    text-shadow:
+      3px 0 rgb(255 31 61 / 0.9),
+      -3px 0 rgb(255 214 221 / 0.5),
+      0 0 14px var(--vx-danger);
+  }
+  35% {
+    color: #ffc2cc;
+    text-shadow:
+      -2px 0 rgb(255 31 61 / 0.7),
+      0 0 8px rgb(255 31 61 / 0.5);
+  }
+}
+/* Dormant: the code gutters back in ash. Locked: it is clamped back hard. Lost: it returns through static. */
+.vx-stage[data-phase="unavailable"] .vx-input {
+  animation: vx-fizzle 900ms ease-out backwards;
+}
+@keyframes vx-fizzle {
+  0% {
+    color: transparent;
+  }
+  45% {
+    color: rgb(140 127 130 / 0.75);
+  }
+  65% {
+    color: rgb(140 127 130 / 0.35);
+  }
+}
+.vx-stage[data-phase="locked"] .vx-input {
+  animation: vx-clamp 600ms ease-out backwards;
+}
+@keyframes vx-clamp {
+  0% {
+    color: transparent;
+  }
+  8% {
+    color: #fff;
+    border-color: var(--vx-danger);
+    text-shadow: 0 0 10px rgb(255 31 61 / 0.8);
+  }
+}
+.vx-stage[data-phase="lost"] .vx-input {
+  animation: vx-static 800ms steps(6, end) backwards;
+}
+@keyframes vx-static {
+  0% {
+    color: transparent;
+  }
+  20% {
+    color: rgb(200 190 192 / 0.7);
+    text-shadow:
+      2px 0 rgb(140 127 130 / 0.6),
+      -2px 0 oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.3);
+  }
+  60% {
+    text-shadow:
+      -1px 0 rgb(140 127 130 / 0.5),
+      1px 0 oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.2);
+  }
+}
+
+/* Verifying: the sweep turns, a scan passes, the segments chase and the core pulses. */
+.vx-stage[data-phase="verifying"] .vx-sweep {
+  opacity: 1;
+  animation: vx-spin 900ms linear infinite;
+}
+.vx-stage[data-phase="verifying"] .vx-scan {
+  opacity: 1;
+  animation: vx-scan 1300ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+.vx-stage[data-phase="verifying"] .vx-seg {
+  animation: vx-chase 900ms linear calc(var(--i) * 37.5ms - 900ms) infinite;
+}
+.vx-stage[data-phase="verifying"] .vx-core {
+  opacity: 0.75;
+  animation: vx-pulse 900ms ease-in-out infinite alternate;
+}
+.vx-stage[data-phase="verifying"] .vx-keyhole {
+  stroke: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+}
+.vx-stage[data-phase="verifying"] .vx-pips > span {
+  animation: vx-pip 900ms ease-in-out calc(var(--i) * 75ms - 900ms) infinite;
+}
+@keyframes vx-scan {
+  from {
+    translate: 0 -150px;
+  }
+  to {
+    translate: 0 180px;
+  }
+}
+@keyframes vx-chase {
+  0%,
+  100% {
+    fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.1);
+  }
+  8% {
+    fill: oklch(from rgb(255 133 151) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.95);
+  }
+  35% {
+    fill: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.25);
+  }
+}
+@keyframes vx-pulse {
+  from {
+    scale: 0.62;
+  }
+  to {
+    scale: 0.85;
+  }
+}
+@keyframes vx-pip {
+  0%,
+  100% {
+    background-color: oklch(from rgb(255 31 61) min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)) / 0.15);
+  }
+  15% {
+    background-color: oklch(from #ff8597 min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  }
+}
+
+/* Granted: the segments whiten, the teeth retract, the gates part and the core floods out. */
+.vx-stage[data-phase="granted"] .vx-seg {
+  fill: rgb(255 238 241 / 0.85);
+  stroke: #fff;
+  transition-delay: calc(200ms + var(--i) * 18ms);
+}
+.vx-stage:is([data-phase="granted"], [data-phase="already"]) :is(.vx-notch, .vx-marker) {
+  fill: #fff;
+  transition-delay: 450ms;
+}
+.vx-stage[data-phase="granted"] .vx-runes {
+  stroke: oklch(from #ffd5dc min(calc(l * (1 + var(--look-lift, 0) * l)), max(l, 0.98)) calc(c * var(--look-chroma, 1)) calc(h + var(--look-hue, 0)));
+  transition-delay: 650ms;
+}
+.vx-stage[data-phase="granted"] .vx-tooth {
+  translate: 0 -11px;
+  transition-delay: 620ms;
+}
+.vx-stage[data-phase="granted"] .vx-gate {
+  opacity: 0.55;
+  transition-delay: 850ms;
+}
+.vx-stage[data-phase="granted"] .vx-gate-l {
+  translate: -62px 0;
+}
+.vx-stage[data-phase="granted"] .vx-gate-r {
+  translate: 62px 0;
+}
+.vx-stage[data-phase="granted"] .vx-rim {
+  opacity: 0;
+  transition-delay: 850ms;
+}
+.vx-stage[data-phase="granted"] .vx-core {
+  opacity: 1;
+  scale: 2.2;
+  transition-delay: 900ms;
+}
+.vx-stage[data-phase="granted"] .vx-bloom {
+  opacity: 1;
+  scale: 1.12;
+  transition-delay: 900ms;
+}
+.vx-stage[data-phase="granted"] .vx-rays {
+  opacity: 1;
+  scale: 1;
+  transition-delay: 1000ms;
+  animation: vx-spin 50s linear infinite;
+}
+.vx-stage[data-phase="granted"] .vx-shock {
+  animation: vx-shock 1000ms cubic-bezier(0.2, 0.7, 0.3, 1) 900ms forwards;
+}
+.vx-stage[data-phase="granted"] .vx-window-flare {
+  opacity: 0.35;
+  animation: vx-flare 1200ms ease-out backwards;
+}
+.vx-stage[data-phase="granted"] .vx-fog {
+  opacity: 1;
+}
+@keyframes vx-shock {
+  from {
+    scale: 1;
+    opacity: 0.9;
+  }
+  to {
+    scale: 2.7;
+    opacity: 0;
+  }
+}
+@keyframes vx-flare {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+}
+
+/* Already claimed: the rings line up in pale light, but the gates stay shut. */
+.vx-stage[data-phase="already"] .vx-seg {
+  fill: rgb(243 233 235 / 0.22);
+  stroke: rgb(243 233 235 / 0.55);
+  transition-delay: calc(var(--i) * 10ms);
+}
+.vx-stage[data-phase="already"] .vx-runes {
+  stroke: rgb(243 233 235 / 0.7);
+}
+.vx-stage[data-phase="already"] .vx-core {
+  opacity: 0.55;
+}
+
+/* Denied: one shake and two slow red pulses (well under three flashes a second). */
+.vx-stage[data-phase="invalid"] .vx-seal-shake {
+  animation: vx-shake 500ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.vx-stage[data-phase="invalid"] .vx-seg {
+  animation: vx-deny 800ms ease-in-out 2;
+}
+.vx-stage[data-phase="invalid"] .vx-keyhole {
+  stroke: var(--vx-danger);
+}
+.vx-stage[data-phase="invalid"] h2.vx-headline {
+  animation: vx-glitch 450ms steps(1, end) backwards;
+}
+.vx-stage[data-phase="invalid"] .vx-input {
+  border-color: var(--vx-danger);
+}
+@keyframes vx-shake {
+  10%,
+  90% {
+    translate: -2px 0;
+  }
+  20%,
+  80% {
+    translate: 4px 0;
+  }
+  30%,
+  50%,
+  70% {
+    translate: -8px 0;
+  }
+  40%,
+  60% {
+    translate: 8px 0;
+  }
+}
+@keyframes vx-deny {
+  50% {
+    fill: rgb(255 31 61 / 0.85);
+    stroke: #ff8597;
+  }
+}
+/* A granted panel only shows again after the reveal: un-hiding it must not replay its entrance. */
+.vx-stage[data-phase="granted"][data-intro] .vx-window:not([data-opening]) * {
+  animation: none;
+}
+@keyframes vx-glitch {
+  0% {
+    translate: -4px 0;
+    text-shadow:
+      3px 0 var(--vx-danger),
+      -3px 0 rgb(255 255 255 / 0.6);
+  }
+  25% {
+    translate: 3px 0;
+  }
+  50% {
+    translate: -2px 0;
+    text-shadow:
+      -2px 0 var(--vx-danger),
+      2px 0 rgb(255 255 255 / 0.5);
+  }
+  75% {
+    translate: 1px 0;
+  }
+}
+
+/* Dormant, lockdown and no signal: the seal goes still and dark. */
+.vx-stage[data-phase="unavailable"] .vx-seal-svg {
+  filter: grayscale(1) brightness(0.75);
+}
+.vx-stage[data-phase="locked"] .vx-seal-svg {
+  filter: brightness(0.4) saturate(0.6);
+}
+.vx-stage[data-phase="lost"] .vx-seal-svg {
+  filter: grayscale(0.7) brightness(0.55);
+}
+.vx-stage:is([data-phase="unavailable"], [data-phase="locked"], [data-phase="lost"]) .vx-fog {
+  opacity: 0.4;
+}
+
+/* A new look: the console's contents go dark while its 3D glass breaks away and rebuilds, then relight;
+   the log follows. Two keyframe names, alternated, so every switch restarts it. */
+.vx-stage[data-relit="a"] .vx-window {
+  animation: vx-relight-a 1250ms ease;
+}
+.vx-stage[data-relit="b"] .vx-window {
+  animation: vx-relight-b 1250ms ease;
+}
+.vx-stage[data-relit="a"] .vx-log {
+  animation: vx-relog-a 900ms ease 250ms;
+}
+.vx-stage[data-relit="b"] .vx-log {
+  animation: vx-relog-b 900ms ease 250ms;
+}
+@keyframes vx-relight-a {
+  16%,
+  40% {
+    opacity: 0;
+    filter: brightness(2.4) blur(3px);
+  }
+  70% {
+    opacity: 1;
+    filter: brightness(1.7);
+  }
+}
+@keyframes vx-relight-b {
+  16%,
+  40% {
+    opacity: 0;
+    filter: brightness(2.4) blur(3px);
+  }
+  70% {
+    opacity: 1;
+    filter: brightness(1.7);
+  }
+}
+@keyframes vx-relog-a {
+  30% {
+    filter: brightness(1.8) saturate(1.3);
+  }
+}
+@keyframes vx-relog-b {
+  30% {
+    filter: brightness(1.8) saturate(1.3);
+  }
+}
+
+/* Subtle motion: quick fades, no scan, no chase, no glitch and no delays. */
+.vx-stage[data-motion="subtle"][data-relit] :is(.vx-window, .vx-log) {
+  animation-name: vx-relog-a;
+  animation-duration: 500ms;
+  animation-delay: 0ms;
+}
+.vx-stage[data-motion="subtle"][data-relit="b"] :is(.vx-window, .vx-log) {
+  animation-name: vx-relog-b;
+}
+.vx-stage[data-motion="subtle"] .vx-scan {
+  display: none;
+}
+.vx-stage[data-motion="subtle"][data-intro="summon"] :is(.vx-hud, .vx-artifact > .vx-seal, .vx-window, .vx-log) {
+  animation: vx-fade 400ms ease var(--vx-panel-at) backwards;
+}
+.vx-stage[data-motion="subtle"][data-intro="summon"] :is(.vx-lede, .vx-label, .vx-field, .vx-signal, .vx-help, .vx-form > .vx-actions, .vx-window-flare) {
+  animation: none;
+}
+.vx-stage[data-motion="subtle"] .vx-cards > li {
+  animation: vx-fade 350ms ease calc(var(--d, 0ms) + var(--i, 0) * 60ms) backwards;
+}
+.vx-stage[data-motion="subtle"] .vx-seal-svg * {
+  transition-delay: 0ms;
+}
+.vx-stage[data-motion="subtle"] :is(.vx-ticks, .vx-rule, .vx-window-title, .vx-seg, .vx-pips > span, .vx-rays, .vx-shock, h2.vx-headline) {
+  animation: none;
+}
+.vx-stage[data-motion="subtle"][data-phase="invalid"] .vx-seal-shake {
+  animation-name: vx-shake-soft;
+}
+.vx-stage[data-motion="subtle"] .vx-window-flare {
+  animation-duration: 600ms;
+  animation-delay: 0ms;
+}
+@keyframes vx-shake-soft {
+  25%,
+  75% {
+    translate: -3px 0;
+  }
+  50% {
+    translate: 3px 0;
+  }
+}
+
+/* Motion off and reduced motion: states change instantly; nothing moves on its own. */
+.vx-stage[data-motion="off"] *,
+.vx-stage[data-motion="off"] *::before,
+.vx-stage[data-motion="off"] *::after {
+  animation: none !important;
+  transition: none !important;
+}
+.vx-stage[data-motion="off"] :is(.vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vx-stage *,
+  .vx-stage *::before,
+  .vx-stage *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .vx-stage :is(.vx-embers, .vx-scan, .vx-sweep, .vx-shock, .vx-shards) {
+    display: none;
+  }
+}
+.vx-stage[data-paused] *,
+.vx-stage[data-paused] *::before,
+.vx-stage[data-paused] *::after {
+  animation-play-state: paused !important;
+}

@@ -54,20 +54,21 @@ const RELEASES: readonly Release[] = [
     id: "2026-11-19-slim-amethyst",
     date: "2026-11-19",
     title: "Slim Amethyst",
-    intro: "A lighter, faster edition of Amethyst with just your archive: same account, same data, open it whenever you like.",
+    intro: "A faster, calmer mode of Amethyst: your archive, To Do and notes with the same look, and the heavy extras left out. Turn it on or off in Settings.",
     icon: "sparkles",
     highlights: [
-      { kind: "new", feature: "Just the archive", text: "Your collections, entries and their full workspaces, with search, a Continue shortcut, pinned and recently changed entries. No games, shops, rewards or experiments." },
-      { kind: "new", feature: "Same account, same data", text: "Everything you change in Slim is the same archive you see in the full app, and nothing outside the archive is touched." },
-      { kind: "new", feature: "Switch any time", text: "Open it from your account menu, and switch back with Full Amethyst in its top bar. Both open the same page where they can." },
+      { kind: "new", feature: "One switch", text: "Settings → General → Slim Amethyst. It applies right away and follows your account to every device." },
+      { kind: "new", feature: "Less to load", text: "Arcade (with Season Pass and Quests), Shop, Inventory and Cases, Index, Achievements, the Vault, the Lab, Admin, Version History, the Timeline and the Tour leave the menus, Home and search, and their code and data stop loading." },
+      { kind: "new", feature: "Your things stay yours", text: "Owned and equipped frames, themes, decorations, badges and titles keep working and stay selectable. Nothing is deleted, and turning Slim off brings every area back." },
+      { kind: "improved", feature: "Faster everywhere", text: "The Vault's and the Arcade games' styles and code no longer download with every page, so all of Amethyst starts a little lighter." },
     ],
     details: {
       new: [
         {
           title: "Slim Amethyst",
-          body: "A separate, simpler app shell that loads only the archive, so it starts quickly even on slower devices. Collections show a fast list with search, label filters and sorting; entries open their real workspace, including notes, checklists, files and Workspace Themes. Your settings are read, never changed, and the full app stays exactly as it was.",
-          where: "Account menu → Open Slim Amethyst",
-          link: { href: "/slim", label: "Open Slim Amethyst" },
+          body: "Slim Amethyst is a setting, not a separate app: your archive, To Do, notes, profile and customization keep their full design. Links into a hidden area explain where it went and how to turn Slim off. Your data, settings and cosmetics are never changed by switching.",
+          where: "Settings → General → Slim Amethyst",
+          link: { href: "/settings#slim-mode-label-setting", label: "Open Settings" },
         },
       ],
     },

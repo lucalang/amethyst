@@ -302,8 +302,10 @@ export default async function HomePage() {
         preferenceRead.then((value) => (value.homeStyle === "flashy" ? value.homeWall : null)),
       ),
     ),
-    measureServer("home.achievements", () => loadAchievementCards(ctx)),
-    measureServer("home.wallet", () => loadCoinBalance(ctx).catch(() => null)),
+    // Slim Amethyst hides Achievements, so their cards aren't loaded.
+    preferenceRead.then((value) => (value.slimMode ? [] : measureServer("home.achievements", () => loadAchievementCards(ctx)))),
+    // Slim Amethyst hides the Arcade and Shop cards, so the coin balance isn't needed.
+    preferenceRead.then((value) => (value.slimMode ? null : measureServer("home.wallet", () => loadCoinBalance(ctx).catch(() => null)))),
     measureServer("home.my-day", () => loadMyDayPreview(ctx)),
     preferenceRead.then((value) => value.homeSections.some((section) => section.id === "quickNotes" && !section.hidden)
       ? measureServer("home.quick-notes", () => loadRecentQuickNotes(ctx, 5)) : []),
@@ -323,6 +325,7 @@ export default async function HomePage() {
     },
     todo: { tasks: myDay.tasks },
     arcade: { balance: coinBalance },
+    slim: preferences.slimMode,
   };
   let index = 1;
 
@@ -454,6 +457,7 @@ export default async function HomePage() {
           wallPicks={home.wallPicks}
         />
 
+        {preferences.slimMode ? null : (
         <div className={cn(INNER, "max-w-2xl pt-2 pb-10 md:pb-12")}>
           <Link
             href="/achievements"
@@ -479,6 +483,7 @@ export default async function HomePage() {
             <span aria-hidden className="trophy-door-sill" />
           </Link>
         </div>
+        )}
         </FlashyScope>
       </HomeCustomizeProvider>
     </EntranceScope>

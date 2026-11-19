@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { IntentLink as Link } from "./intent-link";
 import { usePathname } from "next/navigation";
-import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, Feather, FlaskConical, History, Hourglass, Info, KeyRound, LayoutDashboard, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
+import { Award, Backpack, BookMarked, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, Clover, Crown, FlaskConical, History, Hourglass, Info, KeyRound, LayoutDashboard, LibraryBig, LogIn, LogOut, Megaphone, PackageOpen, Palette, ScrollText, Settings, ShieldCheck, StickyNote, Trophy, UserPlus, UserRound, Wrench, type LucideIcon } from "lucide-react";
 import { ArrangeCollectionsButton } from "@/components/categories/arrange-collections";
 import { NewCategoryButton } from "@/components/categories/collection-actions";
 import { WhatsNewButton } from "@/components/layout/whats-new";
@@ -20,10 +20,11 @@ import {
 import { accentStyle } from "@/lib/collection-identity";
 import { collectionPath, type LibraryCategory } from "@/lib/collections";
 import { DESTINATIONS, destinationFor, type DestinationId } from "@/lib/destinations";
-import { SLIM_NAME, slimPathFor } from "@/lib/edition";
 import { cn } from "@/lib/utils";
 import { useCurrentCollectionId } from "./current-collection";
 import { useSettings } from "./settings-context";
+import { useSlimMode } from "./slim";
+import { slimHides } from "@/lib/slim";
 import type { AvatarDecorationId } from "@/lib/cosmetics";
 import { ProfileAvatar } from "./profile-avatar";
 import { ProfileFlair } from "./profile-flair";
@@ -95,7 +96,8 @@ const TOOL_GROUPS: readonly ToolGroup[] = [
 
 /** One-click switcher between the main areas; the current one shows its name. */
 function DestinationSwitcher({ current, guest, compact }: { current: DestinationId | null; guest: boolean; compact: boolean }) {
-  const items = guest ? DESTINATIONS.filter((item) => item.id === "arcade") : DESTINATIONS;
+  const slim = useSlimMode();
+  const items = guest ? DESTINATIONS.filter((item) => item.id === "arcade") : DESTINATIONS.filter((item) => !(slim && slimHides(item.href)));
   return (
     <nav aria-label="Main areas" className="flex items-center gap-0.5 rounded-lg border border-white/[0.06] bg-white/[0.02] p-0.5">
       {items.map(({ id, label, href, icon: Icon }) => {
@@ -122,6 +124,7 @@ function DestinationSwitcher({ current, guest, compact }: { current: Destination
 
 function ToolsPanel({ admin, onBack }: { admin: boolean; onBack: () => void }) {
   const baseId = useId();
+  const slim = useSlimMode();
   const backRef = useRef<HTMLDivElement>(null);
   useEffect(() => backRef.current?.focus(), []);
   return (
@@ -137,7 +140,11 @@ function ToolsPanel({ admin, onBack }: { admin: boolean; onBack: () => void }) {
         <ChevronLeft aria-hidden /> Tools
         <span className="sr-only">, back to account menu</span>
       </DropdownMenuItem>
-      {TOOL_GROUPS.filter((group) => admin || !group.adminOnly).map((group) => (
+      {TOOL_GROUPS.filter((group) => admin || !group.adminOnly)
+        // In Slim the Arcade group keeps only Achievements, so it's named for what's left.
+        .map((group) => (slim ? { ...group, label: group.id === "arcade" ? "Progress" : group.label, links: group.links.filter((link) => !slimHides(link.href)) } : group))
+        .filter((group) => group.links.length > 0)
+        .map((group) => (
         <DropdownMenuGroup key={group.id} aria-labelledby={`${baseId}-${group.id}`} className="mt-1">
           <DropdownMenuSeparator />
           <DropdownMenuLabel id={`${baseId}-${group.id}`}>{group.label}</DropdownMenuLabel>
@@ -204,6 +211,7 @@ function CollectionSwitcher({ collections, currentId, icons }: { collections: Li
 export function TopNav({ account, collections, icons = {}, latestChangeId }: { account: AccountSummary; collections: LibraryCategory[]; icons?: CollectionIcons; latestChangeId: string }) {
   const currentId = useCurrentCollectionId(collections);
   const { collectionNav } = useSettings();
+  const slim = useSlimMode();
   const pathname = usePathname();
   const area = destinationFor(pathname);
   const seasonActive = isActive(pathname, "/arcade/season");
@@ -257,7 +265,8 @@ export function TopNav({ account, collections, icons = {}, latestChangeId }: { a
         <div className="ml-auto flex items-center gap-2">
           {collections.length > 1 && inArchive ? <ArrangeCollectionsButton collections={collections} compact className="hidden md:inline-flex" /> : null}
           {inArchive ? <NewCategoryButton /> : null}
-          {guest ? null : <Link
+          {/* Season Pass is part of the Arcade, which Slim Amethyst hides. */}
+          {guest || slim ? null : <Link
             href="/arcade/season"
             aria-label="Season Pass"
             aria-current={seasonActive ? "page" : undefined}
@@ -334,7 +343,7 @@ export function TopNav({ account, collections, icons = {}, latestChangeId }: { a
                   <UserRound aria-hidden /> My Profile
                 </Link>
               </DropdownMenuItem>
-              {DESTINATIONS.filter((d) => d.id !== "shop").map(({ id, href, label, icon: Icon }) => (
+              {DESTINATIONS.filter((d) => d.id !== "shop" && !(slim && slimHides(d.href))).map(({ id, href, label, icon: Icon }) => (
                 <DropdownMenuItem key={id} asChild>
                   <Link href={href}>
                     <Icon aria-hidden /> {label}
@@ -344,11 +353,6 @@ export function TopNav({ account, collections, icons = {}, latestChangeId }: { a
               <DropdownMenuItem asChild>
                 <Link href="/settings">
                   <Settings aria-hidden /> Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={slimPathFor(pathname)} title={`Open this archive page in ${SLIM_NAME}, a lighter app with just your archive`}>
-                  <Feather aria-hidden /> Open {SLIM_NAME}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem

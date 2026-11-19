@@ -6,6 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SETTINGS_SEARCH_ITEMS, searchSettings, type SettingsArea, type SettingsSearchItem } from "@/lib/settings-search";
+import { slimHides } from "@/lib/slim";
+import { useSlimMode } from "./slim";
 import { cn } from "@/lib/utils";
 
 function revealSetting(href: string) {
@@ -52,7 +54,9 @@ export function SettingsSearch({ area }: { area: SettingsArea }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const results = searchSettings(query);
+  // Slim Amethyst leaves out pages it hides (Version History).
+  const slim = useSlimMode();
+  const results = searchSettings(query).filter((item) => !(slim && slimHides(item.href)));
   const expanded = open && query.trim().length > 0;
 
   useEffect(() => {

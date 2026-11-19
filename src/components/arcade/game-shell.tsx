@@ -1,11 +1,10 @@
 "use client";
 
+import "./arcade-games.css";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
-  createContext,
-  use,
   useCallback,
   useEffect,
   useEffectEvent,
@@ -14,7 +13,6 @@ import {
   useState,
   useSyncExternalStore,
   type ReactNode,
-  type RefObject,
 } from "react";
 import { ArrowLeft, House, Maximize, Minimize, Store, Trophy, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
@@ -27,9 +25,9 @@ import { ARCADE_EXPLORER_GAME_IDS, type AchievementEvent } from "@/lib/achieveme
 import { isRankedGame, type ArcadeGameId, type ScoreGame } from "@/lib/arcade";
 import { isShopGame, type GameLook } from "@/lib/game-cosmetics";
 import { leaderboardHref } from "@/lib/leaderboards";
-import type { MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
 import { closeAudio, playSound, type SoundName } from "./sound";
+import { ArcadeContext, useArcade } from "./arcade-context";
 import { GameStreak } from "./streaks";
 
 /** Shop opened from inside a game: loaded only when first opened. */
@@ -38,34 +36,13 @@ const GameShopDialog = dynamic(() => import("./shop/game-shop-dialog"), { ssr: f
 /** Fired when something (like the in-game shop) takes over: games pause exactly as if the tab were hidden. */
 export const ARCADE_AWAY_EVENT = "archive:arcade-away";
 
-type ArcadeContextValue = {
-  rootRef: RefObject<HTMLDivElement | null>;
-  play: (name: SoundName, pitch?: number) => void;
-  /** Decorative effects level: the account's animation setting, "off" under reduced motion. */
-  effects: MotionLevel;
-  sound: boolean;
-  toggleSound: () => void;
-  /** Equipped minigame cosmetics (category → item slug). Purely visual; never touches game rules. */
-  look: GameLook;
-  setLook: (look: GameLook) => void;
-};
 
 export function sendAchievementEvent(event: AchievementEvent) {
   void apiFetch("/api/achievements/events", { method: "POST", json: event, keepalive: true }).catch(() => {});
 }
 
-const ArcadeContext = createContext<ArcadeContextValue | null>(null);
-
-export function useArcade() {
-  const value = use(ArcadeContext);
-  if (!value) throw new Error("useArcade must be used inside ArcadeProvider");
-  return value;
-}
-
-/** The surrounding game's context, or null outside one. */
-export function useOptionalArcade() {
-  return use(ArcadeContext);
-}
+// The context lives in its own small module so app-wide code (interface sounds) can read it without loading the games.
+export { useArcade, useOptionalArcade } from "./arcade-context";
 
 /** Sound, effects level and keyboard focus for one game; audio is released when the game unmounts. */
 export function ArcadeProvider({ children, look: initialLook }: { children: ReactNode; look?: GameLook }) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { HideInSlim } from "@/components/layout/slim";
 import "./inventory.css";
 import { useRef, useState, useTransition, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
@@ -113,9 +114,11 @@ export function InventoryView({ items, profile, samples }: { items: InventoryIte
           Frames, avatar decorations, banners, badges, titles and game cosmetics you buy, earn or unlock will be collected here.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <Button asChild>
-            <Link href="/shop">Visit the Shop</Link>
-          </Button>
+          <HideInSlim href="/shop">
+            <Button asChild>
+              <Link href="/shop">Visit the Shop</Link>
+            </Button>
+          </HideInSlim>
           <Button asChild variant="outline">
             <Link href="/achievements">See achievements</Link>
           </Button>

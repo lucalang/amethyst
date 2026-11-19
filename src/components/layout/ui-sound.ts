@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { useOptionalArcade } from "@/components/arcade/game-shell";
+import { useOptionalArcade } from "@/components/arcade/arcade-context";
 import { playSound, type SoundName } from "@/components/arcade/sound";
 import { useSettings } from "./settings-context";
 

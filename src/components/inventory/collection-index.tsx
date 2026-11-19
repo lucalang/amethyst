@@ -1,5 +1,7 @@
 "use client";
 
+import { HideInSlim, useSlimMode } from "@/components/layout/slim";
+import { slimHides } from "@/lib/slim";
 import "./inventory.css";
 import { useRef, useState, useTransition, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
@@ -91,10 +93,12 @@ function SourceLine({ source }: { source: ItemSource }) {
   return (
     <li className="rounded-lg border border-border bg-foreground/[0.02] px-3 py-2.5">
       <p className="text-sm leading-6 text-foreground/90">{text}</p>
-      <Link href={source.href} className="mt-1 inline-flex items-center gap-1 rounded-sm text-xs font-medium text-amethyst outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
-        {link}
-        <ArrowUpRight aria-hidden className="size-3.5" />
-      </Link>
+      <HideInSlim href={source.href}>
+        <Link href={source.href} className="mt-1 inline-flex items-center gap-1 rounded-sm text-xs font-medium text-amethyst outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring">
+          {link}
+          <ArrowUpRight aria-hidden className="size-3.5" />
+        </Link>
+      </HideInSlim>
     </li>
   );
 }
@@ -113,6 +117,7 @@ export function CollectionIndexView({
   profile: Profile;
   samples: Samples;
 }) {
+  const slim = useSlimMode();
   const router = useRouter();
   const effects = useMotionLevel();
   const [retrying, startRetry] = useTransition();
@@ -345,7 +350,7 @@ export function CollectionIndexView({
               )}
             </section>
 
-            {place ? (
+            {place && !(slim && slimHides(place.href)) ? (
               <Button asChild variant="outline" size="sm" className="mt-4 w-full">
                 <Link href={place.href}>
                   {place.label}

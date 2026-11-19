@@ -1,11 +1,11 @@
 "use client";
 
+import { HideInSlim } from "@/components/layout/slim";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { CatalogSearch } from "@/components/catalog/catalog-search";
 import { useCosmetics } from "@/components/layout/cosmetics-context";
-import { useEdition } from "@/components/layout/edition-context";
 import { ArtworkFrame } from "@/components/media/artwork-frame";
 import { MediaImage } from "@/components/media/media-image";
 import { PICKER_SEARCH_MIN, catalogMatcher } from "@/lib/catalog-search";
@@ -74,8 +74,6 @@ export function FramePicker({
 }) {
   const id = useId();
   const { owned } = useCosmetics();
-  // The Slim edition has no shop or cosmetics pages to point to.
-  const slim = useEdition() === "slim";
   const shown = value === "default" ? accountFrame : value;
   const frames = availableFrames(owned).concat(value !== "default" && !availableFrames(owned).includes(value) ? [value] : []);
   const options: { value: FrameChoice; label: string; frame: ArtworkFrameId }[] = [
@@ -149,23 +147,20 @@ export function FramePicker({
         </div>
         </div>
       </div>
-      {slim ? (
-        <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-          “My default” follows your account frame when it changes; “No frame” keeps this entry unframed.
-        </p>
-      ) : (
       <p id={`${id}-hint`} className="text-xs text-muted-foreground">
         Shown on collection cards, in Showcase, and in the artwork viewer. “My default” follows your{" "}
         <Link href="/customization/frames" className="text-amethyst underline-offset-4 hover:underline">
           account frame
         </Link>{" "}
-        when it changes; “No frame” keeps this entry unframed. More frames are in the{" "}
-        <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
-          Shop
-        </Link>
-        .
+        when it changes; “No frame” keeps this entry unframed.
+        <HideInSlim href="/shop">
+          {" "}More frames are in the{" "}
+          <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
+            Shop
+          </Link>
+          .
+        </HideInSlim>
       </p>
-      )}
     </div>
   );
 }

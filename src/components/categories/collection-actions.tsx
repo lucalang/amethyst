@@ -19,8 +19,7 @@ import { errorMessage } from "@/components/workspace/client-utils";
 import { apiFetch } from "@/lib/api-client";
 import { MAX_CATEGORY_NAME_LENGTH } from "@/lib/categories";
 import { accentStyle } from "@/lib/collection-identity";
-import { collectionInputSchema, MAX_COLLECTION_DESCRIPTION_LENGTH, type LibraryCategory } from "@/lib/collections";
-import { useArchivePaths } from "@/components/layout/edition-context";
+import { collectionInputSchema, collectionPath, MAX_COLLECTION_DESCRIPTION_LENGTH, type LibraryCategory } from "@/lib/collections";
 import { DEFAULT_PROGRESS_LABEL, MAX_PROGRESS_LABEL_LENGTH } from "@/lib/progress/label";
 import { NO_TEMPLATE, type TemplateSummary } from "@/lib/templates";
 import { cn } from "@/lib/utils";
@@ -29,7 +28,6 @@ import { CollectionCoverDialog } from "./collection-cover-dialog";
 
 function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; onOpenChange: (open: boolean) => void; collection?: LibraryCategory }) {
   const router = useRouter();
-  const paths = useArchivePaths();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [descriptionLength, setDescriptionLength] = useState(collection?.description?.length ?? 0);
@@ -85,13 +83,13 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
               method: collection ? "PATCH" : "POST", json: parsed.data,
             });
             onOpenChange(false);
-            if (!collection) router.push(paths.collection(result.collection));
+            if (!collection) router.push(collectionPath(result.collection));
             else if (result.collection.slug !== collection.slug) {
               // Renamed: move to the new readable address (the old one keeps redirecting).
-              const current = paths.collection(collection);
+              const current = collectionPath(collection);
               const { pathname, search } = window.location;
               if (pathname === current || pathname.startsWith(`${current}/`)) {
-                router.replace(`${paths.collection(result.collection)}${pathname.slice(current.length)}${search}`);
+                router.replace(`${collectionPath(result.collection)}${pathname.slice(current.length)}${search}`);
               }
             }
             router.refresh();
@@ -219,7 +217,6 @@ const DANGER = { "--tone": "var(--destructive)" } as CSSProperties;
 
 export function CollectionActions({ collection, entryCount, className }: { collection: LibraryCategory; entryCount: number; className?: string }) {
   const router = useRouter();
-  const paths = useArchivePaths();
   const pathname = usePathname();
   const [renaming, setRenaming] = useState(false);
   const [choosingCovers, setChoosingCovers] = useState(false);
@@ -262,8 +259,8 @@ export function CollectionActions({ collection, entryCount, className }: { colle
       setStep(null);
       setTyped("");
       toast.success(populated ? `Deleted “${collection.name}” and ${entriesLabel}` : `Deleted “${collection.name}”`);
-      const current = paths.collection(collection);
-      if (pathname === current || pathname.startsWith(`${current}/`)) router.push(paths.home);
+      const current = collectionPath(collection);
+      if (pathname === current || pathname.startsWith(`${current}/`)) router.push("/");
       router.refresh();
     } catch (deleteError) {
       setError(errorMessage(deleteError));

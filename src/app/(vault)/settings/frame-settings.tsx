@@ -1,5 +1,6 @@
 "use client";
 
+import { HideInSlim } from "@/components/layout/slim";
 import Link from "next/link";
 import { Award, Check, Lock } from "lucide-react";
 import { useState } from "react";
@@ -126,9 +127,11 @@ export function FrameSettings({
                   </span>
                   <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{info.description}</span>
                   {!isOwned && ach ? (
-                    <Link href={`/achievements#${ach.id}`} className="mt-1 inline-block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
-                      Unlock in Achievements
-                    </Link>
+                    <HideInSlim href="/achievements">
+                      <Link href={`/achievements#${ach.id}`} className="mt-1 inline-block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                        Unlock in Achievements
+                      </Link>
+                    </HideInSlim>
                   ) : null}
                 </span>
               </span>

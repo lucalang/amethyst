@@ -11,6 +11,7 @@ import { SwitchSetting } from "./setting-controls";
 import { SettingRow, SettingsGroup, SettingsHeader, resetFor } from "./settings-ui";
 import { PullCutscenesSetting } from "./pull-cutscenes-setting";
 import { SfxVolumeSetting } from "./sfx-volume-setting";
+import { SlimModeSetting } from "./slim-mode-setting";
 import { StartupSetting } from "./startup-setting";
 import { TimeZoneSetting } from "./time-zone-setting";
 
@@ -27,6 +28,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <SettingsHeader title="General" description="Your account, where the app opens, notifications and security." />
+
+      <SlimModeSetting value={preferences.slimMode} />
 
       <SettingsGroup id="startup" title="Startup">
         <SettingRow
@@ -57,20 +60,23 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
       <SettingsGroup id="notifications" title="Notifications">
         <div className="space-y-8">
-          <SettingRow
-            labelId="achievement-notifications-label"
-            label="Achievement celebrations"
-            description="Play a short celebration when you earn an achievement. It never takes focus and waits until you finish typing or playing. Progress tracking stays on when this is off."
-            reset={resetFor(preferences, ["achievementNotifications"], "On")}
-          >
-            <SwitchSetting
-              settingKey="achievementNotifications"
-              value={preferences.achievementNotifications}
+          {/* Slim Amethyst hides Achievements and case opening, so their settings rest (and keep their values). */}
+          {preferences.slimMode ? null : (
+            <SettingRow
               labelId="achievement-notifications-label"
-              onLabel="Celebrations on"
-              offLabel="Celebrations off"
-            />
-          </SettingRow>
+              label="Achievement celebrations"
+              description="Play a short celebration when you earn an achievement. It never takes focus and waits until you finish typing or playing. Progress tracking stays on when this is off."
+              reset={resetFor(preferences, ["achievementNotifications"], "On")}
+            >
+              <SwitchSetting
+                settingKey="achievementNotifications"
+                value={preferences.achievementNotifications}
+                labelId="achievement-notifications-label"
+                onLabel="Celebrations on"
+                offLabel="Celebrations off"
+              />
+            </SettingRow>
+          )}
           <SettingRow
             labelId="sound-effects-label"
             label="Sound effects"
@@ -87,14 +93,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           >
             <SfxVolumeSetting value={preferences.sfxVolume} labelId="sfx-volume-label" />
           </SettingRow>
-          <SettingRow
-            labelId="pull-cutscenes-label"
-            label="Rare pull cutscenes"
-            description="Which rarities play a cutscene when you pull them from a case. Higher rarities get bigger scenes; every scene can be skipped. Reduced motion turns them all off."
-            reset={resetFor(preferences, ["pullCutscenes"], "All on")}
-          >
-            <PullCutscenesSetting value={preferences.pullCutscenes} labelId="pull-cutscenes-label" />
-          </SettingRow>
+          {preferences.slimMode ? null : (
+            <SettingRow
+              labelId="pull-cutscenes-label"
+              label="Rare pull cutscenes"
+              description="Which rarities play a cutscene when you pull them from a case. Higher rarities get bigger scenes; every scene can be skipped. Reduced motion turns them all off."
+              reset={resetFor(preferences, ["pullCutscenes"], "All on")}
+            >
+              <PullCutscenesSetting value={preferences.pullCutscenes} labelId="pull-cutscenes-label" />
+            </SettingRow>
+          )}
         </div>
       </SettingsGroup>
 

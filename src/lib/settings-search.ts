@@ -14,6 +14,7 @@ type SearchSection = {
 export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
   {
     area: "Settings", section: "General", path: "/settings", keywords: "account security notifications", settings: [
+      { label: "Slim Amethyst", target: "slim-mode-label-setting", keywords: "slim mode simple lighter hide arcade shop vault lab admin timeline version history focus" },
       { label: "Startup destination", target: "startup-label-setting", keywords: "opening home first page collection" },
       { label: "Time zone", target: "time-zone-label-setting", keywords: "timezone date day my day tasks midnight clock region" },
       { label: "Achievement celebrations", target: "achievement-notifications-label-setting", keywords: "notification popup confetti" },

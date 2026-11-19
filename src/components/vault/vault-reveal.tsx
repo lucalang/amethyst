@@ -1,5 +1,7 @@
 "use client";
 
+import "./vault.css";
+
 import Link from "next/link";
 import { lazy, Suspense, useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { ArrowLeft, ArrowRight, Clover, Coins, Gamepad2, Package, Sparkles } from "lucide-react";

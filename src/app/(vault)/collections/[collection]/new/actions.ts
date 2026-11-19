@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { parseCategoryIds } from "@/lib/categories";
 import { entryPath } from "@/lib/collections";
-import { SLIM_BASE } from "@/lib/edition";
 import { loadCollection } from "@/lib/data/collections";
 import { requireAccount as requireUser } from "@/lib/supabase/auth";
 import { NO_TEMPLATE } from "@/lib/templates";
@@ -85,6 +84,5 @@ export async function createEntry(_prev: NewEntryState, formData: FormData): Pro
     }
   }
 
-  // An entry created in the Slim edition opens there; everything else opens in the full app.
-  redirect(`${formData.get("edition") === "slim" ? SLIM_BASE : ""}${entryPath(entry)}`);
+  redirect(entryPath(entry));
 }

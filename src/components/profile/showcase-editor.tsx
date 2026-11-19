@@ -1,5 +1,6 @@
 "use client";
 
+import { HideInSlim } from "@/components/layout/slim";
 import { useEffect, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -465,11 +466,14 @@ export function ShowcaseEditor({
             title="Banner theme"
             hint={
               <>
-                Recolours your showcase’s backdrop, lighting and details — only here, never the rest of the site. Find more in the{" "}
-                <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
-                  Shop
-                </Link>
-                .
+                Recolours your showcase’s backdrop, lighting and details — only here, never the rest of the site.
+                <HideInSlim href="/shop">
+                  {" "}Find more in the{" "}
+                  <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
+                    Shop
+                  </Link>
+                  .
+                </HideInSlim>
               </>
             }
           >
@@ -563,11 +567,13 @@ export function ShowcaseEditor({
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Collect something in the{" "}
-                <Link href="/arcade" className="text-amethyst underline-offset-4 hover:underline">
-                  Arcade
-                </Link>{" "}
-                or Vault to put it on display.
+                <HideInSlim href="/arcade" fallback="Items you collect can be put on display here.">
+                  Collect something in the{" "}
+                  <Link href="/arcade" className="text-amethyst underline-offset-4 hover:underline">
+                    Arcade
+                  </Link>{" "}
+                  or Vault to put it on display.
+                </HideInSlim>
               </p>
             )}
           </Section>
@@ -633,11 +639,13 @@ export function ShowcaseEditor({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  No badges yet — earn them in the{" "}
-                  <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
-                    Trophy Room
-                  </Link>{" "}
-                  or the Vault.
+                  <HideInSlim href="/achievements" fallback="No badges yet.">
+                    No badges yet — earn them in the{" "}
+                    <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
+                      Trophy Room
+                    </Link>{" "}
+                    or the Vault.
+                  </HideInSlim>
                 </p>
               )}
             </div>
@@ -688,11 +696,13 @@ export function ShowcaseEditor({
               </div>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Earn your first achievement in the{" "}
-                <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
-                  Trophy Room
-                </Link>{" "}
-                to pin it here.
+                <HideInSlim href="/achievements" fallback="No achievements to pin yet.">
+                  Earn your first achievement in the{" "}
+                  <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
+                    Trophy Room
+                  </Link>{" "}
+                  to pin it here.
+                </HideInSlim>
               </p>
             )}
           </Section>

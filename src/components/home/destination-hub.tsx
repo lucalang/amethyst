@@ -2,18 +2,21 @@ import { IntentLink as Link } from "@/components/layout/intent-link";
 import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight, Coins, LibraryBig } from "lucide-react";
 import { MarqueeArt } from "@/components/home/arcade-marquee";
-import { CaseArt } from "@/components/lootboxes/parts";
+import { HubCaseArt } from "@/components/home/hub-case-art";
 import { MediaImage } from "@/components/media/media-image";
 import { MyDaySummary } from "@/components/tasks/home-my-day";
 import { ARCADE_GAMES, arcadeShelfSummary } from "@/lib/arcade";
 import type { HomePreview } from "@/lib/data/home";
 import { DESTINATIONS, type DestinationId } from "@/lib/destinations";
 import type { Task } from "@/lib/tasks/model";
+import { slimHides } from "@/lib/slim";
 
 export type HubData = {
   archive: { collections: number; entries: number; covers: HomePreview[] };
   todo: { tasks: Task[] };
   arcade: { balance: number | null };
+  /** Slim Amethyst: leave out the destinations it hides (Arcade, Shop). */
+  slim?: boolean;
 };
 
 const COVER_SLOTS: Record<number, string[]> = { 1: ["center"], 2: ["left", "right"], 3: ["left", "center", "right"] };
@@ -87,7 +90,7 @@ const CARDS: Record<DestinationId, { art: (data: HubData) => ReactNode; status: 
   shop: {
     art: () => (
       <span className="hub-glyph">
-        <CaseArt id="release" size="4.75rem" />
+        <HubCaseArt id="release" size="4.75rem" />
       </span>
     ),
     status: ({ arcade }) =>
@@ -110,8 +113,8 @@ export function DestinationHub({ data, startIndex = 1 }: { data: HubData; startI
       <h2 id="hub-heading" className="mb-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase md:mb-4">
         Your spaces
       </h2>
-      <ul className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-4">
-        {DESTINATIONS.map((destination, index) => {
+      <ul className={`grid gap-3 md:grid-cols-2 md:gap-4 ${data.slim ? "" : "xl:grid-cols-4"}`}>
+        {DESTINATIONS.filter((destination) => !(data.slim && slimHides(destination.href))).map((destination, index) => {
           const card = CARDS[destination.id];
           const Icon = destination.icon;
           return (

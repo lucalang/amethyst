@@ -1,5 +1,6 @@
 "use client";
 
+import { HideInSlim } from "@/components/layout/slim";
 import { useActionState, useState } from "react";
 import { flushSync } from "react-dom";
 import Link from "next/link";
@@ -208,9 +209,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                       </span>
                     ) : null}
                     {!isOwned && ach ? (
-                      <Link href={`/achievements#${ach.id}`} className="mt-1 block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
-                        View achievement
-                      </Link>
+                      <HideInSlim href="/achievements">
+                        <Link href={`/achievements#${ach.id}`} className="mt-1 block text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                          View achievement
+                        </Link>
+                      </HideInSlim>
                     ) : null}
                   </span>
                 </label>
@@ -218,15 +221,21 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
             })}
         </div>
         <p className="text-xs text-muted-foreground">
-          Drawn around your picture everywhere it appears; the picture itself isn’t changed. Unlock more in the{" "}
-          <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
-            Shop
-          </Link>{" "}
-          or your{" "}
-          <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
-            Achievements cabinet
-          </Link>
-          .
+          Drawn around your picture everywhere it appears; the picture itself isn’t changed.
+          <HideInSlim href="/achievements">
+            {" "}Unlock more in{" "}
+            <HideInSlim href="/shop" fallback="your ">
+              the{" "}
+              <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
+                Shop
+              </Link>{" "}
+              or your{" "}
+            </HideInSlim>
+            <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
+              Achievements cabinet
+            </Link>
+            .
+          </HideInSlim>
         </p>
       </fieldset>
       <div className="space-y-3">
@@ -321,9 +330,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                       ) : null}
                       {!isOwned ? <Lock aria-hidden className="size-3 text-muted-foreground" /> : null}
                       {!isOwned && ach ? (
-                        <Link href={`/achievements#${ach.id}`} className="text-xs font-medium text-amethyst underline-offset-4 hover:underline">
-                          {ach.name}
-                        </Link>
+                        <HideInSlim href="/achievements">
+                          <Link href={`/achievements#${ach.id}`} className="text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                            {ach.name}
+                          </Link>
+                        </HideInSlim>
                       ) : null}
                     </label>
                   );
@@ -362,9 +373,11 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
                       <span>{id ? PROFILE_TITLES[id].name : "None"}</span>
                       {!isOwned ? <Lock aria-hidden className="size-3 text-muted-foreground" /> : null}
                       {!isOwned && ach ? (
-                        <Link href={`/achievements#${ach.id}`} className="text-xs font-medium text-amethyst underline-offset-4 hover:underline">
-                          {ach.name}
-                        </Link>
+                        <HideInSlim href="/achievements">
+                          <Link href={`/achievements#${ach.id}`} className="text-xs font-medium text-amethyst underline-offset-4 hover:underline">
+                            {ach.name}
+                          </Link>
+                        </HideInSlim>
                       ) : null}
                     </label>
                   );
@@ -372,15 +385,20 @@ export function ProfileForm({ displayName, motto, avatarUrl }: { displayName: st
             </div>
           </fieldset>
           <p className="text-xs text-muted-foreground sm:col-span-2">
-            Shown with your name on Home, in the account menu and on your profile page; the first badge leads. Earn milestone badges and titles in{" "}
-            <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
-              Achievements
-            </Link>{" "}
-            or discover secret ones in the{" "}
-            <Link href="/vault" className="text-amethyst underline-offset-4 hover:underline">
-              Vault
-            </Link>
-            .
+            Shown with your name on Home, in the account menu and on your profile page; the first badge leads.
+            <HideInSlim href="/achievements">
+              {" "}Earn milestone badges and titles in{" "}
+              <Link href="/achievements" className="text-amethyst underline-offset-4 hover:underline">
+                Achievements
+              </Link>
+              <HideInSlim href="/vault">
+                {" "}or discover secret ones in the{" "}
+                <Link href="/vault" className="text-amethyst underline-offset-4 hover:underline">
+                  Vault
+                </Link>
+              </HideInSlim>
+              .
+            </HideInSlim>
           </p>
         </div>
       </div>

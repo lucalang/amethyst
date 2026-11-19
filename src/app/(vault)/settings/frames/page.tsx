@@ -43,11 +43,16 @@ export default async function ArtworkFramesPage() {
           <Link href="/" className="text-amethyst underline-offset-4 hover:underline">
             Showcase
           </Link>{" "}
-          to see yours. Unlock more frames with coins from the{" "}
-          <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
-            Shop
-          </Link>
-          .
+          to see yours.
+          {preferences.slimMode ? null : (
+            <>
+              {" "}Unlock more frames with coins from the{" "}
+              <Link href="/shop/cosmetics" className="text-amethyst underline-offset-4 hover:underline">
+                Shop
+              </Link>
+              .
+            </>
+          )}
         </p>
       </SettingsGroup>
     </>

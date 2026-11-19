@@ -101,6 +101,8 @@ function normalizeHomeSections(list: { id: string; hidden: boolean }[]): HomeSec
 export const DEFAULT_SETTINGS = {
   theme: "amethyst" as ThemeId,
   motion: "full" as MotionLevel,
+  /** Slim Amethyst: hides the feature-heavy areas listed in lib/slim.ts. Off keeps the whole app. */
+  slimMode: false,
   introFrequency: "daily" as IntroFrequency,
   cardShine: true,
   /** Bespoke designs for Version History, Achievements, the Vault and Admin; off uses the standard page layout. */
@@ -184,6 +186,7 @@ function completeShortcuts(saved: Partial<Record<ShortcutAction, string>>): Reco
 const settingFields = {
   theme: z.enum(THEME_IDS),
   motion: z.enum(MOTION_LEVELS),
+  slimMode: z.boolean(),
   introFrequency: z.enum(INTRO_FREQUENCIES),
   cardShine: z.boolean(),
   specialPages: z.boolean(),
