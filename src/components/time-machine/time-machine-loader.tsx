@@ -6,13 +6,13 @@ import type { TimeCollection, TimeEntry } from "@/lib/time-machine";
 const TimeMachine = dynamic(() => import("./time-machine"), {
   ssr: false,
   loading: () => (
-    <div role="status" className="grid h-[calc(100dvh-7.5rem)] min-h-[30rem] place-items-center text-sm tracking-[0.24em] text-muted-foreground uppercase md:h-[calc(100dvh-3.5rem)]">
+    <div role="status" className="fixed inset-0 z-[95] grid place-items-center bg-[#05040a] text-sm tracking-[0.24em] text-white/60 uppercase">
       Charging the Time Machine…
     </div>
   ),
 });
 
-/** The Time Machine reads the browser (WebGL, the URL, the device's zone), so it only renders on the client. */
+/** The Time Machine reads the browser (the device's zone, motion settings, canvas), so it only renders on the client. */
 export function TimeMachineLoader(props: { entries: TimeEntry[]; collections: TimeCollection[] }) {
   return <TimeMachine {...props} />;
 }

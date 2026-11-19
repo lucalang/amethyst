@@ -54,22 +54,23 @@ const RELEASES: readonly Release[] = [
     id: "2026-11-19-time-machine",
     date: "2026-11-19",
     title: "Amethyst Time Machine",
-    intro: "Travel through your archive on a glowing 3D timeline and rediscover what you added in the past.",
+    intro: "A personal rewind: pick a memory and watch your archive play back from today into the past, then return to the present.",
     icon: "sparkles",
     highlights: [
-      { kind: "new", feature: "Time Machine", text: "A 3D path through your archive with one lane per year. Days with entries rise as glowing pillars with your artwork above them. Drag to travel, scroll to zoom from all time down to a single day, or click an entry to fly to it." },
-      { kind: "new", feature: "Rediscover", text: "Entries added a month ago and a year ago, On This Day across earlier years, notable moments such as your first entry and busiest day, and when each collection was created. Empty days are shown as empty." },
-      { kind: "new", feature: "Calendar and keyboard", text: "A calendar and list view reaches the same memories without 3D, and the timeline works with arrow keys, a scrubber and touch. Opening an entry and going back returns you to the same point in time." },
+      { kind: "new", feature: "Rewinds", text: "On This Day, one month ago, one year ago, any year, any date range or everything. Each plays as a full-screen story through a time tunnel while the clock rolls back to every date." },
+      { kind: "new", feature: "Your real memories", text: "Your own covers rise out of the past with the day each entry was added and its collection. Facts like your busiest month only appear when they're true, and new collections get their own moment." },
+      { kind: "new", feature: "Back to the present", text: "The story ends back at today with Replay, another rewind, and links to every entry and collection it showed. Pause, skip chapters or leave any time." },
     ],
     details: {
       new: [
         {
           title: "Amethyst Time Machine",
-          body: "Every date shown is when an entry was added to your archive, not a release date or any date about the entry itself. The timeline only uses your own entries and collections; nothing is made up, and days, months and years without entries say so and point to the closest ones.",
+          body: "Choose a rewind and it plays like a short film: a title, then chapters from the most recent back to the earliest, each with its date on a rolling clock, then a return to today. Every date is when an entry was added to your archive, never a release date, shown in your time zone. Rewinds with nothing to show are not offered, and nothing is made up.",
           points: [
-            "Zoom levels: All time, Year, Month and Day, plus a dive into a single entry",
-            "Arrow keys step through time, + and − zoom, PageUp/PageDown jump between entries, T returns to today",
-            "Respects your motion and sound settings; with motion off the camera moves instantly, and without WebGL you get the calendar view",
+            "Space pauses, arrow keys or swipes skip chapters, R replays, Esc leaves",
+            "The chapter bar at the top jumps to any chapter",
+            "With reduced motion the story holds still and you step through chapters yourself; sound effects follow your setting",
+            "Only the artwork for the next chapters is loaded while it plays",
           ],
           where: "Explore menu → Time Machine, or the Archive page",
           link: { href: "/time-machine", label: "Open the Time Machine" },
