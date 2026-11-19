@@ -61,6 +61,7 @@ function stakeToSlider(stake: number, rules: WagerRules) {
 
 /** A board for the game not yet picked, preferring its first ranked setting. */
 function freeBoard(game: CompetitiveGame, picks: Pick[]) {
+  if (game === "who-am-i") return "";
   const boards = wagerBoards(game).map((b) => b.id).filter((board) => isWagerBoard(game, board));
   return boards.find((board) => !picks.some((p) => p.game === game && p.board === board)) ?? boards[0] ?? "";
 }
@@ -101,11 +102,14 @@ function names(wager: Wager) {
   };
 }
 
+/** Rounds a player returns to: a Sudoku in progress and a live Who Am I? duel. */
+const resumableGame = (game: string) => game === "sudoku" || game === "who-am-i";
+
 /** Whether the viewer still has to play the current round. */
 function yourTurn(wager: Wager) {
   if (wager.status !== "active" || !wager.you) return false;
   const round = wager.rounds?.find((r) => r.round === wager.currentRound && !r.outcome);
-  return round ? round.yourAttempt === null || (round.game === "sudoku" && round.yourAttempt === "playing") : false;
+  return round ? round.yourAttempt === null || (resumableGame(round.game) && round.yourAttempt === "playing") : false;
 }
 
 function MatchCard({ wager, accept, busy, balance }: { wager: Wager; accept?: (wager: Wager) => void; busy?: boolean; balance: number }) {
@@ -188,7 +192,7 @@ function RoundEditor({ pick, index, count, duplicateOf, onChange, onMove, onRemo
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-muted-foreground">{roundsOf(index, count)}</p>
           <p className="truncate font-semibold">{gameTitle(pick.game)}</p>
-          <p className="truncate text-xs text-muted-foreground">{boardLabel(pick.game, pick.board) || "Standard rules"} · {lowerWins(pick.game) ? "fastest time wins" : "highest score wins"}</p>
+          <p className="truncate text-xs text-muted-foreground">{boardLabel(pick.game, pick.board) || (pick.game === "who-am-i" ? "Live duel" : "Standard rules")} · {pick.game === "who-am-i" ? "first correct guess wins" : lowerWins(pick.game) ? "fastest time wins" : "highest score wins"}</p>
         </div>
         <div className="flex shrink-0 gap-1">
           <Button variant="ghost" size="icon" className="size-8" aria-label={`Move ${label} earlier`} disabled={index === 0} onClick={() => onMove(-1)}>
@@ -564,6 +568,7 @@ export function WagerHub({ initial: initialState }: { initial: WagerList | null 
 }
 
 const PLAYER_STATE: Record<PlayerState, string> = { waiting: "Hasn’t played", playing: "Playing now", done: "Finished" };
+const DUEL_STATE: Record<PlayerState, string> = { waiting: "Hasn’t joined", playing: "In the duel", done: "Finished" };
 const TERMINAL = new Set(["cancelled", "expired", "completed", "drawn", "abandoned"]);
 
 function roundResult(round: WagerRound, wager: Wager) {
@@ -625,12 +630,14 @@ export function WagerMatch({ initial: initialState }: { initial: WagerState }) {
   const current = wager.status === "active" ? wager.rounds.find((r) => r.round === wager.currentRound && !r.outcome) ?? null : null;
   const mine = current && wager.you ? (wager.you === "host" ? current.hostState : current.opponentState) : null;
   const theirs = current && wager.you ? (wager.you === "host" ? current.opponentState : current.hostState) : null;
-  const resumable = current?.game === "sudoku" && current.yourAttempt === "playing";
+  const duel = current?.game === "who-am-i";
+  const resumable = current ? resumableGame(current.game) && current.yourAttempt === "playing" : false;
   const outcome = wagerOutcome(wager);
   const { host, opponent } = names(wager);
   const slots = live ? Math.min(wager.maxRounds, Math.max(wager.rounds.length, wager.winsNeeded * 2 - 1)) : wager.rounds.length;
+  const states = duel ? DUEL_STATE : PLAYER_STATE;
   const yourState =
-    current?.yourAttempt === "invalid" ? "No valid result" : current?.yourAttempt === "late" ? "Too late" : resumable ? "Solving" : PLAYER_STATE[mine ?? "waiting"];
+    current?.yourAttempt === "invalid" ? "No valid result" : current?.yourAttempt === "late" ? "Too late" : resumable && !duel ? "Solving" : states[mine ?? "waiting"];
 
   return (
     <div className="cx space-y-5">
@@ -690,20 +697,22 @@ export function WagerMatch({ initial: initialState }: { initial: WagerState }) {
               <h2 id="m-round" className="text-lg font-bold">{setupLabel(current.game, current.board)}</h2>
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Clock aria-hidden className="size-3.5" />
-                Due {utcTime(current.deadline)} · one run each · {current.direction === "low" ? "the faster time wins" : "the higher score wins"}
+                {duel
+                  ? `Join by ${utcTime(current.deadline)} · live duel · the first correct guess wins`
+                  : `Due ${utcTime(current.deadline)} · one run each · ${current.direction === "low" ? "the faster time wins" : "the higher score wins"}`}
               </p>
             </div>
             {wager.you ? (
               <>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <span className="cx-dot" style={{ "--hue": "var(--cx-accent)" } as CSSProperties}>You: {yourState}</span>
-                  <span className="cx-dot" style={{ "--hue": "#94a3b8" } as CSSProperties}>Opponent: {PLAYER_STATE[theirs ?? "waiting"]}</span>
+                  <span className="cx-dot" style={{ "--hue": "#94a3b8" } as CSSProperties}>Opponent: {states[theirs ?? "waiting"]}</span>
                 </div>
                 {current.yourAttempt === null || resumable ? (
                   <Button asChild size="lg">
                     <Link href={`/arcade/wagers/${wager.id}/play`}>
                       <Play aria-hidden />
-                      {resumable ? "Resume your puzzle" : `Play round ${current.round}`}
+                      {duel ? (resumable ? "Return to the duel" : `Join round ${current.round}`) : resumable ? "Resume your puzzle" : `Play round ${current.round}`}
                     </Link>
                   </Button>
                 ) : (

@@ -11,7 +11,7 @@ export default async function TournamentPlayPage() {
   const ctx = await requireUser();
   const state = await loadTournamentState(ctx, null).catch(() => null);
   const t = state?.tournament;
-  if (!t || t.status !== "active" || !isCompetitiveGame(t.game)) redirect("/arcade/tournaments");
+  if (!t || t.status !== "active" || !isCompetitiveGame(t.game) || t.game === "who-am-i") redirect("/arcade/tournaments");
   const { records, look } = await loadCompetitivePlay(ctx, t.game);
   return (
     <CompetitivePlay

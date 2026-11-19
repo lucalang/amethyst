@@ -67,6 +67,27 @@
   --theme-dark: 1;
   color-scheme: dark;
 }
+/* Who Am I?: a gem-lit night parlor. */
+[data-game-skin="who-am-i"] {
+  --background: #120d22;
+  --surface: #1c1533;
+  --surface-raised: #261d44;
+  --foreground: #f3eefe;
+  --muted-foreground: #b9add6;
+  --amethyst: #c084fc;
+  --amethyst-foreground: #1b0b2e;
+  --rose: #ff6b8b;
+  --rose-foreground: #2b0610;
+  --destructive: #ff8fa3;
+  --ink-rgb: 255 255 255;
+  --paper-rgb: 18 13 34;
+  --accent-rgb: 192 132 252;
+  --rose-rgb: 255 107 139;
+  --shadow-rgb: 6 3 14;
+  --shadow-alpha: 0.8;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
 /* 2048: the classic warm beige. */
 [data-game-skin="2048"] {
   --background: #faf8ef;

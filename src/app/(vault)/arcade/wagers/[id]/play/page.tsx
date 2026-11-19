@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { CompetitivePlay } from "@/components/arcade/competitive-play";
+import { LazyWhoAmI } from "@/components/arcade/lazy";
 import { GAME_SETTINGS, isCompetitiveGame } from "@/lib/competitive";
 import { loadSudoku } from "@/lib/data/arcade";
-import { loadCompetitivePlay, loadWagerState } from "@/lib/data/competitive";
+import { loadCompetitivePlay, loadWagerState, loadWhoAmIState } from "@/lib/data/competitive";
 import type { SudokuSize } from "@/lib/sudoku";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -16,9 +17,17 @@ export default async function WagerPlayPage({ params }: Props) {
   const { id } = await params;
   const state = await loadWagerState(ctx, id);
   const round = state?.status === "active" && state.you ? state.rounds.find((r) => r.round === state.currentRound && !r.outcome) : undefined;
+
+  // A Who Am I? round is a live duel: players join (and rejoin after a refresh) until it's over.
+  if (round?.game === "who-am-i" && (round.yourAttempt === null || round.yourAttempt === "playing")) {
+    const duel = await loadWhoAmIState(ctx, id, round.round);
+    if (!duel) redirect(`/arcade/wagers/${id}`);
+    return <LazyWhoAmI mode={{ kind: "wager", wager: id, initial: duel, stake: state!.stake }} />;
+  }
+
   // A Sudoku round in progress can be resumed; every other game is a single run.
   const resumable = round?.game === "sudoku" && round.yourAttempt === "playing";
-  if (!state || !round || (round.yourAttempt !== null && !resumable) || !isCompetitiveGame(round.game)) redirect(state ? `/arcade/wagers/${id}` : "/arcade/wagers");
+  if (!state || !round || (round.yourAttempt !== null && !resumable) || !isCompetitiveGame(round.game) || round.game === "who-am-i") redirect(state ? `/arcade/wagers/${id}` : "/arcade/wagers");
   const sudoku = resumable ? await loadSudoku(ctx, "wager", GAME_SETTINGS.sudoku.values(round.board).size as SudokuSize) : null;
   if (resumable && (!sudoku || sudoku.completed)) redirect(`/arcade/wagers/${id}`);
   const { records, look } = await loadCompetitivePlay(ctx, round.game);

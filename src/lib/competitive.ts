@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RANKED_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type RankedGameId } from "@/lib/arcade";
+import { ARCADE_GAMES, RANKED_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type RankedGameId } from "@/lib/arcade";
 import { isLevelsVariant } from "@/lib/minigames/levels";
 import { isLeaderboardBoard, wagerBoards, parseSnakeBoard, snakeBoardLabel, snakeBoardOf } from "@/lib/leaderboards";
 import { SNAKE_MODE_IDS, SNAKE_MODES, SNAKE_SIZE_IDS, SNAKE_SIZES, SNAKE_SPEED_IDS, SNAKE_SPEEDS, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
@@ -10,8 +10,9 @@ import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant, type SudokuSize } from "@/l
  * settings (a board id, as on the leaderboards); tournaments rotate through the games in the
  * `competitive_boards` table. `_wager_board_direction` in the database checks the same boards.
  */
-export type CompetitiveGame = RankedGameId;
-export const COMPETITIVE_GAME_IDS: readonly CompetitiveGame[] = RANKED_GAMES.map((game) => game.id);
+export type CompetitiveGame = RankedGameId | "who-am-i";
+/** Every game a wager can use: the ranked games plus Who Am I?, a live duel instead of a score run. */
+export const COMPETITIVE_GAME_IDS: readonly CompetitiveGame[] = [...RANKED_GAMES.map((game) => game.id), "who-am-i"];
 export const isCompetitiveGame = (value: unknown): value is CompetitiveGame =>
   typeof value === "string" && COMPETITIVE_GAME_IDS.includes(value as CompetitiveGame);
 
@@ -28,7 +29,7 @@ type SettingsSpec = {
 const NO_SETTINGS: SettingsSpec = { settings: [], board: () => "", values: () => ({}) };
 
 /** One picker over a game's ranked boards. */
-function boardPicker(game: CompetitiveGame, id: string, label: string, hints: Record<string, string> = {}): SettingsSpec {
+function boardPicker(game: RankedGameId, id: string, label: string, hints: Record<string, string> = {}): SettingsSpec {
   return {
     settings: [{ id, label, options: wagerBoards(game).map((board) => ({ id: board.id, label: board.label, hint: hints[board.id] })) }],
     board: (values) => values[id] ?? "",
@@ -77,11 +78,13 @@ export const GAME_SETTINGS: Record<CompetitiveGame, SettingsSpec> = {
   tango: NO_SETTINGS,
   queens: NO_SETTINGS,
   sumbreak: boardPicker("sumbreak", "level", "Difficulty"),
+  "who-am-i": NO_SETTINGS,
 };
 
 /** Whether a wager can use this game and board (mirrors `_wager_board_direction`). */
 export function isWagerBoard(game: string, board: string) {
   if (!isCompetitiveGame(game) || board.startsWith("daily-")) return false;
+  if (game === "who-am-i") return board === "";
   if (game === "snake" && board.startsWith("peace-")) return false;
   // The logic puzzles' endless Levels have no single round to win.
   if (isLevelsVariant(board)) return false;
@@ -90,10 +93,12 @@ export function isWagerBoard(game: string, board: string) {
 
 /** Sudoku is scored by time (lower wins); every other game by points. */
 export const lowerWins = (game: string) => game === "sudoku";
-export const formatScore = (game: string, score: number) => (lowerWins(game) ? formatDuration(score) : score.toLocaleString("en"));
+/** Who Am I? rounds record 1 for the winner and 0 for the loser. */
+export const formatScore = (game: string, score: number) =>
+  game === "who-am-i" ? (score > 0 ? "Won" : "Lost") : lowerWins(game) ? formatDuration(score) : score.toLocaleString("en");
 
 export function gameTitle(game: string) {
-  return RANKED_GAMES.find((g) => g.id === game)?.title ?? game;
+  return ARCADE_GAMES.find((g) => g.id === game)?.title ?? game;
 }
 /** The chosen settings, e.g. "No Borders · Large · 3 fruit · Fast"; empty for games without settings. */
 export function boardLabel(game: string, board: string) {
@@ -134,6 +139,7 @@ export const TOURNAMENT_RULES = [
 export const WAGER_RULES_TEXT = (rules: WagerRules) => [
   `Best of five: first to ${rules.winsNeeded} round wins takes the whole pot (both stakes, no fee).`,
   "Each round, both players get one run of the round's game with the host's settings. Higher score wins (in Sudoku, the faster time); equal results tie the round and it doesn't count.",
+  "Who Am I? rounds are a live duel instead of a run: both players join, take turns asking about their own hidden character, and the first correct guess wins. Each move has 2 minutes; missing two in a row loses the round. If only one player joins before the deadline, they win by forfeit.",
   "Logic puzzles and Sudoku give both players the same puzzle. Sudoku hints aren't allowed in a wager, and its clock keeps running while paused.",
   `Each round has ${rules.roundHours} hours. If only one player posts a valid result in time, they win the round by forfeit. If neither does, the round is void.`,
   "Leaving a run ends it with the score so far. A run the server rejects, or one that never finishes, counts as no result.",

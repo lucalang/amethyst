@@ -6,6 +6,7 @@ import type { SudokuDailyResult, SudokuSave } from "@/lib/arcade";
 import type { SudokuSize } from "@/lib/sudoku";
 import type { GameLook } from "@/lib/game-cosmetics";
 import { ArcadeProvider } from "./game-shell";
+import type { WhoAmIMode } from "./game-who-am-i";
 
 function Loading() {
   return (
@@ -44,6 +45,7 @@ export const LazyPatches = wrap(dynamic<RecordProps & { userId: string }>(() => 
 export const LazyTango = wrap(dynamic<RecordProps & { userId: string }>(() => import("./game-tango"), { ssr: false, loading: Loading }));
 export const LazyQueens = wrap(dynamic<RecordProps & { userId: string }>(() => import("./game-queens"), { ssr: false, loading: Loading }));
 export const LazySumbreak = wrap(dynamic<RecordProps & { userId: string }>(() => import("./game-sumbreak"), { ssr: false, loading: Loading }));
+export const LazyWhoAmI = wrap(dynamic<{ mode: WhoAmIMode }>(() => import("./game-who-am-i"), { ssr: false, loading: Loading }));
 export const LazySudoku = wrap(
   dynamic<{
     regular: Partial<Record<SudokuSize, SudokuSave | null>>;

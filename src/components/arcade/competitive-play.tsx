@@ -30,7 +30,7 @@ export type PlayTarget = { kind: "tournament"; tournament: string } | { kind: "w
 
 type GameProps = { records: Record<string, number>; look: GameLook; userId: string };
 
-const GAMES: Record<Exclude<CompetitiveGame, "sudoku">, (props: GameProps) => ReactNode> = {
+const GAMES: Record<Exclude<CompetitiveGame, "sudoku" | "who-am-i">, (props: GameProps) => ReactNode> = {
   "2048": (props) => <Lazy2048 {...props} />,
   flutter: ({ records, look }) => <LazyFlutter records={records} look={look} />,
   snake: ({ records, look }) => <LazySnake records={records} look={look} />,
@@ -106,7 +106,7 @@ export function CompetitivePlay({ target, game, board, records, look, detail, us
         {game === "sudoku" ? (
           wager ? <SudokuRound wager={wager} round={round} board={board} initial={sudoku} records={records} look={look} onSettled={competition.onSettled} /> : null
         ) : (
-          GAMES[game]({ records, look, userId })
+          game === "who-am-i" ? null : GAMES[game]({ records, look, userId })
         )}
       </CompetitionProvider>
     </>

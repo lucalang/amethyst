@@ -51,6 +51,34 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-who-am-i",
+    date: "2026-11-19",
+    title: "Who Am I?",
+    intro: "A new turn-based deduction game: your rival can see your secret character, but you can't. Ask, cross out and guess who you are first.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Who Am I?", text: "Ask yes/no question cards about your hidden Gemfolk character, track who's left on the board and make your guess." },
+      { kind: "new", feature: "Play the bot", text: "Prism the bot answers truthfully and deduces only from your answers. Pick Easy, Normal or Sharp." },
+      { kind: "new", feature: "Wager duels", text: "Add Who Am I? to a Wager for a live, server-checked duel against a real player, with the usual stakes, escrow and best of five." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Who Am I?",
+          body: "Both players get a different character from the same 24 original Gemfolk. On your turn, ask one question card about yourself or guess; your opponent answers. A correct guess wins, and a wrong one passes the turn. The board lets you cross people out, or cross out everyone your answers rule out in one tap.",
+          points: [
+            "Against the bot, your questions are answered truthfully and the bot only uses what it has learned",
+            "In Wagers, each player's view comes from the server, which keeps your own character hidden from you and checks every answer, guess and turn",
+            "Wager moves have 2 minutes each, and a missed card question is answered for you. Missing two moves in a row loses the round",
+            "Custom typed questions are off by default. They're only enabled if both Wager players opt in, and their answers can't be verified",
+          ],
+          where: "Arcade → Minigames, and Arcade → Wagers",
+          link: { href: "/arcade/who-am-i", label: "Play Who Am I?" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-slim-amethyst",
     date: "2026-11-19",
     title: "Slim Amethyst",

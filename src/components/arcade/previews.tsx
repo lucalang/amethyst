@@ -18,6 +18,7 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   queens: { hue: "#e86bff", genre: "Logic" },
   sumbreak: { hue: "#7ad7f0", genre: "Math" },
   "front-wars": { hue: "#ff6b4a", genre: "Strategy" },
+  "who-am-i": { hue: "#c084fc", genre: "Deduction" },
 };
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
@@ -342,6 +343,32 @@ const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
         <text x="112" y="22" fontSize="7">9.8K</text>
         <text x="26" y="74" fontSize="6">7.1K</text>
         <text x="126" y="74" fontSize="6">8.3K</text>
+      </g>
+    </g>
+  ),
+  "who-am-i": (
+    <g>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <rect key={i} x={10 + (i % 3) * 16} y={18 + Math.floor(i / 3) * 34} width="13" height="28" rx="2.5" className={i === 1 || i === 3 ? "fill-foreground/[0.05]" : "fill-amethyst/25"} />
+      ))}
+      <path d="M28 56 L37 70 M37 56 L28 70" className="stroke-rose" strokeWidth="1.6" strokeLinecap="round" />
+      <g transform="translate(66 14)">
+        <rect width="34" height="46" rx="4" className="fill-amethyst/30 stroke-amethyst" strokeWidth="1" />
+        <ellipse cx="17" cy="24" rx="9" ry="10.5" className="fill-foreground/20" />
+        <text x="17" y="30" textAnchor="middle" fontSize="16" fontWeight="800" className="fill-foreground">?</text>
+      </g>
+      <g transform="translate(108 30)">
+        <rect width="34" height="46" rx="4" fill="#4c8dff" fillOpacity="0.35" stroke="#4c8dff" strokeWidth="1" />
+        <path d="M9 22 Q8 9 17 9 Q26 9 25 22 Q22 14 17 14 Q12 14 9 22Z" fill="#e9bb4c" />
+        <ellipse cx="17" cy="24" rx="8" ry="9.5" fill="#e3ad86" />
+        <circle cx="14" cy="23" r="1.1" fill="#1d1530" />
+        <circle cx="20" cy="23" r="1.1" fill="#1d1530" />
+        <path d="M14 28 Q17 31 20 28" fill="none" stroke="#7a2e3a" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M5 46 Q6 36 17 35 Q28 36 29 46Z" fill="#372e57" />
+      </g>
+      <g transform="translate(78 66)">
+        <rect width="56" height="18" rx="9" className="fill-foreground/[0.08]" />
+        <text x="28" y="12.5" textAnchor="middle" fontSize="7.5" fontWeight="700" className="fill-foreground">Am I smiling?</text>
       </g>
     </g>
   ),

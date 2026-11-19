@@ -30,6 +30,8 @@ import { catalogMatcher } from "@/lib/catalog-search";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 
 function RecordLine({ game, records }: { game: ArcadeGame; records: ArcadeRecords }) {
+  // Head-to-head games keep no record.
+  if (game.id === "who-am-i") return <p>{game.recordLabel}</p>;
   if (game.id === "sudoku") {
     return (
       <dl className="flex flex-wrap gap-x-3 gap-y-1">

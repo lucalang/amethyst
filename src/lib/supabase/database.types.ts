@@ -709,6 +709,12 @@ isOneToOne: false
 "wager_sudoku_puzzle":
 { Args: { "p_wager": string,"p_round": number,"p_puzzle": string,"p_solution": string }; Returns: Json
                            },
+"whoami_state":
+{ Args: { "p_wager": string,"p_round": number }; Returns: Json
+                           },
+"whoami_act":
+{ Args: { "p_wager": string,"p_round": number,"p_action": string,"p_request"?: string,"p_seq"?: number,"p_card"?: string,"p_text"?: string,"p_answer"?: string,"p_guess"?: string }; Returns: Json
+                           },
 "claim_season_quest":
 { Args: { "p_assignment": string }; Returns: Json
                            },
