@@ -38,11 +38,11 @@ const GAMES: Record<Exclude<CompetitiveGame, "sudoku">, (props: GameProps) => Re
   stacker: ({ records, look }) => <LazyStacker records={records} look={look} />,
   "gem-chase": ({ records, look }) => <LazyGemChase records={records} look={look} />,
   "space-blaster": ({ records, look }) => <LazySpaceBlaster records={records} look={look} />,
-  zip: ({ records, look }) => <LazyZip records={records} look={look} />,
-  patches: ({ records, look }) => <LazyPatches records={records} look={look} />,
-  tango: ({ records, look }) => <LazyTango records={records} look={look} />,
-  queens: ({ records, look }) => <LazyQueens records={records} look={look} />,
-  sumbreak: ({ records, look }) => <LazySumbreak records={records} look={look} />,
+  zip: ({ records, look, userId }) => <LazyZip records={records} look={look} userId={userId} />,
+  patches: ({ records, look, userId }) => <LazyPatches records={records} look={look} userId={userId} />,
+  tango: ({ records, look, userId }) => <LazyTango records={records} look={look} userId={userId} />,
+  queens: ({ records, look, userId }) => <LazyQueens records={records} look={look} userId={userId} />,
+  sumbreak: ({ records, look, userId }) => <LazySumbreak records={records} look={look} userId={userId} />,
 };
 
 /** A tournament or wager run: the game locked to one board, with runs started through the competition. */

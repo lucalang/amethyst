@@ -17,7 +17,9 @@ export default async function LeaderboardsPage({ searchParams }: { searchParams:
   const asked = typeof params.game === "string" ? params.game : "";
   const game: ArcadeGameId = LEADERBOARD_GAME_IDS.find((id) => id === asked) ?? LEADERBOARD_GAME_IDS[0];
   const askedBoard = typeof params.board === "string" ? params.board : "";
-  const board = isLeaderboardBoard(game, askedBoard) ? askedBoard : LEADERBOARD_GAMES[game].boards[0].id;
+  // Single-puzzle boards only exist for Wagers; the page lists the ranked boards.
+  const hidden = LEADERBOARD_GAMES[game].matchBoards?.some((option) => option.id === askedBoard) ?? false;
+  const board = isLeaderboardBoard(game, askedBoard) && !hidden ? askedBoard : LEADERBOARD_GAMES[game].boards[0].id;
 
   return (
     <EntranceScope>

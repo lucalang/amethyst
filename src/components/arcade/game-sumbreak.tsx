@@ -5,7 +5,6 @@ import { RotateCcw, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   SUMBREAK_DAILY_SIZE,
-  SUMBREAK_LEVELS,
   applyMerge,
   canMerge,
   generateSumbreak,
@@ -19,9 +18,10 @@ import {
   type SumbreakMove,
   type SumbreakPuzzle,
 } from "@/lib/minigames/sumbreak";
+import { sumbreakLevelBoard } from "@/lib/minigames/levels";
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
-import { PuzzleFrame, usePuzzleSession, type PuzzleMode, type PuzzleSession } from "./puzzle-shell";
+import { PuzzleFrame, usePuzzleSession, type PuzzleSession, type PuzzleSpec } from "./puzzle-shell";
 import { CELEBRATIONS } from "./puzzle-looks";
 
 /** One step of play: the board before it and the merge (null = the board was reset to the start). */
@@ -88,7 +88,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
     setMessage(`${cells[from]} + ${cells[to]} = ${next[to]}. ${remaining === 1 ? "One tile left: solved!" : `${remaining} tiles left.`}`);
     if (sumbreakSolved(next)) {
       const moves = movesOf(nextHistory);
-      session.solve({ moves: moves.length, undos: undos.current }, { seed: puzzle.seed, size: n, moves: moves.flatMap((move) => [move.from, move.to]) });
+      session.solve({ moves: moves.length, undos: undos.current }, { seed: puzzle.seed, size: n, candidates: puzzle.candidates, moves: moves.flatMap((move) => [move.from, move.to]) });
       return true;
     }
     if (legalMerges(next, n).length === 0) {
@@ -183,7 +183,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
     setMessage(`${steppedBack ? "Stepped back to a position that can still be solved. " : ""}Hint: ${base[move.from]} + ${base[move.to]} = ${next[move.to]}.`);
     if (sumbreakSolved(next)) {
       const moves = movesOf(nextHistory);
-      session.solve({ moves: moves.length, undos: undos.current }, { seed: puzzle.seed, size: n, moves: moves.flatMap((entry) => [entry.from, entry.to]) });
+      session.solve({ moves: moves.length, undos: undos.current }, { seed: puzzle.seed, size: n, candidates: puzzle.candidates, moves: moves.flatMap((entry) => [entry.from, entry.to]) });
     }
   }
 
@@ -360,9 +360,16 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
   );
 }
 
-const generate = (random: () => number, mode: PuzzleMode, level: string) => generateSumbreak(random, mode === "daily" ? SUMBREAK_DAILY_SIZE : sumbreakLevelSize(level));
+/** Levels grow the board and pick the trickiest of more candidates; Wager matches use their board's size. */
+const generate = (random: () => number, spec: PuzzleSpec) => {
+  if (spec.kind === "level") {
+    const { size, candidates } = sumbreakLevelBoard(spec.level, spec.difficulty);
+    return generateSumbreak(random, size, candidates);
+  }
+  return generateSumbreak(random, spec.kind === "daily" ? SUMBREAK_DAILY_SIZE : sumbreakLevelSize(spec.board));
+};
 
-export default function GameSumbreak({ records }: { records: Record<string, number> }) {
-  const session = usePuzzleSession("sumbreak", generate, records, SUMBREAK_LEVELS);
+export default function GameSumbreak({ records, userId }: { records: Record<string, number>; userId: string }) {
+  const session = usePuzzleSession("sumbreak", generate, records, userId);
   return <SumbreakPlay key={session.puzzleId} session={session} />;
 }

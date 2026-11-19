@@ -30,7 +30,7 @@ import {
   type WagerRules,
   type WagerState,
 } from "@/lib/competitive";
-import { LEADERBOARD_GAMES } from "@/lib/leaderboards";
+import { wagerBoards } from "@/lib/leaderboards";
 import { cn } from "@/lib/utils";
 import { ARCADE_CABINETS, ArcadePreview } from "./previews";
 
@@ -61,7 +61,7 @@ function stakeToSlider(stake: number, rules: WagerRules) {
 
 /** A board for the game not yet picked, preferring its first ranked setting. */
 function freeBoard(game: CompetitiveGame, picks: Pick[]) {
-  const boards = LEADERBOARD_GAMES[game].boards.map((b) => b.id).filter((board) => isWagerBoard(game, board));
+  const boards = wagerBoards(game).map((b) => b.id).filter((board) => isWagerBoard(game, board));
   return boards.find((board) => !picks.some((p) => p.game === game && p.board === board)) ?? boards[0] ?? "";
 }
 

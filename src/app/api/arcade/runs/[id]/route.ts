@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { data: run, error: runError } = await ctx.supabase.from("arcade_runs").select("game, board").eq("id", id).maybeSingle();
     if (runError) return dbError(runError, "Could not count the coins for this run.");
     if (run?.game === SUMBREAK_GAME) {
-      const board = sumbreakBoardOf(run.board);
+      const board = sumbreakBoardOf(run.board, parsed.data.score);
       if (!board || !verifySumbreakProof(parsed.data.proof, board)) return apiError(422, "unverified", "That solve could not be verified.");
     }
   }

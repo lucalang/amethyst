@@ -3,10 +3,11 @@
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { Eraser, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { zipLevel } from "@/lib/minigames/levels";
 import { edgeKey, generateZip, ZIP_DAILY_SIZE, ZIP_LEVELS, zipNeighbours, zipSolved, type ZipPuzzle } from "@/lib/minigames/zip";
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
-import { PuzzleFrame, usePuzzleSession, type PuzzleMode, type PuzzleSession } from "./puzzle-shell";
+import { PuzzleFrame, usePuzzleSession, type PuzzleSession, type PuzzleSpec } from "./puzzle-shell";
 import { CELEBRATIONS, ZipMarker, zipTrail } from "./puzzle-looks";
 
 function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
@@ -267,13 +268,18 @@ function ZipPlay({ session }: { session: PuzzleSession<ZipPuzzle> }) {
   );
 }
 
-const generate = (random: () => number, mode: PuzzleMode, level: string) => {
-  if (mode === "daily") return generateZip(random, ZIP_DAILY_SIZE);
-  const config = ZIP_LEVELS.find((option) => option.id === level) ?? ZIP_LEVELS[1];
+/** Levels grow the grid and drop numbers; Wager matches use their board's classic difficulty. */
+const generate = (random: () => number, spec: PuzzleSpec) => {
+  if (spec.kind === "daily") return generateZip(random, ZIP_DAILY_SIZE);
+  if (spec.kind === "level") {
+    const { size, hints } = zipLevel(spec.level, spec.difficulty);
+    return generateZip(random, size, hints);
+  }
+  const config = ZIP_LEVELS.find((option) => option.id === spec.board) ?? ZIP_LEVELS[1];
   return generateZip(random, config.size, config.hints);
 };
 
-export default function GameZip({ records }: { records: Record<string, number> }) {
-  const session = usePuzzleSession("zip", generate, records, ZIP_LEVELS);
+export default function GameZip({ records, userId }: { records: Record<string, number>; userId: string }) {
+  const session = usePuzzleSession("zip", generate, records, userId);
   return <ZipPlay key={session.puzzleId} session={session} />;
 }

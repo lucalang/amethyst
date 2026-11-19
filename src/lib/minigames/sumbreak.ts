@@ -15,6 +15,7 @@
  */
 
 import { seedFrom, seededRandom } from "@/lib/arcade-daily";
+import { MAX_PUZZLE_LEVEL, levelsBoardDifficulty, sumbreakLevelBoard } from "@/lib/minigames/levels";
 
 export const SUMBREAK_GAME = "sumbreak";
 
@@ -34,7 +35,10 @@ export const sumbreakLevelSize = (level: string) => SUMBREAK_LEVELS.find((entry)
 export type SumbreakBoard = number[];
 /** A merge: the tile at `from` joins the equal tile at `to` (an orthogonal neighbour); the sum lands on `to`. */
 export type SumbreakMove = { from: number; to: number };
-export type SumbreakPuzzle = { seed: number; size: number; cells: SumbreakBoard; solution: SumbreakMove[] };
+/** `candidates`: how many boards were built to pick the trickiest from (the default for daily and match puzzles). */
+export type SumbreakPuzzle = { seed: number; size: number; candidates: number; cells: SumbreakBoard; solution: SumbreakMove[] };
+export const SUMBREAK_CANDIDATES = 6;
+export const SUMBREAK_MAX_CANDIDATES = 32;
 
 export function sumbreakNeighbours(cell: number, size: number) {
   const r = Math.floor(cell / size);
@@ -185,22 +189,22 @@ function buildOnce(size: number, random: () => number): { cells: SumbreakBoard; 
 }
 
 /** The puzzle for a seed and size: the trickiest of a few candidates (fewest lucky random solves). */
-export function buildSumbreak(seed: number, size: number): SumbreakPuzzle {
+export function buildSumbreak(seed: number, size: number, candidates = SUMBREAK_CANDIDATES): SumbreakPuzzle {
   const random = seededRandom(seed);
   let best: { cells: SumbreakBoard; solution: SumbreakMove[]; luck: number } | null = null;
-  for (let candidate = 0; candidate < 200 && (candidate < 6 || !best); candidate += 1) {
+  for (let candidate = 0; candidate < 200 + candidates && (candidate < candidates || !best); candidate += 1) {
     const built = buildOnce(size, random);
     if (!built) continue;
     const luck = luckRate(built.cells, size, random, 30);
     if (!best || luck < best.luck) best = { ...built, luck };
   }
   if (!best) throw new Error("Could not build a Sumbreak board.");
-  return { seed, size, cells: best.cells, solution: best.solution };
+  return { seed, size, candidates, cells: best.cells, solution: best.solution };
 }
 
 /** A fresh puzzle from the shell's random source (practice, daily or a match seed all pass through here). */
-export function generateSumbreak(random: () => number, size: number) {
-  return buildSumbreak(Math.floor(random() * 2 ** 32) >>> 0, size);
+export function generateSumbreak(random: () => number, size: number, candidates = SUMBREAK_CANDIDATES) {
+  return buildSumbreak(Math.floor(random() * 2 ** 32) >>> 0, size, candidates);
 }
 
 /** The seed of a day's daily puzzle (the same draw the game makes from the daily random source). */
@@ -210,9 +214,14 @@ export function dailySumbreakSeed(date: string) {
 
 /* ---------------------------------------------------------------------------------------------- Proof */
 
-/** The board a record variant or run board stands for: a practice level, or a day's daily puzzle (or null). */
-export function sumbreakBoardOf(board: string | null | undefined): { size: number; date: string | null } | null {
+/**
+ * The board a record variant or run board stands for: a practice level, a day's daily puzzle or an endless level
+ * (whose size depends on the level reached, the record's or run's score), or null.
+ */
+export function sumbreakBoardOf(board: string | null | undefined, score = 0): { size: number; date: string | null } | null {
   if (board === null || board === undefined) return null;
+  const difficulty = levelsBoardDifficulty(board);
+  if (difficulty) return score >= 1 && score <= MAX_PUZZLE_LEVEL ? { size: sumbreakLevelBoard(score, difficulty).size, date: null } : null;
   const daily = /^daily-(\d{4}-\d{2}-\d{2})$/.exec(board);
   if (daily) return { size: SUMBREAK_DAILY_SIZE, date: daily[1] };
   const level = SUMBREAK_LEVELS.find((entry) => entry.id === board);
@@ -220,7 +229,7 @@ export function sumbreakBoardOf(board: string | null | undefined): { size: numbe
 }
 
 /** What a solve sends to the server: the puzzle's seed and size and the merges, as from/to pairs. */
-export type SumbreakProof = { seed: number; size: number; moves: number[] };
+export type SumbreakProof = { seed: number; size: number; moves: number[]; candidates?: number };
 
 /**
  * Whether a proof solves its puzzle under the rules: the board is rebuilt from the seed and every merge is
@@ -229,12 +238,13 @@ export type SumbreakProof = { seed: number; size: number; moves: number[] };
  */
 export function verifySumbreakProof(proof: unknown, expected: { size: number; date?: string | null }): boolean {
   if (!proof || typeof proof !== "object") return false;
-  const { seed, size, moves } = proof as Partial<SumbreakProof>;
+  const { seed, size, moves, candidates = SUMBREAK_CANDIDATES } = proof as Partial<SumbreakProof>;
+  if (!Number.isInteger(candidates) || candidates < 1 || candidates > SUMBREAK_MAX_CANDIDATES) return false;
   if (typeof seed !== "number" || !Number.isInteger(seed) || seed < 0 || seed >= 2 ** 32) return false;
   if (size !== expected.size || !(SUMBREAK_SIZES as readonly number[]).includes(size)) return false;
-  if (expected.date && seed !== dailySumbreakSeed(expected.date)) return false;
+  if (expected.date && (seed !== dailySumbreakSeed(expected.date) || candidates !== SUMBREAK_CANDIDATES)) return false;
   if (!Array.isArray(moves) || moves.length !== (size * size - 1) * 2) return false;
-  let cells = buildSumbreak(seed, size).cells;
+  let cells = buildSumbreak(seed, size, candidates).cells;
   for (let i = 0; i < moves.length; i += 2) {
     const from = moves[i];
     const to = moves[i + 1];

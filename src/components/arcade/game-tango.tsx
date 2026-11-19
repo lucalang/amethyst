@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Eraser, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { tangoLevel } from "@/lib/minigames/levels";
 import { MOON, SUN, generateTango, tangoIssues, tangoSolved, type TangoCell, type TangoPuzzle } from "@/lib/minigames/tango";
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
-import { PuzzleFrame, usePuzzleSession, type PuzzleSession } from "./puzzle-shell";
+import { PuzzleFrame, usePuzzleSession, type PuzzleSession, type PuzzleSpec } from "./puzzle-shell";
 import { CELEBRATIONS, TangoSymbol } from "./puzzle-looks";
 
 const NAMES = ["empty", "sun", "moon"] as const;
@@ -241,7 +242,10 @@ function TangoPlay({ session }: { session: PuzzleSession<TangoPuzzle> }) {
   );
 }
 
-export default function GameTango({ records }: { records: Record<string, number> }) {
-  const session = usePuzzleSession("tango", generateTango, records);
+/** Levels thin the clues out; the daily puzzle and Wager matches keep the full-strength generator. */
+const generate = (random: () => number, spec: PuzzleSpec) => generateTango(random, spec.kind === "level" ? tangoLevel(spec.level, spec.difficulty) : {});
+
+export default function GameTango({ records, userId }: { records: Record<string, number>; userId: string }) {
+  const session = usePuzzleSession("tango", generate, records, userId);
   return <TangoPlay key={session.puzzleId} session={session} />;
 }

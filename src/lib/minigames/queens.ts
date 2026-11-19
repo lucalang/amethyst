@@ -135,6 +135,9 @@ export function generateQueens(random: () => number, size = 8): QueensPuzzle {
   return { size, regions: growRegions(size, crowns, random), solution: crowns };
 }
 
+/** Whether the regions leave exactly one placement (generated puzzles nearly always do). */
+export const queensUnique = (puzzle: QueensPuzzle) => solutions(puzzle.size, puzzle.regions, 2).length === 1;
+
 /** Crowns that break a rule: same row, column or region, or touching. */
 export function queensConflicts(size: number, regions: number[], crowns: number[]) {
   const bad = new Set<number>();

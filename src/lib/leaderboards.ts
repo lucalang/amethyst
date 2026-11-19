@@ -2,6 +2,7 @@ import * as z from "zod";
 import { RANKED_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, type RankedGameId } from "@/lib/arcade";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 import { dailyDate, dailyVariant } from "@/lib/arcade-daily";
+import { PUZZLE_DIFFICULTIES, isLevelsVariant, levelsBoard, type PuzzleLevelGame } from "@/lib/minigames/levels";
 import { SUMBREAK_LEVELS } from "@/lib/minigames/sumbreak";
 import { ZIP_LEVELS } from "@/lib/minigames/zip";
 import { BLEND_MODE_IDS, SNAKE_MODES, SNAKE_SIZES, SNAKE_SPEEDS, isSnakeLeaderboardVariant, type SnakeMode, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
@@ -19,6 +20,8 @@ type LeaderboardGame = {
   order: LeaderboardOrder;
   scoreLabel: string;
   boards: readonly BoardOption[];
+  /** Valid boards that aren't listed (Wagers still play the logic puzzles' single-puzzle boards). */
+  matchBoards?: readonly BoardOption[];
   daily: boolean;
   /** Snake: one board per setup, listed from the boards players have ranked on. */
   setups?: boolean;
@@ -27,6 +30,15 @@ type LeaderboardGame = {
 /** Days of daily boards that stay browsable (today first). */
 export const DAILY_BOARD_DAYS = 7;
 export const LEADERBOARD_LIMIT = 25;
+
+/**
+ * The logic puzzles rank the highest level completed in their endless Levels, one board per difficulty. The old
+ * score boards (Practice, difficulties) are no longer listed; their entries are kept but never shown as levels.
+ * Their daily boards still rank solve speed.
+ */
+function levelBoards(game: PuzzleLevelGame): Pick<LeaderboardGame, "order" | "scoreLabel" | "boards" | "daily"> {
+  return { order: "high", scoreLabel: "Highest level", boards: PUZZLE_DIFFICULTIES[game].map((option) => ({ id: levelsBoard(option.id), label: option.label })), daily: true };
+}
 
 export const LEADERBOARD_GAMES: Record<RankedGameId, LeaderboardGame> = {
   "2048": {
@@ -68,11 +80,11 @@ export const LEADERBOARD_GAMES: Record<RankedGameId, LeaderboardGame> = {
   },
   "gem-chase": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
   "space-blaster": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
-  zip: { order: "high", scoreLabel: "Score", boards: ZIP_LEVELS.map((level) => ({ id: level.id, label: level.label })), daily: true },
-  patches: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
-  tango: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
-  queens: { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Practice" }], daily: true },
-  sumbreak: { order: "high", scoreLabel: "Score", boards: SUMBREAK_LEVELS.map((level) => ({ id: level.id, label: level.label })), daily: true },
+  zip: { ...levelBoards("zip"), matchBoards: ZIP_LEVELS.map((level) => ({ id: level.id, label: level.label })) },
+  patches: { ...levelBoards("patches"), matchBoards: [{ id: "", label: "Practice" }] },
+  tango: { ...levelBoards("tango"), matchBoards: [{ id: "", label: "Practice" }] },
+  queens: { ...levelBoards("queens"), matchBoards: [{ id: "", label: "Practice" }] },
+  sumbreak: { ...levelBoards("sumbreak"), matchBoards: SUMBREAK_LEVELS.map((level) => ({ id: level.id, label: level.label })) },
 };
 
 export const LEADERBOARD_GAME_IDS = RANKED_GAMES.map((game) => game.id);
@@ -107,7 +119,18 @@ export function snakeBoardLabel(board: string) {
 export function boardLabel(game: RankedGameId, board: string, now = Date.now()) {
   if (board.startsWith("daily-")) return `Daily · ${dailyBoards(now).find((day) => day.id === board)?.label ?? board.slice(6)}`;
   if (game === "snake") return snakeBoardLabel(board);
-  return LEADERBOARD_GAMES[game].boards.find((option) => option.id === board)?.label ?? board;
+  const entry = LEADERBOARD_GAMES[game];
+  return [...entry.boards, ...(entry.matchBoards ?? [])].find((option) => option.id === board)?.label ?? board;
+}
+
+/** Whether a board ranks the highest level completed (rows show "Level 12" and equal levels share a rank). */
+export const isLevelsBoard = (game: RankedGameId, board: string) => isLevelsVariant(board) && LEADERBOARD_GAMES[game].boards.some((option) => option.id === board);
+
+/** The metric a board ranks, for headings and footnotes: daily boards of a level game still rank a score. */
+export function boardMetric(game: RankedGameId, board: string) {
+  if (isLevelsBoard(game, board)) return "Highest level";
+  const entry = LEADERBOARD_GAMES[game];
+  return entry.scoreLabel === "Highest level" ? "Score" : entry.scoreLabel;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -122,7 +145,7 @@ export function dailyBoards(now = Date.now()): BoardOption[] {
 
 export function isLeaderboardBoard(game: RankedGameId, board: string, now = Date.now()) {
   const entry = LEADERBOARD_GAMES[game];
-  if (entry.boards.some((option) => option.id === board)) return true;
+  if (entry.boards.some((option) => option.id === board) || entry.matchBoards?.some((option) => option.id === board)) return true;
   if (entry.setups && game === "snake" && isSnakeLeaderboardVariant(board)) return true;
   return entry.daily && dailyBoards(now).some((option) => option.id === board);
 }
@@ -165,3 +188,6 @@ export function leaderboardHref(game: RankedGameId, board = "") {
   if (board) params.set("board", board);
   return `/arcade/leaderboards?${params}`;
 }
+
+/** The boards a Wager can offer for a game: its single-puzzle boards for the logic puzzles, else its listed boards. */
+export const wagerBoards = (game: RankedGameId): readonly BoardOption[] => LEADERBOARD_GAMES[game].matchBoards ?? LEADERBOARD_GAMES[game].boards;

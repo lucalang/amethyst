@@ -8,7 +8,7 @@ import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { ARCADE_GAMES, formatDuration, type RankedGameId } from "@/lib/arcade";
-import { LEADERBOARD_GAMES, LEADERBOARD_GAME_IDS, boardLabel, dailyBoards, leaderboardHref, parseSnakeBoard, snakeBoardLabel, snakeBoardOf, type Leaderboard, type LeaderboardRow, type SnakeBoardParts } from "@/lib/leaderboards";
+import { LEADERBOARD_GAMES, LEADERBOARD_GAME_IDS, boardLabel, boardMetric, dailyBoards, isLevelsBoard, leaderboardHref, parseSnakeBoard, snakeBoardLabel, snakeBoardOf, type Leaderboard, type LeaderboardRow, type SnakeBoardParts } from "@/lib/leaderboards";
 import { FRUIT_COUNT, SNAKE_MODES, SNAKE_MODE_IDS, SNAKE_SIZES, SNAKE_SIZE_IDS, SNAKE_SPEEDS, SNAKE_SPEED_IDS, snakeVariant, isSnakeLeaderboardVariant, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 
 type Load = { key: string } & ({ status: "ready"; data: Leaderboard } | { status: "error"; unavailable: boolean });
@@ -16,11 +16,11 @@ type Load = { key: string } & ({ status: "ready"; data: Leaderboard } | { status
 const titleOf = (game: RankedGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
 const dateFormat = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
 
-function Score({ row, fast }: { row: LeaderboardRow; fast: boolean }) {
-  return <span className="lb-score">{fast ? formatDuration(row.score) : row.score.toLocaleString("en")}</span>;
+function Score({ row, fast, levels }: { row: LeaderboardRow; fast: boolean; levels: boolean }) {
+  return <span className="lb-score">{fast ? formatDuration(row.score) : levels ? `Level ${row.score.toLocaleString("en")}` : row.score.toLocaleString("en")}</span>;
 }
 
-function Row({ row, fast, index = 0 }: { row: LeaderboardRow; fast: boolean; index?: number }) {
+function Row({ row, fast, levels, index = 0 }: { row: LeaderboardRow; fast: boolean; levels: boolean; index?: number }) {
   return (
     <li className="lb-row enter enter-soft" style={{ "--enter-index": index } as CSSProperties} data-you={row.you ? "" : undefined} data-podium={row.rank <= 3 ? row.rank : undefined}>
       <span className="lb-rank" aria-label={`Rank ${row.rank}`}>
@@ -37,7 +37,7 @@ function Row({ row, fast, index = 0 }: { row: LeaderboardRow; fast: boolean; ind
           {row.hints ? ` · ${row.hints} hint${row.hints === 1 ? "" : "s"}` : ""}
         </span>
       </span>
-      <Score row={row} fast={fast} />
+      <Score row={row} fast={fast} levels={levels} />
     </li>
   );
 }
@@ -55,6 +55,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
   const config = LEADERBOARD_GAMES[game];
   const fast = config.order === "fast";
   const daily = board.startsWith("daily-");
+  const levels = isLevelsBoard(game, board);
   const days = config.daily ? dailyBoards() : [];
   const snakeParts = config.setups && !daily ? parseSnakeBoard(board) : null;
   const pickSnake = (change: Partial<SnakeBoardParts>) => snakeParts && setBoard(snakeBoardOf({ ...snakeParts, ...change }));
@@ -209,7 +210,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
               <span className="sr-only"> leaderboard,</span> <span className="lb-variant">{boardLabel(game, board)}</span>
             </h2>
           </span>
-          <span className="ui-pill lb-meta tabular-nums">{data ? `${data.players.toLocaleString("en")} player${data.players === 1 ? "" : "s"}` : config.scoreLabel}</span>
+          <span className="ui-pill lb-meta tabular-nums">{data ? `${data.players.toLocaleString("en")} player${data.players === 1 ? "" : "s"}` : boardMetric(game, board)}</span>
         </header>
 
         {current === null ? (
@@ -235,7 +236,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
             <Button asChild size="sm">
               <Link href={href}>
                 <Play aria-hidden />
-                Set the first score
+                {levels ? "Climb the first levels" : "Set the first score"}
               </Link>
             </Button>
           </div>
@@ -243,13 +244,13 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
           <>
             <ol className="lb-list" aria-label={`Top ${data.top.length}`}>
               {data.top.map((row, index) => (
-                <Row key={`${row.rank}-${index}`} row={row} fast={fast} index={index} />
+                <Row key={`${row.rank}-${index}`} row={row} fast={fast} levels={levels} index={index} />
               ))}
             </ol>
             <footer className="lb-footer">
               {youOutside ? (
                 <ol className="lb-list" aria-label="Your placement">
-                  <Row row={youOutside} fast={fast} />
+                  <Row row={youOutside} fast={fast} levels={levels} />
                 </ol>
               ) : data.you ? null : (
                 <p className="flex flex-wrap items-center justify-between gap-2 px-1 text-sm text-muted-foreground">
@@ -268,8 +269,12 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
       </section>
 
       <p className="px-1 text-xs text-pretty text-muted-foreground">
-        {fast ? "Fastest solve first; fewer hints break a tie, then the earlier solve." : "Highest score first; on a tie, whoever reached it first ranks higher."} Only runs the server
-        timed and checked are ranked, one best per player. Players appear under their display name, or an anonymous arcade name if they haven’t set one.
+        {fast
+          ? "Fastest solve first; fewer hints break a tie, then the earlier solve."
+          : levels
+            ? "Highest level first. Players on the same level share a rank, listed in a fixed order."
+            : "Highest score first; on a tie, whoever reached it first ranks higher."}{" "}
+        Only runs the server timed and checked are ranked, one best per player. Players appear under their display name, or an anonymous arcade name if they haven’t set one.
       </p>
     </div>
   );

@@ -11,9 +11,10 @@ export async function POST(request: Request) {
   if (ctx instanceof Response) return ctx;
   const parsed = await parseJson(request, recordScoreSchema);
   if ("response" in parsed) return parsed.response;
-  // Sumbreak records are only saved for a solve the server has replayed under the rules.
+  // Sumbreak records are only saved for a solve the server has replayed under the rules (a level record's board
+  // size follows the level it claims).
   if (parsed.data.game === SUMBREAK_GAME && parsed.data.score > 0) {
-    const board = sumbreakBoardOf(parsed.data.variant);
+    const board = sumbreakBoardOf(parsed.data.variant, parsed.data.score);
     if (!board || !verifySumbreakProof(parsed.data.proof, board)) return apiError(422, "unverified", "That solve could not be verified.");
   }
 

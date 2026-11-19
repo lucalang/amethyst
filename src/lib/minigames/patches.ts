@@ -118,7 +118,8 @@ function countSolutions(size: number, clues: PatchClue[], limit: number) {
   return count;
 }
 
-export function generatePatches(random: () => number, size = 6): PatchesPuzzle {
+/** `hide`: the share of clues (0 to 0.5) whose shape is hidden when the answer stays unique. */
+export function generatePatches(random: () => number, size = 6, hide = 0.5): PatchesPuzzle {
   let fallback: PatchesPuzzle | null = null;
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const rects = partition(size, random);
@@ -130,7 +131,7 @@ export function generatePatches(random: () => number, size = 6): PatchesPuzzle {
     fallback ??= { size, clues, solution: rects };
     if (countSolutions(size, clues, 2) !== 1) continue;
     // Hide some shapes while the answer stays unique.
-    for (const index of shuffle(clues.map((_, i) => i), random).slice(0, Math.ceil(clues.length / 2))) {
+    for (const index of shuffle(clues.map((_, i) => i), random).slice(0, Math.ceil(clues.length * hide))) {
       const next = clues.map((clue, i) => (i === index ? { ...clue, shape: "any" as const } : clue));
       if (countSolutions(size, next, 2) === 1) clues = next;
     }

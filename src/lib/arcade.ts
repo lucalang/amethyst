@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
+import { MAX_PUZZLE_LEVEL, PUZZLE_DIFFICULTIES, isLevelsVariant, levelsBoard, type PuzzleDifficulty } from "@/lib/minigames/levels";
 import { SUMBREAK_LEVEL_VARIANTS } from "@/lib/minigames/sumbreak";
 import { ZIP_LEVEL_VARIANTS } from "@/lib/minigames/zip";
 import { isSnakeVariant } from "@/lib/snake";
@@ -82,11 +83,11 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
     category: "full",
     features: ["World map", "Up to 484 rivals", "Real-time strategy"],
   },
-  { id: "zip", title: "Zip", href: "/arcade/zip", blurb: "Draw one path through every cell, passing the numbers in order.", recordLabel: "Best score", category: "minigames" },
-  { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Best score", category: "minigames" },
-  { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Best score", category: "minigames" },
-  { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Best score", category: "minigames" },
-  { id: "sumbreak", title: "Sumbreak", href: "/arcade/sumbreak", blurb: "Merge equal neighbours into their sum until a single tile is left. Order is everything.", recordLabel: "Best score", category: "minigames" },
+  { id: "zip", title: "Zip", href: "/arcade/zip", blurb: "Draw one path through every cell, passing the numbers in order.", recordLabel: "Highest level", category: "minigames" },
+  { id: "patches", title: "Patches", href: "/arcade/patches", blurb: "Split the grid into rectangles: one clue each, sized and shaped as it says.", recordLabel: "Highest level", category: "minigames" },
+  { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Highest level", category: "minigames" },
+  { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Highest level", category: "minigames" },
+  { id: "sumbreak", title: "Sumbreak", href: "/arcade/sumbreak", blurb: "Merge equal neighbours into their sum until a single tile is left. Order is everything.", recordLabel: "Highest level", category: "minigames" },
 ];
 
 /** Games with coin runs: the ones leaderboards, streaks, Tournaments and Wagers list. */
@@ -103,11 +104,34 @@ export function arcadeShelfSummary() {
   return full ? `${part(minis, "minigame", "minigames")} and ${part(full, "full game", "full games")}` : part(minis, "minigame", "minigames");
 }
 
-/** Logic puzzles with a Practice board ("") and a daily puzzle; scored by solve speed. */
+/**
+ * Logic puzzles with endless Levels (the record is the highest level completed, in the `levels` variant) and a
+ * daily puzzle (scored by solve speed). Older score records on their other variants stay, but aren't levels.
+ */
 export const PUZZLE_GAMES = ["zip", "patches", "tango", "queens", "sumbreak"] as const;
 export type PuzzleGame = (typeof PUZZLE_GAMES)[number];
 
-/** Puzzle score: 1,000 for an instant solve, 4 fewer per second, never below 100. */
+export const isPuzzleGame = (id: string): id is PuzzleGame => (PUZZLE_GAMES as readonly string[]).includes(id);
+
+/** The record key of a game's highest completed level on one difficulty in `ArcadeRecords`. */
+export const levelRecordKey = (game: PuzzleGame, difficulty: PuzzleDifficulty) => `${game}:${levelsBoard(difficulty)}` as const;
+export { PUZZLE_DIFFICULTIES };
+
+/**
+ * The bests a puzzle page passes to its game: the highest level and recent daily scores, nothing else. The old
+ * practice scores sit on other variants and are left out so they can't be mistaken for levels.
+ */
+export function puzzleBests(game: PuzzleGame, records: ArcadeRecords) {
+  const bests: Record<string, number> = {};
+  for (const [key, value] of Object.entries(records)) {
+    if (value === undefined || !key.startsWith(`${game}:`)) continue;
+    const variant = key.slice(game.length + 1);
+    if (isLevelsVariant(variant) || isRecentDailyVariant(variant)) bests[variant] = value;
+  }
+  return bests;
+}
+
+/** Daily puzzle score: 1,000 for an instant solve, 4 fewer per second, never below 100. */
 export const puzzleScore = (seconds: number) => Math.max(100, 1000 - 4 * Math.floor(seconds));
 
 /**
@@ -131,9 +155,9 @@ function isKnownVariant(game: ScoreGame, variant: string) {
   if (game === "flutter") return isRecentDailyVariant(variant);
   if (game === "fruit-slice") return (FRUIT_MODE_VARIANTS as readonly string[]).includes(variant) || isRecentDailyVariant(variant);
   if (game === "stacker") return variant === STACKER_CLASSIC || isRecentDailyVariant(variant);
-  if (game === "zip") return ZIP_LEVEL_VARIANTS.includes(variant) || isRecentDailyVariant(variant);
-  if (game === "sumbreak") return SUMBREAK_LEVEL_VARIANTS.includes(variant) || isRecentDailyVariant(variant);
-  if ((PUZZLE_GAMES as readonly string[]).includes(game)) return isRecentDailyVariant(variant);
+  if (game === "zip") return ZIP_LEVEL_VARIANTS.includes(variant) || isLevelsVariant(variant) || isRecentDailyVariant(variant);
+  if (game === "sumbreak") return SUMBREAK_LEVEL_VARIANTS.includes(variant) || isLevelsVariant(variant) || isRecentDailyVariant(variant);
+  if ((PUZZLE_GAMES as readonly string[]).includes(game)) return isLevelsVariant(variant) || isRecentDailyVariant(variant);
   return false;
 }
 
@@ -152,6 +176,11 @@ export const recordScoreSchema = z
   .refine((value) => value.variant === "" || isKnownVariant(value.game, value.variant), {
     message: "Unknown game variant.",
     path: ["variant"],
+  })
+  // A level record is a level number, not a score.
+  .refine((value) => !isLevelsVariant(value.variant) || (value.score >= 1 && value.score <= MAX_PUZZLE_LEVEL), {
+    message: "Unknown level.",
+    path: ["score"],
   });
 
 export const SUDOKU_CELLS = 81;

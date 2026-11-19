@@ -16,7 +16,10 @@ import {
   SUDOKU_LABELS,
   arcadeGamesIn,
   formatDuration,
+  isPuzzleGame,
   isRankedGame,
+  levelRecordKey,
+  PUZZLE_DIFFICULTIES,
   type ArcadeCategoryId,
   type ArcadeGame,
   type ArcadeRecords,
@@ -42,6 +45,27 @@ function RecordLine({ game, records }: { game: ArcadeGame; records: ArcadeRecord
           );
         }))}
       </dl>
+    );
+  }
+  // The logic puzzles keep their highest level apart from the old score-based records.
+  if (isPuzzleGame(game.id)) {
+    const puzzle = game.id;
+    return (
+      <div>
+        <p>{game.recordLabel}</p>
+      <dl className="flex flex-wrap gap-x-3 gap-y-1">
+        {PUZZLE_DIFFICULTIES[puzzle].map((option) => {
+          const level = records[levelRecordKey(puzzle, option.id)];
+          if (option.id !== "medium" && !level) return null;
+          return (
+            <div key={option.id} className="flex gap-1">
+              <dt>{option.label}</dt>
+              <dd className="font-semibold text-foreground tabular-nums">{level ? `Level ${level.toLocaleString("en")}` : "—"}</dd>
+            </div>
+          );
+        })}
+      </dl>
+      </div>
     );
   }
   const best = records[game.id];

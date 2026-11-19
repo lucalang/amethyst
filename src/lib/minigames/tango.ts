@@ -82,7 +82,10 @@ function solve(givens: TangoCell[], signs: TangoSign[], limit: number, random?: 
   return { count, first };
 }
 
-export function generateTango(random: () => number): TangoPuzzle {
+/** Levels mode: clues kept at least (so early puzzles stay roomy) and how many candidates to pick the sparsest of. */
+export type TangoOptions = { givens?: number; signs?: number; candidates?: number };
+
+function buildTango(random: () => number, { givens: keepGivens = 0, signs: keepSigns = 0 }: TangoOptions): TangoPuzzle {
   const solution = solve(new Array(N * N).fill(0), [], 1, random).first!;
   const pairs: TangoSign[] = [];
   for (let i = 0; i < N * N; i += 1) {
@@ -91,17 +94,35 @@ export function generateTango(random: () => number): TangoPuzzle {
   }
   let givens: TangoCell[] = [...solution];
   let signs = shuffle(pairs, random).slice(0, 12);
+  let kept = givens.length;
   // Trim givens first (so signs carry part of the logic), then signs, keeping exactly one solution.
   for (const cell of shuffle(Array.from({ length: N * N }, (_, i) => i), random)) {
+    if (kept <= keepGivens) break;
     const next = [...givens];
     next[cell] = 0;
-    if (solve(next, signs, 2).count === 1) givens = next;
+    if (solve(next, signs, 2).count === 1) {
+      givens = next;
+      kept -= 1;
+    }
   }
   for (const sign of [...signs]) {
+    if (signs.length <= keepSigns) break;
     const next = signs.filter((s) => s !== sign);
     if (solve(givens, next, 2).count === 1) signs = next;
   }
   return { size: N, givens, signs, solution };
+}
+
+const clueCount = (puzzle: TangoPuzzle) => puzzle.givens.filter(Boolean).length + puzzle.signs.length;
+
+/** A puzzle with exactly one solution; with `candidates`, the one with the fewest clues of that many. */
+export function generateTango(random: () => number, options: TangoOptions = {}): TangoPuzzle {
+  let best = buildTango(random, options);
+  for (let extra = 1; extra < (options.candidates ?? 1); extra += 1) {
+    const other = buildTango(random, options);
+    if (clueCount(other) < clueCount(best)) best = other;
+  }
+  return best;
 }
 
 /** Cells breaking a rule (for highlighting) and the signs that are violated. */

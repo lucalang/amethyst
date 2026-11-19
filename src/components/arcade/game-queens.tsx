@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Eraser, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateQueens, queensConflicts, queensSolved, type QueensPuzzle } from "@/lib/minigames/queens";
+import { queensLevelSize } from "@/lib/minigames/levels";
+import { generateQueens, queensConflicts, queensSolved, queensUnique, type QueensPuzzle } from "@/lib/minigames/queens";
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
-import { PuzzleFrame, usePuzzleSession, type PuzzleSession } from "./puzzle-shell";
+import { PuzzleFrame, usePuzzleSession, type PuzzleSession, type PuzzleSpec } from "./puzzle-shell";
 import { CELEBRATIONS, QueensCrown, QueensDefs, queensRegionColors } from "./puzzle-looks";
 
 /** 0 empty, 1 marked as "no crown", 2 crown. */
@@ -261,9 +262,15 @@ function QueensPlay({ session }: { session: PuzzleSession<QueensPuzzle> }) {
   );
 }
 
-const generate = (random: () => number) => generateQueens(random, 8);
+/** Levels grow the board; a level's puzzle must have exactly one placement, so a rare fallback is rerolled. */
+const generate = (random: () => number, spec: PuzzleSpec) => {
+  const size = spec.kind === "level" ? queensLevelSize(spec.level, spec.difficulty) : 8;
+  let puzzle = generateQueens(random, size);
+  for (let retry = 0; retry < 4 && spec.kind === "level" && !queensUnique(puzzle); retry += 1) puzzle = generateQueens(random, size);
+  return puzzle;
+};
 
-export default function GameQueens({ records }: { records: Record<string, number> }) {
-  const session = usePuzzleSession("queens", generate, records);
+export default function GameQueens({ records, userId }: { records: Record<string, number>; userId: string }) {
+  const session = usePuzzleSession("queens", generate, records, userId);
   return <QueensPlay key={session.puzzleId} session={session} />;
 }

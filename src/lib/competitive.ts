@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { RANKED_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, formatDuration, type RankedGameId } from "@/lib/arcade";
-import { LEADERBOARD_GAMES, isLeaderboardBoard, parseSnakeBoard, snakeBoardLabel, snakeBoardOf } from "@/lib/leaderboards";
+import { isLevelsVariant } from "@/lib/minigames/levels";
+import { isLeaderboardBoard, wagerBoards, parseSnakeBoard, snakeBoardLabel, snakeBoardOf } from "@/lib/leaderboards";
 import { SNAKE_MODE_IDS, SNAKE_MODES, SNAKE_SIZE_IDS, SNAKE_SIZES, SNAKE_SPEED_IDS, SNAKE_SPEEDS, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant, type SudokuSize } from "@/lib/sudoku";
 
@@ -29,7 +30,7 @@ const NO_SETTINGS: SettingsSpec = { settings: [], board: () => "", values: () =>
 /** One picker over a game's ranked boards. */
 function boardPicker(game: CompetitiveGame, id: string, label: string, hints: Record<string, string> = {}): SettingsSpec {
   return {
-    settings: [{ id, label, options: LEADERBOARD_GAMES[game].boards.map((board) => ({ id: board.id, label: board.label, hint: hints[board.id] })) }],
+    settings: [{ id, label, options: wagerBoards(game).map((board) => ({ id: board.id, label: board.label, hint: hints[board.id] })) }],
     board: (values) => values[id] ?? "",
     values: (board) => ({ [id]: board }),
   };
@@ -82,6 +83,8 @@ export const GAME_SETTINGS: Record<CompetitiveGame, SettingsSpec> = {
 export function isWagerBoard(game: string, board: string) {
   if (!isCompetitiveGame(game) || board.startsWith("daily-")) return false;
   if (game === "snake" && board.startsWith("peace-")) return false;
+  // The logic puzzles' endless Levels have no single round to win.
+  if (isLevelsVariant(board)) return false;
   return isLeaderboardBoard(game, board);
 }
 

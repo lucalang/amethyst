@@ -51,6 +51,43 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-puzzle-levels",
+    date: "2026-11-19",
+    title: "Puzzle levels",
+    intro: "Tango, Zip, Queens, Patches and Sumbreak are now endless level ladders: solve a puzzle to reach the next level, and the highest level you complete is your record.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Levels", text: "Every level is a new generated puzzle that grows gradually: bigger grids, fewer clues and trickier boards. Your level and puzzle are saved, so a reload never rerolls them. A solved level moves on by itself, or tap Next level on the board." },
+      { kind: "new", feature: "Difficulties", text: "Pick Easy, Medium or Hard (Zip also has Expert). Each difficulty has its own run, highest level and leaderboard, and starts at a fair size rather than the smallest board." },
+      { kind: "improved", feature: "Highest level", text: "Records, the Arcade cards and the leaderboards now show your highest level completed. Players on the same level share a rank." },
+      { kind: "improved", feature: "New run", text: "Start again from Level 1 any time; your highest level is kept. Hints are limited to 2 per level and no longer cost time." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Level progression",
+          body: "Practice mode is now Levels, with the difficulties back: each one starts at a sensible size and has its own level, record and leaderboard. Each solved puzzle opens the next level with a freshly generated one that is still guaranteed solvable. Difficulty rises gradually and the line under the board tells you what the level looks like and what changes next. Daily puzzles are unchanged and keep their own solve-speed scores and leaderboards.",
+          points: [
+            "Tango: 6×6 with clues thinning out until Level 12, then sparser puzzles",
+            "Queens, Zip and Patches: grids grow from 4×4 or 5×5 up to 9×9 or 8×8, with fewer numbers or hidden shapes",
+            "Sumbreak: 3×3, then 4×4 from Level 3 and 5×5 from Level 6, with trickier boards after that",
+            "Your current level and puzzle are saved per difficulty on this device; New run from Level 1 keeps your highest level",
+          ],
+          where: "Arcade → Minigames",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+      improved: [
+        {
+          title: "Highest level records and leaderboards",
+          body: "The record for these games is the highest level you completed in a row, shown as \"Highest level\" on the Arcade cards, in the game and on the leaderboards. Players tied on a level share the same rank. Older score-based practice records are kept but are not shown as levels. Each solved level still earns a few coins.",
+          where: "Arcade → Leaderboards",
+          link: { href: "/arcade/leaderboards", label: "View leaderboards" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-sumbreak",
     date: "2026-11-19",
     title: "Sumbreak",

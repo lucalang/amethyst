@@ -3,10 +3,11 @@
 import { useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { Eraser, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { patchesLevel } from "@/lib/minigames/levels";
 import { generatePatches, patchValid, patchesSolved, rectContains, type PatchShape, type PatchesPuzzle, type Rect } from "@/lib/minigames/patches";
 import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
-import { PuzzleFrame, usePuzzleSession, type PuzzleSession } from "./puzzle-shell";
+import { PuzzleFrame, usePuzzleSession, type PuzzleSession, type PuzzleSpec } from "./puzzle-shell";
 import { CELEBRATIONS, patchColors } from "./puzzle-looks";
 
 const SHAPE_LABEL: Record<PatchShape, string> = { square: "square", wide: "wider than tall", tall: "taller than wide", any: "any shape" };
@@ -265,9 +266,14 @@ function PatchesPlay({ session }: { session: PuzzleSession<PatchesPuzzle> }) {
   );
 }
 
-const generate = (random: () => number) => generatePatches(random, 6);
+/** Levels grow the grid and hide more shapes; the daily puzzle and Wager matches are the classic 6×6. */
+const generate = (random: () => number, spec: PuzzleSpec) => {
+  if (spec.kind !== "level") return generatePatches(random, 6);
+  const { size, hide } = patchesLevel(spec.level, spec.difficulty);
+  return generatePatches(random, size, hide);
+};
 
-export default function GamePatches({ records }: { records: Record<string, number> }) {
-  const session = usePuzzleSession("patches", generate, records);
+export default function GamePatches({ records, userId }: { records: Record<string, number>; userId: string }) {
+  const session = usePuzzleSession("patches", generate, records, userId);
   return <PatchesPlay key={session.puzzleId} session={session} />;
 }
