@@ -51,6 +51,35 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-19-ui-pass",
+    date: "2026-11-19",
+    title: "Clearer setup, shops and buttons",
+    intro: "Front Wars shows every match option up front, the Shop puts its main cosmetics first, and buttons say more clearly what they do.",
+    icon: "palette",
+    highlights: [
+      { kind: "improved", feature: "Front Wars setup", text: "Map, Bots, Nations and difficulty are always on screen, with a summary of your match next to Start. Presets now just fill in the options, and My setup brings your own combination back in one click." },
+      { kind: "improved", feature: "Shop", text: "Cosmetics opens on the main shop. Every game's shop sits together under Game Cosmetics, with search and how much of each you own, and there's a Game Cosmetics card on the Shop home." },
+      { kind: "improved", feature: "Game shops", text: "Each game shop shows its game and categories at the top, and a row of links jumps straight to any other game's shop." },
+      { kind: "improved", feature: "Buttons", text: "Main, supporting and toolbar buttons now look distinct, and hovering no longer bounces or spins their icons." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Front Wars setup",
+          body: "Every option that was there before is still there and every combination can be started. Presets are shortcuts that fill in the options; changing any option makes it yours, and it's remembered as My setup, so trying a preset never overwrites it. The rules moved into a How to play section.",
+          where: "Arcade → Front Wars",
+          link: { href: "/arcade/front-wars", label: "Open Front Wars" },
+        },
+        {
+          title: "Shop and Game Cosmetics",
+          body: "Profile and artwork cosmetics come first on the Cosmetics page; the game shops follow under Game Cosmetics with search over games and item names. Every game shop, item, price and owned state is unchanged.",
+          where: "Shop → Cosmetics",
+          link: { href: "/shop/cosmetics", label: "Open Cosmetics" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-time-machine",
     date: "2026-11-19",
     title: "Amethyst Time Machine",

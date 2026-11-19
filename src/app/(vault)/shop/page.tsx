@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { ArrowRight, Backpack, Clover, Coins, Gamepad2, Palette, Store } from "lucide-react";
+import { ArrowRight, Backpack, Clover, Coins, Gamepad2, Joystick, Palette, Store } from "lucide-react";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { CaseArt } from "@/components/lootboxes/parts";
@@ -11,6 +11,7 @@ import { lootCaseInfo } from "@/lib/lootboxes";
 import { boostedOpenings } from "@/lib/boosters";
 import { loadCoinBalance } from "@/lib/data/shop";
 import { requireUser } from "@/lib/supabase/auth";
+import { SHOP_GAMES } from "@/lib/game-cosmetics";
 
 export const metadata: Metadata = { title: "Shop" };
 
@@ -25,10 +26,18 @@ export default async function ShopPage() {
     {
       href: "/shop/cosmetics",
       title: "Cosmetics",
-      tagline: "Profile, artwork and game looks.",
+      tagline: "Avatar decorations, profile banners, frames and artwork frames.",
       accent: "#a855f7",
       art: <Palette className="size-16 text-(--tone) drop-shadow-[0_0_18px_var(--tone)]" strokeWidth={1.5} />,
       meta: null,
+    },
+    {
+      href: "/shop/cosmetics#game-cosmetics",
+      title: "Game Cosmetics",
+      tagline: "Skins, boards and effects for each Arcade game.",
+      accent: "#38bdf8",
+      art: <Joystick className="size-16 text-(--tone) drop-shadow-[0_0_18px_var(--tone)]" strokeWidth={1.5} />,
+      meta: `${SHOP_GAMES.length} game shops`,
     },
     {
       href: "/shop/cases",
@@ -87,7 +96,7 @@ export default async function ShopPage() {
           </span>
         </section>
 
-        <ul className="grid gap-4 md:grid-cols-3">
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {departments.map((department, index) => (
             <li key={department.href} className="enter" style={{ "--enter-index": index + 2 } as CSSProperties}>
               <Link href={department.href} className="ui-card group flex h-full flex-col" style={{ "--tone": department.accent } as CSSProperties}>

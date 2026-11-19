@@ -1396,93 +1396,168 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
 
 const sameSettings = (a: Settings, b: Settings) => a.map === b.map && a.bots === b.bots && a.nations === b.nations && a.difficulty === b.difficulty;
 
-/** Match setup: a preset or your own map, rivals and difficulty, with the rules spelled out before you start. */
+/** The player's own setup, kept apart from presets so trying a preset never overwrites it. */
+const CUSTOM_KEY = "front-wars:custom:v1";
+
+function loadCustom(fallback: Settings): Settings {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(CUSTOM_KEY) ?? "null") as Partial<Settings> | null;
+    if (saved && saved.map && saved.map in MAPS && saved.difficulty && saved.difficulty in DIFFICULTIES && typeof saved.nations === "boolean" && BOT_COUNTS.includes(saved.bots as (typeof BOT_COUNTS)[number])) {
+      return { map: saved.map, bots: saved.bots!, nations: saved.nations, difficulty: saved.difficulty };
+    }
+  } catch {
+    // Private mode or bad data.
+  }
+  return fallback;
+}
+
+const nationCount = (settings: Settings) => (settings.nations ? (settings.map === "world" ? 84 : 12) : 0);
+
+/**
+ * Match setup. Every option is always on screen; presets are shortcuts that fill them in. "My setup" is the
+ * player's own combination: it's saved whenever an option is changed by hand and comes back with one click, so
+ * picking a preset never loses it.
+ */
 function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: (next: Settings) => void; onStart: () => void }) {
   const preset = PRESETS.find((entry) => sameSettings(entry.settings, settings));
-  // Open when the saved setup is custom; after that it stays however the player left it.
-  const [customOpen, setCustomOpen] = useState(!preset);
-  const rivals = settings.bots + (settings.nations ? (settings.map === "world" ? 84 : 12) : 0);
+  // The last match's setup counts as the player's own when it wasn't a preset.
+  const [custom, setCustom] = useState<Settings>(() => loadCustom(settings));
+  const isCustom = sameSettings(custom, settings);
+  const nations = nationCount(settings);
+  const rivals = settings.bots + nations;
+
+  function edit(next: Settings) {
+    onChange(next);
+    setCustom(next);
+    try {
+      window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(next));
+    } catch {
+      // Not remembered; the match still uses it.
+    }
+  }
+
   return (
     <div className="fw-setup">
       <div className="fw-setup-card">
-        <div>
+        <header className="fw-setup-head">
           <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Solo match</p>
-          <h2 className="mt-0.5 text-xl font-bold tracking-tight">Plan your conquest</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Set up your conquest</h2>
+          <p className="text-sm text-muted-foreground">Choose the map, your rivals and how sharp they play. Every combination works.</p>
+        </header>
+
+        <div className="fw-setup-body">
+          <div className="fw-setup-main">
+            <div className="fw-quick">
+              <p className="fw-quick-label" id="fw-quick-label">
+                Start from
+              </p>
+              <div role="radiogroup" aria-labelledby="fw-quick-label" className="fw-presets">
+                <button type="button" role="radio" aria-checked={isCustom && !preset} onClick={() => onChange(custom)} title="Your own setup, as you last left it">
+                  <span className="font-semibold">My setup</span>
+                  <span className="text-xs text-muted-foreground">
+                    {MAPS[custom.map].label} · {custom.bots} Bots · {custom.nations ? "Nations" : "No Nations"} · {DIFFICULTIES[custom.difficulty].label}
+                  </span>
+                </button>
+                {PRESETS.map((entry) => (
+                  <button key={entry.id} type="button" role="radio" aria-checked={preset?.id === entry.id} onClick={() => onChange(entry.settings)} title={entry.hint}>
+                    <span className="font-semibold">{entry.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {MAPS[entry.settings.map].label} · {entry.settings.bots} Bots · {DIFFICULTIES[entry.settings.difficulty].label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="fw-quick-hint" aria-live="polite">
+                {preset ? `${preset.label}: ${preset.hint} Change any option below to make it your own.` : "Your own setup. Changes are remembered for next time."}
+              </p>
+            </div>
+
+            <div className="fw-option-grid">
+              <fieldset className="fw-options">
+                <legend>Map</legend>
+                <div role="radiogroup" aria-label="Map" className="fw-segment">
+                  {(Object.keys(MAPS) as MapKind[]).map((map) => (
+                    <button key={map} type="button" role="radio" aria-checked={settings.map === map} onClick={() => edit({ ...settings, map })}>
+                      {MAPS[map].label}
+                    </button>
+                  ))}
+                </div>
+                <p>{MAPS[settings.map].hint}</p>
+              </fieldset>
+
+              <fieldset className="fw-options">
+                <legend>Difficulty</legend>
+                <div role="radiogroup" aria-label="Difficulty" className="fw-segment">
+                  {(Object.keys(DIFFICULTIES) as Difficulty[]).map((difficulty) => (
+                    <button key={difficulty} type="button" role="radio" aria-checked={settings.difficulty === difficulty} onClick={() => edit({ ...settings, difficulty })}>
+                      {DIFFICULTIES[difficulty].label}
+                    </button>
+                  ))}
+                </div>
+                <p>{DIFFICULTIES[settings.difficulty].hint} It applies to Bots and Nations alike; nobody sees more than you or gets hidden bonuses.</p>
+              </fieldset>
+
+              <fieldset className="fw-options">
+                <legend>Bots</legend>
+                <div role="radiogroup" aria-label="Bots" className="fw-segment">
+                  {BOT_COUNTS.map((count) => (
+                    <button key={count} type="button" role="radio" aria-checked={settings.bots === count} onClick={() => edit({ ...settings, bots: count })}>
+                      {count}
+                    </button>
+                  ))}
+                </div>
+                <p>Small tribes with a third of your troop cap and half your growth, annexed when one player surrounds them. {BOT_HINTS[settings.bots]}</p>
+              </fieldset>
+
+              <fieldset className="fw-options">
+                <legend>Nations</legend>
+                <div role="radiogroup" aria-label="Nations" className="fw-segment">
+                  {[true, false].map((on) => (
+                    <button key={String(on)} type="button" role="radio" aria-checked={settings.nations === on} onClick={() => edit({ ...settings, nations: on })}>
+                      {on ? "On" : "Off"}
+                    </button>
+                  ))}
+                </div>
+                <p>
+                  {settings.map === "world" ? "84 real countries start in their homelands" : "12 rival realms"}: the strong rivals. They expand, build Cities and Defense Posts, sail, and
+                  pick their wars. Off: only Bots, a gentler, more open match.
+                </p>
+              </fieldset>
+            </div>
+          </div>
+
+          <aside className="fw-summary" aria-label="Your match">
+            <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Your match</p>
+            <dl>
+              <div>
+                <dt>Map</dt>
+                <dd>{MAPS[settings.map].label}</dd>
+              </div>
+              <div>
+                <dt>Nations</dt>
+                <dd>{nations ? nations : "Off"}</dd>
+              </div>
+              <div>
+                <dt>Bots</dt>
+                <dd>{settings.bots || "None"}</dd>
+              </div>
+              <div>
+                <dt>Difficulty</dt>
+                <dd>{DIFFICULTIES[settings.difficulty].label}</dd>
+              </div>
+            </dl>
+            <p className="text-sm text-muted-foreground">
+              {rivals ? `${rivals.toLocaleString("en")} rivals.` : "No rivals: the land is all yours to take."} Win by holding {percent(WIN_SHARE)} of all land.
+            </p>
+            <Button size="lg" onClick={onStart} className="w-full">
+              <Swords aria-hidden />
+              Start match
+            </Button>
+          </aside>
         </div>
 
-        <fieldset className="fw-options">
-          <legend>Preset</legend>
-          <div role="radiogroup" aria-label="Preset" className="fw-presets">
-            {PRESETS.map((entry) => (
-              <button key={entry.id} type="button" role="radio" aria-checked={preset?.id === entry.id} onClick={() => onChange(entry.settings)}>
-                <span className="font-semibold">{entry.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  {MAPS[entry.settings.map].label} · {entry.settings.bots} Bots · {DIFFICULTIES[entry.settings.difficulty].label}
-                </span>
-              </button>
-            ))}
-          </div>
-          <p>{preset ? preset.hint : "Custom setup: your own mix of the options below."}</p>
-        </fieldset>
-
-        <details className="fw-custom" open={customOpen} onToggle={(event) => setCustomOpen(event.currentTarget.open)}>
-          <summary>Customize{preset ? "" : " (custom)"}</summary>
-          <div className="grid gap-4 pt-3">
-            <fieldset className="fw-options">
-              <legend>Map</legend>
-              <div role="radiogroup" aria-label="Map" className="fw-segment">
-                {(Object.keys(MAPS) as MapKind[]).map((map) => (
-                  <button key={map} type="button" role="radio" aria-checked={settings.map === map} onClick={() => onChange({ ...settings, map })}>
-                    {MAPS[map].label}
-                  </button>
-                ))}
-              </div>
-              <p>{MAPS[settings.map].hint}</p>
-            </fieldset>
-
-            <fieldset className="fw-options">
-              <legend>Bots</legend>
-              <div role="radiogroup" aria-label="Bots" className="fw-segment">
-                {BOT_COUNTS.map((count) => (
-                  <button key={count} type="button" role="radio" aria-checked={settings.bots === count} onClick={() => onChange({ ...settings, bots: count })}>
-                    {count}
-                  </button>
-                ))}
-              </div>
-              <p>Small tribes with a third of your troop cap and half your growth, annexed when one player surrounds them. {BOT_HINTS[settings.bots]}</p>
-            </fieldset>
-
-            <fieldset className="fw-options">
-              <legend>Nations</legend>
-              <div role="radiogroup" aria-label="Nations" className="fw-segment">
-                {[true, false].map((on) => (
-                  <button key={String(on)} type="button" role="radio" aria-checked={settings.nations === on} onClick={() => onChange({ ...settings, nations: on })}>
-                    {on ? "On" : "Off"}
-                  </button>
-                ))}
-              </div>
-              <p>
-                {settings.map === "world" ? "84 real countries start in their homelands" : "12 rival realms"}: the strong rivals. They expand, build Cities and Defense Posts, sail, and
-                pick their wars. Off: only Bots, a gentler, more open match.
-              </p>
-            </fieldset>
-
-            <fieldset className="fw-options">
-              <legend>Difficulty</legend>
-              <div role="radiogroup" aria-label="Difficulty" className="fw-segment">
-                {(Object.keys(DIFFICULTIES) as Difficulty[]).map((difficulty) => (
-                  <button key={difficulty} type="button" role="radio" aria-checked={settings.difficulty === difficulty} onClick={() => onChange({ ...settings, difficulty })}>
-                    {DIFFICULTIES[difficulty].label}
-                  </button>
-                ))}
-              </div>
-              <p>{DIFFICULTIES[settings.difficulty].hint} It applies to Bots and Nations alike; nobody sees more than you or gets hidden bonuses.</p>
-            </fieldset>
-          </div>
-        </details>
-
-        <div className="fw-rules">
-          <h3>Rules</h3>
+        <details className="fw-rules">
+          <summary>How to play</summary>
           <ul>
             <li>
               <strong>Win</strong> by holding {percent(WIN_SHARE)} of all land. You lose if your last land falls or a rival reaches {percent(WIN_SHARE)} first.
@@ -1507,12 +1582,7 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
             </li>
           </ul>
           <p className="text-xs text-muted-foreground">Controls: tap or click to act · drag to pan · scroll or pinch to zoom · 1 / 2 ratio · C City · F Post · T next front · X retreat · H home · M whole map · Space pause.</p>
-        </div>
-
-        <Button size="lg" onClick={onStart} className="w-full">
-          <Swords aria-hidden />
-          Start match · {rivals.toLocaleString("en")} rivals
-        </Button>
+        </details>
       </div>
     </div>
   );

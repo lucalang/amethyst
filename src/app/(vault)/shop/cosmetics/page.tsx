@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { CSSProperties } from "react";
-import { ArrowRight, Package, Palette, Store } from "lucide-react";
-import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
+import { Gamepad2, Package, Palette, Store } from "lucide-react";
+import { GameCosmeticsDirectory } from "@/components/arcade/shop/game-cosmetics-directory";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { artworkSrc } from "@/lib/attachments";
 import { loadPreferences } from "@/lib/data/preferences";
 import { loadShop, toAvatarDecoration } from "@/lib/data/shop";
 import { measureServer } from "@/lib/data/timing";
-import { GAME_SHOPS, SHOP_GAMES, shopHref } from "@/lib/game-cosmetics";
+import { gameCosmetic, type ShopGame } from "@/lib/game-cosmetics";
 import { toProfileBanner, toProfileFrame } from "@/lib/profile-cosmetics";
 import { requireUser } from "@/lib/supabase/auth";
 import type { FrameSample } from "../../settings/frame-settings";
@@ -28,13 +27,20 @@ export default async function CosmeticsShopPage() {
     banner: profile?.profile_banner ?? null,
     profileFrame: profile?.profile_frame ?? null,
   }));
-  const [preferences, { data: profile }, { data: covers }, shop] = await Promise.all([
+  const [preferences, { data: profile }, { data: covers }, shop, { data: ownedRows }] = await Promise.all([
     preferenceRead,
     profileRead,
     // The account's own covers to try frames on (row-level security keeps this to the account).
     ctx.supabase.from("entries").select("title, cover_url, cover_shape").not("cover_url", "is", null).order("updated_at", { ascending: false }).limit(40),
     measureServer("shop.data", () => loadShop(ctx, equipped)),
+    // What the account owns of each game's cosmetics, for the Game Cosmetics directory.
+    ctx.supabase.from("user_cosmetics").select("item_id").eq("user_id", ctx.userId),
   ]);
+  const ownedPerGame: Partial<Record<ShopGame, number>> = {};
+  for (const row of ownedRows ?? []) {
+    const game = gameCosmetic(row.item_id)?.game;
+    if (game) ownedPerGame[game] = (ownedPerGame[game] ?? 0) + 1;
+  }
   const decoration = toAvatarDecoration(profile?.avatar_decoration);
   const sample = (shape: "portrait" | "square"): FrameSample | null => {
     const row = (covers ?? []).find((cover) => cover.cover_shape === shape && artworkSrc(cover.cover_url));
@@ -49,7 +55,13 @@ export default async function CosmeticsShopPage() {
           icon={Palette}
           tone="#a855f7"
           actions={
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm" className="h-9 px-3">
+                <a href="#game-cosmetics">
+                  <Gamepad2 aria-hidden />
+                  Game Cosmetics
+                </a>
+              </Button>
               <Button asChild variant="outline" size="sm" className="h-9 px-3">
                 <Link href="/shop/cases">
                   <Package aria-hidden />
@@ -65,47 +77,6 @@ export default async function CosmeticsShopPage() {
             </div>
           }
         />
-        <section aria-labelledby="game-shops-heading" className="mb-8">
-          <h2 id="game-shops-heading" className="flex items-center gap-2.5 text-base font-semibold">
-            <span aria-hidden className="ui-icon ui-icon-sm">
-              <Store className="size-4" />
-            </span>
-            Game shops
-          </h2>
-          <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {SHOP_GAMES.map((game, index) => {
-              const shop = GAME_SHOPS[game];
-              const count = shop.categories.reduce((sum, category) => sum + category.items.length, 0);
-              return (
-                <li key={game} className="enter" style={{ "--enter-index": index + 1 } as CSSProperties}>
-                  <Link href={shopHref(game)} className="ui-card group flex h-full flex-col" style={{ "--tone": ARCADE_CABINETS[game].hue } as CSSProperties}>
-                    <span aria-hidden className="ui-stage aspect-[16/6] border-b border-border">
-                      <span className="block size-full">
-                        <ArcadePreview game={game} />
-                      </span>
-                      <span className="absolute inset-0 bg-linear-to-t from-(--tone)/30 via-transparent to-transparent" />
-                    </span>
-                    <span className="flex flex-1 items-center gap-3 p-3.5">
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2 text-sm font-semibold text-foreground transition-colors group-hover:text-(--tone)">
-                          <span aria-hidden className="ui-dot" />
-                          {shop.title} shop
-                        </span>
-                        <span className="mt-0.5 block text-xs text-muted-foreground">
-                          {count} items · {shop.categories.map((category) => category.label).join(", ")}
-                        </span>
-                      </span>
-                      <span className="ui-pill shrink-0 transition-colors group-hover:text-foreground" data-tone>
-                        Browse
-                        <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" />
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
         <ShopView
           shop={shop}
           frame={preferences.artworkFrame}
@@ -115,6 +86,17 @@ export default async function CosmeticsShopPage() {
           profile={{ name: profile?.display_name?.trim() || null, avatarUrl: profile?.avatar_url ?? null }}
           samples={{ portrait: sample("portrait"), square: sample("square") }}
         />
+        <section id="game-cosmetics" aria-labelledby="game-cosmetics-heading" className="mt-12 scroll-mt-24 border-t border-border pt-8">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 id="game-cosmetics-heading" className="text-xl font-bold tracking-tight">
+                Game Cosmetics
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">Skins, boards and effects for each Arcade game, each in its own shop with a live preview.</p>
+            </div>
+          </div>
+          <GameCosmeticsDirectory owned={ownedPerGame} />
+        </section>
       </PageContainer>
     </EntranceScope>
   );

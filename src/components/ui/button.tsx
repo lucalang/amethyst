@@ -8,14 +8,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // Primary: the one main action in a place. Strong fill, a small lift on hover, no wobble.
         default:
-          "btn-sheen relative isolate overflow-hidden bg-[linear-gradient(135deg,var(--primary-hi),var(--primary)_48%,var(--primary-lo))] text-primary-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.3),0_1px_2px_rgb(var(--shadow-rgb)/calc(0.6*var(--shadow-alpha)))] hover:-translate-y-px hover:scale-[1.02] hover:brightness-110 hover:shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.35),0_0_0_1px_rgb(var(--accent-soft-rgb)/0.55),0_10px_28px_-8px_rgb(var(--accent-rgb)/0.85)] hover:[&_svg]:scale-115 hover:[&_svg]:rotate-6 focus-visible:shadow-[0_0_0_1px_rgb(var(--accent-soft-rgb)/0.55),0_8px_24px_-8px_rgb(var(--accent-rgb)/0.8)] active:translate-y-px active:scale-[0.95] active:brightness-95 active:shadow-[inset_0_2px_6px_rgb(var(--shadow-rgb)/calc(0.35*var(--shadow-alpha)))]",
-        outline:
-          "border-border bg-foreground/[0.025] shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.04)] hover:-translate-y-px hover:scale-[1.015] hover:border-amethyst/60 hover:bg-amethyst/10 hover:text-foreground hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.28),0_0_26px_-8px_rgb(var(--accent-rgb)/0.6)] hover:[&_svg]:scale-110 hover:[&_svg]:text-amethyst aria-expanded:border-amethyst/50 aria-expanded:bg-amethyst/10 aria-expanded:text-foreground active:translate-y-0 active:scale-[0.95]",
+          "btn-sheen relative isolate overflow-hidden bg-[linear-gradient(135deg,var(--primary-hi),var(--primary)_48%,var(--primary-lo))] font-semibold text-primary-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.3),0_1px_2px_rgb(var(--shadow-rgb)/calc(0.6*var(--shadow-alpha)))] hover:-translate-y-px hover:brightness-110 hover:shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.35),0_0_0_1px_rgb(var(--accent-soft-rgb)/0.5),0_10px_26px_-10px_rgb(var(--accent-rgb)/0.8)] focus-visible:shadow-[0_0_0_1px_rgb(var(--accent-soft-rgb)/0.55),0_8px_24px_-8px_rgb(var(--accent-rgb)/0.8)] active:translate-y-0 active:scale-[0.97] active:brightness-95 active:shadow-[inset_0_2px_6px_rgb(var(--shadow-rgb)/calc(0.35*var(--shadow-alpha)))]",
+        // Secondary: a supporting action with weight. Tinted fill in the accent, quieter than primary.
         secondary:
-          "bg-secondary text-secondary-foreground shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.07)] hover:-translate-y-px hover:scale-[1.015] hover:bg-accent hover:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.4),0_8px_22px_-10px_rgb(var(--accent-rgb)/0.6)] hover:[&_svg]:scale-110 hover:[&_svg]:text-amethyst aria-expanded:bg-secondary aria-expanded:text-secondary-foreground active:translate-y-0 active:scale-[0.95]",
+          "border-amethyst/25 bg-amethyst/[0.12] text-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.06)] hover:border-amethyst/45 hover:bg-amethyst/[0.2] hover:[&_svg]:text-amethyst aria-expanded:border-amethyst/45 aria-expanded:bg-amethyst/[0.2] active:scale-[0.97]",
+        // Outline: neutral actions and toolbars. Border and text only; the accent appears on hover.
+        outline:
+          "border-border bg-foreground/[0.02] hover:border-amethyst/50 hover:bg-foreground/[0.05] hover:text-foreground hover:[&_svg]:text-amethyst aria-expanded:border-amethyst/50 aria-expanded:bg-amethyst/10 aria-expanded:text-foreground active:scale-[0.97] active:bg-foreground/[0.08]",
+        // Ghost: icon buttons and inline actions with no surface until hovered.
         ghost:
-          "hover:border-foreground/[0.08] hover:bg-foreground/[0.07] hover:text-foreground hover:[&_svg]:scale-115 hover:[&_svg]:text-amethyst aria-expanded:bg-foreground/[0.08] aria-expanded:text-foreground active:scale-[0.93] active:bg-foreground/[0.11]",
+          "hover:bg-foreground/[0.07] hover:text-foreground hover:[&_svg]:text-amethyst aria-expanded:bg-foreground/[0.08] aria-expanded:text-foreground active:scale-[0.95] active:bg-foreground/[0.11]",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 hover:shadow-[inset_0_0_0_1px_rgb(255_107_107/0.4),0_0_22px_-6px_rgb(255_107_107/0.55)] focus-visible:border-destructive/40 focus-visible:ring-destructive/20 active:scale-[0.95] dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline active:opacity-80",

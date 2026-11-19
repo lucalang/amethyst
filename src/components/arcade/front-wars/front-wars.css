@@ -157,8 +157,8 @@
 
 .fw-setup-card {
   display: grid;
-  gap: 1rem;
-  width: min(34rem, 100%);
+  gap: 1.25rem;
+  width: min(62rem, 100%);
   max-height: 100%;
   overflow-y: auto;
   border: 1px solid var(--border);
@@ -533,16 +533,51 @@
 }
 
 /* Setup presets: four cards, two per row on phones. */
-.fw-presets {
+.fw-setup-head {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
-@media (min-width: 36rem) {
-  .fw-presets {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+.fw-setup-body {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 52rem) {
+  .fw-setup-body {
+    grid-template-columns: minmax(0, 1fr) 16rem;
+    align-items: start;
   }
+}
+
+.fw-setup-main {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.fw-quick {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fw-quick-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.fw-quick-hint {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.fw-presets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.4rem;
 }
 
 .fw-presets button {
@@ -567,22 +602,86 @@
 .fw-presets button[aria-checked="true"] {
   border-color: color-mix(in oklab, var(--amethyst) 60%, transparent);
   background: color-mix(in oklab, var(--amethyst) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--amethyst) 35%, transparent);
 }
 
 .fw-presets button:focus-visible,
-.fw-custom summary:focus-visible {
+.fw-rules summary:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 
-.fw-custom summary {
+.fw-option-grid {
+  display: grid;
+  gap: 1rem 1.25rem;
+}
+
+@media (min-width: 40rem) {
+  .fw-option-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fw-option-grid .fw-options {
+  align-content: start;
+  border: 1px solid var(--border);
+  border-radius: calc(0.7rem * var(--radius-unit, 1));
+  padding: 0.75rem;
+  background: color-mix(in oklab, var(--foreground) 2.5%, transparent);
+}
+
+.fw-option-grid .fw-options legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.fw-summary {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in oklab, var(--amethyst) 35%, var(--border));
+  border-radius: calc(0.8rem * var(--radius-unit, 1));
+  padding: 1rem;
+  background: color-mix(in oklab, var(--amethyst) 7%, var(--background));
+}
+
+@media (min-width: 52rem) {
+  .fw-summary {
+    position: sticky;
+    top: 0;
+  }
+}
+
+.fw-summary dl {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.fw-summary dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.fw-summary dt {
+  color: var(--muted-foreground);
+}
+
+.fw-summary dd {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.fw-rules summary {
   cursor: pointer;
   border-radius: 0.3rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+}
+
+.fw-rules[open] summary {
+  margin-bottom: 0.25rem;
 }
 
 .fw-nations {

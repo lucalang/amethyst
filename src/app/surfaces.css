@@ -147,12 +147,12 @@
   flex-shrink: 0;
   border-radius: 999px;
   background: var(--tone, var(--amethyst));
-  box-shadow: 0 0 10px var(--tone, var(--amethyst));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--tone, var(--amethyst)) 18%, transparent);
 }
 
 .ui-empty {
   border-radius: 1rem;
-  border: 1px dashed color-mix(in oklab, var(--tone, var(--amethyst)) 30%, var(--border));
+  border: 1px solid var(--border);
   background: radial-gradient(20rem 8rem at 50% 0%, color-mix(in oklab, var(--tone, var(--amethyst)) 8%, transparent), transparent 75%);
 }
 
