@@ -22,12 +22,14 @@ import {
   restoreRound,
   roundScore,
   shareText,
+  zoneAt,
   type Dive,
   type Round,
   type Stop,
   type Tier,
 } from "@/lib/minigames/blank-atlas";
 import { DescentWorld, DIVE_COLOR, PLUNGE_MS, type Plunge } from "./blank-atlas/descent-world";
+import { RareBurst } from "./blank-atlas/rare-burst";
 import { GameShell, useArcade, useGameAchievementTracking, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
 
@@ -255,7 +257,7 @@ export default function DescentGame({ records }: { records: Record<string, numbe
                   ? "Above the fog"
                   : phase.kind === "complete"
                     ? "Descent complete"
-                    : `Question ${Math.min(phase.kind === "result" ? index : index + 1, STOPS)} of ${STOPS}`}
+                    : `Question ${Math.min(phase.kind === "result" ? index : index + 1, STOPS)} of ${STOPS} · ${zoneAt(depthNow).name}`}
               </span>
             </div>
             <div className="dv-pod dv-pod-right">
@@ -273,6 +275,7 @@ export default function DescentGame({ records }: { records: Record<string, numbe
               <ul className="dv-rules">
                 <li>Name any correct answer. Rare answers score big; obvious ones barely sink.</li>
                 <li>Every point sinks you 10 metres. 700 points reaches the Nameless Floor.</li>
+                <li>Every question hides one gem. Find it for the deepest plunge of all.</li>
                 <li>{relaxed ? "Relaxed: no clock. Take your time." : "Each question gives you 3 seconds to read, then 25 to answer."}</li>
               </ul>
               <Button ref={(element) => element?.focus({ preventScroll: true })} size="lg" className="dv-go h-12 px-7 text-base" onClick={begin}>
@@ -369,6 +372,8 @@ function ResultCard({
   const level = dive ? DIVES[dive].level : 0;
   const [lit, setLit] = useState(motion ? 0 : level);
   const [burst, setBurst] = useState(!motion);
+  /** A hidden gem: the world holds its breath before the eruption. */
+  const [hush, setHush] = useState(false);
   const points = useCountUp(burst ? stop.points : 0, burst && motion ? 500 + level * 90 : 0, 0);
 
   useEffect(() => {
@@ -385,14 +390,25 @@ function ResultCard({
         }, 120 + k * 170),
       );
     }
+    const climax = 200 + level * 170 + (dive === "extraordinary" ? 260 : 0);
+    if (dive === "extraordinary") {
+      timers.push(
+        window.setTimeout(() => {
+          setHush(true);
+          play("thud", 0.6);
+        }, climax - 560),
+      );
+    }
     timers.push(
       window.setTimeout(() => {
+        setHush(false);
         setBurst(true);
         if (dive) {
           play(LAND_SOUND[dive]);
-          if (dive === "extraordinary") window.setTimeout(() => play("perfect"), 180);
+          if (level >= 4) window.setTimeout(() => play("combo", 1.2), 120);
+          if (dive === "extraordinary") window.setTimeout(() => play("perfect"), 260);
         }
-      }, 200 + level * 170),
+      }, climax),
     );
     return () => timers.forEach(window.clearTimeout);
     // One reveal per mount; the parent remounts this for each answer.
@@ -401,7 +417,13 @@ function ResultCard({
 
   const question = questionById(stop.question);
   const easy = question?.answers.find((entry) => entry.tier === 1)?.name;
+  // Each question's hidden gem, revealed after the result unless you found it yourself.
+  const gem = question?.gem ?? null;
+  const foundGem = stop.answer !== null && stop.answer === gem;
   return (
+    <>
+      {hush ? <div aria-hidden className="dv-hush" /> : null}
+      {burst && motion && dive && level >= 3 ? <RareBurst dive={dive} level={level} /> : null}
     <section className="dv-result" data-dive={dive ?? "miss"} data-burst={burst || undefined} style={tone(dive)} aria-labelledby="dv-result-name">
       {burst && level >= 3 && motion ? <span aria-hidden className="dv-result-rays" /> : null}
       {burst && motion && dive ? <span aria-hidden className="dv-result-ring" /> : null}
@@ -421,11 +443,17 @@ function ResultCard({
           ? `${DIVES[dive].blurb} You sink ${metres(stop.points)}.`
           : `${stop.timedOut ? `The clock ran out${stop.input ? ` on “${stop.input}”` : ""}.` : "No answer charted."} The lantern stays where it is.${easy ? ` ${easy} would have counted.` : ""}`}
       </p>
+      {burst && gem && !foundGem ? (
+        <p className="dv-gem">
+          The hidden gem was <strong>{gem}</strong>
+        </p>
+      ) : null}
       <Button ref={nextRef} size="lg" className="dv-go h-11 w-full" onClick={onNext}>
         {last ? "See the whole descent" : "Descend"}
         <ArrowDown aria-hidden />
       </Button>
     </section>
+    </>
   );
 }
 
@@ -491,7 +519,10 @@ function Complete({ round, best, newBest, onRestart, countUp }: { round: Round; 
           Share
         </Button>
       </div>
-      <p className="dv-fine">Rarity is Amethyst’s own curated estimate of how readily people think of each answer, not a measurement of how players answer.</p>
+      <p className="dv-fine">
+        Rarity is Amethyst’s own curated estimate of how readily people think of each answer, not a measurement of how players answer. Each question accepts a long list of
+        answers; a real answer that’s missing from it can’t count yet.
+      </p>
     </section>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { DIVES, METRES_PER_POINT, MAX_SCORE, diveOf, hash, type Dive, type Round } from "@/lib/minigames/blank-atlas";
+import { DIVES, METRES_PER_POINT, MAX_SCORE, ZONES, diveOf, hash, type Dive, type Round } from "@/lib/minigames/blank-atlas";
+import { SCENERY, WALL_KINDS, Wall, ZONE_LIGHT, type Scene } from "./world-art";
 
 /*
  * The Descent's world: one tall column the camera travels down. At the top, the Sanctum floats above the gray fog;
@@ -23,41 +24,76 @@ const BOTTOM = MAX_SCORE * METRES_PER_POINT;
 const WORLD_H = SURF + BOTTOM * PX + 520;
 export const yOf = (metres: number) => SURF + metres * PX;
 
-/** The water darkens with depth, with a crimson stain near the floor. */
+/** The water's colour by depth: murky amber under the city, violet in the Spirit Tide, sea-teal, then crimson. */
 const SHADES: [number, string][] = [
   [0, "#4b4d55"],
-  [400, "#34353c"],
-  [1200, "#25242a"],
-  [2400, "#19161c"],
-  [4200, "#100c12"],
-  [6000, "#12070b"],
-  [7000, "#070407"],
+  [250, "#37302f"],
+  [800, "#2a2333"],
+  [1600, "#1f2236"],
+  [2100, "#0f2a2e"],
+  [3300, "#0a1b22"],
+  [4200, "#1b1214"],
+  [5600, "#1a0a0e"],
+  [6200, "#140509"],
+  [7000, "#070203"],
 ];
 
-/** Original landmarks: small sights on the way, and the four zones in larger type. */
-const LANDMARKS: { m: number; text: string; zone?: boolean }[] = [
-  { m: 60, text: "the gaslight above begins to fade" },
-  { m: 220, text: "church bells can no longer be heard" },
-  { m: 380, text: "a drowned hansom cab drifts past, lamps still lit" },
-  { m: 560, text: "every pocket watch stops here" },
-  { m: 800, text: "The Twilight Veil", zone: true },
-  { m: 1050, text: "tarot cards float by, all face down" },
-  { m: 1350, text: "whispers in a language older than ink" },
-  { m: 1700, text: "a lighthouse that shines darkness" },
-  { m: 2100, text: "The Silent Archive", zone: true },
-  { m: 2500, text: "letters addressed to no one, sealed in red wax" },
-  { m: 3000, text: "the fog turns warm, like breath" },
-  { m: 3600, text: "a staircase descending into itself" },
-  { m: 4200, text: "The Lampless Deep", zone: true },
-  { m: 4800, text: "a cathedral, hanging upside down" },
-  { m: 5500, text: "voices you have never heard call your name" },
-  { m: 6200, text: "The Nameless Floor", zone: true },
-  { m: 7000, text: "the bottom of the fog: a perfect descent ends here", zone: true },
+/** Small sights on the way down, matching the scenery beside them; zone names come from ZONES. */
+const SIGHTS: { m: number; text: string }[] = [
+  { m: 70, text: "the gaslight above begins to fade" },
+  { m: 170, text: "a clock tower, every hand stopped at midnight" },
+  { m: 400, text: "a drowned hansom cab drifts past, lamps still lit" },
+  { m: 600, text: "a train on the viaduct still waits for passengers" },
+  { m: 720, text: "the cathedral bells hang silent" },
+  { m: 1080, text: "tarot cards drift by, face down, except one" },
+  { m: 1320, text: "a mirror that reflects someone else" },
+  { m: 1580, text: "a puppet dances with no puppeteer" },
+  { m: 1830, text: "candles burn in a circle nobody lit" },
+  { m: 2020, text: "clockwork turning for no machine" },
+  { m: 2330, text: "a lighthouse that shines darkness" },
+  { m: 2680, text: "a galleon sails on without a crew" },
+  { m: 3030, text: "lights drift by like breathing lanterns" },
+  { m: 3380, text: "something vast turns over in its sleep" },
+  { m: 3830, text: "an eye larger than a church, watching" },
+  { m: 4480, text: "the face of a forgotten god, eyes closed" },
+  { m: 4780, text: "colonnades of a kingdom without a name" },
+  { m: 5030, text: "a stone hand still offers its gift" },
+  { m: 5430, text: "something sealed, and still straining" },
+  { m: 5830, text: "runes that rewrite themselves" },
+  { m: 6580, text: "a door that should never be opened" },
+  { m: 7000, text: "the bottom of the fog: a perfect descent ends here" },
 ];
+const LANDMARKS: { m: number; text: string; zone?: boolean }[] = [
+  ...SIGHTS,
+  ...ZONES.filter((zone) => zone.m > 0).map((zone) => ({ m: zone.m, text: zone.name, zone: true })),
+].sort((a, b) => a.m - b.m);
 
 const unit = (seed: number, salt: number) => (hash(`${seed}:${salt}`) % 10_000) / 10_000;
 const BANKS = Array.from({ length: 26 }, (_, k) => ({ y: SURF + 120 + k * 230 + unit(3, k) * 80, x: unit(5, k) * 100, w: 50 + unit(9, k) * 50 }));
+/** Each zone's extent in px, for its walls; the last runs past the floor. */
+const WALL_SPANS = ZONES.map((zone, i) => {
+  const top = i === 0 ? SURF : yOf(zone.m);
+  const bottom = i + 1 < ZONES.length ? yOf(ZONES[i + 1].m) : WORLD_H;
+  return { kind: WALL_KINDS[i], top, height: bottom - top };
+});
+/** Foreground fog wisps: closer than everything, so they move faster than the camera. */
+const WISPS = Array.from({ length: 30 }, (_, k) => ({ y: SURF + 80 + k * 260 + unit(61, k) * 120, x: unit(67, k) * 80 - 10, w: 40 + unit(71, k) * 40, d: unit(73, k) * 20 }));
 const MOTES = Array.from({ length: 36 }, (_, k) => ({ x: unit(41, k) * 100, y: unit(43, k) * 100, d: unit(47, k) * 8, s: 0.6 + unit(53, k) * 1.4 }));
+
+/** The far layer moves at this fraction of the camera's speed. */
+const FAR = 0.6;
+/** The foreground fog moves this much faster than the camera. */
+const FORE = 1.3;
+
+function ScenePiece({ scene, top }: { scene: Scene; top: number }) {
+  const position: CSSProperties =
+    scene.side === "c" ? { left: "50%", translate: "-50% -50%" } : scene.side === "l" ? { left: `${scene.inset ?? 0}cqw`, translate: "0 -50%" } : { right: `${scene.inset ?? 0}cqw`, translate: "0 -50%" };
+  return (
+    <div aria-hidden className="dw-scene" data-bleed={scene.bleed || undefined} style={{ top, width: `${scene.width}cqw`, ...position }}>
+      {scene.art}
+    </div>
+  );
+}
 
 export type Plunge = { from: number; to: number; dive: Dive | null; ms: number; key: number };
 
@@ -75,6 +111,9 @@ export function DescentWorld({ round, shown, depth, plunge, final }: { round: Ro
     return { i, from, to: from + stop.points * METRES_PER_POINT, dive, stop, side: hash(`${stop.question}:${i}`) % 2 === 0 ? -1 : 1 };
   });
 
+  // The deepest zone this plunge crossed into, announced on the way down.
+  const crossed = plunge ? ([...ZONES].reverse().find((zone) => zone.m > 0 && zone.m > plunge.from && zone.m <= plunge.to) ?? null) : null;
+
   const style = {
     "--cam": `${y}px`,
     "--dur": `${plunge?.ms ?? 0}ms`,
@@ -83,8 +122,33 @@ export function DescentWorld({ round, shown, depth, plunge, final }: { round: Ro
 
   return (
     <div className="dw" data-plunge={plunge?.dive ?? undefined} data-final={final || undefined} style={style}>
-      <div className="dw-world" style={{ height: WORLD_H, background: gradient }}>
+      {/* Back to front: the water and each zone's light, the far scenery (slower, for depth), then the world itself. */}
+      <div aria-hidden className="dw-world" style={{ height: WORLD_H, background: gradient }}>
+        {ZONE_LIGHT.map((light) => (
+          <span key={light.from} className="dw-light" style={{ top: yOf(light.from), height: (light.to - light.from) * PX, "--light": light.color } as CSSProperties} />
+        ))}
+      </div>
+      <div aria-hidden className="dw-far" style={{ height: WORLD_H }}>
+        {SCENERY.filter((scene) => scene.layer === "far").map((scene) => (
+          <ScenePiece key={`far-${scene.m}`} scene={scene} top={SURF + (yOf(scene.m) - SURF) * FAR} />
+        ))}
+      </div>
+
+      <div className="dw-world" style={{ height: WORLD_H }}>
         <Sanctum round={round} shown={shown} final={final} />
+        {WALL_SPANS.map((span) => (
+          <div key={span.kind} aria-hidden className="dw-walls" data-kind={span.kind} style={{ top: span.top, height: span.height }}>
+            <div className="dw-wall" data-side="l">
+              <Wall kind={span.kind} height={span.height} side="l" />
+            </div>
+            <div className="dw-wall" data-side="r">
+              <Wall kind={span.kind} height={span.height} side="r" />
+            </div>
+          </div>
+        ))}
+        {SCENERY.filter((scene) => scene.layer === "near").map((scene) => (
+          <ScenePiece key={`near-${scene.m}`} scene={scene} top={yOf(scene.m)} />
+        ))}
 
         {BANKS.map((bank, k) => (
           <span key={k} aria-hidden className="dw-bank" style={{ top: bank.y, left: `${bank.x - bank.w / 2}%`, width: `${bank.w + 30}%` }} />
@@ -149,6 +213,17 @@ export function DescentWorld({ round, shown, depth, plunge, final }: { round: Ro
         </div>
       </div>
 
+      {/* Foreground fog, faster than the camera; then the dark beyond the lantern's light. */}
+      <div aria-hidden className="dw-fore" style={{ height: WORLD_H }}>
+        {WISPS.map((wisp, k) => (
+          <span
+            key={k}
+            style={{ top: SURF + (wisp.y - SURF) * FORE, left: `${wisp.x}%`, width: `${wisp.w}%`, animationDelay: `${-wisp.d}s` }}
+          />
+        ))}
+      </div>
+      <div aria-hidden className="dw-dark" />
+
       {/* Fixed to the view: drifting motes that streak past while plunging, then a vignette. */}
       <div aria-hidden className="dw-motes">
         {MOTES.map((mote, k) => (
@@ -156,6 +231,12 @@ export function DescentWorld({ round, shown, depth, plunge, final }: { round: Ro
         ))}
       </div>
       {plunge?.dive && DIVES[plunge.dive].level >= 4 ? <div key={`flash-${plunge.key}`} aria-hidden className="dw-flash" /> : null}
+      {crossed ? (
+        <div key={`zone-${plunge?.key}`} className="dw-zone" style={{ "--delay": `${Math.round((plunge?.ms ?? 0) * 0.45)}ms` } as CSSProperties}>
+          <span>Entering</span>
+          <strong>{crossed.name}</strong>
+        </div>
+      ) : null}
       <div aria-hidden className="dw-vignette" />
     </div>
   );

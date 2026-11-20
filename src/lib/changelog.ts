@@ -57,7 +57,9 @@ const RELEASES: readonly Release[] = [
     intro: "The rare-answer minigame is now one continuous dive. Start in a sanctum floating above an endless gray fog, then sink through it question by question: every point takes you 10 metres deeper.",
     icon: "gamepad",
     highlights: [
-      { kind: "improved", feature: "A real descent", text: "Your lantern sinks through one continuous world as you score, past drowned carriages, silent archives and four named zones, all the way to the Nameless Floor at 7,000 m." },
+      { kind: "improved", feature: "A world below the fog", text: "Your lantern sinks through five zones as you score: the drowned rooftops and stopped clocks of the Gaslit City, the floating tarot cards and mirrors of the Spirit Tide, the Drowned Sea with its dark lighthouse and watching eye, the broken gods of the Fallen Kingdom, and the sealed door of the Nameless Floor at 7,000 m. Each zone frames the dive with its own walls, from lit tenement windows to kelp-hung rock and crimson-cracked stone; only your lantern lights the way, and fog drifts past in front. Crossing into a new zone announces it mid-plunge, and your final verdict is the zone you reach." },
+      { kind: "improved", feature: "Questions anyone can answer", text: "30 everyday questions, like a fruit, a sport or a pizza topping, with up to 195 accepted answers each. Plurals and small typos are fine." },
+      { kind: "improved", feature: "Hidden gems", text: "Every question hides one gem. Finding it stops time, then erupts in crimson and gold. Miss it and the result shows you what it was." },
       { kind: "improved", feature: "Against the clock", text: "Each question gives you 3 seconds to read and 25 to answer, with retries for wrong guesses. Relaxed mode turns the clock off." },
       { kind: "improved", feature: "Every answer is a moment", text: "Your answer slams in, the rarity meter climbs to its tier and bursts in its colour, the points count up, and the lantern plunges: gently for familiar answers, violently for the rarest." },
       { kind: "improved", feature: "The full log", text: "At the end, see your verdict, share your descent as a grid, and tap any question to see every answer that counted, rarest first." },
@@ -66,7 +68,7 @@ const RELEASES: readonly Release[] = [
       improved: [
         {
           title: "The Descent",
-          body: "Begin above the fog, where seven chairs wait around a bronze table; each lights up in the colour of your answer. Questions, scoring and your best score are unchanged: Familiar 10, Uncommon 35, Rare 70 and Exceptional 100 points. An Extraordinary answer is an Exceptional one that stands alone in its question’s rarest tier; it scores the same 100 points but plunges hardest. Running out of time scores nothing, and a round in progress picks up where you left it.",
+          body: "Begin above the fog, where seven chairs wait around a bronze table; each lights up in the colour of your answer. The questions are new and everyday: a fruit, a sport, a colour, a dog breed, a dessert, a capital city and 24 more, each with a long list of accepted answers, so everyone can answer and the skill is reaching past the obvious. Points and your best score are unchanged: Familiar 10, Uncommon 35, Rare 70 and Exceptional 100. Each question also hides one gem, a hand-picked deep answer such as rambutan for “a fruit”; finding it is an Extraordinary dive, worth the same 100 points but plunging hardest. Running out of time scores nothing, and a round in progress picks up where you left it.",
           points: [
             "Rarity is Amethyst’s own curated estimate, not measured from how players answer.",
             "With reduced motion, the world snaps to each depth instead of travelling; colours, the meter and all numbers still show every result.",
