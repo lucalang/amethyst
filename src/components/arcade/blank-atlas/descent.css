@@ -24,19 +24,19 @@
   }
 }
 
-/* The shaft */
+/* The world: the Sanctum above the fog, the fog sea, and the descent beneath. */
 .dv-stage {
   position: relative;
   container-type: inline-size;
   overflow: hidden;
-  height: min(30rem, 62dvh);
+  height: min(34rem, 70dvh);
   border-radius: 1.25rem;
-  background: linear-gradient(180deg, #3a3d44, #202228 35%, #0b0b0e);
-  box-shadow: inset 0 0 60px rgb(0 0 0 / 0.6), 0 30px 60px -36px rgb(0 0 0 / 0.9);
+  background: #08080b;
+  box-shadow: inset 0 0 80px rgb(0 0 0 / 0.7), 0 40px 80px -40px rgb(0 0 0 / 0.95);
 }
 @media (min-width: 1024px) {
   .dv-stage {
-    height: min(46rem, calc(100dvh - 12rem));
+    height: min(52rem, calc(100dvh - 11rem));
   }
 }
 .dv-shaft {
@@ -44,21 +44,102 @@
   width: 100%;
   height: 100%;
 }
-.dv-stage[data-shake] .dv-shaft {
-  animation: dv-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) 360ms both;
-}
-.dv-flash {
+/* A slow breath of light across the whole scene, as if the fog itself were alive. */
+.dv-stage::after {
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(60% 50% at 50% 60%, rgb(224 38 63 / 0.55), rgb(242 193 78 / 0.15) 60%, transparent 80%);
-  opacity: 0;
-  animation: dv-flash 900ms ease-out 330ms both;
+  background: radial-gradient(90% 60% at 50% 30%, transparent 40%, rgb(0 0 0 / 0.55));
 }
 
+.dv-star {
+  fill: #f1d4d8;
+  animation: dv-twinkle 6s ease-in-out infinite;
+}
+.dv-moon {
+  animation: dv-moon 9s ease-in-out infinite;
+}
+.dv-moonglow {
+  animation: dv-moonglow 9s ease-in-out infinite;
+}
+.dv-throne {
+  fill: #19171b;
+  stroke: #6e5a3a;
+  stroke-width: 2;
+}
+.dv-throne-star {
+  fill: #5a4a30;
+  transition: fill 600ms ease;
+}
+.dv-throneglow {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.dv-shaft[data-final] .dv-throneglow {
+  opacity: 1;
+  animation: dv-throne 3s ease-in-out infinite;
+}
+.dv-shaft[data-final] .dv-throne-star {
+  fill: #f2c14e;
+}
+.dv-chair-back {
+  fill: #18161a;
+  stroke: #4a3e2c;
+  stroke-width: 2;
+}
+.dv-chair-halo {
+  fill: none;
+}
+.dv-chair-star {
+  fill: #3a3a42;
+  stroke: #55555e;
+  stroke-width: 1;
+}
+.dv-chair[data-lit] .dv-chair-back {
+  stroke: color-mix(in oklab, var(--dv) 70%, #4a3e2c);
+}
+.dv-chair[data-lit] .dv-chair-star {
+  fill: var(--dv);
+  stroke: color-mix(in oklab, var(--dv) 60%, white);
+  filter: drop-shadow(0 0 6px var(--dv));
+}
+.dv-chair[data-lit] .dv-chair-halo {
+  fill: color-mix(in oklab, var(--dv) 22%, transparent);
+}
+.dv-chair[data-dive="drift"] .dv-chair-star {
+  fill: #6b6e76;
+  filter: none;
+}
+.dv-chair[data-dive="extraordinary"] .dv-chair-star {
+  fill: #f2c14e;
+  stroke: #e0263f;
+  stroke-width: 1.5;
+}
+.dv-chair[data-fresh] :is(.dv-chair-star, .dv-chair-halo) {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dv-ignite 900ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+
+.dv-wave {
+  fill: #9a9ca4;
+}
+.dv-wave-a {
+  opacity: 0.5;
+  animation: dv-tide 22s linear infinite;
+}
+.dv-wave-b {
+  opacity: 0.35;
+  animation: dv-tide 31s linear infinite reverse;
+}
+.dv-wave-c {
+  opacity: 0.25;
+  animation: dv-tide 40s linear infinite;
+}
 .dv-bank {
-  fill: var(--dv-fog);
-  opacity: 0.22;
+  fill: #c9ccd2;
+  opacity: 0.2;
 }
 .dv-bank-a {
   animation: dv-drift 26s ease-in-out infinite alternate;
@@ -69,47 +150,313 @@
 .dv-bank-c {
   animation: dv-drift 41s ease-in-out -17s infinite alternate;
 }
+.dv-ember {
+  fill: #ff9d6b;
+  opacity: 0;
+  animation: dv-ember 10s linear infinite;
+}
 .dv-grain {
   pointer-events: none;
 }
-.dv-grate {
-  stroke: #6d6a63;
-  stroke-width: 3;
-}
-.dv-clock {
-  fill: #1c1b1a;
-  stroke: var(--dv-brass);
-  stroke-width: 2;
-}
-.dv-clock-tick {
-  stroke: var(--dv-brass);
-  stroke-width: 1.5;
-}
-.dv-clock-hand {
-  stroke: var(--dv-paper);
-  stroke-width: 2;
-  stroke-linecap: round;
-  fill: none;
-}
-.dv-lamppost path {
-  fill: #2a2927;
-  stroke: #6d6a63;
-  stroke-width: 2;
-}
-.dv-flame {
-  fill: #f6d99a;
-}
 .dv-gauge-side path {
-  stroke: var(--dv-fog);
+  stroke: #c9ccd2;
   stroke-opacity: 0.35;
   stroke-width: 1.5;
 }
 .dv-gauge-side text {
-  fill: var(--dv-fog);
+  fill: #c9ccd2;
   fill-opacity: 0.45;
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
+
+@keyframes dv-twinkle {
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes dv-moon {
+  50% {
+    filter: brightness(1.25);
+  }
+}
+@keyframes dv-moonglow {
+  50% {
+    opacity: 0.6;
+  }
+}
+@keyframes dv-throne {
+  50% {
+    opacity: 0.6;
+  }
+}
+@keyframes dv-tide {
+  to {
+    translate: 200px 0;
+  }
+}
+@keyframes dv-ember {
+  0% {
+    opacity: 0;
+    translate: 0 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    translate: 18px -160px;
+  }
+}
+@keyframes dv-ignite {
+  from {
+    scale: 0.2;
+    opacity: 0;
+  }
+  60% {
+    scale: 1.6;
+    opacity: 1;
+  }
+}
+@keyframes dv-shake-hard {
+  10% {
+    translate: -7px 4px;
+    rotate: -0.4deg;
+  }
+  25% {
+    translate: 8px -5px;
+    rotate: 0.5deg;
+  }
+  40% {
+    translate: -6px 3px;
+  }
+  55% {
+    translate: 5px -3px;
+  }
+  70% {
+    translate: -3px 2px;
+  }
+  85% {
+    translate: 2px -1px;
+  }
+}
+
+/* ---- The reveal after each answer ---- */
+.dv-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  overflow: hidden;
+  /* Fades out over the last 360ms of the hold, ending as the reveal unmounts. */
+  animation: dv-reveal-out 360ms ease-in calc(var(--hold) - 360ms) forwards;
+}
+.dv-reveal:not([data-burst]) {
+  animation: none;
+}
+.dv-reveal-veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 60% at 50% 50%, rgb(10 10 14 / calc(0.45 + var(--level) * 0.08)), rgb(4 4 6 / calc(0.6 + var(--level) * 0.06)));
+  backdrop-filter: blur(calc(1px + var(--level) * 1px)) grayscale(0.5);
+  animation: dv-fade-in 220ms ease-out both;
+}
+.dv-reveal[data-burst] .dv-reveal-veil {
+  background:
+    radial-gradient(45% 40% at 50% 50%, color-mix(in oklab, var(--dv) calc(10% + var(--level) * 7%), transparent), transparent 70%),
+    radial-gradient(70% 60% at 50% 50%, rgb(10 10 14 / calc(0.45 + var(--level) * 0.08)), rgb(4 4 6 / calc(0.6 + var(--level) * 0.06)));
+}
+.dv-reveal-body {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+.dv-reveal[data-burst][data-dive="rare"] .dv-reveal-body,
+.dv-reveal[data-burst][data-dive="exceptional"] .dv-reveal-body {
+  animation: dv-shake 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.dv-reveal[data-burst][data-dive="extraordinary"] .dv-reveal-body {
+  animation: dv-shake-hard 700ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+.dv-reveal-kicker {
+  font-size: 0.875rem;
+  color: rgb(236 235 230 / 0.6);
+}
+.dv-reveal-answer {
+  max-width: 16ch;
+  font-family: var(--font-serif, Georgia, "Times New Roman", serif);
+  font-size: clamp(2.2rem, 1.4rem + 4vw, 4.25rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #f3f1ea;
+  overflow-wrap: anywhere;
+  text-shadow: 0 6px 30px rgb(0 0 0 / 0.8);
+  animation: dv-slam 420ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.dv-reveal[data-burst] .dv-reveal-answer {
+  text-shadow:
+    0 0 calc(var(--level) * 10px) color-mix(in oklab, var(--dv) 80%, transparent),
+    0 6px 30px rgb(0 0 0 / 0.8);
+}
+.dv-reveal-meter {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.dv-reveal-meter i {
+  width: clamp(2.2rem, 8vw, 3.5rem);
+  height: 0.55rem;
+  border-radius: 999px;
+  background: rgb(236 235 230 / 0.12);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    scale 160ms ease;
+}
+.dv-reveal-meter i[data-on] {
+  background: var(--seg);
+  box-shadow: 0 0 14px var(--seg);
+  scale: 1 1.4;
+}
+.dv-reveal[data-dive="extraordinary"] .dv-reveal-meter i[data-on]:last-child {
+  background: linear-gradient(90deg, #e0263f, #f2c14e);
+}
+.dv-reveal-name {
+  min-height: 1.6rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--dv);
+  text-shadow: 0 0 20px color-mix(in oklab, var(--dv) 70%, transparent);
+}
+.dv-reveal[data-dive="familiar"] .dv-reveal-name {
+  color: #e5e7ec;
+}
+.dv-reveal[data-dive="extraordinary"] .dv-reveal-name {
+  background: linear-gradient(90deg, #ff4a5c, #f2c14e, #ff4a5c);
+  background-clip: text;
+  color: transparent;
+}
+.dv-reveal[data-burst] .dv-reveal-name {
+  animation: dv-slam 380ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+.dv-reveal-points {
+  min-height: 2.6rem;
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #f3f1ea;
+}
+.dv-reveal-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14rem;
+  height: 14rem;
+  margin: -7rem 0 0 -7rem;
+  border-radius: 999px;
+  border: calc(1px + var(--level) * 1.5px) solid var(--dv);
+  box-shadow: 0 0 40px var(--dv), inset 0 0 40px var(--dv);
+  animation: dv-ring calc(700ms + var(--level) * 120ms) cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+.dv-reveal-ring-late {
+  animation-delay: 160ms;
+}
+.dv-reveal-rays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 140vmax;
+  height: 140vmax;
+  margin: -70vmax 0 0 -70vmax;
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--dv) 28%, transparent) 0deg 4deg, transparent 4deg 18deg);
+  mask-image: radial-gradient(circle, black 0%, transparent 45%);
+  animation: dv-rays-spin 2.4s linear both;
+}
+.dv-reveal[data-dive="extraordinary"] .dv-reveal-rays {
+  background: repeating-conic-gradient(from 0deg, rgb(224 38 63 / 0.38) 0deg 4deg, transparent 4deg 12deg, rgb(242 193 78 / 0.3) 12deg 15deg, transparent 15deg 22deg);
+}
+.dv-reveal-shards {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+}
+.dv-reveal-shards i {
+  position: absolute;
+  width: 0.5rem;
+  height: 1.6rem;
+  margin: -0.8rem 0 0 -0.25rem;
+  border-radius: 2px;
+  background: linear-gradient(#f2c14e, #e0263f);
+  box-shadow: 0 0 10px #e0263f;
+  rotate: var(--a);
+  animation: dv-shard 900ms cubic-bezier(0.1, 0.8, 0.3, 1) both;
+}
+
+@keyframes dv-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dv-reveal-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes dv-slam {
+  from {
+    opacity: 0;
+    scale: 1.6;
+    filter: blur(6px);
+  }
+}
+@keyframes dv-ring {
+  from {
+    scale: 0.2;
+    opacity: 1;
+  }
+  to {
+    scale: calc(2.2 + var(--level) * 0.5);
+    opacity: 0;
+  }
+}
+@keyframes dv-rays-spin {
+  from {
+    rotate: 0deg;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    rotate: 40deg;
+    opacity: 0.6;
+  }
+}
+@keyframes dv-shard {
+  from {
+    translate: 0 0;
+    opacity: 1;
+  }
+  to {
+    translate: calc(cos(var(--a)) * var(--d)) calc(sin(var(--a)) * var(--d));
+    opacity: 0;
+  }
+}
+/* Reduced motion: the reveal appears finished and fades; nothing moves, but meter, colour and points all read. */
+.dv-reveal:not([data-motion]) :is(.dv-reveal-answer, .dv-reveal-name, .dv-reveal-body, .dv-reveal-veil) {
+  animation: none;
+}
+.dv-reveal:not([data-motion]) :is(.dv-reveal-ring, .dv-reveal-rays, .dv-reveal-shards) {
+  display: none;
+}
+
 
 /* Dives: --dv is the dive's colour; strength grows with its level. */
 .dv-trail {
@@ -326,11 +673,6 @@
   }
   80% {
     translate: 1px -1px;
-  }
-}
-@keyframes dv-flash {
-  25% {
-    opacity: 1;
   }
 }
 
@@ -584,23 +926,19 @@
 /* Reduced motion: no movement at all. Colour, line weight, the landing sigil and the strength gauge still show each
    dive's quality. */
 @media (prefers-reduced-motion: reduce) {
-  .dv :is(.dv-bank, .dv-next, .dv-flash, .dv-result[data-fresh], .dv-shaft),
+  .dv :is(.dv-bank, .dv-wave, .dv-ember, .dv-star, .dv-moon, .dv-moonglow, .dv-throneglow, .dv-next, .dv-result[data-fresh], .dv-shaft, .dv-input),
+  .dv .dv-chair[data-fresh] *,
   .dv .dv-dive[data-fresh] *,
   .dv .dv-part[data-fresh] {
     animation: none !important;
-  }
-  .dv-flash {
-    display: none;
   }
   .dv-input {
     transition: none;
   }
 }
-:root[data-motion="off"] .dv :is(.dv-bank, .dv-next, .dv-flash, .dv-result[data-fresh], .dv-shaft),
+:root[data-motion="off"] .dv :is(.dv-bank, .dv-wave, .dv-ember, .dv-star, .dv-moon, .dv-moonglow, .dv-throneglow, .dv-next, .dv-result[data-fresh], .dv-shaft, .dv-input),
+:root[data-motion="off"] .dv .dv-chair[data-fresh] *,
 :root[data-motion="off"] .dv .dv-dive[data-fresh] *,
 :root[data-motion="off"] .dv .dv-part[data-fresh] {
   animation: none !important;
-}
-:root[data-motion="off"] .dv-flash {
-  display: none;
 }

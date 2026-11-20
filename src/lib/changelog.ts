@@ -54,9 +54,11 @@ const RELEASES: readonly Release[] = [
     id: "2026-11-20-the-descent",
     date: "2026-11-20",
     title: "Blank Atlas becomes The Descent",
-    intro: "The rare-answer minigame has a new look: seven questions are now seven dives into a world of gray fog, and each dive is as deep and as bright as your answer was rare.",
+    intro: "The rare-answer minigame has a new world: a stone sanctum floating above an endless sea of gray fog. Seven questions are seven dives into that fog, and every answer gets its own dramatic reveal.",
     icon: "gamepad",
     highlights: [
+      { kind: "improved", feature: "The Sanctum above the fog", text: "A vast hall under a crimson moon, with a long bronze table and seven high-backed chairs. Each answer lights its chair in the colour of its dive, and a finished descent lights the throne." },
+      { kind: "improved", feature: "A reveal for every answer", text: "Your answer slams onto the screen, the rarity meter climbs step by step and bursts in its colour, and the points count up. The rarer the answer, the bigger the moment: rays, rings, shards and a shaking world for the very rarest." },
       { kind: "improved", feature: "Dives you can feel", text: "Familiar answers sink gently in silver, uncommon ones glide in teal, rare ones plunge in blue, exceptional ones ripple in violet, and the rarest of all crash through the fog in crimson and gold." },
       { kind: "improved", feature: "The full descent", text: "After the seventh dive you see the whole shaft, every answer with its dive and points, and your final score, with one button to descend again." },
       { kind: "improved", feature: "Same game underneath", text: "Questions, scoring and your best score are unchanged, and a round you had in progress carries on where you left it." },

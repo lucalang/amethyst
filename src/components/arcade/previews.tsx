@@ -71,35 +71,47 @@ const SUDOKU_DIGITS: [number, number, number][] = [
 ];
 
 const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
-  // A shaft into gray fog: seven dives, deeper and brighter the rarer the answer, ending in a crimson-gold plunge.
+  // The Sanctum above the fog: crimson moon, pillars, the bronze table with lit chairs, and dives plunging below.
   "blank-atlas": (
     <g>
       <defs>
-        <linearGradient id="dv-preview-abyss" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4a4d55" />
-          <stop offset="100%" stopColor="#0c0c10" />
+        <linearGradient id="dv-preview-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#140d11" />
+          <stop offset="100%" stopColor="#3c3a42" />
         </linearGradient>
+        <radialGradient id="dv-preview-moon">
+          <stop offset="0%" stopColor="#ff4a5c" />
+          <stop offset="100%" stopColor="#7a0a1e" />
+        </radialGradient>
       </defs>
-      <rect width="160" height="100" fill="url(#dv-preview-abyss)" />
-      <ellipse cx="40" cy="26" rx="60" ry="12" fill="#c9ccd2" opacity="0.18" />
-      <ellipse cx="120" cy="52" rx="55" ry="10" fill="#c9ccd2" opacity="0.14" />
-      <ellipse cx="60" cy="78" rx="60" ry="9" fill="#c9ccd2" opacity="0.1" />
-      <path d="M50 10 H110" stroke="#6d6a63" strokeWidth="2" />
+      <rect width="160" height="100" fill="url(#dv-preview-sky)" />
+      <circle cx="80" cy="24" r="18" fill="#e0263f" opacity="0.18" />
+      <path d="M60 58 V26 Q60 12 80 10 Q100 12 100 26 V58 Z" fill="#221a1f" />
+      <circle cx="80" cy="26" r="9" fill="url(#dv-preview-moon)" />
+      <rect x="0" y="0" width="20" height="62" fill="#2a282e" />
+      <rect x="26" y="0" width="12" height="62" fill="#232127" />
+      <rect x="140" y="0" width="20" height="62" fill="#2a282e" />
+      <rect x="122" y="0" width="12" height="62" fill="#232127" />
+      <path d="M74 44 H86 L100 62 H60 Z" fill="#6b4c2a" stroke="#9a7444" strokeWidth="0.6" />
       {(
         [
-          ["#d5d9e0", 80, 10, 70, 22, 1.4],
-          ["#3fd0b8", 70, 22, 88, 36, 1.8],
-          ["#4f8dff", 88, 36, 66, 54, 2.2],
-          ["#a46bff", 66, 54, 92, 70, 2.6],
-          ["#e0263f", 92, 70, 76, 94, 3.4],
+          [62, 58, "#d5d9e0"],
+          [98, 58, "#3fd0b8"],
+          [67, 50, "#4f8dff"],
+          [93, 50, "#a46bff"],
+          [80, 64, "#e0263f"],
         ] as const
-      ).map(([color, x1, y1, x2, y2, width]) => (
-        <g key={color}>
-          <path d={`M${x1} ${y1} C${x1} ${y1 + (y2 - y1) * 0.7} ${x2} ${y2 - (y2 - y1) * 0.55} ${x2} ${y2}`} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" />
-          <circle cx={x2} cy={y2} r={width + 1.4} fill="#121216" stroke={color} strokeWidth="1.2" />
+      ).map(([x, y, color]) => (
+        <g key={`${x}-${y}`}>
+          <path d={`M${x - 2.2} ${y} V${y - 6} Q${x} ${y - 8} ${x + 2.2} ${y - 6} V${y} Z`} fill="#18161a" />
+          <circle cx={x} cy={y - 11} r="1.6" fill={color} />
         </g>
       ))}
-      <path d="M76 94 m-3 0 l3 -3 l3 3 l-3 3 Z" fill="#f2c14e" />
+      <path d="M0 62 Q20 58 40 62 T80 62 T120 62 T160 62 V100 H0 Z" fill="#8f9199" opacity="0.5" />
+      <path d="M0 70 Q20 66 40 70 T80 70 T120 70 T160 70 V100 H0 Z" fill="#55575f" opacity="0.7" />
+      <path d="M80 66 C80 76 66 74 66 82 C66 88 92 86 90 96" fill="none" stroke="#a46bff" strokeWidth="2" strokeLinecap="round" />
+      <path d="M90 96 l-3 0" stroke="#e0263f" strokeWidth="2.6" strokeLinecap="round" />
+      <circle cx="90" cy="96" r="3" fill="#f2c14e" stroke="#e0263f" strokeWidth="1" />
     </g>
   ),
   "2048": (

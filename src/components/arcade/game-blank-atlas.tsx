@@ -2,6 +2,7 @@
 
 import "./blank-atlas/descent.css";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { DiveReveal } from "./blank-atlas/dive-reveal";
 import { ArrowDown, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,12 +23,10 @@ import {
 } from "@/lib/minigames/blank-atlas";
 import { DescentShaft, DIVE_COLOR, depthOf, fathoms } from "./blank-atlas/descent-shaft";
 import { GameShell, Stat, useArcade, useGameAchievementTracking, useRecord } from "./game-shell";
-import type { SoundName } from "./sound";
 
 // Storage keys keep the game's original id, so a round in progress survives the retheme.
 const SAVE_KEY = "amethyst:blank-atlas:round:v1";
 const RECENT_KEY = "amethyst:blank-atlas:recent:v1";
-const SOUND: Record<Dive, SoundName> = { familiar: "place", uncommon: "chip", rare: "reveal", exceptional: "unlock", extraordinary: "perfect" };
 const DIVE_ORDER: Dive[] = ["familiar", "uncommon", "rare", "exceptional", "extraordinary"];
 
 function read<T>(key: string): T | null {
@@ -50,7 +49,7 @@ const tone = (dive: Dive | null) => ({ "--dv": dive ? DIVE_COLOR[dive] : "#8a8f9
 
 /** The Descent: seven questions, seven dives into the fog. Rarer correct answers score more and dive harder. */
 export default function DescentGame({ records }: { records: Record<string, number> }) {
-  const { play } = useArcade();
+  const { play, effects } = useArcade();
   const { best, submit } = useRecord(BLANK_ATLAS_GAME, records[""] ?? null);
   // The game only renders in the browser (see lazy.tsx), so the saved round can be read right away.
   const [round, setRound] = useState<Round>(() => restoreRound(read(SAVE_KEY)) ?? newRound(read<string[]>(RECENT_KEY) ?? []));
@@ -59,14 +58,34 @@ export default function DescentGame({ records }: { records: Record<string, numbe
   /** The dive made in this visit that should animate (null after a reload, so restored dives sit still). */
   const [fresh, setFresh] = useState<number | null>(null);
   const [newBest, setNewBest] = useState(false);
+  /** The answer whose reveal is playing; its dive joins the world when the reveal ends. */
+  const [reveal, setReveal] = useState<{ stop: Stop; number: number; key: number } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const moving = effects !== "off";
+
+  /** A short shake (Web Animations, so nothing remounts and focus and the drifting fog are kept). */
+  function shake(element: HTMLElement | null, strength: number, ms: number) {
+    if (!element || !moving) return;
+    const k = strength;
+    element.animate(
+      [
+        { translate: "0 0" },
+        { translate: `${-k}px ${k * 0.6}px` },
+        { translate: `${k}px ${-k * 0.6}px` },
+        { translate: `${-k * 0.6}px ${k * 0.3}px` },
+        { translate: `${k * 0.3}px 0` },
+        { translate: "0 0" },
+      ],
+      { duration: ms, easing: "cubic-bezier(0.36, 0.07, 0.19, 0.97)" },
+    );
+  }
 
   const index = round.stops.length;
   const done = index >= STOPS;
   const question = done ? null : questionById(round.questions[index]);
   const score = roundScore(round);
   const last = round.stops.at(-1) ?? null;
-  const lastDive = last ? diveOf(last.question, last.answer, last.tier) : null;
   useGameAchievementTracking(BLANK_ATLAS_GAME, done ? "over" : "playing");
 
   useEffect(() => write(SAVE_KEY, round), [round]);
@@ -79,12 +98,29 @@ export default function DescentGame({ records }: { records: Record<string, numbe
     setRound(next);
     setInput("");
     setWarning(null);
-    setFresh(next.stops.length - 1);
+    // A new answer cuts any reveal still playing short; that dive simply appears.
+    setFresh(null);
+    setReveal({ stop, number: next.stops.length, key: Date.now() });
     if (next.stops.length >= STOPS) {
-      window.setTimeout(() => play("win"), 700);
       write(RECENT_KEY, next.questions);
       setNewBest(submit(roundScore(next)));
     }
+  }
+
+  function revealed(number: number) {
+    setReveal((current) => (current?.number === number ? null : current));
+    setFresh(number - 1);
+    const stop = round.stops[number - 1];
+    const kind = stop ? diveOf(stop.question, stop.answer, stop.tier) : null;
+    // The world shakes as a strong dive lands: harder the rarer it was.
+    if (kind && DIVES[kind].level >= 3) shake(stageRef.current, DIVES[kind].level * 2.5 - 4, 320 + DIVES[kind].level * 90);
+    if (number >= STOPS) play("win");
+  }
+
+  function reject(text: string) {
+    play("invalid");
+    setWarning(text);
+    shake(inputRef.current, 5, 340);
   }
 
   function answer(event: FormEvent) {
@@ -92,30 +128,24 @@ export default function DescentGame({ records }: { records: Record<string, numbe
     if (!question) return;
     const verdict = judge(question, input);
     if (verdict.kind === "empty") {
-      play("invalid");
-      setWarning("Type an answer first, or let this one pass.");
+      reject("Type an answer first, or let this one pass.");
       return;
     }
     if (verdict.kind === "miss") {
-      play("invalid");
-      setWarning(verdict.reason ?? `“${input.trim()}” isn’t a correct answer here. Nothing is lost; try another.`);
+      reject(verdict.reason ?? `“${input.trim()}” isn’t a correct answer here. Nothing is lost; try another.`);
       inputRef.current?.select();
       return;
     }
     if (verdict.kind === "ambiguous") {
-      play("invalid");
-      setWarning(`That could be ${verdict.options.join(" or ")}. Type a little more so it’s clear which.`);
+      reject(`That could be ${verdict.options.join(" or ")}. Type a little more so it’s clear which.`);
       return;
     }
     const { answer: found } = verdict;
-    const kind = diveOf(question.id, found.name, found.tier)!;
-    play(SOUND[kind]);
     dive({ question: question.id, input: input.trim().slice(0, 80), answer: found.name, tier: found.tier, points: TIERS[found.tier].points });
   }
 
   function pass() {
     if (!question) return;
-    play("tap");
     dive({ question: question.id, input: "", answer: null, tier: null, points: 0 });
   }
 
@@ -127,6 +157,7 @@ export default function DescentGame({ records }: { records: Record<string, numbe
     setWarning(null);
     setFresh(null);
     setNewBest(false);
+    setReveal(null);
   }
 
   const depth = fathoms(depthOf(round));
@@ -136,7 +167,6 @@ export default function DescentGame({ records }: { records: Record<string, numbe
       return `Dive ${i + 1}: ${stop.answer ?? "passed"}, ${kind ? DIVES[kind].name : "drifted"}.`;
     })
     .join(" ")}`;
-  const flash = fresh !== null && fresh === index - 1 && lastDive === "extraordinary";
 
   return (
     <GameShell
@@ -210,12 +240,14 @@ export default function DescentGame({ records }: { records: Record<string, numbe
             <HowItWorks />
           </section>
         ) : (
-          <Results round={round} score={score} depth={depth} best={best} newBest={newBest} onRestart={restart} />
+          <Results round={round} score={score} depth={depth} best={best} newBest={newBest} onRestart={restart} countUp={moving} />
         )}
-        <div className="dv-stage" data-shake={flash || undefined}>
-          <DescentShaft round={round} fresh={fresh} final={done} label={label} />
-          {flash ? <span key={`flash-${fresh}`} aria-hidden className="dv-flash" /> : null}
+        <div ref={stageRef} className="dv-stage">
+          <DescentShaft round={round} fresh={fresh} final={done && !reveal} label={label} hidden={reveal ? 1 : 0} />
         </div>
+        {reveal ? (
+          <DiveReveal key={reveal.key} stop={reveal.stop} number={reveal.number} motion={moving} play={play} onDone={() => revealed(reveal.number)} />
+        ) : null}
       </div>
     </GameShell>
   );
@@ -272,15 +304,16 @@ function HowItWorks() {
   );
 }
 
-function Results({ round, score, depth, best, newBest, onRestart }: { round: Round; score: number; depth: number; best: number; newBest: boolean; onRestart: () => void }) {
+function Results({ round, score, depth, best, newBest, onRestart, countUp }: { round: Round; score: number; depth: number; best: number; newBest: boolean; onRestart: () => void; countUp: boolean }) {
+  const shown = useCountUp(score, countUp);
   const deep = round.stops.filter((stop) => (stop.tier ?? 0) >= 3).length;
   return (
     <section className="dv-panel" aria-labelledby="dv-done">
       <h2 id="dv-done" className="dv-prompt">
         The descent is complete
       </h2>
-      <p className="dv-total">
-        {score}
+      <p className="dv-total" aria-label={`${score} of ${MAX_SCORE}`}>
+        {shown}
         <span> of {MAX_SCORE}</span>
       </p>
       <p className="dv-hint">
@@ -321,4 +354,22 @@ function Results({ round, score, depth, best, newBest, onRestart }: { round: Rou
       <HowItWorks />
     </section>
   );
+}
+
+/** Counts a number up from zero once (eased), or shows it at once when motion is off. */
+function useCountUp(target: number, animate: boolean) {
+  const [value, setValue] = useState(animate ? 0 : target);
+  useEffect(() => {
+    if (!animate) return;
+    let frame = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / 1400);
+      setValue(Math.round(target * (1 - (1 - t) ** 3)));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [target, animate]);
+  return animate ? value : target;
 }
