@@ -1,0 +1,997 @@
+/* The Descent's cosmetics (look.tsx): lanterns, fog styles, dive trails, answer markers and art styles, keyed on
+   data attributes of `.dw` (the world) and `.dv` (the whole game, for art styles). Every look keeps each dive's colour
+   (`--dv`) on trails, markers and the plunging lamp, so answer quality always reads the same. Animations stop with
+   reduced motion or the effects setting (descent.css turns off every animation inside `.dv`). */
+
+/* ================================================================================================ Lanterns */
+
+.dw[data-lantern] .dw-flame {
+  filter: drop-shadow(0 0 6px var(--lamp, #ffb347));
+}
+.dw[data-lantern] .dw-lantern::before {
+  background: radial-gradient(
+    circle,
+    var(--lamp-glow, rgb(255 214 150 / 0.32)),
+    transparent 65%
+  );
+}
+.dw-lantern-body[data-float] {
+  animation: lt-bob 3.6s ease-in-out infinite;
+}
+@keyframes lt-bob {
+  50% {
+    translate: 0 -5px;
+    rotate: 2deg;
+  }
+}
+.dw-lantern-body * {
+  transform-box: view-box;
+}
+
+/* Floating Crystal: a faceted prism with shards in orbit. */
+.dw[data-lantern="crystal"] {
+  --lamp: #9fe8ff;
+  --lamp-glow: rgb(150 225 255 / 0.32);
+}
+.lt-crystal {
+  fill: rgb(170 230 255 / 0.22);
+  stroke: #c8f2ff;
+  stroke-width: 1.2;
+}
+.lt-facet {
+  fill: none;
+  stroke: rgb(220 250 255 / 0.55);
+  stroke-width: 0.6;
+}
+.lt-shard {
+  fill: #c8f2ff;
+}
+.lt-orbit {
+  transform-origin: 20px 31px;
+  animation: lt-spin 7s linear infinite;
+}
+.dw[data-lantern="crystal"] .dw-flame {
+  fill: #e6fbff;
+}
+
+/* Moth-wing Lantern: a ribbed paper globe carried by a pale moth. */
+.dw[data-lantern="moth"] {
+  --lamp: #ffb46a;
+  --lamp-glow: rgb(255 196 130 / 0.34);
+}
+.lt-wing {
+  fill: rgb(214 200 176 / 0.85);
+  stroke: #6d5a44;
+  stroke-width: 0.7;
+}
+.lt-wing-eye {
+  fill: #6d5a44;
+  stroke: #e9d9b8;
+  stroke-width: 0.6;
+}
+.lt-wings {
+  transform-origin: 20px 30px;
+  animation: lt-flutter 0.7s ease-in-out infinite alternate;
+}
+.lt-paper {
+  fill: rgb(255 214 160 / 0.5);
+  stroke: #c98a4a;
+  stroke-width: 1.1;
+}
+.lt-ribs,
+.lt-tassel {
+  fill: none;
+  stroke: rgb(150 90 40 / 0.55);
+  stroke-width: 0.7;
+}
+.lt-tassel {
+  stroke: #a3202f;
+  stroke-width: 1.4;
+}
+@keyframes lt-flutter {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 0.55 1;
+  }
+}
+
+/* Abyss Jelly: a glowing bell trailing tentacles. */
+.dw[data-lantern="jelly"] {
+  --lamp: #ff8fd8;
+  --lamp-glow: rgb(150 240 230 / 0.28);
+}
+.lt-bell {
+  fill: rgb(140 240 225 / 0.32);
+  stroke: #9ff5e6;
+  stroke-width: 1;
+}
+.lt-bell-rim {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.5);
+  stroke-width: 0.7;
+}
+.lt-tentacles path {
+  fill: none;
+  stroke: rgb(255 160 225 / 0.7);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.lt-tentacles {
+  transform-origin: 20px 30px;
+  animation: lt-trail 2.4s ease-in-out infinite;
+}
+.lt-bell-pulse {
+  transform-origin: 20px 30px;
+  animation: lt-pulse 2.4s ease-in-out infinite;
+}
+.dw[data-lantern="jelly"] .dw-flame {
+  fill: #ffd1f0;
+}
+@keyframes lt-trail {
+  50% {
+    skew: 8deg 0;
+    scale: 0.92 1.06;
+  }
+}
+@keyframes lt-pulse {
+  50% {
+    scale: 1.08 0.9;
+  }
+}
+
+/* Clockwork Orrery: brass rings turning around a captive sun. */
+.dw[data-lantern="orrery"] {
+  --lamp: #ffcf5a;
+}
+.lt-brass-line {
+  fill: none;
+  stroke: #c9a86a;
+  stroke-width: 1.3;
+}
+.lt-thin {
+  stroke-width: 0.6;
+  stroke-dasharray: 2 2;
+}
+.lt-planet {
+  fill: #e8d2a0;
+  stroke: #5a4422;
+  stroke-width: 0.5;
+}
+.lt-ring {
+  transform-origin: 20px 32px;
+}
+.lt-ring-a {
+  animation: lt-spin 9s linear infinite;
+}
+.lt-ring-b {
+  animation: lt-spin 13s linear infinite reverse;
+}
+.lt-ring-c {
+  animation: lt-spin 5s linear infinite;
+}
+@keyframes lt-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+/* Bell Jar Wisp: a little ghost kept under glass. */
+.dw[data-lantern="bell-jar"] {
+  --lamp: #c6f7ff;
+  --lamp-glow: rgb(200 240 255 / 0.28);
+}
+.lt-jar {
+  fill: rgb(200 230 240 / 0.12);
+  stroke: rgb(220 240 250 / 0.75);
+  stroke-width: 1.1;
+}
+.lt-glint {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.8);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.dw[data-lantern="bell-jar"] .dw-flame {
+  fill: #eafcff;
+}
+.lt-eye-dot {
+  fill: #2b3640;
+}
+.lt-wisp {
+  animation: lt-haunt 3.2s ease-in-out infinite;
+}
+@keyframes lt-haunt {
+  33% {
+    translate: -1.5px -2px;
+    rotate: -6deg;
+  }
+  66% {
+    translate: 1.5px 1px;
+    rotate: 5deg;
+  }
+}
+
+/* The Watcher: a brass eye whose pupil is the light; it blinks now and then. */
+.dw[data-lantern="watcher"] {
+  --lamp: #ff6b6b;
+  --lamp-glow: rgb(255 140 120 / 0.28);
+}
+.lt-sclera {
+  fill: #efe6d2;
+}
+.lt-iris {
+  fill: #5b2a6e;
+  stroke: #2a1030;
+  stroke-width: 0.8;
+}
+.dw[data-lantern="watcher"] .dw-flame {
+  fill: #ffd2a0;
+}
+.lt-rays {
+  fill: none;
+  stroke: #c9a86a;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.lt-lid {
+  fill: #7a5a32;
+  transform-origin: 20px 32px;
+  scale: 1 0;
+  animation: lt-blink 5s ease-in-out infinite;
+}
+@keyframes lt-blink {
+  0%,
+  92%,
+  100% {
+    scale: 1 0;
+  }
+  96% {
+    scale: 1 1;
+  }
+}
+
+/* Caged Star: a fallen star turning inside a birdcage. */
+.dw[data-lantern="caged-star"] {
+  --lamp: #fff2a8;
+  --lamp-glow: rgb(255 240 170 / 0.3);
+}
+.lt-cage {
+  fill: none;
+  stroke: #b08a48;
+  stroke-width: 1.1;
+}
+.lt-star {
+  fill: #fff4b8;
+  transform-origin: 20px 32px;
+  animation: lt-spin 10s linear infinite;
+}
+.dw[data-plunge] .lt-star {
+  fill: color-mix(in oklab, var(--dv) 60%, #fff4b8);
+}
+
+/* ================================================================================================ Fog styles */
+
+/* Ink Bloom: clouds of ink unfurling through the water. */
+.dw[data-fog="ink"] .dw-bank {
+  background:
+    radial-gradient(closest-side at 35% 45%, rgb(12 10 26 / 0.6), transparent),
+    radial-gradient(
+      closest-side at 65% 60%,
+      rgb(28 20 50 / 0.45),
+      transparent 90%
+    );
+  filter: blur(3px);
+}
+.dw[data-fog="ink"] .dw-fore span {
+  background:
+    radial-gradient(closest-side at 25% 50%, rgb(8 6 18 / 0.55), transparent),
+    radial-gradient(closest-side at 60% 40%, rgb(30 22 60 / 0.4), transparent),
+    radial-gradient(closest-side at 85% 65%, rgb(8 6 18 / 0.45), transparent);
+  filter: blur(5px);
+}
+.dw[data-fog="ink"] .dw-motes i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50% 0 50% 50%;
+  rotate: -45deg;
+  background: rgb(20 16 42 / 0.85);
+  box-shadow: 0 0 0 1px rgb(190 180 255 / 0.35);
+}
+.dw[data-fog="ink"] .dw-dark {
+  background: radial-gradient(
+    75% 48% at 50% var(--cam-at),
+    transparent 24%,
+    rgb(6 4 16 / 0.82) 100%
+  );
+}
+
+/* Drifting Tarot: face-down cards tumble past in the foreground. */
+.dw[data-fog="tarot"] .dw-bank {
+  background: radial-gradient(
+    closest-side,
+    rgb(150 120 190 / 0.14),
+    transparent
+  );
+}
+.dw[data-fog="tarot"] .dw-fore span {
+  display: grid;
+  place-items: center;
+  width: 30px !important;
+  height: 46px;
+  border-radius: 4px;
+  border: 1.5px solid rgb(201 168 106 / 0.75);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgb(201 168 106 / 0.12) 0 2px,
+      transparent 2px 6px
+    ),
+    linear-gradient(135deg, #2c1a3c, #150c20);
+  box-shadow:
+    inset 0 0 0 3px #150c20,
+    inset 0 0 0 4px rgb(201 168 106 / 0.45),
+    0 8px 18px rgb(0 0 0 / 0.5);
+  filter: none;
+  opacity: 0.75;
+  animation: fog-tumble 18s ease-in-out infinite alternate;
+}
+.dw[data-fog="tarot"] .dw-fore span::before {
+  content: "✦";
+  font-size: 13px;
+  color: #f2c14e;
+  text-shadow: 0 0 6px rgb(242 193 78 / 0.7);
+}
+.dw[data-fog="tarot"] .dw-fore span:nth-child(3n)::before {
+  content: "☾";
+}
+.dw[data-fog="tarot"] .dw-fore span:nth-child(3n + 1)::before {
+  content: "◉";
+  font-size: 11px;
+}
+.dw[data-fog="tarot"] .dw-motes i {
+  background: #f2c14e;
+  box-shadow: 0 0 6px #f2c14e;
+}
+@keyframes fog-tumble {
+  from {
+    rotate: -18deg;
+    translate: 0 0;
+  }
+  to {
+    rotate: 24deg;
+    translate: 60px 20px;
+  }
+}
+
+/* Will-o'-Wisps: pale green fog and orbs that wander. */
+.dw[data-fog="will-o-wisps"] .dw-bank {
+  background: radial-gradient(
+    closest-side,
+    rgb(120 220 180 / 0.16),
+    transparent
+  );
+}
+.dw[data-fog="will-o-wisps"] .dw-fore span {
+  background: radial-gradient(
+    closest-side,
+    rgb(150 240 200 / 0.12),
+    transparent
+  );
+}
+.dw[data-fog="will-o-wisps"] .dw-motes i {
+  width: 6px;
+  height: 6px;
+  background: rgb(200 255 225);
+  box-shadow:
+    0 0 8px 3px rgb(90 255 180 / 0.55),
+    0 0 22px 6px rgb(90 255 180 / 0.18);
+  animation: fog-wander 11s ease-in-out infinite;
+}
+.dw[data-fog="will-o-wisps"] .dw-motes i:nth-child(3n) {
+  display: none;
+}
+@keyframes fog-wander {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 0;
+  }
+  20%,
+  80% {
+    opacity: 0.9;
+  }
+  35% {
+    translate: 18px -14px;
+  }
+  65% {
+    translate: -14px -32px;
+  }
+}
+
+/* Ash Fall: charcoal smoke, grey flakes drifting down, the odd live ember. */
+.dw[data-fog="ash"] .dw-bank {
+  background: radial-gradient(closest-side, rgb(48 42 40 / 0.5), transparent);
+  filter: blur(6px);
+}
+.dw[data-fog="ash"] .dw-fore span {
+  background: radial-gradient(closest-side, rgb(60 54 52 / 0.32), transparent);
+}
+.dw[data-fog="ash"] .dw-motes i {
+  width: 4px;
+  height: 3px;
+  border-radius: 1px;
+  background: rgb(180 174 168 / 0.75);
+  animation: fog-ashfall 8s linear infinite;
+}
+.dw[data-fog="ash"] .dw-motes i:nth-child(5n) {
+  width: 3px;
+  background: #ff8a3a;
+  box-shadow: 0 0 6px #ff6a1a;
+}
+@keyframes fog-ashfall {
+  from {
+    translate: 0 -40px;
+    rotate: 0deg;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  to {
+    translate: 16px 70px;
+    rotate: 320deg;
+    opacity: 0;
+  }
+}
+
+/* Silk Veils: long translucent ribbons and shimmering sequins. */
+.dw[data-fog="silk"] .dw-bank {
+  background: radial-gradient(
+    closest-side,
+    rgb(200 180 240 / 0.16),
+    transparent
+  );
+}
+.dw[data-fog="silk"] .dw-fore span {
+  height: 24px;
+  border-radius: 100% 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(225 205 255 / 0.18) 25%,
+    rgb(255 255 255 / 0.3) 50%,
+    rgb(225 205 255 / 0.18) 75%,
+    transparent
+  );
+  filter: blur(1.2px);
+  rotate: -9deg;
+  animation: fog-veil 9s ease-in-out infinite alternate;
+}
+.dw[data-fog="silk"] .dw-motes i {
+  width: 4px;
+  height: 4px;
+  border-radius: 0;
+  rotate: 45deg;
+  background: rgb(240 225 255 / 0.85);
+}
+@keyframes fog-veil {
+  from {
+    skew: -14deg 0;
+    translate: 0 0;
+  }
+  to {
+    skew: 12deg 4deg;
+    translate: 14% 12px;
+  }
+}
+
+/* Rune Mist: violet haze and glowing glyphs drifting up. */
+.dw[data-fog="runes"] .dw-bank {
+  background: radial-gradient(
+    closest-side,
+    rgb(140 100 220 / 0.16),
+    transparent
+  );
+}
+.dw[data-fog="runes"] .dw-fore span {
+  background: radial-gradient(
+    closest-side,
+    rgb(160 120 240 / 0.12),
+    transparent
+  );
+}
+.dw[data-fog="runes"] .dw-motes i {
+  background: transparent;
+}
+.dw[data-fog="runes"] .dw-motes i::before {
+  content: "ᚱ";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  font-size: 12px;
+  line-height: 1;
+  color: rgb(205 180 255 / 0.85);
+  text-shadow: 0 0 6px rgb(160 110 255 / 0.9);
+}
+.dw[data-fog="runes"] .dw-motes i:nth-child(4n)::before {
+  content: "ᚦ";
+}
+.dw[data-fog="runes"] .dw-motes i:nth-child(4n + 1)::before {
+  content: "ᛉ";
+}
+.dw[data-fog="runes"] .dw-motes i:nth-child(4n + 2)::before {
+  content: "ᛟ";
+}
+
+/* Deepwater Bubbles: rising bubbles and rings of caustic light. */
+.dw[data-fog="bubbles"] .dw-bank {
+  background: radial-gradient(
+    closest-side,
+    rgb(80 170 200 / 0.18),
+    transparent
+  );
+}
+.dw[data-fog="bubbles"] .dw-fore span {
+  background: radial-gradient(
+    closest-side,
+    transparent 50%,
+    rgb(150 220 255 / 0.12) 72%,
+    transparent
+  );
+  filter: blur(4px);
+}
+.dw[data-fog="bubbles"] .dw-motes i {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgb(190 235 255 / 0.65);
+  background: radial-gradient(
+    circle at 35% 35%,
+    rgb(255 255 255 / 0.8) 0 1px,
+    transparent 1.5px
+  );
+  animation: fog-rise 7s ease-in infinite;
+}
+.dw[data-fog="bubbles"] .dw-motes i:nth-child(odd) {
+  scale: 0.6;
+}
+@keyframes fog-rise {
+  from {
+    translate: 0 50px;
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  50% {
+    translate: 5px -10px;
+  }
+  to {
+    translate: -4px -80px;
+    opacity: 0;
+  }
+}
+
+/* ================================================================================================ Dive trails */
+
+/* Each trail is the dive's colour cut by a repeating pattern; rarer dives draw it larger. */
+.dw[data-trail] .dw-trail,
+.dw[data-trail] .dw-lantern-trail {
+  --k: 1;
+  width: calc(var(--tw) * var(--k));
+  margin-left: calc(var(--tw) * var(--k) / -2);
+  border-radius: 0;
+  box-shadow: none;
+  mask-image: var(--tm);
+  mask-size: 100% calc(var(--th) * var(--k));
+  mask-repeat: repeat-y;
+  mask-position: top center;
+}
+.dw[data-trail] .dw-lantern-trail {
+  margin-left: 0;
+}
+.dw[data-trail] .dw-trail[data-dive="familiar"] {
+  --k: 0.7;
+}
+.dw[data-trail] .dw-trail[data-dive="exceptional"] {
+  --k: 1.15;
+}
+.dw[data-trail] .dw-trail[data-dive="extraordinary"] {
+  --k: 1.35;
+}
+.dw[data-trail="shattered"] {
+  --tw: 16px;
+  --th: 30px;
+  --tm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 30'%3E%3Cpath d='M3 0 L11 4 L8 12 Z M9 14 L15 18 L6 27 Z M1 19 L6 22 L3 29 Z M12 7 L15 9 L13 13 Z'/%3E%3Crect x='7.5' width='1' height='30'/%3E%3C/svg%3E");
+}
+.dw[data-trail="pearls"] {
+  --tw: 12px;
+  --th: 16px;
+  --tm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 16'%3E%3Ccircle cx='6' cy='8' r='4.6'/%3E%3Crect x='5.6' width='0.8' height='16'/%3E%3C/svg%3E");
+}
+.dw[data-trail="chain"] {
+  --tw: 12px;
+  --th: 22px;
+  --tm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 22'%3E%3Cellipse cx='6' cy='6' rx='4' ry='5.6' fill='none' stroke='black' stroke-width='2'/%3E%3Crect x='4.8' y='10.5' width='2.4' height='11' rx='1.2'/%3E%3C/svg%3E");
+}
+.dw[data-trail="twin-spirits"] {
+  --tw: 16px;
+  --th: 40px;
+  --tm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 40'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M8 0 C16 8 16 12 8 20 C0 28 0 32 8 40'/%3E%3Cpath d='M8 0 C0 8 0 12 8 20 C16 28 16 32 8 40' stroke-opacity='0.6'/%3E%3C/g%3E%3Ccircle cx='8' cy='20' r='2'/%3E%3C/svg%3E");
+}
+.dw[data-trail="rune-ladder"] {
+  --tw: 14px;
+  --th: 30px;
+  --tm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 30'%3E%3Cg fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 2 V13 M5 3 L10 6 M5 7 L10 10'/%3E%3Cpath d='M7 17 V28 M3 19 L7 23 L11 19'/%3E%3C/g%3E%3C/svg%3E");
+}
+.dw[data-trail="embers"] {
+  --tw: 18px;
+  --th: 36px;
+  --tm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 36'%3E%3Crect x='8.5' width='1' height='36' fill-opacity='0.55'/%3E%3Ccircle cx='3' cy='4' r='1.6'/%3E%3Ccircle cx='14' cy='10' r='1.1'/%3E%3Ccircle cx='9' cy='17' r='2.2'/%3E%3Ccircle cx='4' cy='26' r='1.1'/%3E%3Ccircle cx='15' cy='30' r='1.7'/%3E%3Ccircle cx='11' cy='2' r='0.8'/%3E%3C/svg%3E");
+}
+.dw[data-trail="cross-stitch"] {
+  --tw: 12px;
+  --th: 15px;
+  --tm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 15'%3E%3Cpath d='M2 2.5 L10 10.5 M10 2.5 L2 10.5' stroke='black' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+.dw[data-trail="embers"] .dw-trail {
+  animation: tr-flicker 1.8s steps(3) infinite;
+}
+@keyframes tr-flicker {
+  50% {
+    mask-position: center 6px;
+  }
+}
+
+/* ================================================================================================ Answer markers */
+
+.dw-mark-dot[data-art] {
+  position: relative;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.dw-mark-dot[data-art="tarot-card"] {
+  width: 1.75rem;
+  height: 2.5rem;
+}
+.dw-mark-dot[data-art] b {
+  position: relative;
+  font-weight: 800;
+  color: var(--dv-paper);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.9);
+}
+.dw-mark-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px color-mix(in oklab, var(--dv) 60%, transparent));
+}
+.dw-mark-art * {
+  transform-box: view-box;
+  transform-origin: 20px 20px;
+}
+.mk-frame {
+  fill: #141318;
+  stroke: var(--dv);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+.mk-tint {
+  fill: color-mix(in oklab, var(--dv) 28%, #0e0d12);
+}
+.mk-line {
+  fill: none;
+  stroke: var(--dv);
+  stroke-width: 0.9;
+  stroke-opacity: 0.75;
+}
+.mk-fill {
+  fill: var(--dv);
+}
+.mk-soft {
+  opacity: 0.85;
+}
+.mk-wax {
+  fill: color-mix(in oklab, var(--dv) 75%, #000);
+  stroke: color-mix(in oklab, var(--dv) 50%, #000);
+  stroke-width: 1;
+}
+.mk-emboss {
+  fill: none;
+  stroke: rgb(0 0 0 / 0.35);
+  stroke-width: 1.6;
+}
+.mk-glint {
+  stroke: rgb(255 255 255 / 0.8);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+.mk-spin {
+  animation: lt-spin 16s linear infinite;
+}
+.dw-mark[data-dive="extraordinary"] .dw-mark-art {
+  filter: drop-shadow(0 0 8px #e0263f) drop-shadow(0 0 2px #f2c14e);
+}
+.dw-mark[data-dive="extraordinary"] .mk-frame,
+.dw-mark[data-dive="extraordinary"] .mk-wax {
+  stroke: #f2c14e;
+}
+.dw-mark[data-fresh] .dw-mark-dot[data-art="tarot-card"] {
+  animation: mk-flip 700ms cubic-bezier(0.2, 1.2, 0.4, 1) calc(var(--dur) * 0.9)
+    both;
+}
+.dw-mark[data-fresh] .dw-mark-dot[data-art="bell"] .dw-mark-art {
+  transform-origin: 50% 0;
+  animation: mk-ring 1.2s ease-out calc(var(--dur) * 0.9) both;
+}
+.dw-mark[data-fresh] .dw-mark-dot[data-art="wax-seal"] {
+  animation: mk-stamp 450ms cubic-bezier(0.3, 1.6, 0.5, 1)
+    calc(var(--dur) * 0.9) both;
+}
+@keyframes mk-flip {
+  from {
+    rotate: y 180deg;
+  }
+}
+@keyframes mk-ring {
+  20% {
+    rotate: 18deg;
+  }
+  45% {
+    rotate: -12deg;
+  }
+  70% {
+    rotate: 6deg;
+  }
+}
+@keyframes mk-stamp {
+  from {
+    scale: 1.8;
+    opacity: 0;
+  }
+}
+
+/* ================================================================================================ Art styles */
+
+.dv[data-style] .dv-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Copperplate Etching: an engraved, cross-hatched plate in sepia; engraved serif lettering and double-ruled frames. */
+.dv[data-style="etching"] {
+  font-family: Georgia, "Times New Roman", serif;
+}
+.dv[data-style="etching"] .dw > .dw-world:first-child,
+.dv[data-style="etching"] .dw-far {
+  filter: sepia(0.8) contrast(1.1);
+}
+.dv[data-style="etching"] .dw-world .dw-scene,
+.dv[data-style="etching"] .dw-walls,
+.dv[data-style="etching"] .dw-sanctum {
+  filter: grayscale(1) sepia(0.6) contrast(1.5) brightness(0.9);
+}
+.dv[data-style="etching"] .dv-stage::after {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgb(24 16 8 / 0.2) 0 1px,
+      transparent 1px 4px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgb(24 16 8 / 0.12) 0 1px,
+      transparent 1px 6px
+    ),
+    radial-gradient(90% 80% at 50% 45%, transparent 50%, rgb(40 26 12 / 0.55));
+  mix-blend-mode: multiply;
+}
+.dv[data-style="etching"] .dw-landmark {
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  color: rgb(226 206 170 / 0.6);
+}
+.dv[data-style="etching"]
+  :is(.dv-intro, .dv-ask, .dv-result, .dv-complete, .dv-pod) {
+  border-radius: 3px;
+  background: rgb(30 22 14 / 0.9);
+  box-shadow:
+    inset 0 0 0 1px #9a7444,
+    inset 0 0 0 4px rgb(30 22 14),
+    inset 0 0 0 5px rgb(154 116 68 / 0.7),
+    0 24px 50px -20px rgb(0 0 0 / 0.85);
+}
+
+/* Cathedral Glass: the deep seen through leaded stained glass; jewel-bright scenery and arched windows for panels. */
+.dv[data-style="stained-glass"] {
+  font-family: Georgia, "Times New Roman", serif;
+}
+.dv[data-style="stained-glass"] .dw-world .dw-scene,
+.dv[data-style="stained-glass"] .dw-sanctum {
+  filter: saturate(1.9) contrast(1.25) drop-shadow(0 0 1px #000)
+    drop-shadow(0 0 1px #000);
+}
+.dv[data-style="stained-glass"] .dw-light {
+  filter: saturate(2.2);
+}
+.dv[data-style="stained-glass"] .dv-stage::after {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M0 18 L34 0 M34 0 L52 40 L0 58 M52 40 L120 30 M86 0 L74 34 M120 76 L82 64 L52 40 M82 64 L64 120 M0 58 L28 96 L64 120 M28 96 L0 120 M82 64 L120 120 M120 30 L120 76 M74 34 L82 64'/%3E%3C/g%3E%3C/svg%3E")
+      0 0 / 180px 180px,
+    radial-gradient(60% 50% at 0% 0%, rgb(180 30 60 / 0.25), transparent),
+    radial-gradient(60% 50% at 100% 100%, rgb(30 80 200 / 0.25), transparent);
+  opacity: 0.55;
+  mix-blend-mode: hard-light;
+}
+.dv[data-style="stained-glass"] .dw-mark-dot {
+  filter: drop-shadow(0 0 1.5px #000) drop-shadow(0 0 1.5px #000);
+}
+.dv[data-style="stained-glass"] .dw-landmark[data-zone] {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.dv[data-style="stained-glass"]
+  :is(.dv-intro, .dv-ask, .dv-result, .dv-complete) {
+  border-radius: 2.4rem 2.4rem 0.6rem 0.6rem;
+  border: 3px solid #121014;
+  box-shadow:
+    inset 0 0 0 1px rgb(242 193 78 / 0.5),
+    0 0 0 1px rgb(242 193 78 / 0.25),
+    0 30px 60px -20px rgb(0 0 0 / 0.8);
+}
+.dv[data-style="stained-glass"] .dv-pod {
+  border-radius: 1rem 1rem 0.3rem 0.3rem;
+  border: 2px solid #121014;
+  box-shadow: inset 0 0 0 1px rgb(242 193 78 / 0.45);
+}
+
+/* Shadow Puppet Theatre: everything is a cut-out silhouette against a lamp-lit screen, framed by velvet curtains. */
+.dv[data-style="shadow-theatre"] {
+  font-family: Georgia, "Times New Roman", serif;
+}
+.dv[data-style="shadow-theatre"] .dv-stage {
+  background: radial-gradient(
+    85% 75% at 50% 40%,
+    #f4bd68,
+    #b9581f 62%,
+    #3e140a
+  );
+}
+.dv[data-style="shadow-theatre"] .dw > .dw-world:first-child {
+  opacity: 0.3;
+  mix-blend-mode: multiply;
+}
+.dv[data-style="shadow-theatre"] .dw-light {
+  display: none;
+}
+.dv[data-style="shadow-theatre"] .dw-world .dw-scene,
+.dv[data-style="shadow-theatre"] .dw-far .dw-scene,
+.dv[data-style="shadow-theatre"] .dw-walls,
+.dv[data-style="shadow-theatre"] .dw-sanctum {
+  filter: brightness(0);
+  opacity: 0.88;
+}
+.dv[data-style="shadow-theatre"] .dw-far .dw-scene {
+  opacity: 0.35;
+}
+.dv[data-style="shadow-theatre"] .dw-dark {
+  opacity: 0.45;
+}
+.dv[data-style="shadow-theatre"] .dw-vignette {
+  background: radial-gradient(
+    85% 70% at 50% 40%,
+    transparent 50%,
+    rgb(40 10 4 / 0.7)
+  );
+}
+.dv[data-style="shadow-theatre"] .dw-landmark,
+.dv[data-style="shadow-theatre"] .dw-gauge span {
+  color: rgb(46 16 6 / 0.75);
+}
+.dv[data-style="shadow-theatre"] .dw-landmark[data-zone] {
+  color: rgb(90 14 10 / 0.85);
+  text-shadow: none;
+}
+.dv[data-style="shadow-theatre"] .dv-stage::after {
+  background:
+    linear-gradient(
+      180deg,
+      #4a0b12 0 10px,
+      #7a1420 10px 16px,
+      transparent 16px
+    ),
+    linear-gradient(
+      90deg,
+      #3c070e,
+      #7a1420 2.5%,
+      rgb(122 20 32 / 0.6) 5%,
+      transparent 8%,
+      transparent 92%,
+      rgb(122 20 32 / 0.6) 95%,
+      #7a1420 97.5%,
+      #3c070e
+    );
+}
+.dv[data-style="shadow-theatre"]
+  :is(.dv-intro, .dv-ask, .dv-result, .dv-complete, .dv-pod) {
+  background: rgb(36 14 8 / 0.9);
+  outline: 1.5px dashed rgb(242 190 110 / 0.45);
+  outline-offset: -6px;
+}
+
+/* Cyanotype Plate: a ghostly photographic negative printed in Prussian blue, with grain and typewritten notes. */
+.dv[data-style="cyanotype"] {
+  font-family: ui-monospace, "Courier New", monospace;
+}
+.dv[data-style="cyanotype"] .dv-stage {
+  background: #0b2a4a;
+}
+.dv[data-style="cyanotype"] .dw > .dw-world:first-child,
+.dv[data-style="cyanotype"] .dw-far {
+  filter: grayscale(1) sepia(1) hue-rotate(170deg) saturate(2.4)
+    brightness(0.95);
+}
+.dv[data-style="cyanotype"] .dw-world .dw-scene,
+.dv[data-style="cyanotype"] .dw-walls,
+.dv[data-style="cyanotype"] .dw-sanctum {
+  filter: grayscale(1) invert(1) brightness(0.8) sepia(1) hue-rotate(170deg)
+    saturate(2.8);
+  mix-blend-mode: screen;
+}
+.dv[data-style="cyanotype"] .dv-stage::after {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(
+      90deg,
+      transparent 31%,
+      rgb(230 245 255 / 0.08) 31.1% 31.3%,
+      transparent 31.4% 72%,
+      rgb(230 245 255 / 0.06) 72.1% 72.2%,
+      transparent 72.3%
+    );
+  opacity: 0.28;
+  mix-blend-mode: overlay;
+  animation: cy-grain 0.4s steps(2) infinite;
+}
+.dv[data-style="cyanotype"] .dw-landmark {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-style: normal;
+  font-size: 0.8125rem;
+  color: rgb(220 240 255 / 0.6);
+}
+.dv[data-style="cyanotype"] .dw-landmark[data-zone] {
+  color: rgb(235 248 255 / 0.85);
+  text-shadow: 0 0 18px rgb(150 210 255 / 0.4);
+}
+.dv[data-style="cyanotype"]
+  :is(.dv-intro, .dv-ask, .dv-result, .dv-complete, .dv-pod) {
+  border-radius: 2px;
+  background: rgb(8 30 56 / 0.9);
+  box-shadow:
+    inset 0 0 0 6px rgb(230 242 252 / 0.08),
+    inset 0 0 0 7px rgb(230 242 252 / 0.3),
+    0 24px 50px -20px rgb(0 0 0 / 0.85);
+}
+@keyframes cy-grain {
+  to {
+    background-position:
+      37px 61px,
+      0 0;
+  }
+}
+
+/* Shop previews don't move when motion is off. */
+.dvp[data-still] * {
+  animation: none !important;
+  transition: none !important;
+}

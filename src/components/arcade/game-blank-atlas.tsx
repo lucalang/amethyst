@@ -1,7 +1,7 @@
 "use client";
 
 import "./blank-atlas/descent.css";
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from "react";
 import { ArrowDown, Check, Copy, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,9 @@ import {
   type Tier,
 } from "@/lib/minigames/blank-atlas";
 import { DescentWorld, DIVE_COLOR, PLUNGE_MS, type Plunge } from "./blank-atlas/descent-world";
+import { descentLook } from "./blank-atlas/look";
 import { RareBurst } from "./blank-atlas/rare-burst";
+import "./blank-atlas/cosmetics.css";
 import { GameShell, useArcade, useGameAchievementTracking, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
 
@@ -74,7 +76,9 @@ function startingPhase(round: Round): Phase {
 
 /** The Descent: seven questions, one continuous dive into the fog. Every point sinks the lantern 10 metres. */
 export default function DescentGame({ records }: { records: Record<string, number> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look: equipped } = useArcade();
+  // Cosmetics from The Descent's shop; equipping one from the in-game shop restyles the world at once.
+  const look = useMemo(() => descentLook(equipped), [equipped]);
   const { best, submit } = useRecord(BLANK_ATLAS_GAME, records[""] ?? null);
   // The game only renders in the browser (see lazy.tsx), so saved state can be read right away.
   const [round, setRound] = useState<Round>(() => restoreRound(read(SAVE_KEY)) ?? newRound(read<string[]>(RECENT_KEY) ?? []));
@@ -234,9 +238,9 @@ export default function DescentGame({ records }: { records: Record<string, numbe
         ) : null
       }
     >
-      <div className="dv">
+      <div className="dv" data-style={look.style}>
         <div ref={stageRef} className="dv-stage" data-phase={phase.kind}>
-          <DescentWorld round={round} shown={round.stops.length} depth={depthNow} plunge={plunge} final={phase.kind === "complete"} />
+          <DescentWorld round={round} shown={round.stops.length} depth={depthNow} plunge={plunge} final={phase.kind === "complete"} look={look} />
 
           {/* HUD: depth, the seven questions, score. */}
           <div className="dv-hud">

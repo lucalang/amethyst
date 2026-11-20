@@ -4,7 +4,7 @@
  * How each item looks lives with the game's renderer, keyed by the item's slug.
  */
 
-export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars"] as const;
+export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars", "blank-atlas"] as const;
 export type ShopGame = (typeof SHOP_GAMES)[number];
 export const isShopGame = (value: unknown): value is ShopGame => typeof value === "string" && (SHOP_GAMES as readonly string[]).includes(value);
 
@@ -1174,6 +1174,93 @@ export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
           item("woodcut", "Woodcut Print", 350, "Cut hatching, black ink borders, engraved seas and serif capitals on grainy paper."),
           item("watercolour", "Watercolour Campaign", 400, "Soft pigment washes that pool darker at the borders, on textured paper with ink lettering."),
           item("console", "CRT Command Console", 450, "A dark phosphor screen: glowing borders, scanlines, a sweeping refresh and monospace readouts."),
+        ],
+      },
+    ],
+  },
+  "blank-atlas": {
+    game: "blank-atlas",
+    title: "The Descent",
+    prefix: "blank-atlas",
+    href: "/arcade/blank-atlas",
+    blurb: "Lanterns, fog, dive trails, answer markers and art styles for your dive into the gray fog. Questions, scoring and every dive's colour never change.",
+    categories: [
+      {
+        id: "lantern",
+        label: "Lanterns",
+        icon: "flame",
+        blurb: "The light you carry down. Every lantern still takes on the dive's colour as it plunges.",
+        default: { name: "Brass Storm Lantern", description: "A swinging brass lantern with a warm flame." },
+        items: [
+          item("moth", "Moth-wing Lantern", 90, "A ribbed paper globe carried by a pale moth, wings fluttering."),
+          item("bell-jar", "Bell Jar Wisp", 100, "A little ghost kept under glass, drifting and peering out."),
+          item("caged-star", "Caged Star", 110, "A fallen star turning slowly inside a brass birdcage."),
+          item("jelly", "Abyss Jelly", 130, "A glowing jellyfish bell that pulses, trailing pink tentacles."),
+          item("orrery", "Clockwork Orrery", 150, "Brass rings and tiny planets turning around a captive sun."),
+          item("watcher", "The Watcher", 170, "A brass eye whose pupil is the light. It blinks now and then."),
+          item("crystal", "Floating Crystal", 190, "A faceted crystal that floats without a chain, shards circling it."),
+        ],
+      },
+      {
+        id: "fog",
+        label: "Fog styles",
+        icon: "wind",
+        blurb: "What drifts around you on the way down: the fog banks, the wisps rushing past and the motes in the water.",
+        default: { name: "Gray Fog", description: "Soft gray banks and pale drifting motes." },
+        items: [
+          item("ash", "Ash Fall", 90, "Charcoal smoke and grey flakes falling, with the odd live ember."),
+          item("bubbles", "Deepwater Bubbles", 100, "Rising bubbles and rings of rippling light."),
+          item("silk", "Silk Veils", 110, "Long translucent ribbons fluttering past, and shimmering sequins."),
+          item("will-o-wisps", "Will-o'-Wisps", 120, "Pale green fog and glowing orbs that wander off on their own."),
+          item("ink", "Ink Bloom", 130, "Clouds of ink unfurling through the water, and ink drops for motes."),
+          item("runes", "Rune Mist", 150, "A violet haze carrying glowing runes."),
+          item("tarot", "Drifting Tarot", 170, "Face-down tarot cards tumbling past, gold sparks between them."),
+        ],
+      },
+      {
+        id: "trail",
+        label: "Dive trails",
+        icon: "route",
+        blurb: "The line each dive leaves behind, and the streak as you plunge. It always keeps the dive's colour, and rarer dives draw it larger.",
+        default: { name: "Lantern Streak", description: "A smooth glowing line." },
+        items: [
+          item("cross-stitch", "Cross-Stitch", 80, "A seam of neat cross-stitches."),
+          item("pearls", "Pearl Rosary", 90, "Pearls strung on a fine thread."),
+          item("chain", "Anchor Chain", 100, "Heavy chain links, as if hauled down."),
+          item("rune-ladder", "Rune Ladder", 120, "A column of carved runes."),
+          item("embers", "Ember Fall", 130, "A thin line shedding flickering embers."),
+          item("twin-spirits", "Twin Spirits", 150, "Two strands twisting around each other all the way down."),
+          item("shattered", "Shattered Light", 170, "Splinters of broken light along a bright core."),
+        ],
+      },
+      {
+        id: "marker",
+        label: "Answer markers",
+        icon: "tag",
+        blurb: "The numbered badge left where each answer landed. Number, answer and the dive's colour always stay readable.",
+        default: { name: "Brass Ring", description: "A ringed number in the dive's colour." },
+        items: [
+          item("compass", "Compass Rose", 80, "A ringed number on an eight-point star."),
+          item("wax-seal", "Wax Seal", 90, "A seal pressed in wax of the dive's colour, stamped on arrival."),
+          item("bell", "Sunken Bell", 100, "A small bell that rings as it lands."),
+          item("crystal-shard", "Crystal Shard", 120, "A faceted hexagonal gem."),
+          item("tarot-card", "Tarot Card", 140, "A tiny tarot card, star above and moon below, flipped face up on arrival."),
+          item("sigil", "Occult Sigil", 150, "A slowly turning circle of runes around the number."),
+          item("clockwork", "Clockwork Cog", 160, "A turning brass-style gear."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Redraws the whole descent: the deep, its scenery, the lettering and the panels. Combines with every other cosmetic.",
+        default: { name: "Gaslit Murk", description: "Painted scenery in the gray fog, with glassy panels." },
+        items: [
+          item("etching", "Copperplate Etching", 300, "An engraved, cross-hatched plate in sepia, with serif lettering and double-ruled frames."),
+          item("stained-glass", "Cathedral Glass", 350, "The deep seen through leaded glass: jewel-bright scenery and arched window panels."),
+          item("shadow-theatre", "Shadow Puppet Theatre", 400, "Black cut-out silhouettes on a lamp-lit screen, framed by velvet curtains."),
+          item("cyanotype", "Cyanotype Plate", 450, "A ghostly negative printed in Prussian blue, with film grain and typewritten notes."),
         ],
       },
     ],

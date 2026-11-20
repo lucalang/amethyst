@@ -51,6 +51,35 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-21-descent-shop",
+    date: "2026-11-21",
+    title: "The Descent shop",
+    intro: "The Descent has its own cosmetic shop: 32 items for your dive into the gray fog, from a floating crystal lantern and drifting tarot cards to trails of shattered light and a shadow-puppet theatre.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Lanterns", text: "Seven lights to carry down, including a moth-wing paper lantern, a ghost in a bell jar, a clockwork orrery and a blinking brass eye." },
+      { kind: "new", feature: "Fog and trails", text: "Seven fog styles (ink blooms, tarot cards, will-o'-wisps, rune mist and more) and seven dive trails, from pearl rosaries to twin spirits and shattered light." },
+      { kind: "new", feature: "Answer markers", text: "Seven badges for where your answers land: clockwork cogs, wax seals, tarot cards, ringing bells and turning sigils." },
+      { kind: "new", feature: "Art styles", text: "Copperplate Etching, Cathedral Glass, Shadow Puppet Theatre and Cyanotype Plate redraw the deep, its scenery, the lettering and the panels, and work with everything else." },
+    ],
+    details: {
+      new: [
+        {
+          title: "The Descent shop",
+          body: "Seven lanterns, seven fog styles, seven dive trails, seven answer markers and four art styles. They are purely visual: questions, timing, scoring and the seven-question round never change.",
+          points: [
+            "Every look keeps each dive's colour on your lantern, trail and markers, so a familiar, uncommon, rare, exceptional or hidden-gem answer reads the same as before.",
+            "Rarer dives still draw a bigger trail, and markers always show the question number, the answer and the points.",
+            "Equip items from the Shop button in the game: the dive restyles straight away, even mid-round.",
+            "Animations follow your effects setting and reduced motion.",
+          ],
+          where: "Arcade → The Descent → Shop",
+          link: { href: "/arcade/blank-atlas/shop", label: "Open The Descent shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-front-wars-shop",
     date: "2026-11-20",
     title: "The Front Wars shop",

@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { DIVES, METRES_PER_POINT, MAX_SCORE, ZONES, diveOf, hash, type Dive, type Round } from "@/lib/minigames/blank-atlas";
+import { Lantern, MarkBadge, worldAttributes, type DescentLook } from "./look";
 import { SCENERY, WALL_KINDS, Wall, ZONE_LIGHT, type Scene } from "./world-art";
 
 /*
@@ -100,7 +101,7 @@ export type Plunge = { from: number; to: number; dive: Dive | null; ms: number; 
 /** How long the lantern takes to sink, by dive: gentle for familiar answers, a long plunge for the rarest. */
 export const PLUNGE_MS: Record<Dive | "miss", number> = { miss: 500, familiar: 900, uncommon: 1250, rare: 1500, exceptional: 1800, extraordinary: 2200 };
 
-export function DescentWorld({ round, shown, depth, plunge, final }: { round: Round; shown: number; depth: number; plunge: Plunge | null; final: boolean }) {
+export function DescentWorld({ round, shown, depth, plunge, final, look = {} }: { round: Round; shown: number; depth: number; plunge: Plunge | null; final: boolean; look?: DescentLook }) {
   const y = yOf(depth);
   const gradient = `linear-gradient(180deg, ${SHADES.map(([m, color]) => `${color} ${Math.round(yOf(m))}px`).join(", ")})`;
 
@@ -121,7 +122,7 @@ export function DescentWorld({ round, shown, depth, plunge, final }: { round: Ro
   } as CSSProperties;
 
   return (
-    <div className="dw" data-plunge={plunge?.dive ?? undefined} data-final={final || undefined} style={style}>
+    <div className="dw" data-plunge={plunge?.dive ?? undefined} data-final={final || undefined} style={style} {...worldAttributes(look)}>
       {/* Back to front: the water and each zone's light, the far scenery (slower, for depth), then the world itself. */}
       <div aria-hidden className="dw-world" style={{ height: WORLD_H, background: gradient }}>
         {ZONE_LIGHT.map((light) => (
@@ -190,9 +191,7 @@ export function DescentWorld({ round, shown, depth, plunge, final }: { round: Ro
             data-side={mark.side > 0 ? "r" : "l"}
             style={{ top: yOf(mark.to) + (mark.to === mark.from ? 18 * (mark.i % 3) : 0), "--dv": mark.dive ? DIVE_COLOR[mark.dive] : "#7d808a" } as CSSProperties}
           >
-            <span aria-hidden className="dw-mark-dot">
-              {mark.i + 1}
-            </span>
+            <MarkBadge kind={look.marker} number={mark.i + 1} />
             <span className="dw-mark-text">
               <strong>{mark.stop.answer ?? (mark.stop.timedOut ? "Out of time" : "Lost in the fog")}</strong>
               <span>{mark.dive ? `${DIVES[mark.dive].name} · +${mark.stop.points}` : "+0"}</span>
@@ -203,13 +202,7 @@ export function DescentWorld({ round, shown, depth, plunge, final }: { round: Ro
         <div aria-hidden className="dw-lantern">
           {/* Keyed per plunge so its streak replays; the lantern itself stays mounted and glides. */}
           <span key={plunge?.key ?? "still"} className="dw-lantern-trail" />
-          <svg viewBox="-20 -34 40 60" className="dw-lantern-body">
-            <path d="M0 -34 V-24" className="dw-chain" />
-            <path d="M-9 -24 H9 L7 -19 H-7 Z" className="dw-brass" />
-            <path d="M-8 -19 H8 L10 12 H-10 Z" className="dw-glass" />
-            <path d="M-12 12 H12 L9 18 H-9 Z" className="dw-brass" />
-            <ellipse cx="0" cy="-2" rx="4.5" ry="7" className="dw-flame" />
-          </svg>
+          <Lantern kind={look.lantern} />
         </div>
       </div>
 
