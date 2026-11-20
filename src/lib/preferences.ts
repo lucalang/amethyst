@@ -17,6 +17,9 @@ export const DEFAULT_PIN_STYLE: PinStyle = "current";
 export const isPinStyle = (value: unknown): value is PinStyle => PIN_STYLES.includes(value as PinStyle);
 
 export const MOTION_LEVELS = ["off", "subtle", "full"] as const;
+/** Corners of buttons and button-like controls: the original rounded look or a squarer one. Ids are stored. */
+export const BUTTON_SHAPES = ["soft", "square"] as const;
+export type ButtonShape = (typeof BUTTON_SHAPES)[number];
 export const EDITOR_FONTS = ["sans", "serif", "mono", "system"] as const;
 export const EDITOR_WIDTHS = ["narrow", "medium", "wide", "full"] as const;
 export const LIBRARY_DENSITIES = ["comfortable", "compact", "large"] as const;
@@ -105,6 +108,7 @@ export const DEFAULT_SETTINGS = {
   slimMode: false,
   introFrequency: "daily" as IntroFrequency,
   cardShine: true,
+  buttonShape: "soft" as ButtonShape,
   /** Bespoke designs for Version History, Achievements, the Vault and Admin; off uses the standard page layout. */
   specialPages: true,
   hoverScale: 5,
@@ -189,6 +193,7 @@ const settingFields = {
   slimMode: z.boolean(),
   introFrequency: z.enum(INTRO_FREQUENCIES),
   cardShine: z.boolean(),
+  buttonShape: z.enum(BUTTON_SHAPES),
   specialPages: z.boolean(),
   hoverScale: z.number().int().min(HOVER_SCALE_RANGE.min).max(HOVER_SCALE_RANGE.max),
   editorFont: z.enum(EDITOR_FONTS),

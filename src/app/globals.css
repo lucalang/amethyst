@@ -54,6 +54,68 @@
 }
 
 /*
+ * Button Shape preference: buttons and button-like controls multiply their corner radius by --control-round
+ * (see components/ui/control-shape.ts). Soft keeps 1, the original corners; Square tightens them to a crisp ~2px.
+ * Set on <html> so portaled menus and dialogs follow it too. Cards, artwork and game pieces never read it.
+ */
+:root[data-button-shape="square"] {
+  --control-round: 0.5;
+}
+
+/*
+ * Square also reaches every other button-like element (hand-styled buttons, pills, icon buttons, menu items,
+ * tabs and bespoke page designs), so the whole app agrees. Left alone: switches, checkboxes, sliders, game board
+ * cells, and buttons that are really cards, artwork or game pieces (the classes below, or data-shape="keep" on
+ * the element or an ancestor). A link that looks like a button opts in with data-shape="button".
+ */
+:root[data-button-shape="square"]
+  :is(
+    button,
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"],
+    [role="menuitemradio"],
+    [role="menuitemcheckbox"],
+    [role="option"],
+    input:is([type="button"], [type="submit"], [type="reset"]),
+    [data-slot="button"],
+    [data-shape="button"]
+  ):not(
+    [role="switch"],
+    [role="checkbox"],
+    [role="slider"],
+    [role="gridcell"],
+    [data-slot="checkbox"],
+    [data-slot="switch"],
+    [data-shape="keep"],
+    [data-shape="keep"] *,
+    .tm-tile,
+    .inv-tile,
+    .inv-stage,
+    .cx-tile,
+    .sp-card,
+    .sp-node,
+    .vx-card,
+    .vp-card,
+    .lb-thumb,
+    .sdk-cell,
+    .showcase-art,
+    .enter-card,
+    .wai-tile,
+    .ach-tile,
+    .pf-badge,
+    .dash-case,
+    .cs-option,
+    .cs-step-pip,
+    .vh-lever
+  ) {
+  border-radius: calc(3px * var(--radius-unit, 1));
+}
+:root[data-button-shape="square"] input::file-selector-button {
+  border-radius: calc(3px * var(--radius-unit, 1));
+}
+
+/*
  * Themes. Amethyst is the default; every other theme overrides the same variables.
  * The app shell carries data-app-theme (rendered on the server, so there is no flash),
  * and previews in Settings carry data-theme-preview. Heading colors for documents come
@@ -5401,7 +5463,7 @@ a.arcade-counter:hover {
   max-width: 28rem;
   padding: 0.25rem;
   border: 1px solid var(--border);
-  border-radius: calc(0.8rem * var(--radius-unit, 1));
+  border-radius: calc(0.8rem * var(--radius-unit, 1) * var(--control-round, 1));
   background: color-mix(in oklab, var(--foreground) 4%, transparent);
 }
 .arcade-shelves-search {
@@ -5416,7 +5478,7 @@ a.arcade-counter:hover {
   min-width: 0;
   height: 2.5rem;
   padding: 0 0.85rem;
-  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  border-radius: calc(0.6rem * var(--radius-unit, 1) * var(--control-round, 1));
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--muted-foreground);

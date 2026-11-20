@@ -15,8 +15,8 @@ import { ScrollExitFallback } from "./scroll-exit-fallback";
 import { SettingsProvider } from "./settings-context";
 import { MobileTabBar, TopNav, type AccountSummary } from "./top-nav";
 
-/** Copies the shell's theme and motion onto <html> before first paint (SettingsProvider keeps them in sync). */
-const ROOT_ATTRIBUTES_SCRIPT = `(function(){var s=document.currentScript.parentElement.parentElement.dataset,r=document.documentElement.dataset;r.appTheme=s.appTheme;r.motion=s.motion})()`;
+/** Copies the shell's theme, motion and button shape onto <html> before first paint (SettingsProvider keeps them in sync). */
+const ROOT_ATTRIBUTES_SCRIPT = `(function(){var s=document.currentScript.parentElement.parentElement.dataset,r=document.documentElement.dataset;r.appTheme=s.appTheme;r.motion=s.motion;r.buttonShape=s.buttonShape})()`;
 
 export function AppShell({
   children,
@@ -53,6 +53,7 @@ export function AppShell({
         className="flex min-h-dvh flex-col"
         data-app-theme={preferences.theme}
         data-motion={preferences.motion}
+        data-button-shape={preferences.buttonShape}
         data-shine={preferences.cardShine ? "on" : "off"}
       >
         <style>{settingsStyle(preferences)}</style>

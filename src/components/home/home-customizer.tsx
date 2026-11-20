@@ -457,6 +457,7 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
                     return (
                       <li key={entry.id}>
                         <button
+                          data-shape="keep"
                           type="button"
                           aria-pressed={selected}
                           onClick={() => {

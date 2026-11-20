@@ -375,6 +375,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                 <li key={entry.slug ?? "default"} className="min-w-0">
                   <article className="group/game-card inv-tile" data-selected={isFocus}>
                     <button
+                      data-shape="keep"
                       type="button"
                       onClick={() => preview(entry)}
                       aria-pressed={isFocus}

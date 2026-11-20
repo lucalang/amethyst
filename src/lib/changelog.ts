@@ -51,6 +51,28 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-button-shape",
+    date: "2026-11-20",
+    title: "Button Shape",
+    intro: "Choose between soft, rounded buttons and a crisper, squarer look.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Button Shape", text: "Customization → Appearance → Interface. Soft keeps the familiar rounded corners; Square tightens them across the app." },
+      { kind: "new", feature: "Everywhere at once", text: "Every button follows it: icon buttons, pills, tabs, menus, dialogs, the Arcade and the special page designs. Cards, artwork, game pieces, switches and checkboxes keep their shape." },
+      { kind: "improved", feature: "Instant and synced", text: "The change applies the moment you pick it, follows your account to every device, and resets with the usual reset button." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Button Shape",
+          body: "Pick Soft or Square from two live previews. Sizes, spacing, focus rings and hover effects stay exactly the same; only the corners change. Soft is the default.",
+          where: "Customization → Appearance → Interface",
+          link: { href: "/customization/appearance#button-shape-label-setting", label: "Open the setting" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-who-am-i-table",
     date: "2026-11-20",
     title: "Who Am I?: a better table",

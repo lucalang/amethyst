@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { loadPreferences } from "@/lib/data/preferences";
 import { DEFAULT_SETTINGS } from "@/lib/preferences";
 import { requireUser } from "@/lib/supabase/auth";
-import { CollectionNavSetting, DensitySetting, HoverScaleSetting, IntroFrequencySetting, MotionSetting } from "../appearance-controls";
+import { ButtonShapeSetting, CollectionNavSetting, DensitySetting, HoverScaleSetting, IntroFrequencySetting, MotionSetting } from "../appearance-controls";
 import { CardInfoSetting } from "../card-info-setting";
 import { PinStyleSetting } from "../pin-style-setting";
 import { SwitchSetting } from "../setting-controls";
@@ -17,7 +17,7 @@ export default async function AppearancePage() {
     <>
       <SettingsHeader
         title="Appearance"
-        description="Motion, effects and how your library is laid out. Changes follow your account to every device. Colors and fonts are in Themes."
+        description="Motion, effects, button shape and how your library is laid out. Changes follow your account to every device. Colors and fonts are in Themes."
       />
 
       <SettingsGroup id="motion" title="Motion and effects">
@@ -69,6 +69,17 @@ export default async function AppearancePage() {
             <HoverScaleSetting value={preferences.hoverScale} labelId="hover-scale-label" />
           </SettingRow>
         </div>
+      </SettingsGroup>
+
+      <SettingsGroup id="interface" title="Interface">
+        <SettingRow
+          labelId="button-shape-label"
+          label="Button shape"
+          description="The corners of every button across the app: icon buttons, pills, tabs, menus and the special page designs too. Cards, artwork and game pieces keep their own shape."
+          reset={resetFor(preferences, ["buttonShape"], "Soft")}
+        >
+          <ButtonShapeSetting value={preferences.buttonShape} labelId="button-shape-label" />
+        </SettingRow>
       </SettingsGroup>
 
       <SettingsGroup id="library" title="Library">

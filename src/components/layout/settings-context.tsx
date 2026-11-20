@@ -7,7 +7,7 @@ import { setSfxVolume } from "@/lib/sfx-volume";
 const SettingsContext = createContext<Preferences>({ ...DEFAULT_SETTINGS, pinStyle: DEFAULT_PIN_STYLE });
 
 export function SettingsProvider({ value, children }: { value: Preferences; children: ReactNode }) {
-  const { theme, motion, sfxVolume } = value;
+  const { theme, motion, buttonShape, sfxVolume } = value;
   useLayoutEffect(() => setSfxVolume(sfxVolume), [sfxVolume]);
   // Theme and motion CSS keys off <html> (`:root[data-…]`) rather than `:root:has(…)`, which made
   // every DOM change re-check the whole page. AppShell's inline script sets these before first paint.
@@ -15,11 +15,13 @@ export function SettingsProvider({ value, children }: { value: Preferences; chil
     const root = document.documentElement.dataset;
     root.appTheme = theme;
     root.motion = motion;
+    root.buttonShape = buttonShape;
     return () => {
       delete root.appTheme;
       delete root.motion;
+      delete root.buttonShape;
     };
-  }, [theme, motion]);
+  }, [theme, motion, buttonShape]);
   return <SettingsContext value={value}>{children}</SettingsContext>;
 }
 

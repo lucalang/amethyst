@@ -46,7 +46,7 @@ function EvolutionGraph({ points, label, percent = false, previousPoint }: { poi
           {coordinates.slice(1).map((point, index) => <line key={points[index + 1].date} x1={coordinates[index].x} y1={coordinates[index].y} x2={point.x} y2={point.y} stroke="currentColor" strokeWidth="2" strokeDasharray={Date.parse(points[index + 1].date) - Date.parse(points[index].date) > 86400000 || points[index + 1].source !== points[index].source ? "4 4" : undefined} vectorEffect="non-scaling-stroke" />)}
         </svg>
         {markers.map(({ point, index }, markerIndex) => (
-          <button key={point.date} type="button" className="absolute grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-amethyst focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          <button data-shape="keep" key={point.date} type="button" className="absolute grid size-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-amethyst focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             style={{ left: `${coordinates[index].x}%`, top: `${coordinates[index].y}%` }}
             aria-label={`${label}: ${formatDate(point.date)}, ${formatValue(point, percent)}, ${sourceLabel(point.source)}`} aria-describedby={readoutId}
             onPointerEnter={() => setActive(index)} onPointerLeave={() => setActive(null)} onFocus={() => setActive(index)} onBlur={() => setActive(null)} onClick={() => setActive(index)}

@@ -444,6 +444,7 @@ function AchievementTile({
   const badge = <AchievementBadge achievement={definition} earned={earned} size={84} />;
   return (
     <button
+      data-shape="keep"
       type="button"
       aria-haspopup="dialog"
       className={

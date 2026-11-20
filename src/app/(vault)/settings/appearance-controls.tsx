@@ -1,13 +1,13 @@
 "use client";
 
-import type { CSSProperties } from "react";
-import { Play } from "lucide-react";
+import { useEffect, type CSSProperties } from "react";
+import { Play, Plus, Settings2 } from "lucide-react";
 import { PREVIEW_INTRO_EVENT } from "@/components/layout/opening-intro";
 import { useSettings } from "@/components/layout/settings-context";
-import { Button } from "@/components/ui/button";
-import { HOVER_SCALE_RANGE, type CollectionNavStyle, type IntroFrequency, type LibraryDensity, type MotionLevel } from "@/lib/preferences";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { HOVER_SCALE_RANGE, type ButtonShape, type CollectionNavStyle, type IntroFrequency, type LibraryDensity, type MotionLevel } from "@/lib/preferences";
 import { cn } from "@/lib/utils";
-import { ChoiceSetting, RangeInput, useSetting, type Choice } from "./setting-controls";
+import { ChoiceCards, ChoiceSetting, RangeInput, useSetting, type Choice } from "./setting-controls";
 
 const TONES = [
   "bg-[linear-gradient(160deg,#6d4bb8,#2a1747_60%,#120a1f)]",
@@ -114,4 +114,34 @@ export function HoverScaleSetting({ value, labelId }: { value: number; labelId: 
       </div>
     </div>
   );
+}
+
+/** Sample controls drawn with the given shape (decorative spans, since they sit inside a radio card). */
+function ButtonShapePreview({ round }: { round: number }) {
+  return (
+    <span className="flex flex-wrap items-center justify-center gap-2" style={{ "--control-round": round } as CSSProperties}>
+      <span className={cn(buttonVariants({ size: "sm" }), "pointer-events-none")}>
+        <Plus aria-hidden />
+        Primary
+      </span>
+      <span className={cn(buttonVariants({ variant: "outline", size: "sm" }), "pointer-events-none")}>Secondary</span>
+      <span className={cn(buttonVariants({ variant: "outline", size: "icon-sm" }), "pointer-events-none")}>
+        <Settings2 aria-hidden />
+      </span>
+    </span>
+  );
+}
+
+const BUTTON_SHAPE_OPTIONS: Choice<ButtonShape>[] = [
+  { value: "soft", title: "Soft", description: "Gently rounded corners. The classic Amethyst look.", preview: <ButtonShapePreview round={1} /> },
+  { value: "square", title: "Square", description: "Crisp, squarer corners for a sharper, more structured feel.", preview: <ButtonShapePreview round={0.5} /> },
+];
+
+/** Button corners across the app. Applied to the page at once, then saved like every other setting. */
+export function ButtonShapeSetting({ value, labelId }: { value: ButtonShape; labelId: string }) {
+  const [local, update] = useSetting("buttonShape", value);
+  useEffect(() => {
+    document.documentElement.dataset.buttonShape = local;
+  }, [local]);
+  return <ChoiceCards name="buttonShape" labelId={labelId} value={local} options={BUTTON_SHAPE_OPTIONS} onChange={update} className="sm:grid-cols-2" />;
 }

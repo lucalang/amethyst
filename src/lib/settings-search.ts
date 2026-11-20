@@ -53,6 +53,7 @@ export const SETTINGS_SEARCH_SECTIONS: readonly SearchSection[] = [
       { label: "Card shine", target: "shine-label-setting", keywords: "hover reflection light effect" },
       { label: "Special page designs", target: "special-pages-label-setting", keywords: "version history achievements trophy room chronometer vault admin sanctum 3d standard plain style" },
       { label: "Hover scaling", target: "hover-scale-label-setting", keywords: "zoom grow cover size" },
+      { label: "Button shape", target: "button-shape-label-setting", keywords: "corners rounded square sharp radius buttons controls style" },
       { label: "Collections in the top bar", target: "collection-nav-label-setting", keywords: "dropdown switcher tabs navigation categories menu" },
       { label: "Library density", target: "density-label-setting", keywords: "compact comfortable cover spacing size" },
       { label: "Cover details", target: "pin-style-label-setting", keywords: "pins progress clean artwork" },

@@ -160,7 +160,7 @@
 .ui-segment {
   display: inline-flex;
   gap: 0.25rem;
-  border-radius: 1rem;
+  border-radius: calc(1rem * var(--control-round, 1));
   border: 1px solid var(--border);
   background: rgb(var(--ink-rgb) / 0.025);
   padding: 0.3rem;

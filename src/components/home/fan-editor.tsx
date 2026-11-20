@@ -553,6 +553,7 @@ export function ArtworkPicker({
                   return (
                     <li key={entry.id} className="min-w-0">
                       <button
+                        data-shape="keep"
                         type="button"
                         aria-pressed={selected}
                         disabled={!selected && full}
