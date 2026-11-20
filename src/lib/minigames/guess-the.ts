@@ -36,6 +36,8 @@ export const guessTheMode = (id: string) => GUESS_THE_MODES.find((mode) => mode.
 /** What the player sees before guessing: never any value after `cutoff`. */
 export type ChartPuzzle = {
   id: string;
+  /** A one-word theme shown as a tag ("Jobs", "Climate"). */
+  topic: string;
   title: string;
   subtitle: string;
   /** The value axis unit, e.g. "%" or "US dollars per barrel". */
@@ -75,23 +77,32 @@ export type ChartResult = {
   missShare: number;
 };
 
-/** Each 1% of the axis height you miss by on average costs this many points. */
-export const POINTS_PER_PERCENT = 4;
+/** The score halves for every this-much of the axis height you miss by on average. */
+export const HALVING_SHARE = 0.25;
 
 /**
  * The scoring rule, the same for every chart whatever its scale: the average miss across all drawn years is
- * measured as a share of the value axis height, and every 1% of height costs 4 points. Missing by a quarter of
- * the height or more on average scores 0.
+ * measured as a share of the value axis height, and the score halves for every quarter of the height. Small misses
+ * cost little and a wild guess still scores a few points: 5% off scores 87, 10% scores 76, 25% scores 50.
  */
 export function scoreGuess(guesses: readonly number[], actual: readonly number[], yDomain: readonly [number, number]) {
   const span = yDomain[1] - yDomain[0];
   const averageMiss = actual.reduce((sum, value, i) => sum + Math.abs(guesses[i] - value), 0) / actual.length;
   const missShare = averageMiss / span;
-  const score = Math.max(0, Math.round(100 - missShare * 100 * POINTS_PER_PERCENT));
+  const score = Math.max(0, Math.min(100, Math.round(100 * 0.5 ** (missShare / HALVING_SHARE))));
   return { score, averageMiss, missShare };
 }
 
-export const SCORING_RULE = `Your score is out of 100. We take how far your line is from the real one in each year you drew, average it, and compare that to the height of the chart: every 1% of the chart’s height you’re off by on average costs ${POINTS_PER_PERCENT} points, so being off by a quarter of the height or more scores 0. Every chart is scored the same way, whatever its units.`;
+export const SCORING_RULE = "Your score is out of 100. We measure how far your line is from the real one in each year you drew, average it, and compare it with the chart’s height. Every quarter of the chart’s height you’re off by on average halves your score: 5% off scores 87, 10% scores 76, 25% scores 50 and 50% scores 25. Every chart is scored the same way, whatever its units.";
+
+/** Five bands, kind at the bottom: even a rough guess gets credit for the trend. */
+export function chartVerdict(score: number) {
+  if (score >= 90) return "Spot on!";
+  if (score >= 78) return "Very close";
+  if (score >= 62) return "Good read";
+  if (score >= 45) return "Right idea";
+  return "Surprising one";
+}
 
 export const chartGuessSchema = z
   .object({

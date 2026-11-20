@@ -20,7 +20,7 @@ export default function GameGuessThe({ records }: { records: Record<string, numb
             const Icon = MODE_ICONS[mode.id];
             const best = records[mode.id];
             return (
-              <li key={mode.id} className="flex flex-col gap-3 rounded-xl border border-border bg-surface-raised/60 p-4">
+              <li key={mode.id} className="gtc-panel flex flex-col gap-3 p-4">
                 <div className="flex items-center gap-3">
                   <span aria-hidden className="grid size-10 place-items-center rounded-lg bg-amethyst/15 text-amethyst">
                     <Icon className="size-5" />

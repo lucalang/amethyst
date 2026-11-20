@@ -2,12 +2,12 @@
 
 import "./guess-the.css";
 import Link from "next/link";
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { ExternalLink, Info, LayoutGrid, Loader2, RotateCcw, Send, Shuffle, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { SCORING_RULE, formatChartValue, type ChartPuzzle, type ChartResult } from "@/lib/minigames/guess-the";
+import { SCORING_RULE, chartVerdict, formatChartValue, type ChartPuzzle, type ChartResult } from "@/lib/minigames/guess-the";
 import { cn } from "@/lib/utils";
 import { GameShell, Stat, useArcade, useGameAchievementTracking } from "../game-shell";
 
@@ -133,7 +133,7 @@ function ChartPlot({
   const years = hiddenYears(chart);
   const narrow = width < 520;
   const height = Math.round(narrow ? Math.max(280, width * 0.92) : Math.min(470, Math.max(320, width * 0.5)));
-  const pad = { left: narrow ? 44 : 54, right: narrow ? 12 : 18, top: 18, bottom: 30 };
+  const pad = { left: narrow ? 44 : 56, right: narrow ? 14 : 22, top: 36, bottom: 30 };
   const plotW = Math.max(10, width - pad.left - pad.right);
   const plotH = height - pad.top - pad.bottom;
   const [yMin, yMax] = chart.yDomain;
@@ -267,6 +267,20 @@ function ChartPlot({
   const focusIndex = drawing ? selected : inspect;
   const focusYear = focusIndex === null ? null : years[focusIndex];
 
+  const futureX = x(chart.cutoff);
+  const futureW = x(chart.lastYear) - futureX;
+  const lastGuess = guess[guess.length - 1];
+  const lastActual = result ? result.actual[result.actual.length - 1][1] : null;
+  // End labels on the right: keep the two apart when the lines finish close together.
+  let actualLabelY = lastActual === null ? 0 : y(lastActual);
+  let guessLabelY = lastGuess === null || lastGuess === undefined ? 0 : y(lastGuess);
+  if (lastActual !== null && lastGuess !== null && lastGuess !== undefined && Math.abs(actualLabelY - guessLabelY) < 24) {
+    const mid = (actualLabelY + guessLabelY) / 2;
+    const up = actualLabelY <= guessLabelY ? -1 : 1;
+    actualLabelY = mid + up * 12;
+    guessLabelY = mid - up * 12;
+  }
+
   return (
     <div ref={ref} className="relative w-full">
       {width > 0 ? (
@@ -274,7 +288,7 @@ function ChartPlot({
           width={width}
           height={height}
           viewBox={`0 0 ${width} ${height}`}
-          className="gtc-plot block bg-surface-raised/60"
+          className="gtc-plot block"
           data-drawing={drawing}
           tabIndex={0}
           role="application"
@@ -290,74 +304,111 @@ function ChartPlot({
         >
           <defs>
             <linearGradient id="gtc-history-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--amethyst)" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="var(--amethyst)" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="var(--amethyst)" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="var(--amethyst)" stopOpacity="0" />
             </linearGradient>
-            <pattern id="gtc-blank" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <path d="M0 0V8" stroke="currentColor" strokeOpacity="0.07" strokeWidth="3" />
-            </pattern>
+            <linearGradient id="gtc-future-fill" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="var(--rose)" stopOpacity="0.13" />
+              <stop offset="100%" stopColor="var(--rose)" stopOpacity="0.03" />
+            </linearGradient>
           </defs>
-          {/* The part to draw. */}
-          <rect x={x(chart.cutoff)} y={pad.top} width={x(chart.lastYear) - x(chart.cutoff)} height={plotH} fill="url(#gtc-blank)" className="text-foreground" />
+
+          {/* Grid and axes. */}
           {yTickValues.map((value) => (
             <g key={value}>
-              <line x1={pad.left} x2={pad.left + plotW} y1={y(value)} y2={y(value)} stroke="currentColor" strokeOpacity={value === 0 && yMin < 0 ? 0.35 : 0.1} className="text-foreground" />
-              <text x={pad.left - 8} y={y(value)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">
+              <line x1={pad.left} x2={pad.left + plotW} y1={y(value)} y2={y(value)} stroke="currentColor" strokeOpacity={value === 0 && yMin < 0 ? 0.32 : 0.08} strokeDasharray={value === 0 && yMin < 0 ? undefined : "2 4"} className="text-foreground" />
+              <text x={pad.left - 9} y={y(value)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[11px] tabular-nums">
                 {formatChartValue({ ...chart.format, decimals: Number.isInteger(value) ? 0 : Math.min(2, chart.format.decimals) }, value)}
               </text>
             </g>
           ))}
           {xTickValues.map((year) => (
-            <text key={year} x={x(year)} y={height - 10} textAnchor="middle" className="fill-muted-foreground text-[11px] tabular-nums">
-              {year}
-            </text>
+            <g key={year}>
+              <line x1={x(year)} x2={x(year)} y1={pad.top + plotH} y2={pad.top + plotH + 4} stroke="currentColor" strokeOpacity="0.3" className="text-foreground" />
+              <text x={x(year)} y={height - 9} textAnchor="middle" className="fill-muted-foreground text-[11px] tabular-nums">
+                {year}
+              </text>
+            </g>
           ))}
-          <line x1={pad.left} x2={pad.left + plotW} y1={pad.top + plotH} y2={pad.top + plotH} stroke="currentColor" strokeOpacity="0.3" className="text-foreground" />
+          <line x1={pad.left} x2={pad.left + plotW} y1={pad.top + plotH} y2={pad.top + plotH} stroke="currentColor" strokeOpacity="0.28" className="text-foreground" />
 
+          {/* The part to draw, with the cutoff marked at the top. */}
+          <rect x={futureX} y={pad.top} width={futureW} height={plotH} rx={6} fill="url(#gtc-future-fill)" />
+          <line x1={futureX} x2={futureX} y1={pad.top - 6} y2={pad.top + plotH} stroke="currentColor" strokeOpacity="0.4" strokeDasharray="4 4" className="text-foreground" />
+          <Pill x={futureX} y={pad.top - 20} text={result ? `Revealed after ${chart.cutoff}` : `Your turn after ${chart.cutoff}`} tone={result ? "sky" : "rose"} align={futureX + 150 > pad.left + plotW ? "end" : "start"} />
+
+          {/* History. */}
           <path d={historyArea} fill="url(#gtc-history-fill)" />
-          <line x1={x(chart.cutoff)} x2={x(chart.cutoff)} y1={pad.top} y2={pad.top + plotH} stroke="currentColor" strokeOpacity="0.45" strokeDasharray="3 4" className="text-foreground" />
-          <path d={history} fill="none" stroke="var(--amethyst)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+          <path d={history} fill="none" stroke="var(--amethyst)" strokeOpacity="0.25" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
+          <path d={history} fill="none" stroke="var(--amethyst)" strokeWidth={2.75} strokeLinejoin="round" strokeLinecap="round" />
 
-          {between ? <path d={between} className={cn(animate && "gtc-reveal-fill")} fill="var(--rose)" fillOpacity="0.14" /> : null}
+          {/* After the reveal: the gap between guess and reality, then the real line. */}
+          {between ? <path d={between} className={cn(animate && "gtc-reveal-fill")} fill="var(--rose)" fillOpacity="0.12" /> : null}
           {guessSegments.map((d, i) => (
-            <path key={i} d={d} fill="none" stroke="var(--rose)" strokeWidth={2.5} strokeDasharray={result ? "6 5" : undefined} strokeLinejoin="round" strokeLinecap="round" />
+            <g key={i}>
+              {!result ? <path d={d} fill="none" stroke="var(--rose)" strokeOpacity="0.22" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" /> : null}
+              <path d={d} fill="none" stroke="var(--rose)" strokeWidth={2.75} strokeDasharray={result ? "7 6" : undefined} strokeLinejoin="round" strokeLinecap="round" />
+            </g>
           ))}
           {!result
             ? guess.map((value, i) =>
-                value === null ? null : <circle key={i} cx={x(years[i])} cy={y(value)} r={years.length > 30 ? 2 : 3} fill="var(--rose)" />,
+                value === null ? null : <circle key={i} cx={x(years[i])} cy={y(value)} r={years.length > 24 ? 2.2 : 3} fill="var(--background)" stroke="var(--rose)" strokeWidth={1.75} />,
               )
             : null}
           {actualPath ? (
-            <path d={actualPath} pathLength={1} className={cn(animate && "gtc-reveal")} fill="none" stroke="var(--amethyst)" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
+            <g>
+              <path d={actualPath} pathLength={1} className={cn(animate && "gtc-reveal")} fill="none" stroke="var(--amethyst)" strokeOpacity="0.25" strokeWidth={9} strokeLinejoin="round" strokeLinecap="round" />
+              <path d={actualPath} pathLength={1} className={cn(animate && "gtc-reveal")} fill="none" stroke="var(--amethyst)" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
+            </g>
           ) : null}
+
+          {/* The last real value before the cutoff. */}
+          <circle cx={x(anchor.year)} cy={y(anchor.value)} r={9} fill="var(--amethyst)" fillOpacity="0.2" />
           <circle cx={x(anchor.year)} cy={y(anchor.value)} r={4.5} fill="var(--amethyst)" stroke="var(--background)" strokeWidth={2} />
+          {!result ? <Pill x={x(anchor.year) - 10} y={y(anchor.value) + (y(anchor.value) < pad.top + 30 ? 18 : -18)} text={`${chart.cutoff}: ${fmt(anchor.value)}`} tone="sky" align="end" /> : null}
+
+          {/* End labels once revealed. */}
+          {result && lastActual !== null ? (
+            <g className={cn(animate && "gtc-reveal-fill")}>
+              <circle cx={x(chart.lastYear)} cy={y(lastActual)} r={4.5} fill="var(--amethyst)" stroke="var(--background)" strokeWidth={2} />
+              <Pill x={x(chart.lastYear) - 10} y={actualLabelY} text={`Actual ${fmt(lastActual)}`} tone="sky" align="end" />
+              {lastGuess !== null && lastGuess !== undefined ? (
+                <>
+                  <circle cx={x(chart.lastYear)} cy={y(lastGuess)} r={4} fill="var(--background)" stroke="var(--rose)" strokeWidth={2} />
+                  <Pill x={x(chart.lastYear) - 10} y={guessLabelY} text={`You ${fmt(lastGuess)}`} tone="rose" align="end" />
+                </>
+              ) : null}
+            </g>
+          ) : null}
 
           {focusYear !== null ? (
             <g pointerEvents="none">
-              <line x1={x(focusYear)} x2={x(focusYear)} y1={pad.top} y2={pad.top + plotH} stroke="var(--rose)" strokeOpacity="0.5" />
-              {guess[focusIndex!] !== null ? <circle cx={x(focusYear)} cy={y(guess[focusIndex!] as number)} r={6} fill="none" stroke="var(--rose)" strokeWidth={2} /> : null}
-              {result ? <circle cx={x(focusYear)} cy={y(result.actual[focusIndex!][1])} r={5} fill="var(--amethyst)" /> : null}
+              <line x1={x(focusYear)} x2={x(focusYear)} y1={pad.top} y2={pad.top + plotH} stroke="currentColor" strokeOpacity="0.35" className="text-foreground" />
+              {guess[focusIndex!] !== null ? <circle cx={x(focusYear)} cy={y(guess[focusIndex!] as number)} r={6.5} fill="var(--rose)" fillOpacity="0.25" stroke="var(--rose)" strokeWidth={2} /> : null}
+              {result ? <circle cx={x(focusYear)} cy={y(result.actual[focusIndex!][1])} r={5.5} fill="var(--amethyst)" stroke="var(--background)" strokeWidth={2} /> : null}
             </g>
           ) : null}
 
           {drawing && drawn === 0 ? (
-            <text x={(x(chart.cutoff) + x(chart.lastYear)) / 2} y={pad.top + plotH / 2} textAnchor="middle" className="fill-foreground text-[13px] font-semibold" opacity={0.75}>
-              <tspan x={(x(chart.cutoff) + x(chart.lastYear)) / 2}>Draw here</tspan>
-              <tspan x={(x(chart.cutoff) + x(chart.lastYear)) / 2} dy="1.4em" className="fill-muted-foreground text-[11px] font-normal">
-                {chart.cutoff + 1}–{chart.lastYear}
-              </tspan>
-            </text>
+            <g pointerEvents="none" className="gtc-hint">
+              <text x={futureX + futureW / 2} y={pad.top + plotH / 2 - 6} textAnchor="middle" className="fill-foreground text-[15px] font-bold">
+                Draw the rest
+              </text>
+              <text x={futureX + futureW / 2} y={pad.top + plotH / 2 + 14} textAnchor="middle" className="fill-muted-foreground text-[11.5px]">
+                {chart.cutoff + 1} → {chart.lastYear}
+              </text>
+            </g>
           ) : null}
         </svg>
       ) : (
         <div style={{ height: 320 }} />
       )}
-      <p aria-live="polite" className="mt-1.5 min-h-5 text-xs text-muted-foreground tabular-nums">
+      <p aria-live="polite" className="mt-2 min-h-5 text-xs text-muted-foreground tabular-nums">
         {focusYear !== null ? (
           <>
             <span className="font-semibold text-foreground">{focusYear}</span>
-            {result ? <> · actual <span className="text-amethyst">{fmt(result.actual[focusIndex!][1])}</span></> : null}
-            {" · "}your guess {guess[focusIndex!] === null ? "not drawn yet" : <span className="text-rose">{fmt(guess[focusIndex!] as number)}</span>}
+            {result ? <> · actual <span className="font-semibold text-amethyst">{fmt(result.actual[focusIndex!][1])}</span></> : null}
+            {" · "}your guess {guess[focusIndex!] === null ? "not drawn yet" : <span className="font-semibold text-rose">{fmt(guess[focusIndex!] as number)}</span>}
           </>
         ) : result ? (
           "Point at a year to compare your guess with what happened."
@@ -367,12 +418,55 @@ function ChartPlot({
   );
 }
 
-function verdict(score: number) {
-  if (score >= 90) return "Spot on!";
-  if (score >= 75) return "Very close";
-  if (score >= 50) return "Not bad";
-  if (score >= 25) return "Off the mark";
-  return "Way off";
+/** A small rounded label inside the chart. */
+function Pill({ x, y, text, tone, align = "start" }: { x: number; y: number; text: string; tone: "sky" | "rose"; align?: "start" | "end" }) {
+  const width = text.length * 6.3 + 16;
+  const left = align === "end" ? x - width : x;
+  const color = tone === "sky" ? "var(--amethyst)" : "var(--rose)";
+  return (
+    <g pointerEvents="none">
+      <rect x={left} y={y - 10} width={width} height={20} rx={10} fill="var(--background)" fillOpacity="0.92" stroke={color} strokeOpacity="0.55" />
+      <text x={left + width / 2} y={y} dy="0.34em" textAnchor="middle" className="text-[11px] font-semibold tabular-nums" fill={color}>
+        {text}
+      </text>
+    </g>
+  );
+}
+
+/** The score as a ring that fills to it. */
+function ScoreRing({ score, animate }: { score: number; animate: boolean }) {
+  const r = 34;
+  const length = 2 * Math.PI * r;
+  return (
+    <div className="relative grid size-24 shrink-0 place-items-center">
+      <svg viewBox="0 0 84 84" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+        <circle cx="42" cy="42" r={r} fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="7" className="text-foreground" />
+        <circle
+          cx="42"
+          cy="42"
+          r={r}
+          fill="none"
+          stroke="url(#gtc-ring)"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={length}
+          strokeDashoffset={length * (1 - score / 100)}
+          className={cn(animate && "gtc-ring")}
+          style={{ "--gtc-ring-from": length } as CSSProperties}
+        />
+        <defs>
+          <linearGradient id="gtc-ring" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="var(--amethyst)" />
+            <stop offset="100%" stopColor="var(--rose)" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <p className="relative flex flex-col items-center leading-none">
+        <span className="text-3xl font-extrabold tabular-nums">{score}</span>
+        <span className="mt-0.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">of 100</span>
+      </p>
+    </div>
+  );
 }
 
 function missText(chart: ChartPuzzle, result: ChartResult) {
@@ -475,14 +569,14 @@ export default function GuessTheChart({ best: initialBest }: { best: number | nu
     >
       <div data-motion={effects} className="flex flex-col gap-3">
         {phase.kind === "loading" ? (
-          <div role="status" className="grid min-h-[22rem] place-items-center text-sm text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <Loader2 aria-hidden className="size-4 animate-spin" />
+          <div role="status" className="gtc-panel grid min-h-[24rem] place-items-center text-sm text-muted-foreground">
+            <span className="flex flex-col items-center gap-3">
+              <span aria-hidden className="gtc-loader" />
               Picking a chart…
             </span>
           </div>
         ) : phase.kind === "error" ? (
-          <div role="alert" className="grid min-h-[22rem] place-items-center gap-3 text-center text-sm">
+          <div role="alert" className="gtc-panel grid min-h-[24rem] place-items-center gap-3 text-center text-sm">
             <p>{phase.message}</p>
             <Button size="sm" onClick={deal}>
               <RotateCcw aria-hidden />
@@ -491,106 +585,115 @@ export default function GuessTheChart({ best: initialBest }: { best: number | nu
           </div>
         ) : chart ? (
           <>
-            <header className="flex flex-col gap-0.5">
-              <h2 className="text-lg leading-tight font-bold tracking-tight text-balance sm:text-xl">{chart.title}</h2>
-              <p className="text-sm text-pretty text-muted-foreground">{chart.subtitle}</p>
-              <p className="text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Units:</span> {chart.unit} · <span className="font-medium text-foreground">Years:</span> {chart.firstYear}–{chart.lastYear}, shown up to{" "}
-                {chart.cutoff}
-              </p>
-            </header>
+            <section className="gtc-panel flex flex-col gap-3 p-3 sm:p-5">
+              <header className="flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="gtc-chip gtc-chip-accent">{chart.topic}</span>
+                  <span className="gtc-chip">{chart.firstYear}–{chart.lastYear}</span>
+                  <span className="gtc-chip">{chart.unit}</span>
+                </div>
+                <h2 className="text-xl leading-tight font-extrabold tracking-tight text-balance sm:text-2xl">{chart.title}</h2>
+                <p className="text-sm text-pretty text-muted-foreground">{chart.subtitle}</p>
+              </header>
 
-            <ChartPlot
-              key={chart.id}
-              chart={chart}
-              guess={guess}
-              onGuess={phase.kind === "drawing" ? setGuess : undefined}
-              result={result}
-              selected={selected}
-              onSelect={setSelected}
-              animate={animate}
-              describedBy={helpId}
-            />
+              <ChartPlot
+                key={chart.id}
+                chart={chart}
+                guess={guess}
+                onGuess={phase.kind === "drawing" ? setGuess : undefined}
+                result={result}
+                selected={selected}
+                onSelect={setSelected}
+                animate={animate}
+                describedBy={helpId}
+              />
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span aria-hidden className="inline-block h-0.5 w-5 rounded bg-amethyst" />
-                Real data
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span aria-hidden className="inline-block h-0.5 w-5 rounded bg-rose" />
-                Your guess
-              </span>
-              <span>Dashed line: {chart.cutoff}, where the real data stops until you submit</span>
-            </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden className="inline-block h-1 w-5 rounded-full bg-amethyst" />
+                  Real data
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden className="inline-block h-1 w-5 rounded-full bg-rose" />
+                  Your guess
+                </span>
+              </div>
+            </section>
 
             {result && phase.kind === "revealed" ? (
-              <section aria-live="polite" className="gtc-score flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-border bg-surface/70 p-3">
-                <p className="flex items-baseline gap-1">
-                  <span className="text-4xl font-extrabold text-amethyst tabular-nums">{result.score}</span>
-                  <span className="text-sm font-semibold text-muted-foreground">/100</span>
-                </p>
+              <section aria-live="polite" className="gtc-panel gtc-score flex flex-col items-center gap-4 p-4 text-center sm:flex-row sm:text-left">
+                <ScoreRing score={result.score} animate={animate} />
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold">
-                    {verdict(result.score)}
-                    {phase.previousBest === null || result.score > phase.previousBest ? <span className="ml-2 text-sm font-semibold text-rose">New best!</span> : null}
+                  <p className="flex flex-wrap items-center justify-center gap-2 text-lg font-extrabold tracking-tight sm:justify-start">
+                    {chartVerdict(result.score)}
+                    {phase.previousBest === null || result.score > phase.previousBest ? <span className="gtc-chip gtc-chip-rose">New best</span> : null}
                   </p>
-                  <p className="text-sm text-pretty text-muted-foreground">{missText(chart, result)}</p>
+                  <p className="mt-0.5 text-sm text-pretty text-muted-foreground">{missText(chart, result)}</p>
                 </div>
-                <Button onClick={deal} ref={(element) => element?.focus({ preventScroll: true })}>
+                <Button size="lg" onClick={deal} ref={(element) => element?.focus({ preventScroll: true })}>
                   <Shuffle aria-hidden />
                   Another chart
                 </Button>
               </section>
             ) : (
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="mr-auto text-sm text-muted-foreground tabular-nums">
-                  {complete ? "Your line is complete." : `${drawn} of ${guess.length} years drawn`}
-                </p>
-                <Button variant="outline" size="sm" onClick={() => setGuess(completeGuess(chart, guess))} disabled={phase.kind !== "drawing" || complete} title="Join drawn years with straight lines and carry the line on flat to the end">
-                  <Wand2 aria-hidden />
-                  Complete line
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setGuess(guess.map(() => null));
-                    setSelected(0);
-                  }}
-                  disabled={phase.kind !== "drawing" || drawn === 0}
-                >
-                  <RotateCcw aria-hidden />
-                  Reset
-                </Button>
-                <Button size="sm" onClick={() => void submit()} disabled={!complete || phase.kind !== "drawing"}>
-                  {phase.kind === "submitting" ? <Loader2 aria-hidden className="animate-spin" /> : <Send aria-hidden />}
-                  Submit guess
-                </Button>
-              </div>
+              <section className="gtc-panel flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className="font-semibold">{complete ? "Your line is complete" : "Draw every year"}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {drawn}/{guess.length} years
+                    </span>
+                  </p>
+                  <div aria-hidden className="gtc-progress mt-1.5">
+                    <span style={{ width: `${guess.length ? (drawn / guess.length) * 100 : 0}%` }} />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setGuess(completeGuess(chart, guess))} disabled={phase.kind !== "drawing" || complete} title="Join drawn years with straight lines and carry the line on flat to the end">
+                    <Wand2 aria-hidden />
+                    Complete line
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGuess(guess.map(() => null));
+                      setSelected(0);
+                    }}
+                    disabled={phase.kind !== "drawing" || drawn === 0}
+                  >
+                    <RotateCcw aria-hidden />
+                    Reset
+                  </Button>
+                  <Button size="sm" onClick={() => void submit()} disabled={!complete || phase.kind !== "drawing"}>
+                    {phase.kind === "submitting" ? <Loader2 aria-hidden className="animate-spin" /> : <Send aria-hidden />}
+                    Reveal
+                  </Button>
+                </div>
+              </section>
             )}
 
-            <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-              <details className="rounded-lg border border-border bg-surface/50 p-2.5" open={phase.kind === "drawing" && session.rounds === 0}>
-                <summary className="flex cursor-pointer items-center gap-1.5 font-semibold text-foreground">
-                  <Info aria-hidden className="size-3.5" />
+            <div className="grid gap-3 text-xs text-muted-foreground sm:grid-cols-2">
+              <details className="gtc-panel group p-3" open={phase.kind === "drawing" && session.rounds === 0}>
+                <summary className="flex cursor-pointer list-none items-center gap-1.5 font-semibold text-foreground">
+                  <Info aria-hidden className="size-3.5 text-amethyst" />
                   How to play and scoring
                 </summary>
-                <p id={helpId} className="mt-1.5 text-pretty">
-                  Draw across the blank part with your mouse or finger, one value per year from {chart.cutoff + 1} to {chart.lastYear}; draw over it again to change it. With a keyboard, focus the chart, pick a
+                <p id={helpId} className="mt-2 text-pretty">
+                  Draw across the shaded part with your mouse or finger, one value per year from {chart.cutoff + 1} to {chart.lastYear}; draw over it again to change it. With a keyboard, focus the chart, pick a
                   year with ← and →, and set it with ↑ and ↓ (hold Shift for bigger steps). “Complete line” joins the years you drew and carries the line on to the end.
                 </p>
-                <p className="mt-1.5 text-pretty">{SCORING_RULE}</p>
+                <p className="mt-2 text-pretty">{SCORING_RULE}</p>
               </details>
-              <div className="rounded-lg border border-border bg-surface/50 p-2.5">
+              <div className="gtc-panel p-3">
                 <p className="text-pretty">
                   <span className="font-semibold text-foreground">Source:</span> {chart.source.publisher}. {chart.source.dataset}.{" "}
-                  <a href={chart.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-amethyst underline-offset-2 hover:underline">
+                  <a href={chart.source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium text-amethyst underline-offset-2 hover:underline">
                     View the data
                     <ExternalLink aria-hidden className="size-3" />
                   </a>
                 </p>
-                <p className="mt-1 text-pretty">
+                <p className="mt-1.5 text-pretty">
                   {chart.firstYear}–{chart.lastYear}. {chart.source.note} A snapshot downloaded on {chart.source.retrieved}, not live data.
                 </p>
               </div>

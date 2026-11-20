@@ -29,6 +29,7 @@ type ChartDef = Omit<ChartPuzzle, "firstYear" | "lastYear" | "visible">;
 const CHARTS: readonly ChartDef[] = [
   {
     id: "college-unemployment",
+    topic: "Jobs",
     title: "Unemployment among college graduates",
     subtitle: "United States, people aged 25 and over whose highest degree is a bachelor’s",
     unit: "% of the labor force",
@@ -44,6 +45,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "us-unemployment",
+    topic: "Jobs",
     title: "US unemployment rate",
     subtitle: "Civilian unemployment rate, all workers aged 16 and over",
     unit: "% of the labor force",
@@ -59,6 +61,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "mortgage-rates",
+    topic: "Housing",
     title: "30-year mortgage rates in the US",
     subtitle: "Average interest rate on a 30-year fixed-rate mortgage",
     unit: "% interest per year",
@@ -74,6 +77,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "oil-price",
+    topic: "Energy",
     title: "The price of a barrel of oil",
     subtitle: "West Texas Intermediate (WTI) crude oil spot price",
     unit: "US dollars per barrel, not adjusted for inflation",
@@ -84,6 +88,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "us-inflation",
+    topic: "Prices",
     title: "Inflation in the United States",
     subtitle: "How much consumer prices rose over each year",
     unit: "% change in consumer prices",
@@ -94,6 +99,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "saving-rate",
+    topic: "Money",
     title: "How much Americans save",
     subtitle: "Personal saving as a share of disposable personal income",
     unit: "% of disposable income",
@@ -104,6 +110,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "house-price",
+    topic: "Housing",
     title: "The price of a new US home",
     subtitle: "Median sales price of newly built houses sold in the United States",
     unit: "thousands of US dollars, not adjusted for inflation",
@@ -119,6 +126,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "co2",
+    topic: "Climate",
     title: "Carbon dioxide in the atmosphere",
     subtitle: "Annual mean CO₂ concentration measured at Mauna Loa, Hawaii",
     unit: "parts per million (ppm)",
@@ -135,6 +143,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "global-temperature",
+    topic: "Climate",
     title: "Global surface temperature",
     subtitle: "Average land and ocean temperature compared with 1951–1980",
     unit: "°C above (or below) the 1951–1980 average",
@@ -151,6 +160,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "internet-users",
+    topic: "Technology",
     title: "People using the internet",
     subtitle: "Share of the world’s population using the internet",
     unit: "% of the world’s population",
@@ -161,6 +171,7 @@ const CHARTS: readonly ChartDef[] = [
   },
   {
     id: "korea-fertility",
+    topic: "Population",
     title: "Births per woman in South Korea",
     subtitle: "Total fertility rate: the average number of children a woman would have",
     unit: "births per woman",

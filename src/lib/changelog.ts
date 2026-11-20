@@ -68,7 +68,7 @@ const RELEASES: readonly Release[] = [
           title: "Guess the Chart",
           body: "Each round deals a random chart from 11 real annual series, never one you played recently while others are left. The chart shows its title, units and years, with the real data up to a dashed line. Draw one value for every year after it; the real continuation stays hidden until your line is complete and submitted.",
           points: [
-            "Scoring: your average miss across the years you drew is compared with the chart’s height. Each 1% of the height you’re off by on average costs 4 points, so a quarter of the height or more scores 0.",
+            "Scoring: your average miss across the years you drew is compared with the chart’s height, and every quarter of the height you’re off by halves your score. 5% off scores 87, 10% scores 76 and 25% scores 50, so a rough read of the trend still earns points.",
             "Sources: the U.S. Bureau of Labor Statistics, Bureau of Economic Analysis, Census Bureau, Freddie Mac and World Bank (via FRED), NOAA’s Global Monitoring Laboratory, NASA GISS and the World Bank’s World Development Indicators.",
             "The charts are a snapshot downloaded on 20 November 2026, not live data. Only full calendar years are shown.",
             "A personal best per mode: no Coins, leaderboards, streaks or Wagers.",
