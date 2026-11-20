@@ -112,6 +112,27 @@
   --theme-dark: 1;
   color-scheme: dark;
 }
+/* The Ascent: leaf green over a deep garden night, with a golden accent. */
+[data-game-skin="the-ascent"] {
+  --background: #12261c;
+  --surface: #183426;
+  --surface-raised: #1f4230;
+  --foreground: #f2fbe9;
+  --muted-foreground: #b2d1b4;
+  --amethyst: #7fd65a;
+  --amethyst-foreground: #0d2a12;
+  --rose: #ffc93c;
+  --rose-foreground: #2a1d02;
+  --destructive: #ff8a6a;
+  --ink-rgb: 242 251 233;
+  --paper-rgb: 18 38 28;
+  --accent-rgb: 127 214 90;
+  --rose-rgb: 255 201 60;
+  --shadow-rgb: 4 14 8;
+  --shadow-alpha: 0.8;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
 /* The Descent (id blank-atlas): gray fog over near-black, with a brass accent. */
 [data-game-skin="blank-atlas"] {
   --background: #16171b;

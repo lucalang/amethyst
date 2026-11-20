@@ -7,7 +7,7 @@ import { isSnakeVariant } from "@/lib/snake";
 import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize, type SudokuSlot } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
-export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "sumbreak", "front-wars", "blank-atlas"] as const;
+export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "sumbreak", "front-wars", "blank-atlas", "the-ascent"] as const;
 export type ScoreGame = (typeof SCORE_GAMES)[number];
 export type ArcadeGameId = ScoreGame | "sudoku" | "who-am-i";
 
@@ -15,7 +15,7 @@ export type ArcadeGameId = ScoreGame | "sudoku" | "who-am-i";
  * Games that keep only a personal record. They have no coin runs, so they also have no leaderboards, streaks,
  * Tournaments or Wagers (all of which are built on runs). Everything that lists those reads `RankedGameId`.
  */
-export const RECORD_ONLY_GAMES = ["front-wars", "blank-atlas"] as const;
+export const RECORD_ONLY_GAMES = ["front-wars", "blank-atlas", "the-ascent"] as const;
 export type RecordOnlyGame = (typeof RECORD_ONLY_GAMES)[number];
 /**
  * Head-to-head games: a bot match outside Wagers and a live duel inside them. They have no coin runs, records,
@@ -101,6 +101,14 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
     href: "/arcade/blank-atlas",
     blurb: "Seven questions, one dive into an endless gray fog. Name the rarest answer you can: every point sinks you 10 metres deeper.",
     recordLabel: "Best descent",
+    category: "minigames",
+  },
+  {
+    id: "the-ascent",
+    title: "The Ascent",
+    href: "/arcade/the-ascent",
+    blurb: "Seven questions, one magic beanstalk. Give the answer everyone else would, and climb toward the giant’s castle in the clouds.",
+    recordLabel: "Highest climb",
     category: "minigames",
   },
   {

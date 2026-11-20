@@ -51,6 +51,33 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-the-ascent",
+    date: "2026-11-20",
+    title: "The Ascent",
+    intro: "A new minigame that flips The Descent around: plant a magic bean, then give the answer you think most people would give. The more common your answer, the higher your beanstalk grows, from a cottage garden all the way to a giant’s castle in the clouds.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Think like everyone else", text: "Seven everyday questions, like a fruit, a sport or a colour. Common answers climb high; rare ones barely sprout. Each question has one crowd favourite worth a golden Giant’s Leap." },
+      { kind: "new", feature: "A climb through the sky", text: "Your beanstalk grows through five zones: the Cottage Garden, the Whispering Canopy, the Cloud Meadows, the High Winds and the Giant’s Kingdom, with every answer grown in its own colours." },
+      { kind: "new", feature: "Every answer celebrated", text: "The commonness meter fills, the points count up and the beanstalk surges. A crowd favourite erupts in golden beans and leaves." },
+    ],
+    details: {
+      new: [
+        {
+          title: "The Ascent",
+          body: "Each question gives you 3 seconds to read and 25 to answer, and wrong guesses can be retried until time runs out (or turn the clock off with Relaxed mode). Points: crowd favourite 100, very common 80, common 50, uncommon 20, rare 5. Every point grows the beanstalk 10 metres, so 700 reaches the Giant’s Kingdom. At the end you see your whole beanstalk, every answer with its commonness and points, and every accepted answer to each question, most common first.",
+          points: [
+            "Commonness is Amethyst’s own curated ranking of how readily people give each answer, not a measurement of how players answer. The crowd favourite is our pick for the single most common answer.",
+            "It shares The Descent’s questions and answer checking, so spelling slips, plurals and alternative names are handled the same way.",
+            "A personal record only: no Coins, leaderboards, streaks or Wagers. With reduced motion the beanstalk grows without animation.",
+          ],
+          where: "Arcade → Minigames → The Ascent",
+          link: { href: "/arcade/the-ascent", label: "Play The Ascent" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-the-descent",
     date: "2026-11-20",
     title: "Blank Atlas becomes The Descent",

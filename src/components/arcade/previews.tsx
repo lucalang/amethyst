@@ -20,6 +20,7 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   "front-wars": { hue: "#ff6b4a", genre: "Strategy" },
   "who-am-i": { hue: "#c084fc", genre: "Deduction" },
   "blank-atlas": { hue: "#a46bff", genre: "Trivia" },
+  "the-ascent": { hue: "#5ee06a", genre: "Trivia" },
 };
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
@@ -71,6 +72,39 @@ const SUDOKU_DIGITS: [number, number, number][] = [
 ];
 
 const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
+  // A beanstalk winding up from a cottage garden, through clouds, to a castle in the sky.
+  "the-ascent": (
+    <g>
+      <defs>
+        <linearGradient id="as-preview-sky" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="#c6ecff" />
+          <stop offset="70%" stopColor="#64aef8" />
+          <stop offset="100%" stopColor="#ffc98a" />
+        </linearGradient>
+      </defs>
+      <rect width="160" height="100" fill="url(#as-preview-sky)" />
+      <path d="M0 92 Q40 82 80 90 T160 88 V100 H0 Z" fill="#5fae4a" />
+      <path d="M22 90 V80 L30 74 L38 80 V90 Z" fill="#f4e2c4" />
+      <path d="M20 81 L30 72 L40 81" fill="none" stroke="#a5452f" strokeWidth="3" />
+      <path d="M118 22 V12 L124 6 L130 12 V22 M106 22 V14 L110 10 L114 14 V22 M100 30 H136 V22 H100 Z" fill="#c8b8e8" stroke="#7a6aa8" strokeWidth="1" />
+      <ellipse cx="118" cy="32" rx="24" ry="6" fill="#fff" />
+      <ellipse cx="40" cy="44" rx="18" ry="5" fill="#fff" opacity="0.85" />
+      <path d="M80 92 C66 78 94 70 80 58 C66 46 94 40 82 28 C74 20 90 14 92 8" fill="none" stroke="#2f6e2a" strokeWidth="6" strokeLinecap="round" />
+      <path d="M80 92 C66 78 94 70 80 58 C66 46 94 40 82 28 C74 20 90 14 92 8" fill="none" stroke="#57b84a" strokeWidth="3.4" strokeLinecap="round" />
+      {(
+        [
+          [72, 78, -1, "#c4b5fd"],
+          [88, 66, 1, "#7cc4ff"],
+          [74, 52, -1, "#2dd4bf"],
+          [90, 38, 1, "#4ade80"],
+          [78, 22, -1, "#ffd84a"],
+        ] as const
+      ).map(([x, y, side, color]) => (
+        <path key={`${x}-${y}`} d={`M${x} ${y} q${side * 6} -6 ${side * 12} -1 q${-side * 6} 5 ${-side * 12} 1 Z`} fill={color} stroke="#2f6e2a" strokeWidth="0.6" />
+      ))}
+      <circle cx="91" cy="10" r="2.6" fill="#e8463c" />
+    </g>
+  ),
   // The Sanctum above the fog: crimson moon, pillars, the bronze table with lit chairs, and dives plunging below.
   "blank-atlas": (
     <g>
