@@ -4,7 +4,7 @@
  * How each item looks lives with the game's renderer, keyed by the item's slug.
  */
 
-export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars", "blank-atlas"] as const;
+export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars", "blank-atlas", "the-ascent"] as const;
 export type ShopGame = (typeof SHOP_GAMES)[number];
 export const isShopGame = (value: unknown): value is ShopGame => typeof value === "string" && (SHOP_GAMES as readonly string[]).includes(value);
 
@@ -1261,6 +1261,109 @@ export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
           item("stained-glass", "Cathedral Glass", 350, "The deep seen through leaded glass: jewel-bright scenery and arched window panels."),
           item("shadow-theatre", "Shadow Puppet Theatre", 400, "Black cut-out silhouettes on a lamp-lit screen, framed by velvet curtains."),
           item("cyanotype", "Cyanotype Plate", 450, "A ghostly negative printed in Prussian blue, with film grain and typewritten notes."),
+        ],
+      },
+    ],
+  },
+  "the-ascent": {
+    game: "the-ascent",
+    title: "The Ascent",
+    prefix: "the-ascent",
+    href: "/arcade/the-ascent",
+    blurb: "Beanstalks, climbers, growth effects, skies, starting gardens and art styles for your climb to the giant's castle. Questions, scoring and every answer's growth colour never change.",
+    categories: [
+      {
+        id: "stalk",
+        label: "Beanstalk styles",
+        icon: "sparkles",
+        blurb: "What your beanstalk is made of. Its leaves always wear each answer's growth colour, so you can still read every answer down the stalk.",
+        default: { name: "Garden Beanstalk", description: "A green stalk with veined leaves, tendrils and golden pods." },
+        items: [
+          item("bamboo", "Bamboo Pole", 90, "A jointed bamboo cane with long, slender leaves."),
+          item("pennant-rope", "Pennant Rope", 100, "A twisted rope strung with flags in each answer's colour."),
+          item("flowering", "Blossom Vine", 110, "Five-petal flowers open among the leaves, with pink tendrils."),
+          item("candy-cane", "Candy Cane Stalk", 120, "Red and white stripes, with a lollipop for every leaf."),
+          item("toadstool", "Toadstool Tower", 140, "A speckled pale stem sprouting little spotted mushrooms."),
+          item("crystal-stem", "Crystal Stem", 160, "Translucent ice that glints, with crystal shards for leaves."),
+          item("starlight", "Starlight Stalk", 180, "A night-blue stem dotted with light, with stars for leaves."),
+        ],
+      },
+      {
+        id: "climber",
+        label: "Climbers",
+        icon: "rocket",
+        blurb: "Who rides the tip of the beanstalk all the way up.",
+        default: { name: "Jack", description: "A gardener in a red jumper and a leafy cap." },
+        items: [
+          item("snail", "Shell Snail", 90, "A slow and steady snail with a spiral shell and wiggling eye stalks."),
+          item("tree-frog", "Tree Frog", 100, "A bright green frog clinging on with sticky orange toes."),
+          item("ladybird", "Ladybird Knight", 110, "A spotted ladybird in a tiny silver helmet with a plume."),
+          item("paper-kite", "Paper Kite", 130, "A smiling four-colour kite, its bow-tied tail swishing."),
+          item("acorn-sprite", "Acorn Sprite", 140, "A forest sprite in an acorn cap, fluttering leaf wings."),
+          item("balloon-cat", "Balloon Cat", 160, "A ginger cat floating up on a red balloon, tail swinging."),
+          item("tin-gardener", "Tin Gardener", 180, "A watering-can robot with blinking eyes and a light-bulb antenna."),
+        ],
+      },
+      {
+        id: "growth",
+        label: "Growth effects",
+        icon: "party",
+        blurb: "What drifts through the air and bursts around your climber as each stretch grows. The climb streak keeps the answer's colour.",
+        default: { name: "Seed Rush", description: "Floating seeds and a glowing streak." },
+        items: [
+          item("dandelion", "Dandelion Puffs", 90, "Dandelion fluff drifting up on the breeze."),
+          item("petals", "Petal Shower", 100, "Pink petals tumbling down around you."),
+          item("confetti", "Ribbon Confetti", 110, "Bright scraps of paper confetti."),
+          item("music-box", "Music Box", 120, "Musical notes floating up, and a streak ruled like a stave."),
+          item("butterflies", "Butterfly Flutter", 140, "Little butterflies flap about and burst out as you grow."),
+          item("fireflies", "Firefly Lanterns", 150, "Fireflies wander the air and spiral out from the climber."),
+          item("rainbow-wake", "Rainbow Wake", 170, "A rainbow band follows you up, with twinkling stars."),
+        ],
+      },
+      {
+        id: "sky",
+        label: "Sky styles",
+        icon: "sun",
+        blurb: "The sky and everything floating in it, all the way up to the castle.",
+        default: { name: "Summer Sky", description: "Soft white clouds in a clear blue sky." },
+        items: [
+          item("storybook", "Storybook Clouds", 110, "Flat, ink-outlined puffs, like a picture book."),
+          item("candyfloss", "Candyfloss Sunset", 120, "Pink and peach skies with spun-sugar clouds."),
+          item("patchwork-sky", "Patchwork Sky", 130, "A stitched quilt of sky with felt-patch clouds."),
+          item("origami-flock", "Origami Flock", 150, "Paper cranes flap past in front, and folded-paper clouds drift behind."),
+          item("balloon-regatta", "Balloon Regatta", 160, "Striped hot-air balloons drift where the far clouds were."),
+          item("lantern-festival", "Lantern Festival", 170, "A dusky sky full of rising paper lanterns."),
+          item("starry-night", "Starry Night", 190, "A midnight climb under the stars, with moonlit clouds."),
+        ],
+      },
+      {
+        id: "garden",
+        label: "Starting gardens",
+        icon: "map",
+        blurb: "Where the magic bean is planted: the scene at the bottom of every climb.",
+        default: { name: "Cottage Garden", description: "A stone cottage, a well, a cow and tidy vegetable rows." },
+        items: [
+          item("pumpkin-patch", "Pumpkin Patch", 100, "Autumn trees, a scarecrow, hay bales and fat pumpkins."),
+          item("seaside", "Seaside Allotment", 110, "Striped beach huts, a lighthouse, a sailboat and a seagull."),
+          item("oasis", "Desert Oasis", 120, "Dunes, palms around a blue pool, flowering cacti and a resting camel."),
+          item("rooftop", "Rooftop Garden", 130, "Planter boxes on a city roof, a wooden water tower and strung lights."),
+          item("winter-greenhouse", "Winter Greenhouse", 150, "Snowy pines, a glass greenhouse in bloom, a snowman and falling snow."),
+          item("moss-temple", "Moss Temple", 160, "A pagoda, a red maple, raked sand and a koi pond under an arched bridge."),
+          item("enchanted-grove", "Enchanted Grove", 180, "A hollow oak with a round door, a toadstool ring and fairy lights."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Redraws the whole climb: scenery, clouds, lettering and panels. Combines with every other cosmetic.",
+        default: { name: "Sunny Picture", description: "Soft painted scenery with rounded glassy panels." },
+        items: [
+          item("pen-and-ink", "Storybook Ink", 300, "Pen outlines and cross-hatching on cream paper, with serif lettering and book-page panels."),
+          item("papercraft", "Pop-up Papercraft", 350, "Every piece cut from card with a white edge, standing off the page on a hard shadow."),
+          item("pixel-quest", "8-bit Quest", 400, "Blocky clouds, a pixel grid, square badges and monospace capitals."),
+          item("chalk-mural", "Chalk Mural", 450, "Drawn in chalk on a slate wall, with a wooden-framed board for every panel."),
         ],
       },
     ],

@@ -1,7 +1,8 @@
 "use client";
 
 import "./the-ascent/ascent.css";
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from "react";
+import "./the-ascent/cosmetics.css";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from "react";
 import { ArrowUp, Check, Copy, RotateCcw, Sprout } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import {
   type Tier,
 } from "@/lib/minigames/the-ascent";
 import { AscentBurst } from "./the-ascent/ascent-burst";
+import { ascentLook } from "./the-ascent/look";
 import { AscentWorld, CLIMB_MS, GROWTH_COLOR, type Climb } from "./the-ascent/ascent-world";
 import { GameShell, useArcade, useGameAchievementTracking, useRecord } from "./game-shell";
 import type { SoundName } from "./sound";
@@ -73,7 +75,9 @@ function startingPhase(round: Round): Phase {
 
 /** The Ascent: seven questions; give the answer most people would give, and the beanstalk grows toward the clouds. */
 export default function AscentGame({ records }: { records: Record<string, number> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look: equipped } = useArcade();
+  // Cosmetics from The Ascent's shop; equipping one from the in-game shop restyles the climb at once.
+  const look = useMemo(() => ascentLook(equipped), [equipped]);
   const { best, submit } = useRecord(ASCENT_GAME, records[""] ?? null);
   // The game only renders in the browser (see lazy.tsx), so saved state can be read right away.
   const [round, setRound] = useState<Round>(() => restoreAscent(read(SAVE_KEY)) ?? newAscent(read<string[]>(RECENT_KEY) ?? []));
@@ -238,9 +242,9 @@ export default function AscentGame({ records }: { records: Record<string, number
         ) : null
       }
     >
-      <div className="as">
+      <div className="as" data-style={look.style}>
         <div ref={stageRef} className="as-stage" data-phase={phase.kind}>
-          <AscentWorld round={round} height={heightNow} climb={climb} final={phase.kind === "complete"} />
+          <AscentWorld round={round} height={heightNow} climb={climb} final={phase.kind === "complete"} look={look} />
 
           <div className="as-hud">
             <div className="as-pod">

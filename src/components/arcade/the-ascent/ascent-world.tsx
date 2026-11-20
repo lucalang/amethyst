@@ -2,7 +2,8 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { GROWTHS, METRES_PER_POINT, MAX_SCORE, ZONES, growthOf, type Growth, type Round } from "@/lib/minigames/the-ascent";
-import { EDGE_KINDS, Edge, Ground, SCENERY, SIGHTS, type Scene } from "./ascent-art";
+import { EDGE_KINDS, Edge, SCENERY, SIGHTS, type Scene } from "./ascent-art";
+import { Climber, Garden, GrowthBurst, leafArt, worldAttributes, type AscentLook } from "./look";
 
 /*
  * The world of The Ascent: one tall column the camera climbs. The ground is at the bottom; every point grows the
@@ -26,17 +27,17 @@ const LEAF: Record<Growth, { fill: string; edge: string; size: number }> = {
   bud: { fill: "#d8ccff", edge: "#8a7ac8", size: 14 },
 };
 
-const PX = 0.85; // px per metre
+export const PX = 0.85; // px per metre
 const TOP = 520; // sky above 7,000 m
 const GROUND_H = 330;
 const CLIMB = MAX_SCORE * METRES_PER_POINT;
 const WORLD_H = TOP + CLIMB * PX + GROUND_H;
-const ROOT = WORLD_H - 70; // where the bean was planted (0 m)
+export const ROOT = WORLD_H - 70; // where the bean was planted (0 m)
 export const yOf = (metres: number) => ROOT - metres * PX;
 
 /** The stalk's sway: a fixed, gentle curve so the beanstalk winds the same way every time. */
-const STALK_W = 320;
-const stalkX = (metres: number) => STALK_W / 2 + Math.sin(metres / 300) * 46 + Math.sin(metres / 113) * 12;
+export const STALK_W = 320;
+export const stalkX = (metres: number) => STALK_W / 2 + Math.sin(metres / 300) * 46 + Math.sin(metres / 113) * 12;
 
 const SKY: [number, string][] = [
   [0, "#c6ecff"],
@@ -91,7 +92,7 @@ function ScenePiece({ scene, top }: { scene: Scene; top: number }) {
 }
 
 /** One answer's stretch of beanstalk, with leaves in its own colours. `fresh` grows it in now. */
-function Segment({ from, to, growth, fresh, index }: { from: number; to: number; growth: Growth; fresh: boolean; index: number }) {
+export function Segment({ from, to, growth, fresh, index, stalk }: { from: number; to: number; growth: Growth; fresh: boolean; index: number; stalk?: string }) {
   const points: string[] = [];
   for (let m = from; m < to; m += 20) points.push(`${stalkX(m).toFixed(1)} ${yOf(m).toFixed(1)}`);
   points.push(`${stalkX(to).toFixed(1)} ${yOf(to).toFixed(1)}`);
@@ -109,24 +110,7 @@ function Segment({ from, to, growth, fresh, index }: { from: number; to: number;
     leaves.push(
       <g key={k} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(1)})`}>
         <g className="aw-leaf" style={{ "--t": `${((m - from) / Math.max(1, to - from)).toFixed(3)}` } as CSSProperties}>
-          <path
-            d={`M0 0 q${side * size * 0.6} ${-size * 0.7} ${side * size * 1.4} ${-size * 0.1} q${-side * size * 0.6} ${size * 0.55} ${-side * size * 1.4} ${size * 0.1} Z`}
-            fill={leaf.fill}
-            stroke={leaf.edge}
-            strokeWidth="1.5"
-          />
-          {/* Midrib, side veins and a sheen, so each leaf reads as a leaf. */}
-          <path d={`M0 0 Q${side * size * 0.7} ${-size * 0.18} ${side * size * 1.32} ${-size * 0.1}`} stroke={leaf.edge} strokeWidth="1" fill="none" />
-          {[0.35, 0.65, 0.95].map((t) => (
-            <path
-              key={t}
-              d={`M${side * size * t} ${-size * 0.14 * t} l${side * size * 0.14} ${-size * 0.16} M${side * size * t} ${-size * 0.14 * t} l${side * size * 0.12} ${size * 0.14}`}
-              stroke={leaf.edge}
-              strokeOpacity="0.55"
-              strokeWidth="0.8"
-            />
-          ))}
-          <path d={`M${side * size * 0.2} ${-size * 0.22} Q${side * size * 0.6} ${-size * 0.48} ${side * size * 1.05} ${-size * 0.28}`} stroke="#fff" strokeOpacity="0.35" strokeWidth="1.4" fill="none" />
+          {leafArt(stalk, side, size, leaf.fill, leaf.edge, k)}
         </g>
       </g>,
     );
@@ -154,6 +138,8 @@ function Segment({ from, to, growth, fresh, index }: { from: number; to: number;
       <path d={d} className="aw-stalk-out" pathLength={1} />
       <path d={d} className="aw-stalk-in" pathLength={1} />
       <path d={d} className="aw-stalk-hi" pathLength={1} />
+      {/* Bands, stripes or speckles of the equipped beanstalk style (measured in px, so they're evenly spaced). */}
+      {stalk ? <path d={d} className="aw-stalk-deco" pathLength={Math.max(1, Math.round((to - from) * PX))} /> : null}
       {/* A node at the end of each answer's growth, like the joint on a real stem. */}
       <ellipse className="aw-node" cx={stalkX(to).toFixed(1)} cy={yOf(to).toFixed(1)} rx="14" ry="6" />
       {leaves}
@@ -161,7 +147,7 @@ function Segment({ from, to, growth, fresh, index }: { from: number; to: number;
   );
 }
 
-export function AscentWorld({ round, height, climb, final }: { round: Round; height: number; climb: Climb | null; final: boolean }) {
+export function AscentWorld({ round, height, climb, final, look = {} }: { round: Round; height: number; climb: Climb | null; final: boolean; look?: AscentLook }) {
   const sky = `linear-gradient(0deg, ${SKY.map(([m, color]) => `${color} ${Math.round(WORLD_H - yOf(m))}px`).join(", ")})`;
   const segments = round.stops.map((stop, i, all) => {
     const from = all.slice(0, i).reduce((sum, earlier) => sum + earlier.points * METRES_PER_POINT, 0);
@@ -178,7 +164,7 @@ export function AscentWorld({ round, height, climb, final }: { round: Round; hei
   } as CSSProperties;
 
   return (
-    <div className="aw" data-climb={climb?.growth ?? undefined} data-final={final || undefined} style={style}>
+    <div className="aw" data-climb={climb?.growth ?? undefined} data-final={final || undefined} style={style} {...worldAttributes(look)}>
       {/* Back to front: the sky and each zone's light, far clouds and scenery (slower), then the world. */}
       <div aria-hidden className="aw-world" style={{ height: WORLD_H, background: sky }}>
         {ZONE_LIGHT.map((light) => (
@@ -222,7 +208,7 @@ export function AscentWorld({ round, height, climb, final }: { round: Round; hei
         </div>
 
         <div aria-hidden className="aw-ground" style={{ height: GROUND_H }}>
-          <Ground />
+          <Garden kind={look.garden} />
         </div>
 
         {/* The beanstalk: a seedling at first, then one coloured stretch per answer. */}
@@ -230,7 +216,7 @@ export function AscentWorld({ round, height, climb, final }: { round: Round; hei
           <path d={`M${stalkX(0)} ${ROOT + 6} q-4 -14 0 -26`} className="aw-seedling" />
           {segments.map((segment) =>
             segment.growth && segment.to > segment.from ? (
-              <Segment key={segment.i} index={segment.i} from={segment.from} to={segment.to} growth={segment.growth} fresh={climb !== null && segment.i === segments.length - 1} />
+              <Segment key={segment.i} index={segment.i} from={segment.from} to={segment.to} growth={segment.growth} fresh={climb !== null && segment.i === segments.length - 1} stalk={look.stalk} />
             ) : null,
           )}
           <g className="aw-tip" style={{ transform: `translate(${tipX.toFixed(1)}px, ${yOf(height).toFixed(1)}px)` }}>
@@ -260,15 +246,8 @@ export function AscentWorld({ round, height, climb, final }: { round: Round; hei
         {/* The climber, riding the tip. */}
         <div aria-hidden className="aw-climber" style={{ left: `calc(50% - ${STALK_W / 2}px + ${tipX}px)` }}>
           <span key={climb?.key ?? "still"} className="aw-climber-trail" />
-          <svg viewBox="-20 -40 40 50" className="aw-climber-body">
-            <path d="M-8 6 L-12 -8 Q-12 -20 0 -20 Q12 -20 12 -8 L8 6 Z" fill="#e8463c" />
-            <rect x="-14" y="-14" width="8" height="14" rx="3" fill="#a86a32" />
-            <circle cx="0" cy="-26" r="9" fill="#ffd7b0" />
-            <path d="M-10 -28 Q0 -44 10 -28 Q4 -34 0 -32 Q-4 -34 -10 -28 Z" fill="#4f9e3e" />
-            <circle cx="-3" cy="-26" r="1.4" fill="#2a1a0a" />
-            <circle cx="4" cy="-26" r="1.4" fill="#2a1a0a" />
-            <path d="M-12 -8 L-18 -24 M12 -8 L18 -24" stroke="#ffd7b0" strokeWidth="4" strokeLinecap="round" className="aw-arms" />
-          </svg>
+          {look.growth ? <GrowthBurst key={`burst-${climb?.key ?? "still"}`} /> : null}
+          <Climber kind={look.climber} />
         </div>
       </div>
 

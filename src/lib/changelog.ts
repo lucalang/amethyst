@@ -51,6 +51,35 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-21-ascent-shop",
+    date: "2026-11-21",
+    title: "The Ascent shop",
+    intro: "The Ascent has its own cosmetic shop: 39 items for your climb into the sky, from a blossoming beanstalk and a paper-kite climber to firefly bursts, storybook clouds and an enchanted starting garden.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Beanstalks and climbers", text: "Seven beanstalk styles (bamboo, candy cane, crystal, starlight and more) and seven climbers, including a snail, a balloon cat, a paper kite and a tin gardener." },
+      { kind: "new", feature: "Growth effects and skies", text: "Seven effects that fill the air and burst as you grow, like fireflies, petals and music notes, plus seven skies from storybook clouds to a starry night." },
+      { kind: "new", feature: "Starting gardens", text: "Seven places to plant the bean: an enchanted grove, a seaside allotment, a rooftop garden, a pumpkin patch, a desert oasis, a moss temple and a winter greenhouse." },
+      { kind: "new", feature: "Art styles", text: "Storybook Ink, Pop-up Papercraft, 8-bit Quest and Chalk Mural redraw the scenery, clouds, lettering and panels, and work with everything else." },
+    ],
+    details: {
+      new: [
+        {
+          title: "The Ascent shop",
+          body: "Seven beanstalk styles, seven climbers, seven growth effects, seven sky styles, seven starting gardens and four art styles. Everything is purely visual: questions, timing, scoring and the seven-question round never change.",
+          points: [
+            "Every beanstalk keeps each answer's growth colour on its leaves, and markers keep theirs, so a crowd favourite, a very common or a rare answer reads the same as before.",
+            "The climb streak keeps the answer's colour with every growth effect.",
+            "Equip items from the Shop button in the game: the climb restyles straight away, even mid-round.",
+            "Animations follow your effects setting and reduced motion.",
+          ],
+          where: "Arcade → The Ascent → Shop",
+          link: { href: "/arcade/the-ascent/shop", label: "Open The Ascent shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-21-descent-shop",
     date: "2026-11-21",
     title: "The Descent shop",

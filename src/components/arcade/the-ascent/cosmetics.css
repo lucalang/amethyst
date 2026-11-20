@@ -1,0 +1,1008 @@
+/* The Ascent's cosmetics (look.tsx): beanstalk styles, climbers, growth effects, sky styles, starting gardens and
+   art styles, keyed on data attributes of `.aw` (the world) and `.as` (the whole game, for art styles). Every look
+   keeps each answer's growth colour on its leaves and marker (and the climb streak), so answer quality always reads
+   the same. Animations stop with reduced motion or the effects setting (ascent.css turns off every animation in `.as`). */
+
+/* ================================================================================================ Beanstalk styles */
+
+.aw-stalk-deco {
+  fill: none;
+  stroke-linecap: butt;
+  opacity: 0;
+}
+.aw[data-stalk] .aw-stalk-deco {
+  opacity: 1;
+}
+.aw[data-stalk] .aw-seg[data-fresh] .aw-stalk-deco {
+  animation: aw-deco-in 500ms ease-out calc(var(--dur) * 0.85) both;
+}
+@keyframes aw-deco-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Blossom Vine: flowers open among the leaves; pink tendrils. */
+.aw[data-stalk="flowering"] .aw-stalk-in {
+  stroke: #6cc75a;
+}
+.aw[data-stalk="flowering"] .aw-tendril {
+  stroke: #e889b5;
+}
+.aw[data-stalk="flowering"] .aw-stalk-deco {
+  stroke: #ffb6d5;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 34;
+}
+
+/* Bamboo Pole: jointed cane with lance leaves. */
+.aw[data-stalk="bamboo"] .aw-stalk-out {
+  stroke: #6f8a2a;
+}
+.aw[data-stalk="bamboo"] .aw-stalk-in {
+  stroke: #b8c94a;
+}
+.aw[data-stalk="bamboo"] .aw-stalk-hi {
+  stroke: #eef59a;
+}
+.aw[data-stalk="bamboo"] .aw-stalk-deco {
+  stroke: #5e7420;
+  stroke-width: 24;
+  stroke-dasharray: 3 38;
+}
+.aw[data-stalk="bamboo"] :is(.aw-node, .aw-tip) {
+  fill: #a8b83a;
+  stroke: #5e7420;
+}
+.aw[data-stalk="bamboo"] .aw-tendril {
+  display: none;
+}
+
+/* Candy Cane Stalk: red and white stripes with lollipop leaves. */
+.aw[data-stalk="candy-cane"] .aw-stalk-out {
+  stroke: #b81e36;
+}
+.aw[data-stalk="candy-cane"] .aw-stalk-in {
+  stroke: #fff4f4;
+}
+.aw[data-stalk="candy-cane"] .aw-stalk-hi {
+  stroke: #fff;
+}
+.aw[data-stalk="candy-cane"] .aw-stalk-deco {
+  stroke: #e8344e;
+  stroke-width: 14;
+  stroke-dasharray: 9 9;
+}
+.aw[data-stalk="candy-cane"] :is(.aw-node, .aw-tip) {
+  fill: #ff8fb0;
+  stroke: #b81e36;
+}
+.aw[data-stalk="candy-cane"] .aw-tendril {
+  stroke: #ff8fb0;
+}
+
+/* Crystal Stem: translucent ice with glinting facets and crystal shards for leaves. */
+.aw[data-stalk="crystal-stem"] .aw-stalk-out {
+  stroke: rgb(80 150 205 / 0.9);
+}
+.aw[data-stalk="crystal-stem"] .aw-stalk-in {
+  stroke: rgb(205 238 255 / 0.85);
+}
+.aw[data-stalk="crystal-stem"] .aw-stalk-hi {
+  stroke: #fff;
+  stroke-width: 2;
+}
+.aw[data-stalk="crystal-stem"] .aw-stalk-deco {
+  stroke: #fff;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 22;
+  filter: drop-shadow(0 0 3px #bfe9ff);
+}
+.aw[data-stalk="crystal-stem"] :is(.aw-node, .aw-tip) {
+  fill: #dff4ff;
+  stroke: #5096cd;
+}
+.aw[data-stalk="crystal-stem"] .aw-tendril {
+  stroke: #9fd8ff;
+}
+
+/* Pennant Rope: a twisted rope strung with flags. */
+.aw[data-stalk="pennant-rope"] .aw-stalk-out {
+  stroke: #6b4a2a;
+}
+.aw[data-stalk="pennant-rope"] .aw-stalk-in {
+  stroke: #c49a5a;
+}
+.aw[data-stalk="pennant-rope"] .aw-stalk-hi {
+  stroke: #f0d8a8;
+}
+.aw[data-stalk="pennant-rope"] .aw-stalk-deco {
+  stroke: #7a5530;
+  stroke-width: 14;
+  stroke-dasharray: 3 6;
+}
+.aw[data-stalk="pennant-rope"] :is(.aw-node, .aw-tip) {
+  fill: #c49a5a;
+  stroke: #6b4a2a;
+}
+.aw[data-stalk="pennant-rope"] .aw-tendril {
+  stroke: #8a6236;
+  stroke-width: 1.5;
+}
+
+/* Starlight Stalk: a night-blue stem dotted with light and star leaves. */
+.aw[data-stalk="starlight"] .aw-stalk-out {
+  stroke: #1d1b4a;
+}
+.aw[data-stalk="starlight"] .aw-stalk-in {
+  stroke: #3b3a8f;
+}
+.aw[data-stalk="starlight"] .aw-stalk-hi {
+  stroke: #b9b6ff;
+}
+.aw[data-stalk="starlight"] .aw-stalk-deco {
+  stroke: #fff8c0;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 14;
+  filter: drop-shadow(0 0 3px #fff2a0);
+}
+.aw[data-stalk="starlight"] :is(.aw-node, .aw-tip) {
+  fill: #6a66d8;
+  stroke: #1d1b4a;
+}
+.aw[data-stalk="starlight"] .aw-tendril {
+  stroke: #8a86f0;
+}
+
+/* Toadstool Tower: a pale, speckled stem sprouting little mushrooms. */
+.aw[data-stalk="toadstool"] .aw-stalk-out {
+  stroke: #9a7a5a;
+}
+.aw[data-stalk="toadstool"] .aw-stalk-in {
+  stroke: #f0e4c8;
+}
+.aw[data-stalk="toadstool"] .aw-stalk-hi {
+  stroke: #fff;
+}
+.aw[data-stalk="toadstool"] .aw-stalk-deco {
+  stroke: #c4a47a;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 0.1 17;
+}
+.aw[data-stalk="toadstool"] :is(.aw-node, .aw-tip) {
+  fill: #e8dcc0;
+  stroke: #9a7a5a;
+}
+.aw[data-stalk="toadstool"] .aw-tendril {
+  stroke: #b9a07a;
+}
+
+/* ================================================================================================ Climbers */
+
+.aw-climber-body * {
+  transform-box: fill-box;
+}
+.ac-kite-tail {
+  fill: none;
+  stroke: #6b4a2a;
+  stroke-width: 1;
+  transform-origin: 50% 0;
+  animation: ac-tail 1.6s ease-in-out infinite alternate;
+}
+path.ac-kite-tail[fill] {
+  stroke: none;
+}
+.aw[data-climber="paper-kite"] .aw-climber-body {
+  animation: ac-kite 3s ease-in-out infinite;
+}
+.ac-antennae {
+  transform-origin: 50% 100%;
+  animation: ac-wiggle 2.2s ease-in-out infinite;
+}
+.ac-balloon {
+  transform-origin: 50% 100%;
+  animation: ac-wiggle 3s ease-in-out infinite;
+}
+.ac-tail {
+  transform-origin: 100% 0;
+  animation: ac-wiggle 1.4s ease-in-out infinite;
+}
+.ac-legs {
+  animation: aa-reach 0.9s ease-in-out infinite;
+}
+.ac-plume {
+  transform-origin: 0 100%;
+  animation: ac-wiggle 1.8s ease-in-out infinite;
+}
+.ac-wings {
+  transform-origin: 50% 50%;
+  animation: ac-flap 0.35s ease-in-out infinite alternate;
+}
+.ac-drops {
+  animation: ac-drip 1.2s ease-in infinite;
+}
+.ac-bulb,
+.ac-eyes {
+  animation: ac-blink 2.6s steps(1) infinite;
+}
+@keyframes ac-tail {
+  from {
+    skew: -10deg 0;
+  }
+  to {
+    skew: 12deg 0;
+  }
+}
+@keyframes ac-kite {
+  50% {
+    rotate: 6deg;
+    translate: 2px -4px;
+  }
+}
+@keyframes ac-wiggle {
+  50% {
+    rotate: 10deg;
+  }
+}
+@keyframes ac-flap {
+  to {
+    scale: 1 0.45;
+  }
+}
+@keyframes ac-drip {
+  from {
+    translate: 0 0;
+    opacity: 1;
+  }
+  to {
+    translate: 2px 6px;
+    opacity: 0;
+  }
+}
+@keyframes ac-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 0.25;
+  }
+}
+
+/* ================================================================================================ Growth effects */
+
+/* A burst around the climber as each stretch grows: hidden unless a growth effect is equipped. */
+.aw-burst {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 0;
+  height: 0;
+}
+.aw-burst i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  opacity: 0;
+}
+.aw[data-climb] .aw-burst i {
+  animation: gx-burst 1.4s cubic-bezier(0.2, 0.7, 0.3, 1)
+    calc(var(--dur) * 0.75 + var(--k) * 30ms) both;
+}
+@keyframes gx-burst {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(0) rotate(calc(var(--a) * -1))
+      scale(0.4);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(58px)
+      rotate(calc(var(--a) * -1 + 90deg)) scale(1);
+  }
+}
+
+/* Firefly Lanterns: seeds become fireflies, and fireflies spiral out. */
+.aw[data-growth-fx="fireflies"] .aw-seeds i,
+.aw[data-growth-fx="fireflies"] .aw-burst i {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #fff7a8;
+  box-shadow:
+    0 0 6px 2px rgb(255 230 90 / 0.8),
+    0 0 16px 4px rgb(255 210 60 / 0.3);
+}
+.aw[data-growth-fx="fireflies"] .aw-seeds i {
+  animation: gx-wander 7s ease-in-out infinite;
+}
+@keyframes gx-wander {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 0.2;
+  }
+  30% {
+    translate: 14px -10px;
+    opacity: 1;
+  }
+  60% {
+    translate: -10px -24px;
+    opacity: 0.5;
+  }
+}
+
+/* Petal Shower: pink petals tumble down. */
+.aw[data-growth-fx="petals"] .aw-seeds i,
+.aw[data-growth-fx="petals"] .aw-burst i {
+  width: 8px;
+  height: 5px;
+  border-radius: 100% 0 100% 0;
+  background: linear-gradient(135deg, #ffd1e3, #ff8fb8);
+  box-shadow: none;
+}
+.aw[data-growth-fx="petals"] .aw-seeds i {
+  animation: gx-tumble 8s linear infinite;
+}
+@keyframes gx-tumble {
+  from {
+    translate: 0 -30px;
+    rotate: 0deg;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  to {
+    translate: 22px 60px;
+    rotate: 540deg;
+    opacity: 0;
+  }
+}
+
+/* Butterfly Flutter: little two-winged butterflies flap about. */
+.aw[data-growth-fx="butterflies"] .aw-seeds i,
+.aw[data-growth-fx="butterflies"] .aw-burst i {
+  width: 12px;
+  height: 9px;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 25% 40%, #ffb347 0 38%, transparent 40%),
+    radial-gradient(circle at 75% 40%, #ffb347 0 38%, transparent 40%),
+    radial-gradient(circle at 30% 80%, #ff7e5f 0 26%, transparent 28%),
+    radial-gradient(circle at 70% 80%, #ff7e5f 0 26%, transparent 28%);
+  box-shadow: none;
+}
+.aw[data-growth-fx="butterflies"] .aw-seeds i:nth-child(3n) {
+  filter: hue-rotate(160deg);
+}
+.aw[data-growth-fx="butterflies"] .aw-seeds i {
+  animation:
+    ac-flap 0.25s ease-in-out infinite alternate,
+    gx-wander 9s ease-in-out infinite;
+}
+
+/* Music Box: notes float up from the stalk. */
+.aw[data-growth-fx="music-box"] .aw-seeds i,
+.aw[data-growth-fx="music-box"] .aw-burst i {
+  width: 10px;
+  height: 14px;
+  background: transparent;
+  box-shadow: none;
+}
+.aw[data-growth-fx="music-box"] :is(.aw-seeds, .aw-burst) i::before {
+  content: "♪";
+  position: absolute;
+  inset: 0;
+  font-size: 14px;
+  line-height: 1;
+  color: #7a4ac8;
+  text-shadow: 0 0 4px #fff;
+}
+.aw[data-growth-fx="music-box"]
+  :is(.aw-seeds, .aw-burst)
+  i:nth-child(even)::before {
+  content: "♫";
+  color: #2f8ab8;
+}
+.aw[data-growth-fx="music-box"] .aw-climber-trail {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 2px,
+    var(--gw) 2px 3px,
+    transparent 3px 5px
+  );
+  width: 22px;
+  box-shadow: none;
+}
+
+/* Dandelion Puffs: drifting fluff. */
+.aw[data-growth-fx="dandelion"] .aw-seeds i,
+.aw[data-growth-fx="dandelion"] .aw-burst i {
+  width: 10px;
+  height: 10px;
+  background:
+    radial-gradient(circle, #fff 0 1.5px, transparent 2px),
+    repeating-conic-gradient(
+      rgb(255 255 255 / 0.95) 0 6deg,
+      transparent 6deg 30deg
+    );
+  border-radius: 999px;
+  mask-image: radial-gradient(circle, #000 0 60%, transparent 70%);
+  box-shadow: none;
+}
+.aw[data-growth-fx="dandelion"] .aw-seeds i {
+  animation: gx-float 10s ease-in-out infinite;
+}
+@keyframes gx-float {
+  from {
+    translate: -10px 20px;
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    translate: 30px -70px;
+    opacity: 0;
+  }
+}
+
+/* Ribbon Confetti: bright paper scraps. */
+.aw[data-growth-fx="confetti"] .aw-seeds i,
+.aw[data-growth-fx="confetti"] .aw-burst i {
+  width: 4px;
+  height: 9px;
+  border-radius: 1px;
+  background: #ff5d6c;
+  box-shadow: none;
+}
+.aw[data-growth-fx="confetti"] :is(.aw-seeds, .aw-burst) i:nth-child(4n + 1) {
+  background: #ffd166;
+}
+.aw[data-growth-fx="confetti"] :is(.aw-seeds, .aw-burst) i:nth-child(4n + 2) {
+  background: #4fc3f7;
+}
+.aw[data-growth-fx="confetti"] :is(.aw-seeds, .aw-burst) i:nth-child(4n + 3) {
+  background: #7bd389;
+}
+.aw[data-growth-fx="confetti"] .aw-seeds i {
+  animation: gx-tumble 6s linear infinite;
+}
+
+/* Rainbow Wake: a rainbow band behind the climber (the answer's colour at its heart) and twinkling stars. */
+.aw[data-growth-fx="rainbow-wake"] .aw-climber-trail {
+  width: 26px;
+  background:
+    linear-gradient(0deg, transparent, transparent 10%, rgb(0 0 0 / 0) 100%),
+    linear-gradient(
+      90deg,
+      #ff5d6c 0 14%,
+      #ff9f43 14% 28%,
+      #ffd166 28% 42%,
+      var(--gw) 42% 58%,
+      #4fc3f7 58% 72%,
+      #7c6cf0 72% 86%,
+      #c084fc 86%
+    );
+  mask-image: linear-gradient(0deg, transparent, #000 40%);
+  box-shadow: none;
+}
+.aw[data-growth-fx="rainbow-wake"] .aw-seeds i,
+.aw[data-growth-fx="rainbow-wake"] .aw-burst i {
+  width: 9px;
+  height: 9px;
+  background: #fff6c0;
+  clip-path: polygon(
+    50% 0,
+    62% 38%,
+    100% 50%,
+    62% 62%,
+    50% 100%,
+    38% 62%,
+    0 50%,
+    38% 38%
+  );
+  box-shadow: none;
+}
+
+/* ================================================================================================ Sky styles */
+
+.aw[data-sky] > .aw-world:first-child::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Storybook Clouds: flat, ink-outlined puffs like a picture book. */
+.aw[data-sky="storybook"] :is(.aw-cloud, .aw-fore span) {
+  height: 54px;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 22% 66%, #fff 0 20%, transparent 21%),
+    radial-gradient(circle at 42% 44%, #fff 0 28%, transparent 29%),
+    radial-gradient(circle at 64% 50%, #fff 0 24%, transparent 25%),
+    radial-gradient(circle at 80% 68%, #fff 0 17%, transparent 18%),
+    linear-gradient(#fff, #fff) 20% 70% / 62% 26% no-repeat;
+  filter: drop-shadow(1.5px 0 0 #5a6a8a) drop-shadow(-1.5px 0 0 #5a6a8a)
+    drop-shadow(0 1.5px 0 #5a6a8a) drop-shadow(0 -1.5px 0 #5a6a8a);
+}
+.aw[data-sky="storybook"] .aw-fore span {
+  opacity: 0.85;
+}
+
+/* Candyfloss Sunset: pink and peach skies with spun-sugar clouds. */
+.aw[data-sky="candyfloss"] > .aw-world:first-child::after {
+  background: linear-gradient(180deg, #ffb8d9, #ffcfa8 45%, #d8b8ff);
+  mix-blend-mode: color;
+  opacity: 0.7;
+}
+.aw[data-sky="candyfloss"] :is(.aw-cloud, .aw-fore span) {
+  background: radial-gradient(
+    closest-side,
+    rgb(255 205 230 / 0.95),
+    rgb(255 170 210 / 0.4) 60%,
+    transparent
+  );
+  filter: blur(2px);
+}
+
+/* Starry Night: a midnight climb under stars, with moonlit clouds. */
+.aw[data-sky="starry-night"] > .aw-world:first-child::after {
+  background:
+    radial-gradient(circle at 20% 30%, #fff 0 1px, transparent 1.6px) 0 0 / 90px
+      110px,
+    radial-gradient(circle at 70% 60%, #fff6c0 0 1.2px, transparent 2px) 0 0 /
+      140px 130px,
+    radial-gradient(
+        circle at 45% 80%,
+        rgb(255 255 255 / 0.7) 0 0.8px,
+        transparent 1.4px
+      )
+      0 0 / 60px 70px,
+    linear-gradient(rgb(10 16 48 / 0.82), rgb(26 22 70 / 0.82));
+}
+.aw[data-sky="starry-night"] :is(.aw-cloud, .aw-fore span) {
+  background: radial-gradient(
+    closest-side,
+    rgb(170 185 230 / 0.6),
+    transparent
+  );
+}
+.aw[data-sky="starry-night"] .aw-light {
+  opacity: 0.4;
+}
+.aw[data-sky="starry-night"] :is(.aw-landmark, .aw-gauge span) {
+  color: rgb(225 232 255 / 0.75);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+/* Lantern Festival: a dusky sky full of rising paper lanterns. */
+.aw[data-sky="lantern-festival"] > .aw-world:first-child::after {
+  background: linear-gradient(
+    180deg,
+    rgb(60 30 90 / 0.55),
+    rgb(220 110 80 / 0.35) 60%,
+    rgb(255 190 120 / 0.25)
+  );
+  mix-blend-mode: multiply;
+}
+.aw[data-sky="lantern-festival"] .aw-far .aw-cloud {
+  width: 20px !important;
+  height: 28px;
+  border-radius: 42% / 46%;
+  background: radial-gradient(circle at 50% 42%, #fff1b8, #ff9a3c 58%, #c2410c);
+  filter: drop-shadow(0 0 10px rgb(255 160 60 / 0.75));
+  opacity: 0.9;
+  animation: sk-rise 9s ease-in-out infinite alternate;
+}
+.aw[data-sky="lantern-festival"] .aw-far .aw-cloud:nth-child(3n) {
+  scale: 0.7;
+}
+@keyframes sk-rise {
+  to {
+    translate: 10px calc(-50% - 30px);
+  }
+}
+
+/* Balloon Regatta: striped hot-air balloons drift instead of the far clouds. */
+.aw[data-sky="balloon-regatta"] .aw-far .aw-cloud {
+  width: 30px !important;
+  height: 38px;
+  border-radius: 50% 50% 42% 42% / 56% 56% 44% 44%;
+  background: repeating-linear-gradient(
+    90deg,
+    #ff5d6c 0 6px,
+    #ffd166 6px 12px,
+    #4fc3f7 12px 18px
+  );
+  filter: drop-shadow(0 4px 6px rgb(20 60 80 / 0.25));
+  opacity: 0.95;
+  animation: sk-rise 12s ease-in-out infinite alternate;
+}
+.aw[data-sky="balloon-regatta"] .aw-far .aw-cloud::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 10px;
+  height: 8px;
+  translate: -50% 6px;
+  border-radius: 2px;
+  background: #8a5a32;
+  box-shadow: 0 -6px 0 -4px #6b4a2a;
+}
+.aw[data-sky="balloon-regatta"] .aw-far .aw-cloud:nth-child(even) {
+  filter: hue-rotate(120deg) drop-shadow(0 4px 6px rgb(20 60 80 / 0.25));
+}
+
+/* Patchwork Sky: a stitched quilt of sky, with felt-patch clouds. */
+.aw[data-sky="patchwork-sky"] > .aw-world:first-child::after {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 118px,
+      rgb(255 255 255 / 0.5) 118px 119px,
+      transparent 119px 120px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 118px,
+      rgb(255 255 255 / 0.5) 118px 119px,
+      transparent 119px 120px
+    ),
+    repeating-conic-gradient(
+        rgb(255 255 255 / 0.12) 0 25%,
+        rgb(255 200 230 / 0.12) 0 50%
+      )
+      0 0 / 240px 240px;
+}
+.aw[data-sky="patchwork-sky"] :is(.aw-cloud, .aw-fore span) {
+  border-radius: 40% 50% 45% 55%;
+  background: #fff8ee;
+  outline: 2px dashed #e6a8c0;
+  outline-offset: -6px;
+  filter: drop-shadow(0 3px 0 rgb(200 150 170 / 0.4));
+  height: 46px;
+}
+.aw[data-sky="patchwork-sky"] .aw-fore span {
+  opacity: 0.6;
+}
+
+/* Origami Flock: paper cranes fly past in the foreground; folded-paper clouds behind. */
+.aw[data-sky="origami-flock"] .aw-far .aw-cloud {
+  border-radius: 0;
+  height: 40px;
+  background: linear-gradient(160deg, #fff 50%, #dfe8f2 50%);
+  clip-path: polygon(
+    0 100%,
+    12% 40%,
+    30% 55%,
+    46% 10%,
+    64% 45%,
+    80% 25%,
+    100% 100%
+  );
+  filter: none;
+}
+.aw[data-sky="origami-flock"] .aw-fore span {
+  width: 48px !important;
+  height: 30px;
+  border-radius: 0;
+  background: linear-gradient(135deg, #fff 45%, #cfdcea 45% 60%, #f4f8fb 60%);
+  clip-path: polygon(
+    0 40%,
+    38% 52%,
+    46% 0,
+    56% 52%,
+    100% 30%,
+    62% 70%,
+    50% 100%,
+    40% 70%
+  );
+  filter: drop-shadow(0 6px 4px rgb(20 50 80 / 0.25));
+  opacity: 0.95;
+  animation:
+    ac-flap 0.6s ease-in-out infinite alternate,
+    aa-drift 20s ease-in-out infinite alternate;
+}
+.aw[data-sky="origami-flock"] .aw-fore span:nth-child(odd) {
+  filter: hue-rotate(300deg) saturate(3)
+    drop-shadow(0 6px 4px rgb(20 50 80 / 0.25));
+}
+
+/* ================================================================================================ Gardens */
+
+.ag-glow {
+  animation: ag-glow 2.4s ease-in-out infinite;
+}
+.ag-twinkle {
+  animation: ag-glow 1.6s ease-in-out infinite;
+}
+.ag-waves {
+  animation: ag-waves 5s ease-in-out infinite alternate;
+}
+.ag-bob {
+  animation: aa-bob 3s ease-in-out infinite;
+}
+.ag-gull {
+  animation: ag-gull 7s ease-in-out infinite alternate;
+}
+.ag-sway {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: ac-wiggle 3.4s ease-in-out infinite;
+}
+.ag-koi {
+  animation: ag-gull 6s ease-in-out infinite alternate;
+}
+.ag-snow {
+  animation: ag-snow 6s linear infinite;
+}
+@keyframes ag-glow {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes ag-waves {
+  to {
+    translate: -30px 2px;
+  }
+}
+@keyframes ag-gull {
+  to {
+    translate: 60px -10px;
+  }
+}
+@keyframes ag-snow {
+  from {
+    translate: 0 -20px;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    translate: 12px 90px;
+    opacity: 0;
+  }
+}
+
+/* ================================================================================================ Art styles */
+
+.as[data-style] .as-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Storybook Ink: pen outlines and cross-hatching on cream paper, with italic serif lettering and book-page panels. */
+.as[data-style="pen-and-ink"] {
+  font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+}
+.as[data-style="pen-and-ink"]
+  :is(.aw-scene, .aw-edges, .aw-ground, .aw-stalk, .aw-climber-body) {
+  filter: drop-shadow(0.8px 0 0 #2a2018) drop-shadow(-0.8px 0 0 #2a2018)
+    drop-shadow(0 0.8px 0 #2a2018) drop-shadow(0 -0.8px 0 #2a2018);
+}
+.as[data-style="pen-and-ink"] .aw > .aw-world:first-child {
+  filter: sepia(0.35) saturate(0.85) brightness(1.04);
+}
+.as[data-style="pen-and-ink"] .as-stage::after {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgb(60 40 20 / 0.07) 0 1px,
+      transparent 1px 5px
+    ),
+    radial-gradient(
+      90% 80% at 50% 45%,
+      rgb(255 246 222 / 0.15) 50%,
+      rgb(120 90 50 / 0.3)
+    );
+  mix-blend-mode: multiply;
+}
+.as[data-style="pen-and-ink"] .aw-landmark {
+  font-family: Georgia, "Times New Roman", serif;
+  color: rgb(50 36 22 / 0.75);
+}
+.as[data-style="pen-and-ink"]
+  :is(.as-intro, .as-ask, .as-result, .as-complete) {
+  --as-glass: rgb(46 32 20 / 0.9);
+  border-radius: 0.35rem;
+  box-shadow:
+    inset 0 0 0 1px rgb(240 220 180 / 0.5),
+    inset 0 0 0 5px rgb(46 32 20),
+    inset 0 0 0 6px rgb(240 220 180 / 0.35),
+    0 24px 50px -20px rgb(30 20 10 / 0.7);
+}
+.as[data-style="pen-and-ink"] .as-pod {
+  border-radius: 0.35rem;
+  background: rgb(252 244 226 / 0.92);
+  box-shadow: inset 0 0 0 1px rgb(60 40 20 / 0.5);
+}
+
+/* Pop-up Papercraft: every piece is cut from card with a white edge, standing off the page on a hard shadow. */
+.as[data-style="papercraft"] {
+  font-family:
+    ui-rounded, "SF Pro Rounded", "Nunito", ui-sans-serif, system-ui, sans-serif;
+}
+.as[data-style="papercraft"]
+  :is(.aw-world .aw-scene, .aw-edges, .aw-ground, .aw-stalk) {
+  filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
+    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
+    drop-shadow(0 5px 0 rgb(20 40 60 / 0.2));
+}
+.as[data-style="papercraft"] :is(.aw-cloud, .aw-fore span) {
+  filter: drop-shadow(0 4px 0 rgb(20 40 60 / 0.12));
+}
+.as[data-style="papercraft"] .as-stage::after {
+  background:
+    radial-gradient(
+        circle at 30% 20%,
+        rgb(255 255 255 / 0.25) 0 0.6px,
+        transparent 1px
+      )
+      0 0 / 7px 7px,
+    radial-gradient(
+        circle at 70% 60%,
+        rgb(0 0 0 / 0.05) 0 0.6px,
+        transparent 1px
+      )
+      0 0 / 9px 9px;
+}
+.as[data-style="papercraft"] :is(.as-intro, .as-ask, .as-result, .as-complete) {
+  border-radius: 1.4rem;
+  box-shadow:
+    inset 0 0 0 3px rgb(255 255 255 / 0.25),
+    0 8px 0 rgb(10 30 40 / 0.35);
+}
+.as[data-style="papercraft"] .as-pod {
+  box-shadow: 0 5px 0 rgb(10 30 40 / 0.25);
+}
+.as[data-style="papercraft"] .aw-mark-dot {
+  box-shadow: 0 4px 0 rgb(10 30 40 / 0.3);
+}
+.as[data-style="papercraft"] .aw-mark-text {
+  border-radius: 0.4rem;
+  box-shadow: 0 4px 0 rgb(10 30 40 / 0.2);
+}
+
+/* 8-bit Quest: a chunky pixel world with blocky clouds, a pixel grid, square badges and monospace capitals. */
+.as[data-style="pixel-quest"] {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+.as[data-style="pixel-quest"] :is(.aw-scene, .aw-edges, .aw-ground) {
+  filter: saturate(1.35) contrast(1.15);
+}
+.as[data-style="pixel-quest"] :is(.aw-cloud, .aw-fore span) {
+  border-radius: 0;
+  filter: none;
+  clip-path: polygon(
+    0 50%,
+    10% 50%,
+    10% 30%,
+    30% 30%,
+    30% 10%,
+    60% 10%,
+    60% 25%,
+    80% 25%,
+    80% 45%,
+    100% 45%,
+    100% 85%,
+    0 85%
+  );
+}
+.as[data-style="pixel-quest"] .as-stage::after {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.06) 0 1px,
+      transparent 1px 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgb(0 0 0 / 0.06) 0 1px,
+      transparent 1px 4px
+    );
+}
+.as[data-style="pixel-quest"] .aw-landmark {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-style: normal;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+.as[data-style="pixel-quest"] :is(.aw-mark-dot, .aw-mark-text, .as-pod) {
+  border-radius: 0;
+}
+.as[data-style="pixel-quest"]
+  :is(.as-intro, .as-ask, .as-result, .as-complete) {
+  border-radius: 0;
+  box-shadow:
+    0 0 0 3px #10261f,
+    0 0 0 6px #fbfbf2,
+    0 0 0 9px #10261f,
+    8px 12px 0 9px rgb(0 0 0 / 0.3);
+}
+.as[data-style="pixel-quest"] .as-pod {
+  box-shadow:
+    0 0 0 2px #10261f,
+    4px 4px 0 2px rgb(0 0 0 / 0.25);
+}
+
+/* Chalk Mural: drawn in chalk on a slate wall, with a wooden-framed board for each panel. */
+.as[data-style="chalk-mural"] {
+  font-family: "Chalkboard SE", "Comic Sans MS", "Segoe Print", cursive;
+}
+.as[data-style="chalk-mural"] .as-stage {
+  background: #2d3a36;
+}
+.as[data-style="chalk-mural"] .aw > .aw-world:first-child,
+.as[data-style="chalk-mural"] .aw-far {
+  filter: brightness(0.38) saturate(0.55);
+}
+.as[data-style="chalk-mural"] :is(.aw-world .aw-scene, .aw-edges, .aw-ground) {
+  filter: saturate(0.7) brightness(1.15) contrast(0.85)
+    drop-shadow(0 0 1px rgb(255 255 255 / 0.6));
+  opacity: 0.92;
+}
+.as[data-style="chalk-mural"] :is(.aw-cloud, .aw-fore span) {
+  background:
+    repeating-linear-gradient(
+      -30deg,
+      rgb(255 255 255 / 0.7) 0 1.5px,
+      transparent 1.5px 5px
+    ),
+    transparent;
+  mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  filter: none;
+}
+.as[data-style="chalk-mural"] .as-stage::after {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.18;
+  mix-blend-mode: screen;
+}
+.as[data-style="chalk-mural"] :is(.aw-landmark, .aw-gauge span) {
+  color: rgb(240 240 228 / 0.8);
+  text-shadow: none;
+}
+.as[data-style="chalk-mural"] .aw-landmark[data-zone] {
+  color: #ffe9a0;
+}
+.as[data-style="chalk-mural"]
+  :is(.as-intro, .as-ask, .as-result, .as-complete) {
+  --as-glass: rgb(36 50 44 / 0.94);
+  border-radius: 0.3rem;
+  border: 7px solid #8a5a32;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.4),
+    0 24px 50px -20px rgb(0 0 0 / 0.8);
+}
+.as[data-style="chalk-mural"] .as-pod {
+  border-radius: 0.3rem;
+  border: 3px solid #8a5a32;
+  background: #2f3e39;
+}
+.as[data-style="chalk-mural"] .as-pod :is(span, strong) {
+  color: #f0f0e4;
+}
+
+/* Shop previews don't move when motion is off. */
+.asp[data-still] * {
+  animation: none !important;
+  transition: none !important;
+}
