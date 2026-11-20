@@ -1,12 +1,36 @@
 "use client";
 
-import { HIGHLAND, MOUNTAIN, POST_RADIUS, WATER, attackState, compactNumber, type Attack, type EndedAttack, type FrontCell, type Game } from "./engine";
+import {
+  HIGHLAND,
+  MOUNTAIN,
+  POST_RADIUS,
+  RAIL_RANGE,
+  SAM_RANGE,
+  WARSHIP_HP,
+  WARSHIP_RANGE,
+  WATER,
+  WEAPONS,
+  aimPoint,
+  attackState,
+  compactNumber,
+  launchProblem,
+  placeProblem,
+  readySilo,
+  type Attack,
+  type Building,
+  type Conquest,
+  type EndedAttack,
+  type FrontCell,
+  type Game,
+  type Weapon,
+} from "./engine";
 import { WORLD_NORTH } from "./world-map";
 
 /**
- * Front Wars drawing. The map is one pixel per tile on an offscreen canvas, repainted only where tiles changed;
- * each frame scales it (crisp when zoomed in, smoothed when zoomed out) and draws battles, buildings, boats and
- * labels on top.
+ * Front Wars drawing. The map is two pixels per tile on an offscreen canvas, repainted only where tiles changed;
+ * a tile's corner pixel takes its neighbors' color where both sides (and the diagonal) belong to someone else, so
+ * borders and coastlines round off instead of stepping. Each frame scales it (crisp when zoomed in, smoothed
+ * when zoomed out) and draws battles, buildings, boats and labels on top.
  *
  * Battles are drawn from the simulation's own state, never decorated after the fact: the tiles on an attack's
  * front, its stretches and the direction each one pushes, the tiles it just took, its troops, and the moment it
@@ -16,6 +40,11 @@ import { WORLD_NORTH } from "./world-map";
 
 /** Screen position of tile (0, 0) and the size of one tile, in CSS pixels. */
 export type View = { scale: number; x: number; y: number };
+
+/** What a tap does: attack, place a building, launch a Warship, move the fleet, or launch a bomb. */
+export type Tool = "attack" | Building | "warship" | "fleet" | Weapon;
+export const isWeapon = (tool: Tool): tool is Weapon => tool === "atom" || tool === "hydrogen" || tool === "mirv";
+export const isBuilding = (tool: Tool): tool is Building => tool === "city" || tool === "post" || tool === "port" || tool === "factory" || tool === "silo" || tool === "sam";
 
 type Rgb = [number, number, number];
 const DEEP: Rgb = [12, 30, 52];
@@ -31,21 +60,25 @@ const mix = (a: Rgb, b: Rgb, t: number): Rgb => [a[0] + (b[0] - a[0]) * t, a[1] 
 
 export const compact = compactNumber;
 
+/** Map pixels per tile edge (corners are rounded at this resolution). */
+const SUB = 2;
+
 export class MapRenderer {
   readonly canvas: HTMLCanvasElement;
   private readonly context: CanvasRenderingContext2D;
   private readonly image: ImageData;
   private readonly ground: Uint8ClampedArray;
   private readonly colors: Rgb[];
+  private readonly rgb: Rgb = [0, 0, 0];
   readonly buildings = new Set<number>();
 
   constructor(private readonly game: Game) {
     const { w, h } = game;
     this.canvas = document.createElement("canvas");
-    this.canvas.width = w;
-    this.canvas.height = h;
+    this.canvas.width = w * SUB;
+    this.canvas.height = h * SUB;
     this.context = this.canvas.getContext("2d")!;
-    this.image = this.context.createImageData(w, h);
+    this.image = this.context.createImageData(w * SUB, h * SUB);
     this.colors = game.nations.map((nation) => hexRgb(nation.color));
     // Unclaimed ground, precomputed once: terrain, latitude (on the world) and a fixed grain.
     this.ground = new Uint8ClampedArray(w * h * 3);
@@ -81,43 +114,84 @@ export class MapRenderer {
     return (x > 0 && terrain[t - 1] !== WATER) || (x < w - 1 && terrain[t + 1] !== WATER) || (t >= w && terrain[t - w] !== WATER) || (t < w * (h - 1) && terrain[t + w] !== WATER);
   }
 
-  private paint(t: number) {
+  /** Who a tile belongs to for drawing: -1 water, 0 unclaimed land, otherwise its owner. */
+  private key(t: number) {
+    return this.game.terrain[t] === WATER ? -1 : this.game.owner[t];
+  }
+
+  /** A tile's flat color into `this.rgb`: ground, or its owner's color (bright on the edge where it meets other land). */
+  private color(t: number) {
     const { game } = this;
     const owner = game.owner[t];
-    const data = this.image.data;
-    const i = t * 4;
     const g = t * 3;
+    const out = this.rgb;
     if (!owner || game.terrain[t] === WATER) {
-      data[i] = this.ground[g];
-      data[i + 1] = this.ground[g + 1];
-      data[i + 2] = this.ground[g + 2];
+      out[0] = this.ground[g];
+      out[1] = this.ground[g + 1];
+      out[2] = this.ground[g + 2];
+      // Irradiated ground: a sickly, scorched yellow-green until the fallout clears.
+      if (game.terrain[t] !== WATER && game.fallout[t] > game.tick) {
+        out[0] = out[0] * 0.45 + 118 * 0.55;
+        out[1] = out[1] * 0.45 + 138 * 0.55;
+        out[2] = out[2] * 0.45 + 40 * 0.55;
+      }
+      return out;
+    }
+    const { w, h, terrain } = game;
+    const x = t % w;
+    const edge =
+      (x > 0 && terrain[t - 1] !== WATER && game.owner[t - 1] !== owner) ||
+      (x < w - 1 && terrain[t + 1] !== WATER && game.owner[t + 1] !== owner) ||
+      (t >= w && terrain[t - w] !== WATER && game.owner[t - w] !== owner) ||
+      (t < w * (h - 1) && terrain[t + w] !== WATER && game.owner[t + w] !== owner);
+    const c = this.colors[owner];
+    if (edge) {
+      const light = owner === 1 ? 0.75 : 0.32;
+      out[0] = c[0] + (255 - c[0]) * light;
+      out[1] = c[1] + (255 - c[1]) * light;
+      out[2] = c[2] + (255 - c[2]) * light;
     } else {
-      // Owned land: the player's color over the ground; a bright edge where it meets other land.
-      const { w, h, terrain } = game;
-      const x = t % w;
-      const edge =
-        (x > 0 && terrain[t - 1] !== WATER && game.owner[t - 1] !== owner) ||
-        (x < w - 1 && terrain[t + 1] !== WATER && game.owner[t + 1] !== owner) ||
-        (t >= w && terrain[t - w] !== WATER && game.owner[t - w] !== owner) ||
-        (t < w * (h - 1) && terrain[t + w] !== WATER && game.owner[t + w] !== owner);
-      const color = this.colors[owner];
-      if (edge) {
-        const light = owner === 1 ? 0.75 : 0.32;
-        data[i] = color[0] + (255 - color[0]) * light;
-        data[i + 1] = color[1] + (255 - color[1]) * light;
-        data[i + 2] = color[2] + (255 - color[2]) * light;
-      } else {
-        data[i] = color[0] * 0.74 + this.ground[g] * 0.26;
-        data[i + 1] = color[1] * 0.74 + this.ground[g + 1] * 0.26;
-        data[i + 2] = color[2] * 0.74 + this.ground[g + 2] * 0.26;
+      out[0] = c[0] * 0.74 + this.ground[g] * 0.26;
+      out[1] = c[1] * 0.74 + this.ground[g + 1] * 0.26;
+      out[2] = c[2] * 0.74 + this.ground[g + 2] * 0.26;
+    }
+    return out;
+  }
+
+  private paint(t: number) {
+    const { game } = this;
+    const { w, h } = game;
+    const data = this.image.data;
+    const x = t % w;
+    const y = (t / w) | 0;
+    const own = this.key(t);
+    const [r, g, b] = this.color(t);
+    const row = w * SUB;
+    for (let sy = 0; sy < SUB; sy += 1) {
+      for (let sx = 0; sx < SUB; sx += 1) {
+        const i = ((y * SUB + sy) * row + x * SUB + sx) * 4;
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+        data[i + 3] = 255;
+        // A corner whose two sides and diagonal all belong to the same someone else rounds off into them.
+        const hx = x + (sx ? 1 : -1);
+        const vy = y + (sy ? 1 : -1);
+        if (hx < 0 || hx >= w || vy < 0 || vy >= h) continue;
+        const side = y * w + hx;
+        const other = this.key(side);
+        if (other === own || this.key(vy * w + x) !== other || this.key(vy * w + hx) !== other) continue;
+        const c = this.color(side);
+        data[i] = c[0];
+        data[i + 1] = c[1];
+        data[i + 2] = c[2];
       }
     }
-    data[i + 3] = 255;
     if (game.building[t]) this.buildings.add(t);
     else this.buildings.delete(t);
   }
 
-  /** Repaint the tiles the simulation changed, and their neighbors (whose edges may have moved). */
+  /** Repaint the tiles the simulation changed and their neighbors (whose edges and corners may have moved). */
   update() {
     const { game } = this;
     if (!game.dirty.length) return;
@@ -126,28 +200,35 @@ export class MapRenderer {
     let y0 = h;
     let x1 = -1;
     let y1 = -1;
+    const done = new Set<number>();
     for (const t of game.dirty) {
       const x = t % w;
       const y = (t / w) | 0;
-      this.paint(t);
-      if (x > 0) this.paint(t - 1);
-      if (x < w - 1) this.paint(t + 1);
-      if (y > 0) this.paint(t - w);
-      if (y < h - 1) this.paint(t + w);
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          const nx = x + dx;
+          const ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const n = ny * w + nx;
+          if (done.has(n)) continue;
+          done.add(n);
+          this.paint(n);
+        }
+      }
       if (x - 1 < x0) x0 = Math.max(0, x - 1);
       if (y - 1 < y0) y0 = Math.max(0, y - 1);
       if (x + 1 > x1) x1 = Math.min(w - 1, x + 1);
       if (y + 1 > y1) y1 = Math.min(h - 1, y + 1);
     }
     game.dirty.length = 0;
-    this.context.putImageData(this.image, 0, 0, x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+    this.context.putImageData(this.image, 0, 0, x0 * SUB, y0 * SUB, (x1 - x0 + 1) * SUB, (y1 - y0 + 1) * SUB);
   }
 }
 
 export type Ping = { tile: number; at: number; ok: boolean };
 export type Overlay = {
   hover: number;
-  mode: "attack" | "city" | "post";
+  tool: Tool;
   pings: Ping[];
   now: number;
   spawn: boolean;
@@ -155,6 +236,10 @@ export type Overlay = {
   selected: number;
   /** Simulation time in ticks, with the fraction since the last tick (battle motion follows the game clock). */
   tick: number;
+  /** The stretch an attack at the hovered tile would open (previewed before you tap). */
+  preview: number[];
+  /** Decorative motion level: "off" skips the conquest wave (reduced motion). */
+  effects: "full" | "subtle" | "off";
 };
 
 type Size = { width: number; height: number; dpr: number };
@@ -210,36 +295,34 @@ export function drawFrame(ctx: CanvasRenderingContext2D, renderer: MapRenderer, 
     drawBand(ctx, game, view, size, attack, rgb, Math.min(0.8, base * pulse * (attack.id === overlay.selected ? 1.5 : 1)));
   }
 
-  // 2. Buildings (once they're big enough to see): a City is a little house, a Defense Post a shield.
+  // 2. Railroads (a Factory's links, with trains running), then buildings once they're big enough to see.
+  drawRails(ctx, game, view, size, tick);
   if (scale >= 1.2) {
     const glyph = Math.max(7, Math.min(18, scale * 3));
     for (const t of renderer.buildings) {
       const [x, y] = at(t);
       if (!visible(x, y)) continue;
-      const color = game.nations[game.owner[t]]?.color ?? "#fff";
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = `rgb(${INK} / 0.85)`;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      if (game.building[t] === 1) {
-        ctx.moveTo(x - glyph / 2, y + glyph / 2);
-        ctx.lineTo(x - glyph / 2, y - glyph / 8);
-        ctx.lineTo(x, y - glyph / 2);
-        ctx.lineTo(x + glyph / 2, y - glyph / 8);
-        ctx.lineTo(x + glyph / 2, y + glyph / 2);
-      } else {
-        ctx.moveTo(x, y - glyph / 2);
-        ctx.lineTo(x + glyph / 2, y - glyph / 4);
-        ctx.quadraticCurveTo(x + glyph / 2, y + glyph / 3, x, y + glyph / 2);
-        ctx.quadraticCurveTo(x - glyph / 2, y + glyph / 3, x - glyph / 2, y - glyph / 4);
+      drawGlyph(ctx, game.building[t], x, y, glyph, game.nations[game.owner[t]]?.color ?? "#fff");
+      // Your Silos and SAMs show their reload as a sweep around them.
+      if (game.owner[t] === 1 && (game.building[t] === 5 || game.building[t] === 6) && game.readyAt[t] > game.tick) {
+        const total = game.building[t] === 5 ? 100 : 75;
+        const left = Math.min(1, (game.readyAt[t] - game.tick) / total);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = `rgb(${WARN} / 0.95)`;
+        ctx.beginPath();
+        ctx.arc(x, y, glyph * 0.85, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - left));
+        ctx.stroke();
       }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(x, y + glyph / 8, glyph / 5, 0, Math.PI * 2);
-      ctx.fill();
+    }
+  } else {
+    // Zoomed out: Silos and SAMs still show as dots (they decide where bombs can go).
+    for (const t of renderer.buildings) {
+      const code = game.building[t];
+      if (code !== 5 && code !== 6) continue;
+      const [x, y] = at(t);
+      if (!visible(x, y)) continue;
+      ctx.fillStyle = code === 5 ? `rgb(${WARN})` : "rgb(140 220 255)";
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
     }
   }
   // Your buildings an enemy front has reached: a red alarm ring until the attack ends or moves on.
@@ -290,6 +373,8 @@ export function drawFrame(ctx: CanvasRenderingContext2D, renderer: MapRenderer, 
     if (age < 0 || age > 20) continue;
     // Land grabs end all the time (out of troops or of open land): only fights between players get a marker.
     if (ended.to === 0) continue;
+    // A fallen player gets the conquest sequence instead (once, not once per attacker).
+    if (ended.eliminated) continue;
     const role = roleOf(ended.from, ended.to);
     if (role === "other" && scale < 2.5) continue;
     const [x, y] = screen(ended.x, ended.y);
@@ -340,6 +425,12 @@ export function drawFrame(ctx: CanvasRenderingContext2D, renderer: MapRenderer, 
     if (mine || incoming || scale > 2) label(ctx, compactNumber(boat.troops), x, y - hull - 6, 11, incoming ? `rgb(${IN})` : "#fff", 700);
   }
 
+  // 5b. Trade ships, Warships, bombs in flight and what just happened at sea and in the sky.
+  drawTraders(ctx, game, view, size);
+  drawWarships(ctx, game, view, size, overlay.tool, tick);
+  drawEffects(ctx, game, view, size, tick, overlay.effects !== "off");
+  drawNukes(ctx, game, view, size, tick);
+
   // 6. Troop counts on the fronts, laid out before the names so the names can give way.
   const pills: Pill[] = [];
   const offscreen: { x: number; y: number; troops: number; rgb: string }[] = [];
@@ -363,6 +454,20 @@ export function drawFrame(ctx: CanvasRenderingContext2D, renderer: MapRenderer, 
       for (let tries = 0; tries < 3 && pills.some((placed) => overlaps(placed, pill)); tries += 1) pill.y -= pill.h + 4;
     }
     pills.push(pill);
+  }
+
+  // 6b. Conquests: the last pocket falls, a wave of the conqueror's color sweeps back over the land taken, and the
+  // fallen name is struck out and fades. One sequence per fall; yours and fallen Nations always, others up close.
+  // When several fall at once only the two latest sweep the map; the others just strike out their names.
+  let waves = 0;
+  for (let i = game.conquests.length - 1; i >= 0; i -= 1) {
+    const conquest = game.conquests[i];
+    const age = tick - conquest.tick;
+    if (age < 0 || age > 40) continue;
+    if (conquest.by !== 1 && conquest.kind !== "nation" && scale < 2.5) continue;
+    const wave = waves < 2;
+    waves += 1;
+    drawConquest(ctx, game, view, size, conquest, age, overlay.effects !== "off" && wave, overlay.effects === "full");
   }
 
   // 7. Player names and troops, sized to their land; the largest first, and only those big enough to read.
@@ -389,13 +494,41 @@ export function drawFrame(ctx: CanvasRenderingContext2D, renderer: MapRenderer, 
   drawOffscreen(ctx, size, offscreen.slice(0, 5));
 
   // 8. Pointer feedback: the hovered tile, a Post's reach while placing one, and a ring where you clicked.
+  if (overlay.preview.length) {
+    const s = scale;
+    const box = Math.max(1.5, s);
+    ctx.beginPath();
+    let drawn = 0;
+    for (const t of overlay.preview) {
+      const x = view.x + (t % game.w) * s;
+      const y = view.y + ((t / game.w) | 0) * s;
+      if (x < -box || y < -box || x > size.width || y > size.height) continue;
+      ctx.rect(x, y, box, box);
+      if (++drawn > 5000) break;
+    }
+    ctx.fillStyle = "rgb(255 255 255 / 0.32)";
+    ctx.fill();
+  }
+  if (overlay.tool !== "attack" && !overlay.spawn) drawToolRanges(ctx, game, view, size, overlay.tool, tick);
   if (overlay.hover >= 0) {
     const [x, y] = at(overlay.hover);
+    const tool = overlay.tool;
     ctx.lineWidth = 2;
-    ctx.strokeStyle = overlay.mode === "attack" ? "rgb(255 255 255 / 0.9)" : "rgb(255 214 107 / 0.95)";
+    const valid =
+      overlay.spawn || tool === "attack"
+        ? true
+        : isBuilding(tool)
+          ? !placeProblem(game, 1, overlay.hover, tool)
+          : isWeapon(tool)
+            ? !launchProblem(game, 1, overlay.hover, tool)
+            : game.terrain[overlay.hover] === WATER;
+    ctx.strokeStyle = tool === "attack" || overlay.spawn ? "rgb(255 255 255 / 0.9)" : valid ? `rgb(${GOOD} / 0.95)` : `rgb(${IN} / 0.95)`;
     const box = Math.max(6, scale + 2);
     ctx.strokeRect(x - box / 2, y - box / 2, box, box);
-    if (overlay.mode === "post") {
+    if (!overlay.spawn && isWeapon(tool)) drawAim(ctx, game, view, overlay.hover, tool, valid, tick);
+    if (!overlay.spawn && tool === "sam") ring(ctx, x, y, SAM_RANGE * scale, valid ? GOOD : IN, true, 0.8);
+    if (!overlay.spawn && tool === "factory" && valid) drawRailPreview(ctx, game, view, overlay.hover);
+    if (tool === "post") {
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
       ctx.arc(x, y, POST_RADIUS * scale, 0, Math.PI * 2);
@@ -500,6 +633,567 @@ function drawTrail(ctx: CanvasRenderingContext2D, game: Game, view: View, size: 
     const r = (s * 0.5 + 1.5) * (1 + age * 0.3);
     ctx.fillStyle = `rgb(${rgb} / ${(1 - age / 6) * 0.85})`;
     ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+}
+
+/**
+ * One conquest, `age` ticks after the fall: the last stand collapses in a flash (~1 s), a shockwave rolls out from
+ * the last pocket, a wave of the conqueror's color sweeps back over everything taken (~2.2 s), and the fallen name
+ * is struck out and fades by 4 s. Without motion only the struck-out name shows.
+ */
+function drawConquest(ctx: CanvasRenderingContext2D, game: Game, view: View, size: Size, conquest: Conquest, age: number, motion: boolean, full: boolean) {
+  const s = view.scale;
+  const rgb = conquest.by === 1 ? OUT : rgbText(game.nations[conquest.by].color);
+  const major = conquest.kind === "nation" || conquest.kind === "human";
+  const n = conquest.tiles.length;
+  const box = Math.max(1.5, s);
+  const tiles = (list: Int32Array, from: number, to: number, fill: string) => {
+    ctx.beginPath();
+    let drawn = 0;
+    for (let i = from; i < to && i < list.length; i += 1) {
+      const t = list[i];
+      const x = view.x + (t % game.w) * s;
+      const y = view.y + ((t / game.w) | 0) * s;
+      if (x < -box || y < -box || x > size.width || y > size.height) continue;
+      ctx.rect(x, y, box, box);
+      if (++drawn > 3000) break;
+    }
+    ctx.fillStyle = fill;
+    ctx.fill();
+  };
+  if (motion && age <= 12 && conquest.final.length) {
+    // The last stand collapses: what fell in the final seconds flashes white and burns into the new color.
+    const p = age / 12;
+    tiles(conquest.final, 0, conquest.final.length, `rgb(255 255 255 / ${0.85 * (1 - p)})`);
+    tiles(conquest.final, 0, conquest.final.length, `rgb(${rgb} / ${0.5 * Math.sin(p * Math.PI)})`);
+  }
+  if (motion && age <= 26) {
+    // The wave front: a band of tiles moving outward through the territory, brightest at its leading edge.
+    const front = Math.min(1, age / 22) * n;
+    const tail = Math.max(0, front - Math.max(40, n * 0.18));
+    const layers = 3;
+    for (let k = 0; k < layers; k += 1) {
+      const from = Math.floor(tail + ((front - tail) * k) / layers);
+      const to = Math.floor(tail + ((front - tail) * (k + 1)) / layers);
+      tiles(conquest.tiles, from, to, `rgb(${rgb} / ${(0.18 + 0.32 * ((k + 1) / layers)) * (1 - Math.max(0, age - 20) / 6)})`);
+    }
+    // Where the last pocket fell: a shockwave, and for a Nation (with full effects) a burst of sparks.
+    const [px, py] = [view.x + conquest.x * s, view.y + conquest.y * s];
+    const reach = Math.max(major ? 34 : 20, Math.min(260, Math.sqrt(conquest.size) * s * 0.9));
+    if (age <= 18) ripple(ctx, px, py, age / 18, rgb, reach);
+    if (major && full && age <= 12) sparks(ctx, px, py, age / 12, rgb, conquest.by === 1 ? GOOD : WARN, Math.max(16, reach * 0.45));
+  }
+  // The fallen name, struck through, then gone.
+  const fade = age < 30 ? 1 : 1 - (age - 30) / 10;
+  if (fade <= 0) return;
+  const x = view.x + conquest.cx * s;
+  const y = view.y + conquest.cy * s;
+  if (x < -200 || y < -60 || x > size.width + 200 || y > size.height + 60) return;
+  const font = Math.max(major ? 14 : 12, Math.min(major ? 30 : 22, Math.sqrt(n) * s * 0.3));
+  ctx.save();
+  ctx.globalAlpha = fade;
+  // A Nation's name settles in from slightly larger; a Bot's just appears.
+  const settle = motion && major ? 1 + 0.25 * Math.max(0, 1 - age / 8) : 1;
+  label(ctx, conquest.name, x, y, font * settle, "rgb(255 255 255 / 0.92)", 800);
+  ctx.font = `800 ${font * settle}px ${FONT}`;
+  const width = ctx.measureText(conquest.name).width;
+  const strike = motion ? Math.min(1, Math.max(0, (age - 2) / 8)) : 1;
+  ctx.lineWidth = Math.max(2, font / 7);
+  ctx.lineCap = "round";
+  ctx.strokeStyle = `rgb(${conquest.by === 1 ? GOOD : rgb})`;
+  ctx.beginPath();
+  ctx.moveTo(x - width / 2 - 4, y);
+  ctx.lineTo(x - width / 2 - 4 + (width + 8) * strike, y);
+  ctx.stroke();
+  if (conquest.by === 1) label(ctx, major ? "NATION CONQUERED" : "CONQUERED", x, y + font * 1.0, Math.max(10, font * 0.42), `rgb(${GOOD})`, 800);
+  else if (major) label(ctx, `FELL TO ${game.nations[conquest.by].name.toUpperCase()}`, x, y + font * 1.0, Math.max(9, font * 0.38), "rgb(255 255 255 / 0.75)", 700);
+  ctx.restore();
+}
+
+/* ----------------------------------------------------------------------------------------- Arsenal */
+
+const GOLD = "255 205 90";
+const SKY = "140 220 255";
+
+function ring(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, rgb: string, dashed: boolean, alpha: number, width = 1.5) {
+  ctx.save();
+  ctx.lineWidth = width;
+  if (dashed) ctx.setLineDash([5, 5]);
+  ctx.strokeStyle = `rgb(${rgb} / ${alpha})`;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** A building's glyph: City house, Post shield, Port anchor, Factory roofline, Silo missile, SAM dish. */
+function drawGlyph(ctx: CanvasRenderingContext2D, code: number, x: number, y: number, g: number, color: string) {
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = `rgb(${INK} / 0.85)`;
+  ctx.fillStyle = "#fff";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  const h = g / 2;
+  switch (code) {
+    case 1:
+      ctx.moveTo(x - h, y + h);
+      ctx.lineTo(x - h, y - g / 8);
+      ctx.lineTo(x, y - h);
+      ctx.lineTo(x + h, y - g / 8);
+      ctx.lineTo(x + h, y + h);
+      break;
+    case 2:
+      ctx.moveTo(x, y - h);
+      ctx.lineTo(x + h, y - g / 4);
+      ctx.quadraticCurveTo(x + h, y + g / 3, x, y + h);
+      ctx.quadraticCurveTo(x - h, y + g / 3, x - h, y - g / 4);
+      break;
+    case 3:
+      ctx.arc(x, y, h, 0, Math.PI * 2);
+      break;
+    case 4:
+      ctx.moveTo(x - h, y + h);
+      ctx.lineTo(x - h, y - h * 0.1);
+      ctx.lineTo(x - h * 0.33, y - h * 0.55);
+      ctx.lineTo(x - h * 0.33, y - h * 0.1);
+      ctx.lineTo(x + h * 0.33, y - h * 0.55);
+      ctx.lineTo(x + h * 0.33, y - h);
+      ctx.lineTo(x + h, y - h);
+      ctx.lineTo(x + h, y + h);
+      break;
+    case 5:
+      ctx.moveTo(x, y - h * 1.15);
+      ctx.quadraticCurveTo(x + h * 0.55, y - h * 0.5, x + h * 0.45, y + h * 0.45);
+      ctx.lineTo(x + h * 0.85, y + h);
+      ctx.lineTo(x - h * 0.85, y + h);
+      ctx.lineTo(x - h * 0.45, y + h * 0.45);
+      ctx.quadraticCurveTo(x - h * 0.55, y - h * 0.5, x, y - h * 1.15);
+      break;
+    default:
+      ctx.moveTo(x, y - h * 0.1);
+      ctx.lineTo(x + h, y + h);
+      ctx.lineTo(x - h, y + h);
+      break;
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(1.2, g / 9);
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  switch (code) {
+    case 3:
+      // Anchor.
+      ctx.moveTo(x, y - h * 0.6);
+      ctx.lineTo(x, y + h * 0.55);
+      ctx.moveTo(x - h * 0.35, y - h * 0.25);
+      ctx.lineTo(x + h * 0.35, y - h * 0.25);
+      ctx.moveTo(x - h * 0.55, y + h * 0.15);
+      ctx.quadraticCurveTo(x, y + h * 0.9, x + h * 0.55, y + h * 0.15);
+      ctx.stroke();
+      return;
+    case 4:
+      ctx.rect(x - h * 0.55, y + h * 0.1, h * 0.4, h * 0.45);
+      ctx.rect(x + h * 0.15, y + h * 0.1, h * 0.4, h * 0.45);
+      ctx.fill();
+      return;
+    case 5:
+      ctx.moveTo(x - h * 0.85, y + h);
+      ctx.lineTo(x + h * 0.85, y + h);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y - h * 0.2, g / 7, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    case 6:
+      // The dish above the mount.
+      ctx.arc(x, y - h * 0.35, h * 0.55, Math.PI * 1.1, Math.PI * 1.9);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y + h * 0.5, g / 7, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    default:
+      ctx.arc(x, y + g / 8, g / 5, 0, Math.PI * 2);
+      ctx.fill();
+  }
+}
+
+/** Railroads between a player's stations, with a train running each line back and forth. */
+function drawRails(ctx: CanvasRenderingContext2D, game: Game, view: View, size: Size, tick: number) {
+  const s = view.scale;
+  if (s < 0.6) return;
+  for (const nation of game.nations) {
+    if (!nation.alive || !nation.rails.length || (nation.id !== 1 && s < 2)) continue;
+    const rgb = nation.id === 1 ? "235 235 245" : rgbText(nation.color);
+    ctx.save();
+    ctx.lineWidth = Math.max(1, Math.min(3, s * 0.4));
+    ctx.strokeStyle = `rgb(${rgb} / 0.55)`;
+    ctx.setLineDash([Math.max(2, s), Math.max(2, s * 0.8)]);
+    ctx.beginPath();
+    for (let i = 0; i < nation.rails.length; i += 2) {
+      const a = nation.rails[i];
+      const b = nation.rails[i + 1];
+      ctx.moveTo(view.x + ((a % game.w) + 0.5) * s, view.y + (((a / game.w) | 0) + 0.5) * s);
+      ctx.lineTo(view.x + ((b % game.w) + 0.5) * s, view.y + (((b / game.w) | 0) + 0.5) * s);
+    }
+    ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = `rgb(${GOLD})`;
+    const car = Math.max(2, Math.min(5, s * 0.8));
+    for (let i = 0; i < nation.rails.length; i += 2) {
+      const a = nation.rails[i];
+      const b = nation.rails[i + 1];
+      const ax = (a % game.w) + 0.5;
+      const ay = ((a / game.w) | 0) + 0.5;
+      const bx = (b % game.w) + 0.5;
+      const by = ((b / game.w) | 0) + 0.5;
+      const length = Math.hypot(bx - ax, by - ay) || 1;
+      const phase = (tick * (0.9 / length) + i * 0.618) % 2;
+      const p = phase < 1 ? phase : 2 - phase;
+      const x = view.x + (ax + (bx - ax) * p) * s;
+      const y = view.y + (ay + (by - ay) * p) * s;
+      if (x < -10 || y < -10 || x > size.width + 10 || y > size.height + 10) continue;
+      ctx.fillRect(x - car / 2, y - car / 2, car, car);
+    }
+  }
+}
+
+/** Where a Factory placed here would lay its railroads (its nearest Cities, Ports and Factories in range). */
+function drawRailPreview(ctx: CanvasRenderingContext2D, game: Game, view: View, tile: number) {
+  const s = view.scale;
+  const nation = game.nations[1];
+  const fx = (tile % game.w) + 0.5;
+  const fy = ((tile / game.w) | 0) + 0.5;
+  ring(ctx, view.x + fx * s, view.y + fy * s, RAIL_RANGE * s, GOLD, true, 0.6);
+  const near = [...nation.citySpots, ...nation.ports, ...nation.factories]
+    .map((t) => ({ t, d: (t % game.w + 0.5 - fx) ** 2 + (((t / game.w) | 0) + 0.5 - fy) ** 2 }))
+    .filter((entry) => entry.d <= RAIL_RANGE * RAIL_RANGE)
+    .sort((a, b) => a.d - b.d)
+    .slice(0, 4);
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = `rgb(${GOLD} / 0.9)`;
+  ctx.beginPath();
+  for (const { t } of near) {
+    ctx.moveTo(view.x + fx * s, view.y + fy * s);
+    ctx.lineTo(view.x + ((t % game.w) + 0.5) * s, view.y + (((t / game.w) | 0) + 0.5) * s);
+  }
+  ctx.stroke();
+  ctx.restore();
+  label(ctx, near.length ? `${near.length} rail link${near.length === 1 ? "" : "s"}` : "No stations in range", view.x + fx * s, view.y + fy * s - 18, 11, `rgb(${GOLD})`, 700);
+}
+
+/** Ranges that matter for the tool in hand: SAM cover when aiming a bomb or placing a SAM, your fleet's patrols. */
+function drawToolRanges(ctx: CanvasRenderingContext2D, game: Game, view: View, size: Size, tool: Tool, tick: number) {
+  const s = view.scale;
+  if (isWeapon(tool) || tool === "sam") {
+    for (const nation of game.nations) {
+      if (!nation.alive) continue;
+      const mine = nation.id === 1;
+      if (tool === "sam" && !mine) continue;
+      for (const sam of nation.sams) {
+        const x = view.x + ((sam % game.w) + 0.5) * s;
+        const y = view.y + (((sam / game.w) | 0) + 0.5) * s;
+        const r = SAM_RANGE * s;
+        if (x < -r || y < -r || x > size.width + r || y > size.height + r) continue;
+        ctx.fillStyle = mine ? `rgb(${SKY} / 0.06)` : `rgb(${IN} / 0.07)`;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+        ring(ctx, x, y, r, mine ? SKY : IN, !mine, 0.55);
+      }
+    }
+  }
+  if (tool === "fleet" || tool === "warship") {
+    for (const ship of game.ships) {
+      if (ship.owner !== 1) continue;
+      const [x, y] = [view.x + ((ship.at % game.w) + 0.5) * s, view.y + (((ship.at / game.w) | 0) + 0.5) * s];
+      const [px, py] = [view.x + ((ship.patrol % game.w) + 0.5) * s, view.y + (((ship.patrol / game.w) | 0) + 0.5) * s];
+      ring(ctx, x, y, WARSHIP_RANGE * s, OUT, true, 0.4);
+      ctx.save();
+      ctx.setLineDash([3, 5]);
+      ctx.lineDashOffset = -tick * 0.6;
+      ctx.strokeStyle = `rgb(${OUT} / 0.55)`;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      ctx.restore();
+      ring(ctx, px, py, 6, OUT, false, 0.8);
+    }
+  }
+}
+
+/** Aiming a bomb: its blast rings where it would land, the flight from your ready Silo, and the SAMs in the way. */
+function drawAim(ctx: CanvasRenderingContext2D, game: Game, view: View, hover: number, weapon: Weapon, valid: boolean, tick: number) {
+  const s = view.scale;
+  const info = WEAPONS[weapon];
+  const { x: tx, y: ty } = aimPoint(game, weapon, hover);
+  const x = view.x + tx * s;
+  const y = view.y + ty * s;
+  const rgb = valid ? WARN : IN;
+  const pulse = 1 + 0.04 * Math.sin(tick * 0.6);
+  if (weapon === "mirv") {
+    const target = game.nations[game.owner[hover]];
+    const spread = Math.sqrt(Math.max(1, target?.tiles ?? 1)) * 0.75 * s;
+    ring(ctx, x, y, spread * pulse, rgb, true, 0.85, 2);
+    label(ctx, target?.tiles ? `MIRV · ~${Math.min(110, Math.max(14, Math.round(target.tiles / 140)))} warheads on ${target.name}` : "MIRV · aim at a rival", x, y - spread - 12, 12, `rgb(${rgb})`, 800);
+  } else {
+    ctx.fillStyle = `rgb(${rgb} / 0.12)`;
+    ctx.beginPath();
+    ctx.arc(x, y, info.outer * s, 0, Math.PI * 2);
+    ctx.fill();
+    ring(ctx, x, y, info.outer * s * pulse, rgb, true, 0.85, 2);
+    ring(ctx, x, y, info.inner * s, rgb, false, 0.95, 2);
+  }
+  // Crosshair.
+  ctx.strokeStyle = `rgb(${rgb} / 0.9)`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y);
+  ctx.lineTo(x + 8, y);
+  ctx.moveTo(x, y - 8);
+  ctx.lineTo(x, y + 8);
+  ctx.stroke();
+  const player = game.nations[1];
+  const silo = readySilo(game, player, hover) >= 0 ? readySilo(game, player, hover) : player.silos[0];
+  if (silo !== undefined && silo >= 0) {
+    const sx = view.x + ((silo % game.w) + 0.5) * s;
+    const sy = view.y + (((silo / game.w) | 0) + 0.5) * s;
+    const distance = Math.hypot(tx - ((silo % game.w) + 0.5), ty - (((silo / game.w) | 0) + 0.5));
+    const lift = Math.min(200, Math.hypot(x - sx, y - sy) * 0.35);
+    ctx.save();
+    ctx.setLineDash([4, 6]);
+    ctx.lineDashOffset = -tick;
+    ctx.strokeStyle = `rgb(${rgb} / 0.6)`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo((sx + x) / 2, (sy + y) / 2 - lift * 2, x, y);
+    ctx.stroke();
+    ctx.restore();
+    // Enemy SAMs covering the target: each gets one shot at it.
+    let sams = 0;
+    if (info.intercept > 0) {
+      for (const nation of game.nations) {
+        if (!nation.alive || nation.id === 1) continue;
+        for (const sam of nation.sams) if ((sam % game.w + 0.5 - tx) ** 2 + (((sam / game.w) | 0) + 0.5 - ty) ** 2 <= SAM_RANGE * SAM_RANGE) sams += 1;
+      }
+    }
+    const eta = Math.max(20, Math.round(distance / info.speed)) / 10;
+    const odds = sams ? ` · ${sams} SAM${sams === 1 ? "" : "s"}: ${Math.round((1 - (1 - info.intercept) ** sams) * 100)}% shot down` : "";
+    if (weapon !== "mirv") label(ctx, `${info.label} · ${Math.ceil(eta)}s${odds}`, x, y - info.outer * s - 12, 12, `rgb(${sams ? IN : rgb})`, 800);
+  }
+}
+
+function drawTraders(ctx: CanvasRenderingContext2D, game: Game, view: View, size: Size) {
+  const s = view.scale;
+  for (const trader of game.traders) {
+    if (trader.owner !== 1 && s < 1.4) continue;
+    const t = trader.path[Math.min(trader.path.length - 1, Math.floor(trader.index))];
+    const x = view.x + ((t % game.w) + 0.5) * s;
+    const y = view.y + (((t / game.w) | 0) + 0.5) * s;
+    if (x < -10 || y < -10 || x > size.width + 10 || y > size.height + 10) continue;
+    const r = Math.max(2.5, Math.min(6, s * 1.2));
+    ctx.fillStyle = `rgb(${GOLD})`;
+    ctx.strokeStyle = trader.owner === 1 ? "#fff" : game.nations[trader.owner].color;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x + r, y);
+    ctx.lineTo(x, y + r);
+    ctx.lineTo(x - r, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawWarships(ctx: CanvasRenderingContext2D, game: Game, view: View, size: Size, tool: Tool, tick: number) {
+  const s = view.scale;
+  for (const ship of game.ships) {
+    const mine = ship.owner === 1;
+    if (!mine && s < 0.9) continue;
+    const x = view.x + ((ship.at % game.w) + 0.5) * s;
+    const y = view.y + (((ship.at / game.w) | 0) + 0.5) * s;
+    if (x < -30 || y < -30 || x > size.width + 30 || y > size.height + 30) continue;
+    const next = ship.path[Math.min(ship.path.length - 1, ship.step + 2)] ?? ship.at;
+    const angle = next !== ship.at ? Math.atan2(((next / game.w) | 0) - ((ship.at / game.w) | 0), (next % game.w) - (ship.at % game.w)) : Math.sin(tick * 0.02 + ship.id) * 0.2;
+    const hull = Math.max(7, Math.min(16, s * 3.4));
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.fillStyle = mine ? "#fff" : game.nations[ship.owner].color;
+    ctx.strokeStyle = `rgb(${INK} / 0.9)`;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(hull, 0);
+    ctx.lineTo(hull * 0.35, -hull * 0.42);
+    ctx.lineTo(-hull * 0.85, -hull * 0.42);
+    ctx.lineTo(-hull * 0.85, hull * 0.42);
+    ctx.lineTo(hull * 0.35, hull * 0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = mine ? game.nations[1].color : "#fff";
+    ctx.fillRect(-hull * 0.35, -hull * 0.18, hull * 0.5, hull * 0.36);
+    ctx.restore();
+    if (ship.hp < WARSHIP_HP) {
+      const w = hull * 1.6;
+      ctx.fillStyle = `rgb(${INK} / 0.8)`;
+      ctx.fillRect(x - w / 2, y - hull - 6, w, 3);
+      ctx.fillStyle = ship.hp > WARSHIP_HP * 0.4 ? `rgb(${GOOD})` : `rgb(${IN})`;
+      ctx.fillRect(x - w / 2, y - hull - 6, (w * ship.hp) / WARSHIP_HP, 3);
+    }
+    if (mine && tool !== "fleet" && tool !== "warship" && s >= 2) ring(ctx, x, y, WARSHIP_RANGE * s, OUT, true, 0.18);
+  }
+}
+
+/** Bombs in flight: an arc from the Silo with a fading trail, and a target marker (red when it's coming at you). */
+function drawNukes(ctx: CanvasRenderingContext2D, game: Game, view: View, size: Size, tick: number) {
+  const s = view.scale;
+  for (const nuke of game.nukes) {
+    const p = Math.min(1, Math.max(0, (tick - nuke.launched) / nuke.flight));
+    const toYou = nuke.to === 1 || game.owner[nuke.target] === 1;
+    const rgb = nuke.from === 1 ? OUT : toYou ? IN : WARN;
+    const x0 = view.x + nuke.x0 * s;
+    const y0 = view.y + nuke.y0 * s;
+    const x1 = view.x + nuke.x1 * s;
+    const y1 = view.y + nuke.y1 * s;
+    const lift = nuke.warhead ? 0 : Math.min(220, Math.hypot(x1 - x0, y1 - y0) * 0.35);
+    const point = (q: number) => [x0 + (x1 - x0) * q, y0 + (y1 - y0) * q - Math.sin(Math.PI * q) * lift] as const;
+    if (!nuke.warhead) {
+      // The target, pulsing faster as impact nears.
+      const info = WEAPONS[nuke.weapon];
+      const r = (nuke.weapon === "mirv" ? Math.sqrt(Math.max(1, game.nations[nuke.to]?.tiles ?? 1)) * 0.75 : info.outer) * s;
+      if (x1 > -r && y1 > -r && x1 < size.width + r && y1 < size.height + r) {
+        const beat = 0.5 + 0.5 * Math.sin(tick * (0.4 + p * 1.2));
+        ctx.fillStyle = `rgb(${rgb} / ${0.06 + 0.08 * beat})`;
+        ctx.beginPath();
+        ctx.arc(x1, y1, r, 0, Math.PI * 2);
+        ctx.fill();
+        ring(ctx, x1, y1, r, rgb, true, 0.7 + 0.3 * beat, 2);
+        if (nuke.weapon !== "mirv") ring(ctx, x1, y1, info.inner * s, rgb, false, 0.8, 1.5);
+        if (nuke.from === 1 || toYou) {
+          const left = Math.max(0, (nuke.flight - (tick - nuke.launched)) / 10);
+          label(ctx, `${info.label.toUpperCase()} · ${Math.ceil(left)}s`, x1, y1 - r - 12, 12, `rgb(${rgb})`, 800);
+        }
+      }
+    }
+    // Trail and head.
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.lineWidth = nuke.warhead ? 1.2 : 2.2;
+    const from = Math.max(0, p - (nuke.warhead ? 0.6 : 0.3));
+    const steps = 10;
+    for (let i = 0; i < steps; i += 1) {
+      const a = from + ((p - from) * i) / steps;
+      const b = from + ((p - from) * (i + 1)) / steps;
+      const [ax, ay] = point(a);
+      const [bx, by] = point(b);
+      ctx.strokeStyle = `rgb(${rgb} / ${((i + 1) / steps) * 0.8})`;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
+    }
+    const [hx, hy] = point(p);
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = `rgb(${rgb})`;
+    ctx.shadowBlur = nuke.warhead ? 4 : 10;
+    ctx.beginPath();
+    ctx.arc(hx, hy, nuke.warhead ? 1.8 : 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+/** Shells, interceptions, blasts, sinkings and seized cargo, each for a moment where it happened. */
+function drawEffects(ctx: CanvasRenderingContext2D, game: Game, view: View, size: Size, tick: number, motion: boolean) {
+  const s = view.scale;
+  for (const fx of game.effects) {
+    const age = tick - fx.tick;
+    if (age < 0) continue;
+    const x0 = view.x + fx.x0 * s;
+    const y0 = view.y + fx.y0 * s;
+    const x1 = view.x + fx.x1 * s;
+    const y1 = view.y + fx.y1 * s;
+    switch (fx.kind) {
+      case "shell": {
+        if (age > 6 || s < 0.9) break;
+        const p = Math.min(1, age / 4);
+        ctx.strokeStyle = `rgb(${WARN} / ${1 - age / 6})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x0 + (x1 - x0) * Math.max(0, p - 0.4), y0 + (y1 - y0) * Math.max(0, p - 0.4));
+        ctx.lineTo(x0 + (x1 - x0) * p, y0 + (y1 - y0) * p);
+        ctx.stroke();
+        if (p >= 1) ring(ctx, x1, y1, 3 + age * 1.5, WARN, false, 1 - age / 6);
+        break;
+      }
+      case "intercept":
+      case "miss": {
+        if (age > 14) break;
+        const p = Math.min(1, age / 5);
+        ctx.strokeStyle = `rgb(${SKY} / ${1 - age / 14})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0 + (x1 - x0) * p, y0 + (y1 - y0) * p);
+        ctx.stroke();
+        if (p >= 1) {
+          const q = (age - 5) / 9;
+          if (fx.kind === "intercept") {
+            ctx.fillStyle = `rgb(255 255 255 / ${0.9 * (1 - q)})`;
+            ctx.beginPath();
+            ctx.arc(x1, y1, 6 + q * 14, 0, Math.PI * 2);
+            ctx.fill();
+            ring(ctx, x1, y1, 8 + q * 26, SKY, false, 1 - q, 2);
+          } else ring(ctx, x1, y1, 4 + q * 8, "180 180 190", false, 0.8 * (1 - q));
+        }
+        break;
+      }
+      case "blast": {
+        if (age > 40) break;
+        const info = WEAPONS[fx.weapon ?? "atom"];
+        const r = Math.max(4, info.outer * s);
+        if (x0 < -r * 2 || y0 < -r * 2 || x0 > size.width + r * 2 || y0 > size.height + r * 2) break;
+        const q = age / 40;
+        if (motion) {
+          if (age < 9) {
+            // The flash: white core into orange, gone within a second.
+            const f = age / 9;
+            const glow = ctx.createRadialGradient(x0, y0, 0, x0, y0, r * (0.6 + f * 0.6));
+            glow.addColorStop(0, `rgb(255 255 240 / ${1 - f})`);
+            glow.addColorStop(0.45, `rgb(255 190 90 / ${0.8 * (1 - f)})`);
+            glow.addColorStop(1, "rgb(255 120 40 / 0)");
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(x0, y0, r * (0.6 + f * 0.6), 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ring(ctx, x0, y0, r * (0.5 + q * 1.3), "255 214 160", false, 0.85 * (1 - q), 2.5);
+          ctx.fillStyle = `rgb(255 120 50 / ${0.2 * (1 - q)})`;
+          ctx.beginPath();
+          ctx.arc(x0, y0, r * 0.75, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (age < 20) ring(ctx, x0, y0, r, "255 190 120", false, 0.9 * (1 - age / 20), 2);
+        break;
+      }
+      case "sunk":
+        if (age > 15 || s < 0.9) break;
+        ring(ctx, x0, y0, 3 + age * 1.2, "200 230 255", false, 1 - age / 15);
+        break;
+      case "seized":
+        if (age > 22 || !fx.value) break;
+        label(ctx, `+${compactNumber(fx.value)} gold`, x0, y0 - 8 - (motion ? age * 0.9 : 0), 11, `rgb(${GOLD} / ${1 - age / 22})`, 800);
+        break;
+    }
   }
 }
 

@@ -16,8 +16,19 @@
 import {
   PLAINS,
   POST_RADIUS,
+  SAM_RANGE,
   WATER,
+  WEAPONS,
+  atWar,
   build,
+  buildWarship,
+  buildingCost,
+  launchNuke,
+  neighbors,
+  placeProblem,
+  readySilo,
+  type Building,
+  type Weapon,
   cityCost,
   defended,
   immune,
@@ -68,12 +79,25 @@ type Level = {
   cityMargin: number;
   /** Bots (small tribes) build: a City once they're established, a Defense Post if Defensive. */
   botBuilds: boolean;
+  /** The least an attack must score to be worth starting: higher difficulty waits for better moments. */
+  threshold: number;
+  /** Seconds after a costly failure before starting another war. */
+  patience: number;
+  /** The arsenal: 0 economy and reactive SAMs only; 1 Silos, bombs and Warships; 2 the same, read sharper. */
+  arsenal: 0 | 1 | 2;
+  /** Seconds between one rival's bombs (±20%). */
+  nukeGap: number;
 };
 
+/** Seconds between opening new war fronts (the same at every difficulty; Bots, small tribes, wait longer). */
+const FRONT_GAP = { nation: 18, bot: 32 };
+/** A retry on the same target within this many seconds needs clearly better odds than last time. */
+const RETRY_WINDOW = 75;
+
 export const AI_LEVELS: Record<Difficulty, Level> = {
-  easy: { think: 3.2, intel: 8, noise: 0.35, terrainAware: false, readsBusy: false, aggression: 0.85, hoard: 0.15, spend: 0.5, sizing: 0, maxAttacks: 1, retreat: 0, counter: 0.1, posts: "reactive", navalRange: 70, cityMargin: 1.6, botBuilds: false },
-  normal: { think: 2, intel: 5, noise: 0.15, terrainAware: true, readsBusy: true, aggression: 1, hoard: 0.05, spend: 0.75, sizing: 1.35, maxAttacks: 2, retreat: 1, counter: 0.25, posts: "defensive", navalRange: 110, cityMargin: 1.15, botBuilds: false },
-  hard: { think: 1.1, intel: 3, noise: 0.05, terrainAware: true, readsBusy: true, aggression: 1.1, hoard: 0, spend: 0.9, sizing: 1.15, maxAttacks: 3, retreat: 2, counter: 0.45, posts: "all", navalRange: 150, cityMargin: 1, botBuilds: true },
+  easy: { think: 3.2, intel: 8, noise: 0.35, terrainAware: false, readsBusy: false, aggression: 0.85, hoard: 0.15, spend: 0.5, sizing: 0, maxAttacks: 1, retreat: 0, counter: 0.1, posts: "reactive", navalRange: 70, cityMargin: 1.6, botBuilds: false, threshold: 0.22, patience: 30, arsenal: 0, nukeGap: 300 },
+  normal: { think: 2, intel: 5, noise: 0.15, terrainAware: true, readsBusy: true, aggression: 1, hoard: 0.05, spend: 0.75, sizing: 1.35, maxAttacks: 2, retreat: 1, counter: 0.25, posts: "defensive", navalRange: 110, cityMargin: 1.15, botBuilds: false, threshold: 0.28, patience: 35, arsenal: 1, nukeGap: 170 },
+  hard: { think: 1.1, intel: 3, noise: 0.05, terrainAware: true, readsBusy: true, aggression: 1.05, hoard: 0, spend: 0.9, sizing: 1.2, maxAttacks: 2, retreat: 2, counter: 0.45, posts: "all", navalRange: 150, cityMargin: 1, botBuilds: true, threshold: 0.36, patience: 40, arsenal: 2, nukeGap: 120 },
 };
 
 type Persona = {
@@ -108,7 +132,6 @@ const PERSONA: Record<Personality, Persona> = {
  * everyone), so open land scores about 1 and a fair fight between equals about 0.1–0.3. This is the least worth
  * starting.
  */
-const ATTACK_THRESHOLD = 0.2;
 const OPEN_LAND = 96;
 
 export function thinkInterval(game: Game) {
@@ -217,6 +240,11 @@ function weigh(game: Game, nation: Nation, other: Nation, contact: Contact, spar
   score *= Math.min(1.3, Math.max(0.5, Math.sqrt(contact.shared) / 5));
   const others = game.targeted[other.id] - (existing ? 1 : 0);
   score /= 1 + Math.max(0, others) * persona.crowd;
+  // The player under fire from others is left to them unless it can be finished: no map-wide dog-pile.
+  if (other.kind === "human" && others > 0 && reason !== "finish") score /= 1 + others * 1.5;
+  // Trying the same target again soon only makes sense if the odds have clearly improved since.
+  const tried = nation.tries.get(other.id);
+  if (tried && game.time - tried.at < RETRY_WINDOW && nation.troops / Math.max(1, other.troops) < tried.edge * 1.2) score *= 0.2;
   if (nation.avoid === other.id && game.time < nation.avoidUntil) score *= 0.15;
   score *= 1 + (game.rng() * 2 - 1) * level.noise;
   // Big enough to push this whole front a couple of layers: no trickle of tiny assaults.
@@ -354,7 +382,10 @@ export function think(game: Game, nation: Nation) {
 
   // 3. Investment: a City deep inside, or a Defense Post facing a strong neighbor before it attacks.
   const fill = nation.troops / cap;
-  const wantsCity = (!bot || (level.botBuilds && nation.cities < 1 && nation.tiles > 150)) && nation.gold >= cityCost(nation.cities) * level.cityMargin && (fill > 0.4 || persona.city > 1.2);
+  // A Nation with a few Cities saves for a Missile Silo (and then for bombs) rather than buying City after City.
+  const saving = !bot && level.arsenal > 0 && nation.cities >= 3 && nation.tiles >= 2500 && (nation.silos.length === 0 || nation.cities >= 5);
+  const savings = saving ? (nation.silos.length ? WEAPONS.atom.cost : buildingCost(nation, "silo")) : 0;
+  const wantsCity = (!bot || (level.botBuilds && nation.cities < 1 && nation.tiles > 150)) && nation.gold >= cityCost(nation.cities) * level.cityMargin + savings && (fill > 0.4 || persona.city > 1.2);
   const proactive = bot ? level.botBuilds && nation.personality === "defensive" : level.posts === "all" || (level.posts === "defensive" && nation.personality === "defensive");
   const tryPost = () => {
     if (!proactive || incoming.length || !postsAllowed || nation.gold < postCost(nation.posts.length)) return false;
@@ -383,6 +414,13 @@ export function think(game: Game, nation: Nation) {
   if (persona.post > persona.city) {
     if (!tryPost()) tryCity();
   } else if (!tryCity()) tryPost();
+  // Nations (not Bots) also build an economy and an arsenal, and use it.
+  if (!bot && !shielded) {
+    const built = arsenal(game, nation, level, incomingTroops > 0);
+    if (built) plan ||= built;
+    const fired = bombard(game, nation, level);
+    if (fired) plan = fired;
+  }
 
   // 4. Offense: spend what's left above the reserve on the best-value move.
   let hostile = 0;
@@ -402,7 +440,8 @@ export function think(game: Game, nation: Nation) {
     nation.lossCheckAt = game.time;
   }
   const recovering = game.time < nation.recoverUntil;
-  const pressure = 1 + Math.max(0, nation.troops / cap - 0.5) * 4;
+  // Troops idling at the cap grow nothing, so a full rival leans toward fighting, but waiting stays a real option.
+  const pressure = 1 + Math.max(0, nation.troops / cap - 0.75) * 2.5;
   // Bots (small tribes) run at most one war at a time, two on Hard.
   const most = bot ? Math.min(level.maxAttacks, level.maxAttacks >= 3 ? 2 : 1) : level.maxAttacks;
   let slots = most - active.filter((attack) => attack.to !== 0).length - boats;
@@ -417,12 +456,21 @@ export function think(game: Game, nation: Nation) {
       options.push({ target: 0, tile: open.tile, score: persona.expand, send, min: Math.max(cap * 0.04, nation.troops * 0.12), reason: "expansion", label: "open land" });
     }
   }
+  // Pacing: a new war only after the gap since the last one, and not while licking the wounds of a failed one
+  // (finishing off a nearly beaten rival is always allowed).
+  const pausing = game.time < nation.failUntil;
+  const canOpen = game.time >= nation.frontAt;
   if (!shielded && slots > 0 && spare > 0) {
     for (const contact of contacts) {
       if (!contact.id) continue;
-      const option = weigh(game, nation, game.nations[contact.id], contact, spare, level, persona, active, pressure, cap);
-      if (!option || option.score < ATTACK_THRESHOLD) continue;
-      if (recovering && option.reason !== "finish") continue;
+      const other = game.nations[contact.id];
+      const option = weigh(game, nation, other, contact, spare, level, persona, active, pressure, cap);
+      if (!option) continue;
+      const fresh = !active.some((attack) => attack.to === other.id);
+      if (option.reason !== "finish" && (recovering || pausing || (fresh && !canOpen))) continue;
+      // Bots (small tribes) take on Nations and the player only at clearly good moments.
+      const bar = level.threshold * (bot && other.kind !== "bot" ? 1.5 : 1);
+      if (option.score < bar) continue;
       options.push(option);
     }
   }
@@ -442,9 +490,14 @@ export function think(game: Game, nation: Nation) {
       nation.intel = null;
       break;
     }
+    const fresh = !expanding && !active.some((attack) => attack.to === option.target);
     const result = launchAttack(game, id, option.tile, send / nation.troops, { reason: option.reason, landOnly: true });
     if (!result.ok) continue;
     launched = true;
+    if (!expanding) {
+      nation.tries.set(option.target, { at: game.time, edge: (nation.troops + send) / Math.max(1, game.nations[option.target].troops) });
+      if (fresh) nation.frontAt = game.time + FRONT_GAP[bot ? "bot" : "nation"] * (0.8 + game.rng() * 0.4);
+    }
     spare -= send;
     if (!expanding) slots -= 1;
     if (!plan) plan = expanding ? "Expanding into open land" : `Attacking ${option.label}`;
@@ -479,4 +532,201 @@ export function think(game: Game, nation: Nation) {
     else plan = spare > 0 ? "Holding its borders" : "Building up troops";
   }
   nation.plan = plan;
+}
+
+/* ------------------------------------------------------------------------------------------- Arsenal */
+
+const BUILD_GAP = 15;
+
+/** A free spot of our land for a building: near (x, y) when given, otherwise toward our middle; ports on the coast. */
+function siteFor(game: Game, nation: Nation, kind: Building, near?: { x: number; y: number }) {
+  const { w, h } = game;
+  const cx = near?.x ?? nation.sx / nation.tiles;
+  const cy = near?.y ?? nation.sy / nation.tiles;
+  const spread = near ? 14 : Math.sqrt(nation.tiles) * (kind === "port" ? 1.1 : 0.55) + 4;
+  const same = kind === "port" ? nation.ports : kind === "factory" ? nation.factories : kind === "silo" ? nation.silos : nation.sams;
+  let best = -1;
+  let bestScore = -Infinity;
+  for (let tries = 0; tries < (kind === "port" ? 900 : 300); tries += 1) {
+    const angle = game.rng() * Math.PI * 2;
+    const d = spread * Math.sqrt(game.rng());
+    const x = Math.round(cx + Math.cos(angle) * d);
+    const y = Math.round(cy + Math.sin(angle) * d);
+    if (x < 0 || y < 0 || x >= w || y >= h) continue;
+    const t = y * w + x;
+    if (placeProblem(game, nation.id, t, kind)) continue;
+    // Away from the border (and from the same kind of building), close to where it's wanted.
+    const edge = nation.border.has(t) ? 30 : 0;
+    const crowd = same.some((spot) => (spot % w - x) ** 2 + (((spot / w) | 0) - y) ** 2 < 144) ? 40 : 0;
+    const score = -d - edge - crowd;
+    if (score > bestScore) {
+      bestScore = score;
+      best = t;
+    }
+  }
+  return best;
+}
+
+/** One arsenal building when it's worth it and affordable (at most one per BUILD_GAP seconds). */
+function arsenal(game: Game, nation: Nation, level: Level, underAttack: boolean): string {
+  if (game.time < nation.buildAt) return "";
+  const can = (kind: Building | "warship", margin = 1) => nation.gold >= buildingCost(nation, kind) * margin;
+  const place = (kind: Building, near?: { x: number; y: number }) => {
+    // Tried or not, the next arsenal decision waits (a failed search is the costly part).
+    nation.buildAt = game.time + BUILD_GAP * (game.rng() * 0.4 + 0.8);
+    const spot = siteFor(game, nation, kind, near);
+    return spot >= 0 && build(game, nation.id, spot, kind).ok;
+  };
+  // A Silo within striking distance of our land (or one owned by someone at war with us) is worth a SAM, as is
+  // having been hit.
+  const hit = game.time - nation.nukedAt < 150;
+  const cx = nation.sx / nation.tiles;
+  const cy = nation.sy / nation.tiles;
+  const threat =
+    hit ||
+    game.nations.some(
+      (other) =>
+        other.alive &&
+        other.id !== nation.id &&
+        other.silos.length > 0 &&
+        (atWar(game, nation.id, other.id) || other.silos.some((silo) => (silo % game.w - cx) ** 2 + (((silo / game.w) | 0) - cy) ** 2 < 220 * 220)),
+    );
+  const valuables = nation.cities + nation.silos.length + nation.factories.length;
+  if (threat && (level.arsenal > 0 || hit) && valuables > 0 && nation.sams.length < Math.min(3, 1 + Math.floor(valuables / 3)) && can("sam")) {
+    // Cover what matters most: our Silos, else our Cities.
+    const key = nation.silos[0] ?? nation.citySpots[nation.sams.length % Math.max(1, nation.citySpots.length)];
+    const near = key !== undefined ? { x: key % game.w, y: (key / game.w) | 0 } : undefined;
+    if (place("sam", near)) return "Building a SAM Launcher";
+  }
+  if (nation.coast > 0 && nation.ports.length < Math.min(3, 1 + Math.floor(nation.tiles / 5000)) && can("port", level.cityMargin)) {
+    if (place("port")) return "Building a Port";
+  }
+  if (nation.cities + nation.ports.length > 0 && nation.factories.length < Math.min(4, 1 + Math.floor(nation.tiles / 4000)) && can("factory", level.cityMargin)) {
+    const city = nation.citySpots[nation.factories.length % Math.max(1, nation.citySpots.length)];
+    if (place("factory", city !== undefined ? { x: city % game.w, y: (city / game.w) | 0 } : undefined)) return "Building a Factory";
+  }
+  const keen = nation.personality === "defensive" ? hit : true;
+  const silos = level.arsenal === 2 && nation.tiles > 10_000 ? 2 : 1;
+  if (level.arsenal > 0 && keen && nation.tiles >= 2500 && nation.silos.length < silos && nation.gold >= buildingCost(nation, "silo") + WEAPONS.atom.cost * 0.8) {
+    if (place("silo")) return "Building a Missile Silo";
+  }
+  // Warships when boats are landing on us, rivals sail warships, or there's plenty of gold to protect trade.
+  const fleet = level.arsenal === 2 ? 3 : level.arsenal === 1 ? 2 : 0;
+  if (nation.ports.length && nation.warships < fleet && can("warship", 1.6)) {
+    const landing = game.boats.find((boat) => boat.from !== nation.id && game.owner[boat.landing] === nation.id);
+    // Hostile Warships near our coast (any player can see them), or plenty of trade to protect.
+    const rivalsAtSea = game.ships.some((ship) => ship.owner !== nation.id && atWar(game, nation.id, ship.owner) && nation.ports.some((port) => (port % game.w - (ship.at % game.w)) ** 2 + (((port / game.w) | 0) - ((ship.at / game.w) | 0)) ** 2 < 6400));
+    if (landing || rivalsAtSea || (underAttack && nation.ports.length >= 2 && can("warship", 2.5)) || (nation.ports.length >= 2 && can("warship", 5))) {
+      const port = nation.ports[nation.warships % nation.ports.length];
+      const near = landing ? landing.landing : port;
+      const sea = seaNear(game, near);
+      nation.buildAt = game.time + BUILD_GAP * (game.rng() * 0.4 + 0.8);
+      if (sea >= 0 && buildWarship(game, nation.id, sea).ok) return landing ? "Launching a Warship against landings" : "Launching a Warship";
+    }
+  }
+  return "";
+}
+
+/** Open water a few tiles off a coastal tile, or -1. */
+function seaNear(game: Game, t: number) {
+  const { w, h } = game;
+  const x0 = t % w;
+  const y0 = (t / w) | 0;
+  for (let r = 4; r >= 1; r -= 1) {
+    for (const [dx, dy] of [[r, 0], [-r, 0], [0, r], [0, -r], [r, r], [-r, -r], [r, -r], [-r, r]]) {
+      const x = x0 + dx;
+      const y = y0 + dy;
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const n = y * w + x;
+      if (game.terrain[n] === WATER && neighbors(n, w, h).every((m) => game.terrain[m] === WATER || game.owner[m] === game.owner[t])) return n;
+    }
+  }
+  for (const n of neighbors(t, w, h)) if (game.terrain[n] === WATER) return n;
+  return -1;
+}
+
+/** How much a blast at (cx, cy) would hurt `target` (land and buildings), and how much of our own land it would hit. */
+function blastValue(game: Game, nation: Nation, target: number, cx: number, cy: number, weapon: Weapon) {
+  const { w, h } = game;
+  const { outer } = WEAPONS[weapon];
+  let value = 0;
+  let own = 0;
+  for (let y = Math.max(0, Math.floor(cy - outer)); y <= Math.min(h - 1, cy + outer); y += 2) {
+    for (let x = Math.max(0, Math.floor(cx - outer)); x <= Math.min(w - 1, cx + outer); x += 2) {
+      if ((x - cx) ** 2 + (y - cy) ** 2 > outer * outer) continue;
+      const t = y * w + x;
+      const o = game.owner[t];
+      if (o === nation.id) own += 4;
+      else if (o === target) value += 4 * (Math.hypot(x - cx, y - cy) <= WEAPONS[weapon].inner ? 1 : 0.5);
+    }
+  }
+  for (const spot of [...game.nations[target].citySpots, ...game.nations[target].silos, ...game.nations[target].sams, ...game.nations[target].factories, ...game.nations[target].ports]) {
+    if ((spot % w - cx) ** 2 + (((spot / w) | 0) - cy) ** 2 <= WEAPONS[weapon].inner ** 2) value += game.building[spot] === 5 ? 300 : 160;
+  }
+  return { value, own };
+}
+
+/** SAMs (other than ours) that cover a point: visible on the map, so any player can count them. */
+function samsCovering(game: Game, nation: Nation, x: number, y: number) {
+  let count = 0;
+  for (const other of game.nations) {
+    if (!other.alive || other.id === nation.id) continue;
+    for (const sam of other.sams) if ((sam % game.w - x) ** 2 + (((sam / game.w) | 0) - y) ** 2 <= SAM_RANGE * SAM_RANGE) count += 1;
+  }
+  return count;
+}
+
+/**
+ * At most one bomb per `nukeGap` seconds, never with one already in flight, and only when the blast is worth its
+ * price: a rival at war with us, holding a grudge, or running away with the map, at its Cities, Silos and land,
+ * away from our own. Players hit by someone else recently are left alone (no pile-on). MIRVs stop a runaway leader.
+ */
+function bombard(game: Game, nation: Nation, level: Level): string {
+  if (level.arsenal === 0 || !nation.silos.length || game.time < nation.nukeAt) return "";
+  if (nation.gold < WEAPONS.atom.cost || game.nukes.some((nuke) => nuke.from === nation.id)) return "";
+  const own = nation.tiles / Math.max(1, game.landTiles);
+  let best: { tile: number; weapon: Weapon; score: number; name: string } | null = null;
+  for (const other of game.nations) {
+    if (!other.alive || other.id === nation.id || other.kind === "bot" || other.tiles < 600) continue;
+    const atWar = game.attacks.some((attack) => (attack.from === other.id && attack.to === nation.id) || (attack.from === nation.id && attack.to === other.id));
+    const grudge = nation.grudge === other.id && game.time < nation.grudgeUntil;
+    const share = other.tiles / game.landTiles;
+    const leader = share >= 0.3 && share > own * 1.3;
+    if (!atWar && !grudge && !leader) continue;
+    let weight = (atWar ? 1.4 : 1) * (grudge ? 1.5 : 1) * (leader ? 1.6 : 1);
+    if (game.time - other.nukedAt < 45) weight *= 0.25;
+    // MIRV: only to stop a runaway leader (or whoever is crushing us), when we can afford it outright.
+    if (nation.gold >= WEAPONS.mirv.cost * 1.1 && (leader || (atWar && other.troops > nation.troops * 1.5)) && game.rng() < (level.arsenal === 2 ? 0.8 : 0.5)) {
+      const tile = other.border.values().next().value;
+      if (tile !== undefined) {
+        const score = 5000 * weight;
+        if (!best || score > best.score) best = { tile, weapon: "mirv", score, name: other.name };
+      }
+    }
+    const spots = [...other.silos, ...other.citySpots, ...other.factories, ...other.sams, ...other.ports].slice(0, 14);
+    if (other.tiles) spots.push(Math.round(other.sy / other.tiles) * game.w + Math.round(other.sx / other.tiles));
+    for (const weapon of ["atom", "hydrogen"] as const) {
+      if (nation.gold < WEAPONS[weapon].cost * 1.05) continue;
+      for (const spot of spots) {
+        const x = (spot % game.w) + 0.5;
+        const y = ((spot / game.w) | 0) + 0.5;
+        if (game.owner[spot] !== other.id) continue;
+        const { value, own: ours } = blastValue(game, nation, other.id, x, y, weapon);
+        if (ours > value * 0.08) continue;
+        // A careful player (Hard) avoids sending an Atom Bomb into SAM cover; others just discount it.
+        const sams = samsCovering(game, nation, x, y);
+        if (sams && level.arsenal === 2 && weapon === "atom") continue;
+        const odds = (1 - WEAPONS[weapon].intercept) ** sams;
+        const worth = (value * odds * weight) / (WEAPONS[weapon].cost / 3000);
+        const bar = weapon === "atom" ? 1 : 0.9;
+        if (worth < bar) continue;
+        if (!best || worth > best.score) best = { tile: spot, weapon, score: worth, name: other.name };
+      }
+    }
+  }
+  if (!best || readySilo(game, nation, best.tile) < 0) return "";
+  const result = launchNuke(game, nation.id, best.tile, best.weapon);
+  if (!result.ok) return "";
+  nation.nukeAt = game.time + level.nukeGap * (0.8 + game.rng() * 0.4);
+  return `Launching a ${WEAPONS[best.weapon].label} at ${best.name}`;
 }

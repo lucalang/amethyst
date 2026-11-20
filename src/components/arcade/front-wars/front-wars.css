@@ -1,10 +1,18 @@
 /* ---------------------------------------------------------------------------
- * Front Wars (/arcade/front-wars): the map stage, its overlays and the command
- * panel. Map colors live in the canvas (front-wars/render.ts); everything here
- * follows the app theme. Phones: map above, panel below. Wide: panel beside it.
+ * Front Wars (/arcade/front-wars). The map is the stage: resources, threats,
+ * zoom and the conquest banner float over it in dark glass (they sit on the
+ * map's own colors, so they don't follow the light theme); the order dock sits
+ * under the map so it never covers it; the command panel is beside it on wide
+ * screens and below it on phones. Map drawing lives in front-wars/render.ts.
  * ------------------------------------------------------------------------- */
 
 .fw-layout {
+  --fw-glass: rgb(10 8 18 / 0.74);
+  --fw-glass-line: rgb(255 255 255 / 0.12);
+  --fw-red: #ff5252;
+  --fw-amber: #ffb547;
+  --fw-green: #3fcf8e;
+  --fw-gold: #ffcd5a;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.75rem;
@@ -12,80 +20,228 @@
 
 @media (min-width: 64rem) {
   .fw-layout:not([data-phase="setup"]) {
-    grid-template-columns: minmax(0, 1fr) 19rem;
+    grid-template-columns: minmax(0, 1fr) 20rem;
     align-items: start;
   }
 }
 
 .fw-stage {
-  position: relative;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: calc(0.75rem * var(--radius-unit, 1));
-  background: #0e263e;
+  border-radius: calc(0.8rem * var(--radius-unit, 1));
+  background: var(--surface);
+}
+
+.fw-viewport {
+  position: relative;
+  overflow: hidden;
+  background: #0c1e34;
 }
 
 .fw-canvas {
   display: block;
   width: 100%;
-  height: clamp(320px, 64dvh, 760px);
+  height: clamp(320px, 62dvh, 760px);
   touch-action: none;
   cursor: crosshair;
   user-select: none;
   -webkit-user-select: none;
 }
 
+.fw-canvas:not([data-tool="attack"]) {
+  cursor: cell;
+}
+
 [data-phase="setup"] .fw-canvas {
-  height: clamp(420px, 72dvh, 760px);
+  height: clamp(460px, 76dvh, 820px);
 }
 
 :fullscreen .fw-canvas {
-  height: calc(100dvh - 11rem);
+  height: calc(100dvh - 17rem);
 }
 
-/* Map chrome: the current order and the hovered tile (top left), zoom (top right), a notice (bottom). */
-.fw-mapbar {
+/* --------------------------------------------------------------- HUD: resources over the map (top left) */
+
+.fw-hud {
   position: absolute;
   top: 0.5rem;
   left: 0.5rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
-  max-width: calc(100% - 7rem);
+  gap: 0.35rem;
+  max-width: calc(100% - 3.75rem);
   pointer-events: none;
 }
 
-.fw-mode,
-.fw-inspect {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+.fw-res {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  min-width: 7.5rem;
+  border-radius: 0.7rem;
+  padding: 0.4rem 0.6rem 0.45rem 0.5rem;
+  color: #fff;
+  background: var(--fw-glass);
+  box-shadow: inset 0 0 0 1px var(--fw-glass-line);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.fw-res-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.1rem;
+  color: #c9b6ff;
+}
+
+.fw-res[data-kind="gold"] .fw-res-icon {
+  color: var(--fw-gold);
+}
+
+.fw-res[data-kind="land"] .fw-res-icon {
+  color: #8ab4ff;
+}
+
+.fw-res-body {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.fw-res-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.fw-res-value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.fw-res-sub {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 255 255 / 0.7);
+}
+
+.fw-meter {
+  display: block;
+  height: 3px;
+  margin: 0.2rem 0 0.15rem;
+  overflow: hidden;
   border-radius: 999px;
-  padding: 0.2rem 0.6rem;
+  background: rgb(255 255 255 / 0.14);
+}
+
+.fw-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8f6bff, #c9b6ff);
+  transition: width 300ms ease;
+}
+
+.fw-res[data-kind="land"] .fw-meter > span {
+  background: linear-gradient(90deg, #3f7bff, #8ab4ff);
+}
+
+.fw-inspect {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  max-width: calc(100% - 4rem);
+  overflow: hidden;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.55rem;
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: #fff;
-  background: rgb(8 6 14 / 0.7);
+  background: var(--fw-glass);
+  box-shadow: inset 0 0 0 1px var(--fw-glass-line);
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------- Threats and strikes (top right) */
+
+.fw-alerts {
+  position: absolute;
+  top: 0.5rem;
+  right: 3.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  max-width: min(18rem, calc(100% - 5rem));
+}
+
+@media (max-width: 40rem) {
+  .fw-alerts {
+    top: auto;
+    bottom: 2.4rem;
+    right: 0.5rem;
+  }
+}
+
+.fw-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  min-height: 2rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: #fff;
+  background: var(--fw-glass);
+  box-shadow: inset 0 0 0 1.5px rgb(255 82 82 / 0.55);
   backdrop-filter: blur(6px);
 }
 
-.fw-mode[data-mode="city"],
-.fw-mode[data-mode="post"] {
-  color: #1c1204;
-  background: #ffd36b;
+.fw-alert[data-level="watch"],
+.fw-alert[data-level="more"] {
+  box-shadow: inset 0 0 0 1px var(--fw-glass-line);
 }
 
-/* The spawn phase: a bright, pulsing call to pick a start. */
-.fw-mode[data-mode="spawn"] {
-  color: #fff;
-  background: #3f7bff;
-  box-shadow: 0 0 0 0 rgb(63 123 255 / 0.6);
-  animation: fw-spawn 1.4s ease-out infinite;
+.fw-alert[data-level="critical"],
+.fw-alert[data-kind="strike-in"] {
+  background: rgb(150 24 24 / 0.88);
+  box-shadow: inset 0 0 0 1.5px var(--fw-red);
+  animation: fw-alarm 1.6s ease-in-out infinite;
 }
 
-@keyframes fw-spawn {
-  to {
-    box-shadow: 0 0 0 10px rgb(63 123 255 / 0);
+.fw-alert[data-kind="strike-out"] {
+  box-shadow: inset 0 0 0 1.5px rgb(255 214 107 / 0.7);
+}
+
+.fw-alert:hover {
+  filter: brightness(1.15);
+}
+
+.fw-alert:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.fw-alert-tag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #ffb3b3;
+}
+
+@keyframes fw-alarm {
+  50% {
+    box-shadow:
+      inset 0 0 0 1.5px var(--fw-red),
+      0 0 0 4px rgb(255 82 82 / 0.25);
   }
 }
 
@@ -99,10 +255,17 @@
 }
 
 .fw-zoom [data-slot="button"] {
-  background: rgb(8 6 14 / 0.65);
   color: #fff;
+  background: var(--fw-glass);
+  border-color: var(--fw-glass-line);
   backdrop-filter: blur(6px);
 }
+
+.fw-zoom [data-slot="button"]:hover {
+  background: rgb(30 24 48 / 0.85);
+}
+
+/* --------------------------------------------------------------- Notices and the conquest banner */
 
 .fw-notice {
   position: absolute;
@@ -116,7 +279,7 @@
   font-weight: 600;
   text-align: center;
   color: #fff;
-  background: rgb(8 6 14 / 0.78);
+  background: rgb(8 6 14 / 0.8);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
   pointer-events: none;
   animation: fw-notice 3.2s ease forwards;
@@ -141,133 +304,439 @@
   }
 }
 
-/* Setup: a card over the empty sea. */
-.fw-setup {
+/* A rival you conquered: a banner across the top of the map that doesn't take clicks. */
+.fw-banner {
   position: absolute;
-  inset: 0;
-  z-index: 10;
+  top: 4.6rem;
+  left: 50%;
   display: grid;
-  place-items: center;
-  overflow-y: auto;
-  padding: 1rem;
+  justify-items: center;
+  gap: 0.1rem;
+  min-width: min(20rem, calc(100% - 2rem));
+  max-width: calc(100% - 2rem);
+  translate: -50% 0;
+  border-radius: 0.9rem;
+  padding: 0.55rem 1.4rem 0.6rem;
+  text-align: center;
+  color: #fff;
   background:
-    radial-gradient(80% 60% at 50% 40%, rgb(91 140 255 / 0.18), transparent 70%),
-    rgb(8 6 14 / 0.35);
+    linear-gradient(180deg, rgb(110 231 160 / 0.16), transparent 70%),
+    rgb(10 8 18 / 0.86);
+  box-shadow:
+    inset 0 0 0 1px rgb(110 231 160 / 0.5),
+    0 18px 40px -18px rgb(0 0 0 / 0.8);
+  pointer-events: none;
+  animation: fw-banner 3.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-.fw-setup-card {
-  display: grid;
-  gap: 1.25rem;
-  width: min(62rem, 100%);
-  max-height: 100%;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: calc(0.9rem * var(--radius-unit, 1));
-  padding: 1.1rem;
-  background: color-mix(in oklab, var(--background) 92%, transparent);
-  box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.8);
-  backdrop-filter: blur(10px);
+.fw-banner[data-major="true"] {
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgb(255 205 90 / 0.28), transparent 60%),
+    rgb(14 10 22 / 0.9);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(255 205 90 / 0.65),
+    0 0 0 6px rgb(255 205 90 / 0.08),
+    0 22px 50px -18px rgb(0 0 0 / 0.85);
 }
 
-.fw-options {
-  display: grid;
-  gap: 0.4rem;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
+.fw-banner-kicker {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6ee7a0;
 }
 
-.fw-options legend {
-  margin-bottom: 0.4rem;
+.fw-banner[data-major="true"] .fw-banner-kicker {
+  color: var(--fw-gold);
+}
+
+.fw-banner-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(1.15rem, 3.4vw, 1.65rem);
+  font-weight: 850;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-decoration: line-through;
+  text-decoration-thickness: 3px;
+  text-decoration-color: rgb(255 255 255 / 0.55);
+}
+
+.fw-banner-detail {
   font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 255 255 / 0.75);
+}
+
+@keyframes fw-banner {
+  0% {
+    opacity: 0;
+    scale: 0.92;
+  }
+  7% {
+    opacity: 1;
+    scale: 1.03;
+  }
+  14%,
+  86% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+/* --------------------------------------------------------------- Order dock (under the map) */
+
+.fw-dock {
+  display: grid;
+  gap: 0.6rem;
+  border-top: 1px solid var(--border);
+  padding: 0.6rem;
+}
+
+@media (min-width: 48rem) {
+  .fw-dock {
+    grid-template-columns: 13.5rem minmax(0, 1fr);
+    align-items: start;
+  }
+  .fw-tool-card {
+    grid-column: 1 / -1;
+  }
+}
+
+.fw-send {
+  display: grid;
+  gap: 0.35rem;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.5rem 0.6rem;
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+.fw-send-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.fw-send-head > :first-child {
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
 
-.fw-options p {
+.fw-send-head strong {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.fw-send-head > :last-child {
+  margin-left: auto;
+}
+
+.fw-send input[type="range"] {
+  width: 100%;
+  accent-color: var(--amethyst);
+}
+
+.fw-send-presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.fw-send-presets button {
+  min-height: 1.75rem;
+  border-radius: calc(0.4rem * var(--radius-unit, 1));
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.fw-send-presets button:hover {
+  color: var(--foreground);
+}
+
+.fw-send-presets button[aria-pressed="true"] {
+  color: var(--foreground);
+  background: color-mix(in oklab, var(--amethyst) 16%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--amethyst) 60%, transparent);
+}
+
+.fw-send-note {
+  font-size: 0.6875rem;
+  color: var(--muted-foreground);
+}
+
+.fw-tools {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+}
+
+.fw-tool-group {
+  display: grid;
+  flex: none;
+  gap: 0.25rem;
+}
+
+.fw-tool-group-label {
+  padding-left: 0.15rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.fw-tool-row {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.fw-tool {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.1rem;
+  width: 4.6rem;
+  min-height: 4.1rem;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.35rem 0.25rem 0.3rem;
+  text-align: center;
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    opacity 150ms ease;
+}
+
+.fw-tool:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--foreground) 8%, transparent);
+}
+
+.fw-tool:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.fw-tool:disabled {
+  opacity: 0.5;
+}
+
+.fw-tool-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.fw-tool-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fw-tool-cost {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.625rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted-foreground);
+}
+
+.fw-tool[data-ready="true"] .fw-tool-cost {
+  color: color-mix(in oklab, var(--fw-green) 75%, var(--foreground));
+}
+
+.fw-tool[data-ready="false"] .fw-tool-icon,
+.fw-tool[data-ready="false"] .fw-tool-name {
+  opacity: 0.6;
+}
+
+.fw-tool[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--amethyst) 18%, transparent);
+  box-shadow:
+    inset 0 0 0 2px var(--amethyst),
+    0 0 0 3px color-mix(in oklab, var(--amethyst) 22%, transparent);
+}
+
+.fw-tool[aria-pressed="true"] .fw-tool-icon,
+.fw-tool[aria-pressed="true"] .fw-tool-name {
+  opacity: 1;
+}
+
+.fw-key {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.25rem;
+  min-width: 1rem;
+  border-radius: 0.25rem;
+  padding: 0 0.2rem;
+  font-family: inherit;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  line-height: 1rem;
+  color: var(--muted-foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+@media (hover: none) {
+  .fw-key {
+    display: none;
+  }
+}
+
+/* What the picked tool does and whether it's available: always visible, so nothing depends on hovering. */
+.fw-tool-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  min-height: 3rem;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.5rem 0.65rem;
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+  box-shadow: inset 3px 0 0 var(--fw-card-edge, color-mix(in oklab, var(--foreground) 30%, transparent));
+}
+
+.fw-tool-card[data-state="ready"] {
+  --fw-card-edge: var(--fw-green);
+}
+
+.fw-tool-card[data-state="locked"] {
+  --fw-card-edge: var(--fw-amber);
+}
+
+.fw-tool-card[data-state="attack"] {
+  --fw-card-edge: var(--amethyst);
+}
+
+.fw-tool-card-icon {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.1rem;
+}
+
+.fw-tool-card-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.fw-tool-card-text {
   font-size: 0.75rem;
   color: var(--muted-foreground);
 }
 
-.fw-segment {
-  display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  gap: 0.25rem;
-  padding: 0.2rem;
-  border: 1px solid var(--border);
-  border-radius: calc(0.6rem * var(--radius-unit, 1));
-  background: color-mix(in oklab, var(--foreground) 4%, transparent);
-}
-
-.fw-segment button {
-  min-height: 2.25rem;
-  border-radius: calc(0.45rem * var(--radius-unit, 1));
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  transition:
-    color 150ms ease,
-    background-color 150ms ease,
-    box-shadow 150ms ease;
-}
-
-.fw-segment button:hover {
+.fw-tool-card-text strong {
+  font-weight: 650;
   color: var(--foreground);
 }
 
-.fw-segment button[aria-checked="true"] {
+.fw-chip {
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #2a1300;
+  background: var(--fw-amber);
+}
+
+.fw-chip[data-ok="true"] {
+  color: #04261a;
+  background: var(--fw-green);
+}
+
+/* --------------------------------------------------------------- Command panel: tabs of cards */
+
+.fw-panel {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.fw-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: calc(0.65rem * var(--radius-unit, 1));
+  padding: 0.2rem;
+  background: var(--surface);
+}
+
+.fw-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.1rem;
+  border-radius: calc(0.45rem * var(--radius-unit, 1));
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--muted-foreground);
+}
+
+.fw-tabs button:hover {
+  color: var(--foreground);
+}
+
+.fw-tabs button[aria-selected="true"] {
   color: var(--foreground);
   background: var(--surface-raised, var(--background));
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--amethyst) 45%, transparent);
 }
 
-.fw-segment button:focus-visible {
+.fw-tabs button:focus-visible {
   outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
-.fw-rules {
+.fw-tab-count {
+  min-width: 1.1rem;
+  border-radius: 999px;
+  padding: 0 0.3rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1.1rem;
+  color: #fff;
+  background: #e03c3c;
+}
+
+.fw-tabpanel {
   display: grid;
-  gap: 0.5rem;
-  border-radius: calc(0.6rem * var(--radius-unit, 1));
-  padding: 0.75rem 0.85rem;
-  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+  gap: 0.6rem;
 }
 
-.fw-rules h3 {
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-
-.fw-rules ul {
-  display: grid;
-  gap: 0.35rem;
-  padding-left: 1rem;
-  font-size: 0.8125rem;
-  list-style: disc;
-  color: var(--muted-foreground);
-}
-
-.fw-rules strong {
-  color: var(--foreground);
-}
-
-/* Command panel */
-.fw-panel {
-  display: grid;
-  gap: 0.75rem;
-}
-
-@media (min-width: 40rem) and (max-width: 63.99rem) {
-  .fw-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .fw-panel > :last-child {
-    grid-column: 1 / -1;
+@media (min-width: 64rem) {
+  .fw-tabpanel {
+    max-height: calc(62dvh + 12rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
 }
 
@@ -288,14 +757,8 @@
   font-weight: 700;
 }
 
-.fw-ratio {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.fw-ratio input[type="range"] {
-  width: 100%;
-  accent-color: var(--amethyst);
+.fw-card[data-alert="true"] {
+  border-color: color-mix(in oklab, var(--fw-red) 55%, var(--border));
 }
 
 /* Fronts: attacks on you (most urgent first) and your own, each with Focus and its command. */
@@ -315,8 +778,8 @@
 }
 
 .fw-fronts li[data-level="critical"] {
-  --fw-edge: #ff5252;
-  background: color-mix(in oklab, #ff5252 12%, transparent);
+  --fw-edge: var(--fw-red);
+  background: color-mix(in oklab, var(--fw-red) 12%, transparent);
 }
 
 .fw-fronts li[data-level="high"] {
@@ -383,11 +846,7 @@
   color: #ff6b6b;
 }
 
-.fw-card[data-alert="true"] {
-  border-color: color-mix(in oklab, #ff5252 55%, var(--border));
-}
-
-/* The selected battle's numbers. */
+/* The selected battle's numbers, and the economy ledger. */
 .fw-detail {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -405,12 +864,53 @@
   font-variant-numeric: tabular-nums;
 }
 
+.fw-ledger {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+}
+
+.fw-ledger > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.fw-ledger dt {
+  min-width: 0;
+  color: var(--muted-foreground);
+}
+
+.fw-ledger dd {
+  flex: none;
+  font-weight: 700;
+}
+
+.fw-inventory {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+}
+
+.fw-inventory li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+}
+
+.fw-inventory li[data-incoming="true"] {
+  color: #e5484d;
+}
+
+.dark .fw-inventory li[data-incoming="true"] {
+  color: #ff6b6b;
+}
+
 /* Battle log: newest first, one line per event, tinted by what it means for you. */
 .fw-feed {
   display: grid;
   gap: 0.3rem;
-  max-height: 15rem;
-  overflow-y: auto;
   font-size: 0.75rem;
 }
 
@@ -423,15 +923,15 @@
 }
 
 .fw-feed li[data-tone="bad"] {
-  --fw-tone: #ff5252;
+  --fw-tone: var(--fw-red);
 }
 
 .fw-feed li[data-tone="warn"] {
-  --fw-tone: #ffb547;
+  --fw-tone: var(--fw-amber);
 }
 
 .fw-feed li[data-tone="good"] {
-  --fw-tone: #3fcf8e;
+  --fw-tone: var(--fw-green);
 }
 
 .fw-feed li[data-tone="info"] {
@@ -466,76 +966,101 @@
   color: var(--muted-foreground);
 }
 
-/* Attacks on you, pinned to the map until they end (top right, under the zoom buttons). */
-.fw-threats {
-  position: absolute;
-  top: 7.25rem;
-  right: 0.5rem;
+.fw-nations {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fw-nations li {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.3rem;
-  max-width: min(18rem, calc(100% - 4.5rem));
-}
-
-.fw-threats button {
-  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  max-width: 100%;
-  min-height: 1.9rem;
-  border-radius: 999px;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #fff;
-  background: rgb(8 6 14 / 0.75);
-  box-shadow: inset 0 0 0 1.5px rgb(255 82 82 / 0.55);
-  backdrop-filter: blur(6px);
+  gap: 0.6rem;
 }
 
-.fw-threats button[data-level="critical"] {
-  background: rgb(150 24 24 / 0.85);
-  box-shadow: inset 0 0 0 1.5px #ff5252;
-  animation: fw-alarm 1.6s ease-in-out infinite;
-}
-
-.fw-threats button:hover {
-  background: rgb(40 10 14 / 0.9);
-}
-
-.fw-threats button:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-
-.fw-threat-level {
-  font-size: 0.6875rem;
+.fw-nations li[data-you="true"] .text-sm {
   font-weight: 700;
-  color: #ffb3b3;
 }
 
-.fw-threats-more {
+.fw-swatch {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.2rem;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25);
+}
+
+.fw-share {
+  display: block;
+  height: 4px;
+  margin-top: 0.25rem;
+  overflow: hidden;
   border-radius: 999px;
-  padding: 0.1rem 0.55rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #fff;
-  background: rgb(8 6 14 / 0.6);
+  background: color-mix(in oklab, var(--foreground) 8%, transparent);
 }
 
-@keyframes fw-alarm {
-  50% {
-    box-shadow:
-      inset 0 0 0 1.5px #ff5252,
-      0 0 0 4px rgb(255 82 82 / 0.25);
-  }
+.fw-share > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 400ms ease;
 }
 
-/* Setup presets: four cards, two per row on phones. */
+/* --------------------------------------------------------------- Setup: a briefing over the empty sea */
+
+.fw-setup {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 1rem;
+  background:
+    radial-gradient(70% 55% at 50% 30%, rgb(143 107 255 / 0.22), transparent 70%),
+    radial-gradient(60% 50% at 80% 90%, rgb(63 123 255 / 0.16), transparent 70%),
+    rgb(8 6 14 / 0.45);
+}
+
+.fw-setup-card {
+  display: grid;
+  gap: 1.25rem;
+  width: min(64rem, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  border: 1px solid color-mix(in oklab, var(--amethyst) 30%, var(--border));
+  border-radius: calc(1rem * var(--radius-unit, 1));
+  padding: 1.25rem;
+  background: color-mix(in oklab, var(--background) 93%, transparent);
+  box-shadow:
+    0 30px 70px -30px rgb(0 0 0 / 0.85),
+    inset 0 1px 0 rgb(255 255 255 / 0.06);
+  backdrop-filter: blur(12px);
+}
+
 .fw-setup-head {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.3rem;
+}
+
+.fw-setup-head h2 {
+  font-size: clamp(1.5rem, 3.6vw, 2rem);
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.fw-setup-head p:last-child {
+  max-width: 38rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.fw-kicker {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--amethyst) 80%, var(--foreground));
 }
 
 .fw-setup-body {
@@ -545,7 +1070,7 @@
 
 @media (min-width: 52rem) {
   .fw-setup-body {
-    grid-template-columns: minmax(0, 1fr) 16rem;
+    grid-template-columns: minmax(0, 1fr) 16.5rem;
     align-items: start;
   }
 }
@@ -586,8 +1111,8 @@
   align-content: start;
   min-height: 3.5rem;
   border: 1px solid var(--border);
-  border-radius: calc(0.55rem * var(--radius-unit, 1));
-  padding: 0.5rem 0.6rem;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.5rem 0.65rem;
   text-align: left;
   font-size: 0.8125rem;
   transition:
@@ -601,7 +1126,7 @@
 
 .fw-presets button[aria-checked="true"] {
   border-color: color-mix(in oklab, var(--amethyst) 60%, transparent);
-  background: color-mix(in oklab, var(--amethyst) 10%, transparent);
+  background: color-mix(in oklab, var(--amethyst) 12%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--amethyst) 35%, transparent);
 }
 
@@ -613,7 +1138,7 @@
 
 .fw-option-grid {
   display: grid;
-  gap: 1rem 1.25rem;
+  gap: 0.75rem;
 }
 
 @media (min-width: 40rem) {
@@ -622,27 +1147,86 @@
   }
 }
 
-.fw-option-grid .fw-options {
+.fw-option {
+  display: grid;
   align-content: start;
+  gap: 0.5rem;
+  min-width: 0;
+  margin: 0;
   border: 1px solid var(--border);
-  border-radius: calc(0.7rem * var(--radius-unit, 1));
+  border-radius: calc(0.75rem * var(--radius-unit, 1));
   padding: 0.75rem;
   background: color-mix(in oklab, var(--foreground) 2.5%, transparent);
 }
 
-.fw-option-grid .fw-options legend {
+.fw-option legend {
   float: left;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   width: 100%;
-  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fw-option legend svg {
+  color: color-mix(in oklab, var(--amethyst) 80%, var(--foreground));
+}
+
+.fw-option p {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+
+.fw-segment {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+.fw-segment button {
+  min-height: 2.25rem;
+  border-radius: calc(0.45rem * var(--radius-unit, 1));
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.fw-segment button:hover {
+  color: var(--foreground);
+}
+
+.fw-segment button[aria-checked="true"] {
+  color: var(--foreground);
+  background: var(--surface-raised, var(--background));
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--amethyst) 60%, transparent);
+}
+
+.fw-segment button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 .fw-summary {
   display: grid;
   gap: 0.75rem;
-  border: 1px solid color-mix(in oklab, var(--amethyst) 35%, var(--border));
-  border-radius: calc(0.8rem * var(--radius-unit, 1));
+  border: 1px solid color-mix(in oklab, var(--amethyst) 40%, var(--border));
+  border-radius: calc(0.85rem * var(--radius-unit, 1));
   padding: 1rem;
-  background: color-mix(in oklab, var(--amethyst) 7%, var(--background));
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in oklab, var(--amethyst) 16%, transparent), transparent 70%),
+    color-mix(in oklab, var(--amethyst) 5%, var(--background));
 }
 
 @media (min-width: 52rem) {
@@ -669,8 +1253,32 @@
 }
 
 .fw-summary dd {
-  font-weight: 600;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
+}
+
+.fw-arsenal-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.fw-arsenal-strip > span {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.45rem;
+  color: var(--muted-foreground);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.fw-rules {
+  display: grid;
+  gap: 0.5rem;
+  border-radius: calc(0.6rem * var(--radius-unit, 1));
+  padding: 0.75rem 0.85rem;
+  background: color-mix(in oklab, var(--foreground) 4%, transparent);
 }
 
 .fw-rules summary {
@@ -684,53 +1292,42 @@
   margin-bottom: 0.25rem;
 }
 
-.fw-nations {
+.fw-rules ul {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  padding-left: 1rem;
+  font-size: 0.8125rem;
+  list-style: disc;
+  color: var(--muted-foreground);
 }
 
-.fw-nations li {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.fw-rules strong {
+  color: var(--foreground);
 }
 
-.fw-nations li[data-alive="false"] {
-  opacity: 0.5;
-}
-
-.fw-nations li[data-you="true"] .text-sm {
-  font-weight: 700;
-}
-
-.fw-swatch {
-  flex: none;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 0.2rem;
-  background: var(--swatch);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.25);
-}
-
-.fw-share {
-  display: block;
-  height: 4px;
-  margin-top: 0.25rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: color-mix(in oklab, var(--foreground) 8%, transparent);
-}
-
-.fw-share > span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  transition: width 400ms ease;
-}
+/* --------------------------------------------------------------- Motion: off with reduced motion or the account setting */
 
 @media (prefers-reduced-motion: reduce) {
   .fw-notice,
-  .fw-threats button[data-level="critical"] {
-    animation: none;
+  .fw-banner,
+  .fw-alert {
+    animation: none !important;
+  }
+  .fw-meter > span,
+  .fw-share > span {
+    transition: none;
+  }
+}
+
+.fw-layout[data-effects="off"] .fw-notice,
+.fw-layout[data-effects="off"] .fw-banner,
+.fw-layout[data-effects="off"] .fw-alert {
+  animation: none !important;
+}
+
+/* Without its fade-out, the banner simply shows until it's removed. */
+@media (prefers-reduced-motion: reduce) {
+  .fw-banner {
+    opacity: 1;
   }
 }

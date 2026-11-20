@@ -79,6 +79,54 @@ const RELEASES: readonly Release[] = [
     },
   },
   {
+    id: "2026-11-19-front-wars-arsenal",
+    date: "2026-11-19",
+    title: "Front Wars: economy, navy and missiles",
+    intro: "Front Wars grows into a full strategy game: Ports and Factories for gold, Warships at sea, Missile Silos with three kinds of bombs, SAM Launchers to stop them, a new sound palette, bigger conquests and a redesigned battle screen.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Economy", text: "Ports trade with other players' Ports for gold, and Factories lay railroads to your Cities, Ports and Factories, earning more for each link." },
+      { kind: "new", feature: "Navy", text: "Warships launch from a Port and patrol where you tap: they sink boats landing on you and fight the ships and seize the trade of anyone at war with you." },
+      { kind: "new", feature: "Missiles and defense", text: "A Missile Silo launches Atom Bombs, Hydrogen Bombs and MIRVs that destroy land, buildings, troops and ships and leave fallout; SAM Launchers shoot bombs down. Rivals use the same rules and prices, sparingly." },
+      { kind: "improved", feature: "Conquests", text: "Conquering a rival collapses its last stand, sweeps a wave over the land you took, and shows a banner with what you gained, with its own drumroll. Several falls at once share one banner." },
+      { kind: "improved", feature: "Battle screen and sound", text: "Resources sit on the map, orders sit in a dock under it with a card explaining the picked tool, and the panel has tabs. Every sound is new, and the setup screen keeps every option." },
+    ],
+    details: {
+      new: [
+        {
+          title: "How to use the arsenal",
+          body: "Pick a building, Warship, fleet order or bomb in the dock (or press its key), then tap the map. Placement turns green or red, a Factory shows its rail links, and a bomb shows its blast, flight time and any enemy SAMs covering the target before you launch.",
+          where: "Arcade → Full Games → Front Wars",
+          link: { href: "/arcade/front-wars", label: "Play Front Wars" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-19-front-wars-fronts",
+    date: "2026-11-19",
+    title: "Front Wars: aimed attacks and earned conquests",
+    intro: "Attacks now open where you aim them, a strong push breaks through, conquering a rival gets its own moment, and rivals pick their fights instead of attacking nonstop.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Aimed attacks", text: "Hover a border to preview the stretch your attack opens; it pushes on from there instead of along your whole border. Clicking elsewhere on the same rival opens a second push." },
+      { kind: "improved", feature: "Force matters", text: "Sending more troops at the same defender now takes land faster and loses far fewer troops per tile, while terrain, Defense Posts, counterattacks and an empty home still count." },
+      { kind: "improved", feature: "Organic borders", text: "Land is taken in rounded, irregular shapes that favour easy ground, and borders and coastlines are drawn with rounded corners." },
+      { kind: "new", feature: "Conquest", text: "When a rival falls, a wave of your color sweeps back over the land you took from it, its name is struck out, and a quiet drum marks the finish, once per fall." },
+      { kind: "improved", feature: "Calmer rivals", text: "Bots and Nations open new wars less often, rest after a failed attack, only retry a target once their odds have improved, and don't all pile onto you. Hard picks better moments rather than attacking more." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Fronts and combat",
+          body: "Your top bar shows troops, cap, growth per second and the exact number you'll send; the Attack card also shows what stays home. Live counts stay white for your attacks and red for attacks on you, with stalling, reinforcement and retreat marked as before. Your setup options, maps and records are unchanged.",
+          where: "Arcade → Full Games → Front Wars",
+          link: { href: "/arcade/front-wars", label: "Play Front Wars" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-slim-amethyst",
     date: "2026-11-19",
     title: "Slim Amethyst",
