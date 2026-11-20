@@ -97,10 +97,10 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "sumbreak", title: "Sumbreak", href: "/arcade/sumbreak", blurb: "Merge equal neighbours into their sum until a single tile is left. Order is everything.", recordLabel: "Highest level", category: "minigames" },
   {
     id: "blank-atlas",
-    title: "Blank Atlas",
+    title: "The Descent",
     href: "/arcade/blank-atlas",
-    blurb: "Seven questions, seven stops on one expedition. Common answers chart known land; rare ones uncover stranger places.",
-    recordLabel: "Best expedition",
+    blurb: "Seven questions, seven dives into the gray fog. Familiar answers sink gently; rare ones plunge deep in a blaze of colour.",
+    recordLabel: "Best descent",
     category: "minigames",
   },
   {

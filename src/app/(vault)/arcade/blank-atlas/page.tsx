@@ -3,9 +3,9 @@ import { LazyBlankAtlas } from "@/components/arcade/lazy";
 import { loadArcadeRecords } from "@/lib/data/arcade";
 import { requireUser } from "@/lib/supabase/auth";
 
-export const metadata: Metadata = { title: "Blank Atlas · Arcade" };
+export const metadata: Metadata = { title: "The Descent · Arcade" };
 
-/** Seven questions, seven stops. Only a personal record is kept: no coin runs, leaderboards or Wagers. */
+/** The Descent (id "blank-atlas"): seven questions, seven dives. Only a personal record is kept: no coin runs, leaderboards or Wagers. */
 export default async function BlankAtlasPage() {
   const ctx = await requireUser();
   const records = await loadArcadeRecords(ctx);

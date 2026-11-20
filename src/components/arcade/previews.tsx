@@ -19,7 +19,7 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   sumbreak: { hue: "#7ad7f0", genre: "Math" },
   "front-wars": { hue: "#ff6b4a", genre: "Strategy" },
   "who-am-i": { hue: "#c084fc", genre: "Deduction" },
-  "blank-atlas": { hue: "#8fe3cf", genre: "Trivia" },
+  "blank-atlas": { hue: "#a46bff", genre: "Trivia" },
 };
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
@@ -71,20 +71,35 @@ const SUDOKU_DIGITS: [number, number, number][] = [
 ];
 
 const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
-  // A route of seven stops across ink water: settlements on the way, one far island with a star.
+  // A shaft into gray fog: seven dives, deeper and brighter the rarer the answer, ending in a crimson-gold plunge.
   "blank-atlas": (
     <g>
-      <rect width="160" height="100" fill="#0b1d3a" />
-      <path d="M14 58 C34 40 48 66 66 52 S100 34 118 48 S140 60 148 46" fill="none" stroke="#8fe3cf" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M86 44 Q96 26 104 18" fill="none" stroke="#ffd36b" strokeWidth="1.4" strokeDasharray="3 3" />
-      <path d="M44 62 Q52 76 60 82" fill="none" stroke="#ff8f7a" strokeWidth="1.4" strokeDasharray="3 3" />
-      <ellipse cx="106" cy="16" rx="11" ry="7" fill="#18405a" stroke="#ffd36b" strokeWidth="0.8" />
-      <path d="M106 10 L107.6 14 L112 14 L108.5 16.6 L109.8 21 L106 18.4 L102.2 21 L103.5 16.6 L100 14 L104.4 14 Z" fill="#ffd36b" />
-      <ellipse cx="62" cy="84" rx="12" ry="7" fill="#18405a" stroke="#9cc9ff" strokeWidth="0.8" />
-      <path d="M62 79 L65 84 L62 89 L59 84 Z" fill="#ff8f7a" />
-      {[[14, 58], [36, 47], [66, 52], [92, 40], [118, 48], [148, 46]].map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="3.4" fill="#8fe3cf" stroke="#0b1d3a" strokeWidth="1.2" />
+      <defs>
+        <linearGradient id="dv-preview-abyss" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#4a4d55" />
+          <stop offset="100%" stopColor="#0c0c10" />
+        </linearGradient>
+      </defs>
+      <rect width="160" height="100" fill="url(#dv-preview-abyss)" />
+      <ellipse cx="40" cy="26" rx="60" ry="12" fill="#c9ccd2" opacity="0.18" />
+      <ellipse cx="120" cy="52" rx="55" ry="10" fill="#c9ccd2" opacity="0.14" />
+      <ellipse cx="60" cy="78" rx="60" ry="9" fill="#c9ccd2" opacity="0.1" />
+      <path d="M50 10 H110" stroke="#6d6a63" strokeWidth="2" />
+      {(
+        [
+          ["#d5d9e0", 80, 10, 70, 22, 1.4],
+          ["#3fd0b8", 70, 22, 88, 36, 1.8],
+          ["#4f8dff", 88, 36, 66, 54, 2.2],
+          ["#a46bff", 66, 54, 92, 70, 2.6],
+          ["#e0263f", 92, 70, 76, 94, 3.4],
+        ] as const
+      ).map(([color, x1, y1, x2, y2, width]) => (
+        <g key={color}>
+          <path d={`M${x1} ${y1} C${x1} ${y1 + (y2 - y1) * 0.7} ${x2} ${y2 - (y2 - y1) * 0.55} ${x2} ${y2}`} fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" />
+          <circle cx={x2} cy={y2} r={width + 1.4} fill="#121216" stroke={color} strokeWidth="1.2" />
+        </g>
       ))}
+      <path d="M76 94 m-3 0 l3 -3 l3 3 l-3 3 Z" fill="#f2c14e" />
     </g>
   ),
   "2048": (

@@ -1,6 +1,6 @@
 /**
- * Blank Atlas: seven questions per round, each a stop on one expedition. Any correct answer charts the stop;
- * rarer correct answers score more.
+ * The Descent (game id "blank-atlas", kept so records and saved rounds carry over): seven questions per round,
+ * each a dive deeper into the fog. Any correct answer counts; rarer correct answers score more and dive harder.
  *
  * Rarity is a curated model, not measured data. No public dataset records how often people give each answer to
  * these prompts, so every answer is placed by hand in one of four tiers by how readily people tend to think of
@@ -13,14 +13,28 @@
 export const BLANK_ATLAS_GAME = "blank-atlas";
 export const STOPS = 7;
 
-/** 1 = Known land, 2 = Side road, 3 = Strange shore, 4 = Uncharted. */
+/** 1 = Familiar, 2 = Uncommon, 3 = Rare, 4 = Exceptional (the curated rarity tiers; points per tier). */
 export type Tier = 1 | 2 | 3 | 4;
 
 export const TIERS: Record<Tier, { name: string; points: number; blurb: string }> = {
-  1: { name: "Known land", points: 10, blurb: "an answer most people reach for first" },
-  2: { name: "Side road", points: 35, blurb: "a solid answer that fewer people think of" },
-  3: { name: "Strange shore", points: 70, blurb: "an answer few people come up with" },
-  4: { name: "Uncharted", points: 100, blurb: "an answer almost nobody thinks of" },
+  1: { name: "Familiar", points: 10, blurb: "an answer most people reach for first" },
+  2: { name: "Uncommon", points: 35, blurb: "a solid answer that fewer people think of" },
+  3: { name: "Rare", points: 70, blurb: "an answer few people come up with" },
+  4: { name: "Exceptional", points: 100, blurb: "an answer almost nobody thinks of" },
+};
+
+/**
+ * How hard an answer dives. The first four follow the tiers one to one. "Extraordinary" is an Exceptional
+ * answer that stands alone in its question's rarest tier (Luxembourg, Oganesson, Hestia…): read straight from
+ * the answer list, worth the same 100 points, it just plunges harder.
+ */
+export type Dive = "familiar" | "uncommon" | "rare" | "exceptional" | "extraordinary";
+export const DIVES: Record<Dive, { name: string; motion: string; level: number }> = {
+  familiar: { name: "Familiar", motion: "a short, gentle descent", level: 1 },
+  uncommon: { name: "Uncommon", motion: "a deeper glide with a trail of light", level: 2 },
+  rare: { name: "Rare", motion: "a fast plunge as the fog parts", level: 3 },
+  exceptional: { name: "Exceptional", motion: "a forceful dive with rippling light", level: 4 },
+  extraordinary: { name: "Extraordinary", motion: "a dramatic plunge through the fog", level: 5 },
 };
 export const MAX_SCORE = STOPS * TIERS[4].points;
 
@@ -30,8 +44,6 @@ export const MAX_SCORE = STOPS * TIERS[4].points;
  */
 type QuestionSource = {
   id: string;
-  /** The stop's place name on the map. */
-  place: string;
   prompt: string;
   /** A short clarification under the prompt. */
   note?: string;
@@ -44,7 +56,6 @@ type QuestionSource = {
 const SOURCES: QuestionSource[] = [
   {
     id: "germany-borders",
-    place: "The Nine Gates",
     prompt: "Name a country that shares a land border with Germany.",
     tiers: [
       ["France", "Austria", "Poland", "Switzerland"],
@@ -56,7 +67,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "planets",
-    place: "Orrery Heights",
     prompt: "Name a planet or dwarf planet in our solar system.",
     note: "The eight planets and the five recognised dwarf planets.",
     tiers: [
@@ -69,14 +79,12 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "noble-gases",
-    place: "The Quiet Lamps",
     prompt: "Name a noble gas.",
     tiers: [["Helium", "Neon"], ["Argon"], ["Krypton", "Xenon", "Radon"], ["Oganesson"]],
     misses: { hydrogen: "Hydrogen is reactive, so it isn't a noble gas.", nitrogen: "Nitrogen isn't a noble gas." },
   },
   {
     id: "greek-letters",
-    place: "Alphabet Reef",
     prompt: "Name a letter of the Greek alphabet.",
     tiers: [
       ["Alpha", "Beta", "Gamma", "Delta", "Omega", "Pi"],
@@ -87,7 +95,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "south-america",
-    place: "Southern Cordillera",
     prompt: "Name a country in South America.",
     tiers: [
       ["Brazil", "Argentina", "Chile", "Peru", "Colombia"],
@@ -104,7 +111,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "china-borders",
-    place: "The Long Wall Road",
     prompt: "Name a country that shares a land border with China.",
     tiers: [
       ["Russia", "India", "Mongolia", "North Korea|dprk"],
@@ -116,7 +122,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "shakespeare",
-    place: "Playhouse Shoals",
     prompt: "Name a play by William Shakespeare.",
     tiers: [
       ["Hamlet", "Romeo and Juliet|romeo & juliet", "Macbeth", "Othello", "King Lear", "A Midsummer Night's Dream|midsummer nights dream"],
@@ -153,7 +158,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "seven-wonders",
-    place: "Ruin Garden",
     prompt: "Name one of the Seven Wonders of the Ancient World.",
     tiers: [
       ["Great Pyramid of Giza|pyramids of giza|pyramid of giza|great pyramid|pyramids|the pyramids", "Hanging Gardens of Babylon|hanging gardens"],
@@ -165,7 +169,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "olympians",
-    place: "Cloud Summit",
     prompt: "Name a Greek god or goddess of Mount Olympus.",
     note: "The Twelve Olympians, with Hades and Hestia welcome too.",
     tiers: [
@@ -178,7 +181,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "moonwalkers",
-    place: "Footprint Flats",
     prompt: "Name an astronaut who walked on the Moon.",
     note: "Surnames are enough.",
     tiers: [
@@ -191,7 +193,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "moons",
-    place: "Satellite Archipelago",
     prompt: "Name a moon in our solar system, other than Earth's Moon.",
     tiers: [
       ["Titan", "Europa", "Io", "Ganymede"],
@@ -203,7 +204,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "one-letter-elements",
-    place: "Single-Letter Springs",
     prompt: "Name a chemical element whose symbol is a single letter.",
     note: "The element's name or its symbol both work.",
     tiers: [
@@ -216,14 +216,12 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "zodiac",
-    place: "Star Chart Plains",
     prompt: "Name a sign of the Western zodiac.",
     tiers: [["Leo", "Aries", "Gemini", "Scorpio", "Virgo", "Taurus"], ["Cancer", "Libra", "Pisces", "Sagittarius", "Capricorn"], ["Aquarius"], []],
     misses: { ophiuchus: "Ophiuchus is a constellation, but not one of the twelve signs." },
   },
   {
     id: "clouds",
-    place: "Weatherglass Ridge",
     prompt: "Name one of the ten main cloud types.",
     note: "The ten cloud genera meteorologists use.",
     tiers: [["Cumulus", "Cirrus", "Stratus"], ["Cumulonimbus", "Nimbostratus"], ["Altocumulus", "Stratocumulus", "Cirrostratus"], ["Altostratus", "Cirrocumulus"]],
@@ -231,7 +229,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "france-borders",
-    place: "Overseas Hedges",
     prompt: "Name a country that shares a land border with France.",
     note: "Borders of France's overseas regions count too.",
     tiers: [
@@ -244,7 +241,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "primes",
-    place: "Prime Steps",
     prompt: "Name a prime number below 50.",
     note: "Digits or words both work.",
     strict: true,
@@ -258,21 +254,18 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "stans",
-    place: "Steppe Junction",
     prompt: "Name a country whose name ends in “-stan”.",
     tiers: [["Pakistan", "Afghanistan", "Kazakhstan"], ["Uzbekistan"], ["Turkmenistan", "Tajikistan"], ["Kyrgyzstan|kirgizstan"]],
     misses: { kurdistan: "Kurdistan is a region, not a sovereign country.", tatarstan: "Tatarstan is a republic within Russia.", balochistan: "Balochistan is a province, not a country." },
   },
   {
     id: "great-lakes",
-    place: "Five Freshwaters",
     prompt: "Name one of the Great Lakes of North America.",
     tiers: [["Superior|lake superior", "Michigan|lake michigan"], ["Erie|lake erie", "Huron|lake huron"], ["Ontario|lake ontario"], []],
     misses: { "lake champlain": "Lake Champlain isn't one of the five Great Lakes.", "great salt lake": "The Great Salt Lake is in Utah, not one of the five." },
   },
   {
     id: "us-canada",
-    place: "The Northern Seam",
     prompt: "Name a US state that borders Canada.",
     note: "Borders across the Great Lakes count.",
     tiers: [
@@ -285,7 +278,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "mediterranean",
-    place: "Middle Sea Coast",
     prompt: "Name a country with a coastline on the Mediterranean Sea.",
     note: "Its arms, like the Adriatic and Aegean, count.",
     tiers: [
@@ -298,21 +290,18 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "world-cup",
-    place: "Trophy Bay",
     prompt: "Name a country that has won the men's FIFA World Cup.",
     tiers: [["Brazil", "Germany|west germany", "Argentina", "France", "Italy"], ["Spain", "England"], ["Uruguay"], []],
     misses: { netherlands: "The Netherlands have reached three finals but never won.", "united kingdom": "Only England has won; the UK doesn't play as one team.", uk: "Only England has won; the UK doesn't play as one team." },
   },
   {
     id: "central-america",
-    place: "Isthmus Bridge",
     prompt: "Name a country in Central America.",
     tiers: [["Costa Rica", "Panama", "Guatemala"], ["Honduras", "Nicaragua", "El Salvador|salvador"], ["Belize"], []],
     misses: { mexico: "Mexico is usually counted as North America, not Central America.", cuba: "Cuba is in the Caribbean." },
   },
   {
     id: "orchestra",
-    place: "Tuning Forest",
     prompt: "Name an instrument found in a symphony orchestra.",
     tiers: [
       ["Violin", "Cello|violoncello", "Flute", "Trumpet", "Clarinet", "Harp"],
@@ -324,7 +313,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "russia-borders",
-    place: "The Far Frontier",
     prompt: "Name a country that shares a land border with Russia.",
     note: "The Kaliningrad exclave counts.",
     tiers: [
@@ -337,7 +325,6 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "south-american-capitals",
-    place: "Capital Highlands",
     prompt: "Name the capital city of a South American country.",
     tiers: [
       ["Buenos Aires", "Lima", "Santiago", "Bogotá", "Brasília"],
@@ -349,28 +336,24 @@ const SOURCES: QuestionSource[] = [
   },
   {
     id: "long-months",
-    place: "Calendar Dunes",
     prompt: "Name a month that has 31 days.",
     tiers: [["January", "December", "July", "August"], ["March", "May", "October"], [], []],
     misses: { june: "June has 30 days.", september: "September has 30 days.", april: "April has 30 days.", november: "November has 30 days.", february: "February has 28, or 29 in a leap year." },
   },
   {
     id: "swiss-languages",
-    place: "Four-Tongue Pass",
     prompt: "Name an official national language of Switzerland.",
     tiers: [["German|swiss german", "French"], ["Italian"], [], ["Romansh|romansch|rumantsch|romanche"]],
     misses: { english: "English is widely spoken but isn't a national language.", "swiss": "Which one? Switzerland has four national languages." },
   },
   {
     id: "rainbow",
-    place: "Prism Falls",
     prompt: "Name a colour of the rainbow, in its classic seven.",
     tiers: [["Red", "Blue", "Green", "Yellow"], ["Orange", "Violet|purple"], ["Indigo"], []],
     misses: { pink: "Pink isn't one of the classic seven.", white: "White light is what the rainbow splits apart." },
   },
   {
     id: "b-countries",
-    place: "The B-Road",
     prompt: "Name a country whose name starts with B.",
     tiers: [
       ["Brazil", "Belgium", "Bolivia", "Bulgaria"],
@@ -391,7 +374,7 @@ export type Question = Omit<QuestionSource, "tiers" | "misses"> & { answers: Ans
 export function normalize(text: string) {
   return text
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[’'`´]/g, "")
@@ -413,12 +396,20 @@ function build(source: QuestionSource): Question {
     }),
   );
   const misses = new Map(Object.entries(source.misses ?? {}).map(([key, text]) => [compact(normalize(key)), text]));
-  return { id: source.id, place: source.place, prompt: source.prompt, note: source.note, strict: source.strict, answers, misses };
+  return { id: source.id, prompt: source.prompt, note: source.note, strict: source.strict, answers, misses };
 }
 
 export const QUESTIONS: Question[] = SOURCES.map(build);
 const BY_ID = new Map(QUESTIONS.map((question) => [question.id, question]));
 export const questionById = (id: string) => BY_ID.get(id) ?? null;
+
+/** The dive for a charted answer, or null for a stop left unanswered. */
+export function diveOf(questionId: string, answer: string | null, tier: Tier | null): Dive | null {
+  if (tier === null || answer === null) return null;
+  if (tier < 4) return (["familiar", "uncommon", "rare"] as const)[tier - 1];
+  const deepest = BY_ID.get(questionId)?.answers.filter((entry) => entry.tier === 4) ?? [];
+  return deepest.length === 1 && deepest[0].name === answer ? "extraordinary" : "exceptional";
+}
 
 /** Optimal string alignment distance (edits, with adjacent swaps counting once), stopping early past `limit`. */
 function distance(a: string, b: string, limit: number) {
@@ -476,7 +467,7 @@ export function judge(question: Question, input: string): Verdict {
 
 // --- Rounds --------------------------------------------------------------------------------------
 
-/** One charted stop: what was typed, what it was read as (null when the stop was left unmapped) and the points. */
+/** One answered stop: what was typed, what it was read as (null when the stop was let pass) and the points. */
 export type Stop = { question: string; input: string; answer: string | null; tier: Tier | null; points: number };
 
 export type Round = { id: string; questions: string[]; stops: Stop[]; startedAt: number };
@@ -514,7 +505,7 @@ export function restoreRound(raw: unknown): Round | null {
   return { id: value.id, questions: value.questions, stops, startedAt: typeof value.startedAt === "number" ? value.startedAt : Date.now() };
 }
 
-/** 32-bit FNV-1a, used to give each discovery a stable place on the map from its own answer. */
+/** 32-bit FNV-1a, used to give each dive a stable sway in the shaft from its own answer. */
 export function hash(text: string) {
   let h = 0x811c9dc5;
   for (let i = 0; i < text.length; i++) {

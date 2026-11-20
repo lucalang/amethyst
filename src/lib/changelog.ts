@@ -51,6 +51,32 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-the-descent",
+    date: "2026-11-20",
+    title: "Blank Atlas becomes The Descent",
+    intro: "The rare-answer minigame has a new look: seven questions are now seven dives into a world of gray fog, and each dive is as deep and as bright as your answer was rare.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Dives you can feel", text: "Familiar answers sink gently in silver, uncommon ones glide in teal, rare ones plunge in blue, exceptional ones ripple in violet, and the rarest of all crash through the fog in crimson and gold." },
+      { kind: "improved", feature: "The full descent", text: "After the seventh dive you see the whole shaft, every answer with its dive and points, and your final score, with one button to descend again." },
+      { kind: "improved", feature: "Same game underneath", text: "Questions, scoring and your best score are unchanged, and a round you had in progress carries on where you left it." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "The Descent",
+          body: "Each answer shows its rarity, points and a five-step dive gauge, then the dive plays in the shaft. Points are the same as before: Familiar 10, Uncommon 35, Rare 70 and Exceptional 100. An Extraordinary dive is an Exceptional answer that stands alone in its question’s rarest tier, such as Luxembourg among Germany’s neighbours; it scores the same 100 points but plunges harder. Wrong answers never dive: they just let you try again.",
+          points: [
+            "Rarity is Amethyst’s own curated estimate, not measured from how players answer.",
+            "With reduced motion, dives don’t move; their colour, line weight, landing mark and gauge still show how good each one was.",
+          ],
+          where: "Arcade → Minigames → The Descent",
+          link: { href: "/arcade/blank-atlas", label: "Play The Descent" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-blank-atlas",
     date: "2026-11-20",
     title: "Blank Atlas",

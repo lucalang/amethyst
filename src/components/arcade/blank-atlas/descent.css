@@ -1,0 +1,606 @@
+/* The Descent: a shaft through gray fog, Victorian brass at the threshold, and dives whose colour cuts through it.
+   Dive colours: familiar silver, uncommon teal, rare blue, exceptional violet, extraordinary crimson and gold. */
+
+.dv {
+  --dv-fog: #c9ccd2;
+  --dv-paper: #ecebe6;
+  --dv-brass: #c9a86a;
+  --dv-familiar: #d5d9e0;
+  --dv-uncommon: #3fd0b8;
+  --dv-rare: #4f8dff;
+  --dv-exceptional: #a46bff;
+  --dv-extraordinary: #e0263f;
+  --dv-gold: #f2c14e;
+  display: grid;
+  gap: 1rem;
+}
+@media (min-width: 1024px) {
+  .dv {
+    grid-template-columns: minmax(0, 1fr) 24rem;
+    align-items: start;
+  }
+  .dv-stage {
+    order: -1;
+  }
+}
+
+/* The shaft */
+.dv-stage {
+  position: relative;
+  container-type: inline-size;
+  overflow: hidden;
+  height: min(30rem, 62dvh);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #3a3d44, #202228 35%, #0b0b0e);
+  box-shadow: inset 0 0 60px rgb(0 0 0 / 0.6), 0 30px 60px -36px rgb(0 0 0 / 0.9);
+}
+@media (min-width: 1024px) {
+  .dv-stage {
+    height: min(46rem, calc(100dvh - 12rem));
+  }
+}
+.dv-shaft {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.dv-stage[data-shake] .dv-shaft {
+  animation: dv-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) 360ms both;
+}
+.dv-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 60%, rgb(224 38 63 / 0.55), rgb(242 193 78 / 0.15) 60%, transparent 80%);
+  opacity: 0;
+  animation: dv-flash 900ms ease-out 330ms both;
+}
+
+.dv-bank {
+  fill: var(--dv-fog);
+  opacity: 0.22;
+}
+.dv-bank-a {
+  animation: dv-drift 26s ease-in-out infinite alternate;
+}
+.dv-bank-b {
+  animation: dv-drift 34s ease-in-out -9s infinite alternate-reverse;
+}
+.dv-bank-c {
+  animation: dv-drift 41s ease-in-out -17s infinite alternate;
+}
+.dv-grain {
+  pointer-events: none;
+}
+.dv-grate {
+  stroke: #6d6a63;
+  stroke-width: 3;
+}
+.dv-clock {
+  fill: #1c1b1a;
+  stroke: var(--dv-brass);
+  stroke-width: 2;
+}
+.dv-clock-tick {
+  stroke: var(--dv-brass);
+  stroke-width: 1.5;
+}
+.dv-clock-hand {
+  stroke: var(--dv-paper);
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+.dv-lamppost path {
+  fill: #2a2927;
+  stroke: #6d6a63;
+  stroke-width: 2;
+}
+.dv-flame {
+  fill: #f6d99a;
+}
+.dv-gauge-side path {
+  stroke: var(--dv-fog);
+  stroke-opacity: 0.35;
+  stroke-width: 1.5;
+}
+.dv-gauge-side text {
+  fill: var(--dv-fog);
+  fill-opacity: 0.45;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dives: --dv is the dive's colour; strength grows with its level. */
+.dv-trail {
+  fill: none;
+  stroke: var(--dv);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+}
+.dv-dive[data-dive="drift"] .dv-trail {
+  stroke-width: 1.5;
+  stroke-dasharray: 0.04 0.04;
+  opacity: 0.55;
+}
+.dv-dive[data-dive="uncommon"] .dv-trail {
+  stroke-width: 3;
+}
+.dv-dive[data-dive="rare"] .dv-trail {
+  stroke-width: 4;
+}
+.dv-dive[data-dive="exceptional"] .dv-trail {
+  stroke-width: 5;
+}
+.dv-dive[data-dive="extraordinary"] .dv-trail {
+  stroke-width: 7;
+}
+.dv-trail-light {
+  fill: none;
+  stroke: var(--dv);
+  stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 0.006 0.03;
+  opacity: 0.45;
+}
+.dv-core {
+  fill: none;
+  stroke: var(--dv-gold);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+}
+.dv-sigil,
+.dv-sigil > * {
+  fill: color-mix(in oklab, var(--dv) 22%, #121216);
+  stroke: var(--dv);
+  stroke-width: 2;
+}
+.dv-sigil .dv-sigil-thin {
+  fill: none;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.dv-sigil .dv-sigil-gold {
+  fill: var(--dv-gold);
+  stroke: #3b0a12;
+}
+.dv-sigil-drift {
+  fill: #1a1b1f;
+  stroke: #8a8f98;
+  stroke-dasharray: 3 3;
+}
+.dv-num-ring {
+  fill: #121216;
+  stroke: none;
+}
+.dv-num {
+  fill: var(--dv-paper);
+  font-size: 13px;
+  font-weight: 700;
+}
+.dv-label {
+  fill: var(--dv-paper);
+  font-size: 17px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: #0e0e11;
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.dv-dive[data-dive]:not([data-dive="familiar"], [data-dive="drift"]) .dv-label {
+  fill: color-mix(in oklab, var(--dv) 55%, white);
+}
+.dv-ripple {
+  fill: none;
+  stroke: var(--dv);
+  stroke-width: 2;
+  opacity: 0.5;
+}
+.dv-rays path {
+  stroke: var(--dv-gold);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.dv-next {
+  fill: none;
+  stroke: var(--dv-paper);
+  stroke-opacity: 0.6;
+  stroke-width: 2;
+  animation: dv-beckon 1.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@container (max-width: 300px) {
+  .dv-label {
+    display: none;
+  }
+}
+
+/* The dive that was just made: duration and force follow its level. */
+.dv-dive[data-fresh] {
+  --dur: 1100ms;
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.dv-dive[data-fresh][data-dive="drift"] {
+  --dur: 1400ms;
+}
+.dv-dive[data-fresh][data-dive="uncommon"] {
+  --dur: 900ms;
+  --ease: cubic-bezier(0.45, 0.05, 0.35, 1);
+}
+.dv-dive[data-fresh][data-dive="rare"] {
+  --dur: 480ms;
+  --ease: cubic-bezier(0.7, 0, 0.84, 0);
+}
+.dv-dive[data-fresh][data-dive="exceptional"] {
+  --dur: 400ms;
+  --ease: cubic-bezier(0.8, 0, 0.9, 0.2);
+}
+.dv-dive[data-fresh][data-dive="extraordinary"] {
+  --dur: 340ms;
+  --ease: cubic-bezier(0.9, 0, 1, 0.1);
+}
+.dv-dive[data-fresh] :is(.dv-trail, .dv-core, .dv-trail-light) {
+  animation: dv-draw var(--dur) var(--ease) both;
+}
+.dv-dive[data-fresh] .dv-landing {
+  animation: dv-land 420ms cubic-bezier(0.2, 1.4, 0.4, 1) var(--dur) both;
+  transform-box: fill-box;
+}
+.dv-dive[data-fresh] .dv-ripple {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dv-ripple 1100ms ease-out var(--dur) both;
+}
+.dv-dive[data-fresh] .dv-ripple-late {
+  animation-delay: calc(var(--dur) + 260ms);
+}
+.dv-dive[data-fresh] .dv-rays {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dv-rays 800ms ease-out var(--dur) both;
+}
+.dv-part[data-fresh] {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: dv-part 900ms ease-out 200ms both;
+}
+
+@keyframes dv-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes dv-land {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes dv-ripple {
+  from {
+    scale: 0.6;
+    opacity: 0.9;
+  }
+  to {
+    scale: 3;
+    opacity: 0;
+  }
+}
+@keyframes dv-rays {
+  from {
+    scale: 0.4;
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+@keyframes dv-part {
+  from {
+    scale: 0.2;
+    opacity: 0;
+  }
+}
+@keyframes dv-drift {
+  to {
+    translate: 70px 8px;
+  }
+}
+@keyframes dv-beckon {
+  50% {
+    scale: 1.5;
+    stroke-opacity: 0.15;
+  }
+}
+@keyframes dv-shake {
+  20% {
+    translate: -3px 2px;
+  }
+  40% {
+    translate: 3px -2px;
+  }
+  60% {
+    translate: -2px 1px;
+  }
+  80% {
+    translate: 1px -1px;
+  }
+}
+@keyframes dv-flash {
+  25% {
+    opacity: 1;
+  }
+}
+
+/* Question panel */
+.dv-panel {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.dv-depth {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.dv-prompt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-serif, Georgia, "Times New Roman", serif);
+  font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.65rem);
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--dv-paper);
+}
+.dv-hint {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+.dv-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.dv-input {
+  min-width: 0;
+  flex: 1;
+  height: 2.75rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgb(201 204 210 / 0.25);
+  background: #111114;
+  padding: 0 0.9rem;
+  font-size: 1rem;
+  color: var(--dv-paper);
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+.dv-input::placeholder {
+  color: rgb(236 235 230 / 0.4);
+}
+.dv-input:focus {
+  border-color: var(--dv-brass);
+  box-shadow: 0 0 0 3px rgb(201 168 106 / 0.22);
+}
+.dv-input[aria-invalid="true"] {
+  border-color: #b88a5a;
+}
+.dv .dv-go {
+  background: var(--dv-paper);
+  color: #141416;
+  font-weight: 700;
+}
+.dv .dv-go:hover {
+  background: #fff;
+}
+.dv-pass {
+  justify-self: start;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  text-decoration: underline;
+  text-decoration-color: rgb(201 204 210 / 0.4);
+  text-underline-offset: 3px;
+  outline: none;
+}
+.dv-pass:hover {
+  color: var(--dv-paper);
+}
+.dv-pass:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.dv-warn {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #d9b48a;
+}
+
+/* The result of the last dive: answer, dive, points, and a five-step strength gauge that also works without motion. */
+.dv-result {
+  display: grid;
+  gap: 0.2rem;
+  min-height: 4.5rem;
+  border-radius: 0.9rem;
+  padding: 0.7rem 0.85rem;
+  background: radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, var(--dv, #8a8f98) 22%, transparent), transparent 65%), rgb(255 255 255 / 0.03);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--dv, #8a8f98) 40%, transparent);
+}
+.dv-result[data-dive="extraordinary"] {
+  background: radial-gradient(120% 140% at 0% 0%, rgb(224 38 63 / 0.3), transparent 60%), radial-gradient(80% 120% at 100% 100%, rgb(242 193 78 / 0.18), transparent 60%), rgb(255 255 255 / 0.03);
+  box-shadow: inset 0 0 0 1px rgb(242 193 78 / 0.55);
+}
+.dv-result-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  color: var(--dv, var(--dv-fog));
+}
+.dv-result[data-dive="familiar"] .dv-result-head {
+  color: var(--dv-paper);
+}
+.dv-result-answer {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--dv-paper);
+  overflow-wrap: anywhere;
+}
+.dv-result-points {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--dv-paper);
+}
+.dv-result-motion {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.dv-strength {
+  display: inline-flex;
+  gap: 2px;
+}
+.dv-strength i {
+  width: 5px;
+  height: 0.85rem;
+  border-radius: 2px;
+  background: rgb(201 204 210 / 0.18);
+}
+.dv-strength i[data-on] {
+  background: var(--dv, var(--dv-fog));
+}
+.dv-result[data-dive="extraordinary"] .dv-strength i[data-on]:last-child {
+  background: var(--dv-gold);
+}
+.dv-result[data-fresh] {
+  animation: dv-result-in 420ms cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+@keyframes dv-result-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.dv-how {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.dv-how summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--dv-paper);
+}
+.dv-how p,
+.dv-how ul {
+  margin-top: 0.5rem;
+}
+.dv-how li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dv-swatch {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--dv);
+}
+
+/* Results */
+.dv-total {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dv-paper);
+}
+.dv-total span {
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted-foreground);
+}
+.dv-log {
+  display: grid;
+  margin: 0.25rem 0 0.5rem;
+}
+.dv-log li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid rgb(201 204 210 / 0.12);
+}
+.dv-log-num {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--dv, #8a8f98) 85%, black);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0e0e11;
+}
+.dv-log li[data-dive="extraordinary"] .dv-log-num {
+  background: linear-gradient(135deg, var(--dv-extraordinary), var(--dv-gold));
+}
+.dv-log-q {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+}
+.dv-log-a {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--dv-paper);
+  overflow-wrap: anywhere;
+}
+.dv-log-score {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--dv, var(--muted-foreground));
+}
+.dv-log li[data-dive="familiar"] .dv-log-score,
+.dv-log li[data-dive="drift"] .dv-log-score {
+  color: var(--muted-foreground);
+}
+.dv-log-score strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--dv-paper);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced motion: no movement at all. Colour, line weight, the landing sigil and the strength gauge still show each
+   dive's quality. */
+@media (prefers-reduced-motion: reduce) {
+  .dv :is(.dv-bank, .dv-next, .dv-flash, .dv-result[data-fresh], .dv-shaft),
+  .dv .dv-dive[data-fresh] *,
+  .dv .dv-part[data-fresh] {
+    animation: none !important;
+  }
+  .dv-flash {
+    display: none;
+  }
+  .dv-input {
+    transition: none;
+  }
+}
+:root[data-motion="off"] .dv :is(.dv-bank, .dv-next, .dv-flash, .dv-result[data-fresh], .dv-shaft),
+:root[data-motion="off"] .dv .dv-dive[data-fresh] *,
+:root[data-motion="off"] .dv .dv-part[data-fresh] {
+  animation: none !important;
+}
+:root[data-motion="off"] .dv-flash {
+  display: none;
+}

@@ -112,24 +112,24 @@
   --theme-dark: 1;
   color-scheme: dark;
 }
-/* Blank Atlas: deep ink blue, sea-glass accent, coral second colour. */
+/* The Descent (id blank-atlas): gray fog over near-black, with a brass accent. */
 [data-game-skin="blank-atlas"] {
-  --background: #091830;
-  --surface: #0f2443;
-  --surface-raised: #163057;
-  --foreground: #e9f4f6;
-  --muted-foreground: #a6bfd3;
-  --amethyst: #8fe3cf;
-  --amethyst-foreground: #06231d;
-  --rose: #ff8f7a;
-  --rose-foreground: #2b0d06;
-  --destructive: #ff8f7a;
-  --ink-rgb: 233 244 246;
-  --paper-rgb: 9 24 48;
-  --accent-rgb: 143 227 207;
-  --rose-rgb: 255 143 122;
-  --shadow-rgb: 2 8 20;
-  --shadow-alpha: 0.8;
+  --background: #16171b;
+  --surface: #1f2026;
+  --surface-raised: #292a31;
+  --foreground: #ecebe6;
+  --muted-foreground: #a9abb2;
+  --amethyst: #c9a86a;
+  --amethyst-foreground: #1a1407;
+  --rose: #e0263f;
+  --rose-foreground: #fff1f2;
+  --destructive: #e07a6a;
+  --ink-rgb: 236 235 230;
+  --paper-rgb: 22 23 27;
+  --accent-rgb: 201 168 106;
+  --rose-rgb: 224 38 63;
+  --shadow-rgb: 4 4 6;
+  --shadow-alpha: 0.85;
   --theme-dark: 1;
   color-scheme: dark;
 }
