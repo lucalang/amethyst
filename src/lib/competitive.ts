@@ -78,6 +78,7 @@ export const GAME_SETTINGS: Record<CompetitiveGame, SettingsSpec> = {
   tango: NO_SETTINGS,
   queens: NO_SETTINGS,
   sumbreak: boardPicker("sumbreak", "level", "Difficulty"),
+  "paper-trails": NO_SETTINGS,
   "who-am-i": NO_SETTINGS,
 };
 

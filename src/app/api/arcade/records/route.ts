@@ -13,6 +13,8 @@ export async function POST(request: Request) {
   if ("response" in parsed) return parsed.response;
   // Sumbreak records are only saved for a solve the server has replayed under the rules (a level record's board
   // size follows the level it claims).
+  // Guess The ... scores every guess on the server and saves the record there (see /api/arcade/guess-the).
+  if (parsed.data.game === "guess-the") return apiError(422, "unverified", "Guess The ... records are saved when a guess is revealed.");
   if (parsed.data.game === SUMBREAK_GAME && parsed.data.score > 0) {
     const board = sumbreakBoardOf(parsed.data.variant, parsed.data.score);
     if (!board || !verifySumbreakProof(parsed.data.proof, board)) return apiError(422, "unverified", "That solve could not be verified.");

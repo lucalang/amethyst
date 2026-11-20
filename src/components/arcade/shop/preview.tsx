@@ -30,6 +30,7 @@ import {
 import { drawBlock, drawPerfect, drawScenery, pedestalColor, perfectDuration, stackerTheme, type StackerTheme } from "../stacker-look";
 import { drawGemBody, drawGlimmer, drawShadeBody, drawSpark, gemChaseTheme, paintMaze, type GemChaseTheme } from "../gem-chase-look";
 import { applyArtStyle, blasterTheme, drawBossBody, drawLaser, drawShipBody, flameColor, glow, paintNebula, type BlasterTheme } from "../space-blaster-look";
+import { botSkins, drawArena, drawCaptureFlash, drawLabel, drawLands, drawPiece, drawScraps, drawTrail as drawPaperTrail, maskPath, paperTrailsTheme, scrapBurst, stepScraps, territoryPath, type PaperTrailsTheme, type Scrap } from "../paper-trails/look";
 import { CELEBRATIONS, PuzzleCelebration, QueensCrown, QueensDefs, TangoSymbol, ZipMarker, lookAttributes, patchColors, queensRegionColors, zipTrail, type Celebration } from "../puzzle-looks";
 import "../minigames.css";
 // The 2048 board (.g2048) and the shared stage are styled here; previews also show outside game pages
@@ -1162,6 +1163,122 @@ function PreviewQueens({ look, effects }: { look: GameLook; effects: MotionLevel
 }
 
 // ---------------------------------------------------------------------------------------------
+// Paper Trails: your piece leaves its land, loops out and closes the trail to claim the paper inside.
+// ---------------------------------------------------------------------------------------------
+
+const PT_COLS = 16;
+const PT_ROWS = 10;
+const PT_CYCLE = 4600;
+const PT_TRAVEL = 0.62;
+/** The loop, in cells: out of your land, around, and back in. */
+const PT_LOOP = [
+  { x: 4.5, y: 4.5 },
+  { x: 6.5, y: 3.2 },
+  { x: 9.6, y: 2.6 },
+  { x: 11.2, y: 4.6 },
+  { x: 10.4, y: 7.6 },
+  { x: 7.4, y: 8.4 },
+  { x: 4.6, y: 6.6 },
+];
+
+function insidePolygon(x: number, y: number, polygon: readonly { x: number; y: number }[]) {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const a = polygon[i];
+    const b = polygon[j];
+    if (a.y > y !== b.y > y && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+function createPaperTrailsScene(theme: PaperTrailsTheme, effects: MotionLevel): Painter {
+  const animate = effects !== "off";
+  const owners = new Int8Array(PT_COLS * PT_ROWS).fill(-1);
+  for (let y = 0; y < PT_ROWS; y += 1) {
+    for (let x = 0; x < PT_COLS; x += 1) {
+      if (Math.hypot(x + 0.5 - 3.2, y + 0.5 - 5.2) < 2.7) owners[y * PT_COLS + x] = 0;
+      else if (x >= 12 && y <= 4) owners[y * PT_COLS + x] = 1;
+      else if (x >= 13 && y >= 6) owners[y * PT_COLS + x] = 2;
+    }
+  }
+  const grown = Int8Array.from(owners);
+  const gained = new Uint8Array(owners.length);
+  for (let i = 0; i < owners.length; i += 1) {
+    if (grown[i] === -1 && insidePolygon((i % PT_COLS) + 0.5, Math.floor(i / PT_COLS) + 0.5, PT_LOOP)) {
+      grown[i] = 0;
+      gained[i] = 1;
+    }
+  }
+  const bots = botSkins(theme.skin);
+  const before = territoryPath(owners, PT_COLS, PT_ROWS, 0)!;
+  const after = territoryPath(grown, PT_COLS, PT_ROWS, 0)!;
+  const flash = maskPath(gained, PT_COLS, PT_ROWS);
+  const rivals = [1, 2].map((id) => ({ path: territoryPath(owners, PT_COLS, PT_ROWS, id)!, skin: bots[id - 1], pattern: "" as const }));
+  const lengths = PT_LOOP.map((p, i) => (i === 0 ? 0 : Math.hypot(p.x - PT_LOOP[i - 1].x, p.y - PT_LOOP[i - 1].y)));
+  const total = lengths.reduce((sum, len) => sum + len, 0);
+  let scraps: Scrap[] = [];
+  let burstCycle = -1;
+  let last = 0;
+
+  /** The loop drawn so far at progress t (0–1), plus the head and its heading. */
+  function along(t: number) {
+    let left = t * total;
+    const points = [PT_LOOP[0]];
+    for (let i = 1; i < PT_LOOP.length; i += 1) {
+      const a = PT_LOOP[i - 1];
+      const b = PT_LOOP[i];
+      if (left >= lengths[i]) {
+        points.push(b);
+        left -= lengths[i];
+        continue;
+      }
+      const k = left / lengths[i];
+      const head = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+      points.push(head);
+      return { points, head, angle: Math.atan2(b.y - a.y, b.x - a.x) };
+    }
+    const end = PT_LOOP[PT_LOOP.length - 1];
+    const prev = PT_LOOP[PT_LOOP.length - 2];
+    return { points, head: end, angle: Math.atan2(end.y - prev.y, end.x - prev.x) };
+  }
+
+  return (ctx, size, now) => {
+    const { width, height } = size;
+    const view = fitWorld(size, PT_COLS + 0.6, PT_ROWS + 0.6);
+    const cycle = animate ? Math.floor(now / PT_CYCLE) : 0;
+    const phase = animate ? (now % PT_CYCLE) / PT_CYCLE : 0.45;
+    const travel = Math.min(1, phase / PT_TRAVEL);
+    const captured = phase >= PT_TRAVEL;
+    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+    last = now;
+    const style = theme.style;
+    ctx.fillStyle = style.margin;
+    ctx.fillRect(0, 0, width, height);
+    ctx.save();
+    ctx.translate(view.x + 0.3 * view.scale, view.y + 0.3 * view.scale);
+    ctx.scale(view.scale, view.scale);
+    drawArena(ctx, style, PT_COLS, PT_ROWS, { x0: 0, y0: 0, x1: PT_COLS, y1: PT_ROWS });
+    drawLands(ctx, style, [...rivals, { path: captured ? after : before, skin: theme.skin, pattern: theme.pattern }]);
+    if (captured && animate) {
+      const t = (phase - PT_TRAVEL) / 0.2;
+      if (t < 1) drawCaptureFlash(ctx, style, flash, t);
+      if (burstCycle !== cycle) {
+        burstCycle = cycle;
+        scraps.push(...scrapBurst(8, 5.6, [theme.skin.color, theme.skin.light, theme.skin.dark], effects === "full" ? 22 : 10, 6));
+      }
+    }
+    scraps = stepScraps(scraps, dt);
+    const { points, head, angle } = along(captured ? 1 : travel);
+    if (!captured) drawPaperTrail(ctx, style, theme.skin, theme.trail, points, now, animate, 7);
+    if (animate) drawScraps(ctx, style, scraps);
+    drawPiece(ctx, style, bots[0], 13.6, 2.4, Math.PI * 0.8, now, animate);
+    drawLabel(ctx, style, bots[0], 13.6, 2.4, "Doodle", true);
+    drawPiece(ctx, style, theme.skin, head.x, head.y, angle, now, animate);
+    ctx.restore();
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
 
 const ASPECT: Record<ShopGame, string> = {
   snake: "aspect-[7/5]",
@@ -1176,6 +1293,7 @@ const ASPECT: Record<ShopGame, string> = {
   patches: "",
   tango: "",
   queens: "",
+  "paper-trails": "aspect-[8/5]",
 };
 
 /** A live preview of a game with the given look; `focus` is the category being browsed. */
@@ -1193,6 +1311,7 @@ export function CosmeticPreview({ game, look, focus, effects }: { game: ShopGame
     if (game === "fruit-slice") return createFruitScene(fruitTheme(look), effects);
     if (game === "gem-chase") return createGemChaseScene(gemChaseTheme(look), effects);
     if (game === "space-blaster") return createBlasterScene(blasterTheme(look), effects);
+    if (game === "paper-trails") return createPaperTrailsScene(paperTrailsTheme(look), effects);
     return createStackerScene(stackerTheme(look), effects);
   };
   return (

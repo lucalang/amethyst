@@ -42,6 +42,27 @@
   --theme-dark: 1;
   color-scheme: dark;
 }
+/* Paper Trails: cream sketchbook paper, ink text and a violet-and-coral accent. */
+[data-game-skin="paper-trails"] {
+  --background: #f3ecdc;
+  --surface: #fbf6ea;
+  --surface-raised: #ffffff;
+  --foreground: #2a2238;
+  --muted-foreground: #6a5f78;
+  --amethyst: #6d3fe0;
+  --amethyst-foreground: #ffffff;
+  --rose: #d0463c;
+  --rose-foreground: #ffffff;
+  --destructive: #c2302a;
+  --ink-rgb: 42 34 56;
+  --paper-rgb: 243 236 220;
+  --accent-rgb: 109 63 224;
+  --rose-rgb: 208 70 60;
+  --shadow-rgb: 60 44 20;
+  --shadow-alpha: 0.35;
+  --theme-dark: 0;
+  color-scheme: light;
+}
 /* Zip: warm paper with an orange trail. */
 [data-game-skin="zip"] {
   --background: #fbf4ec;

@@ -39,6 +39,7 @@ export const LazyFruit = wrap(dynamic<RecordProps>(() => import("./game-fruit"),
 export const LazyStacker = wrap(dynamic<RecordProps>(() => import("./game-stacker"), { ssr: false, loading: Loading }));
 export const LazyGemChase = wrap(dynamic<RecordProps>(() => import("./game-gem-chase"), { ssr: false, loading: Loading }));
 export const LazySpaceBlaster = wrap(dynamic<RecordProps>(() => import("./game-space-blaster"), { ssr: false, loading: Loading }));
+export const LazyPaperTrails = wrap(dynamic<RecordProps>(() => import("./game-paper-trails"), { ssr: false, loading: Loading }));
 export const LazyFrontWars = wrap(dynamic<RecordProps>(() => import("./game-front-wars"), { ssr: false, loading: Loading }));
 export const LazyBlankAtlas = wrap(dynamic<RecordProps>(() => import("./game-blank-atlas"), { ssr: false, loading: Loading }));
 export const LazyTheAscent = wrap(dynamic<RecordProps>(() => import("./game-the-ascent"), { ssr: false, loading: Loading }));
@@ -47,6 +48,8 @@ export const LazyPatches = wrap(dynamic<RecordProps & { userId: string }>(() => 
 export const LazyTango = wrap(dynamic<RecordProps & { userId: string }>(() => import("./game-tango"), { ssr: false, loading: Loading }));
 export const LazyQueens = wrap(dynamic<RecordProps & { userId: string }>(() => import("./game-queens"), { ssr: false, loading: Loading }));
 export const LazySumbreak = wrap(dynamic<RecordProps & { userId: string }>(() => import("./game-sumbreak"), { ssr: false, loading: Loading }));
+export const LazyGuessThe = wrap(dynamic<RecordProps>(() => import("./game-guess-the"), { ssr: false, loading: Loading }));
+export const LazyGuessTheChart = wrap(dynamic<{ best: number | null }>(() => import("./guess-the/chart-game"), { ssr: false, loading: Loading }));
 export const LazyWhoAmI = wrap(dynamic<{ mode: WhoAmIMode }>(() => import("./game-who-am-i"), { ssr: false, loading: Loading }));
 export const LazySudoku = wrap(
   dynamic<{

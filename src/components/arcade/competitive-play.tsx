@@ -15,6 +15,7 @@ import {
   LazyFlutter,
   LazyFruit,
   LazyGemChase,
+  LazyPaperTrails,
   LazyPatches,
   LazyQueens,
   LazySumbreak,
@@ -43,6 +44,7 @@ const GAMES: Record<Exclude<CompetitiveGame, "sudoku" | "who-am-i">, (props: Gam
   tango: ({ records, look, userId }) => <LazyTango records={records} look={look} userId={userId} />,
   queens: ({ records, look, userId }) => <LazyQueens records={records} look={look} userId={userId} />,
   sumbreak: ({ records, look, userId }) => <LazySumbreak records={records} look={look} userId={userId} />,
+  "paper-trails": ({ records, look }) => <LazyPaperTrails records={records} look={look} />,
 };
 
 /** A tournament or wager run: the game locked to one board, with runs started through the competition. */

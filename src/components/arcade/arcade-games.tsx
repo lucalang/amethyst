@@ -27,6 +27,7 @@ import {
 } from "@/lib/arcade";
 import type { ArcadeStreak, ArcadeStreaks } from "@/lib/arcade-streaks";
 import { catalogMatcher } from "@/lib/catalog-search";
+import { GUESS_THE_MODES } from "@/lib/minigames/guess-the";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 
 function RecordLine({ game, records }: { game: ArcadeGame; records: ArcadeRecords }) {
@@ -68,6 +69,22 @@ function RecordLine({ game, records }: { game: ArcadeGame; records: ArcadeRecord
         })}
       </dl>
       </div>
+    );
+  }
+  // Guess The ... keeps one record per mode.
+  if (game.id === "guess-the") {
+    return (
+      <dl className="flex flex-wrap gap-x-3 gap-y-1">
+        {GUESS_THE_MODES.map((mode) => {
+          const best = records[`guess-the:${mode.id}`];
+          return (
+            <div key={mode.id} className="flex gap-1">
+              <dt>{mode.title}</dt>
+              <dd className="font-semibold text-foreground tabular-nums">{best === undefined ? "—" : `${best}/100`}</dd>
+            </div>
+          );
+        })}
+      </dl>
     );
   }
   const best = records[game.id];

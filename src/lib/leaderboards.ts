@@ -80,6 +80,7 @@ export const LEADERBOARD_GAMES: Record<RankedGameId, LeaderboardGame> = {
   },
   "gem-chase": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
   "space-blaster": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
+  "paper-trails": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Classic" }], daily: false },
   zip: { ...levelBoards("zip"), matchBoards: ZIP_LEVELS.map((level) => ({ id: level.id, label: level.label })) },
   patches: { ...levelBoards("patches"), matchBoards: [{ id: "", label: "Practice" }] },
   tango: { ...levelBoards("tango"), matchBoards: [{ id: "", label: "Practice" }] },

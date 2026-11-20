@@ -4,7 +4,7 @@
  * How each item looks lives with the game's renderer, keyed by the item's slug.
  */
 
-export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens"] as const;
+export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails"] as const;
 export type ShopGame = (typeof SHOP_GAMES)[number];
 export const isShopGame = (value: unknown): value is ShopGame => typeof value === "string" && (SHOP_GAMES as readonly string[]).includes(value);
 
@@ -1001,6 +1001,77 @@ export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
         ],
       },
       PUZZLE_STYLES,
+    ],
+  },
+  "paper-trails": {
+    game: "paper-trails",
+    title: "Paper Trails",
+    prefix: "paper-trails",
+    href: "/arcade/paper-trails",
+    blurb: "Piece skins, land patterns, trail effects and art styles that redraw the whole arena. Rules and hit areas never change.",
+    categories: [
+      {
+        id: "piece",
+        label: "Piece skins",
+        icon: "palette",
+        blurb: "Your piece and the colour of your land. Computer opponents always pick colours that stay clearly different.",
+        default: { name: "Amethyst Ink", description: "Violet paper with a folded corner." },
+        items: [
+          item("tangerine", "Tangerine", 80, "Bright orange paper with a folded corner."),
+          item("mint", "Mint Sticker", 80, "A glossy mint-green sticker."),
+          item("cherry", "Cherry Stamp", 90, "Cherry red, stamped with a star."),
+          item("ocean", "Ocean Ink", 90, "Deep blue printed with rolling waves."),
+          item("bumblebee", "Bumblebee", 110, "Sunny yellow with bold black stripes."),
+          item("gold", "Gold Foil", 130, "Shimmering foil that catches the light as you turn."),
+          item("galaxy", "Night Sky", 140, "Midnight blue scattered with twinkling stars."),
+        ],
+      },
+      {
+        id: "pattern",
+        label: "Land patterns",
+        icon: "grid",
+        blurb: "A soft print across your land. Patterns stay gentle so borders and trails always read on top.",
+        default: { name: "Plain Wash", description: "A clean, solid colour." },
+        items: [
+          item("stripes", "Pinstripes", 90, "Fine diagonal stripes."),
+          item("dots", "Polka Dots", 90, "Neat rows of dots."),
+          item("gingham", "Gingham", 100, "A picnic-cloth check."),
+          item("hatch", "Crosshatch", 100, "Pen crosshatching, like an engraving."),
+          item("waves", "Waves", 110, "Gentle wavy lines."),
+          item("scales", "Scales", 120, "Overlapping scalloped scales."),
+          item("confetti", "Confetti", 130, "Scattered paper confetti."),
+        ],
+      },
+      {
+        id: "trail",
+        label: "Trail effects",
+        icon: "route",
+        blurb: "How your exposed trail is drawn. Every trail keeps its outline in your colours, so it's always easy to spot.",
+        default: { name: "Cut Line", description: "A dashed cut-here line down the middle." },
+        items: [
+          item("stitches", "Stitches", 80, "A running stitch, like a sewn seam."),
+          item("crayon", "Crayon", 90, "Waxy, hand-coloured strokes."),
+          item("ricrac", "Ric-Rac", 90, "A zigzag ribbon down the middle."),
+          item("splats", "Ink Splats", 110, "Ink drops spattered along the way."),
+          item("glitter", "Glitter", 120, "Twinkling glitter sprinkled along the trail."),
+          item("comet", "Comet Sparks", 130, "A glowing tail that sheds sparks."),
+          item("rainbow", "Rainbow Ribbon", 140, "A rainbow core that shimmers as you go."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Redraws the whole arena: paper, land, trails and pieces. Combines with your skin, pattern and trail.",
+        default: { name: "Sketchbook", description: "Cream notebook paper, raised paper land and pencil outlines." },
+        items: [
+          item("blueprint", "Blueprint", 300, "White drafting lines on blueprint blue."),
+          item("newsprint", "Newsprint", 350, "Halftone paper, heavy black ink and bold offset shadows."),
+          item("papercraft", "Papercraft", 400, "Cut paper layered on kraft card, with soft cast shadows."),
+          item("chalkboard", "Chalkboard", 450, "Chalk outlines and pastel land on a green slate."),
+        ],
+      },
     ],
   },
 };

@@ -51,6 +51,71 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-guess-the",
+    date: "2026-11-20",
+    title: "Guess The ...: Guess the Chart",
+    intro: "A new minigame of guesses built on real-world data. Its first mode, Guess the Chart, shows you how a real chart began and asks you to draw how it carried on.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Guess the Chart", text: "Unemployment, mortgage rates, oil prices, CO₂, global temperature and more: see the start of the chart, then draw the rest." },
+      { kind: "new", feature: "Draw your guess", text: "Draw with a mouse or finger, or set each year with the keyboard. Redraw, reset or complete the line before you submit." },
+      { kind: "new", feature: "See how close you were", text: "The real line is drawn in next to yours, with a score out of 100 that works the same way on every chart." },
+      { kind: "new", feature: "Real, sourced data", text: "Every chart names its source and years, with a link to the original data." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Guess the Chart",
+          body: "Each round deals a random chart from 11 real annual series, never one you played recently while others are left. The chart shows its title, units and years, with the real data up to a dashed line. Draw one value for every year after it; the real continuation stays hidden until your line is complete and submitted.",
+          points: [
+            "Scoring: your average miss across the years you drew is compared with the chart’s height. Each 1% of the height you’re off by on average costs 4 points, so a quarter of the height or more scores 0.",
+            "Sources: the U.S. Bureau of Labor Statistics, Bureau of Economic Analysis, Census Bureau, Freddie Mac and World Bank (via FRED), NOAA’s Global Monitoring Laboratory, NASA GISS and the World Bank’s World Development Indicators.",
+            "The charts are a snapshot downloaded on 20 November 2026, not live data. Only full calendar years are shown.",
+            "A personal best per mode: no Coins, leaderboards, streaks or Wagers.",
+          ],
+          where: "Arcade → Minigames → Guess The ...",
+          link: { href: "/arcade/guess-the/chart", label: "Play Guess the Chart" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-20-paper-trails",
+    date: "2026-11-20",
+    title: "Paper Trails",
+    intro: "A new minigame about claiming paper. Leave your land, draw a trail and loop back home: everything you fence in becomes yours. Cut through rivals’ trails to knock them out, but keep yours safe, because one crossing ends your run.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Claim the arena", text: "Your piece never stops. Draw loops out of your land to capture territory, including land other players had claimed. Hold half the arena to win." },
+      { kind: "new", feature: "Seven computer rivals", text: "Bots claim land, chase exposed trails and head home when you get close. Knock one out and another takes its place." },
+      { kind: "new", feature: "Coins, ranks and Wagers", text: "Runs earn Coins and count toward a leaderboard, streaks and Wagers, like the other score games." },
+      { kind: "new", feature: "Paper Trails shop", text: "Piece skins, land patterns, trail effects and four art styles (Blueprint, Newsprint, Papercraft and Chalkboard) that redraw the whole arena." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Paper Trails",
+          body: "You start on a small patch of land. Step off it and you lay a trail behind you; reach your land again and the trail, plus everything it encloses, becomes yours. Your land, peak land, rank and eliminations show above the arena, with standings and a map of the whole arena on the board.",
+          points: [
+            "Steer with the arrow keys or WASD (hold two for diagonals), the mouse, or by dragging anywhere on a touch screen.",
+            "If anyone crosses your exposed trail, or you cross your own, your run ends. Crossing a rival’s trail knocks them out, even inside your land.",
+            "Head-on crashes outside your land knock out both pieces. Inside your own land you’re safe and the visitor is knocked out.",
+            "The arena edge is safe: you slide along it. Areas fenced in only with the help of the edge aren’t captured.",
+            "Score: your peak land (12.34% scores 1,234), plus 500 for each rival you knock out and 2,500 for claiming half the arena.",
+            "Rivals are computer-controlled and always labelled CPU.",
+          ],
+          where: "Arcade → Minigames → Paper Trails",
+          link: { href: "/arcade/paper-trails", label: "Play Paper Trails" },
+        },
+        {
+          title: "Paper Trails shop",
+          body: "Seven piece skins (your land takes their colour), seven land patterns, seven trail effects and four art styles. Art styles redraw the paper, land, trails and pieces and work with every other item; borders and trails stay easy to read in all of them, and rivals always pick colours unlike yours.",
+          link: { href: "/arcade/paper-trails/shop", label: "Open the Paper Trails shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-detailed-worlds",
     date: "2026-11-20",
     title: "Richer worlds in The Descent and The Ascent",

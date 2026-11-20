@@ -19,8 +19,10 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   sumbreak: { hue: "#7ad7f0", genre: "Math" },
   "front-wars": { hue: "#ff6b4a", genre: "Strategy" },
   "who-am-i": { hue: "#c084fc", genre: "Deduction" },
+  "guess-the": { hue: "#38bdf8", genre: "Data" },
   "blank-atlas": { hue: "#a46bff", genre: "Trivia" },
   "the-ascent": { hue: "#5ee06a", genre: "Trivia" },
+  "paper-trails": { hue: "#ff7a59", genre: "Territory" },
 };
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
@@ -72,6 +74,56 @@ const SUDOKU_DIGITS: [number, number, number][] = [
 ];
 
 const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
+  "guess-the": (
+    <g>
+      <rect x="14" y="10" width="132" height="80" rx="6" fill="#0f172a" />
+      <g stroke="#94a3b8" strokeOpacity="0.25" strokeWidth="0.6">
+        <path d="M28 26H138M28 44H138M28 62H138M28 80H138" />
+      </g>
+      <path d="M28 80H138M28 18V80" stroke="#cbd5e1" strokeWidth="1" />
+      <path d="M28 66 L38 60 L46 63 L54 52 L62 56 L70 46 L78 50 L84 42" fill="none" stroke="#38bdf8" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M84 42 L84 80" stroke="#cbd5e1" strokeOpacity="0.6" strokeDasharray="2 2" />
+      <path d="M84 42 L94 36 L104 40 L114 30 L124 34 L134 24" fill="none" stroke="#f472b6" strokeWidth="2.6" strokeDasharray="4 3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="134" cy="24" r="3.4" fill="#f472b6" />
+      <text x="110" y="66" textAnchor="middle" fontSize="18" fontWeight="800" fill="#f8fafc" fillOpacity="0.85">?</text>
+    </g>
+  ),
+  "paper-trails": (
+    <g>
+      <rect width="160" height="100" fill="#fbf6ea" />
+      <g stroke="#608cd2" strokeOpacity="0.22" strokeWidth="0.6">
+        {Array.from({ length: 16 }, (_, i) => (
+          <path key={`v${i}`} d={`M${i * 10 + 5} 0V100`} />
+        ))}
+        {Array.from({ length: 10 }, (_, i) => (
+          <path key={`h${i}`} d={`M0 ${i * 10 + 5}H160`} />
+        ))}
+      </g>
+      <path d="M104 8 H146 L152 14 V44 L146 50 H118 L112 44 V30 L104 22 Z" fill="#7a2e0a" transform="translate(0 2.5)" />
+      <path d="M104 8 H146 L152 14 V44 L146 50 H118 L112 44 V30 L104 22 Z" fill="#fb8a2b" stroke="#7a2e0a" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M12 60 H40 L46 66 V90 L40 94 H14 L8 88 V66 Z" fill="#0f5c3c" transform="translate(0 2.5)" />
+      <path d="M12 60 H40 L46 66 V90 L40 94 H14 L8 88 V66 Z" fill="#30a46c" stroke="#0f5c3c" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M50 30 H84 L90 36 V62 L84 68 H56 L50 62 Z" fill="#43198f" transform="translate(0 2.5)" />
+      <path d="M50 30 H84 L90 36 V62 L84 68 H56 L50 62 Z" fill="#8b5cf6" stroke="#43198f" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M50 46 L59 46 L60 52 L59 58 L56 62" fill="none" stroke="#c4b5fd" strokeOpacity="0.55" strokeWidth="5" />
+      <path d="M88 56 C100 60 110 66 112 78 C114 88 98 92 86 86 C78 82 76 74 78 68" fill="none" stroke="#43198f" strokeWidth="6.5" strokeLinecap="round" />
+      <path d="M88 56 C100 60 110 66 112 78 C114 88 98 92 86 86 C78 82 76 74 78 68" fill="none" stroke="#b9a2fb" strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M88 56 C100 60 110 66 112 78 C114 88 98 92 86 86 C78 82 76 74 78 68" fill="none" stroke="#43198f" strokeWidth="0.9" strokeDasharray="2.4 1.8" />
+      <g transform="translate(78 68) rotate(-100)">
+        <rect x="-6" y="-6" width="12" height="12" rx="3" fill="#8b5cf6" stroke="#2a2238" strokeWidth="1" />
+        <circle cx="2.4" cy="-2.2" r="1.6" fill="#fff" />
+        <circle cx="2.4" cy="2.2" r="1.6" fill="#fff" />
+        <circle cx="3" cy="-2.2" r="0.8" fill="#18121f" />
+        <circle cx="3" cy="2.2" r="0.8" fill="#18121f" />
+      </g>
+      <g transform="translate(118 30)">
+        <rect x="-5.5" y="-5.5" width="11" height="11" rx="3" fill="#fb8a2b" stroke="#2a2238" strokeWidth="1" />
+        <circle cx="2.2" cy="-2" r="1.4" fill="#fff" />
+        <circle cx="2.2" cy="2" r="1.4" fill="#fff" />
+      </g>
+      <rect x="1" y="1" width="158" height="98" fill="none" stroke="#d0463c" strokeWidth="2" />
+    </g>
+  ),
   // A beanstalk winding up from a cottage garden, through clouds, to a castle in the sky.
   "the-ascent": (
     <g>

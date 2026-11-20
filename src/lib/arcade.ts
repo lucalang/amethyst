@@ -1,13 +1,14 @@
 import * as z from "zod";
 import { isRecentDailyVariant } from "@/lib/arcade-daily";
 import { MAX_PUZZLE_LEVEL, PUZZLE_DIFFICULTIES, isLevelsVariant, levelsBoard, type PuzzleDifficulty } from "@/lib/minigames/levels";
+import { GUESS_THE_MODE_IDS } from "@/lib/minigames/guess-the";
 import { SUMBREAK_LEVEL_VARIANTS } from "@/lib/minigames/sumbreak";
 import { ZIP_LEVEL_VARIANTS } from "@/lib/minigames/zip";
 import { isSnakeVariant } from "@/lib/snake";
 import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize, type SudokuSlot } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
-export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "sumbreak", "front-wars", "blank-atlas", "the-ascent"] as const;
+export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "sumbreak", "paper-trails", "front-wars", "blank-atlas", "the-ascent", "guess-the"] as const;
 export type ScoreGame = (typeof SCORE_GAMES)[number];
 export type ArcadeGameId = ScoreGame | "sudoku" | "who-am-i";
 
@@ -15,7 +16,7 @@ export type ArcadeGameId = ScoreGame | "sudoku" | "who-am-i";
  * Games that keep only a personal record. They have no coin runs, so they also have no leaderboards, streaks,
  * Tournaments or Wagers (all of which are built on runs). Everything that lists those reads `RankedGameId`.
  */
-export const RECORD_ONLY_GAMES = ["front-wars", "blank-atlas", "the-ascent"] as const;
+export const RECORD_ONLY_GAMES = ["front-wars", "blank-atlas", "the-ascent", "guess-the"] as const;
 export type RecordOnlyGame = (typeof RECORD_ONLY_GAMES)[number];
 /**
  * Head-to-head games: a bot match outside Wagers and a live duel inside them. They have no coin runs, records,
@@ -96,6 +97,14 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Highest level", category: "minigames" },
   { id: "sumbreak", title: "Sumbreak", href: "/arcade/sumbreak", blurb: "Merge equal neighbours into their sum until a single tile is left. Order is everything.", recordLabel: "Highest level", category: "minigames" },
   {
+    id: "paper-trails",
+    title: "Paper Trails",
+    href: "/arcade/paper-trails",
+    blurb: "Leave your land, draw a trail and loop back home to claim the paper. Cut rivals' trails, and keep yours safe.",
+    recordLabel: "Best score",
+    category: "minigames",
+  },
+  {
     id: "blank-atlas",
     title: "The Descent",
     href: "/arcade/blank-atlas",
@@ -109,6 +118,14 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
     href: "/arcade/the-ascent",
     blurb: "Seven questions, one magic beanstalk. Give the answer everyone else would, and climb toward the giant’s castle in the clouds.",
     recordLabel: "Highest climb",
+    category: "minigames",
+  },
+  {
+    id: "guess-the",
+    title: "Guess The ...",
+    href: "/arcade/guess-the",
+    blurb: "Guessing games built on real-world data. Start with Guess the Chart: see how a chart began, then draw how it carried on.",
+    recordLabel: "Best accuracy",
     category: "minigames",
   },
   {
@@ -188,6 +205,8 @@ function isKnownVariant(game: ScoreGame, variant: string) {
   if (game === "stacker") return variant === STACKER_CLASSIC || isRecentDailyVariant(variant);
   if (game === "zip") return ZIP_LEVEL_VARIANTS.includes(variant) || isLevelsVariant(variant) || isRecentDailyVariant(variant);
   if (game === "sumbreak") return SUMBREAK_LEVEL_VARIANTS.includes(variant) || isLevelsVariant(variant) || isRecentDailyVariant(variant);
+  // Guess The ...: one record per mode.
+  if (game === "guess-the") return GUESS_THE_MODE_IDS.includes(variant);
   if ((PUZZLE_GAMES as readonly string[]).includes(game)) return isLevelsVariant(variant) || isRecentDailyVariant(variant);
   return false;
 }

@@ -1,0 +1,81 @@
+/* Guess The ...: a calm slate "data desk" with a sky-blue history line and a pink guess (see guess-the/). */
+[data-game-skin="guess-the"] {
+  --background: #0d1424;
+  --surface: #131c30;
+  --surface-raised: #1b2640;
+  --foreground: #eef3fb;
+  --muted-foreground: #a3b1c9;
+  --amethyst: #38bdf8;
+  --amethyst-foreground: #04131d;
+  --rose: #f472b6;
+  --rose-foreground: #2b0618;
+  --destructive: #ff8a8a;
+  --ink-rgb: 238 243 251;
+  --paper-rgb: 13 20 36;
+  --accent-rgb: 56 189 248;
+  --rose-rgb: 244 114 182;
+  --shadow-rgb: 2 6 16;
+  --shadow-alpha: 0.8;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
+
+.gtc-plot {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  border-radius: 0.75rem;
+}
+.gtc-plot:focus-visible {
+  box-shadow: 0 0 0 2px var(--amethyst);
+}
+.gtc-plot[data-drawing="true"] {
+  cursor: crosshair;
+}
+
+/* The real continuation draws itself in after a guess is submitted. */
+.gtc-reveal {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: gtc-draw 1.1s cubic-bezier(0.3, 0.7, 0.3, 1) 0.15s forwards;
+}
+.gtc-reveal-fill {
+  opacity: 0;
+  animation: gtc-fade 0.5s ease-out 1s forwards;
+}
+.gtc-score {
+  animation: gtc-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) 1.1s both;
+}
+@keyframes gtc-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes gtc-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes gtc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gtc-reveal,
+  .gtc-reveal-fill,
+  .gtc-score {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+[data-motion="off"] .gtc-reveal,
+[data-motion="off"] .gtc-reveal-fill,
+[data-motion="off"] .gtc-score {
+  animation: none;
+  stroke-dashoffset: 0;
+  opacity: 1;
+}
