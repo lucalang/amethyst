@@ -1,718 +1,688 @@
-/* The Descent: a shaft through gray fog, Victorian brass at the threshold, and dives whose colour cuts through it.
-   Dive colours: familiar silver, uncommon teal, rare blue, exceptional violet, extraordinary crimson and gold. */
+/* The Descent: one continuous world the camera travels down (descent-world.tsx), with the HUD and the question,
+   result and completion panels floating over it (game-blank-atlas.tsx). Colours: gray fog, brass, and one colour per
+   dive: familiar silver, uncommon teal, rare blue, exceptional violet, extraordinary crimson and gold. */
 
 .dv {
-  --dv-fog: #c9ccd2;
   --dv-paper: #ecebe6;
   --dv-brass: #c9a86a;
-  --dv-familiar: #d5d9e0;
-  --dv-uncommon: #3fd0b8;
-  --dv-rare: #4f8dff;
-  --dv-exceptional: #a46bff;
-  --dv-extraordinary: #e0263f;
   --dv-gold: #f2c14e;
-  display: grid;
-  gap: 1rem;
-}
-@media (min-width: 1024px) {
-  .dv {
-    grid-template-columns: minmax(0, 1fr) 24rem;
-    align-items: start;
-  }
-  .dv-stage {
-    order: -1;
-  }
+  --dv-glass: rgb(16 15 19 / 0.84);
 }
 
-/* The world: the Sanctum above the fog, the fog sea, and the descent beneath. */
+/* ---- Stage and camera ---- */
 .dv-stage {
+  --cam-at: 32cqh;
   position: relative;
-  container-type: inline-size;
+  container-type: size;
   overflow: hidden;
-  height: min(34rem, 70dvh);
+  height: max(32rem, calc(100dvh - 14rem));
   border-radius: 1.25rem;
   background: #08080b;
-  box-shadow: inset 0 0 80px rgb(0 0 0 / 0.7), 0 40px 80px -40px rgb(0 0 0 / 0.95);
+  box-shadow: 0 40px 80px -40px rgb(0 0 0 / 0.95);
+  isolation: isolate;
 }
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .dv-stage {
-    height: min(52rem, calc(100dvh - 11rem));
+    height: max(34rem, calc(100dvh - 10.5rem));
   }
 }
-.dv-shaft {
-  display: block;
-  width: 100%;
-  height: 100%;
+.dv-stage[data-phase="intro"] {
+  --cam-at: 70cqh;
 }
-/* A slow breath of light across the whole scene, as if the fog itself were alive. */
-.dv-stage::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(90% 60% at 50% 30%, transparent 40%, rgb(0 0 0 / 0.55));
+.dv-stage[data-phase="result"] {
+  --cam-at: 36cqh;
+}
+.dv-stage[data-phase="complete"] {
+  --cam-at: 22cqh;
 }
 
-.dv-star {
+.dw {
+  --ease: cubic-bezier(0.3, 0.1, 0.2, 1);
+  position: absolute;
+  inset: 0;
+}
+.dw[data-plunge="familiar"] {
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.dw[data-plunge="uncommon"] {
+  --ease: cubic-bezier(0.45, 0.05, 0.3, 1);
+}
+.dw[data-plunge="rare"] {
+  --ease: cubic-bezier(0.6, 0, 0.2, 1);
+}
+.dw[data-plunge="exceptional"] {
+  --ease: cubic-bezier(0.7, 0, 0.15, 1);
+}
+.dw[data-plunge="extraordinary"] {
+  --ease: cubic-bezier(0.8, 0, 0.1, 1);
+}
+.dw-world {
+  position: absolute;
+  inset: 0 0 auto;
+  translate: 0 calc(var(--cam-at) - var(--cam));
+  transition: translate max(var(--dur), 1100ms) var(--ease);
+  will-change: translate;
+}
+
+/* ---- The Sanctum ---- */
+.dw-sanctum {
+  position: absolute;
+  inset: 0 0 auto;
+  width: 100%;
+}
+.dw-star {
   fill: #f1d4d8;
-  animation: dv-twinkle 6s ease-in-out infinite;
+  animation: dw-twinkle 6s ease-in-out infinite;
 }
-.dv-moon {
-  animation: dv-moon 9s ease-in-out infinite;
+.dw-moon {
+  animation: dw-breathe 9s ease-in-out infinite;
 }
-.dv-moonglow {
-  animation: dv-moonglow 9s ease-in-out infinite;
+.dw-moonglow {
+  animation: dw-glow 9s ease-in-out infinite;
 }
-.dv-throne {
+.dw-throne {
   fill: #19171b;
   stroke: #6e5a3a;
   stroke-width: 2;
 }
-.dv-throne-star {
+.dw-throne-star {
   fill: #5a4a30;
-  transition: fill 600ms ease;
+  transition: fill 800ms ease;
 }
-.dv-throneglow {
+.dw-throneglow {
   opacity: 0;
   transition: opacity 1.2s ease;
 }
-.dv-shaft[data-final] .dv-throneglow {
+.dw[data-final] .dw-throneglow {
   opacity: 1;
-  animation: dv-throne 3s ease-in-out infinite;
+  animation: dw-glow 3s ease-in-out infinite;
 }
-.dv-shaft[data-final] .dv-throne-star {
-  fill: #f2c14e;
+.dw[data-final] .dw-throne-star {
+  fill: var(--dv-gold);
 }
-.dv-chair-back {
+.dw-chair-back {
   fill: #18161a;
   stroke: #4a3e2c;
   stroke-width: 2;
 }
-.dv-chair-halo {
-  fill: none;
-}
-.dv-chair-star {
-  fill: #3a3a42;
+.dw-chair-star {
+  fill: #33333a;
   stroke: #55555e;
   stroke-width: 1;
+  transition:
+    fill 500ms ease,
+    filter 500ms ease;
 }
-.dv-chair[data-lit] .dv-chair-back {
+.dw-chair[data-lit] .dw-chair-back {
   stroke: color-mix(in oklab, var(--dv) 70%, #4a3e2c);
 }
-.dv-chair[data-lit] .dv-chair-star {
+.dw-chair[data-lit] .dw-chair-star {
   fill: var(--dv);
-  stroke: color-mix(in oklab, var(--dv) 60%, white);
+  stroke: color-mix(in oklab, var(--dv) 55%, white);
   filter: drop-shadow(0 0 6px var(--dv));
 }
-.dv-chair[data-lit] .dv-chair-halo {
-  fill: color-mix(in oklab, var(--dv) 22%, transparent);
-}
-.dv-chair[data-dive="drift"] .dv-chair-star {
-  fill: #6b6e76;
+.dw-chair[data-lit="miss"] .dw-chair-star {
+  fill: #55575f;
   filter: none;
 }
-.dv-chair[data-dive="extraordinary"] .dv-chair-star {
-  fill: #f2c14e;
+.dw-chair[data-lit="extraordinary"] .dw-chair-star {
+  fill: var(--dv-gold);
   stroke: #e0263f;
-  stroke-width: 1.5;
 }
-.dv-chair[data-fresh] :is(.dv-chair-star, .dv-chair-halo) {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: dv-ignite 900ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
-}
-
-.dv-wave {
+.dw-wave {
   fill: #9a9ca4;
 }
-.dv-wave-a {
+.dw-wave-a {
   opacity: 0.5;
-  animation: dv-tide 22s linear infinite;
+  animation: dw-tide 22s linear infinite;
 }
-.dv-wave-b {
+.dw-wave-b {
   opacity: 0.35;
-  animation: dv-tide 31s linear infinite reverse;
+  animation: dw-tide 31s linear infinite reverse;
 }
-.dv-wave-c {
+.dw-wave-c {
   opacity: 0.25;
-  animation: dv-tide 40s linear infinite;
-}
-.dv-bank {
-  fill: #c9ccd2;
-  opacity: 0.2;
-}
-.dv-bank-a {
-  animation: dv-drift 26s ease-in-out infinite alternate;
-}
-.dv-bank-b {
-  animation: dv-drift 34s ease-in-out -9s infinite alternate-reverse;
-}
-.dv-bank-c {
-  animation: dv-drift 41s ease-in-out -17s infinite alternate;
-}
-.dv-ember {
-  fill: #ff9d6b;
-  opacity: 0;
-  animation: dv-ember 10s linear infinite;
-}
-.dv-grain {
-  pointer-events: none;
-}
-.dv-gauge-side path {
-  stroke: #c9ccd2;
-  stroke-opacity: 0.35;
-  stroke-width: 1.5;
-}
-.dv-gauge-side text {
-  fill: #c9ccd2;
-  fill-opacity: 0.45;
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
+  animation: dw-tide 40s linear infinite;
 }
 
-@keyframes dv-twinkle {
+/* ---- The deep ---- */
+.dw-bank {
+  position: absolute;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(201 204 210 / 0.22), transparent);
+  filter: blur(8px);
+  pointer-events: none;
+  animation: dw-drift 30s ease-in-out infinite alternate;
+}
+.dw-bank:nth-child(odd) {
+  animation-duration: 41s;
+  animation-direction: alternate-reverse;
+}
+.dw-gauge span {
+  position: absolute;
+  right: 0.75rem;
+  translate: 0 -50%;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: rgb(201 204 210 / 0.4);
+}
+.dw-gauge span::after {
+  content: "";
+  display: inline-block;
+  width: 0.6rem;
+  height: 1px;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+  background: currentColor;
+}
+.dw-landmark {
+  position: absolute;
+  max-width: min(18rem, 38%);
+  translate: 0 -50%;
+  font-family: var(--font-serif, Georgia, "Times New Roman", serif);
+  font-size: 0.875rem;
+  font-style: italic;
+  line-height: 1.3;
+  color: rgb(214 214 224 / 0.5);
+}
+.dw-landmark[data-side="l"] {
+  left: 1.25rem;
+}
+.dw-landmark[data-side="r"] {
+  right: 3.5rem;
+  text-align: right;
+}
+.dw-landmark[data-zone] {
+  max-width: 60%;
+  font-size: clamp(1.25rem, 1rem + 1.4cqw, 2rem);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgb(201 168 106 / 0.75);
+  text-shadow: 0 0 24px rgb(201 168 106 / 0.25);
+}
+
+/* The coloured trail and the markers left by each dive. */
+.dw-trail {
+  position: absolute;
+  left: 50%;
+  width: 4px;
+  margin-left: -2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent, var(--dv) 12%, var(--dv));
+  box-shadow: 0 0 12px var(--dv);
+}
+.dw-trail[data-dive="familiar"] {
+  width: 2px;
+  margin-left: -1px;
+  box-shadow: none;
+  opacity: 0.7;
+}
+.dw-trail[data-dive="extraordinary"] {
+  width: 7px;
+  margin-left: -3.5px;
+  background: linear-gradient(180deg, transparent, #e0263f 10%, #f2c14e 50%, #e0263f);
+  box-shadow: 0 0 22px #e0263f;
+}
+.dw-mark {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  translate: -0.85rem -50%;
+}
+.dw-mark[data-side="l"] {
+  flex-direction: row-reverse;
+  translate: calc(-100% + 0.85rem) -50%;
+  text-align: right;
+}
+.dw-mark-dot {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  border: 2px solid var(--dv);
+  background: #121216;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--dv-paper);
+  box-shadow: 0 0 14px color-mix(in oklab, var(--dv) 60%, transparent);
+}
+.dw-mark[data-dive="extraordinary"] .dw-mark-dot {
+  border-color: #f2c14e;
+  background: radial-gradient(circle, #e0263f, #5a0716);
+  box-shadow: 0 0 24px #e0263f;
+}
+.dw-mark-text {
+  display: grid;
+  max-width: min(14rem, 36cqw);
+}
+.dw-mark-text strong {
+  overflow: hidden;
+  font-size: 0.9375rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: color-mix(in oklab, var(--dv) 45%, white);
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.9);
+}
+.dw-mark-text span {
+  font-size: 0.75rem;
+  color: rgb(214 214 224 / 0.6);
+}
+.dw-mark[data-fresh] {
+  animation: dw-arrive 500ms cubic-bezier(0.2, 1.4, 0.4, 1) calc(var(--dur) * 0.9) both;
+}
+
+/* The lantern the camera follows. */
+.dw-lantern {
+  position: absolute;
+  left: 50%;
+  top: var(--cam);
+  width: 2.6rem;
+  translate: -50% -60%;
+  transition: top max(var(--dur), 1100ms) var(--ease);
+  pointer-events: none;
+}
+.dw-lantern::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 9rem;
+  height: 9rem;
+  translate: -50% -50%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgb(255 214 150 / 0.32), transparent 65%);
+  animation: dw-glow 2.6s ease-in-out infinite;
+}
+.dw-lantern-body {
+  position: relative;
+  display: block;
+  width: 100%;
+  animation: dw-sway 4s ease-in-out infinite;
+  transform-origin: 50% 0;
+}
+.dw-chain {
+  stroke: #8a7a5a;
+  stroke-width: 1.5;
+}
+.dw-brass {
+  fill: #b08a48;
+  stroke: #5a4422;
+  stroke-width: 1;
+}
+.dw-glass {
+  fill: rgb(255 226 170 / 0.25);
+  stroke: #b08a48;
+  stroke-width: 1.5;
+}
+.dw-flame {
+  fill: #ffd27a;
+  filter: drop-shadow(0 0 6px #ffb347);
+  animation: dw-flicker 1.4s ease-in-out infinite;
+}
+.dw[data-plunge] .dw-flame {
+  fill: color-mix(in oklab, var(--dv) 60%, #ffd27a);
+}
+.dw-lantern-trail {
+  position: absolute;
+  left: 50%;
+  bottom: 70%;
+  width: 6px;
+  height: 0;
+  translate: -50% 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, transparent, var(--dv));
+  box-shadow: 0 0 16px var(--dv);
+  opacity: 0;
+}
+.dw[data-plunge]:not([data-plunge="familiar"]) .dw-lantern-trail {
+  animation: dw-streak var(--dur) var(--ease) both;
+}
+
+/* Fixed to the view. */
+.dw-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.dw-motes i {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(220 222 230 / 0.55);
+  animation: dw-mote 9s linear infinite;
+}
+.dw[data-plunge]:not([data-plunge="familiar"]) .dw-motes i {
+  background: color-mix(in oklab, var(--dv) 70%, white);
+  animation: dw-rush 0.5s linear infinite;
+}
+.dw-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 50% at 50% 40%, color-mix(in oklab, var(--dv) 55%, transparent), transparent 75%);
+  opacity: 0;
+  animation: dw-flash 1s ease-out calc(var(--dur) * 0.85) both;
+}
+.dw[data-plunge="extraordinary"] .dw-flash {
+  background:
+    radial-gradient(50% 40% at 50% 40%, rgb(242 193 78 / 0.5), transparent 70%),
+    radial-gradient(80% 70% at 50% 40%, rgb(224 38 63 / 0.55), transparent 80%);
+}
+.dw-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(85% 70% at 50% 40%, transparent 45%, rgb(0 0 0 / 0.65));
+}
+
+@keyframes dw-twinkle {
   50% {
     opacity: 0.25;
   }
 }
-@keyframes dv-moon {
+@keyframes dw-breathe {
   50% {
     filter: brightness(1.25);
   }
 }
-@keyframes dv-moonglow {
+@keyframes dw-glow {
   50% {
     opacity: 0.6;
   }
 }
-@keyframes dv-throne {
-  50% {
-    opacity: 0.6;
-  }
-}
-@keyframes dv-tide {
+@keyframes dw-tide {
   to {
     translate: 200px 0;
   }
 }
-@keyframes dv-ember {
-  0% {
-    opacity: 0;
-    translate: 0 0;
-  }
-  15% {
-    opacity: 0.8;
-  }
-  100% {
-    opacity: 0;
-    translate: 18px -160px;
+@keyframes dw-drift {
+  to {
+    translate: 8% 10px;
   }
 }
-@keyframes dv-ignite {
+@keyframes dw-sway {
+  0%,
+  100% {
+    rotate: -4deg;
+  }
+  50% {
+    rotate: 4deg;
+  }
+}
+@keyframes dw-flicker {
+  50% {
+    scale: 0.9 1.08;
+    opacity: 0.85;
+  }
+}
+@keyframes dw-mote {
   from {
-    scale: 0.2;
+    translate: 0 30px;
     opacity: 0;
   }
-  60% {
-    scale: 1.6;
+  20% {
+    opacity: 0.8;
+  }
+  to {
+    translate: 12px -60px;
+    opacity: 0;
+  }
+}
+@keyframes dw-rush {
+  from {
+    translate: 0 40cqh;
+    scale: 1 1;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+    scale: 1 7;
+  }
+  to {
+    translate: 0 -60cqh;
+    scale: 1 7;
+    opacity: 0;
+  }
+}
+@keyframes dw-streak {
+  0% {
+    height: 0;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  70% {
+    height: 18rem;
+    opacity: 0.9;
+  }
+  100% {
+    height: 4rem;
+    opacity: 0;
+  }
+}
+@keyframes dw-flash {
+  20% {
     opacity: 1;
   }
 }
-@keyframes dv-shake-hard {
-  10% {
-    translate: -7px 4px;
-    rotate: -0.4deg;
-  }
-  25% {
-    translate: 8px -5px;
-    rotate: 0.5deg;
-  }
-  40% {
-    translate: -6px 3px;
-  }
-  55% {
-    translate: 5px -3px;
-  }
-  70% {
-    translate: -3px 2px;
-  }
-  85% {
-    translate: 2px -1px;
+@keyframes dw-arrive {
+  from {
+    opacity: 0;
+    scale: 0.6;
   }
 }
 
-/* ---- The reveal after each answer ---- */
-.dv-reveal {
-  position: fixed;
-  inset: 0;
-  z-index: 70;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  overflow: hidden;
-  /* Fades out over the last 360ms of the hold, ending as the reveal unmounts. */
-  animation: dv-reveal-out 360ms ease-in calc(var(--hold) - 360ms) forwards;
-}
-.dv-reveal:not([data-burst]) {
-  animation: none;
-}
-.dv-reveal-veil {
+/* ---- HUD ---- */
+.dv-hud {
   position: absolute;
-  inset: 0;
-  background: radial-gradient(70% 60% at 50% 50%, rgb(10 10 14 / calc(0.45 + var(--level) * 0.08)), rgb(4 4 6 / calc(0.6 + var(--level) * 0.06)));
-  backdrop-filter: blur(calc(1px + var(--level) * 1px)) grayscale(0.5);
-  animation: dv-fade-in 220ms ease-out both;
+  inset: 0 0 auto;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  pointer-events: none;
 }
-.dv-reveal[data-burst] .dv-reveal-veil {
-  background:
-    radial-gradient(45% 40% at 50% 50%, color-mix(in oklab, var(--dv) calc(10% + var(--level) * 7%), transparent), transparent 70%),
-    radial-gradient(70% 60% at 50% 50%, rgb(10 10 14 / calc(0.45 + var(--level) * 0.08)), rgb(4 4 6 / calc(0.6 + var(--level) * 0.06)));
+.dv-pod {
+  display: grid;
+  min-width: 5.5rem;
+  border-radius: 0.8rem;
+  padding: 0.4rem 0.7rem;
+  background: rgb(14 13 17 / 0.62);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
 }
-.dv-reveal-body {
-  position: relative;
+.dv-pod span {
+  font-size: 0.6875rem;
+  color: rgb(214 214 224 / 0.65);
+}
+.dv-pod strong {
+  font-size: 1.15rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--dv-paper);
+}
+.dv-pod-right {
+  text-align: right;
+}
+.dv-dots {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding-top: 0.3rem;
+}
+.dv-dots ol {
+  display: flex;
+  gap: 0.4rem;
+}
+.dv-dots li {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: rgb(214 214 224 / 0.18);
+  box-shadow: inset 0 0 0 1px rgb(214 214 224 / 0.25);
+}
+.dv-dots li[data-state="now"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--dv-paper);
+  animation: dw-glow 1.2s ease-in-out infinite;
+}
+.dv-dots li[data-state="miss"] {
+  background: #3a3b42;
+}
+.dv-dots li:not([data-state="now"], [data-state="ahead"], [data-state="miss"]) {
+  background: var(--dv);
+  box-shadow: 0 0 10px var(--dv);
+}
+.dv-dots span {
+  font-size: 0.75rem;
+  color: rgb(214 214 224 / 0.75);
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.9);
+}
+
+/* ---- Panels ---- */
+.dv-intro,
+.dv-ask,
+.dv-result,
+.dv-complete {
+  position: absolute;
+  z-index: 4;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  margin-inline: auto;
+  max-width: 38rem;
+  border-radius: 1.1rem;
+  padding: 1.1rem 1.2rem 1.2rem;
+  background: var(--dv-glass);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    0 30px 60px -20px rgb(0 0 0 / 0.8);
+  animation: dv-rise 420ms cubic-bezier(0.2, 1, 0.3, 1) both;
+}
+.dv-intro {
   display: grid;
   justify-items: center;
   gap: 0.6rem;
-  padding: 1.5rem;
   text-align: center;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+  bottom: 1.5rem;
 }
-.dv-reveal[data-burst][data-dive="rare"] .dv-reveal-body,
-.dv-reveal[data-burst][data-dive="exceptional"] .dv-reveal-body {
-  animation: dv-shake 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-.dv-reveal[data-burst][data-dive="extraordinary"] .dv-reveal-body {
-  animation: dv-shake-hard 700ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-}
-.dv-reveal-kicker {
-  font-size: 0.875rem;
-  color: rgb(236 235 230 / 0.6);
-}
-.dv-reveal-answer {
-  max-width: 16ch;
+.dv-title {
   font-family: var(--font-serif, Georgia, "Times New Roman", serif);
-  font-size: clamp(2.2rem, 1.4rem + 4vw, 4.25rem);
+  font-size: clamp(2.6rem, 1.8rem + 4cqw, 4.5rem);
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: #f3f1ea;
-  overflow-wrap: anywhere;
-  text-shadow: 0 6px 30px rgb(0 0 0 / 0.8);
-  animation: dv-slam 420ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
-}
-.dv-reveal[data-burst] .dv-reveal-answer {
+  color: var(--dv-paper);
   text-shadow:
-    0 0 calc(var(--level) * 10px) color-mix(in oklab, var(--dv) 80%, transparent),
-    0 6px 30px rgb(0 0 0 / 0.8);
-}
-.dv-reveal-meter {
-  display: flex;
-  gap: 0.4rem;
-  margin-top: 0.4rem;
-}
-.dv-reveal-meter i {
-  width: clamp(2.2rem, 8vw, 3.5rem);
-  height: 0.55rem;
-  border-radius: 999px;
-  background: rgb(236 235 230 / 0.12);
-  transition:
-    background-color 160ms ease,
-    box-shadow 160ms ease,
-    scale 160ms ease;
-}
-.dv-reveal-meter i[data-on] {
-  background: var(--seg);
-  box-shadow: 0 0 14px var(--seg);
-  scale: 1 1.4;
-}
-.dv-reveal[data-dive="extraordinary"] .dv-reveal-meter i[data-on]:last-child {
-  background: linear-gradient(90deg, #e0263f, #f2c14e);
-}
-.dv-reveal-name {
-  min-height: 1.6rem;
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--dv);
-  text-shadow: 0 0 20px color-mix(in oklab, var(--dv) 70%, transparent);
-}
-.dv-reveal[data-dive="familiar"] .dv-reveal-name {
-  color: #e5e7ec;
-}
-.dv-reveal[data-dive="extraordinary"] .dv-reveal-name {
-  background: linear-gradient(90deg, #ff4a5c, #f2c14e, #ff4a5c);
-  background-clip: text;
-  color: transparent;
-}
-.dv-reveal[data-burst] .dv-reveal-name {
-  animation: dv-slam 380ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
-}
-.dv-reveal-points {
-  min-height: 2.6rem;
-  font-size: 2.6rem;
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  color: #f3f1ea;
-}
-.dv-reveal-ring {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 14rem;
-  height: 14rem;
-  margin: -7rem 0 0 -7rem;
-  border-radius: 999px;
-  border: calc(1px + var(--level) * 1.5px) solid var(--dv);
-  box-shadow: 0 0 40px var(--dv), inset 0 0 40px var(--dv);
-  animation: dv-ring calc(700ms + var(--level) * 120ms) cubic-bezier(0.1, 0.7, 0.3, 1) both;
-}
-.dv-reveal-ring-late {
-  animation-delay: 160ms;
-}
-.dv-reveal-rays {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 140vmax;
-  height: 140vmax;
-  margin: -70vmax 0 0 -70vmax;
-  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--dv) 28%, transparent) 0deg 4deg, transparent 4deg 18deg);
-  mask-image: radial-gradient(circle, black 0%, transparent 45%);
-  animation: dv-rays-spin 2.4s linear both;
-}
-.dv-reveal[data-dive="extraordinary"] .dv-reveal-rays {
-  background: repeating-conic-gradient(from 0deg, rgb(224 38 63 / 0.38) 0deg 4deg, transparent 4deg 12deg, rgb(242 193 78 / 0.3) 12deg 15deg, transparent 15deg 22deg);
-}
-.dv-reveal-shards {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-}
-.dv-reveal-shards i {
-  position: absolute;
-  width: 0.5rem;
-  height: 1.6rem;
-  margin: -0.8rem 0 0 -0.25rem;
-  border-radius: 2px;
-  background: linear-gradient(#f2c14e, #e0263f);
-  box-shadow: 0 0 10px #e0263f;
-  rotate: var(--a);
-  animation: dv-shard 900ms cubic-bezier(0.1, 0.8, 0.3, 1) both;
-}
-
-@keyframes dv-fade-in {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes dv-reveal-out {
-  to {
-    opacity: 0;
-  }
-}
-@keyframes dv-slam {
-  from {
-    opacity: 0;
-    scale: 1.6;
-    filter: blur(6px);
-  }
-}
-@keyframes dv-ring {
-  from {
-    scale: 0.2;
-    opacity: 1;
-  }
-  to {
-    scale: calc(2.2 + var(--level) * 0.5);
-    opacity: 0;
-  }
-}
-@keyframes dv-rays-spin {
-  from {
-    rotate: 0deg;
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  to {
-    rotate: 40deg;
-    opacity: 0.6;
-  }
-}
-@keyframes dv-shard {
-  from {
-    translate: 0 0;
-    opacity: 1;
-  }
-  to {
-    translate: calc(cos(var(--a)) * var(--d)) calc(sin(var(--a)) * var(--d));
-    opacity: 0;
-  }
-}
-/* Reduced motion: the reveal appears finished and fades; nothing moves, but meter, colour and points all read. */
-.dv-reveal:not([data-motion]) :is(.dv-reveal-answer, .dv-reveal-name, .dv-reveal-body, .dv-reveal-veil) {
-  animation: none;
-}
-.dv-reveal:not([data-motion]) :is(.dv-reveal-ring, .dv-reveal-rays, .dv-reveal-shards) {
-  display: none;
-}
-
-
-/* Dives: --dv is the dive's colour; strength grows with its level. */
-.dv-trail {
-  fill: none;
-  stroke: var(--dv);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-}
-.dv-dive[data-dive="drift"] .dv-trail {
-  stroke-width: 1.5;
-  stroke-dasharray: 0.04 0.04;
-  opacity: 0.55;
-}
-.dv-dive[data-dive="uncommon"] .dv-trail {
-  stroke-width: 3;
-}
-.dv-dive[data-dive="rare"] .dv-trail {
-  stroke-width: 4;
-}
-.dv-dive[data-dive="exceptional"] .dv-trail {
-  stroke-width: 5;
-}
-.dv-dive[data-dive="extraordinary"] .dv-trail {
-  stroke-width: 7;
-}
-.dv-trail-light {
-  fill: none;
-  stroke: var(--dv);
-  stroke-width: 12;
-  stroke-linecap: round;
-  stroke-dasharray: 0.006 0.03;
-  opacity: 0.45;
-}
-.dv-core {
-  fill: none;
-  stroke: var(--dv-gold);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-}
-.dv-sigil,
-.dv-sigil > * {
-  fill: color-mix(in oklab, var(--dv) 22%, #121216);
-  stroke: var(--dv);
-  stroke-width: 2;
-}
-.dv-sigil .dv-sigil-thin {
-  fill: none;
-  stroke-width: 1;
-  stroke-dasharray: 2 3;
-}
-.dv-sigil .dv-sigil-gold {
-  fill: var(--dv-gold);
-  stroke: #3b0a12;
-}
-.dv-sigil-drift {
-  fill: #1a1b1f;
-  stroke: #8a8f98;
-  stroke-dasharray: 3 3;
-}
-.dv-num-ring {
-  fill: #121216;
-  stroke: none;
-}
-.dv-num {
-  fill: var(--dv-paper);
-  font-size: 13px;
-  font-weight: 700;
-}
-.dv-label {
-  fill: var(--dv-paper);
-  font-size: 17px;
-  font-weight: 600;
-  paint-order: stroke;
-  stroke: #0e0e11;
-  stroke-width: 5px;
-  stroke-linejoin: round;
-}
-.dv-dive[data-dive]:not([data-dive="familiar"], [data-dive="drift"]) .dv-label {
-  fill: color-mix(in oklab, var(--dv) 55%, white);
-}
-.dv-ripple {
-  fill: none;
-  stroke: var(--dv);
-  stroke-width: 2;
-  opacity: 0.5;
-}
-.dv-rays path {
-  stroke: var(--dv-gold);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-.dv-next {
-  fill: none;
-  stroke: var(--dv-paper);
-  stroke-opacity: 0.6;
-  stroke-width: 2;
-  animation: dv-beckon 1.8s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-@container (max-width: 300px) {
-  .dv-label {
-    display: none;
-  }
-}
-
-/* The dive that was just made: duration and force follow its level. */
-.dv-dive[data-fresh] {
-  --dur: 1100ms;
-  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
-}
-.dv-dive[data-fresh][data-dive="drift"] {
-  --dur: 1400ms;
-}
-.dv-dive[data-fresh][data-dive="uncommon"] {
-  --dur: 900ms;
-  --ease: cubic-bezier(0.45, 0.05, 0.35, 1);
-}
-.dv-dive[data-fresh][data-dive="rare"] {
-  --dur: 480ms;
-  --ease: cubic-bezier(0.7, 0, 0.84, 0);
-}
-.dv-dive[data-fresh][data-dive="exceptional"] {
-  --dur: 400ms;
-  --ease: cubic-bezier(0.8, 0, 0.9, 0.2);
-}
-.dv-dive[data-fresh][data-dive="extraordinary"] {
-  --dur: 340ms;
-  --ease: cubic-bezier(0.9, 0, 1, 0.1);
-}
-.dv-dive[data-fresh] :is(.dv-trail, .dv-core, .dv-trail-light) {
-  animation: dv-draw var(--dur) var(--ease) both;
-}
-.dv-dive[data-fresh] .dv-landing {
-  animation: dv-land 420ms cubic-bezier(0.2, 1.4, 0.4, 1) var(--dur) both;
-  transform-box: fill-box;
-}
-.dv-dive[data-fresh] .dv-ripple {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: dv-ripple 1100ms ease-out var(--dur) both;
-}
-.dv-dive[data-fresh] .dv-ripple-late {
-  animation-delay: calc(var(--dur) + 260ms);
-}
-.dv-dive[data-fresh] .dv-rays {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: dv-rays 800ms ease-out var(--dur) both;
-}
-.dv-part[data-fresh] {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: dv-part 900ms ease-out 200ms both;
-}
-
-@keyframes dv-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-@keyframes dv-land {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes dv-ripple {
-  from {
-    scale: 0.6;
-    opacity: 0.9;
-  }
-  to {
-    scale: 3;
-    opacity: 0;
-  }
-}
-@keyframes dv-rays {
-  from {
-    scale: 0.4;
-    opacity: 0;
-  }
-  40% {
-    opacity: 1;
-  }
-}
-@keyframes dv-part {
-  from {
-    scale: 0.2;
-    opacity: 0;
-  }
-}
-@keyframes dv-drift {
-  to {
-    translate: 70px 8px;
-  }
-}
-@keyframes dv-beckon {
-  50% {
-    scale: 1.5;
-    stroke-opacity: 0.15;
-  }
-}
-@keyframes dv-shake {
-  20% {
-    translate: -3px 2px;
-  }
-  40% {
-    translate: 3px -2px;
-  }
-  60% {
-    translate: -2px 1px;
-  }
-  80% {
-    translate: 1px -1px;
-  }
-}
-
-/* Question panel */
-.dv-panel {
+    0 0 40px rgb(224 38 63 / 0.35),
+    0 4px 24px rgb(0 0 0 / 0.9);
+}
+.dv-tagline {
+  font-family: var(--font-serif, Georgia, "Times New Roman", serif);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: rgb(236 235 230 / 0.85);
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.9);
+}
+.dv-rules {
   display: grid;
-  gap: 0.6rem;
-  min-width: 0;
-}
-.dv-depth {
+  gap: 0.25rem;
+  margin: 0.25rem 0 0.6rem;
   font-size: 0.875rem;
-  color: var(--muted-foreground);
+  color: rgb(214 214 224 / 0.8);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.95);
+}
+.dv-relaxed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  color: rgb(214 214 224 / 0.75);
+  cursor: pointer;
+}
+.dv-relaxed input {
+  accent-color: var(--dv-brass);
+}
+.dv-best {
+  font-size: 0.8125rem;
+  color: var(--dv-brass);
+}
+.dv .dv-go {
+  background: linear-gradient(180deg, #f3f1ea, #cfccc2);
+  color: #151417;
+  font-weight: 700;
+  box-shadow: 0 10px 30px -10px rgb(236 235 230 / 0.5);
+}
+.dv .dv-go:hover {
+  background: #fff;
+}
+.dv-ask-meta {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: rgb(214 214 224 / 0.65);
 }
 .dv-prompt {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  margin-top: 0.2rem;
   font-family: var(--font-serif, Georgia, "Times New Roman", serif);
-  font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.65rem);
+  font-size: clamp(1.3rem, 1.05rem + 1.2cqw, 1.75rem);
   font-weight: 600;
   line-height: 1.2;
   text-wrap: balance;
   color: var(--dv-paper);
 }
+.dv-ask[data-phase="preview"] .dv-prompt {
+  animation: dv-reveal-prompt 900ms ease-out both;
+}
 .dv-hint {
+  margin-top: 0.25rem;
   font-size: 0.875rem;
-  color: var(--muted-foreground);
+  color: rgb(214 214 224 / 0.7);
+}
+.dv-clock {
+  display: block;
+  height: 4px;
+  margin-top: 0.7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(214 214 224 / 0.12);
+}
+.dv-clock span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--dv-paper);
+  transition: width 120ms linear;
+}
+.dv-clock[data-urgent] span {
+  background: #e0263f;
+  box-shadow: 0 0 12px #e0263f;
 }
 .dv-form {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.25rem;
+  margin-top: 0.7rem;
 }
 .dv-input {
   min-width: 0;
   flex: 1;
   height: 2.75rem;
-  border-radius: 0.6rem;
-  border: 1px solid rgb(201 204 210 / 0.25);
-  background: #111114;
+  border-radius: 0.65rem;
+  border: 1px solid rgb(214 214 224 / 0.22);
+  background: rgb(8 8 10 / 0.7);
   padding: 0 0.9rem;
   font-size: 1rem;
   color: var(--dv-paper);
@@ -729,134 +699,135 @@
   box-shadow: 0 0 0 3px rgb(201 168 106 / 0.22);
 }
 .dv-input[aria-invalid="true"] {
-  border-color: #b88a5a;
-}
-.dv .dv-go {
-  background: var(--dv-paper);
-  color: #141416;
-  font-weight: 700;
-}
-.dv .dv-go:hover {
-  background: #fff;
-}
-.dv-pass {
-  justify-self: start;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  color: var(--muted-foreground);
-  text-decoration: underline;
-  text-decoration-color: rgb(201 204 210 / 0.4);
-  text-underline-offset: 3px;
-  outline: none;
-}
-.dv-pass:hover {
-  color: var(--dv-paper);
-}
-.dv-pass:focus-visible {
-  box-shadow: 0 0 0 2px var(--ring);
+  border-color: #c98a5a;
 }
 .dv-warn {
-  font-size: 0.875rem;
-  line-height: 1.4;
-  color: #d9b48a;
+  min-height: 1.25rem;
+  margin-top: 0.4rem;
+  font-size: 0.8125rem;
+  color: #e0b48a;
 }
 
-/* The result of the last dive: answer, dive, points, and a five-step strength gauge that also works without motion. */
+/* Result card: the meter climbs, then bursts in the dive's colour. */
 .dv-result {
-  display: grid;
-  gap: 0.2rem;
-  min-height: 4.5rem;
-  border-radius: 0.9rem;
-  padding: 0.7rem 0.85rem;
-  background: radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, var(--dv, #8a8f98) 22%, transparent), transparent 65%), rgb(255 255 255 / 0.03);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--dv, #8a8f98) 40%, transparent);
+  overflow: hidden;
+  text-align: center;
 }
-.dv-result[data-dive="extraordinary"] {
-  background: radial-gradient(120% 140% at 0% 0%, rgb(224 38 63 / 0.3), transparent 60%), radial-gradient(80% 120% at 100% 100%, rgb(242 193 78 / 0.18), transparent 60%), rgb(255 255 255 / 0.03);
-  box-shadow: inset 0 0 0 1px rgb(242 193 78 / 0.55);
+.dv-result[data-burst] {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklab, var(--dv) 55%, transparent),
+    0 0 60px -10px color-mix(in oklab, var(--dv) 60%, transparent),
+    0 30px 60px -20px rgb(0 0 0 / 0.8);
 }
-.dv-result-head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-weight: 700;
-  color: var(--dv, var(--dv-fog));
+.dv-result[data-dive="extraordinary"][data-burst] {
+  box-shadow:
+    inset 0 0 0 1px rgb(242 193 78 / 0.7),
+    0 0 80px -6px rgb(224 38 63 / 0.7),
+    0 30px 60px -20px rgb(0 0 0 / 0.8);
 }
-.dv-result[data-dive="familiar"] .dv-result-head {
-  color: var(--dv-paper);
+.dv-result > * {
+  position: relative;
 }
 .dv-result-answer {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--dv-paper);
+  font-family: var(--font-serif, Georgia, "Times New Roman", serif);
+  font-size: clamp(1.8rem, 1.3rem + 2.4cqw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.05;
+  color: #f3f1ea;
   overflow-wrap: anywhere;
+  animation: dv-slam 420ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.dv-result[data-burst] .dv-result-answer {
+  text-shadow: 0 0 24px color-mix(in oklab, var(--dv) 70%, transparent);
+}
+.dv-meter {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0.8rem 0 0.4rem;
+}
+.dv-meter i {
+  width: clamp(2rem, 9cqw, 3.4rem);
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgb(214 214 224 / 0.12);
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    scale 150ms ease;
+}
+.dv-meter i[data-on] {
+  background: var(--seg);
+  box-shadow: 0 0 14px var(--seg);
+  scale: 1 1.5;
+}
+.dv-result[data-dive="extraordinary"] .dv-meter i[data-on]:last-child {
+  background: linear-gradient(90deg, #e0263f, #f2c14e);
+}
+.dv-result-name {
+  display: flex;
+  min-height: 2.2rem;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--dv);
+}
+.dv-result[data-dive="familiar"] .dv-result-name {
+  color: #e5e7ec;
+}
+.dv-result[data-dive="miss"] .dv-result-name {
+  color: rgb(214 214 224 / 0.6);
+}
+.dv-result[data-burst] .dv-result-name {
+  animation: dv-slam 380ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 .dv-result-points {
-  margin-left: auto;
+  font-size: 1.6rem;
   font-variant-numeric: tabular-nums;
   color: var(--dv-paper);
 }
-.dv-result-motion {
-  font-size: 0.8125rem;
-  color: var(--muted-foreground);
+.dv-result .dv-hint {
+  margin-bottom: 0.9rem;
 }
-.dv-strength {
-  display: inline-flex;
-  gap: 2px;
-}
-.dv-strength i {
-  width: 5px;
-  height: 0.85rem;
-  border-radius: 2px;
-  background: rgb(201 204 210 / 0.18);
-}
-.dv-strength i[data-on] {
-  background: var(--dv, var(--dv-fog));
-}
-.dv-result[data-dive="extraordinary"] .dv-strength i[data-on]:last-child {
-  background: var(--dv-gold);
-}
-.dv-result[data-fresh] {
-  animation: dv-result-in 420ms cubic-bezier(0.2, 1.2, 0.4, 1) both;
-}
-@keyframes dv-result-in {
-  from {
-    opacity: 0;
-    translate: 0 6px;
-  }
-}
-
-.dv-how {
-  margin-top: 0.5rem;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-}
-.dv-how summary {
-  cursor: pointer;
-  width: fit-content;
-  color: var(--dv-paper);
-}
-.dv-how p,
-.dv-how ul {
-  margin-top: 0.5rem;
-}
-.dv-how li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.dv-swatch {
-  width: 0.65rem;
-  height: 0.65rem;
-  flex-shrink: 0;
+.dv-result-ring {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 10rem;
+  height: 10rem;
+  margin: -5rem 0 0 -5rem;
   border-radius: 999px;
-  background: var(--dv);
+  border: 3px solid var(--dv);
+  box-shadow: 0 0 30px var(--dv);
+  pointer-events: none;
+  animation: dv-ring 900ms cubic-bezier(0.1, 0.7, 0.3, 1) both;
+}
+.dv-result-rays {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 60rem;
+  height: 60rem;
+  margin: -30rem 0 0 -30rem;
+  background: repeating-conic-gradient(from 0deg, color-mix(in oklab, var(--dv) 25%, transparent) 0deg 4deg, transparent 4deg 18deg);
+  mask-image: radial-gradient(circle, black 0%, transparent 40%);
+  pointer-events: none;
+  animation: dv-spin 3s linear both;
+}
+.dv-result[data-dive="extraordinary"] .dv-result-rays {
+  background: repeating-conic-gradient(from 0deg, rgb(224 38 63 / 0.4) 0deg 4deg, transparent 4deg 12deg, rgb(242 193 78 / 0.3) 12deg 15deg, transparent 15deg 22deg);
 }
 
-/* Results */
+/* Completion */
+.dv-complete {
+  top: 4.75rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .dv-total {
-  font-size: 3rem;
+  font-size: clamp(3rem, 2rem + 5cqw, 4.5rem);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -864,45 +835,70 @@
   color: var(--dv-paper);
 }
 .dv-total span {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 500;
   letter-spacing: 0;
-  color: var(--muted-foreground);
+  color: rgb(214 214 224 / 0.6);
+}
+.dv-band {
+  margin-top: 0.4rem;
+  font-family: var(--font-serif, Georgia, "Times New Roman", serif);
+  font-size: 1.15rem;
+  font-style: italic;
+  color: var(--dv-brass);
 }
 .dv-log {
   display: grid;
-  margin: 0.25rem 0 0.5rem;
+  margin: 0.75rem 0 1rem;
 }
 .dv-log li {
+  border-top: 1px solid rgb(214 214 224 / 0.1);
+}
+.dv-log summary {
   display: flex;
   align-items: flex-start;
   gap: 0.7rem;
-  padding: 0.6rem 0;
-  border-top: 1px solid rgb(201 204 210 / 0.12);
+  padding: 0.6rem 0.25rem;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 0.5rem;
+}
+.dv-log summary::-webkit-details-marker {
+  display: none;
+}
+.dv-log summary:hover {
+  background: rgb(255 255 255 / 0.03);
+}
+.dv-log summary:focus-visible {
+  outline: 2px solid var(--ring);
 }
 .dv-log-num {
   display: grid;
   flex-shrink: 0;
   place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.7rem;
+  height: 1.7rem;
   border-radius: 999px;
-  background: color-mix(in oklab, var(--dv, #8a8f98) 85%, black);
+  background: var(--dv);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #0e0e11;
 }
-.dv-log li[data-dive="extraordinary"] .dv-log-num {
-  background: linear-gradient(135deg, var(--dv-extraordinary), var(--dv-gold));
+.dv-log-num[data-dive="extraordinary"] {
+  background: linear-gradient(135deg, #e0263f, #f2c14e);
+}
+.dv-log-num[data-dive="miss"] {
+  background: #3a3b42;
+  color: var(--dv-paper);
 }
 .dv-log-q {
   display: block;
   font-size: 0.8125rem;
-  color: var(--muted-foreground);
+  color: rgb(214 214 224 / 0.6);
 }
 .dv-log-a {
   display: block;
-  font-size: 0.9375rem;
+  font-weight: 600;
   color: var(--dv-paper);
   overflow-wrap: anywhere;
 }
@@ -910,35 +906,103 @@
   flex-shrink: 0;
   text-align: right;
   font-size: 0.75rem;
-  color: var(--dv, var(--muted-foreground));
-}
-.dv-log li[data-dive="familiar"] .dv-log-score,
-.dv-log li[data-dive="drift"] .dv-log-score {
-  color: var(--muted-foreground);
+  color: var(--dv);
 }
 .dv-log-score strong {
   display: block;
   font-size: 1rem;
-  color: var(--dv-paper);
   font-variant-numeric: tabular-nums;
+  color: var(--dv-paper);
+}
+.dv-sheet {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.25rem 0.25rem 0.9rem 2.6rem;
+}
+.dv-sheet-tier p {
+  font-size: 0.75rem;
+  color: rgb(214 214 224 / 0.55);
+}
+.dv-sheet-tier ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.8rem;
+  margin-top: 0.2rem;
+}
+.dv-sheet-tier li {
+  font-size: 0.875rem;
+  color: color-mix(in oklab, var(--dv) 55%, white);
+}
+.dv-sheet-tier li[data-yours] {
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: var(--dv);
+  text-underline-offset: 3px;
+}
+.dv-complete-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.dv-fine {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: rgb(214 214 224 / 0.45);
 }
 
-/* Reduced motion: no movement at all. Colour, line weight, the landing sigil and the strength gauge still show each
-   dive's quality. */
-@media (prefers-reduced-motion: reduce) {
-  .dv :is(.dv-bank, .dv-wave, .dv-ember, .dv-star, .dv-moon, .dv-moonglow, .dv-throneglow, .dv-next, .dv-result[data-fresh], .dv-shaft, .dv-input),
-  .dv .dv-chair[data-fresh] *,
-  .dv .dv-dive[data-fresh] *,
-  .dv .dv-part[data-fresh] {
-    animation: none !important;
-  }
-  .dv-input {
-    transition: none;
+@keyframes dv-rise {
+  from {
+    opacity: 0;
+    translate: 0 16px;
   }
 }
-:root[data-motion="off"] .dv :is(.dv-bank, .dv-wave, .dv-ember, .dv-star, .dv-moon, .dv-moonglow, .dv-throneglow, .dv-next, .dv-result[data-fresh], .dv-shaft, .dv-input),
-:root[data-motion="off"] .dv .dv-chair[data-fresh] *,
-:root[data-motion="off"] .dv .dv-dive[data-fresh] *,
-:root[data-motion="off"] .dv .dv-part[data-fresh] {
+@keyframes dv-slam {
+  from {
+    opacity: 0;
+    scale: 1.5;
+    filter: blur(6px);
+  }
+}
+@keyframes dv-ring {
+  from {
+    scale: 0.3;
+    opacity: 1;
+  }
+  to {
+    scale: 3.2;
+    opacity: 0;
+  }
+}
+@keyframes dv-spin {
+  from {
+    rotate: 0deg;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    rotate: 45deg;
+    opacity: 0.5;
+  }
+}
+@keyframes dv-reveal-prompt {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+  }
+}
+
+/* Reduced motion: nothing travels or animates; the world snaps to each new depth, and colour, the meter, markers and
+   numbers still show every result. */
+@media (prefers-reduced-motion: reduce) {
+  .dv *,
+  .dv *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+:root[data-motion="off"] .dv *,
+:root[data-motion="off"] .dv *::before {
   animation: none !important;
+  transition: none !important;
 }

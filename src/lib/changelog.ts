@@ -54,23 +54,22 @@ const RELEASES: readonly Release[] = [
     id: "2026-11-20-the-descent",
     date: "2026-11-20",
     title: "Blank Atlas becomes The Descent",
-    intro: "The rare-answer minigame has a new world: a stone sanctum floating above an endless sea of gray fog. Seven questions are seven dives into that fog, and every answer gets its own dramatic reveal.",
+    intro: "The rare-answer minigame is now one continuous dive. Start in a sanctum floating above an endless gray fog, then sink through it question by question: every point takes you 10 metres deeper.",
     icon: "gamepad",
     highlights: [
-      { kind: "improved", feature: "The Sanctum above the fog", text: "A vast hall under a crimson moon, with a long bronze table and seven high-backed chairs. Each answer lights its chair in the colour of its dive, and a finished descent lights the throne." },
-      { kind: "improved", feature: "A reveal for every answer", text: "Your answer slams onto the screen, the rarity meter climbs step by step and bursts in its colour, and the points count up. The rarer the answer, the bigger the moment: rays, rings, shards and a shaking world for the very rarest." },
-      { kind: "improved", feature: "Dives you can feel", text: "Familiar answers sink gently in silver, uncommon ones glide in teal, rare ones plunge in blue, exceptional ones ripple in violet, and the rarest of all crash through the fog in crimson and gold." },
-      { kind: "improved", feature: "The full descent", text: "After the seventh dive you see the whole shaft, every answer with its dive and points, and your final score, with one button to descend again." },
-      { kind: "improved", feature: "Same game underneath", text: "Questions, scoring and your best score are unchanged, and a round you had in progress carries on where you left it." },
+      { kind: "improved", feature: "A real descent", text: "Your lantern sinks through one continuous world as you score, past drowned carriages, silent archives and four named zones, all the way to the Nameless Floor at 7,000 m." },
+      { kind: "improved", feature: "Against the clock", text: "Each question gives you 3 seconds to read and 25 to answer, with retries for wrong guesses. Relaxed mode turns the clock off." },
+      { kind: "improved", feature: "Every answer is a moment", text: "Your answer slams in, the rarity meter climbs to its tier and bursts in its colour, the points count up, and the lantern plunges: gently for familiar answers, violently for the rarest." },
+      { kind: "improved", feature: "The full log", text: "At the end, see your verdict, share your descent as a grid, and tap any question to see every answer that counted, rarest first." },
     ],
     details: {
       improved: [
         {
           title: "The Descent",
-          body: "Each answer shows its rarity, points and a five-step dive gauge, then the dive plays in the shaft. Points are the same as before: Familiar 10, Uncommon 35, Rare 70 and Exceptional 100. An Extraordinary dive is an Exceptional answer that stands alone in its question’s rarest tier, such as Luxembourg among Germany’s neighbours; it scores the same 100 points but plunges harder. Wrong answers never dive: they just let you try again.",
+          body: "Begin above the fog, where seven chairs wait around a bronze table; each lights up in the colour of your answer. Questions, scoring and your best score are unchanged: Familiar 10, Uncommon 35, Rare 70 and Exceptional 100 points. An Extraordinary answer is an Exceptional one that stands alone in its question’s rarest tier; it scores the same 100 points but plunges hardest. Running out of time scores nothing, and a round in progress picks up where you left it.",
           points: [
             "Rarity is Amethyst’s own curated estimate, not measured from how players answer.",
-            "With reduced motion, dives don’t move; their colour, line weight, landing mark and gauge still show how good each one was.",
+            "With reduced motion, the world snaps to each depth instead of travelling; colours, the meter and all numbers still show every result.",
           ],
           where: "Arcade → Minigames → The Descent",
           link: { href: "/arcade/blank-atlas", label: "Play The Descent" },

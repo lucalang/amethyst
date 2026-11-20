@@ -99,7 +99,7 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
     id: "blank-atlas",
     title: "The Descent",
     href: "/arcade/blank-atlas",
-    blurb: "Seven questions, seven dives into the gray fog. Familiar answers sink gently; rare ones plunge deep in a blaze of colour.",
+    blurb: "Seven questions, one dive into an endless gray fog. Name the rarest answer you can: every point sinks you 10 metres deeper.",
     recordLabel: "Best descent",
     category: "minigames",
   },

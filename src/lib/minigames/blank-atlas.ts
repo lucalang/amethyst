@@ -29,13 +29,30 @@ export const TIERS: Record<Tier, { name: string; points: number; blurb: string }
  * the answer list, worth the same 100 points, it just plunges harder.
  */
 export type Dive = "familiar" | "uncommon" | "rare" | "exceptional" | "extraordinary";
-export const DIVES: Record<Dive, { name: string; motion: string; level: number }> = {
-  familiar: { name: "Familiar", motion: "a short, gentle descent", level: 1 },
-  uncommon: { name: "Uncommon", motion: "a deeper glide with a trail of light", level: 2 },
-  rare: { name: "Rare", motion: "a fast plunge as the fog parts", level: 3 },
-  exceptional: { name: "Exceptional", motion: "a forceful dive with rippling light", level: 4 },
-  extraordinary: { name: "Extraordinary", motion: "a dramatic plunge through the fog", level: 5 },
+export const DIVES: Record<Dive, { name: string; motion: string; blurb: string; level: number; mark: string }> = {
+  familiar: { name: "Familiar", motion: "a short, gentle descent", blurb: "The first answer on everyone’s lips.", level: 1, mark: "⬜" },
+  uncommon: { name: "Uncommon", motion: "a deeper glide with a trail of light", blurb: "Off the lit road. Well found.", level: 2, mark: "🟩" },
+  rare: { name: "Rare", motion: "a fast plunge as the fog parts", blurb: "Few would ever think of it.", level: 3, mark: "🟦" },
+  exceptional: { name: "Exceptional", motion: "a forceful dive with rippling light", blurb: "Almost nobody goes this deep.", level: 4, mark: "🟪" },
+  extraordinary: { name: "Extraordinary", motion: "a dramatic plunge through the fog", blurb: "The rarest answer on the whole list.", level: 5, mark: "🟥" },
 };
+export const MISS_MARK = "⬛";
+
+/** Every point sinks the lantern 10 metres, so a perfect descent reaches 7,000 m. */
+export const METRES_PER_POINT = 10;
+/** Before each question: a moment to read it. Then the clock. */
+export const PREVIEW_MS = 3000;
+export const ANSWER_MS = 25_000;
+
+/** How deep a whole round went, in words. */
+export const BANDS: { min: number; name: string; verdict: string }[] = [
+  { min: 0, name: "In the gaslight", verdict: "Still in the gaslight. The fog has far more to show you." },
+  { min: 151, name: "The Twilight Veil", verdict: "Through the Twilight Veil, where the bells fall quiet." },
+  { min: 251, name: "The Silent Archive", verdict: "Down among the Silent Archive’s unread letters." },
+  { min: 351, name: "The Lampless Deep", verdict: "Lost in the Lampless Deep. Few lanterns reach it." },
+  { min: 450, name: "The Nameless Floor", verdict: "The Nameless Floor. Hardly anyone returns from here." },
+];
+export const bandFor = (score: number) => [...BANDS].reverse().find((band) => score >= band.min) ?? BANDS[0];
 export const MAX_SCORE = STOPS * TIERS[4].points;
 
 /**
@@ -468,7 +485,7 @@ export function judge(question: Question, input: string): Verdict {
 // --- Rounds --------------------------------------------------------------------------------------
 
 /** One answered stop: what was typed, what it was read as (null when the stop was let pass) and the points. */
-export type Stop = { question: string; input: string; answer: string | null; tier: Tier | null; points: number };
+export type Stop = { question: string; input: string; answer: string | null; tier: Tier | null; points: number; timedOut?: boolean };
 
 export type Round = { id: string; questions: string[]; stops: Stop[]; startedAt: number };
 
@@ -500,7 +517,14 @@ export function restoreRound(raw: unknown): Round | null {
     // Re-read the stored answer so a saved round can never claim more than its answer is worth.
     const answer = stop.answer === null ? null : (question.answers.find((entry) => entry.name === stop.answer) ?? null);
     if (stop.answer !== null && !answer) return null;
-    stops.push({ question: stop.question, input: String(stop.input ?? "").slice(0, 80), answer: answer?.name ?? null, tier: answer?.tier ?? null, points: answer ? TIERS[answer.tier].points : 0 });
+    stops.push({
+      question: stop.question,
+      input: String(stop.input ?? "").slice(0, 80),
+      answer: answer?.name ?? null,
+      tier: answer?.tier ?? null,
+      points: answer ? TIERS[answer.tier].points : 0,
+      timedOut: answer ? undefined : Boolean(stop.timedOut) || undefined,
+    });
   }
   return { id: value.id, questions: value.questions, stops, startedAt: typeof value.startedAt === "number" ? value.startedAt : Date.now() };
 }
@@ -513,4 +537,14 @@ export function hash(text: string) {
     h = Math.imul(h, 0x01000193);
   }
   return h >>> 0;
+}
+
+/** The round as a shareable text grid: one square per question, coloured by its dive. */
+export function shareText(round: Round) {
+  const score = roundScore(round);
+  const marks = round.stops.map((stop) => {
+    const dive = diveOf(stop.question, stop.answer, stop.tier);
+    return dive ? DIVES[dive].mark : MISS_MARK;
+  });
+  return `The Descent · ${score}/${MAX_SCORE} · ${(score * METRES_PER_POINT).toLocaleString("en")} m\n${marks.join("")}\n${bandFor(score).name}`;
 }
