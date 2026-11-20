@@ -56,7 +56,7 @@ export const recoverStreakSchema = z
 
 export const celebrateStreakSchema = z.object({ game: gameSchema }).strict();
 
-/** `celebrate` is true for exactly one claim per player and UTC day. */
+/** `celebrate` is true for exactly one claim per player, game and UTC day. */
 export type StreakCelebration = { celebrate: boolean; streak: number };
 
 export type StreakRecovery = { status: "recovered" | "already"; balance: number; cost: number; streak: number };

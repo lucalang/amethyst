@@ -2,7 +2,7 @@ import { recoverStreakSchema, type StreakRecovery } from "@/lib/arcade-streaks";
 import { loadArcadeStreaks, loadStreakCelebrated } from "@/lib/data/arcade";
 import { apiError, dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 
-/** The player's streak for every game, and whether today's celebration already played. */
+/** The player's streak for every game, and the games whose celebration already played today. */
 export async function GET() {
   const ctx = await requireApiUser();
   if (ctx instanceof Response) return ctx;

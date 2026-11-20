@@ -12,15 +12,14 @@ export async function loadArcadeStreaks(ctx: AuthContext): Promise<ArcadeStreaks
 }
 
 /** Whether today's (UTC) streak celebration has already played. */
-export async function loadStreakCelebrated(ctx: AuthContext): Promise<boolean> {
+export async function loadStreakCelebrated(ctx: AuthContext): Promise<string[]> {
   const { data, error } = await ctx.supabase
     .from("arcade_streak_celebrations")
     .select("game")
     .eq("user_id", ctx.userId)
-    .eq("celebrate_date", new Date().toISOString().slice(0, 10))
-    .maybeSingle();
-  if (error) throw new Error(`Could not load the streak celebration: ${error.code}`);
-  return data !== null;
+    .eq("celebrate_date", new Date().toISOString().slice(0, 10));
+  if (error) throw new Error(`Could not load the streak celebrations: ${error.code}`);
+  return data.map((row) => row.game);
 }
 
 /** The signed-in account's personal records (missing games have none yet). */

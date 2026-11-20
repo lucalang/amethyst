@@ -36,16 +36,19 @@ import { useUiSound } from "@/components/layout/ui-sound";
 
 const gameTitle = (game: RankedGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
 
-type StreakState = { date: string; streaks: ArcadeStreaks; celebrated?: boolean };
+/** `celebrated`: the games whose streak celebration already played today (undefined until known). */
+type StreakState = { date: string; streaks: ArcadeStreaks; celebrated?: readonly string[] };
 
 const fetchStreaks = () =>
-  apiFetch<{ streaks: ArcadeStreaks; celebrated: boolean }>("/api/arcade/streaks").then(
-    (body): StreakState => ({ date: dailyDate(), streaks: body.streaks, celebrated: body.celebrated }),
+  apiFetch<{ streaks: ArcadeStreaks; celebrated: string[] }>("/api/arcade/streaks").then(
+    (body): StreakState => ({ date: dailyDate(), streaks: body.streaks, celebrated: Array.isArray(body.celebrated) ? body.celebrated : [] }),
   );
+
+const withGames = (current: readonly string[] | undefined, more: readonly string[]) => [...new Set([...(current ?? []), ...more])];
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
-/** Claims today's celebration, retrying connection and server errors; `retried` means an earlier attempt may have landed. */
+/** Claims today's celebration for one game, retrying connection and server errors; `retried` means an earlier attempt may have landed. */
 async function claimCelebration(game: RankedGameId): Promise<{ celebration: StreakCelebration; retried: boolean } | null> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
@@ -85,8 +88,10 @@ export function useArcadeStreaks(initial: StreakState | null, refreshOnPlay: (st
       void fetchStreaks().then(
         (next) => {
           setFailures(0);
-          // An answer requested before this page's claim must not forget that today was celebrated.
-          setState((previous) => (previous?.date === next.date && previous.celebrated ? { ...next, celebrated: true } : next));
+          // An answer requested before this page's claim must not forget a game celebrated today.
+          setState((previous) =>
+            previous?.date === next.date && previous.celebrated ? { ...next, celebrated: withGames(next.celebrated, previous.celebrated) } : next,
+          );
         },
         () => setFailures((count) => count + 1),
       ),
@@ -117,9 +122,14 @@ export function useArcadeStreaks(initial: StreakState | null, refreshOnPlay: (st
       }),
     [],
   );
-  const markCelebrated = useCallback(() => setState((previous) => (previous ? { ...previous, celebrated: true } : previous)), []);
-  // Yesterday's answer says nothing about today's celebration.
-  const celebrated = state?.date === today ? (state.celebrated ?? null) : null;
+  const markCelebrated = useCallback(
+    (game: RankedGameId) =>
+      setState((previous) => (previous && previous.date === dailyDate() ? { ...previous, celebrated: withGames(previous.celebrated, [game]) } : previous)),
+    [],
+  );
+  // Whether a game's celebration already played today; null while unknown. Yesterday's answer says nothing about today.
+  const celebratedToday = state?.date === today ? state.celebrated : undefined;
+  const celebrated = useCallback((game: RankedGameId) => (celebratedToday ? celebratedToday.includes(game) : null), [celebratedToday]);
   return { streaks: state?.streaks ?? null, celebrated, replace, markCelebrated, refresh };
 }
 
@@ -244,7 +254,8 @@ export function StreakLine({ streak, onRecover }: { streak: ArcadeStreak; onReco
 export function GameStreak({ game }: { game: RankedGameId }) {
   const { effects } = useArcade();
   const sound = useUiSound();
-  const { streaks, celebrated, replace, markCelebrated, refresh } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));
+  const { streaks, celebrated: celebratedGame, replace, markCelebrated, refresh } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));
+  const celebrated = celebratedGame(game);
   const [open, setOpen] = useState(false);
   const [recovering, setRecovering] = useState(false);
   const [burst, setBurst] = useState<{ from: number; to: number } | null>(null);
@@ -254,7 +265,7 @@ export function GameStreak({ game }: { game: RankedGameId }) {
   const claimedFor = useRef<string | null>(null);
   const streak = streaks?.[game];
 
-  // The first verified completion of the day claims the celebration; the server grants it once.
+  // Each game's first verified completion of the day claims its celebration; the server grants it once per game.
   const onCompleted = useEffectEvent((completed: unknown) => {
     const day = dailyDate();
     if (completed !== game || claimedFor.current === day || celebrated === true) return;
@@ -271,7 +282,7 @@ export function GameStreak({ game }: { game: RankedGameId }) {
         setBurst({ from: celebration.streak - 1, to: celebration.streak });
         sound("flame");
       }
-      markCelebrated();
+      markCelebrated(game);
       refresh();
     });
   });

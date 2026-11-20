@@ -1,7 +1,7 @@
 import { celebrateStreakSchema, type StreakCelebration } from "@/lib/arcade-streaks";
 import { dbError, jsonResponse, parseJson, rejectCrossOrigin, requireApiUser } from "@/lib/http";
 
-/** Claims today's streak celebration; the database grants it once per day after a verified completion. */
+/** Claims today's streak celebration for one game; the database grants it once per game and day after a verified completion. */
 export async function POST(request: Request) {
   const rejected = rejectCrossOrigin(request);
   if (rejected) return rejected;

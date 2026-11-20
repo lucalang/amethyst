@@ -51,6 +51,26 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-streak-every-game",
+    date: "2026-11-20",
+    title: "A streak moment for every game",
+    intro: "Each game’s streak now gets its own flame animation the first time you finish it each day, not just the first game you play.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Per-game celebrations", text: "Finish Snake, then Sudoku, then Queens: each one shows its own streak going up, once per game per day." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Streak celebrations",
+          body: "Streaks are kept separately for every game, and now so is the celebration. The first finished round of each game on a given day (UTC) plays the flame animation for that game’s streak.",
+          where: "Arcade → any game, next to the title",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-password-reset-fix",
     date: "2026-11-20",
     title: "Password reset works again",
