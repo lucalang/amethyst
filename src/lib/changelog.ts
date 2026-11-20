@@ -51,6 +51,27 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-password-reset-fix",
+    date: "2026-11-20",
+    title: "Password reset works again",
+    intro: "The link in a password reset email now opens a page to choose your new password instead of the sign-in screen.",
+    icon: "link",
+    highlights: [
+      { kind: "fixed", feature: "Reset links", text: "Opening the emailed link signs you in securely and shows the new-password form, with your new password checked as you type." },
+      { kind: "improved", feature: "Clear outcomes", text: "You see when the change succeeded and continue straight into Amethyst. An expired or already-used link explains why and lets you send a fresh one right there." },
+    ],
+    details: {
+      fixed: [
+        {
+          title: "Resetting your password",
+          body: "Use “Forgot password?” on the sign-in page, then open the link from the email in the same browser. Choose and confirm a new password; you stay signed in afterwards. Sign-up confirmation and sign-in links use the same fixed route.",
+          where: "Sign in → Forgot password?",
+          link: { href: "/forgot-password", label: "Reset your password" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-button-shape",
     date: "2026-11-20",
     title: "Button Shape",

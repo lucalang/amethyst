@@ -26,7 +26,9 @@ const newPasswordSchema = z
   .regex(/[A-Za-z]/, "Include at least one letter.")
   .regex(/\d/, "Include at least one digit.");
 
-const confirmUrl = (next: string) => `${serverEnv().APP_URL}/auth/confirm?next=${encodeURIComponent(next)}`;
+/** Where email links land (see auth/confirm/route.ts); `type` tells the route what a PKCE `?code=` link was for. */
+const confirmUrl = (next: string, type?: "recovery") =>
+  `${serverEnv().APP_URL}/auth/confirm?${type ? `type=${type}&` : ""}next=${encodeURIComponent(next)}`;
 
 function destination(next: unknown) {
   return safeNextPath(next);
@@ -121,7 +123,7 @@ export async function requestPasswordReset(_prev: AuthState, formData: FormData)
   const parsed = emailSchema.safeParse(String(formData.get("email") ?? "").trim());
   if (!parsed.success) return { status: "error", message: "Enter a valid email address." };
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: confirmUrl("/auth/reset-password") });
+  const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, { redirectTo: confirmUrl("/auth/reset-password", "recovery") });
   if (error?.status === 429) return { status: "error", message: "Please wait a moment before requesting another email.", email: parsed.data };
   return { status: "success", message: "If an account exists for that address, a password reset link is on its way.", email: parsed.data };
 }
@@ -138,15 +140,25 @@ export async function completePasswordReset(_prev: AuthState, formData: FormData
   }
 
   const supabase = await createClient();
+  // The recovery link signed this browser in; without that session there is nothing to update.
+  const { data: session } = await supabase.auth.getClaims();
+  if (!session?.claims?.sub || session.claims.is_anonymous === true) {
+    return { status: "error", message: "Your reset link has expired. Request a new one below.", fieldErrors: { link: "expired" } };
+  }
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) {
-    if (error.code === "same_password") return { status: "error", message: "That's your current password. Choose a different one." };
-    if (error.message.includes("different")) return { status: "error", message: error.message };
+    if (error.code === "same_password") return { status: "error", message: "That's your current password. Choose a different one.", fieldErrors: { password: "same" } };
+    if (error.code === "weak_password") return { status: "error", message: error.message, fieldErrors: { password: error.message } };
+    if (error.status === 401 || error.code === "session_not_found" || error.code === "session_expired") {
+      return { status: "error", message: "Your reset link has expired. Request a new one below.", fieldErrors: { link: "expired" } };
+    }
+    if (error.status === 429) return { status: "error", message: "Too many attempts. Wait a moment and try again." };
     return { status: "error", message: "Could not update your password. Try again." };
   }
 
+  // The user stays signed in; the next page they open is their usual start page.
   (await cookies()).set(STARTUP_COOKIE, "1", startupCookieOptions(serverEnv().APP_URL.startsWith("https:")));
-  redirect(STARTUP_PATH);
+  return { status: "success", message: "Your password has been changed." };
 }
 
 export async function sendMagicLink(_prev: AuthState, formData: FormData): Promise<AuthState> {
