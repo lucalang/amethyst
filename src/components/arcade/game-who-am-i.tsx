@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, BookOpen, Coins, Loader2, MessageSquareWarning, Play, RotateCcw, Swords, Users } from "lucide-react";
+import { ArrowLeft, BookOpen, Coins, Loader2, MessageSquareWarning, Play, RotateCcw, Swords, Trophy, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { GameShell, Stat, useArcade, useGameAchievementTracking } from "./game-shell";
 import { Portrait } from "./who-am-i/portrait";
-import { RulesList, WhoAmITable, knowledgeOf, type TableActions, type TableView } from "./who-am-i/table";
+import { RulesList, WhoAmITable, knowledgeOf, mirrorEvents, type TableActions, type TableView } from "./who-am-i/table";
 
 export type WhoAmIMode = { kind: "bot" } | { kind: "wager"; wager: string; initial: WhoAmIState; stake: number };
 
@@ -35,9 +35,12 @@ export default function GameWhoAmI({ mode }: { mode: WhoAmIMode }) {
 const RULES_SEEN_KEY = "amethyst:who-am-i:rules-seen";
 const BOT_RECORD_KEY = "amethyst:who-am-i:bot-record";
 const BOT_NAME = "Prism";
-/** Fixed bot pacing: the same whatever it knows, so timing never gives anything away. */
-const BOT_ANSWER_MS = 650;
-const BOT_THINK_MS = 1100;
+/**
+ * Fixed bot pacing: the same whatever it knows, so timing never gives anything away. Prism answers after a short
+ * beat; its own turn only starts once the player has continued past that answer (see `hold`).
+ */
+const BOT_ANSWER_MS = 700;
+const BOT_THINK_MS = 900;
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
@@ -85,6 +88,8 @@ type BotGameState = {
   pending: TableView["pending"];
   events: WhoAmIEvent[];
   winner: Side | null;
+  /** The player is reading the answer to their question (or their wrong guess); Prism waits for "Continue". */
+  hold: boolean;
 };
 
 function withEvent(state: BotGameState, event: Pick<WhoAmIEvent, "by" | "kind"> & Partial<WhoAmIEvent>): WhoAmIEvent[] {
@@ -99,7 +104,7 @@ function deal(id: number, level: BotLevel, first: Side | "random"): BotGameState
   const others = PLAYABLE.filter((c) => c.id !== you.id);
   const them = others[Math.floor(Math.random() * others.length)];
   const turn = first === "random" ? (Math.random() < 0.5 ? "you" : "them") : first;
-  const base: BotGameState = { id, level, phase: "ask", turn, you: you.id, them: them.id, pending: null, events: [], winner: null };
+  const base: BotGameState = { id, level, phase: "ask", turn, you: you.id, them: them.id, pending: null, events: [], winner: null, hold: false };
   return { ...base, events: withEvent(base, { by: "system", kind: "start" }) };
 }
 
@@ -110,7 +115,7 @@ function botAnswers(g: BotGameState): BotGameState {
   const you = characterById(g.you);
   if (!card || !you) return g;
   const events = withEvent(g, { by: "them", kind: "answer", card: card.id, answer: cardTruth(you, card) ? "yes" : "no" });
-  return { ...g, events, phase: "ask", turn: "them", pending: null };
+  return { ...g, events, phase: "ask", turn: "them", pending: null, hold: true };
 }
 
 /**
@@ -118,9 +123,8 @@ function botAnswers(g: BotGameState): BotGameState {
  * guesses and the player's visible character. Its own identity (`g.them`) is only read to check a guess.
  */
 function botActs(g: BotGameState): BotGameState {
-  if (g.phase !== "ask" || g.turn !== "them") return g;
-  const mirrored = g.events.map((e) => ({ ...e, by: e.by === "you" ? "them" : e.by === "them" ? "you" : e.by }) as WhoAmIEvent);
-  const move = botMove(knowledgeOf(mirrored, g.you), g.level);
+  if (g.phase !== "ask" || g.turn !== "them" || g.hold) return g;
+  const move = botMove(knowledgeOf(mirrorEvents(g.events), g.you), g.level);
   if (move.kind === "ask") {
     return { ...g, events: withEvent(g, { by: "them", kind: "ask", card: move.card.id }), phase: "answer", pending: { kind: "card", card: move.card.id, text: null } };
   }
@@ -155,7 +159,7 @@ function BotGame() {
       const timer = window.setTimeout(() => setGame((g) => (g && g.id === game.id ? botAnswers(g) : g)), BOT_ANSWER_MS);
       return () => window.clearTimeout(timer);
     }
-    if (game.phase === "ask" && game.turn === "them") {
+    if (game.phase === "ask" && game.turn === "them" && !game.hold) {
       const timer = window.setTimeout(() => setGame((g) => (g && g.id === game.id ? botActs(g) : g)), BOT_THINK_MS);
       return () => window.clearTimeout(timer);
     }
@@ -191,7 +195,7 @@ function BotGame() {
           ? { ...g, events: withEvent(g, { by: "you", kind: "ask", card: question.card }), phase: "answer", pending: { kind: "card", card: question.card, text: null } }
           : g,
       );
-      play("tap");
+      play("waiAsk");
     },
     answer: (answer) => {
       const g = gameRef.current;
@@ -204,7 +208,7 @@ function BotGame() {
         toast.error(`Look again at ${them.name}: that answer doesn’t match their card.`);
         return;
       }
-      play("tap");
+      play(answer === "yes" ? "waiYes" : "waiNo");
       setGame((current) =>
         current && current.id === g.id && current.phase === "answer" && current.turn === "them"
           ? { ...current, events: withEvent(current, { by: "you", kind: "answer", card: card.id, answer }), phase: "ask", turn: "you", pending: null }
@@ -215,13 +219,14 @@ function BotGame() {
       const g = gameRef.current;
       if (!g || g.phase !== "ask" || g.turn !== "you") return;
       const correct = id === g.you;
-      play(correct ? "win" : "miss");
+      play(correct ? "win" : "waiWrong");
       setGame((current) => {
         if (!current || current.id !== g.id || current.phase !== "ask" || current.turn !== "you") return current;
         const events = withEvent(current, { by: "you", kind: "guess", guess: id, correct });
-        return correct ? { ...current, events, phase: "done", winner: "you" } : { ...current, events, turn: "them" };
+        return correct ? { ...current, events, phase: "done", winner: "you" } : { ...current, events, turn: "them", hold: true };
       });
     },
+    acknowledge: () => setGame((current) => (current && current.hold ? { ...current, hold: false } : current)),
   }), [play]);
 
   const stats = (
@@ -361,13 +366,46 @@ function BotSetup({ level, onLevel, first, onFirst, onStart, showRules }: {
   );
 }
 
-function ResultBanner({ won, title, detail, you, children }: { won: boolean; title: string; detail: string; you: string | null; children?: ReactNode }) {
+const BURST_COLORS = ["#b384ff", "#34d399", "#4c8dff", "#ff4d6d", "#ffb63b"];
+/** Gem shards for a win: fixed positions, so the banner renders the same every time. */
+const BURST = Array.from({ length: 18 }, (_, i) => ({
+  x: `${8 + ((i * 37) % 84)}%`,
+  dx: `${((i * 53) % 140) - 70}px`,
+  dy: `${-60 - ((i * 29) % 70)}px`,
+  r: `${((i * 71) % 360) - 180}deg`,
+  c: BURST_COLORS[i % BURST_COLORS.length],
+  delay: `${(i % 6) * 40}ms`,
+}));
+
+function ResultBanner({ won, title, detail, you, children }: { won: boolean | null; title: string; detail: string; you: string | null; children?: ReactNode }) {
   const character = characterById(you);
   return (
-    <section role="status" className={cn("flex gap-3 rounded-xl border p-3", won ? "border-emerald-400/70 bg-emerald-400/10" : "border-rose-400/60 bg-rose-400/10")}>
-      {character ? <span className="size-16 shrink-0 overflow-hidden rounded-lg"><Portrait character={character} /></span> : null}
-      <div className="min-w-0 space-y-2">
-        <p className="text-lg font-bold">{title}</p>
+    <section
+      role="status"
+      className={cn(
+        "wai-result relative flex gap-3 overflow-hidden rounded-xl border p-3 sm:p-4",
+        won === true && "wai-result-won border-emerald-400/70 bg-emerald-400/10",
+        won === false && "wai-result-lost border-rose-400/60 bg-rose-400/10",
+        won === null && "border-border bg-surface/50",
+      )}
+    >
+      {won ? (
+        <span aria-hidden className="wai-burst">
+          {BURST.map((shard, i) => (
+            <span key={i} style={{ "--x": shard.x, "--dx": shard.dx, "--dy": shard.dy, "--r": shard.r, "--c": shard.c, animationDelay: shard.delay } as CSSProperties} />
+          ))}
+        </span>
+      ) : null}
+      {character ? (
+        <span className={cn("wai-flip-in relative size-20 shrink-0 overflow-hidden rounded-lg ring-2 ring-offset-2 ring-offset-background sm:size-24", won ? "ring-emerald-400" : won === false ? "ring-rose-400" : "ring-border")}>
+          <Portrait character={character} />
+        </span>
+      ) : null}
+      <div className="relative min-w-0 space-y-2">
+        <p className="flex items-center gap-2 text-xl font-black tracking-tight">
+          {won === true ? <Trophy aria-hidden className="size-5 text-emerald-300" /> : won === false ? <X aria-hidden className="size-5 text-rose-300" strokeWidth={3} /> : null}
+          {title}
+        </p>
         <p className="text-sm text-muted-foreground">{detail}</p>
         {children ? <div className="flex flex-wrap gap-2">{children}</div> : null}
       </div>
@@ -474,7 +512,7 @@ function DuelGame({ wager, initial, stake }: { wager: string; initial: WhoAmISta
   const actions = useMemo<TableActions>(() => ({
     busy,
     ask: (question) => {
-      play("tap");
+      play("waiAsk");
       void send({ action: "ask", ...question }, true);
     },
     answer: (answer) => void send({ action: "answer", answer }, true),
@@ -532,7 +570,7 @@ function DuelGame({ wager, initial, stake }: { wager: string; initial: WhoAmISta
           banner={
             state.phase === "done" ? (
               <ResultBanner
-                won={state.winner === "you"}
+                won={state.winner === "you" ? true : state.winner === "them" ? false : null}
                 title={state.winner === "you" ? "You won the round!" : state.winner === "them" ? `${state.names.them} won the round` : "Round tied"}
                 detail={`${REASON_TEXT(state)} You were ${characterById(state.identity.you)?.name ?? "?"}; ${state.names.them} was ${characterById(state.identity.them)?.name ?? "?"}.`}
                 you={state.identity.you}

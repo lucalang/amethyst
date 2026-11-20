@@ -128,6 +128,25 @@ export const SOUNDS = {
     { freq: 220, to: 110, duration: 0.14, type: "triangle", volume: 0.07 },
   ],
 
+  /* Who Am I?: soft card and bell sounds for the parlor table. */
+  waiAsk: [
+    { noise: true, duration: 0.07, volume: 0.05, filter: "bandpass", freq: 2200 },
+    { freq: 523, to: 587, duration: 0.09, type: "triangle", volume: 0.05, delay: 0.03 },
+  ],
+  waiYes: [
+    { freq: 659, duration: 0.1, type: "triangle", volume: 0.07 },
+    { freq: 988, duration: 0.2, type: "triangle", volume: 0.065, delay: 0.08 },
+  ],
+  waiNo: [
+    { freq: 392, duration: 0.1, type: "triangle", volume: 0.07 },
+    { freq: 294, duration: 0.22, type: "triangle", volume: 0.065, delay: 0.08 },
+  ],
+  waiTurn: [{ freq: 880, to: 1046, duration: 0.07, type: "sine", volume: 0.04 }],
+  waiWrong: [
+    { freq: 330, to: 247, duration: 0.18, type: "triangle", volume: 0.07 },
+    { noise: true, duration: 0.08, volume: 0.04, filter: "lowpass", freq: 700, delay: 0.02 },
+  ],
+
   /*
    * Front Wars: one palette for the war table. Low drums (swept sines), muffled ground and paper (filtered noise),
    * soft brass (sawtooth through a lowpass) and wooden bells (triangles), all in D, through a shared bus that

@@ -1,0 +1,74 @@
+/*
+ * Who Am I?: table effects. Every animation sits under `.wai-fx` (the account's effects setting is not "off")
+ * and is removed again for prefers-reduced-motion, so information never depends on motion.
+ */
+
+/* Answer stamps: icon + word, colored per answer (never color alone). */
+.wai-stamp-yes { color: #6ee7b7; border-color: color-mix(in srgb, #34d399 70%, transparent); background: color-mix(in srgb, #34d399 12%, transparent); }
+.wai-stamp-no { color: #fda4af; border-color: color-mix(in srgb, #fb7185 70%, transparent); background: color-mix(in srgb, #fb7185 12%, transparent); }
+.wai-stamp-unsure, .wai-stamp-none { color: var(--muted-foreground); border-color: var(--border); background: color-mix(in srgb, var(--foreground) 6%, transparent); }
+.wai-stamp-icon { background: color-mix(in srgb, currentColor 16%, transparent); }
+
+.wai-scroll-x { scrollbar-width: none; }
+.wai-scroll-x::-webkit-scrollbar { display: none; }
+.wai-scroll-y { scrollbar-width: thin; }
+
+/* Thinking dots: static (dimmed) without effects. */
+.wai-dots > span { display: inline-block; width: 0.32rem; height: 0.32rem; border-radius: 999px; background: currentColor; opacity: 0.6; }
+
+/* Board tiles: crossed-out characters fade and desaturate. */
+.wai-tile { transition: opacity 180ms ease, filter 180ms ease, transform 160ms ease, border-color 160ms ease; }
+.wai-tile-out { opacity: 0.38; filter: grayscale(0.85); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .wai-fx .wai-stage { animation: wai-stage-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .wai-fx .wai-stamp { animation: wai-stamp 460ms cubic-bezier(0.2, 1.4, 0.4, 1) 80ms both; }
+  .wai-fx .wai-question { animation: wai-rise 320ms ease-out both; }
+  .wai-fx .wai-pop { animation: wai-pop 220ms cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+  .wai-fx .wai-shake { animation: wai-shake 420ms ease-in-out both; }
+  .wai-fx .wai-flip-in { animation: wai-flip 620ms cubic-bezier(0.3, 1.2, 0.4, 1) both; transform-origin: center; }
+  .wai-fx .wai-cross path { stroke-dasharray: 20; animation: wai-draw 220ms ease-out both; }
+  .wai-fx .wai-cross path + path { animation-delay: 90ms; }
+  .wai-fx .wai-tile-picked { animation: wai-pulse 1.4s ease-in-out infinite; }
+  .wai-fx .wai-tile-revealed { animation: wai-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+  .wai-fx .wai-player-active { animation: wai-glow 2.4s ease-in-out infinite; }
+  .wai-fx .wai-dots > span { animation: wai-dot 1s ease-in-out infinite; }
+  .wai-fx .wai-dots > span:nth-child(2) { animation-delay: 0.15s; }
+  .wai-fx .wai-dots > span:nth-child(3) { animation-delay: 0.3s; }
+  .wai-fx .wai-hourglass { animation: wai-turn 1.6s ease-in-out infinite; }
+  .wai-fx .wai-chip-active { animation: wai-pop 200ms cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+  .wai-fx .wai-log-item:first-child { animation: wai-rise 280ms ease-out both; }
+  .wai-fx .wai-result { animation: wai-stage-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .wai-fx-full .wai-result-won .wai-burst > span { animation: wai-burst 1100ms cubic-bezier(0.1, 0.7, 0.3, 1) both; }
+  .wai-fx .wai-result-lost { animation: wai-stage-in 360ms ease-out both, wai-shake 420ms ease-in-out 200ms; }
+}
+
+/* Win confetti: small gem shards from the result banner (full effects only). */
+.wai-burst { pointer-events: none; position: absolute; inset: 0; overflow: hidden; }
+.wai-burst > span { position: absolute; left: var(--x); top: 40%; width: 0.5rem; height: 0.7rem; clip-path: polygon(50% 0, 100% 40%, 50% 100%, 0 40%); background: var(--c); opacity: 0; }
+
+@keyframes wai-stage-in { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+@keyframes wai-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes wai-stamp {
+  0% { opacity: 0; transform: scale(1.8) rotate(-10deg); }
+  60% { opacity: 1; transform: scale(0.94) rotate(-4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+}
+@keyframes wai-pop { 0% { transform: scale(0.85); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes wai-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px) rotate(-2deg); }
+  40% { transform: translateX(5px) rotate(2deg); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes wai-flip { from { opacity: 0; transform: perspective(400px) rotateY(90deg) scale(0.9); } to { opacity: 1; transform: none; } }
+@keyframes wai-draw { from { stroke-dashoffset: 20; } to { stroke-dashoffset: 0; } }
+@keyframes wai-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--amethyst) 60%, transparent); } 50% { box-shadow: 0 0 0 6px transparent; } }
+@keyframes wai-glow { 0%, 100% { box-shadow: 0 0 0 1px var(--amethyst); } 50% { box-shadow: 0 0 0 1px var(--amethyst), 0 0 18px -2px color-mix(in srgb, var(--amethyst) 70%, transparent); } }
+@keyframes wai-dot { 0%, 100% { transform: translateY(0); opacity: 0.35; } 40% { transform: translateY(-3px); opacity: 1; } }
+@keyframes wai-turn { 0%, 40% { transform: rotate(0); } 60%, 100% { transform: rotate(180deg); } }
+@keyframes wai-burst {
+  0% { transform: translate(0, 0) rotate(0) scale(0.4); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(1); opacity: 0; }
+}

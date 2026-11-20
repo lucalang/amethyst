@@ -51,6 +51,34 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-who-am-i-table",
+    date: "2026-11-20",
+    title: "Who Am I?: a better table",
+    intro: "Redrawn Gemfolk, a searchable question menu, a clear answer moment you continue from, and a look at your rival’s board.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Redrawn Gemfolk", text: "Every character has more personality, and every trait a card asks about (gem, hair, headwear, glasses, beard, earrings, smile, scarf, companion) is drawn the same bold way on everyone." },
+      { kind: "improved", feature: "Question menu", text: "Questions sit in compact categories, with a search that filters as you type (try “hat”, “blue” or “smile”). Enter picks the first match and asks it on a second press." },
+      { kind: "improved", feature: "Answer moment", text: "Your question and the Yes or No answer appear big, right next to the board, and stay until you press Continue. Only then does Prism take its turn." },
+      { kind: "new", feature: "Their board", text: "Switch between your board and your rival’s to see who they have ruled out so far. It is view-only and never gives away your own card." },
+      { kind: "improved", feature: "Effects", text: "New sounds and animations for asking, answering, crossing out, guessing and winning. Your effects and sound settings, and reduced motion, are respected." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "How a turn flows now",
+          body: "Ask a card and Prism answers after a short beat. The answer gets its own moment with a Yes or No stamp (an icon and a word, not just a color) and how many characters still fit. Press Continue (or Enter) and Prism takes its turn. A wrong guess works the same way. In Wagers, the moment waits for you in the same way; if your rival asks in the meantime, you see that their question is waiting and how long you have.",
+          points: [
+            "Rules, question cards, custom questions, Wager clocks, stakes and escrow are unchanged",
+            "Your rival’s board only uses your answers to them and their wrong guesses",
+          ],
+          where: "Arcade → Minigames → Who Am I?, and Arcade → Wagers",
+          link: { href: "/arcade/who-am-i", label: "Play Who Am I?" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-19-who-am-i",
     date: "2026-11-19",
     title: "Who Am I?",

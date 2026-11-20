@@ -86,7 +86,8 @@ export const ROSTER: readonly Character[] = [
   c("zed", "Zed", "ruby", "curly", "dark", "cap", { glasses: true, beard: true, smiling: true }),
 ];
 
-export type CardGroup = "Gem" | "Hair" | "Hair color" | "Headwear" | "Look";
+/** Question categories: a UI grouping only (the database mirrors each card's trait, op and value, not its group). */
+export type CardGroup = "Gem" | "Hair" | "Hair color" | "Headwear" | "Face" | "Extras";
 export type Card = {
   id: string;
   group: CardGroup;
@@ -98,40 +99,44 @@ export type Card = {
   /** `eq`: the trait equals `value`; `ne`: it doesn't (used for "wearing anything on my head?"). */
   op: "eq" | "ne";
   value: string;
+  /** Extra search words (synonyms, colors) for the question search. */
+  keywords: string;
 };
 
 const GEM_WORDS: Record<Gem, string> = { amethyst: "an amethyst (purple)", emerald: "an emerald (green)", sapphire: "a sapphire (blue)", ruby: "a ruby (red)", topaz: "a topaz (gold)" };
+const GEM_KEYWORDS: Record<Gem, string> = { amethyst: "purple violet lilac", emerald: "green", sapphire: "blue", ruby: "red crimson", topaz: "gold yellow orange amber" };
 const cap = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
 /** The predefined questions. Each one is answerable for every character from its traits alone. */
 export const CARDS: readonly Card[] = [
-  ...GEMS.map((gem): Card => ({ id: `gem-${gem}`, group: "Gem", prompt: `Is my gem ${GEM_WORDS[gem]}?`, short: `${cap(gem)} gem`, trait: "gem", op: "eq", value: gem })),
-  { id: "hair-none", group: "Hair", prompt: "Am I bald?", short: "Bald", trait: "hair", op: "eq", value: "none" },
-  { id: "hair-short", group: "Hair", prompt: "Is my hair short?", short: "Short hair", trait: "hair", op: "eq", value: "short" },
-  { id: "hair-long", group: "Hair", prompt: "Is my hair long?", short: "Long hair", trait: "hair", op: "eq", value: "long" },
-  { id: "hair-curly", group: "Hair", prompt: "Is my hair curly?", short: "Curly hair", trait: "hair", op: "eq", value: "curly" },
+  ...GEMS.map((gem): Card => ({ id: `gem-${gem}`, group: "Gem", prompt: `Is my gem ${GEM_WORDS[gem]}?`, short: cap(gem), trait: "gem", op: "eq", value: gem, keywords: `gem stone jewel badge color colour ${GEM_KEYWORDS[gem]}` })),
+  { id: "hair-none", group: "Hair", prompt: "Am I bald?", short: "Bald", trait: "hair", op: "eq", value: "none", keywords: "hair hairless no hair shaved head" },
+  { id: "hair-short", group: "Hair", prompt: "Is my hair short?", short: "Short", trait: "hair", op: "eq", value: "short", keywords: "hair style haircut" },
+  { id: "hair-long", group: "Hair", prompt: "Is my hair long?", short: "Long", trait: "hair", op: "eq", value: "long", keywords: "hair style flowing" },
+  { id: "hair-curly", group: "Hair", prompt: "Is my hair curly?", short: "Curly", trait: "hair", op: "eq", value: "curly", keywords: "hair style curls wavy afro" },
   ...(["dark", "gold", "red", "silver", "violet"] as const).map((color): Card => ({
     id: `color-${color}`,
     group: "Hair color",
     prompt: `Is my hair ${color}?`,
-    short: `${cap(color)} hair`,
+    short: cap(color),
     trait: "hairColor",
     op: "eq",
     value: color,
+    keywords: `hair colour color ${{ dark: "black brown brunette", gold: "blond blonde yellow golden", red: "ginger auburn orange", silver: "grey gray white old", violet: "purple lilac" }[color]}`,
   })),
-  { id: "head-any", group: "Headwear", prompt: "Am I wearing anything on my head?", short: "Headwear", trait: "headwear", op: "ne", value: "none" },
-  { id: "head-crown", group: "Headwear", prompt: "Am I wearing a crown?", short: "Crown", trait: "headwear", op: "eq", value: "crown" },
-  { id: "head-wizard", group: "Headwear", prompt: "Am I wearing a pointed hat?", short: "Pointed hat", trait: "headwear", op: "eq", value: "wizard" },
-  { id: "head-cap", group: "Headwear", prompt: "Am I wearing a cap?", short: "Cap", trait: "headwear", op: "eq", value: "cap" },
-  { id: "head-flowers", group: "Headwear", prompt: "Am I wearing a flower wreath?", short: "Flower wreath", trait: "headwear", op: "eq", value: "flowers" },
-  { id: "glasses", group: "Look", prompt: "Do I wear glasses?", short: "Glasses", trait: "glasses", op: "eq", value: "yes" },
-  { id: "beard", group: "Look", prompt: "Do I have a beard?", short: "Beard", trait: "beard", op: "eq", value: "yes" },
-  { id: "earrings", group: "Look", prompt: "Do I wear earrings?", short: "Earrings", trait: "earrings", op: "eq", value: "yes" },
-  { id: "smiling", group: "Look", prompt: "Am I smiling?", short: "Smiling", trait: "smiling", op: "eq", value: "yes" },
-  { id: "scarf", group: "Look", prompt: "Do I wear a scarf?", short: "Scarf", trait: "scarf", op: "eq", value: "yes" },
-  { id: "companion", group: "Look", prompt: "Do I have a little companion?", short: "Companion", trait: "companion", op: "eq", value: "yes" },
+  { id: "head-any", group: "Headwear", prompt: "Am I wearing anything on my head?", short: "Any headwear", trait: "headwear", op: "ne", value: "none", keywords: "head hat headwear anything wearing" },
+  { id: "head-crown", group: "Headwear", prompt: "Am I wearing a crown?", short: "Crown", trait: "headwear", op: "eq", value: "crown", keywords: "head royal king queen tiara gold" },
+  { id: "head-wizard", group: "Headwear", prompt: "Am I wearing a pointed hat?", short: "Pointed hat", trait: "headwear", op: "eq", value: "wizard", keywords: "head wizard witch magic star blue" },
+  { id: "head-cap", group: "Headwear", prompt: "Am I wearing a cap?", short: "Cap", trait: "headwear", op: "eq", value: "cap", keywords: "head hat baseball orange peak" },
+  { id: "head-flowers", group: "Headwear", prompt: "Am I wearing a flower wreath?", short: "Flower wreath", trait: "headwear", op: "eq", value: "flowers", keywords: "head flowers floral garland blossoms" },
+  { id: "glasses", group: "Face", prompt: "Do I wear glasses?", short: "Glasses", trait: "glasses", op: "eq", value: "yes", keywords: "face eyes spectacles specs lenses" },
+  { id: "beard", group: "Face", prompt: "Do I have a beard?", short: "Beard", trait: "beard", op: "eq", value: "yes", keywords: "face facial hair chin whiskers" },
+  { id: "smiling", group: "Face", prompt: "Am I smiling?", short: "Smiling", trait: "smiling", op: "eq", value: "yes", keywords: "face mouth happy grin smile expression" },
+  { id: "earrings", group: "Face", prompt: "Do I wear earrings?", short: "Earrings", trait: "earrings", op: "eq", value: "yes", keywords: "ears jewelry jewellery piercing" },
+  { id: "scarf", group: "Extras", prompt: "Do I wear a scarf?", short: "Scarf", trait: "scarf", op: "eq", value: "yes", keywords: "neck pink clothing" },
+  { id: "companion", group: "Extras", prompt: "Do I have a little companion?", short: "Companion", trait: "companion", op: "eq", value: "yes", keywords: "pet wisp friend sidekick spirit ghost creature" },
 ];
-export const CARD_GROUPS: readonly CardGroup[] = ["Gem", "Hair", "Hair color", "Headwear", "Look"];
+export const CARD_GROUPS: readonly CardGroup[] = ["Gem", "Hair", "Hair color", "Headwear", "Face", "Extras"];
 
 const CARD_BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 export const cardById = (id: string | null | undefined) => (id ? CARD_BY_ID.get(id) : undefined);
