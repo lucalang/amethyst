@@ -4079,10 +4079,8 @@
   min-width: 0;
   align-items: center;
   gap: 0.5rem;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .ach-nameplate {
   display: inline-flex;
@@ -4979,11 +4977,9 @@ a.arcade-counter:hover {
 }
 .trophy-door-kicker {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
   line-height: 1.1rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
   color: #f3cd72;
 }
 .trophy-door-sub {
@@ -5156,10 +5152,8 @@ a.arcade-counter:hover {
   color: var(--muted-foreground);
 }
 .streak-restore-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: color-mix(in oklab, var(--warning) 75%, var(--foreground));
 }
 .streak-chip[data-recover="true"] {
@@ -6752,3 +6746,136 @@ a.arcade-counter:hover {
 }
 
 /* The Vault's styles live in components/vault/vault.css (loaded only on /vault). */
+
+/* Minigame shop covers (ArcadeCover): each game's artwork on a dark stage lit in its own colour. The artwork's
+   theme colours are redefined locally, so every game gets its own palette without redrawing it. */
+.arcade-cover {
+  --cover: #a855f7;
+  --cover-2: oklch(from var(--cover) clamp(0.62, l, 0.8) c calc(h + 150));
+  --surface: color-mix(in oklab, var(--cover) 16%, #0a0712);
+  --background: #07050d;
+  --foreground: #fbf8ff;
+  --amethyst: var(--cover);
+  --amethyst-foreground: #10091a;
+  --rose: var(--cover-2);
+  --rose-foreground: #10091a;
+  position: relative;
+  display: block;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(70% 90% at 50% 55%, color-mix(in oklab, var(--cover) 34%, transparent), transparent 70%),
+    radial-gradient(40% 60% at 90% 0%, color-mix(in oklab, var(--cover-2) 30%, transparent), transparent 70%),
+    var(--surface);
+}
+.arcade-cover::after {
+  /* Vignette and a thin glass highlight along the top edge. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.1), transparent 18%),
+    radial-gradient(120% 100% at 50% 45%, transparent 55%, rgb(0 0 0 / 0.45));
+}
+.arcade-cover-art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  /* The artwork's own background is replaced by the lit stage above. */
+  filter: saturate(1.25) drop-shadow(0 0 10px color-mix(in oklab, var(--cover) 45%, transparent));
+  transition: scale 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.arcade-cover-art svg > rect:nth-of-type(-n + 2) {
+  fill: transparent;
+}
+.arcade-cover-shine {
+  position: absolute;
+  inset: -20% auto -20% -60%;
+  z-index: 3;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.22), transparent);
+  translate: -40% 0;
+  opacity: 0;
+}
+:is(a, button):hover .arcade-cover-art,
+:is(a, button):focus-visible .arcade-cover-art {
+  scale: 1.06;
+}
+:is(a, button):hover .arcade-cover-shine,
+:is(a, button):focus-visible .arcade-cover-shine {
+  animation: arcade-cover-shine 900ms ease-out;
+}
+@keyframes arcade-cover-shine {
+  0% {
+    opacity: 1;
+    translate: -40% 0;
+  }
+  100% {
+    opacity: 0;
+    translate: 420% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-cover-art {
+    transition: none;
+  }
+  :is(a, button):hover .arcade-cover-art {
+    scale: 1;
+  }
+  :is(a, button):hover .arcade-cover-shine {
+    animation: none;
+  }
+}
+:root[data-motion="off"] .arcade-cover-art {
+  transition: none;
+}
+:root[data-motion="off"] :is(a, button):hover .arcade-cover-art {
+  scale: 1;
+}
+:root[data-motion="off"] :is(a, button):hover .arcade-cover-shine {
+  animation: none;
+}
+
+/* Outline buttons with an icon and a label (page header actions like Game Cosmetics / Cases / Shop, back links,
+   toolbars): the leading icon sits in a small tinted badge in the accent colour, which fills on hover. Icon-only
+   and extra-small buttons keep a bare icon. Inside a game skin the badge takes the game's own accent. */
+[data-slot="button"][data-variant="outline"]:not([data-size^="icon"], [data-size="xs"]) > svg:first-child:not(:only-child, .animate-spin) {
+  box-sizing: content-box;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-inline-start: -0.3rem;
+  padding: 0.25rem;
+  border-radius: calc(5px * var(--radius-unit, 1) * var(--control-round, 1));
+  background: rgb(var(--accent-rgb) / 0.14);
+  color: var(--amethyst);
+  box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.22);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    box-shadow 200ms ease,
+    scale 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-slot="button"][data-variant="outline"]:not([data-size^="icon"], [data-size="xs"]):is(:hover, :focus-visible, [aria-expanded="true"]) > svg:first-child:not(:only-child, .animate-spin) {
+  background: var(--amethyst);
+  color: var(--amethyst-foreground);
+  box-shadow: 0 0 12px -2px rgb(var(--accent-rgb) / 0.7);
+  scale: 1.06;
+}
+[data-slot="button"][data-variant="outline"]:not([data-size^="icon"], [data-size="xs"]):is([data-size="lg"], [data-size="default"]) > svg:first-child:not(:only-child, .animate-spin) {
+  width: 1rem;
+  height: 1rem;
+  padding: 0.3rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="button"][data-variant="outline"] > svg:first-child {
+    scale: none !important;
+  }
+}
+:root[data-motion="off"] [data-slot="button"][data-variant="outline"] > svg:first-child {
+  scale: none !important;
+}

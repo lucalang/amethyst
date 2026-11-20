@@ -137,7 +137,7 @@ export function EntryHeader({
             <Link
               href={collectionPath(collection)}
               className={cn(
-                "text-[11px] font-semibold tracking-[0.16em] break-words uppercase [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.85*var(--shadow-alpha)))]",
+                "text-xs font-semibold tracking-[0.16em] break-words [text-shadow:0_1px_10px_rgb(var(--shadow-rgb)/calc(0.85*var(--shadow-alpha)))]",
                 accent ? "text-[var(--ca)]" : "text-amethyst",
               )}
             >

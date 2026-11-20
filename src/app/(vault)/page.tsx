@@ -264,7 +264,7 @@ function FeaturedEntry({ featured }: { featured: HomeFeaturedEntry }) {
         <MediaImage src={entry.coverUrl} alt="" sizes="auto, (min-width: 768px) 160px, 112px" fallbackLabel={entry.title} />
       </span>
       <span className="min-w-0 flex-1 pb-1">
-        <span className="block truncate text-[11px] font-semibold tracking-[0.16em] text-amethyst uppercase">{featured.collectionName}</span>
+        <span className="block truncate text-xs font-semibold tracking-[0.16em] text-amethyst">{featured.collectionName}</span>
         <span className="mt-1.5 line-clamp-2 text-xl leading-tight font-semibold tracking-tight break-words transition-colors group-hover/featured:text-amethyst md:text-3xl">{entry.title}</span>
         {progress.total ? (
           <ProgressMeter done={progress.done} total={progress.total} label={progress.label} className="mt-3 max-w-xs" />

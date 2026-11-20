@@ -310,7 +310,7 @@ function CabinetHeader({ byId, earnedCount, owner, special }: { byId: Map<string
           </svg>
           <span className="relative text-center leading-none">
             <span className="block text-2xl font-extrabold tabular-nums sm:text-3xl">{earnedCount}</span>
-            <span className="coin-ink mt-1 block text-[10px] font-semibold tracking-[0.14em] uppercase">of {total}</span>
+            <span className="coin-ink mt-1 block text-xs font-semibold tracking-[0.14em]">of {total}</span>
           </span>
         </div>
         <div className="min-w-0 flex-1">
@@ -638,7 +638,7 @@ function AchievementDetails({
 
         <div className="mt-4 rounded-md border border-white/[0.08] bg-white/[0.02] p-3.5">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            <h3 className="text-xs font-semibold text-muted-foreground">
               {definition.reward.items.length + (definition.reward.coins > 0 ? 1 : 0) > 1 ? "Milestone rewards" : "Milestone reward"}
             </h3>
             {rewardGranted ? (

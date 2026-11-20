@@ -171,7 +171,7 @@ function Tip({ label, tip, children }: { label: string; tip?: string; children: 
 function Group({ title, value, children }: { title: string; value: ReactNode; children: ReactNode }) {
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-1.5 flex w-full items-baseline gap-1.5 text-[0.7rem] font-semibold tracking-wider text-muted-foreground uppercase">
+      <legend className="mb-1.5 flex w-full items-baseline gap-1.5 text-xs font-semibold text-muted-foreground">
         {title}
         <span aria-hidden>·</span>
         <span className="truncate font-medium tracking-normal text-foreground normal-case">{value}</span>

@@ -481,7 +481,7 @@ function PlayerCard({ label, name, active, winner, loser, children }: { label: s
     >
       <div className="size-14 shrink-0 overflow-hidden rounded-lg">{children}</div>
       <div className="min-w-0">
-        <p className="truncate text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase">{label}</p>
+        <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
         <p aria-hidden className="truncate text-sm font-bold">{name}</p>
         {active ? <span className="mt-0.5 inline-block rounded-full bg-amethyst px-1.5 text-[0.6rem] font-semibold text-amethyst-foreground uppercase">Turn</span> : null}
         {winner ? <span className="mt-0.5 inline-block rounded-full bg-emerald-400 px-1.5 text-[0.6rem] font-semibold text-black uppercase">Winner</span> : null}
@@ -649,7 +649,7 @@ function Stage({ view, actions, items, yourMove, toAnswer, reveal, stillFit, onC
         >
           <div ref={focusRef} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <div className="min-w-0 space-y-1">
-              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">You asked</p>
+              <p className="text-xs font-semibold text-muted-foreground">You asked</p>
               <p className="text-lg leading-snug font-bold text-pretty break-words sm:text-xl">{questionText(reveal.item.card, reveal.item.text)}</p>
               {reveal.item.card && (answer === "yes" || answer === "no") ? (
                 <p className="text-sm text-muted-foreground">
@@ -874,7 +874,7 @@ function QuestionLog({ items, names }: { items: LogItem[]; names: TableView["nam
             const who = item.by === "you" ? "You" : names.them;
             return (
               <li key={item.key} className={cn("wai-log-item rounded-lg border px-2.5 py-1.5 text-sm", item.by === "you" ? "border-amethyst/40 bg-amethyst/5" : "border-border")}>
-                <span className="text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase">{who}</span>
+                <span className="text-xs font-semibold text-muted-foreground">{who}</span>
                 {item.type === "qa" ? (
                   <p className="flex flex-wrap items-baseline justify-between gap-x-2">
                     <span className="min-w-0 break-words">{questionText(item.card, item.text)}</span>

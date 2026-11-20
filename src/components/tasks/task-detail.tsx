@@ -44,7 +44,7 @@ const LiveMarkdownEditor = dynamic(() => import("@/components/editor/live-markdo
   loading: () => <div aria-hidden className="h-28 animate-pulse rounded-md bg-foreground/[0.04] motion-reduce:animate-none" />,
 });
 
-const SECTION_LABEL = "text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase";
+const SECTION_LABEL = "text-xs font-semibold tracking-[0.1em] text-muted-foreground";
 const CARD =
   "rounded-lg bg-surface/65 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.07)] transition-[background-color,box-shadow,scale] duration-200 focus-within:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]";
 const stamp = new Intl.DateTimeFormat("en", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });

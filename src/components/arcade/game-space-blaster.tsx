@@ -1773,7 +1773,7 @@ export default function GameSpaceBlaster({ records: initialRecords }: { records:
           <Stat label="Wave" value={hud.wave} />
           <Stat label="Hull" value={`${hud.hull}/${hud.maxHull}${hud.shield ? " +S" : ""}`} />
           <div className="flex min-w-[8rem] flex-col justify-center rounded-lg border border-border bg-surface/60 px-3 py-1.5">
-            <span className="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">Loadout</span>
+            <span className="text-xs font-medium text-muted-foreground">Loadout</span>
             <span className="flex flex-wrap gap-1 text-xs font-semibold">
               {owned.length === 0 ? (
                 <span className="text-muted-foreground">Stock ship</span>

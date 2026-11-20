@@ -350,8 +350,7 @@ export function ShopView({
               <ItemPreview id={focus.id} large samples={samples} profile={profile} />
             </div>
             <div aria-live="polite" className="mt-4">
-              <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                <span aria-hidden className="ui-dot" />
+              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 {COSMETIC_KIND_LABELS[focus.kind]}
               </p>
               <p className="mt-0.5 flex items-center justify-between gap-3 text-base font-semibold text-foreground">

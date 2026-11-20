@@ -39,6 +39,13 @@ async function AmethystStatsData() {
           coins: { ...coins, total: coins.arcade + coins.codes + coins.achievements },
           redemptions: { total: n("redemptions"), repeats: n("redemptions") - n("redemption_pairs") },
           cosmeticsGranted: n("cosmetics_granted"),
+          play: {
+            runs: n("arcade_runs"),
+            cases: n("cases_opened"),
+            tournamentEntries: n("tournament_entries"),
+            wagers: n("wagers_played"),
+            quests: n("quests_claimed"),
+          },
         }}
         code={codeStats as CodeStats}
       />

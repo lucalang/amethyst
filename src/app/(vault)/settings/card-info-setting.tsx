@@ -74,7 +74,6 @@ export function CardInfoSetting({ value, labelId }: { value: CardInfo; labelId: 
       />
       <fieldset className="rounded-2xl border border-border bg-surface/40 p-4">
         <legend className="float-left mb-3 flex w-full items-center gap-2 text-xs font-semibold text-muted-foreground">
-          <span aria-hidden className="ui-dot" />
           Fine-tune{!preset ? <span className="ui-pill" data-tone>Custom mix</span> : null}
         </legend>
         <div className="clear-both grid gap-4 sm:grid-cols-3">

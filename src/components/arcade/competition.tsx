@@ -28,6 +28,26 @@ export function useCompetitionBoard(game: string): string | null {
   return useCompetitionLock(game)?.board ?? null;
 }
 
+/**
+ * How the game frame leads back during competitive play: its back button goes to the match (or tournament)
+ * instead of the Arcade, the round's info shows inside the frame (so it stays visible in fullscreen), and once
+ * the round is in, a floating button returns to the match without scrolling.
+ */
+export type ShellNav = {
+  back: { href: string; label: string; short: string };
+  banner: ReactNode;
+  /** The round's result is in: show the floating return button. */
+  done: boolean;
+};
+
+const ShellNavContext = createContext<ShellNav | null>(null);
+
+export function ShellNavProvider({ value, children }: { value: ShellNav; children: ReactNode }) {
+  return <ShellNavContext.Provider value={value}>{children}</ShellNavContext.Provider>;
+}
+
+export const useShellNav = () => useContext(ShellNavContext);
+
 export function useCompetitionLock(game: string): CompetitionLock | null {
   const competition = useCompetition();
   return competition?.lock.game === game ? competition.lock : null;

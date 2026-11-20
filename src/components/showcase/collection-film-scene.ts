@@ -46,6 +46,10 @@ const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 const easeOut = (t: number) => 1 - (1 - t) ** 3;
+/** The hold's push-in: starts at rest after the card lands and is still gathering speed when it ends. */
+const pushIn = (t: number) => t * t;
+/** Hermite weight for a starting velocity: 0 at both ends, slope 1 at the start and 0 at the end. */
+const carryWeight = (t: number) => t * (1 - t) * (1 - t);
 
 const CARD_VERTEX = /* glsl */ `
 varying vec2 vUv;
@@ -598,6 +602,15 @@ export function createFilm(
   let lastSeg = -1;
   let lastT = -1;
   let outgoing = -1;
+  // Camera and look-at velocity (units per second), measured every rendered frame. When playback runs
+  // from one entry into the next, that velocity is carried into the next move instead of stopping dead.
+  const camVel = new Vector3();
+  const lookVel = new Vector3();
+  const lastCam = new Vector3();
+  const lastLook = new Vector3();
+  const camCarry = new Vector3();
+  const lookCarry = new Vector3();
+  const carried = new Vector3();
   let clock = 0;
   const euler = new Euler();
 
@@ -636,6 +649,7 @@ export function createFilm(
     const { seg, t } = director;
     const step = Math.min(dt, 0.1);
     const moving = director.playing || t !== lastT;
+    const previousT = lastT;
     lastT = t;
     if (moving) clock += step;
     stamp += 1;
@@ -643,6 +657,15 @@ export function createFilm(
     const focus = seg === 0 ? 0 : seg > count ? count - 1 : seg - 1;
     if (seg !== lastSeg) {
       outgoing = lastSeg >= 1 && lastSeg <= count ? lastSeg - 1 : -1;
+      // Only an uninterrupted hand-off (an entry played to its end) keeps its momentum; seeks start at rest.
+      const flowing = director.playing && outgoing >= 0 && seg === lastSeg + 1 && previousT >= FILM.entry - 0.25;
+      if (flowing) {
+        camCarry.copy(camVel);
+        lookCarry.copy(lookVel);
+      } else {
+        camCarry.set(0, 0, 0);
+        lookCarry.set(0, 0, 0);
+      }
       camFrom.copy(camera.position);
       lookFrom.copy(look);
       if (lastSeg === -1) camFrom.set(0, 2.2, 34);
@@ -686,21 +709,31 @@ export function createFilm(
         flash = Math.exp(-k * k) * 0.55;
       }
     } else if (seg <= count) {
-      const k = easeInOut(clamp01(t / FILM.transition));
-      const hold = easeInOut(clamp01((t - FILM.transition) / (FILM.entry - FILM.transition)));
+      const u = clamp01(t / FILM.transition);
+      const k = easeInOut(u);
+      const hold = pushIn(clamp01((t - FILM.transition) / (FILM.entry - FILM.transition)));
       const target = new Vector3(swayX, swayY, -focus * SPACING + distance - 0.4 * hold * amp);
-      camera0.lerpVectors(camFrom, target, k);
-      look0.lerpVectors(lookFrom, new Vector3(swayX * 0.4, swayY * 0.4, target.z - 10), k);
+      const carry = carryWeight(u) * FILM.transition;
+      camera0.lerpVectors(camFrom, target, k).add(carried.copy(camCarry).multiplyScalar(carry));
+      look0.lerpVectors(lookFrom, new Vector3(swayX * 0.4, swayY * 0.4, target.z - 10), k).add(carried.copy(lookCarry).multiplyScalar(carry));
       for (const card of constellation) card.mesh.visible = false;
     } else {
-      const k = easeInOut(clamp01(t / 2.6));
+      const u = clamp01(t / 2.6);
+      const k = easeInOut(u);
       const center = new Vector3(0, 0, -(count - 1) * SPACING - 16);
       const target = new Vector3(swayX, 0.9 + swayY, center.z + 15 + Math.max(0, t - 2.6) * 0.25 * amp);
-      camera0.lerpVectors(camFrom, target, k);
-      look0.lerpVectors(lookFrom, center, k);
+      const carry = carryWeight(u) * 2.6;
+      camera0.lerpVectors(camFrom, target, k).add(carried.copy(camCarry).multiplyScalar(carry));
+      look0.lerpVectors(lookFrom, center, k).add(carried.copy(lookCarry).multiplyScalar(carry));
       tunnelFade = 1 - easeOut(clamp01(t / 2.2)) * 0.85;
       placeConstellation(center, t - 0.6, 0, 1, t);
     }
+    if (step > 0) {
+      camVel.subVectors(camera0, lastCam).divideScalar(step);
+      lookVel.subVectors(look0, lastLook).divideScalar(step);
+    }
+    lastCam.copy(camera0);
+    lastLook.copy(look0);
     camera.position.copy(camera0);
     look.copy(look0);
     camera.lookAt(look);
@@ -716,8 +749,7 @@ export function createFilm(
       } else if (seg > count && index === outgoing) f = 1 - easeInOut(clamp01(t / (FILM.transition * 0.75)));
 
       // The leaving card starts from where its hold ended (slightly enlarged, still swaying), so nothing jumps.
-      const hold =
-        index === focus && seg >= 1 && seg <= count ? easeInOut(clamp01((t - FILM.transition) / (FILM.entry - FILM.transition))) : index === outgoing ? f : 0;
+      const hold = index === focus && seg >= 1 && seg <= count ? pushIn(clamp01((t - FILM.transition) / (FILM.entry - FILM.transition))) : index === outgoing ? f : 0;
       const arc = Math.sin(f * Math.PI);
       const stageZ = -index * SPACING;
       const x = lerp(s.x, offset.x, f);

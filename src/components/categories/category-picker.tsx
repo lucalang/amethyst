@@ -160,7 +160,7 @@ function CategoryOptions({
               onClick={() => void choose(option)}
               className={cn(
                 "group/option flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
-                isActive ? "bg-amethyst/[0.14] text-foreground shadow-[inset_2px_0_0_var(--amethyst)]" : "text-foreground/85",
+                isActive ? "bg-amethyst/[0.14] text-foreground" : "text-foreground/85",
               )}
             >
               <span

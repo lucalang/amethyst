@@ -384,7 +384,7 @@ export function SpinWheelStudio({ initialWheels, initialId }: { initialWheels: S
 
         {result ? (
           <div key={result.spin} className="spin-result mt-5 rounded-2xl border p-4 text-center" style={{ "--slice": result.color } as CSSProperties}>
-            <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">The wheel picked</p>
+            <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground">The wheel picked</p>
             <p className="mt-1 flex items-center justify-center gap-2 text-2xl font-extrabold tracking-tight break-words">
               <span aria-hidden className="size-3 shrink-0 rounded-full ring-2 ring-white/40" style={{ backgroundColor: result.color }} />
               {result.label}
@@ -408,7 +408,7 @@ export function SpinWheelStudio({ initialWheels, initialId }: { initialWheels: S
 
         {history.length > 1 ? (
           <div className="mt-4">
-            <p className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Earlier this visit</p>
+            <p className="text-xs font-semibold text-muted-foreground">Earlier this visit</p>
             <ol aria-label="Earlier results, newest first" className="mt-2 flex flex-wrap gap-1.5">
               {history.slice(1).map((entry) => (
                 <li key={entry.spin} className="ui-pill gap-1.5">

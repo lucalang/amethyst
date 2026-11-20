@@ -7,8 +7,8 @@ import { useRef, useState, useTransition, type CSSProperties } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, BookMarked, Check, CircleDashed, Loader2, RotateCcw, TriangleAlert, type LucideIcon } from "lucide-react";
-import { CatalogEmpty, CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
+import { ArrowUpRight, BookMarked, Check, CircleDashed, Loader2, RotateCcw, TriangleAlert, X } from "lucide-react";
+import { CatalogEmpty, CatalogSearch, FilterSelect } from "@/components/catalog/catalog-search";
 import { RarityTag } from "@/components/lootboxes/parts";
 import { useMotionLevel } from "@/components/showcase/motion";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { INVENTORY_TYPES, INVENTORY_TYPE_LABELS, inventoryItemLabel, type Invent
 import { formatChance } from "@/lib/lootboxes";
 import { RARITIES, RARITY_IDS, rarityRank, type RarityId } from "@/lib/rarities";
 import { cn } from "@/lib/utils";
-import { placeFor } from "./inventory-view";
+import { placeFor, TypeTab } from "./inventory-view";
 import { ItemArt, TYPE_LOOK, toneOf, toneStyle, type ArtProfile as Profile, type ArtSamples as Samples } from "./item-art";
 
 const CosmeticPreview = dynamic(() => import("@/components/arcade/shop/preview").then((mod) => mod.CosmeticPreview), {
@@ -32,7 +32,7 @@ type Ownership = "all" | "owned" | "missing";
 type Sort = "catalog" | "name" | "rarity";
 
 const OWNERSHIP: { id: Ownership; label: string }[] = [
-  { id: "all", label: "All" },
+  { id: "all", label: "Everything" },
   { id: "owned", label: "Owned" },
   { id: "missing", label: "Missing" },
 ];
@@ -43,26 +43,6 @@ const SORTS: { id: Sort; label: string }[] = [
 ];
 
 const percent = (owned: number, total: number) => (total ? Math.floor((owned / total) * 100) : 0);
-
-function KindButton({ icon: Icon, tone, label, owned, total, pressed, onClick }: { icon: LucideIcon; tone: string; label: string; owned: number; total: number; pressed: boolean; onClick: () => void }) {
-  return (
-    <button type="button" aria-pressed={pressed} onClick={onClick} className="inv-kind" style={toneStyle(tone)}>
-      <span className="inv-kind-icon">
-        <Icon aria-hidden className="size-[1.1rem]" />
-      </span>
-      <span className="min-w-0">
-        <span className="inv-kind-count">
-          {owned}
-          <span className="text-sm font-medium text-muted-foreground">/{total}</span>
-        </span>
-        <span className="inv-kind-label">
-          {label}
-          <span className="sr-only">, {owned} of {total} owned</span>
-        </span>
-      </span>
-    </button>
-  );
-}
 
 export function OwnedStatus({ owned, className }: { owned: boolean; className?: string }) {
   return (
@@ -122,7 +102,13 @@ export function CollectionIndexView({
   const effects = useMotionLevel();
   const [retrying, startRetry] = useTransition();
   const [type, setType] = useState<"all" | InventoryType>("all");
-  const [game, setGame] = useState<"all" | ShopGame>("all");
+  const [game, setGameState] = useState<"all" | ShopGame>("all");
+  /** A game's cosmetic category (board themes, skins…), offered once a single game is picked. */
+  const [category, setCategory] = useState("all");
+  const setGame = (next: "all" | ShopGame) => {
+    setGameState(next);
+    setCategory("all");
+  };
   const [ownership, setOwnership] = useState<Ownership>("all");
   const [rarity, setRarity] = useState<"all" | RarityId>("all");
   const [query, setQuery] = useState("");
@@ -165,7 +151,16 @@ export function CollectionIndexView({
   const types = INVENTORY_TYPES.filter((id) => items.some((item) => item.type === id));
   const games = SHOP_GAMES.filter((id) => items.some((item) => item.type === "game" && item.game === id));
   const ofType = byRarity.filter((item) => type === "all" || item.type === type);
-  const shown = ofType.filter((item) => type !== "game" || game === "all" || (item.type === "game" && item.game === game));
+  const shown = ofType.filter(
+    (item) =>
+      type !== "game" ||
+      game === "all" ||
+      (item.type === "game" && item.game === game && (category === "all" || item.category === category)),
+  );
+  const categories =
+    type === "game" && game !== "all"
+      ? GAME_SHOPS[game].categories.filter((entry) => ofType.some((item) => item.type === "game" && item.game === game && item.category === entry.id))
+      : [];
   if (sort === "name") shown.sort((a, b) => a.name.localeCompare(b.name, "en"));
   if (sort === "rarity") shown.sort((a, b) => rarityRank(b.rarity) - rarityRank(a.rarity) || a.name.localeCompare(b.name, "en"));
   const focus = shown.find((item) => item.id === selected) ?? shown[0] ?? null;
@@ -213,75 +208,75 @@ export function CollectionIndexView({
         ) : null}
       </section>
 
-      <div role="group" aria-label="Item type" className="enter grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]" style={{ "--enter-index": 1 } as CSSProperties}>
-        <KindButton icon={BookMarked} tone="var(--amethyst)" label="All items" owned={ownedTotal} total={items.length} pressed={type === "all"} onClick={() => chooseType("all")} />
-        {types.map((id) => {
-          const ofKind = items.filter((item) => item.type === id);
-          return (
-            <KindButton
-              key={id}
-              icon={TYPE_LOOK[id].icon}
-              tone={TYPE_LOOK[id].tone}
-              label={INVENTORY_TYPE_LABELS[id].many}
-              owned={ofKind.filter((item) => item.owned).length}
-              total={ofKind.length}
-              pressed={type === id}
-              onClick={() => chooseType(id)}
+      <div className="enter grid gap-2.5" style={{ "--enter-index": 1 } as CSSProperties}>
+        <div role="group" aria-label="Item type" className="inv-types">
+          <TypeTab
+            icon={BookMarked}
+            tone="var(--amethyst)"
+            label="All"
+            count={`${ownedTotal}/${items.length}`}
+            pressed={type === "all"}
+            onClick={() => chooseType("all")}
+          />
+          {types.map((id) => {
+            const ofKind = items.filter((item) => item.type === id);
+            return (
+              <TypeTab
+                key={id}
+                icon={TYPE_LOOK[id].icon}
+                tone={TYPE_LOOK[id].tone}
+                label={INVENTORY_TYPE_LABELS[id].many}
+                count={`${ofKind.filter((item) => item.owned).length}/${ofKind.length}`}
+                pressed={type === id}
+                onClick={() => chooseType(id)}
+              />
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <CatalogSearch value={query} onChange={setQuery} label="Search the Index" placeholder="Search all items" className="sm:w-64" />
+          <FilterSelect label="Show" value={ownership} onChange={setOwnership} options={OWNERSHIP} />
+          <FilterSelect
+            label="Rarity"
+            value={rarity}
+            onChange={setRarity}
+            options={[
+              { id: "all" as const, label: "Any" },
+              ...rarities.map((id) => ({
+                id,
+                label: (
+                  <>
+                    <span aria-hidden className="size-2 rounded-full" style={{ background: RARITIES[id].color }} />
+                    {RARITIES[id].label}
+                  </>
+                ),
+              })),
+            ]}
+          />
+          {type === "game" && games.length > 1 ? (
+            <FilterSelect
+              label="Game"
+              value={game}
+              onChange={setGame}
+              options={[{ id: "all" as const, label: "All games" }, ...games.map((id) => ({ id, label: GAME_SHOPS[id].title }))]}
             />
-          );
-        })}
-      </div>
-
-      <div className="enter grid gap-3" style={{ "--enter-index": 2 } as CSSProperties}>
-        <div className="flex flex-wrap items-center gap-3">
-          <CatalogSearch value={query} onChange={setQuery} label="Search the Index" placeholder="Search all items" className="sm:w-72" />
-          <div role="group" aria-label="Ownership" className="flex flex-wrap gap-2">
-            {OWNERSHIP.map((option) => (
-              <FilterChip
-                key={option.id}
-                pressed={ownership === option.id}
-                onClick={() => setOwnership(option.id)}
-                count={option.id === "all" ? searched.length : searched.filter((item) => item.owned === (option.id === "owned")).length}
-              >
-                {option.label}
-              </FilterChip>
-            ))}
-          </div>
-          <div role="group" aria-label="Sort" className="flex items-center gap-2 sm:ml-auto">
-            <span aria-hidden className="text-xs font-medium text-muted-foreground">
-              Sort
-            </span>
-            {SORTS.map((option) => (
-              <FilterChip key={option.id} pressed={sort === option.id} onClick={() => setSort(option.id)}>
-                <span className="sr-only">Sort by </span>
-                {option.label}
-              </FilterChip>
-            ))}
-          </div>
+          ) : null}
+          {type === "game" && game !== "all" && categories.length > 1 ? (
+            <FilterSelect
+              label="Kind"
+              value={category}
+              onChange={setCategory}
+              options={[{ id: "all", label: "All kinds" }, ...categories.map((entry) => ({ id: entry.id, label: entry.label }))]}
+            />
+          ) : null}
+          <FilterSelect label="Sort" value={sort} onChange={setSort} options={SORTS} className="sm:ml-auto" />
+          {filtered ? (
+            <Button type="button" variant="ghost" size="sm" className="h-9 text-muted-foreground" onClick={reset}>
+              <X aria-hidden />
+              Clear
+            </Button>
+          ) : null}
         </div>
-        <div role="group" aria-label="Rarity" className="flex flex-wrap gap-2">
-          <FilterChip pressed={rarity === "all"} onClick={() => setRarity("all")}>
-            Any rarity
-          </FilterChip>
-          {rarities.map((id) => (
-            <FilterChip key={id} pressed={rarity === id} onClick={() => setRarity(id)} count={byOwnership.filter((item) => item.rarity === id).length}>
-              <span aria-hidden className="size-2 rounded-full" style={{ background: RARITIES[id].color }} />
-              {RARITIES[id].label}
-            </FilterChip>
-          ))}
-        </div>
-        {type === "game" && games.length > 1 ? (
-          <div role="group" aria-label="Game" className="flex flex-wrap gap-2">
-            <FilterChip pressed={game === "all"} onClick={() => setGame("all")} count={ofType.length}>
-              All games
-            </FilterChip>
-            {games.map((id) => (
-              <FilterChip key={id} pressed={game === id} onClick={() => setGame(id)} count={ofType.filter((item) => item.type === "game" && item.game === id).length}>
-                {GAME_SHOPS[id].title}
-              </FilterChip>
-            ))}
-          </div>
-        ) : null}
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(19rem,23rem)_minmax(0,1fr)]">
@@ -301,7 +296,7 @@ export function CollectionIndexView({
               )}
             </div>
             <div aria-live="polite" className="mt-4">
-              <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <span aria-hidden className="inv-dot" />
                 {inventoryItemLabel(focus)}
               </p>
@@ -331,7 +326,7 @@ export function CollectionIndexView({
             </dl>
 
             <section aria-labelledby="idx-sources" className="mt-4">
-              <h3 id="idx-sources" className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              <h3 id="idx-sources" className="flex items-center justify-between gap-2 text-xs font-semibold text-muted-foreground">
                 {focus.owned ? "Where it comes from" : "How to get it"}
                 <span className="idx-availability normal-case" data-availability={focus.availability}>
                   {AVAILABILITY_LABELS[focus.availability]}
@@ -390,7 +385,7 @@ export function CollectionIndexView({
                     </span>
                     <OwnedStatus owned={item.owned} className="absolute top-2 right-2 z-[2]" />
                     <span className="flex flex-1 flex-col gap-1 p-3">
-                      <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
                         <span aria-hidden className="inv-dot" />
                         <span className="truncate">{inventoryItemLabel(item)}</span>
                       </span>

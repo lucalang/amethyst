@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { ArcadeGameId } from "@/lib/arcade";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +29,22 @@ export function ArcadePreview({ game }: { game: ArcadeGameId }) {
       <rect width="160" height="100" className="fill-amethyst/[0.08]" />
       {PREVIEWS[game]}
     </svg>
+  );
+}
+
+/**
+ * The same artwork as a vivid cover (shop cards and headers): a dark stage lit in the game's own colour, with a
+ * complementary accent, a soft glow behind the art and a sheen that sweeps across on hover. Styles: `.arcade-cover`
+ * in globals.css.
+ */
+export function ArcadeCover({ game, className }: { game: ArcadeGameId; className?: string }) {
+  return (
+    <span aria-hidden className={cn("arcade-cover", className)} style={{ "--cover": ARCADE_CABINETS[game].hue } as CSSProperties}>
+      <span className="arcade-cover-art">
+        <ArcadePreview game={game} />
+      </span>
+      <span className="arcade-cover-shine" />
+    </span>
   );
 }
 

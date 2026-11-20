@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type CSSProperties } from "react";
 import { ArrowRight } from "lucide-react";
-import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
+import { ARCADE_CABINETS, ArcadeCover } from "@/components/arcade/previews";
 import { CatalogEmpty, CatalogSearch } from "@/components/catalog/catalog-search";
 import { catalogMatcher } from "@/lib/catalog-search";
 import { GAME_SHOPS, SHOP_GAMES, shopHref, type ShopGame } from "@/lib/game-cosmetics";
@@ -36,10 +36,8 @@ export function GameCosmeticsDirectory({ owned, compact = false }: { owned: Part
             return (
               <li key={game} className="min-w-0">
                 <Link href={shopHref(game)} className="ui-card group flex h-full flex-col" style={{ "--tone": ARCADE_CABINETS[game].hue } as CSSProperties}>
-                  <span aria-hidden className={cn("ui-stage border-b border-border", compact ? "aspect-[16/9]" : "aspect-[16/7]")}>
-                    <span className="block size-full">
-                      <ArcadePreview game={game} />
-                    </span>
+                  <span className={cn("block overflow-hidden rounded-t-[inherit] border-b border-border", compact ? "aspect-[16/9]" : "aspect-[16/8]")}>
+                    <ArcadeCover game={game} />
                   </span>
                   <span className="flex flex-1 items-center gap-2 px-3 py-2.5">
                     <span className="min-w-0 flex-1">

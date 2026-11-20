@@ -130,7 +130,7 @@ function Group({ title, description, children }: { title: string; description: s
   const id = useId();
   return (
     <section aria-labelledby={id} className="rounded-xl border border-white/[0.1] bg-black/20 p-4 md:p-5">
-      <h3 id={id} className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+      <h3 id={id} className="text-xs font-semibold tracking-[0.14em] text-muted-foreground">
         {title}
       </h3>
       <p className="mt-1 mb-4 text-xs text-muted-foreground">{description}</p>

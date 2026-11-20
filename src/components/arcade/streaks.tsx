@@ -219,7 +219,7 @@ export function RecoverStreakDialog({
             <div className="space-y-2">
               <p>
                 This spends <span className="coin-ink font-semibold tabular-nums">{cost}</span> to count {formatDailyDate(recovery.date)} (UTC) as
-                played. Your streak continues at {dayWord(recovery.streak + 2)}.
+                played. Your streak is back at {dayWord(recovery.streak + 1)}, and today’s first round makes it {dayWord(recovery.streak + 2)}.
               </p>
               <p>Each missed day can be restored only once, and only until 00:00 UTC tonight.</p>
             </div>
@@ -289,7 +289,7 @@ export function StreakRestorePanel({
           <p className="text-xs leading-5 text-muted-foreground text-pretty">
             You missed {formatDailyDate(recovery.date)}.{" "}
             {recovery.ready
-              ? `Restore it for ${cost} and it continues at ${dayWord(recovery.streak + 2)}.`
+              ? `Restore it for ${cost} to bring back your ${dayWord(recovery.streak + 1)} streak. You don’t need to play first.`
               : `Finish one round of ${title} today, then restore it for ${cost}.`}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -467,11 +467,11 @@ export function GameStreak({ game, restoreSlot }: { game: RankedGameId; restoreS
           </div>
           <dl className="grid grid-cols-2 gap-2">
             <div className="rounded-md border border-border px-2.5 py-1.5">
-              <dt className="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">Current</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Current</dt>
               <dd className="text-lg leading-tight font-semibold tabular-nums">{dayWord(streak.current)}</dd>
             </div>
             <div className="rounded-md border border-border px-2.5 py-1.5">
-              <dt className="text-[0.65rem] font-medium tracking-wider text-muted-foreground uppercase">Best</dt>
+              <dt className="text-xs font-medium text-muted-foreground">Best</dt>
               <dd className="text-lg leading-tight font-semibold tabular-nums">{dayWord(streak.best)}</dd>
             </div>
           </dl>

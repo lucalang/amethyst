@@ -404,7 +404,7 @@ function RarityBreakdown({ counts }: { counts: Partial<Record<RarityId, number>>
 function RarePulls({ pulls }: { pulls: Pull[] }) {
   return (
     <section aria-label="Rare pulls" className="grid gap-1.5">
-      <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Secret or rarer · {n(pulls.length)}</h3>
+      <h3 className="text-xs font-medium text-muted-foreground">Secret or rarer · {n(pulls.length)}</h3>
       {pulls.length ? (
         <ul className="grid max-h-40 gap-1 overflow-y-auto pr-1">
           {pulls.slice(0, SHOWN_PULLS).map((pull, at) => (

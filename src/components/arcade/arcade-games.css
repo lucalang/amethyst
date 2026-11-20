@@ -4,13 +4,37 @@
   position: relative;
   container-type: inline-size;
   margin-inline: auto;
-  width: min(100%, calc(var(--stage-h, min(70dvh, 46rem)) * var(--stage-ratio, 1)));
+  /* --stage-fit (set by GameShell) is the height left below the board's top, so the whole board is on screen. */
+  width: min(
+    100%,
+    calc(var(--stage-h, min(70dvh, 46rem)) * var(--stage-ratio, 1)),
+    calc(var(--stage-fit, 100dvh) * var(--stage-ratio, 1))
+  );
   aspect-ratio: var(--stage-ratio, 1);
 }
 [data-arcade-game]:fullscreen {
   overflow: auto;
   background: var(--background);
   max-width: none;
+}
+/* The floating "Back to the match" button after a competitive round. */
+.arcade-return {
+  animation: arcade-return-in 320ms cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+/* No tab bar in fullscreen, so the button sits near the bottom edge. */
+[data-arcade-game]:fullscreen .arcade-return-dock {
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+}
+@keyframes arcade-return-in {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-return {
+    animation: none;
+  }
 }
 [data-arcade-game]:fullscreen .arcade-stage {
   --stage-h: calc(100dvh - 9rem);

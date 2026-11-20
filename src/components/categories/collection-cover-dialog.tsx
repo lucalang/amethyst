@@ -75,7 +75,7 @@ export function CollectionCoverDialog({ open, onOpenChange, collection }: { open
                     </span>
                   )}
                   <div className="min-w-0 text-sm">
-                    <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Preview</p>
+                    <p className="text-xs font-medium text-muted-foreground">Preview</p>
                     <p className="mt-1 font-medium">{custom.length ? "Your chosen covers" : "Automatic artwork"}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {custom.length

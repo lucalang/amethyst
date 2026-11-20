@@ -32,6 +32,9 @@ import { drawGemBody, drawGlimmer, drawShadeBody, drawSpark, gemChaseTheme, pain
 import { applyArtStyle, blasterTheme, drawBossBody, drawLaser, drawShipBody, flameColor, glow, paintNebula, type BlasterTheme } from "../space-blaster-look";
 import { CELEBRATIONS, PuzzleCelebration, QueensCrown, QueensDefs, TangoSymbol, ZipMarker, lookAttributes, patchColors, queensRegionColors, zipTrail, type Celebration } from "../puzzle-looks";
 import "../minigames.css";
+// The 2048 board (.g2048) and the shared stage are styled here; previews also show outside game pages
+// (shop, Inventory, Index), where the game shell that normally loads this file isn't on the page.
+import "../arcade-games.css";
 
 /**
  * Shop previews: a small, looping scene of each game drawn with the real renderers, so what you

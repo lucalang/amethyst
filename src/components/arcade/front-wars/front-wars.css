@@ -616,7 +616,7 @@
   border-radius: calc(0.6rem * var(--radius-unit, 1));
   padding: 0.5rem 0.65rem;
   background: color-mix(in oklab, var(--foreground) 4%, transparent);
-  box-shadow: inset 3px 0 0 var(--fw-card-edge, color-mix(in oklab, var(--foreground) 30%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-card-edge, var(--foreground)) 35%, transparent);
 }
 
 .fw-tool-card[data-state="ready"] {
@@ -774,7 +774,7 @@
   padding: 0.45rem 0.55rem;
   font-size: 0.8125rem;
   background: color-mix(in oklab, var(--foreground) 5%, transparent);
-  box-shadow: inset 3px 0 0 var(--fw-edge, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fw-edge, transparent) 45%, transparent);
 }
 
 .fw-fronts li[data-level="critical"] {

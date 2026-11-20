@@ -61,6 +61,18 @@ async function MyStatsData() {
       slotBest: n("slot_best"),
     },
     rewards: { achievements: n("achievements"), achievementsTotal: ACHIEVEMENTS.length, cosmetics: n("cosmetics"), codes: n("codes") },
+    play: {
+      arcadeDays: n("arcade_days"),
+      streakBest: n("streak_best"),
+      streakActive: n("streak_active"),
+      streakRestores: n("streak_restores"),
+      casesOpened: n("cases_opened"),
+      tournaments: n("tournaments_joined"),
+      podiums: n("tournament_podiums"),
+      wagers: n("wagers_played"),
+      wagersWon: n("wagers_won"),
+      quests: n("quests_claimed"),
+    },
   };
 
   return (

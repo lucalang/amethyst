@@ -29,7 +29,6 @@ export function SettingsGroup({ id, title, description, children, className }: {
     <section id={id} aria-labelledby={`${id}-heading`} className={cn("ui-panel enter enter-soft mb-4 scroll-mt-28 p-5 md:p-6", className)}>
       <div className="mb-5 border-b border-border pb-4">
         <h2 id={`${id}-heading`} className="flex items-center gap-2 text-base font-semibold tracking-normal">
-          <span aria-hidden className="ui-dot" />
           {title}
         </h2>
         {description ? <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p> : null}

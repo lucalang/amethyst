@@ -5,6 +5,7 @@
   --cf-a: var(--cf-accent, rgb(var(--accent-rgb)));
   --cf-intro: 0;
   --cf-caption: 0;
+  --cf-caption-out: 0;
   --cf-finale: 0;
   --cf-progress: 0;
   position: fixed;
@@ -274,6 +275,14 @@
   inset: auto 1.25rem calc(5.75rem + env(safe-area-inset-bottom));
   opacity: var(--cf-caption);
   transform: translateY(calc((1 - var(--cf-caption)) * 22px));
+  pointer-events: none;
+}
+/* The previous entry's caption, fading up and away while the next card flies in. */
+.cf-caption.cf-caption-out {
+  opacity: var(--cf-caption-out, 0);
+  transform: translateY(calc((1 - var(--cf-caption-out, 0)) * -14px));
+}
+.cf-caption.cf-caption-out > * {
   pointer-events: none;
 }
 .cf-caption > * {

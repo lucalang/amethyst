@@ -1,4 +1,4 @@
-import { Award, BookOpenCheck, CalendarCheck, Coins, Dices, FolderOpen, Gamepad2, Gem, LibraryBig, ListChecks, ListTodo, Puzzle, Target } from "lucide-react";
+import { Award, BookOpenCheck, CalendarCheck, CalendarDays, Coins, Dices, Flame, FolderOpen, Gamepad2, Gem, LibraryBig, ListChecks, ListTodo, Package, Puzzle, ScrollText, Swords, Target, Trophy } from "lucide-react";
 import { Bar, day, fmt, Group, Stat } from "../stats-ui";
 
 export type MyStats = {
@@ -8,6 +8,18 @@ export type MyStats = {
   todo: { total: number; completed: number; completed7d: number; importantOpen: number };
   arcade: { balance: number; coinsIn: number; coinsOut: number; runs: number; favoriteGame: string | null; records: number; dailySudokus: number; slotSpins: number; slotBest: number };
   rewards: { achievements: number; achievementsTotal: number; cosmetics: number; codes: number };
+  play: {
+    arcadeDays: number;
+    streakBest: number;
+    streakActive: number;
+    streakRestores: number;
+    casesOpened: number;
+    tournaments: number;
+    podiums: number;
+    wagers: number;
+    wagersWon: number;
+    quests: number;
+  };
 };
 
 const percent = (done: number, total: number) => (total > 0 ? `${Math.round((done / total) * 100)}%` : "—");
@@ -18,7 +30,7 @@ const REST = "bg-transparent";
 
 /** The signed-in account's own totals, computed from what is saved now. */
 export function MyStatsView({ stats }: { stats: MyStats }) {
-  const { library, workspace, todo, arcade, rewards } = stats;
+  const { library, workspace, todo, arcade, rewards, play } = stats;
   const notStarted = library.entries - library.completed - library.inProgress;
   return (
     <>
@@ -88,6 +100,35 @@ export function MyStatsView({ stats }: { stats: MyStats }) {
         <Stat historyKey="slot_spins" icon={Dices} label="Slot spins" value={arcade.slotSpins} definition={arcade.slotBest ? `Biggest single payout: ${plural(arcade.slotBest, "coin")}.` : "No winning spin yet."} />
         <Stat historyKey="achievements" icon={Award} label="Achievements earned" value={`${fmt(rewards.achievements)}/${fmt(rewards.achievementsTotal)}`} definition="Earned achievements out of all achievements, including hidden ones." />
         <Stat historyKey="cosmetics" icon={Gem} label="Cosmetics owned" value={rewards.cosmetics} definition={`Frames, decorations, badges, titles and game looks you own. ${plural(rewards.codes, "Vault code")} redeemed.`} />
+        <Stat historyKey="cases_opened" icon={Package} label="Cases opened" value={play.casesOpened} definition="Every case you opened, counting each case in a multi-open." />
+      </Group>
+
+      <Group id="streaks" title="Streaks & competition" wide>
+        <Stat
+          historyKey="streak_best"
+          icon={Flame}
+          label="Best streak"
+          value={plural(play.streakBest, "day")}
+          definition={`Your longest run of days in a row in a single game. ${plural(play.streakActive, "streak")} still alive today${play.streakRestores ? ` · ${fmt(play.streakRestores)} restored` : ""}.`}
+        />
+        <Stat historyKey="arcade_days" icon={CalendarDays} label="Days in the Arcade" value={play.arcadeDays} definition="Days (UTC) on which you started at least one round of any game. Restored days are not counted." />
+        <Stat
+          historyKey="tournaments_joined"
+          icon={Trophy}
+          label="Tournaments joined"
+          value={play.tournaments}
+          definition={play.podiums ? `${plural(play.podiums, "podium finish", "podium finishes")} (top 3).` : "No podium finish yet."}
+        />
+        <Stat
+          historyKey={["wagers_played"]}
+          icon={Swords}
+          label="Wagers played"
+          value={play.wagers}
+          definition={play.wagers ? `${fmt(play.wagersWon)} won · ${percent(play.wagersWon, play.wagers)} win rate. Only finished wagers count.` : "Finished wagers against other players appear here."}
+        >
+          {play.wagers ? <Bar label={`${play.wagersWon} of ${play.wagers} won`} parts={[{ value: play.wagersWon, className: FILL }, { value: play.wagers - play.wagersWon, className: REST }]} /> : null}
+        </Stat>
+        <Stat historyKey="quests_claimed" icon={ScrollText} label="Season quests completed" value={play.quests} definition="Season Pass quests you finished and claimed, across all seasons." />
       </Group>
 
       <p className="ui-empty flex items-start gap-2 px-4 py-3.5 text-xs leading-5 text-muted-foreground">

@@ -68,7 +68,7 @@ export function ShowcaseGallery({
             {icon}
           </span>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold tracking-[0.18em] text-muted-foreground/80 uppercase">
+            <p className="text-xs font-semibold tracking-[0.18em] text-muted-foreground/80">
               Showcase{filtered ? " · filtered" : ""}
             </p>
             <h2 id="showcase-title" className="truncate text-base leading-tight font-semibold md:text-lg">

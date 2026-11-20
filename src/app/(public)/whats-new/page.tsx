@@ -83,13 +83,13 @@ export default async function WhatsNewPage() {
           <nav aria-label="All updates" className="hidden lg:block">
             <div className="sticky top-24">
             <div className="ui-panel p-3">
-              <p className="mb-2 px-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">All updates</p>
+              <p className="mb-2 px-2 text-xs font-semibold text-muted-foreground">All updates</p>
               <ol className="max-h-[calc(100dvh-10rem)] space-y-0.5 overflow-y-auto">
                 {CHANGELOG.map((release) => (
                   <li key={release.id}>
                     <a
                       href={`#${release.id}`}
-                      className="block rounded-lg border-l-2 border-transparent py-1.5 pr-2 pl-2.5 text-xs leading-snug text-muted-foreground outline-none transition-colors hover:border-amethyst hover:bg-amethyst/[0.07] hover:text-foreground focus-visible:border-amethyst focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                      className="block rounded-lg py-1.5 pr-2 pl-2.5 text-xs leading-snug text-muted-foreground outline-none transition-colors hover:bg-amethyst/[0.07] hover:text-foreground focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span className="block tabular-nums text-muted-foreground/70">{formatChangeDate(release.date, "short")}</span>
                       <span className="line-clamp-2">{release.title}</span>

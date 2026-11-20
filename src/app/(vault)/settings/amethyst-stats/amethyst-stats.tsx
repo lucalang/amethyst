@@ -1,4 +1,4 @@
-import { BookOpenCheck, Code2, Coins, Gift, GitCommitHorizontal, KeyRound, LibraryBig, ListChecks, ListTodo, Sparkles, Type } from "lucide-react";
+import { BookOpenCheck, Code2, Coins, Gamepad2, Gift, GitCommitHorizontal, KeyRound, LibraryBig, ListChecks, ListTodo, Package, ScrollText, Sparkles, Swords, Trophy, Type } from "lucide-react";
 import { day, fmt, Group, Stat } from "../stats-ui";
 
 export type PlatformStats = {
@@ -9,6 +9,7 @@ export type PlatformStats = {
   coins: { total: number; arcade: number; codes: number; achievements: number };
   redemptions: { total: number; repeats: number };
   cosmeticsGranted: number;
+  play: { runs: number; cases: number; tournamentEntries: number; wagers: number; quests: number };
 };
 export type CodeStats = { generatedAt: string; commit: string; commits: number; files: number; lines: number; characters: number; history?: { date: string; commit: string; commits: number; files: number; lines: number; characters: number }[] };
 
@@ -39,6 +40,13 @@ export function AmethystStatsView({ platform, code, computedAt }: { platform: Pl
           definition={<>Every successful Vault redemption. {platform.redemptions.repeats ? <>{fmt(platform.redemptions.repeats)} of them are repeat uses a code allowed for the same account.</> : "None are repeats of the same code by the same account."}</>}
         />
         <Stat historyKey="cosmetics_granted" icon={Gift} label="Cosmetics granted" value={platform.cosmeticsGranted} definition="All unique account–cosmetic ownerships, including shop purchases and grants from codes or achievements." />
+      </Group>
+      <Group id="play" title="Arcade & play" meta="Live totals" wide>
+        <Stat historyKey="arcade_runs" icon={Gamepad2} label="Arcade rounds played" value={platform.play.runs} definition="Finished rounds of every Arcade game. Sudoku completions are included." />
+        <Stat historyKey="cases_opened" icon={Package} label="Cases opened" value={platform.play.cases} definition="Every case opened, counting each case in a multi-open." />
+        <Stat historyKey="tournament_entries" icon={Trophy} label="Tournament entries" value={platform.play.tournamentEntries} definition="Times anyone joined a Daily Tournament." />
+        <Stat historyKey="wagers_played" icon={Swords} label="Wagers played" value={platform.play.wagers} definition="Accepted wagers that have finished, whatever the result." />
+        <Stat historyKey="quests_claimed" icon={ScrollText} label="Season quests completed" value={platform.play.quests} definition="Season Pass quests finished and claimed." />
       </Group>
       <Group
         id="code"

@@ -110,7 +110,7 @@ const CARDS: Record<DestinationId, { art: (data: HubData) => ReactNode; status: 
 export function DestinationHub({ data, startIndex = 1 }: { data: HubData; startIndex?: number }) {
   return (
     <nav aria-labelledby="hub-heading" className="border-t border-white/[0.08] pt-5 md:pt-6">
-      <h2 id="hub-heading" className="mb-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase md:mb-4">
+      <h2 id="hub-heading" className="mb-3 text-xs font-semibold tracking-[0.14em] text-muted-foreground md:mb-4">
         Your spaces
       </h2>
       <ul className={`grid gap-3 md:grid-cols-2 md:gap-4 ${data.slim ? "" : "xl:grid-cols-4"}`}>

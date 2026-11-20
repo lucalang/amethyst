@@ -51,6 +51,94 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-arcade-polish",
+    date: "2026-11-20",
+    title: "A brighter Arcade and a cleaner look",
+    intro: "Restore streaks without playing first, a redesigned Daily Tournament, livelier game shop covers, simpler filters, new stats and calmer, cleaner styling across Amethyst.",
+    icon: "trophy",
+    highlights: [
+      { kind: "improved", feature: "Streak restores", text: "A streak that missed only yesterday can now be restored right away. You no longer have to finish a round first." },
+      { kind: "improved", feature: "Daily Tournament", text: "A new layout with the day’s game front and centre, a live countdown, where you stand, a prize ladder and a week strip." },
+      { kind: "improved", feature: "Bigger tournament prizes", text: "Daily Tournament Coin prizes are 100 times larger: 30,000 for 1st, 18,000 for 2nd, 12,000 for 3rd and 4,000 for 4th to 10th, starting with today’s tournament." },
+      { kind: "improved", feature: "Wagers", text: "The game’s back button now leads to the match, the round info stays visible in fullscreen, and a button to return appears as soon as your round is in." },
+      { kind: "improved", feature: "Filters and stats", text: "Inventory and Index filters fit in one compact row with dropdowns. Stats and Amethyst Stats now cover streaks, cases, tournaments, wagers and quests." },
+      { kind: "improved", feature: "Look and feel", text: "Game shop covers glow in each game’s own colours, buttons like Cases or Shop have a raised look with a coloured icon badge, and all-caps labels and coloured edge stripes are gone." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Restoring a streak",
+          body: "If you missed only yesterday, the restore button works straight away until 00:00 UTC. The price and rules are unchanged, and playing today still extends the restored streak.",
+          where: "Arcade, and each game’s screen",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+        {
+          title: "Daily Tournament",
+          body: "The day’s game is shown as a large lit banner with a countdown to the end (or start), one clear Join or Play button, your rank, best score and runs, and how far you are from the next place. Below it are a week strip with each day’s game, a leaderboard with a podium, a prize ladder, collapsible rules and your past results with medals.",
+          link: { href: "/arcade/tournaments", label: "Open the tournament" },
+        },
+        {
+          title: "Wager and tournament rounds",
+          body: "While playing a round, the back button in the game’s header goes to the match (or the tournament) instead of the Arcade, and the round’s details sit inside the game frame, so they stay visible in fullscreen. When your result is in, a “Back to the match” button floats at the bottom of the screen.",
+        },
+        {
+          title: "Inventory and Index filters",
+          body: "Item types are a single slim row of tabs, and game, rarity, ownership and sort are dropdowns next to the search box, with a Clear button when anything is set.",
+          where: "Inventory, Index",
+        },
+        {
+          title: "Stats",
+          body: "Stats adds days in the Arcade, your best and active streaks, restores, cases opened, tournaments and podium finishes, wagers played and won, and season quests. Amethyst Stats adds the matching totals across all accounts and a fresh codebase snapshot. New numbers are recorded from today; earlier days aren’t filled in.",
+          where: "Settings → Stats, Settings → Amethyst Stats",
+          link: { href: "/settings/stats", label: "Open Stats" },
+        },
+        {
+          title: "Styling",
+          body: "Game shop covers sit on a dark stage lit in the game’s own colour and catch a sheen on hover. Buttons with an icon and a label, such as Game Cosmetics, Cases, Shop, Home or Arcade, have a softly raised surface, and their icon sits in a small badge in the accent colour that lights up on hover (in games it takes the game’s colour). Small all-caps labels are now in normal case, and coloured stripes along the left edge of cards and menus are replaced by tinted borders.",
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-20-arcade-fit-screen",
+    date: "2026-11-20",
+    title: "Games fit your screen",
+    intro: "Opening a game on a phone or small window now shows the whole board straight away, without scrolling down to find the rest of it.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Whole board on screen", text: "Each game’s board sizes itself to the space left below the header and scores, and above the tab bar on phones, so it is fully visible as soon as the game opens." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Game layout on small screens",
+          body: "Boards used to take a fixed share of the screen height, so on phones the bottom half was cut off. They now fit the space that is actually left, and resize when the window does or when something above them changes. The frame around the game is also a little tighter on phones. Large screens look the same as before.",
+          where: "Arcade → any game",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-20-collection-film-exit",
+    date: "2026-11-20",
+    title: "Smoother collection showcase",
+    intro: "The collection showcase now flows from one entry into the next instead of pausing before each card leaves.",
+    icon: "image",
+    highlights: [
+      { kind: "fixed", feature: "Collection showcase", text: "The camera no longer stops dead between entries. Its push towards each card carries straight into the flight to the next one, and the previous caption fades away instead of vanishing." },
+    ],
+    details: {
+      fixed: [
+        {
+          title: "Transitions between entries",
+          body: "Each entry used to land, push in, stop, and then start a separate move to leave, which felt like a stutter. The motion now keeps its momentum through the hand-off. Timing, pacing and the rest of the film are unchanged, and jumping to an entry still starts it from rest.",
+          where: "Any collection → Play",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-spin-wheel",
     date: "2026-11-20",
     title: "Spin Wheel",

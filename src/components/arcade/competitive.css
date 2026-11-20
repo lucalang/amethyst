@@ -41,10 +41,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--cx-accent);
 }
 .cx-stats {
@@ -421,13 +419,13 @@
 }
 .cx-slot[data-state="live"] {
   border-color: color-mix(in oklab, var(--cx-accent) 60%, transparent);
-  box-shadow: inset 3px 0 0 var(--cx-accent);
+  background: color-mix(in oklab, var(--cx-accent) 8%, transparent);
 }
 .cx-slot[data-state="won"] {
-  box-shadow: inset 3px 0 0 var(--cx-accent);
+  border-color: color-mix(in oklab, var(--cx-accent) 40%, transparent);
 }
 .cx-slot[data-state="lost"] {
-  box-shadow: inset 3px 0 0 var(--destructive);
+  border-color: color-mix(in oklab, var(--destructive) 40%, transparent);
 }
 .cx-slot-num {
   display: grid;
@@ -601,4 +599,369 @@
 }
 :root[data-motion="off"] .cx-tile::before {
   display: none;
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Daily Tournament (tournaments.tsx)
+   --------------------------------------------------------------------------------------------- */
+
+/* Unclaimed rewards: a warm, can't-miss banner. */
+.tx-claims {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in oklab, var(--cx-gold) 55%, transparent);
+  background:
+    radial-gradient(60% 140% at 0% 0%, color-mix(in oklab, var(--cx-gold) 26%, transparent), transparent 70%),
+    var(--card);
+  padding: 1rem 1.1rem;
+  box-shadow: 0 18px 40px -28px var(--cx-gold);
+}
+.tx-claims-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.9rem;
+  background: var(--cx-gold);
+  color: #2a1a02;
+  box-shadow: 0 0 22px -4px var(--cx-gold);
+}
+
+/* Hero: the day's game as a lit stage, with the countdown, the main action and where you stand. */
+.tx-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid color-mix(in oklab, var(--hue) 45%, transparent);
+  background: #0b0814;
+  color: #fff;
+  box-shadow: 0 30px 70px -40px var(--hue);
+}
+.tx-hero-art {
+  position: absolute !important;
+  inset: 0;
+  z-index: -2;
+}
+.tx-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgb(8 5 16 / 0.94) 0%, rgb(8 5 16 / 0.78) 45%, rgb(8 5 16 / 0.25) 100%),
+    linear-gradient(0deg, rgb(8 5 16 / 0.7), transparent 50%);
+}
+@media (max-width: 639px) {
+  .tx-hero::before {
+    background: linear-gradient(0deg, rgb(8 5 16 / 0.95) 35%, rgb(8 5 16 / 0.55));
+  }
+}
+.tx-hero-body {
+  max-width: 40rem;
+  padding: 1.5rem 1.25rem 1.4rem;
+}
+@media (min-width: 768px) {
+  .tx-hero-body {
+    padding: 2.25rem 2.25rem 2rem;
+  }
+}
+.tx-title {
+  margin-top: 0.75rem;
+  font-size: clamp(2.2rem, 1.6rem + 3vw, 3.75rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  text-shadow: 0 0 40px color-mix(in oklab, var(--hue) 60%, transparent);
+}
+.tx-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.08);
+  padding: 0 0.7rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+.tx-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.5);
+}
+.tx-status[data-status="active"] {
+  border-color: rgb(52 211 153 / 0.5);
+  background: rgb(52 211 153 / 0.14);
+}
+.tx-status[data-status="active"] .tx-status-dot {
+  background: #34d399;
+  box-shadow: 0 0 0 0 rgb(52 211 153 / 0.7);
+  animation: tx-live 1.8s ease-out infinite;
+}
+@keyframes tx-live {
+  70% {
+    box-shadow: 0 0 0 7px rgb(52 211 153 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(52 211 153 / 0);
+  }
+}
+.tx-countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.tx-countdown-sec {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.6);
+}
+.tx-cta {
+  height: 3rem;
+  border-radius: 999px;
+  padding-inline: 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--hue);
+  color: #0d0716;
+  box-shadow: 0 12px 30px -10px var(--hue), inset 0 1px 0 rgb(255 255 255 / 0.4);
+}
+.tx-cta:hover {
+  background: color-mix(in oklab, var(--hue) 85%, white);
+}
+.tx-standing {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  max-width: 28rem;
+}
+.tx-standing > div {
+  border-radius: 0.9rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.06);
+  padding: 0.55rem 0.75rem;
+  backdrop-filter: blur(8px);
+}
+.tx-standing dt {
+  font-size: 0.75rem;
+  color: rgb(255 255 255 / 0.65);
+}
+.tx-standing dd {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Week strip: one card per day with its game's cover. */
+.tx-week {
+  display: grid;
+  grid-auto-columns: minmax(8.5rem, 1fr);
+  grid-auto-flow: column;
+  gap: 0.6rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.25rem;
+}
+.tx-day {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+  text-align: left;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    translate 160ms ease,
+    box-shadow 160ms ease;
+}
+.tx-day-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 7;
+}
+.tx-day-body {
+  display: block;
+  padding: 0.5rem 0.65rem 0.6rem;
+}
+.tx-day-status {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.tx-day[data-status="active"] .tx-day-status {
+  color: #34d399;
+  font-weight: 600;
+}
+.tx-day[data-status="upcoming"] .tx-day-art {
+  opacity: 0.6;
+  filter: saturate(0.6);
+}
+.tx-day:hover {
+  border-color: color-mix(in oklab, var(--hue) 55%, var(--border));
+  translate: 0 -2px;
+}
+.tx-day:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.tx-day[aria-pressed="true"] {
+  border-color: var(--hue);
+  box-shadow: 0 12px 28px -18px var(--hue), inset 0 0 0 1px var(--hue);
+}
+
+/* Leaderboard rows and avatars. */
+.tx-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  border: 2px solid var(--medal, var(--border));
+  background: color-mix(in oklab, var(--medal, var(--foreground)) 18%, var(--card));
+  font-weight: 800;
+}
+.tx-avatar-sm {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-width: 1px;
+  font-size: 0.75rem;
+}
+.cx-podium-step .cx-medal {
+  margin-top: auto;
+}
+.tx-rows {
+  display: grid;
+  gap: 0.25rem;
+}
+.tx-rows li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.875rem;
+}
+.tx-rows li:nth-child(odd) {
+  background: var(--cx-soft);
+}
+.tx-rows li[data-you] {
+  background: color-mix(in oklab, var(--cx-accent) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--cx-accent) 45%, transparent);
+}
+
+/* Prize ladder and medals. */
+.tx-prizes {
+  display: grid;
+  gap: 0.4rem;
+}
+.tx-prizes li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--cx-line);
+  padding: 0.5rem 0.7rem;
+}
+.tx-prizes li[data-place] {
+  background: linear-gradient(90deg, color-mix(in oklab, var(--medal) 16%, transparent), transparent 70%);
+  border-color: color-mix(in oklab, var(--medal) 35%, transparent);
+}
+.tx-prizes li[data-place="1"],
+.tx-medal[data-place="1"],
+.tx-avatar[data-place="1"] {
+  --medal: #fbbf24;
+}
+.tx-prizes li[data-place="2"],
+.tx-medal[data-place="2"],
+.tx-avatar[data-place="2"] {
+  --medal: #cbd5e1;
+}
+.tx-prizes li[data-place="3"],
+.tx-medal[data-place="3"],
+.tx-avatar[data-place="3"] {
+  --medal: #d97706;
+}
+.tx-medal {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  vertical-align: middle;
+  background: var(--medal, color-mix(in oklab, var(--foreground) 12%, transparent));
+  color: var(--medal-ink, var(--foreground));
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.18);
+}
+.tx-medal[data-place] {
+  --medal-ink: #1c1205;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.18), 0 0 14px -4px var(--medal);
+}
+.tx-medal-none {
+  color: var(--muted-foreground);
+}
+.tx-coins {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cx-gold);
+}
+
+/* Past results. */
+.tx-past {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--hue) 10%, transparent), transparent 60%), var(--card);
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  outline: none;
+  transition: border-color 160ms ease;
+}
+.tx-past:hover {
+  border-color: color-mix(in oklab, var(--hue) 50%, var(--border));
+}
+.tx-past:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tx-status-dot {
+    animation: none !important;
+  }
+  .tx-day {
+    transition: none;
+  }
+  .tx-day:hover {
+    translate: none;
+  }
+}
+:root[data-motion="off"] .tx-status-dot {
+  animation: none !important;
+}
+:root[data-motion="off"] .tx-day:hover {
+  translate: none;
 }

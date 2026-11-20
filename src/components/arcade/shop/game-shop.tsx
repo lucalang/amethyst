@@ -323,7 +323,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
           </h2>
           <CosmeticPreview game={data.game} look={previewLook} focus={category.id} effects={effects} />
           <div aria-live="polite" className="mt-4">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{category.label}</p>
+            <p className="text-xs font-medium text-muted-foreground">{category.label}</p>
             <p className="mt-0.5 flex items-center justify-between gap-3 text-base font-semibold text-foreground">
               {focus.name}
               {focus.owned ? null : <Price value={focus.price} />}
@@ -387,7 +387,7 @@ export function GameShop({ data, onLook, compact = false }: { data: GameShopData
                         <StateBadge entry={entry} />
                       </span>
                       <span className="text-xs leading-5 text-muted-foreground">{entry.description}</span>
-                      {entry.slug ? null : <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Default · free</span>}
+                      {entry.slug ? null : <span className="text-xs font-medium text-muted-foreground">Default · free</span>}
                     </button>
                     <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
                       <button

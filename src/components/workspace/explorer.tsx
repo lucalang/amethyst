@@ -153,7 +153,7 @@ export function Explorer(props: ExplorerProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border pr-1.5 pl-3">
-        <h2 className="min-w-0 flex-1 truncate text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Files</h2>
+        <h2 className="min-w-0 flex-1 truncate text-xs font-semibold text-muted-foreground">Files</h2>
         <ToolbarButton label="New note" onClick={() => props.onStartCreate("note")}>
           <FilePlus2 aria-hidden />
         </ToolbarButton>

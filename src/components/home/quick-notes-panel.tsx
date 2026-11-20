@@ -74,7 +74,7 @@ export function QuickNotesPanel({ notes }: { notes: QuickNoteSummary[] }) {
       </form>
 
       <div className="flex min-w-0 flex-col">
-        <h3 className="mb-1.5 px-1 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Recent notes</h3>
+        <h3 className="mb-1.5 px-1 text-xs font-semibold tracking-[0.14em] text-muted-foreground">Recent notes</h3>
         {notes.length ? (
           <ul aria-label="Recent quick notes" className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
             {notes.map((note) => (

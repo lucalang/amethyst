@@ -54,7 +54,7 @@ export function CaseShelf({ state, admin = false, profile, samples }: { state: L
               <li key={lootCase.id} className="lb-stage flex items-center gap-4 p-3 pr-4" style={caseStyle(lootCase.id)}>
                 <CaseArt id={lootCase.id} size="4.5rem" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Case</p>
+                  <p className="text-xs font-medium text-muted-foreground">Case</p>
                   <p className="truncate text-sm font-semibold text-foreground">{info.name}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">× {lootCase.quantity.toLocaleString("en")}</p>
                 </div>

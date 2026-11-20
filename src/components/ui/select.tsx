@@ -114,7 +114,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex min-h-9 w-full cursor-default items-center gap-2 rounded-[calc(6px*var(--radius-unit,1)*var(--control-round,1))] py-2 pr-8 pl-3 text-sm outline-hidden transition-[background-color,box-shadow] duration-150 select-none focus:bg-[linear-gradient(90deg,rgb(var(--accent-rgb)/0.22),rgb(var(--accent-rgb)/0.05))] focus:text-foreground focus:shadow-[inset_2px_0_0_var(--amethyst)] not-data-[variant=destructive]:focus:**:text-foreground data-[state=checked]:font-medium data-[state=checked]:text-amethyst data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        "relative flex min-h-9 w-full cursor-default items-center gap-2 rounded-[calc(6px*var(--radius-unit,1)*var(--control-round,1))] py-2 pr-8 pl-3 text-sm outline-hidden transition-[background-color,box-shadow] duration-150 select-none focus:bg-[linear-gradient(90deg,rgb(var(--accent-rgb)/0.22),rgb(var(--accent-rgb)/0.05))] focus:text-foreground not-data-[variant=destructive]:focus:**:text-foreground data-[state=checked]:font-medium data-[state=checked]:text-amethyst data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className
       )}
       {...props}

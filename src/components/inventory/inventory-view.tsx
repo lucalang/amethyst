@@ -2,12 +2,12 @@
 
 import { HideInSlim } from "@/components/layout/slim";
 import "./inventory.css";
-import { useRef, useState, useTransition, type CSSProperties } from "react";
+import { useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Backpack, Loader2, RotateCcw, TriangleAlert, type LucideIcon } from "lucide-react";
-import { CatalogEmpty, CatalogSearch, FilterChip } from "@/components/catalog/catalog-search";
+import { ArrowUpRight, Backpack, Loader2, RotateCcw, TriangleAlert, X, type LucideIcon } from "lucide-react";
+import { CatalogEmpty, CatalogSearch, FilterSelect } from "@/components/catalog/catalog-search";
 import { RarityTag } from "@/components/lootboxes/parts";
 import { useMotionLevel } from "@/components/showcase/motion";
 import { Button } from "@/components/ui/button";
@@ -45,16 +45,13 @@ export function placeFor(item: CollectibleItem): { href: string; label: string }
   }
 }
 
-function KindButton({ icon: Icon, tone, label, count, pressed, onClick }: { icon: LucideIcon; tone: string; label: string; count: number; pressed: boolean; onClick: () => void }) {
+/** One tab of the item type row (shared with the Index). `count` is a number or "owned/total". */
+export function TypeTab({ icon: Icon, tone, label, count, pressed, onClick }: { icon: LucideIcon; tone: string; label: string; count: ReactNode; pressed: boolean; onClick: () => void }) {
   return (
-    <button type="button" aria-pressed={pressed} onClick={onClick} className="inv-kind" style={toneStyle(tone)}>
-      <span className="inv-kind-icon">
-        <Icon aria-hidden className="size-[1.1rem]" />
-      </span>
-      <span className="min-w-0">
-        <span className="inv-kind-count">{count}</span>
-        <span className="inv-kind-label">{label}</span>
-      </span>
+    <button type="button" aria-pressed={pressed} onClick={onClick} className="inv-type" style={toneStyle(tone)}>
+      <Icon aria-hidden />
+      {label}
+      <span className="inv-type-count">{count}</span>
     </button>
   );
 }
@@ -65,7 +62,13 @@ export function InventoryView({ items, profile, samples }: { items: InventoryIte
   const effects = useMotionLevel();
   const [retrying, startRetry] = useTransition();
   const [type, setType] = useState<"all" | InventoryType>("all");
-  const [game, setGame] = useState<"all" | ShopGame>("all");
+  const [game, setGameState] = useState<"all" | ShopGame>("all");
+  /** A game's cosmetic category (board themes, skins…), offered once a single game is picked. */
+  const [category, setCategory] = useState("all");
+  const setGame = (next: "all" | ShopGame) => {
+    setGameState(next);
+    setCategory("all");
+  };
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("recent");
   const [selected, setSelected] = useState<string | null>(null);
@@ -132,7 +135,16 @@ export function InventoryView({ items, profile, samples }: { items: InventoryIte
   const types = INVENTORY_TYPES.filter((id) => items.some((item) => item.type === id));
   const games = SHOP_GAMES.filter((id) => items.some((item) => item.type === "game" && item.game === id));
   const ofType = searched.filter((item) => type === "all" || item.type === type);
-  const shown = ofType.filter((item) => type !== "game" || game === "all" || (item.type === "game" && item.game === game));
+  const shown = ofType.filter(
+    (item) =>
+      type !== "game" ||
+      game === "all" ||
+      (item.type === "game" && item.game === game && (category === "all" || item.category === category)),
+  );
+  const categories =
+    type === "game" && game !== "all"
+      ? GAME_SHOPS[game].categories.filter((entry) => ofType.some((item) => item.type === "game" && item.game === game && item.category === entry.id))
+      : [];
   if (sort === "name") shown.sort((a, b) => a.name.localeCompare(b.name, "en"));
   if (sort === "type") {
     const rank = (item: InventoryItem) => INVENTORY_TYPES.indexOf(item.type) * 100 + (item.type === "game" ? SHOP_GAMES.indexOf(item.game) : 0);
@@ -157,48 +169,48 @@ export function InventoryView({ items, profile, samples }: { items: InventoryIte
 
   return (
     <div className="grid gap-5">
-      <div role="group" aria-label="Item type" className="enter grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(10.5rem,1fr))]" style={{ "--enter-index": 1 } as CSSProperties}>
-        <KindButton icon={Backpack} tone="var(--amethyst)" label="All items" count={searched.length} pressed={type === "all"} onClick={() => chooseType("all")} />
-        {types.map((id) => (
-          <KindButton
-            key={id}
-            icon={TYPE_LOOK[id].icon}
-            tone={TYPE_LOOK[id].tone}
-            label={INVENTORY_TYPE_LABELS[id].many}
-            count={searched.filter((item) => item.type === id).length}
-            pressed={type === id}
-            onClick={() => chooseType(id)}
-          />
-        ))}
-      </div>
-
-      <div className="enter flex flex-wrap items-center gap-3" style={{ "--enter-index": 2 } as CSSProperties}>
-        <CatalogSearch value={query} onChange={setQuery} label="Search your inventory" placeholder="Search your items" className="sm:w-72" />
-        <div role="group" aria-label="Sort" className="flex items-center gap-2 sm:ml-auto">
-          <span aria-hidden className="text-xs font-medium text-muted-foreground">
-            Sort
-          </span>
-          {SORTS.map((option) => (
-            <FilterChip key={option.id} pressed={sort === option.id} onClick={() => setSort(option.id)}>
-              <span className="sr-only">Sort by </span>
-              {option.label}
-            </FilterChip>
+      <div className="enter grid gap-2.5" style={{ "--enter-index": 1 } as CSSProperties}>
+        <div role="group" aria-label="Item type" className="inv-types">
+          <TypeTab icon={Backpack} tone="var(--amethyst)" label="All" count={searched.length} pressed={type === "all"} onClick={() => chooseType("all")} />
+          {types.map((id) => (
+            <TypeTab
+              key={id}
+              icon={TYPE_LOOK[id].icon}
+              tone={TYPE_LOOK[id].tone}
+              label={INVENTORY_TYPE_LABELS[id].many}
+              count={searched.filter((item) => item.type === id).length}
+              pressed={type === id}
+              onClick={() => chooseType(id)}
+            />
           ))}
         </div>
-      </div>
-
-      {type === "game" && games.length > 1 ? (
-        <div role="group" aria-label="Game" className="flex flex-wrap gap-2">
-          <FilterChip pressed={game === "all"} onClick={() => setGame("all")} count={ofType.length}>
-            All games
-          </FilterChip>
-          {games.map((id) => (
-            <FilterChip key={id} pressed={game === id} onClick={() => setGame(id)} count={ofType.filter((item) => item.type === "game" && item.game === id).length}>
-              {GAME_SHOPS[id].title}
-            </FilterChip>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <CatalogSearch value={query} onChange={setQuery} label="Search your inventory" placeholder="Search your items" className="sm:w-64" />
+          {type === "game" && games.length > 1 ? (
+            <FilterSelect
+              label="Game"
+              value={game}
+              onChange={setGame}
+              options={[{ id: "all" as const, label: "All games" }, ...games.map((id) => ({ id, label: GAME_SHOPS[id].title }))]}
+            />
+          ) : null}
+          {type === "game" && game !== "all" && categories.length > 1 ? (
+            <FilterSelect
+              label="Kind"
+              value={category}
+              onChange={setCategory}
+              options={[{ id: "all", label: "All kinds" }, ...categories.map((entry) => ({ id: entry.id, label: entry.label }))]}
+            />
+          ) : null}
+          <FilterSelect label="Sort" value={sort} onChange={setSort} options={SORTS} className="sm:ml-auto" />
+          {query.trim() || type !== "all" ? (
+            <Button type="button" variant="ghost" size="sm" className="h-9 text-muted-foreground" onClick={reset}>
+              <X aria-hidden />
+              Clear
+            </Button>
+          ) : null}
         </div>
-      ) : null}
+      </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(19rem,23rem)_minmax(0,1fr)]">
         {focus && place ? (
@@ -217,7 +229,7 @@ export function InventoryView({ items, profile, samples }: { items: InventoryIte
               )}
             </div>
             <div aria-live="polite" className="mt-4">
-              <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <span aria-hidden className="inv-dot" />
                 {inventoryItemLabel(focus)}
               </p>
@@ -269,7 +281,7 @@ export function InventoryView({ items, profile, samples }: { items: InventoryIte
                       </span>
                     </span>
                     <span className="flex flex-1 flex-col gap-1 p-3">
-                      <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
                         <span aria-hidden className="inv-dot" />
                         <span className="truncate">{inventoryItemLabel(item)}</span>
                       </span>

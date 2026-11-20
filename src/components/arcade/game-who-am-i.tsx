@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, BookOpen, Coins, Loader2, MessageSquareWarning, Play, RotateCcw, Swords, Trophy, Users, X } from "lucide-react";
+import { BookOpen, Coins, Loader2, MessageSquareWarning, Play, RotateCcw, Swords, Trophy, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ import {
   type WhoAmIState,
 } from "@/lib/who-am-i";
 import { cn } from "@/lib/utils";
+import { ShellNavProvider, type ShellNav } from "./competition";
 import { GameShell, Stat, useArcade, useGameAchievementTracking } from "./game-shell";
 import { Portrait } from "./who-am-i/portrait";
 import { RulesList, WhoAmITable, knowledgeOf, mirrorEvents, type TableActions, type TableView } from "./who-am-i/table";
@@ -288,7 +289,7 @@ function BotGame() {
 function Choice<T extends string>({ legend, value, options, onChange }: { legend: string; value: T; options: { id: T; label: string; hint?: string }[]; onChange: (value: T) => void }) {
   return (
     <fieldset className="grid gap-1.5">
-      <legend className="mb-1 text-xs font-semibold tracking-wider text-muted-foreground uppercase">{legend}</legend>
+      <legend className="mb-1 text-xs font-semibold text-muted-foreground">{legend}</legend>
       <div role="radiogroup" aria-label={legend} className="grid gap-1.5 sm:grid-cols-3">
         {options.map((option) => (
           <button
@@ -520,14 +521,8 @@ function DuelGame({ wager, initial, stake }: { wager: string; initial: WhoAmISta
   }), [busy, play, send]);
 
   const consent = (custom: boolean) => send({ action: "consent", custom }, false);
-  const backLink = (
-    <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
-      <Link href={`/arcade/wagers/${wager}`}>
-        <ArrowLeft aria-hidden />
-        Match
-      </Link>
-    </Button>
-  );
+  // The frame's back button leads to the match, and a floating return button appears once the round is over.
+  const nav: ShellNav = { back: { href: `/arcade/wagers/${wager}`, label: "Back to the match", short: "Match" }, banner: null, done: state.phase === "done" };
   const stats = (
     <>
       <Stat label="Round" value={round} />
@@ -536,17 +531,15 @@ function DuelGame({ wager, initial, stake }: { wager: string; initial: WhoAmISta
     </>
   );
   const shellActions = (
-    <>
-      {backLink}
-      <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={() => setRulesOpen(true)}>
-        <BookOpen aria-hidden />
-        Rules
-      </Button>
-    </>
+    <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={() => setRulesOpen(true)}>
+      <BookOpen aria-hidden />
+      Rules
+    </Button>
   );
 
   const started = state.phase !== "lobby";
   return (
+    <ShellNavProvider value={nav}>
     <GameShell game="who-am-i" title="Who Am I? · Wager" active={state.phase === "ask" || state.phase === "answer"} stats={stats} actions={shellActions} leaderboard={null}>
       {stale ? <p role="status" className="mb-2 text-center text-xs text-amber-400">Connection lost. Reconnecting…</p> : null}
       {!started ? (
@@ -597,6 +590,7 @@ function DuelGame({ wager, initial, stake }: { wager: string; initial: WhoAmISta
         extra={<p className="text-sm text-muted-foreground">In a Wager each move has 2 minutes. A missed card answer is answered for you; missing two moves in a row loses the round.</p>}
       />
     </GameShell>
+    </ShellNavProvider>
   );
 }
 

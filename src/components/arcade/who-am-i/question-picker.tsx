@@ -157,7 +157,7 @@ export function QuestionPicker({ selected, onSelect, onAsk, asked, disabled }: {
         ) : (
           groups.map((name) => (
             <div key={name} role="group" aria-label={name} className="grid gap-1 sm:grid-cols-[5.25rem_minmax(0,1fr)] sm:items-start sm:gap-2">
-              <span aria-hidden className="pt-1.5 text-[0.65rem] font-semibold tracking-wider text-muted-foreground uppercase">{name}</span>
+              <span aria-hidden className="pt-1.5 text-xs font-semibold text-muted-foreground">{name}</span>
               <div className="flex flex-wrap gap-1.5">
                 {visible.filter((card) => card.group === name).map((card) => {
                   const used = asked.has(card.id);

@@ -158,7 +158,7 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
 
       {visible ? (
         <div className="overflow-hidden rounded-lg border border-white/[0.08] bg-black/30 px-3 pt-2">
-          <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">Preview</p>
+          <p className="text-xs font-medium text-muted-foreground">Preview</p>
           <CoverFan items={items} preview />
         </div>
       ) : null}

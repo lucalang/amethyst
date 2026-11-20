@@ -14,6 +14,8 @@ import "./collection-film.css";
 
 const SAMPLE = 28;
 const IDLE_MS = 2800;
+/** Seconds the previous entry's caption takes to fade out after playback moves on to the next one. */
+const CAPTION_OUT = 0.45;
 
 const ease = (x: number) => {
   const k = Math.min(1, Math.max(0, x));
@@ -81,6 +83,8 @@ export default function CollectionFilmPlayer({
   const calm = motion === "off";
   const director = useRef<Director>({ seg: 0, t: 0, playing: !still, count });
   const [seg, setSeg] = useState(0);
+  /** The entry whose caption is fading out after playback just moved past it (never after a jump back). */
+  const [outgoingCaption, setOutgoingCaption] = useState<number | null>(null);
   const [playing, setPlaying] = useState(!still);
   const [idle, setIdle] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -93,7 +97,9 @@ export default function CollectionFilmPlayer({
   const ended = seg === last && !playing;
 
   function sync() {
-    setSeg(director.current.seg);
+    const next = director.current.seg;
+    setOutgoingCaption(next === seg + 1 && seg >= 1 && seg <= count && director.current.playing && !calm ? seg - 1 : null);
+    setSeg(next);
     setPlaying(director.current.playing);
   }
 
@@ -159,6 +165,8 @@ export default function CollectionFilmPlayer({
     const levels = overlayLevels(d, cinematic, still && calm);
     root.style.setProperty("--cf-intro", levels.intro.toFixed(3));
     root.style.setProperty("--cf-caption", levels.caption.toFixed(3));
+    const captionOut = cinematic && d.seg >= 2 && d.t < CAPTION_OUT ? 1 - ease(d.t / CAPTION_OUT) : 0;
+    root.style.setProperty("--cf-caption-out", captionOut.toFixed(3));
     root.style.setProperty("--cf-finale", levels.finale.toFixed(3));
     const progress = (d.seg + Math.min(1, d.t / segmentLength(d))) / (d.count + 2);
     root.style.setProperty("--cf-progress", progress.toFixed(4));
@@ -304,6 +312,22 @@ export default function CollectionFilmPlayer({
           {count} {count === 1 ? "entry" : "entries"}
         </p>
       </div>
+
+      {outgoingCaption !== null && slides[outgoingCaption] ? (
+        <div className="cf-caption cf-caption-out" key={`out-${slides[outgoingCaption].id}`} aria-hidden>
+          <p className="cf-index">
+            <span>{String(outgoingCaption + 1).padStart(2, "0")}</span> / {count}
+          </p>
+          <p className="cf-title">{slides[outgoingCaption].title}</p>
+          {slides[outgoingCaption].meta.length ? (
+            <ul className="cf-meta">
+              {slides[outgoingCaption].meta.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
 
       {entry ? (
         <div className="cf-caption" key={entry.id}>

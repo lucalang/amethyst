@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Gamepad2, ShoppingBag, Store } from "lucide-react";
 import type { CSSProperties } from "react";
-import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
+import { ARCADE_CABINETS, ArcadeCover } from "@/components/arcade/previews";
 import { PageContainer, PageHeader } from "@/components/layout/app-shell";
 import { EntranceScope } from "@/components/layout/entrance-scope";
 import { Button } from "@/components/ui/button";
@@ -41,10 +41,8 @@ export async function GameShopPage({ game }: { game: ShopGame }) {
           }
         />
         <section aria-label={`${shop.title} cosmetics`} className="ui-panel mb-6 grid overflow-hidden sm:grid-cols-[minmax(0,15rem)_1fr]" style={{ "--tone": ARCADE_CABINETS[game].hue } as CSSProperties}>
-          <span aria-hidden className="ui-stage aspect-[16/9] border-b border-border sm:aspect-auto sm:border-r sm:border-b-0">
-            <span className="block size-full">
-              <ArcadePreview game={game} />
-            </span>
+          <span className="block aspect-[16/9] border-b border-border sm:aspect-auto sm:min-h-36 sm:border-r sm:border-b-0">
+            <ArcadeCover game={game} />
           </span>
           <div className="grid content-center gap-1 p-4">
             <p className="text-sm text-pretty text-muted-foreground">{shop.blurb}</p>

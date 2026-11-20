@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from "react";
 import { RotateCcw, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OWNERSHIP_LABELS, type Ownership } from "@/lib/catalog-search";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +89,40 @@ export function FilterChip({ pressed, onClick, count, children }: { pressed: boo
         </span>
       ) : null}
     </button>
+  );
+}
+
+/**
+ * A compact dropdown filter: one control instead of a row of chips. It looks "active" whenever it is not on
+ * its first (default) option, so set filters stay visible at a glance.
+ */
+export function FilterSelect<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+  className,
+}: {
+  label: string;
+  value: T;
+  onChange: (value: T) => void;
+  options: { id: T; label: ReactNode }[];
+  className?: string;
+}) {
+  return (
+    <Select value={value} onValueChange={(next) => onChange(next as T)}>
+      <SelectTrigger size="sm" aria-label={label} data-active={value !== options[0]?.id || undefined} className={cn("h-9 min-w-0 gap-1.5", className)}>
+        <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option.id} value={option.id}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

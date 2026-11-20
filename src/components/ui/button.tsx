@@ -15,9 +15,10 @@ const buttonVariants = cva(
         // Secondary: a supporting action with weight. Tinted fill in the accent, quieter than primary.
         secondary:
           "border-amethyst/25 bg-amethyst/[0.12] text-foreground shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.06)] hover:border-amethyst/45 hover:bg-amethyst/[0.2] hover:[&_svg]:text-amethyst aria-expanded:border-amethyst/45 aria-expanded:bg-amethyst/[0.2] active:scale-[0.97]",
-        // Outline: neutral actions and toolbars. Border and text only; the accent appears on hover.
+        // Outline: neutral actions and toolbars. A softly raised surface (gentle gradient, top highlight, small shadow)
+        // that lifts and picks up the accent on hover, and presses in when clicked.
         outline:
-          "border-border bg-foreground/[0.02] hover:border-amethyst/50 hover:bg-foreground/[0.05] hover:text-foreground hover:[&_svg]:text-amethyst aria-expanded:border-amethyst/50 aria-expanded:bg-amethyst/10 aria-expanded:text-foreground active:scale-[0.97] active:bg-foreground/[0.08]",
+          "border-border bg-surface bg-[linear-gradient(180deg,rgb(var(--ink-rgb)/0.07),rgb(var(--ink-rgb)/0.015))] text-foreground/90 shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.09),0_1px_2px_rgb(var(--shadow-rgb)/calc(0.4*var(--shadow-alpha)))] hover:-translate-y-px hover:border-amethyst/45 hover:bg-[linear-gradient(180deg,rgb(var(--accent-rgb)/0.12),rgb(var(--accent-rgb)/0.03))] hover:text-foreground hover:shadow-[inset_0_1px_0_rgb(var(--ink-rgb)/0.12),0_8px_20px_-12px_rgb(var(--accent-rgb)/0.7)] hover:[&_svg]:text-amethyst aria-expanded:border-amethyst/50 aria-expanded:bg-amethyst/10 aria-expanded:text-foreground active:translate-y-0 active:scale-[0.97] active:shadow-[inset_0_1px_3px_rgb(var(--shadow-rgb)/calc(0.35*var(--shadow-alpha)))] motion-reduce:hover:translate-y-0",
         // Ghost: icon buttons and inline actions with no surface until hovered.
         ghost:
           "hover:bg-foreground/[0.07] hover:text-foreground hover:[&_svg]:text-amethyst aria-expanded:bg-foreground/[0.08] aria-expanded:text-foreground active:scale-[0.95] active:bg-foreground/[0.11]",

@@ -92,7 +92,7 @@ export default async function LibraryPage({ params, searchParams }: Props) {
   );
   const eyebrow = (
     <p className={cn("flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs", banner ? "text-foreground/80" : "text-muted-foreground")}>
-      <span className={cn("font-semibold tracking-[0.08em] uppercase", accent ? "text-[var(--ca)]" : "text-amethyst")}>Collection</span>
+      <span className={cn("font-semibold tracking-[0.08em]", accent ? "text-[var(--ca)]" : "text-amethyst")}>Collection</span>
       <span className="border-l border-white/[0.2] pl-2.5">
         <LibraryCount />
       </span>

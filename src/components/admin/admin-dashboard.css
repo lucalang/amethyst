@@ -432,8 +432,7 @@
   min-width: 0;
   gap: 0.05rem;
   padding: 0.5rem 0.65rem;
-  border: 1px solid transparent;
-  border-left: 3px solid var(--rarity);
+  border: 1px solid color-mix(in oklab, var(--rarity) 40%, transparent);
   border-radius: calc(0.55rem * var(--radius-unit, 1));
   text-align: left;
   background: var(--dash-soft);

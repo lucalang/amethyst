@@ -132,7 +132,8 @@
 /* Shared puzzle board: square, sized by its container so text scales with cqi units. */
 .puzzle-board {
   container-type: inline-size;
-  max-width: min(100%, 34rem);
+  /* Square boards: capping the width at the height left on screen (--stage-fit, see GameShell) keeps them fully visible. */
+  max-width: min(100%, 34rem, var(--stage-fit, 100dvh));
   border-radius: 0.75rem;
   transition: box-shadow 0.4s ease;
 }

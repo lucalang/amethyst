@@ -44,7 +44,7 @@ export default async function ReleasePage({ params }: Props) {
             </div>
           ) : null}
           <div className="ui-panel mt-7 p-4 md:p-5" data-glow>
-            <h2 className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">At a glance</h2>
+            <h2 className="mb-3 text-xs font-semibold text-muted-foreground">At a glance</h2>
             <HighlightList highlights={release.highlights} />
           </div>
         </header>

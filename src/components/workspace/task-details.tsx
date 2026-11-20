@@ -28,7 +28,7 @@ export type TaskActions = {
 
 export const notesBackupKey = (itemId: string) => `archive:task-notes:${itemId}`;
 
-const SECTION_LABEL = "text-[11px] font-semibold tracking-[0.1em] text-muted-foreground uppercase";
+const SECTION_LABEL = "text-xs font-semibold tracking-[0.1em] text-muted-foreground";
 const CARD =
   "rounded-lg bg-black/50 shadow-[inset_0_0_0_1px_rgb(var(--ink-rgb)/0.06)] transition-shadow duration-200 focus-within:shadow-[inset_0_0_0_1px_rgb(var(--accent-rgb)/0.45)]";
 

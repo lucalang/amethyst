@@ -34,7 +34,6 @@ export function Group({ id, title, meta, wide = false, children }: { id: string;
     <section aria-labelledby={`${id}-heading`} className="enter enter-soft mb-9 last-of-type:mb-7">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id={`${id}-heading`} className="flex items-center gap-2 text-base font-semibold">
-          <span aria-hidden className="ui-dot" />
           {title}
         </h2>
         {meta ? <p className="text-xs text-muted-foreground">{meta}</p> : null}

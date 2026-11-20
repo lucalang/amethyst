@@ -268,7 +268,7 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
                 <AchievementBadge achievement={singleDef} earned size={68} motion="assemble" />
               </div>
               <div className="ach-toast-text min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                <p className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.16em] text-muted-foreground">
                   <span aria-hidden className="size-1.5 rotate-45 rounded-[1px] bg-[rgb(var(--ach-glow))] shadow-[0_0_6px_rgb(var(--ach-glow))]" />
                   {active.replay ? "Achievement replay" : `${BADGE_STYLES[singleDef.group].label} unlocked`}
                 </p>
@@ -337,7 +337,7 @@ export function AchievementNotifications({ enabled }: { enabled: boolean }) {
                 <AchievementBadge achievement={{ icon: "Medal", group: "Discovery" }} earned size={64} motion="assemble" />
               </div>
               <div className="ach-toast-text min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                <p className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.16em] text-muted-foreground">
                   <span aria-hidden className="size-1.5 rotate-45 rounded-[1px] bg-[rgb(var(--ach-glow))] shadow-[0_0_6px_rgb(var(--ach-glow))]" />
                   Milestone rewards granted
                 </p>
