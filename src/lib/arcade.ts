@@ -7,7 +7,7 @@ import { isSnakeVariant } from "@/lib/snake";
 import { SUDOKU_SIZES, sudokuProgressValid, type SudokuSize, type SudokuSlot } from "@/lib/sudoku";
 
 /** Games with a single higher-is-better record (Sudoku keeps fastest times per difficulty). */
-export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "sumbreak", "front-wars"] as const;
+export const SCORE_GAMES = ["2048", "flutter", "snake", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "sumbreak", "front-wars", "blank-atlas"] as const;
 export type ScoreGame = (typeof SCORE_GAMES)[number];
 export type ArcadeGameId = ScoreGame | "sudoku" | "who-am-i";
 
@@ -15,7 +15,7 @@ export type ArcadeGameId = ScoreGame | "sudoku" | "who-am-i";
  * Games that keep only a personal record. They have no coin runs, so they also have no leaderboards, streaks,
  * Tournaments or Wagers (all of which are built on runs). Everything that lists those reads `RankedGameId`.
  */
-export const RECORD_ONLY_GAMES = ["front-wars"] as const;
+export const RECORD_ONLY_GAMES = ["front-wars", "blank-atlas"] as const;
 export type RecordOnlyGame = (typeof RECORD_ONLY_GAMES)[number];
 /**
  * Head-to-head games: a bot match outside Wagers and a live duel inside them. They have no coin runs, records,
@@ -95,6 +95,14 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "tango", title: "Tango", href: "/arcade/tango", blurb: "Fill the grid with suns and moons, balanced in every row and column.", recordLabel: "Highest level", category: "minigames" },
   { id: "queens", title: "Queens", href: "/arcade/queens", blurb: "Place one crown in every row, column and color region, never touching.", recordLabel: "Highest level", category: "minigames" },
   { id: "sumbreak", title: "Sumbreak", href: "/arcade/sumbreak", blurb: "Merge equal neighbours into their sum until a single tile is left. Order is everything.", recordLabel: "Highest level", category: "minigames" },
+  {
+    id: "blank-atlas",
+    title: "Blank Atlas",
+    href: "/arcade/blank-atlas",
+    blurb: "Seven questions, seven stops on one expedition. Common answers chart known land; rare ones uncover stranger places.",
+    recordLabel: "Best expedition",
+    category: "minigames",
+  },
   {
     id: "who-am-i",
     title: "Who Am I?",

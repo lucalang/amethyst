@@ -112,6 +112,27 @@
   --theme-dark: 1;
   color-scheme: dark;
 }
+/* Blank Atlas: deep ink blue, sea-glass accent, coral second colour. */
+[data-game-skin="blank-atlas"] {
+  --background: #091830;
+  --surface: #0f2443;
+  --surface-raised: #163057;
+  --foreground: #e9f4f6;
+  --muted-foreground: #a6bfd3;
+  --amethyst: #8fe3cf;
+  --amethyst-foreground: #06231d;
+  --rose: #ff8f7a;
+  --rose-foreground: #2b0d06;
+  --destructive: #ff8f7a;
+  --ink-rgb: 233 244 246;
+  --paper-rgb: 9 24 48;
+  --accent-rgb: 143 227 207;
+  --rose-rgb: 255 143 122;
+  --shadow-rgb: 2 8 20;
+  --shadow-alpha: 0.8;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
 /* 2048: the classic warm beige. */
 [data-game-skin="2048"] {
   --background: #faf8ef;

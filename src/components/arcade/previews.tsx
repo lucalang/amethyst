@@ -19,6 +19,7 @@ export const ARCADE_CABINETS: Record<ArcadeGameId, { hue: string; genre: string 
   sumbreak: { hue: "#7ad7f0", genre: "Math" },
   "front-wars": { hue: "#ff6b4a", genre: "Strategy" },
   "who-am-i": { hue: "#c084fc", genre: "Deduction" },
+  "blank-atlas": { hue: "#8fe3cf", genre: "Trivia" },
 };
 
 /** Static artwork for the Arcade hub (no game code is loaded until a game opens). */
@@ -70,6 +71,22 @@ const SUDOKU_DIGITS: [number, number, number][] = [
 ];
 
 const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
+  // A route of seven stops across ink water: settlements on the way, one far island with a star.
+  "blank-atlas": (
+    <g>
+      <rect width="160" height="100" fill="#0b1d3a" />
+      <path d="M14 58 C34 40 48 66 66 52 S100 34 118 48 S140 60 148 46" fill="none" stroke="#8fe3cf" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M86 44 Q96 26 104 18" fill="none" stroke="#ffd36b" strokeWidth="1.4" strokeDasharray="3 3" />
+      <path d="M44 62 Q52 76 60 82" fill="none" stroke="#ff8f7a" strokeWidth="1.4" strokeDasharray="3 3" />
+      <ellipse cx="106" cy="16" rx="11" ry="7" fill="#18405a" stroke="#ffd36b" strokeWidth="0.8" />
+      <path d="M106 10 L107.6 14 L112 14 L108.5 16.6 L109.8 21 L106 18.4 L102.2 21 L103.5 16.6 L100 14 L104.4 14 Z" fill="#ffd36b" />
+      <ellipse cx="62" cy="84" rx="12" ry="7" fill="#18405a" stroke="#9cc9ff" strokeWidth="0.8" />
+      <path d="M62 79 L65 84 L62 89 L59 84 Z" fill="#ff8f7a" />
+      {[[14, 58], [36, 47], [66, 52], [92, 40], [118, 48], [148, 46]].map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r="3.4" fill="#8fe3cf" stroke="#0b1d3a" strokeWidth="1.2" />
+      ))}
+    </g>
+  ),
   "2048": (
     <g transform="translate(46 8)">
       <rect width="68" height="84" rx="5" className="fill-foreground/[0.06]" />

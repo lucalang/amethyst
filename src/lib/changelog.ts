@@ -51,6 +51,34 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-blank-atlas",
+    date: "2026-11-20",
+    title: "Blank Atlas",
+    intro: "A new Arcade minigame about rare answers. Seven questions make one expedition: familiar answers chart known land, while rarer ones uncover stranger places on your map.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Seven stops, one map", text: "Each answer adds a discovery to your route. After the seventh, the finished map appears next to your results, built from exactly what you answered." },
+      { kind: "new", feature: "Rare answers score more", text: "Any correct answer charts a stop. Known land is worth 10, a side road 35, a strange shore 70 and uncharted ground 100, for up to 700 per expedition." },
+      { kind: "new", feature: "Fair answers", text: "Every question has a complete list of correct answers. Small typos are forgiven, unclear answers ask for a little more, and wrong ones just let you try again." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Blank Atlas",
+          body: "Type an answer for each of the seven stops, or leave one unmapped. Common answers stay close to the route; rarer ones lead out to hills, islands and far-off starred isles. The results list shows what each answer was read as, its rarity and its points, and your best expedition is saved as your record. An unfinished expedition is kept on this device, so you can pick it up where you left off.",
+          points: [
+            "Rarity is Amethyst’s own curated estimate of how readily people think of each answer. It isn’t measured from how players actually answer.",
+            "29 questions on geography, space, science, history and the arts; each expedition picks seven of them.",
+            "A personal record only: no Coins, leaderboards, streaks or Wagers.",
+            "Works with keyboard and touch, and respects reduced motion.",
+          ],
+          where: "Arcade → Minigames → Blank Atlas",
+          link: { href: "/arcade/blank-atlas", label: "Play Blank Atlas" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-arcade-polish",
     date: "2026-11-20",
     title: "A brighter Arcade and a cleaner look",
