@@ -35,10 +35,13 @@ export async function GET(request: NextRequest) {
 
   if (code && !tokenHash) {
     if (code.length > 512) return fail();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) return fail();
     await supabase.rpc("ensure_profile");
-    return succeed();
+    // The code verifier cookie remembers a reset request, so a recovery code is recognised even when Supabase
+    // sent it without our parameters (its Site URL fallback, see proxy.ts).
+    const redirectType = (data as { redirectType?: string | null }).redirectType;
+    return redirectType === "recovery" ? redirect(RESET_PATH) : succeed();
   }
 
   if (!tokenHash || !type || tokenHash.length > 512) return fail();

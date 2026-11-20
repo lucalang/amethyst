@@ -42,6 +42,16 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  // Supabase sends email links back to the bare Site URL (`/?code=…`) when it doesn't accept the requested
+  // redirect. Hand the code to /auth/confirm instead of letting the sign-in redirect below drop it.
+  if (request.nextUrl.pathname === "/" && request.method === "GET" && request.nextUrl.searchParams.has("code")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/confirm";
+    url.search = "";
+    url.searchParams.set("code", request.nextUrl.searchParams.get("code")!);
+    return NextResponse.redirect(url, { headers: { "Cache-Control": "no-store" } });
+  }
+
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims?.sub);
   const guest = signedIn && data?.claims?.is_anonymous === true;
