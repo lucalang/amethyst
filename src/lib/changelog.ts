@@ -51,6 +51,78 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-spin-wheel",
+    date: "2026-11-20",
+    title: "Spin Wheel",
+    intro: "A new tool for quick decisions: enter your own choices, spin, and let the wheel pick. Save wheels to reuse them on any device.",
+    icon: "sparkles",
+    highlights: [
+      { kind: "new", feature: "Your own wheels", text: "Type or paste choices (one per line), reorder them, pick a palette or color single slices, then spin." },
+      { kind: "new", feature: "Saved wheels", text: "Name and save as many wheels as you like (up to 100). Reopen, spin, rename, duplicate or delete them from any device." },
+      { kind: "new", feature: "Fair results", text: "Every choice has the same chance. The result is picked before the wheel moves; the animation only shows it. Remove the pick in one click, and undo it if needed." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Spin Wheel",
+          body: "Open Tools → Utilities → Spin Wheel. Edits apply to the wheel immediately but are only kept when you press Save (or Ctrl/⌘+S); Discard returns to the saved version. Wheels are private to your account.",
+          points: [
+            "Up to 100 choices of 80 characters each. Blank lines and extra spaces are ignored, and duplicates are kept on purpose.",
+            "Choose a palette, set a custom color per slice, and pick a Quick, Normal or Long spin.",
+            "Works with keyboard, touch and screen readers. With reduced motion on, the result appears at once without the animation.",
+            "Just for deciding things: no Coins, prizes or rewards are involved.",
+          ],
+          where: "Tools → Utilities → Spin Wheel",
+          link: { href: "/spin-wheel", label: "Open Spin Wheel" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-20-todo-list-reorder",
+    date: "2026-11-20",
+    title: "Drag to reorder, fixed everywhere",
+    intro: "Dragging by the six-dot handle now works all the way to where you drop it: To Do lists and groups, Home sections, the cover fan and Arrange collections.",
+    icon: "tasks",
+    highlights: [
+      { kind: "fixed", feature: "Reliable dragging", text: "A drag no longer stops after the first step (or, in To Do, when moving a list into or out of a group). It ends only when you let go." },
+      { kind: "improved", feature: "Smoother, more polished", text: "The row you hold lifts with a soft glow and follows your pointer. In Home, the cover fan and Arrange collections the other rows slide aside to make room above a marked landing spot; in To Do a glowing line glides to where it will land. On drop it springs into place, and rows also glide when you use the arrows. Supported phones give a light tap as you pick up and pass rows." },
+      { kind: "improved", feature: "Touch and keyboard", text: "Handles are easier to grab on touch screens, lists scroll while you drag near their edge, Escape cancels, and the arrow keys and move buttons still work. Quick changes to Home’s section order no longer jump back for a moment." },
+    ],
+    details: {
+      fixed: [
+        {
+          title: "Reordering",
+          body: "Hold the six-dot handle and drag. In the To Do sidebar you can drop a list between others, into an open group, or out of a group by dragging toward the left edge below its last list. Changes save when you let go (Arrange collections saves with “Save order”).",
+          where: "To Do sidebar, Customize Home (Sections and Cover fan), Arrange collections",
+          link: { href: "/tasks", label: "Open To Do" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-20-streak-restore",
+    date: "2026-11-20",
+    title: "Lost streaks are easy to spot and restore",
+    intro: "When you miss a day, the Arcade now tells you plainly which streak was lost and lets you restore it in two clicks.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Streak lost notice", text: "A labelled panel names the game, the streak you lost and the day you missed, at the top of the Arcade, on the game’s card and right below the game’s title bar." },
+      { kind: "improved", feature: "Clear restore button", text: "The button says exactly what it costs (for example “Restore streak · 50 Coins”), with a countdown to 00:00 UTC when the offer ends. Before today’s first round it explains what unlocks it." },
+      { kind: "improved", feature: "Safer confirmation", text: "The price is shown again before anything is spent, a double click can’t buy twice, and not having enough Coins or a changed price is explained right in the dialog." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Restoring a streak",
+          body: "The rules are unchanged: if you missed only yesterday, finish one round of that game today and you can buy yesterday back once, until 00:00 UTC. The price depends on the streak’s length.",
+          where: "Arcade, and each game’s screen",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-streak-every-game",
     date: "2026-11-20",
     title: "A streak moment for every game",

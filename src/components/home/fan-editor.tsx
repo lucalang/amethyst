@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { CoverFan } from "@/components/home/cover-fan";
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";
+import { DropSlot, sortRowClass, useListDrag } from "@/components/ui/list-drag";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,8 +55,6 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
   }
   const [pickerOpen, setPickerOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const [dragKey, setDragKey] = useState<string | null>(null);
-  const dragStart = useRef("");
   const pending = useRef(0);
   const listRef = useRef<HTMLOListElement>(null);
   const openRef = useRef<HTMLButtonElement>(null);
@@ -108,32 +107,19 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
     requestAnimationFrame(() => (neighbour ? rowControl(neighbour.key, "remove") : openRef.current)?.focus());
   }
 
-  function onPointerDown(event: PointerEvent<HTMLButtonElement>, key: string) {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.currentTarget.focus();
-    dragStart.current = JSON.stringify(items);
-    setDragKey(key);
-  }
-
-  function onPointerMove(event: PointerEvent<HTMLButtonElement>, key: string) {
-    if (dragKey !== key || !listRef.current) return;
-    let target = 0;
-    for (const row of listRef.current.querySelectorAll<HTMLElement>("[data-fan-key]")) {
-      if (row.dataset.fanKey === key) continue;
-      const rect = row.getBoundingClientRect();
-      if (event.clientY > rect.top + rect.height / 2) target += 1;
-    }
-    const next = relocate(items, key, target);
-    if (next !== items) setItems(next);
-  }
-
-  function onPointerEnd(key: string) {
-    if (dragKey !== key) return;
-    setDragKey(null);
-    if (JSON.stringify(items) !== dragStart.current) commit(items, positionMessage(items, key));
-  }
+  const { dragId: dragKey, slot, startDrag, rowStyle } = useListDrag({
+    ids: items.map((item) => item.key),
+    containerRef: listRef,
+    label: (key) => {
+      const item = items.find((entry) => entry.key === key);
+      return item ? itemTitle(item) : "Artwork";
+    },
+    onAnnounce: setAnnouncement,
+    onDrop: (key, to) => {
+      const next = relocate(items, key, to);
+      if (next !== items) commit(next, positionMessage(next, key));
+    },
+  });
 
   function onHandleKey(event: KeyboardEvent<HTMLButtonElement>, key: string) {
     if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
@@ -183,7 +169,8 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
             Number 1 sits on the left. Drag a row by its handle, use the arrows, or focus a handle and press the arrow keys. Removing artwork
             here never deletes the entry or the image.
           </p>
-          <ol ref={listRef} aria-label="Fan artwork, left to right" className={cn("space-y-1.5", dragKey && "select-none")}>
+          <ol ref={listRef} aria-label="Fan artwork, left to right" className={cn("relative space-y-1.5", dragKey && "cursor-grabbing select-none")}>
+            <DropSlot slot={slot} />
             {items.map((item, index) => {
               const title = itemTitle(item);
               const art = itemArt(item);
@@ -192,10 +179,9 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
                 <li
                   key={item.key}
                   data-fan-key={item.key}
-                  className={cn(
-                    "flex min-w-0 items-center gap-1.5 rounded-md border p-1 transition-[background-color,border-color,box-shadow] duration-150",
-                    dragging ? "relative z-10 border-amethyst/45 bg-amethyst/[0.1] shadow-lg shadow-black/50" : "border-white/[0.07] bg-black/30",
-                  )}
+                  data-sort-id={item.key}
+                  style={rowStyle(item.key)}
+                  className={cn("flex min-w-0 items-center gap-1.5 rounded-md border p-1", sortRowClass(dragging), !dragging && "border-white/[0.07] bg-black/30")}
                 >
                   <button
                     type="button"
@@ -204,13 +190,11 @@ export function FanEditor({ fan, collections }: { fan: FanItem[]; collections: F
                     aria-describedby="home-fan-instructions"
                     className={cn(
                       "grid size-9 shrink-0 touch-none place-items-center rounded text-muted-foreground transition-colors outline-none hover:bg-amethyst/[0.08] hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring",
-                      dragging ? "cursor-grabbing text-amethyst" : "cursor-grab",
+                      dragging ? "cursor-grabbing bg-amethyst/15 text-amethyst" : "cursor-grab",
                     )}
-                    onPointerDown={(event) => onPointerDown(event, item.key)}
-                    onPointerMove={(event) => onPointerMove(event, item.key)}
-                    onPointerUp={() => onPointerEnd(item.key)}
-                    onPointerCancel={() => onPointerEnd(item.key)}
-                    onLostPointerCapture={() => onPointerEnd(item.key)}
+                    title="Drag to reorder"
+                    onPointerDown={(event) => startDrag(event, item.key)}
+                    onContextMenu={(event) => event.preventDefault()}
                     onKeyDown={(event) => onHandleKey(event, item.key)}
                   >
                     <GripVertical aria-hidden className="size-4" />

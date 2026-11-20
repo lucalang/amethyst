@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, Fragment, useContext, useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -41,6 +41,7 @@ const WallEditor = dynamic(() => import("@/components/home/wall-editor").then((m
 import { ImageUrlField } from "@/components/media/image-url-field";
 import { MediaImage } from "@/components/media/media-image";
 import { Button } from "@/components/ui/button";
+import { DropSlot, sortRowClass, useListDrag } from "@/components/ui/list-drag";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -106,14 +107,18 @@ function useLocalSetting<K extends keyof Settings>(key: K, value: Settings[K]) {
   const save = useSaveSettings();
   const [local, setLocal] = useState(value);
   const [shown, setShown] = useState(value);
+  // Saves still running: a refresh triggered by an earlier save must not snap the local value back to it.
+  const [saving, setSaving] = useState(0);
   if (JSON.stringify(shown) !== JSON.stringify(value)) {
     setShown(value);
-    setLocal(value);
+    if (saving === 0) setLocal(value);
   }
   function commit(next: Settings[K]) {
     const previous = local;
     setLocal(next);
+    setSaving((count) => count + 1);
     void save({ [key]: next } as SettingsPatch).then((ok) => {
+      setSaving((count) => count - 1);
       if (!ok) setLocal(previous);
     });
   }
@@ -168,7 +173,7 @@ export function HomeSections({
 }) {
   const { customizing, setCustomizing } = useContext(CustomizeContext);
   const [style, , commitStyle] = useLocalSetting("homeStyle", homeStyle);
-  const [sections, setSections, commitSections] = useLocalSetting("homeSections", layout);
+  const [sections, , commitSections] = useLocalSetting("homeSections", layout);
   const isDefault = JSON.stringify(sections) === JSON.stringify(DEFAULT_LAYOUT);
 
   return (
@@ -208,7 +213,6 @@ export function HomeSections({
                 <SectionArranger
                   sections={sections}
                   available={(id) => Boolean(nodes[id])}
-                  onPreview={setSections}
                   onCommit={commitSections}
                   featuredMissing={featuredMissing}
                   changed={!isDefault}
@@ -529,7 +533,6 @@ function FeaturedEditor({ featured, featuredTitle, missing }: { featured: HomeFe
 function SectionArranger({
   sections,
   available,
-  onPreview,
   onCommit,
   featuredMissing,
   changed,
@@ -537,16 +540,13 @@ function SectionArranger({
 }: {
   sections: HomeSection[];
   available: (id: HomeSectionId) => boolean;
-  onPreview: (sections: HomeSection[]) => void;
   onCommit: (sections: HomeSection[]) => void;
   featuredMissing: boolean;
   changed: boolean;
   onReset: () => void;
 }) {
-  const [dragId, setDragId] = useState<HomeSectionId | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const listRef = useRef<HTMLOListElement>(null);
-  const dragStart = useRef<string>("");
 
   function relocate(list: HomeSection[], id: HomeSectionId, target: number) {
     const from = list.findIndex((item) => item.id === id);
@@ -576,33 +576,16 @@ function SectionArranger({
     });
   }
 
-  function onPointerDown(event: PointerEvent<HTMLButtonElement>, id: HomeSectionId) {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.currentTarget.focus();
-    dragStart.current = JSON.stringify(sections);
-    setDragId(id);
-  }
-
-  function onPointerMove(event: PointerEvent<HTMLButtonElement>, id: HomeSectionId) {
-    if (dragId !== id || !listRef.current) return;
-    let target = 0;
-    for (const row of listRef.current.querySelectorAll<HTMLElement>("[data-section-id]")) {
-      if (row.dataset.sectionId === id) continue;
-      const rect = row.getBoundingClientRect();
-      if (event.clientY > rect.top + rect.height / 2) target += 1;
-    }
-    const next = relocate(sections, id, target);
-    if (next !== sections) onPreview(next);
-  }
-
-  function onPointerEnd(id: HomeSectionId) {
-    if (dragId !== id) return;
-    setDragId(null);
-    announce(sections, id);
-    if (JSON.stringify(sections) !== dragStart.current) onCommit(sections);
-  }
+  const { dragId, slot, startDrag, rowStyle } = useListDrag({
+    ids: sections.map((section) => section.id),
+    containerRef: listRef,
+    label: (id) => SECTION_META[id as HomeSectionId]?.title ?? "Section",
+    onAnnounce: setAnnouncement,
+    onDrop: (id, to) => {
+      const next = relocate(sections, id as HomeSectionId, to);
+      if (next !== sections) onCommit(next);
+    },
+  });
 
   function onHandleKey(event: KeyboardEvent<HTMLButtonElement>, id: HomeSectionId) {
     if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
@@ -630,7 +613,8 @@ function SectionArranger({
       <p id="home-sections-instructions" className="mt-1 text-xs text-muted-foreground">
         Drag a row by its handle, use the arrows, or focus a handle and press the arrow keys. The order is the same on every screen size.
       </p>
-      <ol ref={listRef} aria-labelledby="home-sections-label" className={cn("mt-3 space-y-1.5", dragId && "select-none")}>
+      <ol ref={listRef} aria-labelledby="home-sections-label" className={cn("relative mt-3 space-y-1.5", dragId && "cursor-grabbing select-none")}>
+        <DropSlot slot={slot} />
         {sections.map((section, index) => {
           const meta = SECTION_META[section.id];
           const dragging = dragId === section.id;
@@ -648,10 +632,9 @@ function SectionArranger({
             <li
               key={section.id}
               data-section-id={section.id}
-              className={cn(
-                "flex min-w-0 items-center gap-1.5 rounded-md border py-1 pr-1 pl-1 transition-[background-color,border-color,box-shadow,opacity] duration-150",
-                dragging ? "relative z-10 border-amethyst/45 bg-amethyst/[0.1] shadow-lg shadow-black/50" : "border-white/[0.07] bg-black/30",
-              )}
+              data-sort-id={section.id}
+              style={rowStyle(section.id)}
+              className={cn("flex min-w-0 items-center gap-1.5 rounded-md border py-1 pr-1 pl-1", sortRowClass(dragging), !dragging && "border-white/[0.07] bg-black/30")}
             >
               <button
                 type="button"
@@ -660,13 +643,11 @@ function SectionArranger({
                 aria-describedby="home-sections-instructions"
                 className={cn(
                   "grid size-9 shrink-0 touch-none place-items-center rounded text-muted-foreground transition-colors outline-none hover:bg-amethyst/[0.08] hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring",
-                  dragging ? "cursor-grabbing text-amethyst" : "cursor-grab",
+                  dragging ? "cursor-grabbing bg-amethyst/15 text-amethyst" : "cursor-grab",
                 )}
-                onPointerDown={(event) => onPointerDown(event, section.id)}
-                onPointerMove={(event) => onPointerMove(event, section.id)}
-                onPointerUp={() => onPointerEnd(section.id)}
-                onPointerCancel={() => onPointerEnd(section.id)}
-                onLostPointerCapture={() => onPointerEnd(section.id)}
+                title="Drag to reorder"
+                onPointerDown={(event) => startDrag(event, section.id)}
+                onContextMenu={(event) => event.preventDefault()}
                 onKeyDown={(event) => onHandleKey(event, section.id)}
               >
                 <GripVertical aria-hidden className="size-4" />

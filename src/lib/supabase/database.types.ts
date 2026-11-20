@@ -29,6 +29,12 @@ export type Database = {
               Update: { id?: string; user_id?: string; name?: string; content?: string; version?: number; created_at?: string; updated_at?: string }
               Relationships: []
             },
+            "spin_wheels": {
+              Row: { id: string; user_id: string; name: string; choices: Json; settings: Json; version: number; created_at: string; updated_at: string }
+              Insert: { id?: string; user_id?: string; name: string; choices?: Json; settings?: Json; version?: number; created_at?: string; updated_at?: string }
+              Update: { id?: string; user_id?: string; name?: string; choices?: Json; settings?: Json; version?: number; created_at?: string; updated_at?: string }
+              Relationships: []
+            },
             "app_admins": {
               Row: { user_id: string; role: "owner" | "admin"; granted_at: string; granted_by: string | null }
               Insert: { user_id: string; role?: "owner" | "admin"; granted_at?: string; granted_by?: string | null }

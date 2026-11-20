@@ -142,6 +142,13 @@ export const SOUNDS = {
     { freq: 294, duration: 0.22, type: "triangle", volume: 0.065, delay: 0.08 },
   ],
   waiTurn: [{ freq: 880, to: 1046, duration: 0.07, type: "sine", volume: 0.04 }],
+  // Spin Wheel: a soft peg click as each slice passes the pointer, and a bright chime on the result.
+  wheelTick: [{ noise: true, duration: 0.025, volume: 0.06, filter: "bandpass", freq: 3200, q: 2 }],
+  wheelLand: [
+    { freq: 784, duration: 0.12, type: "triangle", volume: 0.06 },
+    { freq: 1175, duration: 0.3, type: "triangle", volume: 0.055, delay: 0.09 },
+    { freq: 1568, duration: 0.4, type: "sine", volume: 0.03, delay: 0.16 },
+  ],
   waiWrong: [
     { freq: 330, to: 247, duration: 0.18, type: "triangle", volume: 0.07 },
     { noise: true, duration: 0.08, volume: 0.04, filter: "lowpass", freq: 700, delay: 0.02 },

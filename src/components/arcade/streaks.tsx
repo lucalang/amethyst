@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
-import { Check, Coins, Loader2, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { Check, Coins, Loader2, Lock, Play, RotateCcw, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { DailyCountdown, formatDailyDate, useDailyDate } from "@/components/arcade/daily";
 import { useArcade } from "@/components/arcade/game-shell";
@@ -133,7 +134,14 @@ export function useArcadeStreaks(initial: StreakState | null, refreshOnPlay: (st
   return { streaks: state?.streaks ?? null, celebrated, replace, markCelebrated, refresh };
 }
 
-/** Confirms and buys back yesterday; the price shown is the one the server enforces. */
+const coinsLabel = (amount: number) => `${amount.toLocaleString("en")} ${amount === 1 ? "Coin" : "Coins"}`;
+
+type RestoreProblem = { kind: "funds" | "price" | "ineligible" | "error"; text: string };
+
+/**
+ * Confirms and buys back yesterday; the price shown is the one the server enforces. The server also checks
+ * eligibility, the balance and that each missed day is restored only once (a repeat returns "already").
+ */
 export function RecoverStreakDialog({
   streak,
   open,
@@ -143,17 +151,29 @@ export function RecoverStreakDialog({
   streak: ArcadeStreak;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** New streaks after a restore, or null when they should be reloaded (price or eligibility changed). */
   onRecovered: (streaks: ArcadeStreaks | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState<RestoreProblem | null>(null);
+  const [shownFor, setShownFor] = useState(open);
+  // A guard on top of the disabled button: a double click can never send two purchases.
+  const sending = useRef(false);
   const sound = useUiSound();
+  if (shownFor !== open) {
+    setShownFor(open);
+    if (open) setProblem(null);
+  }
   const recovery = streak.recovery;
   if (!recovery) return null;
   const title = gameTitle(streak.game);
+  const cost = coinsLabel(recovery.cost);
 
   async function recover() {
-    if (!recovery) return;
+    if (!recovery || sending.current) return;
+    sending.current = true;
     setBusy(true);
+    setProblem(null);
     try {
       const body = await apiFetch<{ recovery: StreakRecovery; streaks: ArcadeStreaks | null }>("/api/arcade/streaks", {
         method: "POST",
@@ -163,15 +183,29 @@ export function RecoverStreakDialog({
       if (body.recovery.status === "recovered") sound("flame");
       toast.success(
         body.recovery.status === "recovered"
-          ? `${title} streak recovered: ${dayWord(body.recovery.streak)} and counting.`
-          : `${title} streak was already recovered.`,
+          ? `${title} streak restored for ${coinsLabel(body.recovery.cost)}: ${dayWord(body.recovery.streak)} and counting.`
+          : `${title} streak was already restored. No Coins were spent.`,
       );
       onRecovered(body.streaks);
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Could not recover the streak. No coins were taken.");
-      if (error instanceof ApiError && error.status === 409) onRecovered(null);
+      const code = error instanceof ApiError ? error.code : null;
+      if (code === "insufficient_funds") {
+        setProblem({ kind: "funds", text: `You don’t have enough Coins. Restoring costs ${cost}. Earn Coins by playing, then try again before the day ends.` });
+      } else if (code === "price_changed") {
+        setProblem({ kind: "price", text: "The restore price changed. Check the new price below before confirming." });
+        onRecovered(null);
+      } else if (code === "streak_not_recoverable") {
+        const text = error instanceof ApiError ? error.message : "This streak can’t be restored right now.";
+        setProblem({ kind: "ineligible", text });
+        // The reload may close this dialog (no offer left), so say it outside the dialog too.
+        toast.error(`${title} streak can’t be restored: ${text} No Coins were spent.`);
+        onRecovered(null);
+      } else {
+        setProblem({ kind: "error", text: "Couldn’t restore the streak. No Coins were spent. Check your connection and try again." });
+      }
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
@@ -180,52 +214,116 @@ export function RecoverStreakDialog({
     <AlertDialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Recover your {recovery.streak}-day {title} streak?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Spend <span className="coin-ink font-semibold tabular-nums">{recovery.cost.toLocaleString("en")} coins</span> to count{" "}
-            {formatDailyDate(recovery.date)} (UTC) as played. Your streak continues at {dayWord(recovery.streak + 2)}. Each missed day can be
-            recovered only once, and only the day after.
+          <AlertDialogTitle>Restore your {recovery.streak}-day {title} streak?</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2">
+              <p>
+                This spends <span className="coin-ink font-semibold tabular-nums">{cost}</span> to count {formatDailyDate(recovery.date)} (UTC) as
+                played. Your streak continues at {dayWord(recovery.streak + 2)}.
+              </p>
+              <p>Each missed day can be restored only once, and only until 00:00 UTC tonight.</p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {problem ? (
+          <p role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground">
+            <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive" />
+            <span>{problem.text}</span>
+          </p>
+        ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Keep coins</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={busy}
-            onClick={(event) => {
-              event.preventDefault();
-              void recover();
-            }}
-          >
-            {busy ? <Loader2 aria-hidden className="animate-spin" /> : <Coins aria-hidden />}
-            Spend {recovery.cost.toLocaleString("en")} coins
-          </AlertDialogAction>
+          <AlertDialogCancel disabled={busy}>{problem?.kind === "ineligible" ? "Close" : "Keep my Coins"}</AlertDialogCancel>
+          {problem?.kind === "ineligible" ? null : (
+            <AlertDialogAction
+              disabled={busy}
+              aria-busy={busy || undefined}
+              onClick={(event) => {
+                event.preventDefault();
+                void recover();
+              }}
+            >
+              {busy ? <Loader2 aria-hidden className="animate-spin" /> : <Coins aria-hidden />}
+              {busy ? "Restoring…" : `Spend ${cost}`}
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
 
-function RecoveryNote({ streak, onRecover, compact = false }: { streak: ArcadeStreak; onRecover: () => void; compact?: boolean }) {
+/**
+ * The lost-streak notice: says plainly which streak was lost, that it can be restored, the exact price and the
+ * deadline (00:00 UTC tonight), with an explicitly labelled restore button. Before today's round it explains
+ * that one finished round unlocks restoring (the server's rule). `playHref` adds a way to that game.
+ */
+export function StreakRestorePanel({
+  streak,
+  onRestore,
+  playHref,
+  compact = false,
+  className,
+}: {
+  streak: ArcadeStreak;
+  onRestore: () => void;
+  playHref?: string;
+  compact?: boolean;
+  className?: string;
+}) {
   const recovery = streak.recovery;
   if (!recovery) return null;
-  if (!recovery.ready) {
-    return (
-      <p className={cn("streak-recover text-pretty", compact && "text-[0.7rem]")}>
-        Missed {formatDailyDate(recovery.date)}. Play today to recover your {recovery.streak}-day streak for{" "}
-        <span className="coin-ink font-semibold tabular-nums">{recovery.cost.toLocaleString("en")}</span> coins.
-      </p>
-    );
-  }
+  const title = gameTitle(streak.game);
+  const cost = coinsLabel(recovery.cost);
+  const headingId = `streak-restore-${streak.game}${compact ? "-card" : ""}`;
   return (
-    <div className={cn("streak-recover flex flex-wrap items-center gap-x-2 gap-y-1.5", compact && "text-[0.7rem]")}>
-      <span className="min-w-0 flex-1 text-pretty">
-        Missed {formatDailyDate(recovery.date)}: bring back your {recovery.streak}-day streak.
-      </span>
-      <Button size="sm" variant="outline" className="h-7 shrink-0 px-2 text-xs" onClick={onRecover}>
-        <RotateCcw aria-hidden />
-        Recover · <span className="coin-ink tabular-nums">{recovery.cost.toLocaleString("en")}</span>
-      </Button>
-    </div>
+    <section aria-labelledby={headingId} className={cn("streak-restore", compact && "streak-restore-compact", className)} data-ready={recovery.ready ? "true" : "false"}>
+      <div className="flex items-start gap-2.5">
+        <span aria-hidden className="streak-restore-icon">
+          <FireMark lit={false} className="size-4" />
+        </span>
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="streak-restore-label">Streak lost · can be restored</p>
+          <h3 id={headingId} className="text-sm leading-snug font-semibold text-foreground text-pretty">
+            Your {dayWord(recovery.streak)} {title} streak was lost
+          </h3>
+          <p className="text-xs leading-5 text-muted-foreground text-pretty">
+            You missed {formatDailyDate(recovery.date)}.{" "}
+            {recovery.ready
+              ? `Restore it for ${cost} and it continues at ${dayWord(recovery.streak + 2)}.`
+              : `Finish one round of ${title} today, then restore it for ${cost}.`}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            <DailyCountdown label="Restore available for" title="Restoring is possible until 00:00 UTC tonight" />
+          </p>
+        </div>
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        {recovery.ready ? (
+          <Button size="sm" className="streak-restore-button h-8 px-3" onClick={onRestore}>
+            <RotateCcw aria-hidden />
+            Restore streak · <span className="tabular-nums">{cost}</span>
+          </Button>
+        ) : (
+          <>
+            {playHref ? (
+              <Button asChild size="sm" className="h-8 px-3">
+                <Link href={playHref}>
+                  <Play aria-hidden />
+                  Play {title}
+                </Link>
+              </Button>
+            ) : null}
+            <Button size="sm" variant="outline" className="h-8 px-3" disabled aria-describedby={`${headingId}-locked`}>
+              <Lock aria-hidden />
+              Restore streak · <span className="tabular-nums">{cost}</span>
+            </Button>
+            <span id={`${headingId}-locked`} className="text-xs text-muted-foreground">
+              Unlocks after today’s first finished round.
+            </span>
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -245,13 +343,16 @@ export function StreakLine({ streak, onRecover }: { streak: ArcadeStreak; onReco
           {status}
         </span>
       </div>
-      <RecoveryNote streak={streak} onRecover={onRecover} compact />
+      <StreakRestorePanel streak={streak} onRestore={onRecover} compact />
     </div>
   );
 }
 
-/** The current game's streak beside its title, with details and recovery in a popover. */
-export function GameStreak({ game }: { game: RankedGameId }) {
+/**
+ * The current game's streak beside its title, with details in a popover. A lost streak that can be restored also
+ * gets the full restore panel, rendered into `restoreSlot` (below the game's header) so it can't be missed.
+ */
+export function GameStreak({ game, restoreSlot }: { game: RankedGameId; restoreSlot?: HTMLElement | null }) {
   const { effects } = useArcade();
   const sound = useUiSound();
   const { streaks, celebrated: celebratedGame, replace, markCelebrated, refresh } = useArcadeStreaks(null, (all) => !all[game].playedToday || Boolean(all[game].recovery));
@@ -386,9 +487,10 @@ export function GameStreak({ game }: { game: RankedGameId }) {
               "Start a round today to begin a streak."
             )}
           </p>
-          <RecoveryNote
+          <StreakRestorePanel
             streak={streak}
-            onRecover={() => {
+            compact
+            onRestore={() => {
               setOpen(false);
               setRecovering(true);
             }}
@@ -404,6 +506,9 @@ export function GameStreak({ game }: { game: RankedGameId }) {
         onOpenChange={setRecovering}
         onRecovered={(next) => (next ? replace(next) : void fetchStreaks().then((value) => replace(value.streaks), () => {}))}
       />
+      {restoreSlot && streak.recovery
+        ? createPortal(<StreakRestorePanel streak={streak} onRestore={() => setRecovering(true)} />, restoreSlot)
+        : null}
       {celebration}
     </>
   );

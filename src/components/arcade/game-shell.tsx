@@ -114,6 +114,7 @@ export function GameShell({
   const guest = useGuest();
   const fullscreen = useSyncExternalStore(subscribeFullscreen, () => Boolean(document.fullscreenElement), () => false);
   const canFullscreen = useSyncExternalStore(noSubscribe, () => Boolean(document.fullscreenEnabled), () => false);
+  const [restoreSlot, setRestoreSlot] = useState<HTMLDivElement | null>(null);
   const [shop, setShop] = useState<"closed" | "open" | "idle">("closed");
   const shopGame = isShopGame(game) && !guest;
 
@@ -158,7 +159,7 @@ export function GameShell({
           <div className="flex min-w-0 items-center gap-1.5">
             <h1 className="min-w-0 truncate px-1 text-lg font-bold tracking-tight md:text-xl">{title}</h1>
             {/* Streaks and ranks come from coin runs; record-only games (see RECORD_ONLY_GAMES) have neither. */}
-            {isRankedGame(game) ? <GameStreak game={game} /> : null}
+            {isRankedGame(game) ? <GameStreak game={game} restoreSlot={restoreSlot} /> : null}
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             {actions}
@@ -199,6 +200,8 @@ export function GameShell({
             ) : null}
           </div>
         </div>
+        {/* A lost streak that can be restored shows its panel here (see GameStreak). */}
+        <div ref={setRestoreSlot} className="empty:hidden" />
         <div data-game-skin={game} className="flex flex-col gap-3 rounded-lg p-3 md:p-4">
           {stats ? <div className="flex flex-wrap items-stretch gap-2">{stats}</div> : null}
           <div className="relative min-h-0">{children}</div>

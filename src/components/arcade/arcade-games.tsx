@@ -6,7 +6,7 @@ import { Flame, Gamepad2, Layers, Play, Sparkles, Trophy } from "lucide-react";
 import { Tabs as TabsPrimitive } from "radix-ui";
 import { DailyCountdown } from "@/components/arcade/daily";
 import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
-import { RecoverStreakDialog, StreakLine, useArcadeStreaks } from "@/components/arcade/streaks";
+import { RecoverStreakDialog, StreakLine, StreakRestorePanel, useArcadeStreaks } from "@/components/arcade/streaks";
 import { CatalogEmpty, CatalogSearch } from "@/components/catalog/catalog-search";
 import { Button } from "@/components/ui/button";
 import {
@@ -135,7 +135,12 @@ export function ArcadeGames({
 }) {
   const [query, setQuery] = useState("");
   const [shelf, setShelf] = useState<ArcadeCategoryId>(isShelf(initialShelf) ? initialShelf : DEFAULT_SHELF);
-  const { streaks, replace } = useArcadeStreaks(initialStreaks, () => false);
+  const { streaks, replace, refresh } = useArcadeStreaks(initialStreaks, () => false);
+  // Every game with a lost streak that can still be restored today, whatever shelf or search is showing.
+  const restorable = ARCADE_GAMES.flatMap((game) => {
+    const streak = isRankedGame(game.id) ? streaks?.[game.id] : undefined;
+    return streak?.recovery ? [{ game, streak }] : [];
+  });
   const [recovering, setRecovering] = useState<RankedGameId | null>(null);
   const match = catalogMatcher(query);
   const games = match ? ARCADE_GAMES.filter((game) => match(game.title, ARCADE_CABINETS[game.id].genre, game.blurb, ...(game.features ?? []))) : ARCADE_GAMES;
@@ -178,6 +183,18 @@ export function ArcadeGames({
           Play a game once per UTC day to grow its streak. <DailyCountdown label="Next reset in" title="Streak days reset at 00:00 UTC" />
         </span>
       </p>
+      {restorable.length > 0 ? (
+        <section aria-labelledby="arcade-restore-heading" className="mb-5 grid gap-2.5">
+          <h2 id="arcade-restore-heading" className="text-sm font-semibold">
+            {restorable.length === 1 ? "A streak you can restore today" : `${restorable.length} streaks you can restore today`}
+          </h2>
+          <div className="grid gap-2.5 md:grid-cols-2">
+            {restorable.map(({ game, streak }) => (
+              <StreakRestorePanel key={game.id} streak={streak} playHref={game.href} onRestore={() => setRecovering(streak.game)} />
+            ))}
+          </div>
+        </section>
+      ) : null}
       {games.length === 0 ? <CatalogEmpty query={query} onReset={() => setQuery("")} /> : null}
       {ARCADE_CATEGORIES.map((category) => {
         const full = category.id === "full";
@@ -252,7 +269,7 @@ export function ArcadeGames({
           streak={streaks[recovering]}
           open
           onOpenChange={(open) => !open && setRecovering(null)}
-          onRecovered={(next) => next && replace(next)}
+          onRecovered={(next) => (next ? replace(next) : refresh())}
         />
       ) : null}
     </TabsPrimitive.Root>

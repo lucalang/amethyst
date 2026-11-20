@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, GripVertical, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DropSlot, sortRowClass, useListDrag } from "@/components/ui/list-drag";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { errorMessage } from "@/components/workspace/client-utils";
 import { apiFetch } from "@/lib/api-client";
@@ -13,14 +14,11 @@ import type { LibraryCategory } from "@/lib/collections";
 import { cn } from "@/lib/utils";
 import { ClientCollectionIcon } from "./collection-identity-fields";
 
-const EDGE = 36;
-
 /** Opens a dialog to reorder collections by dragging or with move buttons / arrow keys. */
 export function ArrangeCollectionsButton({ collections, compact, className }: { collections: LibraryCategory[]; compact?: boolean; className?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [order, setOrder] = useState(collections);
-  const [dragId, setDragId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +28,6 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
 
   function show() {
     setOrder(collections);
-    setDragId(null);
     setAnnouncement("");
     setError(null);
     setOpen(true);
@@ -64,37 +61,14 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
     });
   }
 
-  function onPointerDown(event: PointerEvent<HTMLButtonElement>, id: string) {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.currentTarget.focus();
-    setDragId(id);
-  }
-
-  function onPointerMove(event: PointerEvent<HTMLButtonElement>, id: string) {
-    if (dragId !== id || !listRef.current) return;
-    const scroller = scrollRef.current;
-    if (scroller) {
-      const bounds = scroller.getBoundingClientRect();
-      if (event.clientY < bounds.top + EDGE) scroller.scrollBy({ top: -10 });
-      else if (event.clientY > bounds.bottom - EDGE) scroller.scrollBy({ top: 10 });
-    }
-    // Target index = how many other rows have their midpoint above the pointer.
-    let target = 0;
-    for (const row of listRef.current.querySelectorAll<HTMLElement>("[data-arrange-id]")) {
-      if (row.dataset.arrangeId === id) continue;
-      const rect = row.getBoundingClientRect();
-      if (event.clientY > rect.top + rect.height / 2) target += 1;
-    }
-    setOrder((current) => relocate(current, id, target));
-  }
-
-  function onPointerEnd(id: string) {
-    if (dragId !== id) return;
-    setDragId(null);
-    announce(order, id);
-  }
+  const { dragId, slot, startDrag, rowStyle } = useListDrag({
+    ids: order.map((item) => item.id),
+    containerRef: listRef,
+    scrollRef,
+    label: (id) => order.find((item) => item.id === id)?.name ?? "Collection",
+    onAnnounce: setAnnouncement,
+    onDrop: (id, to) => setOrder((current) => relocate(current, id, to)),
+  });
 
   function onHandleKey(event: KeyboardEvent<HTMLButtonElement>, id: string) {
     if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
@@ -162,18 +136,21 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
             </DialogDescription>
           </div>
         </DialogHeader>
-        <p id="arrange-instructions" className="sr-only">Press the up or down arrow key on a handle to move that collection.</p>
+        <p id="arrange-instructions" className="sr-only">Drag the handle, or press the up or down arrow key on it to move that collection. Escape cancels a drag.</p>
         <div ref={scrollRef} className="-mx-2 max-h-[55vh] overflow-y-auto px-2 py-1">
-          <ol ref={listRef} aria-label="Collection order" className={cn("space-y-1.5", dragId && "select-none")}>
+          <ol ref={listRef} aria-label="Collection order" className={cn("relative space-y-1.5", dragId && "cursor-grabbing select-none")}>
+            <DropSlot slot={slot} className="rounded-xl" />
             {order.map((item, index) => {
               const dragging = dragId === item.id;
               return (
                 <li
                   key={item.id}
-                  data-arrange-id={item.id}
+                  data-sort-id={item.id}
+                  style={rowStyle(item.id)}
                   className={cn(
-                    "flex min-w-0 items-center gap-1.5 rounded-xl border py-1 pr-1 pl-1 transition-[background-color,border-color,box-shadow] duration-150",
-                    dragging ? "relative z-10 border-amethyst/55 bg-amethyst/[0.12] shadow-[0_18px_36px_-20px_var(--amethyst)]" : "border-border bg-[rgb(var(--ink-rgb)/0.025)] hover:border-amethyst/30",
+                    "flex min-w-0 items-center gap-1.5 rounded-xl border py-1 pr-1 pl-1",
+                    sortRowClass(dragging),
+                    !dragging && "border-border bg-[rgb(var(--ink-rgb)/0.025)] hover:border-amethyst/30",
                   )}
                 >
                   <button
@@ -182,15 +159,13 @@ export function ArrangeCollectionsButton({ collections, compact, className }: { 
                     aria-label={`Reorder ${item.name}`}
                     aria-describedby="arrange-instructions"
                     className={cn(
-                      "grid size-9 shrink-0 touch-none place-items-center rounded-lg text-muted-foreground transition-colors outline-none hover:bg-amethyst/[0.08] hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring",
-                      dragging ? "cursor-grabbing text-amethyst" : "cursor-grab",
+                      "grid size-9 shrink-0 touch-none place-items-center rounded-lg text-muted-foreground transition-colors outline-none select-none hover:bg-amethyst/[0.08] hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring",
+                      dragging ? "cursor-grabbing bg-amethyst/15 text-amethyst" : "cursor-grab",
                     )}
                     disabled={pending}
-                    onPointerDown={(event) => onPointerDown(event, item.id)}
-                    onPointerMove={(event) => onPointerMove(event, item.id)}
-                    onPointerUp={() => onPointerEnd(item.id)}
-                    onPointerCancel={() => onPointerEnd(item.id)}
-                    onLostPointerCapture={() => onPointerEnd(item.id)}
+                    title="Drag to reorder"
+                    onPointerDown={(event) => startDrag(event, item.id)}
+                    onContextMenu={(event) => event.preventDefault()}
                     onKeyDown={(event) => onHandleKey(event, item.id)}
                   >
                     <GripVertical aria-hidden className="size-4" />

@@ -5131,6 +5131,37 @@ a.arcade-counter:hover {
 .streak-recover {
   color: var(--foreground);
 }
+/* Lost streak that can still be restored today: a clear, labelled notice in the warning tone (never color alone). */
+.streak-restore {
+  border-radius: calc(0.7rem * var(--radius-unit, 1));
+  border: 1px solid color-mix(in oklab, var(--warning) 55%, var(--border));
+  border-left-width: 4px;
+  background: color-mix(in oklab, var(--warning) 9%, var(--background));
+  padding: 0.75rem 0.85rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+.streak-restore-compact {
+  padding: 0.6rem 0.7rem;
+  border-left-width: 3px;
+}
+.streak-restore-icon {
+  display: grid;
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--warning) 18%, transparent);
+  color: var(--muted-foreground);
+}
+.streak-restore-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--warning) 75%, var(--foreground));
+}
 .streak-chip[data-recover="true"] {
   border-color: color-mix(in oklab, var(--warning) 55%, var(--border));
 }
