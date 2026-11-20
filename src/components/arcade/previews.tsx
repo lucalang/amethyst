@@ -450,8 +450,9 @@ const PREVIEWS: Record<ArcadeGameId, ReactNode> = {
       ].map(([x, y, n]) =>
         n ? (
           <g key={`${x}-${y}`}>
-            <rect x={x * 22 + 2} y={y * 27 + 2} width="18" height="23" rx="5" className={n >= 12 ? "fill-amethyst/45" : "fill-foreground/[0.12]"} />
-            <text x={x * 22 + 11} y={y * 27 + 17} textAnchor="middle" fontSize="9" fontWeight="800" className="fill-foreground">{n}</text>
+            <rect x={x * 22 + 2} y={y * 27 + 2} width="18" height="23" rx="5" fill={({ 3: "#5fe3c2", 6: "#5cc8f0", 12: "#8b9cff", 24: "#c98bff" } as Record<number, string>)[n]} />
+            <rect x={x * 22 + 2} y={y * 27 + 21} width="18" height="4" rx="2" fill="#000" fillOpacity="0.22" />
+            <text x={x * 22 + 11} y={y * 27 + 17} textAnchor="middle" fontSize="9" fontWeight="900" fill="#0b1d26">{n}</text>
           </g>
         ) : (
           <rect key={`${x}-${y}`} x={x * 22 + 6} y={y * 27 + 9} width="10" height="10" rx="5" className="fill-none stroke-foreground/20" strokeDasharray="2 2" />

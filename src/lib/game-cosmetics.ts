@@ -4,7 +4,7 @@
  * How each item looks lives with the game's renderer, keyed by the item's slug.
  */
 
-export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails"] as const;
+export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars"] as const;
 export type ShopGame = (typeof SHOP_GAMES)[number];
 export const isShopGame = (value: unknown): value is ShopGame => typeof value === "string" && (SHOP_GAMES as readonly string[]).includes(value);
 
@@ -36,7 +36,8 @@ export type CategoryIcon =
   | "tag"
   | "party"
   | "sun"
-  | "crown";
+  | "crown"
+  | "ship";
 
 type ItemDef = { slug: string; name: string; price: number; description: string };
 export type GameCategory = {
@@ -1070,6 +1071,109 @@ export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
           item("newsprint", "Newsprint", 350, "Halftone paper, heavy black ink and bold offset shadows."),
           item("papercraft", "Papercraft", 400, "Cut paper layered on kraft card, with soft cast shadows."),
           item("chalkboard", "Chalkboard", 450, "Chalk outlines and pastel land on a green slate."),
+        ],
+      },
+    ],
+  },
+  "front-wars": {
+    game: "front-wars",
+    title: "Front Wars",
+    prefix: "front-wars",
+    href: "/arcade/front-wars",
+    blurb: "Map styles, patterns for your land, building and boat skins, attack effects and art styles that redraw the whole war. Rules, ranges and odds never change.",
+    categories: [
+      {
+        id: "map",
+        label: "Map styles",
+        icon: "map",
+        blurb: "The ground and sea under every border. Territories keep their owners' colours on top.",
+        default: { name: "Command Map", description: "Green plains, brown highlands and a deep navy sea." },
+        items: [
+          item("war-room", "Antique War Room", 150, "Parchment continents, an inked coastline with engraved ripples, latitude lines and a compass rose."),
+          item("topographic", "Topographic Survey", 150, "Elevation bands and brown contour lines on land, and depth bands at sea, like a surveyor's sheet."),
+          item("coral-atoll", "Coral Atoll", 170, "Jungle islands ringed by sand beaches and turquoise lagoons dotted with coral."),
+          item("frostbound", "Frostbound", 180, "Snowfields and cracked blue glaciers, with ice floes drifting off dark arctic coasts."),
+          item("circuit-board", "Circuit Board", 200, "Continents etched as circuit boards: copper traces, gold pads and chip-black mountains."),
+          item("ember-wastes", "Ember Wastes", 220, "Black basalt split by glowing lava veins, beside an obsidian sea."),
+          item("lunar-survey", "Lunar Survey", 240, "Grey cratered moonscape adrift in a starry void."),
+        ],
+      },
+      {
+        id: "pattern",
+        label: "Territory patterns",
+        icon: "grid",
+        blurb: "A pattern across the inside of your land. Your borders stay bright and clear, and rivals never get it.",
+        default: { name: "Plain Banner", description: "Your land in one solid colour." },
+        items: [
+          item("chevrons", "Heraldic Chevrons", 100, "Stacked chevrons, like a coat of arms."),
+          item("masonry", "Fortress Masonry", 100, "Brick courses with dark mortar."),
+          item("fields", "Patchwork Fields", 110, "Hedged fields ploughed in different directions."),
+          item("honeycomb", "Hive Cells", 120, "A honeycomb of rounded cells."),
+          item("camouflage", "Camouflage", 130, "Three-tone camouflage blotches."),
+          item("circuit", "Circuit Traces", 150, "Bright traces running between gold solder pads."),
+          item("starfield", "Starfield Banner", 160, "A darker field strewn with stars."),
+        ],
+      },
+      {
+        id: "building",
+        label: "Building skins",
+        icon: "building",
+        blurb: "Your Cities, Posts, Ports, Factories, Silos and SAMs. Each keeps its shape and symbol, so you can always tell them apart. Rivals keep plain markers.",
+        default: { name: "Field Markers", description: "White map markers with a symbol in your colour." },
+        items: [
+          item("origami", "Folded Paper", 110, "Creased paper markers, half in shade, with a crisp cast shadow."),
+          item("carved", "Carved Miniatures", 120, "Hand-carved wooden pieces on round pedestals, wood grain and all."),
+          item("stone-keep", "Stone Keeps", 130, "Grey masonry on heavy stone plinths."),
+          item("campaign-banners", "Campaign Banners", 140, "Stitched canvas tents, each flying a swallowtail pennant in your colour."),
+          item("ice", "Ice Sculptures", 150, "Faceted ice with twinkling glints."),
+          item("clockwork", "Brass Clockwork", 170, "Polished, riveted brass mounted on turning gears."),
+          item("hologram", "Hologram Projectors", 190, "Flickering cyan holograms with rolling scanlines, beamed up from projector pads."),
+        ],
+      },
+      {
+        id: "attack",
+        label: "Attack effects",
+        icon: "zap",
+        blurb: "What marches along the front of your attacks, flashes on land you take and bursts when an attack starts. Your fronts stay white, or amber when stalling.",
+        default: { name: "Chevrons", description: "Marching chevrons and square flashes." },
+        items: [
+          item("arrows", "Arrow Volley", 110, "Arrows arc toward the front and thud into captured land."),
+          item("ink", "Ink Blots", 110, "Ink drops race ahead and splat where land falls."),
+          item("flares", "Signal Flares", 130, "Glowing red flares trailing smoke; captured land sends up embers."),
+          item("tide", "Tidal Surge", 130, "Wave crests roll forward and leave foam behind."),
+          item("swarm", "Firefly Swarm", 150, "Clouds of fireflies swirling along the front."),
+          item("packets", "Data Packets", 160, "Pixel packets stream forward, and captured land glitches."),
+          item("storm", "Storm Front", 180, "Crackling lightning strikes forward with flickering flashes."),
+        ],
+      },
+      {
+        id: "boat",
+        label: "Boat skins",
+        icon: "ship",
+        blurb: "Your troop boats and Warships. A white outline always marks them as yours, and Warships keep their gun turret.",
+        default: { name: "Troop Barge", description: "A plain white arrowhead hull." },
+        items: [
+          item("paper-boat", "Paper Boat", 100, "A folded paper boat with a stripe in your colour."),
+          item("swan", "Swan Paddleboat", 120, "A swan with a curved neck, paddling ripples behind it."),
+          item("lantern-junk", "Lantern Junk", 130, "Crescent battened sails and a glowing stern lantern."),
+          item("longship", "Dragon Longship", 140, "A dragon prow, a striped sail and a row of shields."),
+          item("sea-turtle", "Sea Turtle Ferry", 160, "A giant turtle paddling its flippers, with troops riding on its shell."),
+          item("submarine", "Midget Submarine", 170, "Half under water, with a bow wave and a trail of bubbles."),
+          item("zeppelin", "Sky Zeppelin", 190, "A silver airship bobbing above its own shadow."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Redraws the whole war: borders, land, lettering, pieces and the screen itself. Combines with every other cosmetic.",
+        default: { name: "Command Display", description: "Clean flat colours with bright borders." },
+        items: [
+          item("diorama", "Tabletop Diorama", 300, "Raised territories cast shadows across the board, pieces stand on it and names sit on plaques."),
+          item("woodcut", "Woodcut Print", 350, "Cut hatching, black ink borders, engraved seas and serif capitals on grainy paper."),
+          item("watercolour", "Watercolour Campaign", 400, "Soft pigment washes that pool darker at the borders, on textured paper with ink lettering."),
+          item("console", "CRT Command Console", 450, "A dark phosphor screen: glowing borders, scanlines, a sweeping refresh and monospace readouts."),
         ],
       },
     ],

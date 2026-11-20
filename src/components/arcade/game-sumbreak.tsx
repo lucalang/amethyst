@@ -27,6 +27,12 @@ import { CELEBRATIONS } from "./puzzle-looks";
 /** One step of play: the board before it and the merge (null = the board was reset to the start). */
 type Step = { before: SumbreakBoard; move: SumbreakMove | null };
 type Drag = { from: number; pointer: number; x: number; y: number; moved: boolean };
+/** The latest merge, for its effects: `from` slides onto `cell`; `chain` counts merges made in quick succession. */
+type Pop = { id: number; cell: number; from: number; fromValue: number; chain: number };
+
+/** Merges this close together (ms) build a chain. */
+const CHAIN_MS = 1600;
+const SPARK_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 /** The merges since the last reset, in order: what the server replays. */
 function movesOf(history: Step[]) {
@@ -46,7 +52,8 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
   const [history, setHistory] = useState<Step[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [cursor, setCursor] = useState(0);
-  const [pop, setPop] = useState<{ id: number; cell: number } | null>(null);
+  const [pop, setPop] = useState<Pop | null>(null);
+  const lastMerge = useRef({ at: 0, chain: 0 });
   const [shake, setShake] = useState<{ id: number; cell: number } | null>(null);
   const [hinted, setHinted] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
@@ -83,7 +90,12 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
     setSelected(null);
     setCursor(to);
     setHinted(null);
-    setPop((previous) => ({ id: (previous?.id ?? 0) + 1, cell: to }));
+    const now = performance.now();
+    const chain = now - lastMerge.current.at < CHAIN_MS ? lastMerge.current.chain + 1 : 1;
+    lastMerge.current = { at: now, chain };
+    setPop((previous) => ({ id: (previous?.id ?? 0) + 1, cell: to, from, fromValue: cells[from], chain }));
+    // A little buzz on phones: firmer for big numbers.
+    if (effects !== "off") navigator.vibrate?.(tier(next[to]) >= 5 ? [14, 40, 18] : 12);
     const remaining = tilesLeft(next);
     setMessage(`${cells[from]} + ${cells[to]} = ${next[to]}. ${remaining === 1 ? "One tile left: solved!" : `${remaining} tiles left.`}`);
     if (sumbreakSolved(next)) {
@@ -94,7 +106,10 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
     if (legalMerges(next, n).length === 0) {
       play("miss");
       setMessage(`No merges left with ${remaining} tiles. Undo or restart.`);
-    } else play("merge", 0.8 + Math.min(0.8, tier(next[to]) * 0.1));
+    } else {
+      play("merge", 0.8 + Math.min(0.8, tier(next[to]) * 0.1) + Math.min(0.3, (chain - 1) * 0.06));
+      if (chain >= 3) play("combo", 1 + Math.min(0.6, (chain - 3) * 0.1));
+    }
     return true;
   }
 
@@ -179,7 +194,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
     setSelected(null);
     setCursor(move.to);
     setHinted(move.to);
-    setPop((previous) => ({ id: (previous?.id ?? 0) + 1, cell: move.to }));
+    setPop((previous) => ({ id: (previous?.id ?? 0) + 1, cell: move.to, from: move.from, fromValue: base[move.from], chain: 1 }));
     setMessage(`${steppedBack ? "Stepped back to a position that can still be solved. " : ""}Hint: ${base[move.from]} + ${base[move.to]} = ${next[move.to]}.`);
     if (sumbreakSolved(next)) {
       const moves = movesOf(nextHistory);
@@ -283,12 +298,35 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
         </>
       }
     >
-      <div className={cn("puzzle-board sumbreak-board relative mx-auto aspect-square w-full", solved && "puzzle-board-solved", stuck && "sumbreak-stuck", effects !== "off" && "sumbreak-fx")}>
+      <div
+        data-fx={effects}
+        className={cn(
+          "puzzle-board sumbreak-board relative mx-auto aspect-square w-full",
+          solved && "puzzle-board-solved",
+          stuck && "sumbreak-stuck",
+          effects !== "off" && "sumbreak-fx",
+          // Big merges give the whole board a small thump (two names so back-to-back ones both play).
+          pop && tier(cells[pop.cell] || 1) >= 4 && (pop.id % 2 ? "sumbreak-thump-a" : "sumbreak-thump-b"),
+        )}
+      >
+        {pop && pop.chain >= 2 && effects !== "off" ? (
+          <span key={`chain-${pop.id}`} aria-hidden className="sumbreak-chain">
+            Chain ×{pop.chain}
+          </span>
+        ) : null}
         <div
           role="grid"
           aria-label={`Sumbreak board, ${n} by ${n}, ${left} tile${left === 1 ? "" : "s"} left`}
-          className="grid size-full gap-[clamp(0.25rem,1.6cqi,0.6rem)] p-[clamp(0.25rem,1.6cqi,0.6rem)]"
-          style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${n}, minmax(0, 1fr))` }}
+          className="grid size-full"
+          style={
+            {
+              "--sb-gap": "clamp(0.25rem, 1.6cqi, 0.6rem)",
+              gap: "var(--sb-gap)",
+              padding: "var(--sb-gap)",
+              gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${n}, minmax(0, 1fr))`,
+            } as CSSProperties
+          }
         >
           {Array.from({ length: n }, (_, r) => (
             <div key={r} role="row" className="contents">
@@ -297,6 +335,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
                 const value = cells[cell];
                 const isPartner = partners.includes(cell);
                 const matches = value ? sumbreakNeighbours(cell, n).filter((other) => cells[other] === value).length : 0;
+                const merged = pop?.cell === cell && Boolean(value);
                 return (
                   <button
                     key={cell}
@@ -329,7 +368,9 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
                     className={cn(
                       "sumbreak-cell relative grid touch-none place-items-center rounded-[22%] select-none",
                       value ? "sumbreak-tile" : "sumbreak-gap",
-                      value && tier(value) >= 5 && "sumbreak-deep",
+                      value && tier(value) >= 7 && "sumbreak-hot",
+                      merged && "sumbreak-merged",
+                      solved && value && "sumbreak-final",
                       selected === cell && "sumbreak-selected",
                       isPartner && "sumbreak-partner",
                       over === cell && (isPartner ? "sumbreak-over" : "sumbreak-over-bad"),
@@ -337,6 +378,27 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
                     )}
                     style={{ "--sb-tier": value ? tier(value) : 0 } as CSSProperties}
                   >
+                    {merged && pop && effects !== "off" ? (
+                      <span key={`fx-${pop.id}`} aria-hidden className="contents">
+                        <span
+                          className="sumbreak-ghost sumbreak-value"
+                          style={
+                            {
+                              "--sb-tier": tier(pop.fromValue),
+                              "--dx": (pop.from % n) - c,
+                              "--dy": Math.floor(pop.from / n) - r,
+                              fontSize: `clamp(0.9rem, ${(pop.fromValue >= 100 ? 26 : pop.fromValue >= 10 ? 32 : 38) / n}cqi, 2.6rem)`,
+                            } as CSSProperties
+                          }
+                        >
+                          {pop.fromValue}
+                        </span>
+                        <span className="sumbreak-ring" />
+                        {SPARK_ANGLES.map((angle) => (
+                          <span key={angle} className="sumbreak-spark" style={{ "--a": `${angle + (pop.id % 4) * 11}deg` } as CSSProperties} />
+                        ))}
+                      </span>
+                    ) : null}
                     {value ? (
                       <span
                         key={`${pop?.cell === cell ? pop.id : 0}-${shake?.cell === cell ? shake.id : 0}`}

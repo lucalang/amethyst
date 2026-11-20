@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import {
   Anchor,
   Atom,
@@ -94,6 +94,7 @@ import {
   type Settings,
   type Weapon,
 } from "./front-wars/engine";
+import { frontWarsTheme } from "./front-wars/look";
 import { MapRenderer, drawFrame, isBuilding, type Ping, type Tool, type View } from "./front-wars/render";
 import "./front-wars/front-wars.css";
 
@@ -637,12 +638,15 @@ function attackerTile(game: Game, attack: Attack) {
 }
 
 export default function FrontWarsGame({ records }: { records: Record<string, number> }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look } = useArcade();
   // Decorative motion (the conquest sequence, blasts) follows the account's animation setting and reduced motion.
   const effectsRef = useRef(effects);
   useEffect(() => {
     effectsRef.current = effects;
   }, [effects]);
+  // Cosmetics from the Front Wars shop; equipping one mid-match (from the in-game shop) restyles the map at once.
+  const theme = useMemo(() => frontWarsTheme(look), [look]);
+  const themeRef = useRef(theme);
   const { best, submit } = useRecord("front-wars", records[""] ?? null);
   // The last match's setup (this component only renders in the browser: it's loaded with ssr: false).
   const [settings, setSettings] = useState<Settings>(loadSettings);
@@ -753,6 +757,13 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
   }, [draw]);
 
   useEffect(() => () => cancelAnimationFrame(drawRequest.current), []);
+
+  useEffect(() => {
+    themeRef.current = theme;
+    if (!rendererRef.current) return;
+    rendererRef.current.setTheme(theme);
+    requestDraw();
+  }, [theme, requestDraw]);
 
   const fit = useCallback(() => {
     const game = gameRef.current;
@@ -900,7 +911,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       }
       const game = createGame(next, (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0);
       gameRef.current = game;
-      rendererRef.current = new MapRenderer(game);
+      rendererRef.current = new MapRenderer(game, themeRef.current);
       pingsRef.current = [];
       hoverRef.current = -1;
       selectedRef.current = -1;

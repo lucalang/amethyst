@@ -1900,87 +1900,335 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Sumbreak: numbered tiles that merge into their sum. Shades deepen with each
- * doubling (--sb-tier); emptied cells stay as faint dashed gaps.
+ * Sumbreak: numbered tiles that merge into their sum, on a deep night-sea board.
+ * Every doubling (--sb-tier) moves a tile one step along a colour wheel, mint →
+ * cyan → blue → violet → magenta → pink → coral → orange → gold, so equal numbers
+ * always share a colour. Emptied cells stay as faint sunken holes.
  * ------------------------------------------------------------------------- */
+[data-game-skin="sumbreak"] {
+  --background: #0a1820;
+  --surface: #0f222d;
+  --surface-raised: #15303c;
+  --foreground: #eafbff;
+  --muted-foreground: #9cc3cf;
+  --amethyst: #3fe0c5;
+  --amethyst-foreground: #04201b;
+  --rose: #ff8a5c;
+  --rose-foreground: #2a0d02;
+  --destructive: #ff7a7a;
+  --ink-rgb: 234 251 255;
+  --paper-rgb: 10 24 32;
+  --accent-rgb: 63 224 197;
+  --rose-rgb: 255 138 92;
+  --shadow-rgb: 0 6 10;
+  --shadow-alpha: 0.85;
+  --theme-dark: 1;
+  color-scheme: dark;
+}
 .sumbreak-board {
-  background: rgb(var(--ink-rgb) / 0.05);
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgb(63 224 197 / 0.08), transparent 60%),
+    linear-gradient(180deg, #0c2029, #081820);
   border: 1px solid rgb(var(--ink-rgb) / 0.1);
+  box-shadow:
+    inset 0 2px 12px rgb(0 0 0 / 0.45),
+    0 18px 40px -24px rgb(0 0 0 / 0.9);
 }
 .sumbreak-cell {
-  --sb-mix: calc(14% + var(--sb-tier) * 11%);
+  /* The tile's colour: one step round the wheel per doubling. */
+  --sb-h: calc(168 + var(--sb-tier) * 34);
+  --sb-top: oklch(0.89 0.11 var(--sb-h));
+  --sb-face: oklch(0.79 0.15 var(--sb-h));
+  --sb-edge: oklch(0.56 0.14 var(--sb-h));
+  --sb-glow: oklch(0.8 0.17 var(--sb-h) / 0.75);
   font-variant-numeric: tabular-nums;
   transition:
     background-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.12s ease;
+    box-shadow 0.18s ease,
+    transform 0.16s cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 .sumbreak-tile {
   cursor: grab;
-  color: var(--foreground);
-  background: color-mix(in oklab, var(--amethyst) min(var(--sb-mix), 82%), var(--surface-raised));
+  color: #0b1d26;
+  background: linear-gradient(180deg, var(--sb-top), var(--sb-face) 62%);
   box-shadow:
-    inset 0 -3px 0 rgb(var(--shadow-rgb) / 0.16),
-    0 1px 3px rgb(var(--shadow-rgb) / 0.18);
+    inset 0 -0.28em 0 var(--sb-edge),
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    0 0.3em 0.6em -0.2em rgb(0 0 0 / 0.55);
 }
-.sumbreak-deep {
-  color: #fff;
+/* A glossy highlight across the top of each tile. */
+.sumbreak-tile::before {
+  content: "";
+  position: absolute;
+  inset: 6% 10% 55%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.45), rgb(255 255 255 / 0));
+  pointer-events: none;
+}
+/* Big numbers (from the eighth doubling) shimmer. */
+.sumbreak-hot {
+  background:
+    linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 0.4) 45%, transparent 60%) 0 0 / 250% 100%,
+    linear-gradient(180deg, var(--sb-top), var(--sb-face) 62%);
 }
 .sumbreak-tile:hover:not([aria-disabled="true"]) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 .sumbreak-gap {
   cursor: default;
-  background: transparent;
-  border: 2px dashed rgb(var(--ink-rgb) / 0.12);
+  background: rgb(0 0 0 / 0.22);
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.45);
+  border: 1.5px dashed rgb(var(--ink-rgb) / 0.08);
 }
 .sumbreak-cell:focus-visible {
-  outline: 3px solid var(--amethyst);
+  outline: 3px solid #ffffff;
   outline-offset: 2px;
   z-index: 1;
 }
 .sumbreak-selected {
   cursor: grabbing;
-  transform: scale(1.04);
+  transform: translateY(-4px) scale(1.07);
   box-shadow:
-    0 0 0 3px var(--amethyst),
-    0 6px 16px rgb(var(--shadow-rgb) / 0.3);
-  z-index: 1;
+    inset 0 -0.28em 0 var(--sb-edge),
+    0 0 0 3px #ffffff,
+    0 0 22px 4px var(--sb-glow),
+    0 12px 18px -8px rgb(0 0 0 / 0.7);
+  z-index: 2;
 }
 .sumbreak-partner {
   box-shadow:
-    0 0 0 2px rgb(var(--accent-rgb) / 0.9),
-    inset 0 0 0 999px rgb(var(--accent-rgb) / 0.12);
+    inset 0 -0.28em 0 var(--sb-edge),
+    0 0 0 2.5px rgb(255 255 255 / 0.9),
+    0 0 16px 2px var(--sb-glow);
 }
 .sumbreak-over {
-  transform: scale(1.06);
-  box-shadow: 0 0 0 3px rgb(var(--accent-rgb));
+  transform: scale(1.1);
+  box-shadow:
+    inset 0 -0.28em 0 var(--sb-edge),
+    0 0 0 3.5px #ffffff,
+    0 0 26px 6px var(--sb-glow);
+  z-index: 1;
 }
 .sumbreak-over-bad {
-  box-shadow: 0 0 0 3px rgb(var(--rose-rgb) / 0.85);
+  transform: rotate(-3deg);
+  box-shadow:
+    inset 0 -0.28em 0 var(--sb-edge),
+    0 0 0 3px rgb(var(--rose-rgb) / 0.95);
 }
 .sumbreak-value {
-  font-weight: 800;
+  position: relative;
+  font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.45);
 }
 .sumbreak-stuck .sumbreak-tile {
-  opacity: 0.75;
+  filter: saturate(0.45) brightness(0.85);
+}
+.sumbreak-merged {
+  z-index: 3;
+}
+/* The tile you moved, sliding onto its partner (it starts --dx/--dy cells away). */
+.sumbreak-ghost {
+  /* Recomputed here: the ghost wears the colour of the number it was before the merge. */
+  --sb-h: calc(168 + var(--sb-tier) * 34);
+  --sb-top: oklch(0.89 0.11 var(--sb-h));
+  --sb-face: oklch(0.79 0.15 var(--sb-h));
+  --sb-edge: oklch(0.56 0.14 var(--sb-h));
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--sb-top), var(--sb-face) 62%);
+  box-shadow: inset 0 -0.28em 0 var(--sb-edge);
+  opacity: 0;
+}
+.sumbreak-ring,
+.sumbreak-spark,
+.sumbreak-chain {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+.sumbreak-ring {
+  inset: -6%;
+  border-radius: 30%;
+  border: 3px solid var(--sb-face);
+  box-shadow: 0 0 18px var(--sb-glow);
+}
+.sumbreak-spark {
+  left: 50%;
+  top: 50%;
+  width: 9%;
+  aspect-ratio: 1;
+  margin: -4.5% 0 0 -4.5%;
+  border-radius: 999px;
+  background: var(--sb-top);
+  box-shadow: 0 0 8px var(--sb-glow);
+}
+.sumbreak-chain {
+  left: 50%;
+  top: 0.4rem;
+  z-index: 4;
+  translate: -50% 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #0b1d26;
+  background: linear-gradient(90deg, #3fe0c5, #ffd36b, #ff8a5c);
+  box-shadow: 0 6px 18px -6px rgb(0 0 0 / 0.7);
+}
+.sumbreak-final {
+  box-shadow:
+    inset 0 -0.28em 0 var(--sb-edge),
+    0 0 0 3px #fff3c4,
+    0 0 40px 10px oklch(0.85 0.16 85 / 0.7);
 }
 @media (prefers-reduced-motion: no-preference) {
+  .sumbreak-fx .sumbreak-hot {
+    animation: sumbreak-shimmer 2.6s linear infinite;
+  }
+  .sumbreak-fx .sumbreak-partner {
+    animation: sumbreak-breathe 1s ease-in-out infinite;
+  }
+  .sumbreak-fx .sumbreak-ghost {
+    animation: sumbreak-slide 0.13s cubic-bezier(0.5, 0, 0.9, 0.6) both;
+  }
+  .sumbreak-fx .sumbreak-merged {
+    animation: sumbreak-squash 0.42s cubic-bezier(0.3, 1.5, 0.5, 1) 0.11s both;
+  }
   .sumbreak-fx .sumbreak-pop {
-    animation: sumbreak-pop 0.32s cubic-bezier(0.3, 1.6, 0.5, 1);
+    animation: sumbreak-pop 0.36s cubic-bezier(0.3, 1.8, 0.5, 1) 0.11s both;
+  }
+  .sumbreak-fx .sumbreak-ring {
+    animation: sumbreak-ring 0.5s ease-out 0.11s both;
+  }
+  .sumbreak-fx[data-fx="full"] .sumbreak-spark {
+    animation: sumbreak-spark 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) 0.11s both;
+  }
+  .sumbreak-fx .sumbreak-chain {
+    animation: sumbreak-chain 0.9s ease-out both;
   }
   .sumbreak-fx .sumbreak-shake {
     animation: sumbreak-shake 0.3s ease;
   }
+  .sumbreak-fx .sumbreak-final {
+    animation: sumbreak-final 1.2s ease-in-out 0.3s 2;
+  }
+  .sumbreak-fx.sumbreak-thump-a {
+    animation: sumbreak-thump-a 0.35s ease-out 0.11s;
+  }
+  .sumbreak-fx.sumbreak-thump-b {
+    animation: sumbreak-thump-b 0.35s ease-out 0.11s;
+  }
 }
-@keyframes sumbreak-pop {
+@keyframes sumbreak-slide {
   0% {
-    transform: scale(0.6);
+    opacity: 1;
+    transform: translate(calc(var(--dx) * (100% + var(--sb-gap))), calc(var(--dy) * (100% + var(--sb-gap))));
+  }
+  90% {
+    opacity: 1;
+    transform: translate(0, 0) scale(0.92);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.9);
+  }
+}
+@keyframes sumbreak-squash {
+  0% {
+    transform: scale(0.88, 0.92);
+  }
+  35% {
+    transform: scale(1.2, 1.12);
+  }
+  65% {
+    transform: scale(0.95, 0.98);
   }
   100% {
     transform: scale(1);
+  }
+}
+@keyframes sumbreak-pop {
+  0% {
+    transform: scale(0.4);
+    filter: brightness(2);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+@keyframes sumbreak-ring {
+  0% {
+    opacity: 1;
+    transform: scale(0.75);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+@keyframes sumbreak-spark {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateY(-430%) scale(0.3);
+  }
+}
+@keyframes sumbreak-chain {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.7);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+}
+@keyframes sumbreak-shimmer {
+  from {
+    background-position: 130% 0, 0 0;
+  }
+  to {
+    background-position: -130% 0, 0 0;
+  }
+}
+@keyframes sumbreak-breathe {
+  50% {
+    transform: scale(1.04);
+  }
+}
+@keyframes sumbreak-final {
+  50% {
+    transform: scale(1.08);
+    filter: brightness(1.15);
+  }
+}
+@keyframes sumbreak-thump-a {
+  30% {
+    transform: scale(0.985);
+  }
+}
+@keyframes sumbreak-thump-b {
+  30% {
+    transform: scale(0.985);
   }
 }
 @keyframes sumbreak-shake {
@@ -1991,3 +2239,4 @@
     transform: translateX(4px);
   }
 }
+

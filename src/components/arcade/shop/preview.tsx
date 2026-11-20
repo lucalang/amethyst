@@ -31,6 +31,8 @@ import { drawBlock, drawPerfect, drawScenery, pedestalColor, perfectDuration, st
 import { drawGemBody, drawGlimmer, drawShadeBody, drawSpark, gemChaseTheme, paintMaze, type GemChaseTheme } from "../gem-chase-look";
 import { applyArtStyle, blasterTheme, drawBossBody, drawLaser, drawShipBody, flameColor, glow, paintNebula, type BlasterTheme } from "../space-blaster-look";
 import { botSkins, drawArena, drawCaptureFlash, drawLabel, drawLands, drawPiece, drawScraps, drawTrail as drawPaperTrail, maskPath, paperTrailsTheme, scrapBurst, stepScraps, territoryPath, type PaperTrailsTheme, type Scrap } from "../paper-trails/look";
+import { frontWarsTheme } from "../front-wars/look";
+import { createFrontWarsShowcase } from "../front-wars/showcase";
 import { CELEBRATIONS, PuzzleCelebration, QueensCrown, QueensDefs, TangoSymbol, ZipMarker, lookAttributes, patchColors, queensRegionColors, zipTrail, type Celebration } from "../puzzle-looks";
 import "../minigames.css";
 // The 2048 board (.g2048) and the shared stage are styled here; previews also show outside game pages
@@ -1294,6 +1296,7 @@ const ASPECT: Record<ShopGame, string> = {
   tango: "",
   queens: "",
   "paper-trails": "aspect-[8/5]",
+  "front-wars": "aspect-[8/5]",
 };
 
 /** A live preview of a game with the given look; `focus` is the category being browsed. */
@@ -1312,6 +1315,7 @@ export function CosmeticPreview({ game, look, focus, effects }: { game: ShopGame
     if (game === "gem-chase") return createGemChaseScene(gemChaseTheme(look), effects);
     if (game === "space-blaster") return createBlasterScene(blasterTheme(look), effects);
     if (game === "paper-trails") return createPaperTrailsScene(paperTrailsTheme(look), effects);
+    if (game === "front-wars") return createFrontWarsShowcase(frontWarsTheme(look), effects);
     return createStackerScene(stackerTheme(look), effects);
   };
   return (

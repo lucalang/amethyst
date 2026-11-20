@@ -51,6 +51,56 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-front-wars-shop",
+    date: "2026-11-20",
+    title: "The Front Wars shop",
+    intro: "Front Wars has its own cosmetic shop: 39 items that change how the war looks, from antique war-room maps and circuit-board continents to dragon longships, lightning attacks and a CRT command console.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Map styles", text: "Seven new grounds under every border, including Antique War Room with a compass rose, Circuit Board, Ember Wastes and a starry Lunar Survey." },
+      { kind: "new", feature: "Your land and pieces", text: "Seven patterns for the inside of your land, plus seven skins each for your buildings and your boats, from carved miniatures and brass clockwork to a sea turtle ferry and a sky zeppelin." },
+      { kind: "new", feature: "Attack effects", text: "Seven ways for your fronts to march, flash and burst: arrows, ink blots, signal flares, tides, fireflies, data packets and lightning." },
+      { kind: "new", feature: "Art styles", text: "Tabletop Diorama, Woodcut Print, Watercolour Campaign and CRT Command Console redraw borders, lettering and the whole screen, and work with everything else." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Front Wars shop",
+          body: "Seven map styles, seven territory patterns, seven building skins, seven attack effects, seven boat skins and four art styles. Everything is purely visual: rules, ranges, speeds and odds never change.",
+          points: [
+            "Patterns, building skins, boat skins and attack effects only change your own land and pieces; rivals keep plain markers, so yours always stand out.",
+            "Borders, ownership colours, troop counts, alerts and tool ranges stay readable in every combination. Your boats keep a white outline, and Warships keep their gun turret.",
+            "Every building keeps its shape and symbol in every skin, so Cities, Posts, Ports, Factories, Silos and SAMs are always easy to tell apart.",
+            "Equip items from the Shop button in the game: the map restyles straight away, even mid-match.",
+            "Animated touches follow your effects setting and reduced motion.",
+          ],
+          where: "Arcade → Front Wars → Shop",
+          link: { href: "/arcade/front-wars/shop", label: "Open the Front Wars shop" },
+        },
+      ],
+    },
+  },
+  {
+    id: "2026-11-20-sumbreak-colours",
+    date: "2026-11-20",
+    title: "A brighter, juicier Sumbreak",
+    intro: "Sumbreak has its own colours now, and every merge feels like one.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "Colour by number", text: "Tiles climb a colour wheel as they double, from mint through blue, violet and pink to coral and gold, so equal numbers always match at a glance. The biggest numbers shimmer." },
+      { kind: "improved", feature: "Satisfying merges", text: "The tile you move slides onto its partner, which squashes, pops and throws a ring of sparks. Big merges thump the board, quick merges build a chain, and phones give a little buzz." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "Sumbreak’s new look",
+          body: "A deep night-sea board with glossy, colour-coded tiles: picked tiles lift and glow, tiles they can merge with pulse in their colour, and emptied cells sink into the board. Merging several times in quick succession shows a chain counter and raises the sound’s pitch, and the last tile glows gold when you solve. Rules, puzzles and records are unchanged. With reduced motion or effects off, the animations and vibration stay off.",
+          link: { href: "/arcade/sumbreak", label: "Play Sumbreak" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-guess-the",
     date: "2026-11-20",
     title: "Guess The ...: Guess the Chart",
