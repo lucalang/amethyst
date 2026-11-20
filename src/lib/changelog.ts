@@ -51,6 +51,26 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-20-detailed-worlds",
+    date: "2026-11-20",
+    title: "Richer worlds in The Descent and The Ascent",
+    intro: "Every object in both worlds has been redrawn with far more detail: textures, shading, trim and small living touches, from the cottage garden’s flowers to the sealed door at the bottom of the fog.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "improved", feature: "The Ascent", text: "Real garden flowers (sunflowers, daisies, tulips, poppies, bluebells, hollyhocks), veined leaves, a tiled stone cottage with roses, a cow with a bell, woolly cloud-sheep, a balloonist who waves, a riveted airship and a brick-and-pennant castle." },
+      { kind: "improved", feature: "The Descent", text: "Brick tenements with sash windows, balconies and chimney pots, a clock tower with Roman numerals, illustrated tarot cards, a gilt mirror, a lighthouse and galleon in full rigging, kelp with air bladders, carved glyphs and a riveted, chained door." },
+    ],
+    details: {
+      improved: [
+        {
+          title: "More detailed worlds",
+          body: "Nothing about how either game plays has changed: the same scenery sits in the same places, only drawn with much more care. The beanstalk’s leaves now have veins and joints, and the Sanctum above the fog has banners, candelabra, a marble floor and fluted pillars.",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-20-the-ascent",
     date: "2026-11-20",
     title: "The Ascent",

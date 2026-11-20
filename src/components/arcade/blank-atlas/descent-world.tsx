@@ -298,25 +298,80 @@ function Sanctum({ round, shown, final }: { round: Round; shown: number; final: 
       <circle cx="400" cy="140" r="90" fill="url(#dw-moonglow)" className="dw-moonglow" />
       <circle cx="400" cy="140" r="40" fill="url(#dw-moon)" className="dw-moon" />
       <path d="M300 250 V140 Q300 78 400 70 Q500 78 500 140 V250 M400 70 V250 M300 160 H500" fill="none" stroke="#3b3036" strokeWidth="4" />
+      <path d="M350 160 V250 M450 160 V250 M330 100 Q400 120 470 100" fill="none" stroke="#3b3036" strokeWidth="2" />
+      <circle cx="400" cy="112" r="12" fill="none" stroke="#3b3036" strokeWidth="2" />
+      {/* Hanging crimson banners embroidered with a gold star. */}
+      {[210, 590].map((x) => (
+        <g key={x}>
+          <path d={`M${x - 22} 60 H${x + 22}`} stroke="#6e5a3a" strokeWidth="3" />
+          <path d={`M${x - 18} 62 H${x + 18} V196 L${x} 182 L${x - 18} 196 Z`} fill="#5a1220" stroke="#8a2a34" strokeWidth="1.5" />
+          <path d={`M${x - 14} 66 V188 M${x + 14} 66 V188`} stroke="#c9a86a" strokeWidth="1" strokeOpacity="0.6" />
+          <path d={`M${x} 100 L${x + 4} 112 L${x + 16} 112 L${x + 6} 120 L${x + 10} 132 L${x} 124 L${x - 10} 132 L${x - 6} 120 L${x - 16} 112 L${x - 4} 112 Z`} fill="#c9a86a" />
+        </g>
+      ))}
       {[
         [0, 92],
         [96, 52],
         [158, 32],
-      ].map(([x, w]) => (
-        <g key={x}>
-          <rect x={x} y="0" width={w} height="400" fill="url(#dw-stone)" />
-          <rect x={x - 6} y="370" width={w + 12} height="14" fill="#2c2a30" />
-          <rect x={x - 6} y="34" width={w + 12} height="12" fill="#2c2a30" />
-          <rect x={800 - x - w} y="0" width={w} height="400" fill="url(#dw-stone)" />
-          <rect x={800 - x - w - 6} y="370" width={w + 12} height="14" fill="#2c2a30" />
-          <rect x={800 - x - w - 6} y="34" width={w + 12} height="12" fill="#2c2a30" />
-        </g>
-      ))}
+      ].map(([x, w]) =>
+        [x, 800 - x - w].map((px) => (
+          <g key={px}>
+            <rect x={px} y="0" width={w} height="400" fill="url(#dw-stone)" />
+            {/* Fluting, a carved capital with volutes, and a stepped base. */}
+            {Array.from({ length: Math.max(2, Math.round(w / 12)) }, (_, f) => (
+              <path key={f} d={`M${px + ((f + 0.5) * w) / Math.max(2, Math.round(w / 12))} 52 V364`} stroke="#141216" strokeOpacity="0.55" strokeWidth={w / 18} />
+            ))}
+            <rect x={px - 6} y="34" width={w + 12} height="12" fill="#2c2a30" />
+            <rect x={px - 3} y="46" width={w + 6} height="6" fill="#26242a" />
+            <path d={`M${px - 6} 40 q-6 4 0 8 M${px + w + 6} 40 q6 4 0 8`} stroke="#3a363c" strokeWidth="2" fill="none" />
+            <rect x={px - 3} y="364" width={w + 6} height="6" fill="#26242a" />
+            <rect x={px - 6} y="370" width={w + 12} height="14" fill="#2c2a30" />
+            <path d={`M${px + w * 0.15} 60 V340`} stroke="#5a5660" strokeOpacity="0.25" strokeWidth="2" />
+          </g>
+        )),
+      )}
       <path d="M0 400 L240 252 H560 L800 400 Z" fill="#26242a" />
+      {/* Checkered marble floor in perspective. */}
+      {Array.from({ length: 6 }, (_, row) => {
+        const t0 = row / 6;
+        const t1 = (row + 1) / 6;
+        const y0 = 252 + (400 - 252) * t0;
+        const y1 = 252 + (400 - 252) * t1;
+        const half0 = 160 + 240 * t0;
+        const half1 = 160 + 240 * t1;
+        return Array.from({ length: 8 }, (_, col) =>
+          (row + col) % 2 ? null : (
+            <path
+              key={`${row}-${col}`}
+              d={`M${400 - half0 + (half0 * 2 * col) / 8} ${y0} H${400 - half0 + (half0 * 2 * (col + 1)) / 8} L${400 - half1 + (half1 * 2 * (col + 1)) / 8} ${y1} H${400 - half1 + (half1 * 2 * col) / 8} Z`}
+              fill="#34313a"
+              opacity="0.6"
+            />
+          ),
+        );
+      })}
       <ellipse cx="400" cy="232" rx="70" ry="40" fill="url(#dw-throneglow)" className="dw-throneglow" />
       <path d="M376 258 V190 Q376 168 400 160 Q424 168 424 190 V258 Z M366 258 H434 V264 H366 Z" className="dw-throne" />
       <path d="M400 168 L404 178 L414 178 L406 184 L409 194 L400 188 L391 194 L394 184 L386 178 L396 178 Z" className="dw-throne-star" />
       <path d="M368 262 L432 262 L520 378 L280 378 Z" fill="url(#dw-bronze)" stroke="#9a7444" strokeWidth="1.5" />
+      <path d="M392 262 L408 262 L432 378 L368 378 Z" fill="#5a1220" opacity="0.85" />
+      <path d="M392 262 L368 378 M408 262 L432 378" stroke="#c9a86a" strokeWidth="1" strokeOpacity="0.7" />
+      {/* Candelabra standing on the table, candles lit. */}
+      {[
+        [400, 300, 0.8],
+        [400, 352, 1.1],
+      ].map(([x, y, s]) => (
+        <g key={y} transform={`translate(${x} ${y}) scale(${s})`}>
+          <path d="M0 0 V-18 M-12 -14 Q0 -6 12 -14 M-12 -14 V-20 M12 -14 V-20" stroke="#c9a86a" strokeWidth="2" fill="none" />
+          <ellipse cx="0" cy="1" rx="6" ry="2" fill="#9a7444" />
+          {[-12, 0, 12].map((cx) => (
+            <g key={cx}>
+              <rect x={cx - 1.6} y={cx === 0 ? -26 : -26} width="3.2" height="7" fill="#efe6d2" />
+              <ellipse cx={cx} cy="-29" rx="1.8" ry="3.4" fill="#ffd27a" className="wa-flame" />
+            </g>
+          ))}
+        </g>
+      ))}
       {CHAIRS.map((chair, i) => {
         const stop = i < shown ? round.stops[i] : null;
         const dive = stop ? diveOf(stop.question, stop.answer, stop.tier) : null;
@@ -329,6 +384,8 @@ function Sanctum({ round, shown, final }: { round: Round; shown: number; final: 
             style={{ "--dv": dive ? DIVE_COLOR[dive] : "#6b6e76" } as CSSProperties}
           >
             <path d="M-11 6 V-34 Q-11 -44 0 -47 Q11 -44 11 -34 V6 Z M-14 6 H14 V11 H-14 Z" className="dw-chair-back" />
+            <path d="M-7 2 V-30 Q0 -38 7 -30 V2" fill="none" stroke="#3a3036" strokeWidth="1.2" />
+            <circle cy="-49" r="2.4" fill="#6e5a3a" />
             <path transform="translate(0 -62)" d="M0 -8 L2.4 -2.4 L8 -2.4 L3.6 1.2 L5.2 7 L0 3.6 L-5.2 7 L-3.6 1.2 L-8 -2.4 L-2.4 -2.4 Z" className="dw-chair-star" />
           </g>
         );

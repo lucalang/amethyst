@@ -108,14 +108,26 @@ function Segment({ from, to, growth, fresh, index }: { from: number; to: number;
     const angle = side * (35 + unit(index + 211, k) * 25);
     leaves.push(
       <g key={k} transform={`translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(1)})`}>
-        <path
-          className="aw-leaf"
-          style={{ "--t": `${((m - from) / Math.max(1, to - from)).toFixed(3)}` } as CSSProperties}
-          d={`M0 0 q${side * size * 0.6} ${-size * 0.7} ${side * size * 1.4} ${-size * 0.1} q${-side * size * 0.6} ${size * 0.55} ${-side * size * 1.4} ${size * 0.1} Z`}
-          fill={leaf.fill}
-          stroke={leaf.edge}
-          strokeWidth="1.5"
-        />
+        <g className="aw-leaf" style={{ "--t": `${((m - from) / Math.max(1, to - from)).toFixed(3)}` } as CSSProperties}>
+          <path
+            d={`M0 0 q${side * size * 0.6} ${-size * 0.7} ${side * size * 1.4} ${-size * 0.1} q${-side * size * 0.6} ${size * 0.55} ${-side * size * 1.4} ${size * 0.1} Z`}
+            fill={leaf.fill}
+            stroke={leaf.edge}
+            strokeWidth="1.5"
+          />
+          {/* Midrib, side veins and a sheen, so each leaf reads as a leaf. */}
+          <path d={`M0 0 Q${side * size * 0.7} ${-size * 0.18} ${side * size * 1.32} ${-size * 0.1}`} stroke={leaf.edge} strokeWidth="1" fill="none" />
+          {[0.35, 0.65, 0.95].map((t) => (
+            <path
+              key={t}
+              d={`M${side * size * t} ${-size * 0.14 * t} l${side * size * 0.14} ${-size * 0.16} M${side * size * t} ${-size * 0.14 * t} l${side * size * 0.12} ${size * 0.14}`}
+              stroke={leaf.edge}
+              strokeOpacity="0.55"
+              strokeWidth="0.8"
+            />
+          ))}
+          <path d={`M${side * size * 0.2} ${-size * 0.22} Q${side * size * 0.6} ${-size * 0.48} ${side * size * 1.05} ${-size * 0.28}`} stroke="#fff" strokeOpacity="0.35" strokeWidth="1.4" fill="none" />
+        </g>
       </g>,
     );
     // Curling tendrils on longer stretches, and bean pods on the crowd favourite's golden growth.
@@ -142,6 +154,8 @@ function Segment({ from, to, growth, fresh, index }: { from: number; to: number;
       <path d={d} className="aw-stalk-out" pathLength={1} />
       <path d={d} className="aw-stalk-in" pathLength={1} />
       <path d={d} className="aw-stalk-hi" pathLength={1} />
+      {/* A node at the end of each answer's growth, like the joint on a real stem. */}
+      <ellipse className="aw-node" cx={stalkX(to).toFixed(1)} cy={yOf(to).toFixed(1)} rx="14" ry="6" />
       {leaves}
     </g>
   );

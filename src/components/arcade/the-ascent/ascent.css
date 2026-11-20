@@ -138,7 +138,7 @@
   position: absolute;
   top: 0;
   height: 100%;
-  width: clamp(54px, 14cqw, 140px);
+  width: clamp(54px, 14cqw, 100px);
 }
 .aw-edge[data-side="l"] {
   left: 0;
@@ -241,6 +241,15 @@
 }
 .aw-seg[data-growth="bud"] .aw-stalk-in {
   stroke: #7cb86a;
+}
+.aw-node {
+  fill: #3f8a32;
+  stroke: #2f6e2a;
+  stroke-width: 2;
+}
+.aw-seg[data-growth="giant"] .aw-node {
+  fill: #ffd84a;
+  stroke: #b8861e;
 }
 .aw-leaf {
   filter: drop-shadow(0 2px 2px rgb(20 60 30 / 0.3));
@@ -594,6 +603,59 @@
   animation: aa-streak 4s linear infinite;
 }
 
+.aa-tail {
+  animation: aa-sway 2.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: 100% 0;
+}
+.aa-pour {
+  animation: aa-pour 0.8s linear infinite;
+}
+.aa-wave {
+  animation: aa-wave 1s ease-in-out infinite alternate;
+  transform-box: fill-box;
+  transform-origin: 0 100%;
+}
+.aa-tumble {
+  animation: aa-tumble 5s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.aa-pennant {
+  animation: aa-pennant 1.6s ease-in-out infinite;
+}
+@keyframes aa-pour {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+@keyframes aa-wave {
+  to {
+    rotate: -30deg;
+  }
+}
+@keyframes aa-tumble {
+  from {
+    rotate: 0deg;
+    translate: -10px 0;
+  }
+  50% {
+    translate: 10px -6px;
+  }
+  to {
+    rotate: 360deg;
+    translate: -10px 0;
+  }
+}
+@keyframes aa-pennant {
+  0%,
+  100% {
+    scale: 1 1;
+  }
+  50% {
+    scale: 0.85 1.1;
+  }
+}
 @keyframes aa-drift {
   to {
     translate: 8% -50%;

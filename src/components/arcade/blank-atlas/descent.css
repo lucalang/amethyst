@@ -111,7 +111,7 @@
   position: absolute;
   top: 0;
   height: 100%;
-  width: clamp(56px, 15cqw, 150px);
+  width: clamp(56px, 15cqw, 100px);
 }
 .dw-wall[data-side="l"] {
   left: 0;
@@ -147,12 +147,12 @@
   fill: rgb(196 181 253 / 0.1);
   animation-delay: -6s;
 }
+/* Kelp is a group (stem plus air bladders), so only the sway lives here; colours are on its parts. */
 .wa-kelp {
-  fill: none;
-  stroke: #1f5a4c;
-  stroke-width: 3;
-  stroke-linecap: round;
   animation: wa-kelp 5s ease-in-out infinite;
+}
+.wa-twinkle {
+  animation: wa-glow 2.6s ease-in-out infinite;
 }
 .wa-crack {
   fill: none;
