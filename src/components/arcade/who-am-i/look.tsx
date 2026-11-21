@@ -23,6 +23,9 @@ export const WHO_AM_I_LOOKS = {
     "fortune-tent",
     "sunken-galleon",
     "starship-bridge",
+    "alchemy-lab",
+    "dining-car",
+    "snowed-cabin",
   ],
   card: [
     "stained-glass",
@@ -32,6 +35,9 @@ export const WHO_AM_I_LOOKS = {
     "art-deco",
     "woven-tapestry",
     "holo-foil",
+    "royal-deck",
+    "blue-willow",
+    "treasure-map",
   ],
   question: [
     "wax-seal",
@@ -41,6 +47,9 @@ export const WHO_AM_I_LOOKS = {
     "paper-plane",
     "crystal-mist",
     "comic-burst",
+    "megaphone",
+    "ransom-note",
+    "carrier-pigeon",
   ],
   marker: [
     "rubber-stamp",
@@ -50,6 +59,9 @@ export const WHO_AM_I_LOOKS = {
     "cross-stitch",
     "die-cut-sticker",
     "ticket-punch",
+    "leather-tag",
+    "pixel-badge",
+    "paint-blot",
   ],
   reveal: [
     "curtain-call",
@@ -59,8 +71,11 @@ export const WHO_AM_I_LOOKS = {
     "fireworks-finale",
     "lantern-release",
     "constellation-crown",
+    "butterfly-flight",
+    "rainbow-arch",
+    "trophy",
   ],
-  style: ["illuminated", "comic-panel", "cut-paper", "phosphor-terminal"],
+  style: ["illuminated", "comic-panel", "cut-paper", "phosphor-terminal", "art-nouveau"],
 } as const;
 
 type Looks = typeof WHO_AM_I_LOOKS;
@@ -202,6 +217,35 @@ export function TableBackdrop({ kind }: { kind: WhoAmILook["table"] }) {
         {dots(BUBBLES, "wtb-bubble", (item) => ({
           scale: String((item as (typeof BUBBLES)[number]).s),
         }))}
+      </>
+    );
+  } else if (kind === "alchemy-lab") {
+    scene = (
+      <>
+        <i className="wtb-lab-shelf" />
+        <i className="wtb-cauldron" />
+        {dots(BUBBLES, "wtb-fume", (item) => ({
+          scale: String((item as (typeof BUBBLES)[number]).s),
+        }))}
+      </>
+    );
+  } else if (kind === "dining-car") {
+    scene = (
+      <>
+        <i className="wtb-panelling" />
+        <i className="wtb-train-window">
+          <i className="wtb-hills" />
+        </i>
+        <i className="wtb-brass-lamp" />
+      </>
+    );
+  } else if (kind === "snowed-cabin") {
+    scene = (
+      <>
+        <i className="wtb-logs" />
+        <i className="wtb-fireplace" />
+        <i className="wtb-frost-window" />
+        {dots(MOTES, "wtb-snow")}
       </>
     );
   } else {
@@ -568,6 +612,58 @@ function HoloBack() {
   );
 }
 
+function RoyalDeckBack() {
+  return (
+    <>
+      <defs>
+        <pattern id="wai-cb-lattice" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="8" height="8" fill="#b3202c" />
+          <path d="M0 0 H8 M0 0 V8" stroke="#f4ecd8" strokeWidth="1.4" />
+          <circle cx="4" cy="4" r="1" fill="#f4ecd8" />
+        </pattern>
+      </defs>
+      <rect width="100" height="100" fill="#f4ecd8" />
+      <rect x="7" y="7" width="86" height="86" rx="6" fill="url(#wai-cb-lattice)" stroke="#7a1018" strokeWidth="2" />
+      <circle cx="50" cy="50" r="16" fill="#f4ecd8" stroke="#7a1018" strokeWidth="2" />
+      {QUESTION_MARK("#b3202c", "ui-serif, Georgia, serif", 26, 59)}
+    </>
+  );
+}
+
+function BlueWillowBack() {
+  return (
+    <>
+      <rect width="100" height="100" fill="#f6f8fc" />
+      <rect x="5" y="5" width="90" height="90" rx="8" fill="none" stroke="#1f4aa0" strokeWidth="3" />
+      <rect x="10" y="10" width="80" height="80" rx="5" fill="none" stroke="#1f4aa0" strokeWidth="1" strokeDasharray="2 2" />
+      {/* A willow tree, a little bridge and two birds. */}
+      <path d="M22 70 Q24 50 30 40 M30 40 Q20 46 16 60 M30 40 Q36 48 38 62 M30 40 Q28 30 34 24" stroke="#1f4aa0" strokeWidth="2" fill="none" />
+      <path d="M44 74 Q56 62 68 74" stroke="#1f4aa0" strokeWidth="2.5" fill="none" />
+      <path d="M46 74 H66" stroke="#1f4aa0" strokeWidth="1.5" />
+      <path d="M62 30 q4 -4 8 0 q4 -4 8 0 M70 40 q3 -3 6 0 q3 -3 6 0" stroke="#1f4aa0" strokeWidth="1.5" fill="none" />
+      <path d="M14 84 Q50 78 86 84" stroke="#1f4aa0" strokeWidth="1.5" fill="none" />
+      {QUESTION_MARK("#1f4aa0", "ui-serif, Georgia, serif", 22, 60)}
+    </>
+  );
+}
+
+function TreasureMapBack() {
+  return (
+    <>
+      <rect width="100" height="100" fill="#e9d6a8" />
+      <path d="M4 6 Q50 2 96 6 Q98 50 94 94 Q50 98 6 94 Q2 50 4 6 Z" fill="#efdeb4" stroke="#8a6a3a" strokeWidth="1.5" />
+      <path d="M18 30 Q30 18 44 26 Q52 36 40 44 Q28 52 36 62" fill="none" stroke="#8a6a3a" strokeWidth="1.2" />
+      <path d="M20 78 Q34 72 46 76 Q58 80 68 70 Q74 62 80 58" fill="none" stroke="#6a3a1a" strokeWidth="1.6" strokeDasharray="3 3" />
+      <path d="M76 52 L84 60 M84 52 L76 60" stroke="#b3202c" strokeWidth="3" strokeLinecap="round" />
+      <g transform="translate(78 22)" stroke="#6a3a1a" strokeWidth="1" fill="none">
+        <circle r="8" />
+        <path d="M0 -11 L2 0 L0 11 L-2 0 Z" fill="#6a3a1a" />
+      </g>
+      {QUESTION_MARK("#6a3a1a", "ui-serif, Georgia, serif", 22, 50)}
+    </>
+  );
+}
+
 const BACKS: Record<NonNullable<WhoAmILook["card"]>, () => ReactNode> = {
   "stained-glass": StainedGlassBack,
   "gilded-baroque": () => (
@@ -590,6 +686,9 @@ const BACKS: Record<NonNullable<WhoAmILook["card"]>, () => ReactNode> = {
   "art-deco": ArtDecoBack,
   "woven-tapestry": TapestryBack,
   "holo-foil": HoloBack,
+  "royal-deck": RoyalDeckBack,
+  "blue-willow": BlueWillowBack,
+  "treasure-map": TreasureMapBack,
 };
 
 /** A face-down card: your own hidden card, or one not dealt yet. */
@@ -711,6 +810,41 @@ export function QuestionFlourish({ kind }: { kind: WhoAmILook["question"] }) {
       </span>
     );
   }
+  if (kind === "megaphone") {
+    return (
+      <span aria-hidden className="wqf wqf-megaphone">
+        <svg viewBox="0 0 40 24">
+          <path d="M4 9 H10 L28 2 V22 L10 15 H4 Z" fill="#ffcf3a" stroke="#3a2a0a" strokeWidth="1.4" strokeLinejoin="round" />
+          <rect x="6" y="15" width="4" height="6" rx="1" fill="#3a2a0a" />
+          <path d="M32 6 Q36 12 32 18 M35 3 Q41 12 35 21" stroke="#3a2a0a" strokeWidth="1.4" fill="none" strokeLinecap="round" className="wqf-waves" />
+        </svg>
+      </span>
+    );
+  }
+  if (kind === "ransom-note") {
+    return (
+      <span aria-hidden className="wqf wqf-ransom">
+        <svg viewBox="0 0 24 24">
+          <path d="M5 4 L19 20 M19 4 L5 20" stroke="#3a3a44" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="6" cy="20" r="3" fill="none" stroke="#c0283a" strokeWidth="2" />
+          <circle cx="18" cy="20" r="3" fill="none" stroke="#c0283a" strokeWidth="2" />
+        </svg>
+      </span>
+    );
+  }
+  if (kind === "carrier-pigeon") {
+    return (
+      <span aria-hidden className="wqf wqf-pigeon">
+        <svg viewBox="0 0 40 28">
+          <path d="M6 16 Q10 8 20 10 Q28 10 32 6 L36 8 L32 12 Q30 20 20 20 Q12 21 6 16 Z" fill="#c8ccd8" stroke="#4a4e5a" strokeWidth="1.2" />
+          <path d="M14 12 Q18 2 26 4 Q22 10 18 14 Z" fill="#a8acb8" stroke="#4a4e5a" strokeWidth="1" className="wqf-wing" />
+          <circle cx="31" cy="8" r="1" fill="#1a1a20" />
+          <path d="M36 8 L39 9 L36 10" fill="#e8a02a" />
+          <rect x="16" y="20" width="8" height="5" rx="2" fill="#f4ecd8" stroke="#8a6a3a" strokeWidth="0.8" />
+        </svg>
+      </span>
+    );
+  }
   return (
     <span aria-hidden className="wqf wqf-burst">
       ?!
@@ -802,6 +936,29 @@ export function VictoryReveal({ kind }: { kind: WhoAmILook["reveal"] }) {
         ))}
       </>
     );
+  } else if (kind === "butterfly-flight") {
+    body = RISING.map((x, k) => (
+      <i
+        key={k}
+        className="wvr-butterfly"
+        style={
+          {
+            left: `${x}%`,
+            animationDelay: `${k * 0.15}s`,
+            "--sway": `${k % 2 ? 18 : -18}px`,
+            filter: `hue-rotate(${k * 55}deg)`,
+          } as CSSProperties
+        }
+      />
+    ));
+  } else if (kind === "rainbow-arch") {
+    body = (
+      <>
+        <i className="wvr-rainbow" />
+        <i className="wvr-cloud" data-side="l" />
+        <i className="wvr-cloud" data-side="r" />
+      </>
+    );
   } else {
     body = <i className="wvr-glitter" />;
   }
@@ -883,6 +1040,20 @@ export function PortraitReveal({ kind }: { kind: WhoAmILook["reveal"] }) {
     return (
       <span aria-hidden className="wvr-on-portrait" data-reveal={kind}>
         <i className="wvr-spot" />
+      </span>
+    );
+  }
+  if (kind === "trophy") {
+    return (
+      <span aria-hidden className="wvr-on-portrait" data-reveal={kind}>
+        <svg viewBox="0 0 40 40" className="wvr-trophy">
+          <path d="M12 4 H28 V14 Q28 24 20 26 Q12 24 12 14 Z" fill="#f2c230" stroke="#8a6410" strokeWidth="1.4" />
+          <path d="M12 7 H6 Q6 16 13 17 M28 7 H34 Q34 16 27 17" fill="none" stroke="#8a6410" strokeWidth="1.6" />
+          <rect x="17" y="26" width="6" height="6" fill="#d8a420" stroke="#8a6410" strokeWidth="1" />
+          <rect x="11" y="32" width="18" height="5" rx="1" fill="#6a4a1a" stroke="#3a2a0a" strokeWidth="1" />
+          <path d="M16 8 Q15 16 18 21" stroke="#fff6c8" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        </svg>
+        <i className="wvr-gleam" />
       </span>
     );
   }

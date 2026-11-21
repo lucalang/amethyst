@@ -383,8 +383,79 @@ const LUNAR_SURVEY: MapStyleDef = {
   },
 };
 
+const DUNES: MapStyleDef = {
+  id: "dunes",
+  backdrop: [58, 34, 20],
+  ground(tile, out) {
+    const { x, y } = tile;
+    if (tile.terrain === WATER) {
+      if (tile.dist <= 1) return put(out, 92, 170, 160);
+      if (tile.dist <= 4) return put(out, 46, 132, 150);
+      return putScaled(out, [22, 78, 112], 0.94 + tile.grain * 0.1);
+    }
+    // Oases hug the coast; mesas stand in the highlands; the rest is rippled sand.
+    if (tile.dist <= 2 && hash2(x, y, 91) < 0.35) return putScaled(out, [86, 140, 64], 0.9 + tile.grain * 0.15);
+    if (tile.terrain === MOUNTAIN) return putScaled(out, [150, 70, 44], 0.85 + tile.grain * 0.2 + (y % 4 === 0 ? -0.12 : 0));
+    const ripple = Math.sin((x + valueNoise(x / 20, y / 20, 92) * 30) * 0.55 + y * 0.9);
+    const k = 0.92 + ripple * 0.06 + tile.grain * 0.05;
+    if (tile.terrain === HIGHLAND) return putScaled(out, [206, 140, 84], k);
+    putScaled(out, [232, 190, 122], k);
+  },
+};
+
+const AUTUMN: MapStyleDef = {
+  id: "autumn",
+  backdrop: [20, 26, 32],
+  ground(tile, out) {
+    const { x, y } = tile;
+    if (tile.terrain === WATER) {
+      if (tile.dist <= 1) return put(out, 92, 112, 126);
+      return putScaled(out, [44, 66, 86], 0.9 + valueNoise(x / 13, y / 13, 93) * 0.2);
+    }
+    const k = 0.88 + tile.grain * 0.14;
+    if (tile.terrain === MOUNTAIN) return putScaled(out, hash2(x, y, 94) < 0.12 ? [232, 236, 240] : [118, 112, 116], k);
+    if (tile.terrain === HIGHLAND) return putScaled(out, [128, 82, 128], k * (0.9 + valueNoise(x / 6, y / 6, 95) * 0.2));
+    // Patchy woodland: russet, amber and the last green.
+    const n = valueNoise(x / 8, y / 8, 96);
+    const tone: Rgb = n < 0.35 ? [178, 72, 34] : n < 0.62 ? [214, 140, 48] : [104, 124, 54];
+    putScaled(out, tone, k);
+  },
+};
+
+const SPRINKLES: Rgb[] = [
+  [255, 90, 130],
+  [255, 214, 80],
+  [90, 190, 255],
+  [150, 230, 120],
+];
+
+const SWEETS: MapStyleDef = {
+  id: "sweets",
+  backdrop: [70, 30, 60],
+  ground(tile, out) {
+    const { x, y } = tile;
+    if (tile.terrain === WATER) {
+      if (tile.dist <= 1) return put(out, 236, 250, 240);
+      // Fizzy mint soda with rising bubbles.
+      if (hash2(x, y, 97) < 0.02) return put(out, 220, 255, 240);
+      return putScaled(out, tile.dist <= 5 ? [124, 222, 196] : [72, 182, 168], 0.95 + tile.grain * 0.08);
+    }
+    if (tile.terrain === MOUNTAIN) {
+      // Sugar peaks with the odd candy sprinkle.
+      if (hash2(x, y, 98) < 0.1) return put(out, 255, 110, 150);
+      return putScaled(out, [250, 246, 240], 0.94 + tile.grain * 0.08);
+    }
+    if (tile.terrain === HIGHLAND) return putScaled(out, [124, 78, 52], 0.9 + tile.grain * 0.14);
+    if (hash2(x, y, 99) < 0.03) {
+      const sprinkle = SPRINKLES[Math.floor(hash2(x, y, 100) * SPRINKLES.length)];
+      return put(out, sprinkle[0], sprinkle[1], sprinkle[2]);
+    }
+    putScaled(out, [250, 178, 206], 0.95 + tile.grain * 0.08);
+  },
+};
+
 export const MAP_STYLES: Record<string, MapStyleDef> = Object.fromEntries(
-  [WAR_ROOM, TOPOGRAPHIC, CORAL_ATOLL, FROSTBOUND, CIRCUIT_BOARD, EMBER_WASTES, LUNAR_SURVEY].map((style) => [style.id, style]),
+  [WAR_ROOM, TOPOGRAPHIC, CORAL_ATOLL, FROSTBOUND, CIRCUIT_BOARD, EMBER_WASTES, LUNAR_SURVEY, DUNES, AUTUMN, SWEETS].map((style) => [style.id, style]),
 );
 
 /* =============================================================================================== Territory patterns */
@@ -471,6 +542,40 @@ export const PATTERNS: Record<string, PatternDef> = {
       if (ly === 0 && hash2(cx, cy, 72) > 0.4) return 0.6;
       if (lx === 0 && hash2(cx, cy, 73) > 0.5) return 0.6;
       return -0.14;
+    },
+  },
+  tartan: {
+    id: "tartan",
+    accent: [255, 255, 255],
+    at(gx, gy) {
+      const bx = gx % 20;
+      const by = gy % 20;
+      const band = (bx < 5 ? 1 : 0) + (by < 5 ? 1 : 0);
+      if (bx === 12 || by === 12) return 0.55;
+      return band === 2 ? -0.42 : band === 1 ? -0.2 : 0.04;
+    },
+  },
+  waves: {
+    id: "waves",
+    accent: [255, 255, 255],
+    at(gx, gy) {
+      const crest = (gy + Math.round(Math.sin(gx / 4) * 3)) % 10;
+      if (crest === 0) return 0.55;
+      if (crest === 1) return 0.2;
+      return crest > 6 ? -0.22 : 0;
+    },
+  },
+  scales: {
+    id: "scales",
+    accent: [255, 255, 255],
+    at(gx, gy) {
+      const s = 8;
+      const row = Math.floor(gy / (s / 2));
+      const cx = Math.floor((gx + (row & 1) * (s / 2)) / s) * s - (row & 1) * (s / 2) + s / 2;
+      const cy = row * (s / 2);
+      const d = Math.hypot(gx - cx, gy - cy) / (s / 2);
+      if (d > 0.9 && d < 1.15) return 0.5;
+      return d < 0.9 ? -0.25 + d * 0.2 : -0.1;
     },
   },
   starfield: {
@@ -780,7 +885,81 @@ const CONSOLE: ArtStyleDef = {
   },
 };
 
-export const ART_STYLES: Record<string, ArtStyleDef> = { diorama: DIORAMA, woodcut: WOODCUT, watercolour: WATERCOLOUR, console: CONSOLE };
+const LINEN: Rgb = [236, 226, 206];
+let linenCanvas: HTMLCanvasElement | null = null;
+
+/** A woven linen texture for the sampler (built once). */
+function linen(ctx: Ctx) {
+  if (!linenCanvas) {
+    linenCanvas = document.createElement("canvas");
+    linenCanvas.width = linenCanvas.height = 8;
+    const g = linenCanvas.getContext("2d")!;
+    g.fillStyle = "rgb(236 226 206)";
+    g.fillRect(0, 0, 8, 8);
+    g.fillStyle = "rgb(200 186 160)";
+    for (let i = 0; i < 8; i += 2) {
+      g.fillRect(i, 0, 1, 8);
+      g.fillRect(0, i, 8, 1);
+    }
+  }
+  return ctx.createPattern(linenCanvas, "repeat");
+}
+
+const SAMPLER: ArtStyleDef = {
+  id: "sampler",
+  font: '"Segoe Script", "Brush Script MT", "Apple Chancery", Georgia, cursive',
+  upper: false,
+  smooth: false,
+  paper: "#f3ead6",
+  ink: "70 40 50",
+  nameFill: "#5a1f2e",
+  nameHalo: "236 226 206",
+  nameShadow: false,
+  shadows: false,
+  castShadow: false,
+  groundFilter(out, water) {
+    // Thread colours softened toward the linen ground.
+    mixInto(out, out, LINEN, water ? 0.3 : 0.22);
+  },
+  territory(out, c, g, edge, player) {
+    if (edge && player) return put(out, c[0] + (255 - c[0]) * 0.7, c[1] + (255 - c[1]) * 0.7, c[2] + (255 - c[2]) * 0.7);
+    if (edge) return put(out, c[0] * 0.62, c[1] * 0.62, c[2] * 0.62);
+    put(out, c[0] * 0.82 + g[0] * 0.18, c[1] * 0.82 + g[1] * 0.18, c[2] * 0.82 + g[2] * 0.18);
+  },
+  pixel(data, i, gx, gy, kind) {
+    // Every tile is a cross-stitch: one diagonal of thread catches the light, the other sits in shade.
+    let k = 1;
+    const a = gx & 1;
+    const b = gy & 1;
+    if (kind === PIXEL_EDGE) k = ((gx + gy) >> 1) & 1 ? 0.7 : 1.08;
+    else if (kind === PIXEL_SEA) k = (gx + gy) % 6 === 0 ? 0.9 : 1;
+    else k = a === b ? 1.08 : 0.86;
+    data[i] = Math.min(255, data[i] * k);
+    data[i + 1] = Math.min(255, data[i + 1] * k);
+    data[i + 2] = Math.min(255, data[i + 2] * k);
+  },
+  overlay(ctx, size) {
+    const weave = linen(ctx);
+    if (weave) {
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = weave;
+      ctx.fillRect(0, 0, size.width, size.height);
+      ctx.restore();
+    }
+    // A stitched border round the hoop of the screen.
+    ctx.save();
+    ctx.strokeStyle = "rgb(140 40 60 / 0.55)";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 5]);
+    ctx.strokeRect(10, 10, size.width - 20, size.height - 20);
+    ctx.restore();
+    vignette(ctx, size, "120 90 60", 0.3);
+  },
+};
+
+export const ART_STYLES: Record<string, ArtStyleDef> = { diorama: DIORAMA, woodcut: WOODCUT, watercolour: WATERCOLOUR, console: CONSOLE, sampler: SAMPLER };
 
 /* =============================================================================================== Buildings */
 
@@ -1202,6 +1381,104 @@ const BUILDING_SKINS: BuildingSkinDef[] = [
       glyphMark(ctx, b.code, x, y, g, "#eafcff");
     },
   },
+  {
+    id: "lanterns",
+    draw(ctx, b) {
+      const { x, y, g, tick, motion } = b;
+      const h = g / 2;
+      const glow = motion ? 0.75 + 0.25 * Math.sin(tick * 0.18 + x * 0.2) : 0.9;
+      const halo = ctx.createRadialGradient(x, y, 0, x, y, g * 1.2);
+      halo.addColorStop(0, `rgb(255 190 90 / ${0.4 * glow})`);
+      halo.addColorStop(1, "rgb(255 190 90 / 0)");
+      ctx.fillStyle = halo;
+      ctx.fillRect(x - g * 1.2, y - g * 1.2, g * 2.4, g * 2.4);
+      const paper = ctx.createRadialGradient(x, y, h * 0.2, x, y, h * 1.3);
+      paper.addColorStop(0, "#ffd27a");
+      paper.addColorStop(0.6, "#e8402a");
+      paper.addColorStop(1, "#9a1a14");
+      bodyWith(ctx, b, paper, "#5a0e0a", 1.2);
+      insideBody(ctx, b, () => {
+        ctx.strokeStyle = "rgb(90 14 10 / 0.5)";
+        ctx.lineWidth = 0.8;
+        for (const k of [-0.5, 0, 0.5]) {
+          ctx.beginPath();
+          ctx.moveTo(x - h * 1.2, y + h * k);
+          ctx.quadraticCurveTo(x, y + h * k + h * 0.18, x + h * 1.2, y + h * k);
+          ctx.stroke();
+        }
+      });
+      // Gold cap and a hanging tassel.
+      ctx.fillStyle = "#e8b83a";
+      ctx.fillRect(x - h * 0.4, y + h * 0.95, h * 0.8, Math.max(1, g * 0.1));
+      ctx.strokeStyle = "#c0281e";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y + h * 1.05);
+      ctx.lineTo(x, y + h * 1.45);
+      ctx.stroke();
+      glyphMark(ctx, b.code, x, y, g, b.color);
+    },
+  },
+  {
+    id: "terracotta",
+    draw(ctx, b) {
+      const { x, y, g } = b;
+      const h = g / 2;
+      groundShadow(ctx, x + g * 0.12, y + h + g * 0.08, h * 1.15, h * 0.3, 0.32);
+      ctx.fillStyle = "#9a4a2a";
+      ctx.strokeStyle = "#5a2414";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.rect(x - h * 1.05, y + h * 0.88, h * 2.1, h * 0.32);
+      ctx.fill();
+      ctx.stroke();
+      const clay = ctx.createLinearGradient(x - h, y - h, x + h, y + h);
+      clay.addColorStop(0, "#e8996a");
+      clay.addColorStop(0.6, "#c4683e");
+      clay.addColorStop(1, "#94482a");
+      bodyWith(ctx, b, clay, "#5a2414", 1.3);
+      insideBody(ctx, b, () => {
+        // Incised lines and a few chips of slip.
+        ctx.strokeStyle = "rgb(90 36 20 / 0.55)";
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        for (const k of [-0.45, 0.1, 0.6]) {
+          ctx.moveTo(x - h * 1.2, y + h * k);
+          ctx.lineTo(x + h * 1.2, y + h * k);
+        }
+        ctx.stroke();
+        ctx.fillStyle = "rgb(250 210 170 / 0.5)";
+        for (const [dx, dy] of [[-0.5, -0.2], [0.4, 0.3], [0.1, -0.6]]) {
+          circle(ctx, x + h * dx, y + h * dy, Math.max(0.6, g / 22));
+          ctx.fill();
+        }
+      });
+      glyphMark(ctx, b.code, x, y, g, b.color);
+    },
+  },
+  {
+    id: "neon",
+    draw(ctx, b) {
+      const { x, y, g, tick, motion } = b;
+      // A rare stutter, like a tired tube, never a strobe.
+      const buzz = motion && Math.sin(tick * 0.9 + x) > 0.985 ? 0.55 : 1;
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      glyphPath(ctx, b.code, x, y, g);
+      ctx.fillStyle = "#14101e";
+      ctx.fill();
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = b.color.startsWith("#") ? `${b.color}55` : b.color;
+      ctx.globalAlpha = 0.6 * buzz;
+      ctx.stroke();
+      ctx.globalAlpha = buzz;
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = "#fff4fb";
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      glyphMark(ctx, b.code, x, y, g, b.color);
+    },
+  },
 ];
 
 /* =============================================================================================== Attack effects */
@@ -1608,6 +1885,131 @@ const ATTACK_FX: AttackFxDef[] = [
       ctx.stroke();
     },
   },
+  {
+    id: "cavalry",
+    marker(ctx, m) {
+      const { x, y, dx, dy, half, alpha, rgb } = m;
+      // A horseshoe, open end trailing, bobbing as it gallops.
+      const bob = m.motion ? Math.abs(Math.sin(m.along * Math.PI * 4)) * half * 0.35 : 0;
+      const cx = x - dy * bob;
+      const cy = y + dx * bob;
+      const a = Math.atan2(dy, dx);
+      ctx.lineCap = "round";
+      for (const [w, color] of [[Math.max(3, half * 0.7), `rgb(${DARK} / ${alpha * 0.5})`], [Math.max(1.6, half * 0.38), `rgb(${rgb} / ${alpha})`]] as const) {
+        ctx.lineWidth = w;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, half * 0.7, a + Math.PI + 0.5, a + Math.PI - 0.5 + TAU);
+        ctx.stroke();
+      }
+    },
+    flash(ctx, x, y, r, age, _rgb, seed) {
+      // Dust kicked up where the charge lands.
+      const p = age / 6;
+      for (let i = 0; i < 4; i += 1) {
+        const a = hash2(seed, i, 11) * TAU;
+        const d = r * (0.3 + p * 1.2);
+        ctx.fillStyle = `rgb(196 170 128 / ${(1 - p) * 0.55})`;
+        circle(ctx, x + Math.cos(a) * d, y + Math.sin(a) * d, r * (0.35 + p * 0.45));
+        ctx.fill();
+      }
+    },
+    launch(ctx, x, y, progress, rgb, radius) {
+      rippleRing(ctx, x, y, progress, rgb, radius);
+      ctx.fillStyle = `rgb(196 170 128 / ${(1 - progress) * 0.4})`;
+      circle(ctx, x, y, radius * 0.4 * (0.5 + progress));
+      ctx.fill();
+    },
+  },
+  {
+    id: "paint",
+    marker(ctx, m) {
+      const { x, y, dx, dy, half, alpha, rgb } = m;
+      // A roller: a stripe of paint behind and the roller drum across the front.
+      const nx = -dy * half * 1.1;
+      const ny = dx * half * 1.1;
+      ctx.fillStyle = `rgb(${rgb} / ${alpha * 0.45})`;
+      ctx.beginPath();
+      ctx.moveTo(x + nx, y + ny);
+      ctx.lineTo(x - nx, y - ny);
+      ctx.lineTo(x - nx - dx * half * 1.6, y - ny - dy * half * 1.6);
+      ctx.lineTo(x + nx - dx * half * 1.6, y + ny - dy * half * 1.6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineCap = "round";
+      ctx.lineWidth = Math.max(3, half * 0.55);
+      ctx.strokeStyle = `rgb(${DARK} / ${alpha * 0.6})`;
+      ctx.beginPath();
+      ctx.moveTo(x + nx, y + ny);
+      ctx.lineTo(x - nx, y - ny);
+      ctx.stroke();
+      ctx.lineWidth = Math.max(2, half * 0.35);
+      ctx.strokeStyle = `rgb(${rgb} / ${alpha})`;
+      ctx.stroke();
+    },
+    flash(ctx, x, y, r, age, rgb, seed) {
+      const p = age / 6;
+      ctx.fillStyle = `rgb(${rgb} / ${(1 - p) * 0.75})`;
+      circle(ctx, x, y, r * (0.7 + p * 0.3));
+      ctx.fill();
+      for (let i = 0; i < 3; i += 1) {
+        const a = hash2(seed, i, 12) * TAU;
+        circle(ctx, x + Math.cos(a) * r * 1.2, y + Math.sin(a) * r * 1.2, r * 0.22);
+        ctx.fill();
+      }
+    },
+    launch(ctx, x, y, progress, rgb, radius) {
+      ctx.fillStyle = `rgb(${rgb} / ${(1 - progress) * 0.5})`;
+      for (let i = 0; i < 6; i += 1) {
+        const a = (i / 6) * TAU + 0.4;
+        circle(ctx, x + Math.cos(a) * radius * progress, y + Math.sin(a) * radius * progress, radius * 0.12 * (1 - progress * 0.5));
+        ctx.fill();
+      }
+    },
+  },
+  {
+    id: "cranes",
+    marker(ctx, m) {
+      const { x, y, dx, dy, half, alpha, rgb } = m;
+      const flap = m.motion ? Math.sin(m.tick * 0.5 + m.along * 9) : 0.5;
+      const nx = -dy;
+      const ny = dx;
+      const w = half * (0.6 + flap * 0.5);
+      // Body, then two folded wings above and below the line of flight.
+      ctx.lineJoin = "round";
+      ctx.fillStyle = `rgb(${rgb} / ${alpha})`;
+      ctx.strokeStyle = `rgb(${DARK} / ${alpha * 0.55})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + dx * half, y + dy * half);
+      ctx.lineTo(x + nx * w, y + ny * w);
+      ctx.lineTo(x - dx * half * 0.9, y - dy * half * 0.9);
+      ctx.lineTo(x - nx * w, y - ny * w);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - dx * half * 0.9, y - dy * half * 0.9);
+      ctx.lineTo(x + dx * half, y + dy * half);
+      ctx.stroke();
+    },
+    flash(ctx, x, y, r, age, rgb, seed) {
+      const p = age / 6;
+      for (let i = 0; i < 5; i += 1) {
+        const a = hash2(seed, i, 13) * TAU;
+        const d = r * (0.2 + p * 1.4);
+        ctx.save();
+        ctx.translate(x + Math.cos(a) * d, y + Math.sin(a) * d);
+        ctx.rotate(a + p * 4);
+        ctx.fillStyle = i % 2 ? `rgb(${rgb} / ${1 - p})` : `rgb(255 250 240 / ${1 - p})`;
+        ctx.fillRect(-r * 0.25, -r * 0.12, r * 0.5, r * 0.24);
+        ctx.restore();
+      }
+    },
+    launch(ctx, x, y, progress, rgb, radius) {
+      rippleRing(ctx, x, y, progress, rgb, radius);
+    },
+  },
 ];
 
 /* =============================================================================================== Boats */
@@ -1983,6 +2385,131 @@ const BOAT_SKINS: BoatSkinDef[] = [
       ctx.beginPath();
       this.path(ctx, b);
       ctx.stroke();
+    },
+  },
+  {
+    id: "galleon",
+    path(ctx, { hull }) {
+      ctx.moveTo(hull, 0);
+      ctx.quadraticCurveTo(hull * 0.6, -hull * 0.5, -hull * 0.8, -hull * 0.42);
+      ctx.lineTo(-hull, 0);
+      ctx.lineTo(-hull * 0.8, hull * 0.42);
+      ctx.quadraticCurveTo(hull * 0.6, hull * 0.5, hull, 0);
+      ctx.closePath();
+    },
+    paint(ctx, b) {
+      const { hull, tick, motion } = b;
+      ctx.fillStyle = "#3a2618";
+      ctx.strokeStyle = "#140c06";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      this.path(ctx, b);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "#8a6a3a";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.moveTo(hull * 0.7, 0);
+      ctx.lineTo(-hull * 0.85, 0);
+      ctx.stroke();
+      // Black sails bellied out (seen from above), with a colour pennant.
+      const billow = motion ? Math.sin(tick * 0.15 + b.seed) * hull * 0.05 : 0;
+      ctx.fillStyle = "#1a1a20";
+      for (const at of [0.35, -0.3]) {
+        ctx.beginPath();
+        ctx.ellipse(hull * at, 0, hull * 0.14 + billow, hull * 0.62, 0, 0, TAU);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#f4f0e6";
+      circle(ctx, hull * 0.35, 0, hull * 0.1);
+      ctx.fill();
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.moveTo(-hull * 0.9, 0);
+      ctx.lineTo(-hull * 1.3, -hull * 0.12);
+      ctx.lineTo(-hull * 1.3, hull * 0.12);
+      ctx.closePath();
+      ctx.fill();
+    },
+  },
+  {
+    id: "duck",
+    path(ctx, { hull }) {
+      ctx.ellipse(-hull * 0.15, 0, hull * 0.85, hull * 0.55, 0, 0, TAU);
+    },
+    paint(ctx, b) {
+      const { hull, tick, motion } = b;
+      const bob = motion ? Math.sin(tick * 0.2 + b.seed) * 0.08 : 0;
+      ctx.save();
+      ctx.rotate(bob);
+      ctx.fillStyle = "#ffd23a";
+      ctx.strokeStyle = "#b8860b";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      this.path(ctx, b);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(hull * 0.5, 0, hull * 0.38, 0, TAU);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ff8a1a";
+      ctx.beginPath();
+      ctx.ellipse(hull * 0.92, 0, hull * 0.22, hull * 0.12, 0, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#1a1a20";
+      for (const side of [1, -1]) {
+        circle(ctx, hull * 0.6, side * hull * 0.18, Math.max(0.8, hull * 0.06));
+        ctx.fill();
+      }
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = Math.max(1, hull * 0.1);
+      ctx.beginPath();
+      ctx.arc(-hull * 0.25, 0, hull * 0.32, Math.PI * 0.6, Math.PI * 1.4);
+      ctx.stroke();
+      ctx.restore();
+    },
+  },
+  {
+    id: "hovercraft",
+    path(ctx, { hull }) {
+      ctx.roundRect(-hull, -hull * 0.55, hull * 2, hull * 1.1, hull * 0.5);
+    },
+    paint(ctx, b) {
+      const { hull, tick, motion } = b;
+      if (motion) {
+        const p = (tick * 0.1 + b.seed * 0.29) % 1;
+        ctx.fillStyle = `rgb(255 255 255 / ${0.45 * (1 - p)})`;
+        for (const side of [1, -1]) {
+          circle(ctx, -hull * (1 + p * 0.8), side * hull * (0.3 + p * 0.4), hull * (0.18 + p * 0.25));
+          ctx.fill();
+        }
+      }
+      ctx.fillStyle = "#2a2a32";
+      ctx.strokeStyle = "#0a0a10";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      this.path(ctx, b);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#e8eaf0";
+      ctx.beginPath();
+      ctx.roundRect(-hull * 0.75, -hull * 0.38, hull * 1.5, hull * 0.76, hull * 0.3);
+      ctx.fill();
+      ctx.fillStyle = b.color;
+      ctx.fillRect(-hull * 0.2, -hull * 0.38, hull * 0.25, hull * 0.76);
+      // Twin fans at the stern.
+      const spin = motion ? tick * 0.8 : 0;
+      for (const side of [1, -1]) {
+        ctx.strokeStyle = "#5a5e6a";
+        ctx.lineWidth = 1;
+        circle(ctx, -hull * 0.62, side * hull * 0.22, hull * 0.2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-hull * 0.62 + Math.cos(spin) * hull * 0.18, side * hull * 0.22 + Math.sin(spin) * hull * 0.18);
+        ctx.lineTo(-hull * 0.62 - Math.cos(spin) * hull * 0.18, side * hull * 0.22 - Math.sin(spin) * hull * 0.18);
+        ctx.stroke();
+      }
     },
   },
 ];

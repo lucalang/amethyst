@@ -11,10 +11,12 @@ import { mix, random, withAlpha } from "./engine";
  */
 
 export type FruitKind = { skin: string; flesh: string; radius: number; leaf: boolean };
-export type FruitStyle = "smooth" | "cartoon" | "pixel" | "watercolor";
+export type FruitStyle = "smooth" | "cartoon" | "pixel" | "watercolor" | "linocut" | "neon";
 export type FruitTheme = { key: string; blade: string; skin: string; background: string; juice: string; style: FruitStyle };
 
-const STYLES: FruitStyle[] = ["cartoon", "pixel", "watercolor"];
+const STYLES: FruitStyle[] = ["cartoon", "pixel", "watercolor", "linocut", "neon"];
+const NEON_DARK = "#0b0716";
+const PRINT_PAPER = "#f1e7d0";
 const INK = "#1d1426";
 const BOMB_RADIUS = 28;
 /** World px per pixel-art pixel. */
@@ -96,6 +98,10 @@ function skinBase(kind: FruitKind, skin: string) {
       return mix(kind.skin, "#120c2a", 0.55);
     case "plush":
       return mix(kind.skin, "#ffffff", 0.12);
+    case "knitted":
+      return mix(kind.skin, "#ffffff", 0.08);
+    case "disco":
+      return mix(kind.skin, "#c9cdd8", 0.5);
     default:
       return kind.skin;
   }
@@ -123,10 +129,22 @@ function paintBody(c: CanvasRenderingContext2D, r: number, base: string, style: 
     }
     return;
   }
+  if (style === "neon") {
+    // A dark glass bulb; the glowing tube comes with the outline.
+    c.fillStyle = mix(base, NEON_DARK, 0.8);
+    c.beginPath();
+    c.arc(0, 0, r, 0, Math.PI * 2);
+    c.fill();
+    return;
+  }
   c.fillStyle = base;
   c.beginPath();
   c.arc(0, 0, r, 0, Math.PI * 2);
   c.fill();
+  if (style === "linocut") {
+    gouges(c, r, base, seed);
+    return;
+  }
   if (style === "smooth") {
     c.fillStyle = withAlpha("#000000", 0.16);
     c.beginPath();
@@ -152,7 +170,41 @@ function paintBody(c: CanvasRenderingContext2D, r: number, base: string, style: 
   c.restore();
 }
 
+/** Linocut: curved gouge marks, dark on the shadow side and bare paper on the lit side. */
+function gouges(c: CanvasRenderingContext2D, r: number, base: string, seed: number) {
+  c.save();
+  c.beginPath();
+  c.arc(0, 0, r, 0, Math.PI * 2);
+  c.clip();
+  c.strokeStyle = mix(base, INK, 0.75);
+  c.lineCap = "round";
+  for (let k = 0; k < 6; k += 1) {
+    c.lineWidth = r * (0.05 + rand(k, seed) * 0.04);
+    c.beginPath();
+    c.arc(-r * 0.3, -r * 0.3, r * (0.95 + k * 0.14), 0.05 + rand(k, seed + 1) * 0.3, 1.45 - rand(k, seed + 2) * 0.3);
+    c.stroke();
+  }
+  c.strokeStyle = PRINT_PAPER;
+  for (let k = 0; k < 3; k += 1) {
+    c.lineWidth = r * 0.05;
+    c.beginPath();
+    c.arc(r * 0.25, r * 0.25, r * (0.75 + k * 0.13), Math.PI + 0.35, Math.PI + 1.1 - k * 0.12);
+    c.stroke();
+  }
+  c.restore();
+}
+
 function paintHighlight(c: CanvasRenderingContext2D, r: number, style: FruitStyle) {
+  if (style === "linocut") return;
+  if (style === "neon") {
+    c.strokeStyle = withAlpha("#ffffff", 0.75);
+    c.lineWidth = Math.max(1.5, r * 0.06);
+    c.lineCap = "round";
+    c.beginPath();
+    c.arc(0, 0, r * 0.68, Math.PI * 1.1, Math.PI * 1.45);
+    c.stroke();
+    return;
+  }
   if (style === "pixel") {
     c.fillStyle = withAlpha("#ffffff", 0.8);
     c.fillRect(-r * 0.55, -r * 0.55, r * 0.24, r * 0.24);
@@ -194,6 +246,26 @@ function paintOutline(c: CanvasRenderingContext2D, r: number, base: string, styl
     c.lineWidth = 3;
     c.beginPath();
     c.arc(0, 0, r - 1, 0, Math.PI * 2);
+    c.stroke();
+  } else if (style === "linocut") {
+    c.strokeStyle = INK;
+    c.lineWidth = Math.max(3, r * 0.12);
+    wobblyCircle(c, 0, 0, r * 0.97, seed + 4, 0.035);
+    c.stroke();
+  } else if (style === "neon") {
+    c.save();
+    c.shadowColor = base;
+    c.shadowBlur = r * 0.45;
+    c.strokeStyle = mix(base, "#ffffff", 0.15);
+    c.lineWidth = Math.max(2.5, r * 0.11);
+    c.beginPath();
+    c.arc(0, 0, r * 0.94, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
+    c.strokeStyle = withAlpha("#ffffff", 0.7);
+    c.lineWidth = Math.max(1, r * 0.035);
+    c.beginPath();
+    c.arc(0, 0, r * 0.94, 0, Math.PI * 2);
     c.stroke();
   } else if (style === "watercolor") {
     // Pigment pooling at the edge of the wash.
@@ -334,6 +406,76 @@ function paintSkin(c: CanvasRenderingContext2D, kind: FruitKind, skin: string, r
       c.stroke();
       break;
     }
+    case "knitted": {
+      // Rows of V stitches, each row a touch darker at the purl line.
+      const step = r * 0.24;
+      c.strokeStyle = withAlpha(mix(base, "#000000", 0.28), 0.8);
+      c.lineWidth = r * 0.055;
+      c.lineCap = "round";
+      for (let row = -5; row <= 5; row += 1) {
+        const y = row * step * 0.8;
+        for (let col = -5; col <= 5; col += 1) {
+          const x = col * step + (row % 2 ? step / 2 : 0);
+          c.beginPath();
+          c.moveTo(x - step * 0.42, y - step * 0.32);
+          c.quadraticCurveTo(x - step * 0.1, y + step * 0.05, x, y + step * 0.3);
+          c.quadraticCurveTo(x + step * 0.1, y + step * 0.05, x + step * 0.42, y - step * 0.32);
+          c.stroke();
+        }
+      }
+      c.fillStyle = withAlpha("#ffffff", 0.12);
+      for (let row = -5; row <= 5; row += 1) c.fillRect(-r, row * step * 0.8 - step * 0.35, r * 2, step * 0.12);
+      break;
+    }
+    case "stained-glass": {
+      // Irregular panes in shades of the fruit, joined by dark lead came.
+      const panes = 7;
+      const pts = Array.from({ length: panes }, (_, i) => {
+        const a = (i / panes) * Math.PI * 2 + rand(i, 61) * 0.5;
+        return { x: Math.cos(a) * r * 1.2, y: Math.sin(a) * r * 1.2 };
+      });
+      const hub = { x: (rand(1, 62) - 0.5) * r * 0.4, y: (rand(2, 62) - 0.5) * r * 0.4 };
+      for (let i = 0; i < panes; i += 1) {
+        const a = pts[i];
+        const b = pts[(i + 1) % panes];
+        c.fillStyle = mix(base, i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? kind.flesh : "#000000", i % 3 === 2 ? 0.2 : 0.3);
+        c.beginPath();
+        c.moveTo(hub.x, hub.y);
+        c.lineTo(a.x, a.y);
+        c.lineTo(b.x, b.y);
+        c.closePath();
+        c.fill();
+      }
+      c.fillStyle = withAlpha("#ffffff", 0.18);
+      c.fillRect(-r, -r, r * 2, r * 0.7);
+      c.strokeStyle = "#2a2430";
+      c.lineWidth = r * 0.07;
+      c.lineJoin = "round";
+      c.beginPath();
+      for (const a of pts) {
+        c.moveTo(hub.x, hub.y);
+        c.lineTo(a.x, a.y);
+      }
+      c.moveTo(r * 0.62, 0);
+      c.arc(0, 0, r * 0.62, 0, Math.PI * 2);
+      c.stroke();
+      break;
+    }
+    case "disco": {
+      // A grid of mirror tiles, each catching the light differently.
+      const t = r * 0.22;
+      for (let y = -r; y < r; y += t)
+        for (let x = -r; x < r; x += t) {
+          const v = rand(Math.round(x / t) * 31 + Math.round(y / t), 71);
+          const lit = x + y < -r * 0.4;
+          c.fillStyle = v > 0.86 ? "#ffffff" : lit ? mix(base, "#ffffff", 0.25 + v * 0.3) : mix(base, "#1a1a2a", v * 0.35);
+          c.fillRect(x + 0.6, y + 0.6, t - 1.2, t - 1.2);
+        }
+      c.fillStyle = "#ffffff";
+      starPath(c, -r * 0.45, -r * 0.4, r * 0.2, 4, 0.25);
+      c.fill();
+      break;
+    }
     case "cosmic": {
       const glow = c.createRadialGradient(r * 0.2, r * 0.1, 0, r * 0.2, r * 0.1, r);
       glow.addColorStop(0, withAlpha(kind.skin, 0.55));
@@ -374,10 +516,18 @@ function paintLeaf(c: CanvasRenderingContext2D, r: number, skin: string, style: 
   c.beginPath();
   c.ellipse(r * 0.25, -r * 1.02, r * 0.32, r * 0.13, -0.5, 0, Math.PI * 2);
   c.fill();
-  if (style === "cartoon") {
+  if (style === "cartoon" || style === "linocut") {
     c.strokeStyle = INK;
     c.lineWidth = Math.max(2, r * 0.07);
     c.stroke();
+  } else if (style === "neon") {
+    c.save();
+    c.shadowColor = color;
+    c.shadowBlur = r * 0.3;
+    c.strokeStyle = mix(color, "#ffffff", 0.3);
+    c.lineWidth = Math.max(1.5, r * 0.05);
+    c.stroke();
+    c.restore();
   } else if (style === "pixel") {
     c.strokeStyle = mix(color, "#000000", 0.5);
     c.lineWidth = 2;
@@ -417,12 +567,26 @@ function paintHalf(c: CanvasRenderingContext2D, kind: FruitKind, theme: FruitThe
     c.arc(0, 0, r * k, 0, Math.PI);
     c.closePath();
   };
-  c.fillStyle = style === "watercolor" ? withAlpha(base, 0.75) : base;
+  c.fillStyle = style === "watercolor" ? withAlpha(base, 0.75) : style === "neon" ? mix(base, NEON_DARK, 0.8) : base;
   semi(1);
   c.fill();
-  c.fillStyle = style === "watercolor" ? withAlpha(flesh, 0.8) : flesh;
+  c.fillStyle = style === "watercolor" ? withAlpha(flesh, 0.8) : style === "neon" ? mix(flesh, NEON_DARK, 0.7) : flesh;
   semi(0.84);
   c.fill();
+  if (style === "linocut") {
+    c.save();
+    semi(0.84);
+    c.clip();
+    c.strokeStyle = mix(flesh, INK, 0.6);
+    c.lineWidth = r * 0.05;
+    c.lineCap = "round";
+    for (let k = 0; k < 4; k += 1) {
+      c.beginPath();
+      c.arc(0, -r * 0.2, r * (0.5 + k * 0.14), 0.4, Math.PI - 0.4);
+      c.stroke();
+    }
+    c.restore();
+  }
   if (style === "cartoon" || style === "pixel") {
     c.fillStyle = withAlpha(mix(flesh, "#000000", 0.4), 0.3);
     c.beginPath();
@@ -446,11 +610,22 @@ function paintHalf(c: CanvasRenderingContext2D, kind: FruitKind, theme: FruitThe
     c.ellipse((i - 1.5) * r * 0.22, r * 0.38, r * 0.035, r * 0.06, 0, 0, Math.PI * 2);
     c.fill();
   }
-  if (style === "cartoon") {
+  if (style === "cartoon" || style === "linocut") {
     c.strokeStyle = INK;
-    c.lineWidth = Math.max(2.5, r * 0.1);
+    c.lineWidth = Math.max(2.5, r * (style === "linocut" ? 0.12 : 0.1));
     semi(1);
     c.stroke();
+  } else if (style === "neon") {
+    c.save();
+    c.shadowBlur = r * 0.4;
+    for (const [k, color] of [[0.98, base], [0.82, flesh]] as const) {
+      c.shadowColor = color;
+      c.strokeStyle = mix(color, "#ffffff", 0.15);
+      c.lineWidth = Math.max(2, r * 0.09);
+      semi(k);
+      c.stroke();
+    }
+    c.restore();
   } else if (style === "pixel") {
     c.strokeStyle = mix(base, "#000000", 0.6);
     c.lineWidth = 3;
@@ -523,12 +698,22 @@ export function drawBomb(c: CanvasRenderingContext2D, theme: FruitTheme, now: nu
   c.beginPath();
   c.arc(0, 0, r, 0, Math.PI * 2);
   c.stroke();
-  if (style === "cartoon") {
+  if (style === "cartoon" || style === "linocut") {
     c.strokeStyle = INK;
-    c.lineWidth = 3;
+    c.lineWidth = style === "linocut" ? 4 : 3;
     c.beginPath();
     c.arc(0, 0, r + 3, 0, Math.PI * 2);
     c.stroke();
+  } else if (style === "neon") {
+    c.save();
+    c.shadowColor = "#ff3b3b";
+    c.shadowBlur = 14;
+    c.strokeStyle = "#ff6b6b";
+    c.lineWidth = 2.5;
+    c.beginPath();
+    c.arc(0, 0, r + 2, 0, Math.PI * 2);
+    c.stroke();
+    c.restore();
   }
   c.strokeStyle = "#ff6b6b";
   c.lineWidth = 5;
@@ -733,6 +918,129 @@ function paintBackdrop(c: CanvasRenderingContext2D, theme: FruitTheme, w: number
       }
       break;
     }
+    case "diner": {
+      c.fillStyle = "#f4ead8";
+      c.fillRect(0, 0, w, h);
+      // Teal wall, chrome counter, then a black-and-white checker floor in perspective-free tiles.
+      c.fillStyle = "#5fc4b8";
+      c.fillRect(0, 0, w, h * 0.42);
+      c.fillStyle = withAlpha("#ffffff", 0.25);
+      for (let x = 0; x < w; x += 26) c.fillRect(x, 0, 2, h * 0.42);
+      const chrome = c.createLinearGradient(0, h * 0.42, 0, h * 0.5);
+      chrome.addColorStop(0, "#f8fbff");
+      chrome.addColorStop(0.5, "#9aa6b6");
+      chrome.addColorStop(1, "#e6ecf4");
+      c.fillStyle = chrome;
+      c.fillRect(0, h * 0.42, w, h * 0.08);
+      c.fillStyle = "#d63a4a";
+      c.fillRect(0, h * 0.5, w, h * 0.04);
+      const tile = 46;
+      for (let y = h * 0.54, row = 0; y < h; y += tile, row += 1)
+        for (let x = row % 2 ? 0 : tile, col = 0; x < w; x += tile * 2, col += 1) {
+          c.fillStyle = "#1e1e26";
+          c.fillRect(x, y, tile, tile);
+        }
+      c.save();
+      c.shadowColor = "#ff4f7a";
+      c.shadowBlur = 14;
+      c.strokeStyle = "#ff7a9a";
+      c.lineWidth = 4;
+      c.font = "700 40px ui-rounded, system-ui, sans-serif";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.strokeText("OPEN", w * 0.78, h * 0.2);
+      c.restore();
+      break;
+    }
+    case "greenhouse": {
+      const sky = c.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#d8f0d0");
+      sky.addColorStop(1, "#9fcf8f");
+      c.fillStyle = sky;
+      c.fillRect(0, 0, w, h);
+      // Dappled sunlight through the glass.
+      for (let i = 0; i < 18; i += 1) {
+        const x = rand(i, 51) * w;
+        const y = rand(i, 52) * h;
+        const r = 30 + rand(i, 53) * 60;
+        const g = c.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, withAlpha("#fffbe0", 0.35));
+        g.addColorStop(1, withAlpha("#fffbe0", 0));
+        c.fillStyle = g;
+        c.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      c.strokeStyle = withAlpha("#f4f8f2", 0.8);
+      c.lineWidth = 6;
+      c.beginPath();
+      for (let x = 0; x <= w; x += 120) {
+        c.moveTo(x, 0);
+        c.lineTo(x, h);
+      }
+      for (let y = 0; y <= h; y += 110) {
+        c.moveTo(0, y);
+        c.lineTo(w, y);
+      }
+      c.stroke();
+      // Hanging ferns along the top.
+      for (let i = 0, x = 60; x < w; i += 1, x += 170) {
+        c.strokeStyle = "#7a5a3a";
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.moveTo(x, 0);
+        c.lineTo(x, 46);
+        c.stroke();
+        c.fillStyle = "#c46a3a";
+        c.beginPath();
+        c.moveTo(x - 18, 46);
+        c.lineTo(x + 18, 46);
+        c.lineTo(x + 12, 66);
+        c.lineTo(x - 12, 66);
+        c.fill();
+        c.strokeStyle = "#3f8a3a";
+        c.lineWidth = 3;
+        for (let f = -3; f <= 3; f += 1) {
+          c.beginPath();
+          c.moveTo(x, 50);
+          c.quadraticCurveTo(x + f * 16, 60, x + f * 13, 96 + Math.abs(f) * -6 + rand(f + i * 7, 54) * 30);
+          c.stroke();
+        }
+      }
+      break;
+    }
+    case "volcano": {
+      const sky = c.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#1a0f14");
+      sky.addColorStop(0.6, "#4a1a14");
+      sky.addColorStop(1, "#ff6a1a");
+      c.fillStyle = sky;
+      c.fillRect(0, 0, w, h);
+      // The lava lake glows at the bottom between jagged black rock.
+      const lava = c.createLinearGradient(0, h * 0.82, 0, h);
+      lava.addColorStop(0, "#ffb02e");
+      lava.addColorStop(1, "#ff4a1a");
+      c.fillStyle = lava;
+      c.fillRect(0, h * 0.84, w, h * 0.16);
+      c.fillStyle = "#140c10";
+      for (const side of [0, 1]) {
+        c.beginPath();
+        const x0 = side ? w : 0;
+        c.moveTo(x0, 0);
+        for (let y = 0; y <= h; y += 40) c.lineTo(x0 + (side ? -1 : 1) * (40 + rand(y, 55 + side) * 70 + (y / h) * 60), y);
+        c.lineTo(x0, h);
+        c.fill();
+      }
+      c.strokeStyle = withAlpha("#ff7a2a", 0.5);
+      c.lineWidth = 2;
+      for (let i = 0; i < 8; i += 1) {
+        const x = rand(i, 57) * w;
+        c.beginPath();
+        c.moveTo(x, h * 0.86);
+        c.lineTo(x + 20, h * 0.9);
+        c.lineTo(x + 6, h * 0.95);
+        c.stroke();
+      }
+      break;
+    }
     case "space": {
       c.fillStyle = "#06041a";
       c.fillRect(0, 0, w, h);
@@ -791,6 +1099,39 @@ function paintBackdrop(c: CanvasRenderingContext2D, theme: FruitTheme, w: number
     c.strokeStyle = withAlpha(INK, 0.7);
     c.lineWidth = 8;
     c.strokeRect(0, 0, w, h);
+  } else if (theme.style === "linocut") {
+    // Printed on cream paper: the colors knock back, gouge texture and a heavy inked border.
+    c.fillStyle = withAlpha(PRINT_PAPER, 0.45);
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = withAlpha(INK, 0.09);
+    c.lineWidth = 2;
+    c.lineCap = "round";
+    for (let i = 0; i < 90; i += 1) {
+      const x = rand(i, 41) * w;
+      const y = rand(i, 42) * h;
+      c.beginPath();
+      c.arc(x, y, 18 + rand(i, 43) * 30, 0.2, 1.1);
+      c.stroke();
+    }
+    c.strokeStyle = INK;
+    c.lineWidth = 10;
+    c.strokeRect(0, 0, w, h);
+  } else if (theme.style === "neon") {
+    // Lights down: the room goes dark so every glowing tube reads.
+    c.fillStyle = withAlpha(NEON_DARK, 0.8);
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = withAlpha("#7a4bff", 0.12);
+    c.lineWidth = 1;
+    c.beginPath();
+    for (let x = 0; x <= w; x += 40) {
+      c.moveTo(x, 0);
+      c.lineTo(x, h);
+    }
+    for (let y = 0; y <= h; y += 40) {
+      c.moveTo(0, y);
+      c.lineTo(w, y);
+    }
+    c.stroke();
   } else if (theme.style === "watercolor") {
     c.fillStyle = withAlpha("#f5ecd7", 0.16);
     c.fillRect(0, 0, w, h);
@@ -872,6 +1213,42 @@ export function drawBackdropMotion(c: CanvasRenderingContext2D, theme: FruitThem
         c.fill();
       }
       break;
+    case "volcano":
+      for (let i = 0; i < 14; i += 1) {
+        const life = ((now / 2600 + rand(i, 81)) % 1 + 1) % 1;
+        const x = rand(i, 82) * w + Math.sin(now / 500 + i) * 10;
+        const y = h * 0.86 - life * h * 0.8;
+        c.fillStyle = withAlpha(i % 2 ? "#ffb02e" : "#ff6a2a", (1 - life) * 0.85);
+        c.beginPath();
+        c.arc(x, y, 1.5 + (1 - life) * 2, 0, Math.PI * 2);
+        c.fill();
+      }
+      break;
+    case "greenhouse":
+      for (let i = 0; i < 5; i += 1) {
+        const k = 0.5 + 0.5 * Math.sin(now / 1400 + i * 1.3);
+        const x = rand(i, 91) * w;
+        const g = c.createRadialGradient(x, h * 0.5, 0, x, h * 0.5, 120);
+        g.addColorStop(0, withAlpha("#fffbe0", 0.1 * k));
+        g.addColorStop(1, withAlpha("#fffbe0", 0));
+        c.fillStyle = g;
+        c.fillRect(x - 120, h * 0.5 - 120, 240, 240);
+      }
+      break;
+    case "diner": {
+      const flicker = Math.sin(now / 900) > 0.97 ? 0.4 : 1;
+      c.save();
+      c.shadowColor = "#ff4f7a";
+      c.shadowBlur = 24 * flicker;
+      c.strokeStyle = withAlpha("#ffb3c4", flicker);
+      c.lineWidth = 2;
+      c.font = "700 40px ui-rounded, system-ui, sans-serif";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.strokeText("OPEN", w * 0.78, h * 0.2);
+      c.restore();
+      break;
+    }
     case "beach":
       c.strokeStyle = withAlpha("#ffffff", 0.5);
       c.lineWidth = 2;
@@ -940,10 +1317,20 @@ function ribbon(c: CanvasRenderingContext2D, pts: TrailPoint[], now: number, ms:
     c.fill();
     return;
   }
+  if (style === "neon") {
+    c.save();
+    c.shadowColor = color;
+    c.shadowBlur = 12;
+    ribbonPath(c, pts, now, ms, maxW);
+    c.fillStyle = withAlpha(color, Math.min(1, alpha + 0.3));
+    c.fill();
+    c.restore();
+    return;
+  }
   ribbonPath(c, pts, now, ms, maxW);
-  if (style === "cartoon") {
+  if (style === "cartoon" || style === "linocut") {
     c.strokeStyle = INK;
-    c.lineWidth = 2.5;
+    c.lineWidth = style === "linocut" ? 3.5 : 2.5;
     c.lineJoin = "round";
     c.stroke();
     c.fillStyle = color;
@@ -1103,6 +1490,65 @@ export function drawBlade(c: CanvasRenderingContext2D, pts: TrailPoint[], now: n
       c.stroke();
       break;
     }
+    case "laser": {
+      ribbon(c, pts, now, ms, 7, "#ff2fd0", 0.35, style);
+      const hum = 0.75 + 0.25 * Math.sin(now / 35);
+      ribbonPath(c, pts, now, ms, 3.2 * hum);
+      c.fillStyle = withAlpha("#ff8ae8", 0.9);
+      c.fill();
+      core(c, pts, "#ffffff", 1.6);
+      break;
+    }
+    case "vine": {
+      // A twisting green stem, with leaves budding along it as the swipe ages.
+      ribbon(c, pts, now, ms, 3.5, "#3f8f2a", 0.85, style);
+      c.strokeStyle = withAlpha("#a6dd6a", 0.8);
+      c.lineWidth = 1.2;
+      c.beginPath();
+      for (let i = 0; i < n; i += 1) {
+        const p = pts[i];
+        const wob = Math.sin(i * 0.9) * 3;
+        if (i) c.lineTo(p.x + wob, p.y - wob);
+        else c.moveTo(p.x + wob, p.y - wob);
+      }
+      c.stroke();
+      for (let i = 2; i < n - 1; i += 3) {
+        const f = fadeOf(i);
+        if (f <= 0) continue;
+        const a = pts[i - 1];
+        const b = pts[i + 1];
+        const ang = Math.atan2(b.y - a.y, b.x - a.x) + (i % 2 ? 1 : -1) * 0.9;
+        const grow = Math.min(1, (1 - f) * 3 + 0.3);
+        c.save();
+        c.translate(pts[i].x, pts[i].y);
+        c.rotate(ang);
+        c.fillStyle = withAlpha(i % 2 ? "#5fbf3a" : "#7fd04a", f);
+        c.beginPath();
+        c.ellipse(5 * grow, 0, 5 * grow, 2.4 * grow, 0, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
+      }
+      break;
+    }
+    case "shadow": {
+      ribbon(c, pts, now, ms, 7, "#2a1640", 0.7, style);
+      ribbonPath(c, pts, now, ms, 2.5);
+      c.fillStyle = withAlpha("#b88aff", 0.6);
+      c.fill();
+      // Smoke wisps curl up off the edge as it fades.
+      for (let i = 0; i < n; i += 3) {
+        const f = fadeOf(i);
+        if (f <= 0) continue;
+        const age = now - pts[i].t;
+        const x = pts[i].x + Math.sin(i * 1.7 + age / 90) * 6;
+        const y = pts[i].y - age * 0.05;
+        c.fillStyle = withAlpha(i % 2 ? "#3a2058" : "#6a3fa0", f * 0.45);
+        c.beginPath();
+        c.arc(x, y, 3 + (1 - f) * 7, 0, Math.PI * 2);
+        c.fill();
+      }
+      break;
+    }
     default:
       ribbon(c, pts, now, ms, 5.5, "#ff4d4d", 0.5, style);
       core(c, pts, withAlpha("#ffffff", 0.9), 1.6);
@@ -1194,6 +1640,27 @@ export function juiceBurst(theme: FruitTheme, x: number, y: number, kind: FruitK
         p.span = 1.1;
         p.spin = random(-12, 12);
         break;
+      case "seeds":
+        p.color = mix(kind.flesh, "#2b1a10", 0.75);
+        p.size = random(2.2, 3.4);
+        p.g = 0.9;
+        p.spin = random(-14, 14);
+        break;
+      case "smoothie":
+        p.color = i % 2 ? kind.flesh : mix(kind.flesh, "#fff4e6", 0.55);
+        p.size = random(3.5, 6);
+        p.g = 0.8;
+        p.vx *= 0.75;
+        p.vy *= 0.75;
+        break;
+      case "fireworks":
+        p.color = i % 3 === 0 ? "#fff3b0" : mix(kind.flesh, "#ffffff", 0.25);
+        p.size = random(1.6, 2.6);
+        p.g = 0.15;
+        p.span = 0.75;
+        p.vx *= 1.3;
+        p.vy = p.vy * 1.3 + 60;
+        break;
       default:
         p.shape = "drop";
     }
@@ -1264,6 +1731,57 @@ export function drawJuice(c: CanvasRenderingContext2D, particles: JuiceParticle[
         c.fill();
         break;
       }
+      case "seeds": {
+        c.save();
+        c.translate(p.x, p.y);
+        c.rotate(p.rot);
+        c.fillStyle = withAlpha(p.color, alpha);
+        c.beginPath();
+        c.moveTo(0, -s);
+        c.quadraticCurveTo(s * 0.7, 0, 0, s * 0.8);
+        c.quadraticCurveTo(-s * 0.7, 0, 0, -s);
+        c.fill();
+        c.restore();
+        break;
+      }
+      case "smoothie": {
+        // A thick creamy drop with a stretched tail along its motion.
+        const sp = Math.hypot(p.vx, p.vy) || 1;
+        c.strokeStyle = withAlpha(p.color, alpha);
+        c.lineCap = "round";
+        c.lineWidth = s * 1.4;
+        c.beginPath();
+        c.moveTo(p.x, p.y);
+        c.lineTo(p.x - (p.vx / sp) * s * 1.6, p.y - (p.vy / sp) * s * 1.6);
+        c.stroke();
+        c.fillStyle = withAlpha("#ffffff", alpha * 0.4);
+        c.beginPath();
+        c.arc(p.x - s * 0.2, p.y - s * 0.25, s * 0.25, 0, Math.PI * 2);
+        c.fill();
+        break;
+      }
+      case "fireworks": {
+        // A spark with a short streak; near the end of its life it bursts into a tiny star.
+        const sp = Math.hypot(p.vx, p.vy) || 1;
+        c.strokeStyle = withAlpha(p.color, alpha);
+        c.lineWidth = s * 0.7;
+        c.lineCap = "round";
+        c.beginPath();
+        c.moveTo(p.x, p.y);
+        c.lineTo(p.x - (p.vx / sp) * s * 5, p.y - (p.vy / sp) * s * 5);
+        c.stroke();
+        if (life < 0.35) {
+          c.beginPath();
+          for (let k = 0; k < 6; k += 1) {
+            const a = (k / 6) * Math.PI * 2 + p.rot;
+            const d = s * (1 + (0.35 - life) * 14);
+            c.moveTo(p.x, p.y);
+            c.lineTo(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
+          }
+          c.stroke();
+        }
+        break;
+      }
       case "confetti": {
         c.save();
         c.translate(p.x, p.y);
@@ -1287,7 +1805,7 @@ export function drawJuice(c: CanvasRenderingContext2D, particles: JuiceParticle[
 export function makeSplat(theme: FruitTheme, x: number, y: number, kind: FruitKind): JuiceSplat {
   const shape = theme.juice;
   const count = shape === "glitter" ? 14 : shape === "confetti" ? 10 : shape === "default" ? 5 : 6;
-  const color = shape === "ink" ? "#15121c" : shape === "petals" ? "#ffb3cb" : kind.flesh;
+  const color = shape === "ink" ? "#15121c" : shape === "petals" ? "#ffb3cb" : shape === "seeds" ? "#5fae3a" : kind.flesh;
   return {
     x,
     y,
@@ -1337,6 +1855,42 @@ export function drawSplats(c: CanvasRenderingContext2D, splats: JuiceSplat[], th
           c.fillStyle = withAlpha(blob.color, 0.24 * s.life);
           starPath(c, x, y, blob.r, 5, 0.45, blob.rot);
           c.fill();
+          break;
+        case "seeds": {
+          // Little sprouts: a stem and two leaves.
+          const k = Math.min(1, (1 - s.life) * 4 + 0.3);
+          c.strokeStyle = withAlpha("#3f8a2a", 0.5 * s.life);
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.moveTo(x, y);
+          c.lineTo(x, y - blob.r * 1.6 * k);
+          c.stroke();
+          c.fillStyle = withAlpha(blob.color, 0.5 * s.life);
+          for (const side of [-1, 1]) {
+            c.beginPath();
+            c.ellipse(x + side * blob.r * 0.6 * k, y - blob.r * 1.6 * k, blob.r * 0.6 * k, blob.r * 0.28 * k, side * 0.5, 0, Math.PI * 2);
+            c.fill();
+          }
+          break;
+        }
+        case "smoothie":
+          c.strokeStyle = withAlpha(blob.color, 0.28 * s.life);
+          c.lineWidth = blob.r * 0.45;
+          c.lineCap = "round";
+          c.beginPath();
+          for (let a = 0; a < Math.PI * 3; a += 0.4) c.lineTo(x + Math.cos(a + blob.rot) * blob.r * (a / 9), y + Math.sin(a + blob.rot) * blob.r * (a / 9));
+          c.stroke();
+          break;
+        case "fireworks":
+          c.strokeStyle = withAlpha(blob.color, 0.3 * s.life);
+          c.lineWidth = 1.2;
+          c.beginPath();
+          for (let k = 0; k < 8; k += 1) {
+            const a = (k / 8) * Math.PI * 2 + blob.rot;
+            c.moveTo(x + Math.cos(a) * blob.r * 0.4, y + Math.sin(a) * blob.r * 0.4);
+            c.lineTo(x + Math.cos(a) * blob.r * 1.2, y + Math.sin(a) * blob.r * 1.2);
+          }
+          c.stroke();
           break;
         case "confetti":
           c.save();

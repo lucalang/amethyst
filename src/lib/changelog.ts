@@ -51,6 +51,35 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-21-minigame-shops-expansion",
+    date: "2026-11-21",
+    title: "Bigger game shops",
+    intro: "Every Arcade game shop grows: 250 new cosmetics, ten in every category and five art styles for every game. Flutter, Sudoku and Tower Stacker get art styles for the first time.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Three more of everything", text: "Every category in every game shop gains three new items made for that game, from an Aurora snake and a Lava Lamp 2048 board to a Moon Jelly flyer, a Pirate Galleon in Front Wars and a Snowed-in Cabin for Who Am I?." },
+      { kind: "new", feature: "Art styles for Flutter, Sudoku and Tower Stacker", text: "Flutter can fly in 8-Bit, Silent Film, Blueprint, Storybook Watercolor or Pop Art; Sudoku boards can be 8-Bit, Sketchbook, Carved Stone, LED Lightboard or Swiss Poster; Tower Stacker towers can be Voxel, Toon Ink, Papercraft, Low Poly or Hologram." },
+      { kind: "new", feature: "A fifth art style everywhere else", text: "Roman Mosaic, Origami, Linocut, Neon Sign, Chalkboard, VHS Tape, Treasure Map, Cross-Stitch Sampler, Ukiyo-e, Watercolour, Art Deco, Art Nouveau and a style made for each puzzle: Metro Map, Embroidery Hoop, Azulejo Tiles and Heraldry." },
+      { kind: "new", feature: "New solve celebrations", text: "Puzzle finishes now include lanterns, streamers, comets, autumn leaves, butterflies, glitter, balloons, coins, kites, tiny crowns, banners and doves." },
+    ],
+    details: {
+      new: [
+        {
+          title: "250 new game cosmetics",
+          body: "Each game shop now has ten items in every category and five art styles. Every new item is built for its own game, works with everything else you've equipped and is purely visual: rules, hitboxes, scoring, records and Wagers are unchanged.",
+          points: [
+            "Art styles redraw the whole game and combine with every other cosmetic. In Flutter the score stays crisp on top of the style, and in every puzzle numbers, clues and answer colours stay readable.",
+            "Colours that carry meaning never change: Sumbreak numbers keep one colour per doubling, Who Am I? answers keep their yes and no colours, Gem Chase's frightened shades stay blue and Space Blaster's upgrade tiers stay distinct.",
+            "Animations follow your effects setting and reduced motion, so with effects off every new item shows a still version.",
+            "Prices follow each shop's usual ladder, and rarity follows price as before.",
+          ],
+          where: "Arcade → any game → Shop, or Shop → Cosmetics",
+          link: { href: "/shop/cosmetics", label: "Browse every game shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-21-who-am-i-shop",
     date: "2026-11-21",
     title: "Who Am I? shop",

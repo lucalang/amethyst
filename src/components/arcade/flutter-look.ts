@@ -7,7 +7,8 @@ import { mix, withAlpha } from "./engine";
  * Flutter cosmetics: characters, flight trails, obstacle skins and background scenery. Everything
  * here is drawing only: characters are painted inside the same small circle whatever their shape
  * (the hitbox lives in the game and never changes), and obstacles fill the exact pillar outline.
- * Layering: scenery (sky, parallax, ground) → obstacles → trail → character.
+ * Layering: scenery (sky, parallax, ground) → obstacles → trail → character, then the art style
+ * re-renders the finished frame (see `applyFlutterStyle`), so it combines with everything else.
  */
 
 type Ctx = CanvasRenderingContext2D;
@@ -20,14 +21,17 @@ export const PIPE_W = 70;
 export const TIP = 18;
 export const GAP = 165;
 
-export type FlutterTheme = { key: string; character: string; trail: string; obstacle: string; scenery: string };
+export type FlutterStyle = "" | "pixel" | "silent-film" | "blueprint" | "watercolor" | "pop-art";
+const STYLES: FlutterStyle[] = ["pixel", "silent-film", "blueprint", "watercolor", "pop-art"];
+export type FlutterTheme = { key: string; character: string; trail: string; obstacle: string; scenery: string; style: FlutterStyle };
 
 export function flutterTheme(look: GameLook): FlutterTheme {
   const character = look.character ?? "";
   const trail = look.trail ?? "";
   const obstacle = look.obstacle ?? "";
   const scenery = look.scenery ?? "";
-  return { key: [character, trail, obstacle, scenery].join("|"), character, trail, obstacle, scenery };
+  const style = STYLES.find((entry) => entry === look.style) ?? "";
+  return { key: [character, trail, obstacle, scenery, style].join("|"), character, trail, obstacle, scenery, style };
 }
 
 const hash = (n: number) => (Math.imul(n ^ 0x9e3779b9, 0x85ebca6b) >>> 0) / 4294967296;
@@ -312,6 +316,179 @@ const SCENERIES: Record<string, Scenery> = {
       ctx.stroke();
     },
   },
+  reef: {
+    top: "#47b8d6",
+    bottom: "#0f5b82",
+    ground: "#e3cc93",
+    groundTop: "#f3e2b2",
+    stripe: withAlpha("#8a6a30", 0.14),
+    text: "#ffffff",
+    outline: withAlpha("#06304a", 0.5),
+    layers(ctx, offset, now, animate) {
+      // Sun rays slanting down through the water.
+      ctx.fillStyle = withAlpha("#e8fbff", 0.09);
+      for (let k = 0; k < 5; k += 1) {
+        const sway = animate ? Math.sin(now / 1800 + k) * 18 : 0;
+        const x = 40 + k * 100 + sway;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x + 46, 0);
+        ctx.lineTo(x - 40 + sway, GROUND);
+        ctx.lineTo(x - 110 + sway, GROUND);
+        ctx.fill();
+      }
+      // Far coral heads.
+      ctx.fillStyle = withAlpha("#1f6f92", 0.6);
+      repeat(offset, 0.15, 150, (x, i) => {
+        const h = 60 + hash(i) * 70;
+        ctx.beginPath();
+        ctx.moveTo(x, GROUND);
+        for (let b = 0; b <= 6; b += 1) ctx.lineTo(x + b * 22, GROUND - h * (0.55 + 0.45 * Math.abs(Math.sin(b * 1.3 + i))));
+        ctx.lineTo(x + 132, GROUND);
+        ctx.fill();
+      });
+      // Swaying kelp in front.
+      ctx.lineCap = "round";
+      repeat(offset, 0.4, 110, (x, i) => {
+        const h = 90 + hash(i * 3) * 120;
+        const bx = x + hash(i * 5) * 60;
+        ctx.strokeStyle = i % 2 ? "#2f8a5a" : "#3f9f4a";
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(bx, GROUND);
+        for (let y = 0; y <= h; y += 12) ctx.lineTo(bx + Math.sin(y / 26 + (animate ? now / 700 : 0) + i) * 7, GROUND - y);
+        ctx.stroke();
+      });
+      if (animate) {
+        ctx.strokeStyle = withAlpha("#ffffff", 0.55);
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < 18; i += 1) {
+          const x = (((hash(i * 7) * WIDTH - offset * 0.3) % WIDTH) + WIDTH) % WIDTH + Math.sin(now / 500 + i) * 4;
+          const y = GROUND - ((now * (0.03 + hash(i) * 0.03) + hash(i * 9) * GROUND) % GROUND);
+          ctx.beginPath();
+          ctx.arc(x, y, 2 + hash(i * 3) * 2.5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    },
+  },
+  blossom: {
+    top: "#ffcfe2",
+    bottom: "#fff5ee",
+    ground: "#86ba68",
+    groundTop: "#b6de8a",
+    stripe: withAlpha("#3a6a20", 0.12),
+    text: "#5a2040",
+    outline: withAlpha("#ffffff", 0.7),
+    layers(ctx, offset, now, animate) {
+      // A snow-capped mountain far away, then pink hills and blossoming trees.
+      ctx.fillStyle = withAlpha("#a78bc6", 0.55);
+      ctx.beginPath();
+      ctx.moveTo(150, GROUND);
+      ctx.lineTo(300, GROUND - 250);
+      ctx.lineTo(460, GROUND);
+      ctx.fill();
+      ctx.fillStyle = withAlpha("#ffffff", 0.9);
+      ctx.beginPath();
+      ctx.moveTo(300, GROUND - 250);
+      ctx.lineTo(262, GROUND - 188);
+      ctx.lineTo(284, GROUND - 196);
+      ctx.lineTo(300, GROUND - 180);
+      ctx.lineTo(318, GROUND - 198);
+      ctx.lineTo(340, GROUND - 186);
+      ctx.closePath();
+      ctx.fill();
+      hills(ctx, offset, 0.18, GROUND - 60, 20, withAlpha("#e7a8c6", 0.6), 5);
+      repeat(offset, 0.4, 150, (x, i) => {
+        const tx = x + hash(i * 3) * 60;
+        const h = 70 + hash(i) * 40;
+        ctx.strokeStyle = "#6a4034";
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(tx, GROUND);
+        ctx.quadraticCurveTo(tx + 6, GROUND - h * 0.5, tx - 4, GROUND - h);
+        ctx.moveTo(tx + 2, GROUND - h * 0.55);
+        ctx.lineTo(tx + 22, GROUND - h * 0.8);
+        ctx.stroke();
+        for (let b = 0; b < 7; b += 1) {
+          ctx.fillStyle = b % 2 ? "#ffb7d2" : "#ff9cc2";
+          ctx.beginPath();
+          ctx.arc(tx - 22 + hash(i * 11 + b) * 50, GROUND - h - 8 + hash(i * 13 + b) * 30, 14 + hash(b + i) * 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      if (animate) {
+        ctx.fillStyle = withAlpha("#ff8fb8", 0.85);
+        for (let i = 0; i < 26; i += 1) {
+          const fall = now * (0.025 + hash(i) * 0.02);
+          const x = (((hash(i * 7) * WIDTH + Math.sin(now / 700 + i) * 20 - offset * 0.6 - fall * 0.6) % WIDTH) + WIDTH) % WIDTH;
+          const y = (hash(i * 11) * GROUND + fall) % GROUND;
+          ctx.beginPath();
+          ctx.ellipse(x, y, 3.2, 1.8, now / 400 + i, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    },
+  },
+  "sky-islands": {
+    top: "#4f9ff0",
+    bottom: "#d6ecff",
+    ground: "#eef4ff",
+    groundTop: "#ffffff",
+    stripe: withAlpha("#9ab0d8", 0.28),
+    text: "#183058",
+    outline: withAlpha("#ffffff", 0.7),
+    layers(ctx, offset, now, animate) {
+      ctx.fillStyle = withAlpha("#ffffff", 0.7);
+      repeat(offset, 0.05, 260, (x, i) => {
+        const y = 120 + hash(i) * 160;
+        for (const [dx, dy, r] of [[0, 0, 26], [26, -10, 32], [58, 0, 24], [30, 10, 26]]) {
+          ctx.beginPath();
+          ctx.arc(x + dx, y + dy, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      const island = (x: number, y: number, w: number, i: number) => {
+        // Waterfall first, so the island sits on top of it.
+        const fall = animate ? (now / 25) % 20 : 0;
+        ctx.fillStyle = withAlpha("#bfe6ff", 0.7);
+        ctx.fillRect(x + w * 0.62, y, 5, 130);
+        ctx.fillStyle = withAlpha("#ffffff", 0.8);
+        for (let k = 0; k < 7; k += 1) ctx.fillRect(x + w * 0.62 + 1, y + k * 20 + fall, 3, 7);
+        ctx.fillStyle = "#8a6446";
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + w, y);
+        ctx.lineTo(x + w * 0.7, y + w * 0.4);
+        ctx.lineTo(x + w * 0.5, y + w * 0.75);
+        ctx.lineTo(x + w * 0.3, y + w * 0.35);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#6fc05a";
+        ctx.beginPath();
+        ctx.ellipse(x + w / 2, y, w / 2 + 4, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#3f8f4a";
+        ctx.beginPath();
+        ctx.arc(x + w * 0.3, y - 14, 10, 0, Math.PI * 2);
+        ctx.arc(x + w * 0.4, y - 20, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#6a4034";
+        ctx.fillRect(x + w * 0.33, y - 10, 3, 10);
+        if (i % 3 === 0) {
+          ctx.fillStyle = "#f4efe4";
+          ctx.fillRect(x + w * 0.66, y - 14, 12, 12);
+          ctx.fillStyle = "#c4503a";
+          ctx.beginPath();
+          ctx.moveTo(x + w * 0.66 - 3, y - 14);
+          ctx.lineTo(x + w * 0.66 + 6, y - 22);
+          ctx.lineTo(x + w * 0.66 + 15, y - 14);
+          ctx.fill();
+        }
+      };
+      repeat(offset, 0.2, 230, (x, i) => island(x + hash(i) * 50, 210 + hash(i * 3) * 120 + (animate ? Math.sin(now / 1200 + i) * 4 : 0), 70 + hash(i * 5) * 30, i));
+    },
+  },
 };
 
 export const sceneryOf = (theme: FlutterTheme) => SCENERIES[theme.scenery] ?? SCENERIES.default;
@@ -591,6 +768,135 @@ export function drawObstacle(ctx: Ctx, theme: FlutterTheme, gapY: number, seed: 
         ctx.restore();
         break;
       }
+      case "birch": {
+        path();
+        ctx.fillStyle = hGradient(ctx, "#d4cfc2", "#f8f5ee", "#c4bdae");
+        ctx.fill();
+        ctx.save();
+        path();
+        ctx.clip();
+        // Dark lenticels across the bark, a few knotted "eyes" and a shelf fungus near the tip.
+        ctx.fillStyle = "#2f2c27";
+        for (let ny = Math.floor(y / 20) * 20; ny < y + h; ny += 20) {
+          const r = hash(Math.round(ny) * 3 + seed);
+          ctx.beginPath();
+          ctx.ellipse(8 + r * 40, ny + 6, 6 + r * 9, 1.6 + r, 0, 0, Math.PI * 2);
+          ctx.fill();
+          if (r > 0.82) {
+            ctx.beginPath();
+            ctx.moveTo(PIPE_W * 0.5, ny);
+            ctx.quadraticCurveTo(PIPE_W * 0.62, ny + 8, PIPE_W * 0.5, ny + 16);
+            ctx.quadraticCurveTo(PIPE_W * 0.38, ny + 8, PIPE_W * 0.5, ny);
+            ctx.fill();
+          }
+        }
+        const shelf = up ? end + TIP + 26 : end - TIP - 26;
+        ctx.fillStyle = "#c98a4a";
+        ctx.beginPath();
+        ctx.ellipse(PIPE_W - 4, shelf, 16, 6, 0, Math.PI * 0.5, Math.PI * 1.5);
+        ctx.fill();
+        ctx.fillStyle = "#e8b878";
+        ctx.fillRect(PIPE_W - 18, shelf - 1, 14, 2);
+        ctx.restore();
+        path();
+        ctx.strokeStyle = "#6e675a";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        break;
+      }
+      case "coral": {
+        path();
+        ctx.fillStyle = hGradient(ctx, "#f2647e", "#ffb0a4", "#d84a68");
+        ctx.fill();
+        ctx.save();
+        path();
+        ctx.clip();
+        // Rows of polyps that slowly open and close.
+        let idx = 0;
+        for (let ny = Math.floor(y / 14) * 14; ny < y + h + 14; ny += 14) {
+          const row = Math.round(ny / 14);
+          for (let nx = row % 2 ? 7 : 14; nx < PIPE_W; nx += 14) {
+            idx += 1;
+            const open = animate ? 0.6 + 0.4 * Math.sin(now / 500 + idx * 0.7 + seed) : 0.85;
+            ctx.fillStyle = withAlpha("#a8324a", 0.45);
+            ctx.beginPath();
+            ctx.arc(nx, ny, 4.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#fff0e6";
+            for (let t = 0; t < 6; t += 1) {
+              const a = (t / 6) * Math.PI * 2;
+              ctx.beginPath();
+              ctx.arc(nx + Math.cos(a) * 3.2 * open, ny + Math.sin(a) * 3.2 * open, 1.1, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+        ctx.restore();
+        path();
+        ctx.strokeStyle = "#9a2a44";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        break;
+      }
+      case "clockwork": {
+        path();
+        ctx.fillStyle = hGradient(ctx, "#86662a", "#e2be64", "#6a4e1e");
+        ctx.fill();
+        ctx.save();
+        path();
+        ctx.clip();
+        for (let ny = Math.floor(y / 64) * 64; ny < y + h; ny += 64) {
+          ctx.fillStyle = withAlpha("#4a360e", 0.5);
+          ctx.fillRect(0, ny, PIPE_W, 7);
+          ctx.fillStyle = "#f2d690";
+          for (let rx = 6; rx < PIPE_W; rx += 12) {
+            ctx.beginPath();
+            ctx.arc(rx, ny + 3.5, 1.6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        // Gears turn against each other: neighbours spin opposite ways.
+        let g = 0;
+        for (let ny = Math.floor(y / 64) * 64 + 34; ny < y + h; ny += 64) {
+          g += 1;
+          const r = 13 + hash(Math.round(ny) + seed) * 5;
+          const cx = g % 2 ? 22 : PIPE_W - 22;
+          const spin = (animate ? now / 900 : 0) * (g % 2 ? 1 : -1) + g;
+          ctx.save();
+          ctx.translate(cx, ny);
+          ctx.rotate(spin);
+          ctx.fillStyle = "#c9a24a";
+          ctx.beginPath();
+          for (let t = 0; t < 20; t += 1) {
+            const a = (t / 20) * Math.PI * 2;
+            const rr = t % 2 ? r : r + 4;
+            ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = "#5a4210";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = "#5a4210";
+          ctx.beginPath();
+          ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = withAlpha("#5a4210", 0.6);
+          ctx.beginPath();
+          for (let t = 0; t < 4; t += 1) {
+            ctx.moveTo(Math.cos((t * Math.PI) / 2) * r * 0.35, Math.sin((t * Math.PI) / 2) * r * 0.35);
+            ctx.lineTo(Math.cos((t * Math.PI) / 2) * r * 0.85, Math.sin((t * Math.PI) / 2) * r * 0.85);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+        path();
+        ctx.strokeStyle = "#4a360e";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        break;
+      }
       default: {
         path();
         ctx.fillStyle = hGradient(ctx, mix("#5cb83a", "#70c5ce", 0.15), mix("#5cb83a", "#ffffff", 0.12), mix("#5cb83a", "#70c5ce", 0.45));
@@ -607,6 +913,13 @@ export function drawObstacle(ctx: Ctx, theme: FlutterTheme, gapY: number, seed: 
         }
         ctx.stroke();
       }
+    }
+    if (theme.style === "pop-art") {
+      // Comic ink: a heavy black outline round every pillar.
+      path();
+      ctx.strokeStyle = "#111018";
+      ctx.lineWidth = 4.5;
+      ctx.stroke();
     }
   }
 }
@@ -626,9 +939,180 @@ function eye(ctx: Ctx, x: number, y: number, r: number, dead: boolean) {
   ctx.fill();
 }
 
+/** Offscreen buffers for the Pop Art ink outline round the character. */
+let inkSprite: HTMLCanvasElement | null = null;
+let inkMask: HTMLCanvasElement | null = null;
+const INK_BOX = 72;
+
 /** `wing` is the flap amount (0 at rest, up to ~1.3). */
 export function drawCharacter(ctx: Ctx, theme: FlutterTheme, wing: number, dead: boolean, now: number, animate: boolean) {
+  if (theme.style !== "pop-art" || typeof document === "undefined") return paintCharacter(ctx, theme, wing, dead, now, animate);
+  // Pop Art: draw the flyer once offscreen, then stamp a black silhouette round it for a thick ink line.
+  const m = ctx.getTransform();
+  const k = Math.min(4, Math.max(1, Math.hypot(m.a, m.b)));
+  const px = Math.ceil(INK_BOX * k);
+  inkSprite ??= document.createElement("canvas");
+  inkMask ??= document.createElement("canvas");
+  for (const c of [inkSprite, inkMask]) {
+    if (c.width !== px) {
+      c.width = px;
+      c.height = px;
+    }
+  }
+  const sc = inkSprite.getContext("2d");
+  const mc = inkMask.getContext("2d");
+  if (!sc || !mc) return paintCharacter(ctx, theme, wing, dead, now, animate);
+  sc.setTransform(1, 0, 0, 1, 0, 0);
+  sc.clearRect(0, 0, px, px);
+  sc.setTransform(k, 0, 0, k, px / 2, px / 2);
+  paintCharacter(sc, theme, wing, dead, now, animate);
+  mc.setTransform(1, 0, 0, 1, 0, 0);
+  mc.globalCompositeOperation = "source-over";
+  mc.clearRect(0, 0, px, px);
+  mc.drawImage(inkSprite, 0, 0);
+  mc.globalCompositeOperation = "source-in";
+  mc.fillStyle = "#111018";
+  mc.fillRect(0, 0, px, px);
+  const h = INK_BOX / 2;
+  for (let a = 0; a < 8; a += 1) {
+    const ox = Math.cos((a / 8) * Math.PI * 2) * 2.4;
+    const oy = Math.sin((a / 8) * Math.PI * 2) * 2.4;
+    ctx.drawImage(inkMask, -h + ox, -h + oy, INK_BOX, INK_BOX);
+  }
+  ctx.drawImage(inkSprite, -h, -h, INK_BOX, INK_BOX);
+}
+
+function paintCharacter(ctx: Ctx, theme: FlutterTheme, wing: number, dead: boolean, now: number, animate: boolean) {
   switch (theme.character) {
+    case "jellyfish": {
+      const pulse = (animate ? Math.sin(now / 170) * 0.1 : 0) + wing * 0.12;
+      const sy = 1 - pulse;
+      // Tentacles stream out behind the bell.
+      ctx.strokeStyle = withAlpha("#ff9ad8", 0.85);
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = "round";
+      for (let t = 0; t < 4; t += 1) {
+        const ty = -6 + t * 4;
+        ctx.beginPath();
+        ctx.moveTo(-5, ty);
+        for (let j = 1; j <= 4; j += 1) ctx.lineTo(-5 - j * 5, ty + Math.sin((animate ? now / 110 : 0) + j + t) * 2.4);
+        ctx.stroke();
+      }
+      ctx.save();
+      ctx.scale(1 + pulse * 0.6, sy);
+      ctx.beginPath();
+      ctx.moveTo(-6, -14);
+      ctx.bezierCurveTo(10, -18, 21, -10, 21, 0);
+      ctx.bezierCurveTo(21, 10, 10, 18, -6, 14);
+      for (let b = 0; b < 4; b += 1) ctx.quadraticCurveTo(-10, 10.5 - b * 7, -6, 7 - b * 7);
+      ctx.closePath();
+      const g = ctx.createRadialGradient(8, -4, 2, 4, 0, 22);
+      g.addColorStop(0, "#fff0fb");
+      g.addColorStop(0.5, "#f5a8e8");
+      g.addColorStop(1, "#a77bff");
+      ctx.fillStyle = g;
+      ctx.globalAlpha = 0.92;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = withAlpha("#ffffff", 0.7);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = withAlpha("#ffffff", 0.55);
+      for (const [cx, cy] of [[2, -6], [2, 6], [-1, 0]]) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+      eye(ctx, 11, -3, 3.4, dead);
+      return;
+    }
+    case "maple-seed": {
+      // A samara: the nut leads and its single veined wing whirls round behind it.
+      const spin = animate ? now / 70 + wing * 3 : 0.8;
+      ctx.save();
+      ctx.translate(5, 0);
+      ctx.rotate(-0.28);
+      ctx.scale(1, Math.cos(spin) * 0.85 + (Math.cos(spin) < 0 ? -0.15 : 0.15));
+      ctx.beginPath();
+      ctx.moveTo(0, -3);
+      ctx.bezierCurveTo(-10, -15, -27, -13, -31, -4);
+      ctx.bezierCurveTo(-27, 2, -12, 4, 0, 3);
+      ctx.closePath();
+      ctx.fillStyle = "#dba552";
+      ctx.fill();
+      ctx.strokeStyle = "#a8702a";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.beginPath();
+      for (let v = 0; v < 5; v += 1) {
+        ctx.moveTo(0, 1);
+        ctx.lineTo(-10 - v * 4, -10 + v * 2.4);
+      }
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = "#7f5226";
+      ctx.beginPath();
+      ctx.ellipse(7, 0, 10, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = withAlpha("#ffffff", 0.25);
+      ctx.beginPath();
+      ctx.ellipse(5, -4, 5, 2.2, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      eye(ctx, 11, -1, 3.4, dead);
+      return;
+    }
+    case "owl": {
+      ctx.fillStyle = "#9a6a42";
+      ctx.beginPath();
+      ctx.ellipse(0, 1, 16, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ead6ae";
+      ctx.beginPath();
+      ctx.ellipse(4, 6, 9, 8.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#a8794a";
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      for (const [cx, cy] of [[1, 5], [6, 5], [3.5, 9], [8.5, 9]]) {
+        ctx.moveTo(cx - 1.6, cy - 1);
+        ctx.lineTo(cx, cy + 0.6);
+        ctx.lineTo(cx + 1.6, cy - 1);
+      }
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(-6, 2);
+      ctx.rotate(-0.2 - wing * 0.9);
+      ctx.fillStyle = "#7a5032";
+      ctx.beginPath();
+      ctx.ellipse(-5, 0, 11, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = "#7a5032";
+      ctx.beginPath();
+      ctx.moveTo(1, -12);
+      ctx.lineTo(2, -19);
+      ctx.lineTo(7, -13);
+      ctx.moveTo(10, -12);
+      ctx.lineTo(15, -18);
+      ctx.lineTo(15, -10);
+      ctx.fill();
+      for (const ex of [4.5, 12.5]) {
+        ctx.fillStyle = "#ffb43a";
+        ctx.beginPath();
+        ctx.arc(ex, -4, 5.2, 0, Math.PI * 2);
+        ctx.fill();
+        eye(ctx, ex, -4, 3.8, dead);
+      }
+      ctx.fillStyle = "#f0a030";
+      ctx.beginPath();
+      ctx.moveTo(7.2, 0);
+      ctx.lineTo(9.8, 0);
+      ctx.lineTo(8.5, 4);
+      ctx.closePath();
+      ctx.fill();
+      return;
+    }
     case "bee": {
       ctx.save();
       ctx.rotate(-0.2 - wing * 0.6);
@@ -1074,6 +1558,88 @@ export function drawTrail(ctx: Ctx, theme: FlutterTheme, points: TrailPoint[], n
       ctx.restore();
       return;
     }
+    case "notes": {
+      const colors = ["#ffd23f", "#ff7ad9", "#7ad9ff"];
+      pts.forEach((p, i) => {
+        if (i % 5 !== 2) return;
+        const k = 1 - i / n;
+        const s = 6.5 * (0.6 + k * 0.4);
+        const x = p.x;
+        const y = p.y + (subtle ? 0 : Math.sin(now / 200 + i) * 4 - (1 - k) * 12);
+        ctx.globalAlpha = k;
+        ctx.fillStyle = colors[((i / 5) | 0) % 3];
+        ctx.strokeStyle = ctx.fillStyle;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.ellipse(x, y, s * 0.55, s * 0.4, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x + s * 0.48, y - s * 0.1);
+        ctx.lineTo(x + s * 0.48, y - s * 1.7);
+        ctx.quadraticCurveTo(x + s * 1.2, y - s * 1.3, x + s * 1.05, y - s * 0.7);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      });
+      return;
+    }
+    case "feathers":
+      pts.forEach((p, i) => {
+        if (i % 6 !== 3) return;
+        const k = 1 - i / n;
+        const rock = subtle ? 0.4 : Math.sin(now / 280 + i) * 0.7;
+        ctx.save();
+        ctx.translate(p.x, p.y + (subtle ? 0 : (1 - k) * 16));
+        ctx.rotate(rock + 0.3);
+        ctx.globalAlpha = k * 0.95;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(-8, 0);
+        ctx.quadraticCurveTo(-2, -4.5, 8, -0.5);
+        ctx.quadraticCurveTo(-2, 4, -8, 0);
+        ctx.fill();
+        ctx.strokeStyle = "#b8b0c8";
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(-10, 0.5);
+        ctx.lineTo(8, -0.5);
+        ctx.moveTo(-2, -2.8);
+        ctx.lineTo(0, -0.4);
+        ctx.moveTo(2, 2.4);
+        ctx.lineTo(3, 0);
+        ctx.stroke();
+        ctx.restore();
+      });
+      return;
+    case "paint-splats": {
+      const paints = ["#00b4d8", "#ff006e", "#ffbe0b", "#7b2cbf"];
+      for (let i = 1; i < n; i += 1) {
+        const k = 1 - i / n;
+        ctx.strokeStyle = withAlpha(paints[Math.floor(i / 6) % paints.length], k);
+        ctx.lineWidth = 7 * k + 1;
+        strokeThrough(ctx, [pts[i - 1], pts[i]]);
+        ctx.stroke();
+      }
+      pts.forEach((p, i) => {
+        if (i % 6 !== 5) return;
+        const k = 1 - i / n;
+        ctx.fillStyle = withAlpha(paints[Math.floor(i / 6) % paints.length], k);
+        for (let b = 0; b < 5; b += 1) {
+          const a = hash(i * 7 + b) * Math.PI * 2;
+          const d = 4 + hash(i * 3 + b) * 6;
+          ctx.beginPath();
+          ctx.arc(p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 1.4 + hash(b + i) * 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        if (!subtle) {
+          const drip = (1 - k) * 14;
+          ctx.fillRect(p.x - 1.2, p.y, 2.4, drip);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y + drip, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      return;
+    }
     default:
       // Wing puffs: a few soft clouds left behind.
       pts.forEach((p, i) => {
@@ -1085,4 +1651,225 @@ export function drawTrail(ctx: Ctx, theme: FlutterTheme, points: TrailPoint[], n
         ctx.fill();
       });
   }
+}
+
+// ---------------------------------------------------------------------------
+// Art styles: a pass over the finished frame
+// ---------------------------------------------------------------------------
+
+let styleBuffer: HTMLCanvasElement | null = null;
+const textures = new Map<string, HTMLCanvasElement>();
+
+/** A small cached texture canvas (noise, paper, halftone) built once per kind. */
+function texture(key: string, size: number, paint: (c: Ctx, size: number) => void) {
+  let canvas = textures.get(key);
+  if (!canvas) {
+    canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const c = canvas.getContext("2d");
+    if (c) paint(c, size);
+    textures.set(key, canvas);
+  }
+  return canvas;
+}
+
+const grain = (c: Ctx, size: number) => {
+  const img = c.createImageData(size, size);
+  for (let i = 0; i < size * size; i += 1) {
+    const v = Math.floor(hash(i * 7 + 3) * 255);
+    img.data[i * 4] = v;
+    img.data[i * 4 + 1] = v;
+    img.data[i * 4 + 2] = v;
+    img.data[i * 4 + 3] = 255;
+  }
+  c.putImageData(img, 0, 0);
+};
+
+const paper = (c: Ctx, size: number) => {
+  c.fillStyle = "#f4ead6";
+  c.fillRect(0, 0, size, size);
+  // Blotchy pigment pooling and paper fibres.
+  for (let i = 0; i < 26; i += 1) {
+    const g = c.createRadialGradient(hash(i) * size, hash(i * 3) * size, 0, hash(i) * size, hash(i * 3) * size, 20 + hash(i * 5) * 60);
+    g.addColorStop(0, `rgb(200 175 140 / ${0.12 + hash(i * 9) * 0.12})`);
+    g.addColorStop(1, "rgb(200 175 140 / 0)");
+    c.fillStyle = g;
+    c.fillRect(0, 0, size, size);
+  }
+  c.strokeStyle = "rgb(150 120 90 / 0.18)";
+  c.lineWidth = 0.6;
+  c.beginPath();
+  for (let i = 0; i < 160; i += 1) {
+    const x = hash(i * 11) * size;
+    const y = hash(i * 13) * size;
+    const a = hash(i * 17) * Math.PI;
+    c.moveTo(x, y);
+    c.lineTo(x + Math.cos(a) * 6, y + Math.sin(a) * 6);
+  }
+  c.stroke();
+};
+
+const halftone = (c: Ctx, size: number) => {
+  c.fillStyle = "#ffffff";
+  c.fillRect(0, 0, size, size);
+  c.fillStyle = "#3a2a6a";
+  const step = size / 4;
+  for (let y = 0; y < 4; y += 1)
+    for (let x = 0; x < 4; x += 1) {
+      c.beginPath();
+      c.arc((x + (y % 2 ? 0.5 : 0)) * step, y * step + step / 2, step * 0.22, 0, Math.PI * 2);
+      c.arc((x + (y % 2 ? 0.5 : 0)) * step + step, y * step + step / 2, step * 0.22, 0, Math.PI * 2);
+      c.fill();
+    }
+};
+
+/**
+ * Re-renders the world rect (x, y, w, h in the current transform) in the equipped art style. Call it
+ * after the world is drawn and before HUD text, so the score stays crisp. A no-op for the default.
+ */
+export function applyFlutterStyle(ctx: Ctx, theme: FlutterTheme, x: number, y: number, w: number, h: number, now: number, animate: boolean) {
+  const style = theme.style;
+  if (!style || typeof document === "undefined") return;
+  const m = ctx.getTransform();
+  const dx = m.e + x * m.a;
+  const dy = m.f + y * m.d;
+  const dw = w * m.a;
+  const dh = h * m.d;
+  const unit = m.a;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.beginPath();
+  ctx.rect(dx, dy, dw, dh);
+  ctx.clip();
+  const fill = (op: GlobalCompositeOperation, color: string | CanvasGradient | CanvasPattern, alpha = 1) => {
+    ctx.globalCompositeOperation = op;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.fillRect(dx, dy, dw, dh);
+  };
+  const pattern = (canvas: HTMLCanvasElement, scale: number, ox = 0, oy = 0) => {
+    const p = ctx.createPattern(canvas, "repeat");
+    p?.setTransform(new DOMMatrix().translate(dx + ox, dy + oy).scale(scale, scale));
+    return p;
+  };
+
+  switch (style) {
+    case "pixel": {
+      // Sample the frame down to a coarse grid, then blow it back up with hard edges.
+      const pw = Math.max(1, Math.round(w / 4));
+      const ph = Math.max(1, Math.round(h / 4));
+      styleBuffer ??= document.createElement("canvas");
+      if (styleBuffer.width !== pw || styleBuffer.height !== ph) {
+        styleBuffer.width = pw;
+        styleBuffer.height = ph;
+      }
+      const b = styleBuffer.getContext("2d");
+      if (b) {
+        b.imageSmoothingEnabled = true;
+        b.clearRect(0, 0, pw, ph);
+        b.drawImage(ctx.canvas, dx, dy, dw, dh, 0, 0, pw, ph);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(styleBuffer, 0, 0, pw, ph, dx, dy, dw, dh);
+      }
+      break;
+    }
+    case "silent-film": {
+      fill("saturation", "#808080");
+      fill("color", "#a8865a", 0.4);
+      fill("multiply", "#efe2c8");
+      const jitter = animate ? Math.floor(now / 70) : 0;
+      const noise = texture("grain", 128, grain);
+      const grainPattern = pattern(noise, unit * 0.9, hash(jitter) * 128, hash(jitter * 3) * 128);
+      if (grainPattern) fill("overlay", grainPattern, 0.22);
+      const vignette = ctx.createRadialGradient(dx + dw / 2, dy + dh / 2, Math.min(dw, dh) * 0.3, dx + dw / 2, dy + dh / 2, Math.max(dw, dh) * 0.72);
+      vignette.addColorStop(0, "rgb(255 255 255)");
+      vignette.addColorStop(1, "rgb(70 52 34)");
+      fill("multiply", vignette);
+      if (animate) {
+        // A gentle exposure flicker and a couple of passing scratches.
+        fill("source-over", "#1a1208", 0.03 + hash(jitter * 5) * 0.04);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = "#f6ecd6";
+        ctx.lineWidth = Math.max(1, unit * 1.2);
+        ctx.beginPath();
+        for (let s = 0; s < 2; s += 1) {
+          if (hash(jitter * 7 + s) < 0.5) continue;
+          const sx = dx + hash(jitter * 11 + s) * dw;
+          ctx.moveTo(sx, dy);
+          ctx.lineTo(sx + (hash(jitter + s) - 0.5) * unit * 10, dy + dh);
+        }
+        ctx.stroke();
+      }
+      break;
+    }
+    case "blueprint": {
+      fill("difference", "#ffffff");
+      fill("color", "#1f5fbf");
+      fill("multiply", "#bcd4ff");
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = Math.max(1, unit * 0.8);
+      ctx.strokeStyle = "rgb(220 235 255 / 0.12)";
+      ctx.beginPath();
+      for (let gx = 0; gx <= w; gx += 20) {
+        ctx.moveTo(dx + gx * unit, dy);
+        ctx.lineTo(dx + gx * unit, dy + dh);
+      }
+      for (let gy = 0; gy <= h; gy += 20) {
+        ctx.moveTo(dx, dy + gy * unit);
+        ctx.lineTo(dx + dw, dy + gy * unit);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = "rgb(230 242 255 / 0.25)";
+      ctx.beginPath();
+      for (let gx = 0; gx <= w; gx += 100) {
+        ctx.moveTo(dx + gx * unit, dy);
+        ctx.lineTo(dx + gx * unit, dy + dh);
+      }
+      for (let gy = 0; gy <= h; gy += 100) {
+        ctx.moveTo(dx, dy + gy * unit);
+        ctx.lineTo(dx + dw, dy + gy * unit);
+      }
+      ctx.stroke();
+      // A drafting title block in the corner.
+      const bw = 128 * unit;
+      const bh = 30 * unit;
+      const bx = dx + dw - bw - 8 * unit;
+      const by = dy + dh - bh - 8 * unit;
+      ctx.strokeStyle = "rgb(235 245 255 / 0.75)";
+      ctx.lineWidth = Math.max(1, unit);
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.beginPath();
+      ctx.moveTo(bx, by + bh / 2);
+      ctx.lineTo(bx + bw, by + bh / 2);
+      ctx.stroke();
+      ctx.fillStyle = "rgb(235 245 255 / 0.85)";
+      ctx.font = `600 ${Math.round(9 * unit)}px ui-monospace, monospace`;
+      ctx.textBaseline = "middle";
+      ctx.fillText("FLUTTER  Mk.I", bx + 6 * unit, by + bh / 4);
+      ctx.fillText("SCALE 1:1  SHEET 01", bx + 6 * unit, by + (bh * 3) / 4);
+      break;
+    }
+    case "watercolor": {
+      fill("saturation", "hsl(30 40% 50%)", 0.45);
+      fill("soft-light", "#ffe7c4", 0.5);
+      const sheet = pattern(texture("paper", 256, paper), unit * 1.2);
+      if (sheet) fill("multiply", sheet);
+      // Pigment gathers at the edges of the page.
+      const edge = ctx.createRadialGradient(dx + dw / 2, dy + dh / 2, Math.min(dw, dh) * 0.35, dx + dw / 2, dy + dh / 2, Math.max(dw, dh) * 0.7);
+      edge.addColorStop(0, "rgb(255 250 240 / 0)");
+      edge.addColorStop(1, "rgb(250 240 222 / 0.55)");
+      fill("source-over", edge);
+      break;
+    }
+    case "pop-art": {
+      fill("saturation", "hsl(0 100% 50%)", 0.45);
+      const dots = pattern(texture("halftone", 32, halftone), unit * 0.75);
+      if (dots) fill("multiply", dots, 0.28);
+      break;
+    }
+  }
+  ctx.restore();
 }

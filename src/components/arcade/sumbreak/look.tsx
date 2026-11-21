@@ -19,6 +19,9 @@ export const SUMBREAK_LOOKS = {
     "stained-glass",
     "neon-sign",
     "gemstone",
+    "sea-glass",
+    "felt-patch",
+    "lacquer",
   ],
   board: [
     "zen-garden",
@@ -28,6 +31,9 @@ export const SUMBREAK_LOOKS = {
     "aurora-floe",
     "volcanic-forge",
     "observatory",
+    "beach",
+    "bento",
+    "picnic",
   ],
   number: [
     "typewriter",
@@ -37,6 +43,9 @@ export const SUMBREAK_LOOKS = {
     "digital-clock",
     "marquee",
     "luminous",
+    "stencil",
+    "chalk",
+    "engraved",
   ],
   merge: [
     "soap-bubbles",
@@ -46,8 +55,11 @@ export const SUMBREAK_LOOKS = {
     "lightning",
     "firework-peony",
     "supernova",
+    "paper-cranes",
+    "snowflakes",
+    "honey-drip",
   ],
-  style: ["woodcut", "watercolour", "bauhaus", "crt-arcade"],
+  style: ["woodcut", "watercolour", "bauhaus", "crt-arcade", "art-deco"],
 } as const;
 
 type Looks = typeof SUMBREAK_LOOKS;
@@ -315,6 +327,32 @@ function ScholarsDesk() {
   );
 }
 
+function Beach() {
+  return (
+    <>
+      <span className="sbd-surf" />
+      <span className="sbd-shell" style={{ left: "14%", top: "70%" }} />
+      <span className="sbd-shell" data-shell="2" style={{ left: "80%", top: "22%" }} />
+    </>
+  );
+}
+
+function Picnic() {
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="sbd-svg">
+      <g className="sbd-ants">
+        {Array.from({ length: 7 }, (_, k) => (
+          <g key={k} transform={`translate(${4 + k * 14} 96)`}>
+            <ellipse cx="0" cy="0" rx="1.1" ry="0.7" />
+            <ellipse cx="1.6" cy="0" rx="0.8" ry="0.6" />
+            <ellipse cx="-1.5" cy="0" rx="0.9" ry="0.7" />
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 const SCENES: Partial<
   Record<NonNullable<SumbreakLook["board"]>, () => ReactElement>
 > = {
@@ -325,6 +363,8 @@ const SCENES: Partial<
   "aurora-floe": AuroraFloe,
   "zen-garden": ZenGarden,
   "scholars-desk": ScholarsDesk,
+  beach: Beach,
+  picnic: Picnic,
 };
 
 /** Scenery behind the grid for the equipped board, and the art style's overlay in front of it. */

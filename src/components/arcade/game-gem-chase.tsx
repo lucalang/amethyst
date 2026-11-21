@@ -519,7 +519,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
     const flashing = shade.frightened && frightLeft < 2 && animate && Math.floor(now / 180) % 2 === 0;
     if (shade.mode !== "eyes") {
       const base = shade.frightened ? (flashing ? "#f6f0ff" : "#3d5cff") : hooks.live().theme.shades[shade.id];
-      drawShadeBody(ctx, x, y, r, base, animate ? Math.sin(now / 90 + shade.id) * r * 0.12 : 0, animate, hooks.live().theme.style);
+      drawShadeBody(ctx, x, y, r, base, animate ? Math.sin(now / 90 + shade.id) * r * 0.12 : 0, animate, hooks.live().theme.style, hooks.live().theme.shadeKind);
       if (shade.frightened) {
         ctx.strokeStyle = flashing ? "#ff5f8f" : "#f6f0ff";
         ctx.lineWidth = 1.5;
@@ -551,7 +551,7 @@ function createGemChase(canvas: HTMLCanvasElement, hooks: Hooks) {
 
   function wallLayer(color: string) {
     const { maze, style } = hooks.live().theme;
-    const cacheKey = `${color}|${maze.surface}|${maze.floor}|${style}`;
+    const cacheKey = `${color}|${maze.surface}|${maze.floor}|${maze.texture ?? ""}|${style}`;
     const cached = wallCache[cacheKey];
     if (cached) return cached;
     const scale = 2;

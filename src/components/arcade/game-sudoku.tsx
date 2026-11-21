@@ -797,6 +797,7 @@ export default function GameSudoku({
                 data-font={look.font}
                 data-grid={look.grid}
                 data-highlight={look.highlight}
+                data-style={look.style}
               >
                 {Array.from({ length: cells }, (_, cell) => {
                   const clue = game.puzzle[cell] !== "0";

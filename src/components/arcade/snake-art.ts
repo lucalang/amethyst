@@ -39,13 +39,16 @@ export const PAIR_HUES = ["#f5b700", "#2f9bff", "#ff5fa2", "#4fcf6a", "#a77bff",
  * Purchasable art styles re-render every piece through `cel` and `ink`: pixel (blocky, flat,
  * hard highlights; the engine also renders at low resolution), hand-drawn (paper fills, hatched
  * shading, doubled graphite lines), clay (soft gradient volume, no ink) and neon (dark fills with
- * glowing outlines). Sprites are cached per style.
+ * glowing outlines) and mosaic (flat stone tesserae with grout lines and a few shaded stones).
+ * Sprites are cached per style.
  */
-export type SnakeArtStyle = "cartoon" | "pixel" | "hand-drawn" | "clay" | "neon";
+export type SnakeArtStyle = "cartoon" | "pixel" | "hand-drawn" | "clay" | "neon" | "mosaic";
 let artStyle: SnakeArtStyle = "cartoon";
 export const PAPER = "#fbf6e9";
 export const GRAPHITE = "#3b3442";
 export const NEON_DARK = "#0d0a1c";
+/** Mosaic grout between the stone tesserae. */
+export const GROUT = "#3b342c";
 
 export function setSnakeArtStyle(style: SnakeArtStyle) {
   artStyle = style;
@@ -102,6 +105,44 @@ function cel(ctx: Ctx, shape: () => void, base: string, shade: string, { line = 
     shape();
     ctx.fillStyle = light;
     ctx.fill();
+    ctx.restore();
+    if (line <= 0) return;
+    shape();
+    ink(ctx, line);
+    return;
+  }
+  if (artStyle === "mosaic") {
+    // Flat stones in offset courses; a few take the shade color so the shape still reads as round.
+    shape();
+    ctx.fillStyle = base;
+    ctx.fill();
+    ctx.save();
+    shape();
+    ctx.clip();
+    const t = 11;
+    for (let y = -6; y < 6; y += 1)
+      for (let x = -6; x < 6; x += 1) {
+        const ox = x * t + (y % 2 ? t / 2 : 0);
+        const lit = ox + y * t < -t * 2;
+        const v = ((x * 73856093) ^ (y * 19349663)) >>> 0;
+        if (!lit && ox + y * t > t * 1.5) ctx.fillStyle = shade;
+        else if (v % 5 === 0) ctx.fillStyle = mix(base, "#ffffff", 0.25);
+        else continue;
+        ctx.fillRect(ox, y * t, t, t);
+      }
+    ctx.beginPath();
+    for (let y = -6; y <= 6; y += 1) {
+      ctx.moveTo(-70, y * t);
+      ctx.lineTo(70, y * t);
+      for (let x = -6; x <= 6; x += 1) {
+        const ox = x * t + (y % 2 ? t / 2 : 0);
+        ctx.moveTo(ox, y * t);
+        ctx.lineTo(ox, (y + 1) * t);
+      }
+    }
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = withAlpha(GROUT, 0.6);
+    ctx.stroke();
     ctx.restore();
     if (line <= 0) return;
     shape();
@@ -173,6 +214,12 @@ function ink(ctx: Ctx, width = 5, color = INK) {
     ctx.strokeStyle = bright;
     ctx.stroke();
     ctx.restore();
+    return;
+  }
+  if (artStyle === "mosaic") {
+    ctx.lineWidth = width * 1.1;
+    ctx.strokeStyle = color === INK ? GROUT : mix(color, GROUT, 0.4);
+    ctx.stroke();
     return;
   }
   if (artStyle === "clay") {

@@ -14,13 +14,15 @@ type Ctx = CanvasRenderingContext2D;
 
 const accent = GAME_PALETTES["space-blaster"].accent;
 
-type Hull = { wingEdge: string; wingMid: string; bodyEdge: string; bodyLight: string; bodyShade: string; stripe: string; glassTop: string; glassBottom: string; outline: string };
-type Trail = { flame: string; cycle: readonly string[] | null; sparks: boolean };
-type Weapon = { tiers: [string, string, string]; core: string; width: number; length: number };
-type Sector = { base: string; tints: string[]; dust: string; plating: [string, string, string]; core: string; lights: string };
+type Hull = { wingEdge: string; wingMid: string; bodyEdge: string; bodyLight: string; bodyShade: string; stripe: string; glassTop: string; glassBottom: string; outline: string; decal?: "shark" | "checker" | "flames" };
+/** Extra exhaust particles (the game's own particle kinds): rings, smoke puffs or colored sparks. */
+export type TrailExtra = { kind: "ring" | "smoke" | "spark"; colors: readonly string[]; chance: number };
+type Trail = { flame: string; cycle: readonly string[] | null; sparks: boolean; extra?: TrailExtra };
+type Weapon = { tiers: [string, string, string]; core: string; width: number; length: number; shape?: "crescent" | "star" | "orb" };
+type Sector = { base: string; tints: string[]; dust: string; plating: [string, string, string]; core: string; lights: string; feature?: "spiral" | "giant" | "binary" };
 
-export type BlasterArtStyle = "" | "pixel" | "crt" | "comic" | "hyperglow";
-const ART_STYLES: readonly BlasterArtStyle[] = ["pixel", "crt", "comic", "hyperglow"];
+export type BlasterArtStyle = "" | "pixel" | "crt" | "comic" | "hyperglow" | "vhs";
+const ART_STYLES: readonly BlasterArtStyle[] = ["pixel", "crt", "comic", "hyperglow", "vhs"];
 const INK = "#0b0716";
 
 export type BlasterTheme = { key: string; style: BlasterArtStyle; hull: Hull; trail: Trail; weapon: Weapon; sector: Sector };
@@ -34,6 +36,9 @@ const HULLS: Record<string, Hull> = {
   hornet: { wingEdge: "#1a1608", wingMid: "#ffd23d", bodyEdge: "#3a3424", bodyLight: "#fff6c9", bodyShade: "#8a6f1a", stripe: "#14120a", glassTop: "#ffe8b0", glassBottom: "#7a4a0a", outline: "#ffe066" },
   arctic: { wingEdge: "#5a7a9a", wingMid: "#e8f4ff", bodyEdge: "#b8d4ec", bodyLight: "#ffffff", bodyShade: "#7a9ab8", stripe: "#5fc8ff", glassTop: "#e0f8ff", glassBottom: "#1a5a8a", outline: "#cfeeff" },
   phantom: { wingEdge: "#1a0a2e", wingMid: "#6a3ab0", bodyEdge: "#7a5aa8", bodyLight: "#e8d8ff", bodyShade: "#3a2260", stripe: "#ff7ad9", glassTop: "#ffe0f6", glassBottom: "#9a1a6a", outline: "#c49bff" },
+  sharkmouth: { wingEdge: "#2a3018", wingMid: "#7a8a4a", bodyEdge: "#8a9a5a", bodyLight: "#d8e0b8", bodyShade: "#4a5430", stripe: "#d8e0b8", glassTop: "#e8f4ff", glassBottom: "#3a5a7a", outline: "#b8c88a", decal: "shark" },
+  checker: { wingEdge: "#8a8f9a", wingMid: "#ffffff", bodyEdge: "#d8dce4", bodyLight: "#ffffff", bodyShade: "#a8adb8", stripe: "#e0263a", glassTop: "#e8f4ff", glassBottom: "#1a2a4a", outline: "#ffffff", decal: "checker" },
+  hotrod: { wingEdge: "#050508", wingMid: "#2a2a34", bodyEdge: "#3a3a46", bodyLight: "#8a8a9a", bodyShade: "#121218", stripe: "#ffb02e", glassTop: "#ffe8c0", glassBottom: "#8a3a0a", outline: "#ff7a2e", decal: "flames" },
 };
 
 // Hex so glow sprites (and their cache) stay finite.
@@ -49,6 +54,9 @@ const TRAILS: Record<string, Trail> = {
   toxic: { flame: "#8dff4a", cycle: null, sparks: false },
   inferno: { flame: "#ff4d2e", cycle: null, sparks: true },
   aurora: { flame: "#4fffc4", cycle: AURORA, sparks: false },
+  warp: { flame: "#5ff0ff", cycle: null, sparks: false, extra: { kind: "ring", colors: ["#5ff0ff", "#b8f8ff"], chance: 0.06 } },
+  steam: { flame: "#ffcf6a", cycle: null, sparks: false, extra: { kind: "smoke", colors: ["#c8ccd8", "#e8ecf4"], chance: 0.3 } },
+  starlight: { flame: "#ffe27a", cycle: null, sparks: false, extra: { kind: "spark", colors: ["#ff7ad9", "#5fd8ff", "#9dff5c", "#ffd84a"], chance: 0.5 } },
 };
 
 const WEAPONS: Record<string, Weapon> = {
@@ -60,6 +68,9 @@ const WEAPONS: Record<string, Weapon> = {
   frost: { tiers: ["#7fd8ff", "#b8ecff", "#ffffff"], core: "#ffffff", width: 2.5, length: 12 },
   "rose-gold": { tiers: ["#ff9ab8", "#ffc4a8", "#fff0e0"], core: "#fffaf5", width: 2, length: 14 },
   needle: { tiers: ["#ff5fd2", "#ff9ae6", "#ffe0f6"], core: "#ffffff", width: 1, length: 22 },
+  crescent: { tiers: ["#4fe8d0", "#9ff8ec", "#ffffff"], core: "#ffffff", width: 2, length: 12, shape: "crescent" },
+  starshot: { tiers: ["#ffd84a", "#ff9ab8", "#ffffff"], core: "#fffbe6", width: 2, length: 10, shape: "star" },
+  orb: { tiers: ["#9dff5c", "#4fffc4", "#e0fffa"], core: "#ffffff", width: 3, length: 8, shape: "orb" },
 };
 
 const SECTORS: Record<string, Sector> = {
@@ -71,6 +82,9 @@ const SECTORS: Record<string, Sector> = {
   abyss: { base: "#020a12", tints: ["#0f5a7a", "#1b8a8a", "#0a3a6a", "#2ab0b0", "#123a5a"], dust: "#c9f6ff", plating: ["#a8d8e0", "#2f6a78", "#0a1c24"], core: "#4fffc4", lights: "#7df9ff" },
   "amethyst-nebula": { base: "#0c0518", tints: ["#7a2ab5", "#b52a9a", "#4a1b8a", "#d45ad4", "#5a2aa0"], dust: "#f0d9ff", plating: ["#e0c8ff", "#6a3a9a", "#1c0f30"], core: "#c77dff", lights: "#ff7ad9" },
   obsidian: { base: "#040406", tints: ["#2a2a3a", "#3a3050", "#1a2a3a", "#4a4a5a", "#2a1a3a"], dust: "#e0e4f0", plating: ["#c8ccd8", "#4a4c5c", "#121218"], core: "#7df9ff", lights: "#ffffff" },
+  spiral: { base: "#04061a", tints: ["#2a4ab5", "#1b2a78", "#4a3aa0", "#1a5a9a", "#2a2a6a"], dust: "#f4ecd0", plating: ["#fbf6ee", "#b8b0c8", "#4a4458"], core: "#ffd27a", lights: "#ffe9b0", feature: "spiral" },
+  "gas-giant": { base: "#0c0606", tints: ["#7a3a1a", "#5a2a2a", "#9a5a2a", "#3a1a1a", "#6a3a3a"], dust: "#ffe6d0", plating: ["#f0b080", "#a0582a", "#3a1a0c"], core: "#7df9ff", lights: "#ffb070", feature: "giant" },
+  binary: { base: "#06040e", tints: ["#4a2a7a", "#7a2a3a", "#2a3a7a", "#6a3a6a", "#3a2a5a"], dust: "#fff0e0", plating: ["#ffffff", "#9aa4b8", "#2a2e3a"], core: "#ff9a4a", lights: "#7ad8ff", feature: "binary" },
 };
 
 /** Boss core color once it drops below half health; shared by every sector. */
@@ -153,11 +167,127 @@ export function paintNebula(sector: Sector, width: number, height: number) {
       g.fillRect(x - r, y + oy - r, r * 2, r * 2);
     }
   }
+  if (sector.feature) paintFeature(g, sector, width, height);
   for (let i = 0; i < 280; i += 1) {
     g.fillStyle = withAlpha(sector.dust, Math.random() * 0.35);
     g.fillRect(Math.random() * width, Math.random() * height, 0.8, 0.8);
   }
   return canvas;
+}
+
+/** A sector's landmark, painted into the tiling backdrop (kept inside one tile so it scrolls cleanly). */
+function paintFeature(g: Ctx, sector: Sector, width: number, height: number) {
+  const cx = width * 0.68;
+  const cy = height * 0.45;
+  if (sector.feature === "spiral") {
+    const core = g.createRadialGradient(cx, cy, 0, cx, cy, 60);
+    core.addColorStop(0, withAlpha("#fff4d0", 0.55));
+    core.addColorStop(1, withAlpha("#fff4d0", 0));
+    g.fillStyle = core;
+    g.fillRect(cx - 60, cy - 60, 120, 120);
+    for (let arm = 0; arm < 2; arm += 1) {
+      for (let i = 0; i < 220; i += 1) {
+        const t = i / 220;
+        const a = arm * Math.PI + t * Math.PI * 3.2;
+        const d = 8 + t * 120;
+        const x = cx + Math.cos(a) * d + (Math.random() - 0.5) * 14 * t;
+        const y = cy + Math.sin(a) * d * 0.45 + (Math.random() - 0.5) * 8 * t;
+        g.fillStyle = withAlpha(t < 0.3 ? "#fff0c0" : "#a8c4ff", (1 - t) * 0.5);
+        g.fillRect(x, y, 1.4, 1.4);
+      }
+    }
+  } else if (sector.feature === "giant") {
+    const r = Math.min(width, height) * 0.42;
+    const px = width * 0.85;
+    const py = height * 0.5;
+    g.save();
+    g.beginPath();
+    g.arc(px, py, r, 0, Math.PI * 2);
+    g.clip();
+    const bands = ["#a85a2a", "#d08a4a", "#8a3a1a", "#e8b070", "#b06a3a", "#7a3018"];
+    for (let i = 0; i < 12; i += 1) {
+      g.fillStyle = withAlpha(bands[i % bands.length], 0.55);
+      g.fillRect(px - r, py - r + (i * r * 2) / 12, r * 2, (r * 2) / 12 + 1);
+    }
+    g.fillStyle = withAlpha("#c0401a", 0.55);
+    g.beginPath();
+    g.ellipse(px - r * 0.3, py + r * 0.25, r * 0.16, r * 0.08, 0, 0, Math.PI * 2);
+    g.fill();
+    const shade = g.createRadialGradient(px - r * 0.4, py - r * 0.3, r * 0.2, px, py, r);
+    shade.addColorStop(0, withAlpha("#000000", 0));
+    shade.addColorStop(1, withAlpha("#000000", 0.6));
+    g.fillStyle = shade;
+    g.fillRect(px - r, py - r, r * 2, r * 2);
+    g.restore();
+  } else if (sector.feature === "binary") {
+    for (const [x, y, r, color] of [[width * 0.25, height * 0.3, 26, "#ffb070"], [width * 0.75, height * 0.62, 18, "#9ad8ff"]] as const) {
+      const halo = g.createRadialGradient(x, y, 0, x, y, r * 4);
+      halo.addColorStop(0, withAlpha("#ffffff", 0.9));
+      halo.addColorStop(0.2, withAlpha(color, 0.6));
+      halo.addColorStop(1, withAlpha(color, 0));
+      g.fillStyle = halo;
+      g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
+    }
+  }
+}
+
+/** Hull decals: nose art, checkered wingtips or flames, drawn over the paint. */
+function drawDecal(c: Ctx, decal: Hull["decal"]) {
+  if (decal === "shark") {
+    c.fillStyle = "#e0263a";
+    c.beginPath();
+    c.moveTo(-5.5, -12);
+    c.quadraticCurveTo(0, -4, 5.5, -12);
+    c.lineTo(5, -9);
+    c.quadraticCurveTo(0, -1, -5, -9);
+    c.closePath();
+    c.fill();
+    c.fillStyle = "#ffffff";
+    c.beginPath();
+    for (let k = -4; k <= 4; k += 2) {
+      c.moveTo(k - 1, -10.5 + Math.abs(k) * 0.4);
+      c.lineTo(k, -8 + Math.abs(k) * 0.3);
+      c.lineTo(k + 1, -10.5 + Math.abs(k) * 0.4);
+    }
+    c.fill();
+    c.fillStyle = "#111111";
+    for (const side of [-1, 1]) {
+      c.beginPath();
+      c.arc(side * 4.2, -15, 1, 0, Math.PI * 2);
+      c.fill();
+    }
+  } else if (decal === "checker") {
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i += 1)
+        for (let k = 0; k < 2; k += 1) {
+          if ((i + k) % 2) continue;
+          c.fillStyle = "#111111";
+          c.fillRect(side > 0 ? 14 + i * 3 : -17 - i * 3, 11 + k * 3, 3, 3);
+        }
+    }
+  } else if (decal === "flames") {
+    for (const side of [-1, 1]) {
+      c.save();
+      c.scale(side, 1);
+      c.fillStyle = "#ff7a2e";
+      c.beginPath();
+      c.moveTo(6, 2);
+      c.quadraticCurveTo(12, 6, 20, 8);
+      c.quadraticCurveTo(14, 9, 16, 12);
+      c.quadraticCurveTo(10, 10, 9, 13);
+      c.quadraticCurveTo(7, 9, 6, 12);
+      c.closePath();
+      c.fill();
+      c.fillStyle = "#ffd84a";
+      c.beginPath();
+      c.moveTo(6, 5);
+      c.quadraticCurveTo(10, 7, 14, 9);
+      c.quadraticCurveTo(9, 10, 6, 10);
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+  }
 }
 
 /** Player ship centered at the origin (flames, hull, cockpit, nav lights). */
@@ -213,6 +343,7 @@ export function drawShipBody(c: Ctx, theme: BlasterTheme, bank: number, flame: s
     c.lineWidth = 2.4;
     c.stroke();
   }
+  if (h.decal) drawDecal(c, h.decal);
   c.fillStyle = h.stripe;
   c.fillRect(-1, -2, 2, 14);
   const glass = c.createLinearGradient(0, -14, 0, 0);
@@ -234,6 +365,38 @@ export function drawShipBody(c: Ctx, theme: BlasterTheme, bank: number, flame: s
 /** Player laser bolt: tinted glow plus a bright core. */
 export function drawLaser(c: Ctx, weapon: Weapon, x: number, y: number, color: string) {
   c.globalCompositeOperation = "lighter";
+  if (weapon.shape) {
+    glow(c, x, y, 9, color, 0.9);
+    c.fillStyle = weapon.core;
+    c.strokeStyle = color;
+    if (weapon.shape === "crescent") {
+      c.beginPath();
+      c.arc(x, y + 3, 7, Math.PI * 1.15, Math.PI * 1.85);
+      c.arc(x, y + 6, 6, Math.PI * 1.8, Math.PI * 1.2, true);
+      c.closePath();
+      c.fill();
+    } else if (weapon.shape === "star") {
+      const spin = y * 0.08;
+      c.beginPath();
+      for (let k = 0; k < 8; k += 1) {
+        const a = spin + (k * Math.PI) / 4;
+        const r = k % 2 ? 2 : 5.5;
+        c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      }
+      c.closePath();
+      c.fill();
+    } else {
+      c.beginPath();
+      c.arc(x, y, 3.2, 0, Math.PI * 2);
+      c.fill();
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.arc(x, y, 5.5, 0, Math.PI * 2);
+      c.stroke();
+    }
+    c.globalCompositeOperation = "source-over";
+    return;
+  }
   glow(c, x, y, 3 + weapon.width * 1.5, color, 0.9, weapon.length + 3);
   c.fillStyle = weapon.core;
   c.fillRect(x - weapon.width / 2, y - weapon.length * 0.6, weapon.width, weapon.length);
@@ -309,10 +472,10 @@ export function drawBossBody(c: Ctx, sector: Sector, enraged: boolean, flash: bo
   c.fill();
 }
 
-const scratch: Partial<Record<"small" | "pattern", HTMLCanvasElement>> = {};
+const scratch: Partial<Record<"small" | "pattern" | "red" | "cyan", HTMLCanvasElement>> = {};
 const patterns = new Map<string, CanvasPattern | null>();
 
-function scratchCanvas(name: "small" | "pattern", width: number, height: number) {
+function scratchCanvas(name: "small" | "pattern" | "red" | "cyan", width: number, height: number) {
   let canvas = scratch[name];
   if (!canvas) {
     canvas = document.createElement("canvas");
@@ -405,6 +568,47 @@ export function applyArtStyle(c: Ctx, style: BlasterArtStyle, now: number, anima
     vignette.addColorStop(1, "rgba(0, 0, 0, 0.45)");
     c.fillStyle = vignette;
     c.fillRect(0, 0, width, height);
+  } else if (style === "vhs") {
+    // Split the picture into red and cyan copies and re-add them slightly apart (hues are kept).
+    const shift = unit * 2 + (animate ? Math.round(Math.sin(now / 420) * unit) : 0);
+    const red = scratchCanvas("red", width, height);
+    const cyan = scratchCanvas("cyan", width, height);
+    const r = red.getContext("2d");
+    const b = cyan.getContext("2d");
+    if (r && b) {
+      for (const [g, tint] of [[r, "#ff0000"], [b, "#00ffff"]] as const) {
+        g.globalCompositeOperation = "copy";
+        g.drawImage(c.canvas, 0, 0);
+        g.globalCompositeOperation = "multiply";
+        g.fillStyle = tint;
+        g.fillRect(0, 0, width, height);
+      }
+      c.globalCompositeOperation = "copy";
+      c.drawImage(cyan, 0, 0);
+      c.globalCompositeOperation = "lighter";
+      c.drawImage(red, shift, 0);
+      c.globalCompositeOperation = "source-over";
+    }
+    const lines = overlayPattern(c, "scanlines", unit);
+    if (lines) {
+      c.globalAlpha = 0.5;
+      c.fillStyle = lines;
+      c.fillRect(0, 0, width, height);
+      c.globalAlpha = 1;
+    }
+    if (animate) {
+      // A band of tracking noise drifting down the tape.
+      const band = ((now / 9) % (height + 80)) - 40;
+      for (let i = 0; i < 14; i += 1) {
+        const v = Math.sin(i * 91.7 + Math.floor(now / 50) * 13.1) * 0.5 + 0.5;
+        c.fillStyle = `rgba(255, 255, 255, ${0.04 + v * 0.08})`;
+        c.fillRect(v * width * 0.6, band + i * unit * 2, width * (0.2 + v * 0.5), unit);
+      }
+    }
+    c.fillStyle = "rgba(255, 255, 255, 0.75)";
+    c.font = `600 ${unit * 11}px ui-monospace, monospace`;
+    c.textBaseline = "bottom";
+    c.fillText("PLAY \u25B6", unit * 10, height - unit * 10);
   } else if (style === "comic") {
     const dots = overlayPattern(c, "halftone", unit * 2);
     if (dots) {

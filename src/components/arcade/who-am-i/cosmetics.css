@@ -2044,6 +2044,586 @@
   }
 }
 
+/* ============================================================================
+ * Expansion: three more of each category, and the Art Nouveau style.
+ * ========================================================================== */
+
+/* Alchemist's Lab */
+.wai-table[data-wai-table="alchemy-lab"] {
+  --background: #0c1a12;
+  --surface: #13261b;
+  --surface-raised: #1b3426;
+  --border: rgb(140 230 150 / 0.25);
+  --muted-foreground: #bcd8c2;
+  --amethyst: #8ef09a;
+  --amethyst-foreground: #06200c;
+  --accent-rgb: 142 240 154;
+}
+[data-scene="alchemy-lab"] {
+  background:
+    radial-gradient(50% 40% at 50% 100%, rgb(90 255 130 / 0.22), transparent 70%),
+    linear-gradient(180deg, #102016, #07110b);
+}
+.wtb-lab-shelf {
+  inset: 0.8rem 6% auto;
+  height: 3.6rem;
+  border-bottom: 4px solid #3a2414;
+  background:
+    radial-gradient(ellipse 5% 40% at 8% 70%, #3fae6a 60%, transparent 62%),
+    radial-gradient(ellipse 4% 50% at 22% 62%, #a84ad8 60%, transparent 62%),
+    radial-gradient(ellipse 6% 34% at 40% 74%, #e8b02a 60%, transparent 62%),
+    radial-gradient(ellipse 4% 46% at 60% 64%, #3a8ad8 60%, transparent 62%),
+    radial-gradient(ellipse 5% 38% at 78% 70%, #d84a4a 60%, transparent 62%),
+    radial-gradient(ellipse 3% 50% at 92% 60%, #3fae6a 60%, transparent 62%);
+  opacity: 0.55;
+}
+.wtb-cauldron {
+  left: 50%;
+  bottom: -1.6rem;
+  width: min(12rem, 40%);
+  aspect-ratio: 2;
+  translate: -50% 0;
+  border-radius: 45% 45% 50% 50% / 30% 30% 70% 70%;
+  background: radial-gradient(ellipse 80% 30% at 50% 18%, #6aff8a, #1a6a2a 70%, transparent 72%), #1a1a1e;
+  box-shadow: 0 -10px 40px rgb(90 255 130 / 0.3);
+  opacity: 0.8;
+}
+.wtb-fume {
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgb(140 255 160 / 0.6);
+  background: rgb(140 255 160 / 0.12);
+}
+
+/* Night Train Dining Car */
+.wai-table[data-wai-table="dining-car"] {
+  --background: #1e120c;
+  --surface: #2c1a10;
+  --surface-raised: #3a2416;
+  --border: rgb(230 190 120 / 0.3);
+  --muted-foreground: #e0ccb0;
+  --amethyst: #e8b86a;
+  --amethyst-foreground: #2a1806;
+  --accent-rgb: 232 184 106;
+}
+[data-scene="dining-car"] {
+  background:
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 0.12) 0 2px, transparent 2px 46px),
+    linear-gradient(180deg, #4a2a18, #2a160c);
+}
+.wtb-panelling {
+  inset: auto 0 0;
+  height: 30%;
+  background: repeating-linear-gradient(90deg, #5a3420 0 60px, #3a1f12 60px 63px);
+  border-top: 4px solid #c8a04a;
+  opacity: 0.6;
+}
+.wtb-train-window {
+  left: 8%;
+  right: 8%;
+  top: 1rem;
+  height: 4.4rem;
+  overflow: hidden;
+  border: 5px solid #2a160c;
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #1a2448, #34466e);
+  box-shadow: inset 0 0 0 2px #c8a04a;
+  opacity: 0.85;
+}
+.wtb-hills {
+  position: absolute;
+  inset: auto 0 0 0;
+  width: 200%;
+  height: 60%;
+  background:
+    radial-gradient(ellipse 8% 70% at 6% 100%, #10182e 98%, transparent) 0 0 / 25% 100%,
+    radial-gradient(ellipse 12% 50% at 18% 100%, #182444 98%, transparent) 0 0 / 25% 100%;
+}
+.wtb-brass-lamp {
+  left: 50%;
+  top: 0;
+  width: 10rem;
+  height: 10rem;
+  translate: -50% -40%;
+  background: radial-gradient(closest-side, rgb(255 220 150 / 0.22), transparent);
+}
+
+/* Snowed-in Cabin */
+.wai-table[data-wai-table="snowed-cabin"] {
+  --background: #1c1210;
+  --surface: #2a1a14;
+  --surface-raised: #38241a;
+  --border: rgb(255 190 130 / 0.28);
+  --muted-foreground: #e8d4c0;
+  --amethyst: #ffae5a;
+  --amethyst-foreground: #2a1204;
+  --accent-rgb: 255 174 90;
+}
+[data-scene="snowed-cabin"] {
+  background:
+    radial-gradient(45% 40% at 18% 100%, rgb(255 140 60 / 0.28), transparent 70%),
+    linear-gradient(180deg, #2a1a12, #140c08);
+}
+.wtb-logs {
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgb(90 50 30 / 0.4) 0 22px, rgb(40 22 12 / 0.4) 22px 25px);
+}
+.wtb-fireplace {
+  left: 4%;
+  bottom: 0;
+  width: min(9rem, 28%);
+  height: 6rem;
+  border-radius: 0.4rem 0.4rem 0 0;
+  border: 6px solid #5a4a44;
+  border-bottom: 0;
+  background: radial-gradient(ellipse 60% 70% at 50% 100%, #ffd27a, #ff7a2a 40%, #6a1a0a 75%, #1a0a06);
+  opacity: 0.85;
+}
+.wtb-frost-window {
+  right: 6%;
+  top: 1rem;
+  width: min(8rem, 26%);
+  aspect-ratio: 1;
+  border: 5px solid #4a2a18;
+  background:
+    linear-gradient(90deg, transparent 47%, #4a2a18 47% 53%, transparent 53%),
+    linear-gradient(transparent 47%, #4a2a18 47% 53%, transparent 53%),
+    radial-gradient(circle at 20% 80%, rgb(255 255 255 / 0.55), transparent 35%),
+    radial-gradient(circle at 80% 20%, rgb(255 255 255 / 0.4), transparent 30%),
+    linear-gradient(#22345a, #3a5080);
+  opacity: 0.85;
+}
+.wtb-snow {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0.55;
+}
+
+/* Card backs and frames */
+[data-wai-card="royal-deck"] .wai-portrait::after {
+  box-shadow: inset 0 0 0 3px #b3202c, inset 0 0 0 5px #f4ecd8, inset 0 0 0 6px #b3202c;
+}
+[data-wai-card="blue-willow"] .wai-portrait::after {
+  box-shadow: inset 0 0 0 3px #f6f8fc, inset 0 0 0 5px #1f4aa0, inset 0 0 0 6.5px #f6f8fc;
+}
+[data-wai-card="treasure-map"] .wai-portrait::after {
+  --fw: 4px;
+  border: var(--fw) solid transparent;
+  background: repeating-linear-gradient(45deg, #c8a46a 0 4px, #8a6a3a 4px 6px) border-box;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) padding-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+/* Megaphone */
+[data-wai-question="megaphone"] .wai-q {
+  padding-left: 2.9rem;
+}
+[data-wai-question="megaphone"] .wai-q .wai-question {
+  font-weight: 800;
+}
+.wqf-megaphone {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2.5rem;
+  translate: 0 -50%;
+}
+
+/* Ransom Note */
+[data-wai-question="ransom-note"] .wai-q {
+  padding: 0.55rem 2.4rem 0.55rem 0.75rem;
+  color: #1a1a1a;
+  background:
+    linear-gradient(#fff6a8, #fff6a8) 4% 20% / 22% 60% no-repeat,
+    linear-gradient(#ffd6e6, #ffd6e6) 30% 30% / 18% 55% no-repeat,
+    linear-gradient(#d6ecff, #d6ecff) 52% 15% / 20% 65% no-repeat,
+    linear-gradient(#e8ffd6, #e8ffd6) 76% 28% / 18% 55% no-repeat,
+    #f4f1ea;
+  border-radius: 2px;
+  rotate: -0.8deg;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+}
+[data-wai-question="ransom-note"] .wai-q .wai-question {
+  color: inherit;
+  font-family: var(--font-special-elite), "Courier New", monospace;
+}
+.wqf-ransom {
+  position: absolute;
+  right: 0.3rem;
+  top: -0.6rem;
+  width: 1.8rem;
+  rotate: 20deg;
+}
+
+/* Carrier Pigeon */
+[data-wai-question="carrier-pigeon"] .wai-q {
+  padding: 0.55rem 3rem 0.55rem 1rem;
+  color: #3a2414;
+  background:
+    radial-gradient(ellipse 0.5rem 50% at 0 50%, #d8c494, transparent),
+    radial-gradient(ellipse 0.5rem 50% at 100% 50%, #d8c494, transparent),
+    linear-gradient(#f6ead0, #ecdcb4);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+}
+[data-wai-question="carrier-pigeon"] .wai-q .wai-question {
+  color: inherit;
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.2em;
+}
+.wqf-pigeon {
+  position: absolute;
+  right: -0.4rem;
+  top: -1.3rem;
+  width: 2.8rem;
+}
+
+/* Leather Tags */
+[data-wai-marker="leather-tag"] .wai-stamp {
+  color: rgb(var(--mk));
+  background:
+    radial-gradient(rgb(0 0 0 / 0.12) 0.6px, transparent 1px) 0 0 / 4px 4px,
+    linear-gradient(#6a3f22, #4a2a16);
+  border: 2px dashed rgb(240 210 160 / 0.6);
+  outline: 3px solid #4a2a16;
+  border-radius: 0.5rem;
+  font-family: var(--font-cinzel), Georgia, serif;
+  text-shadow: 0 -1px 0 rgb(0 0 0 / 0.6);
+}
+[data-wai-marker="leather-tag"] .wai-stamp-word {
+  font-weight: 700;
+}
+[data-wai-marker="leather-tag"] .wai-stamp-icon {
+  color: #f0d6a8;
+  background: rgb(var(--mkd));
+}
+[data-wai-marker="leather-tag"] .wai-mark {
+  color: rgb(var(--mk));
+  background: #5a341c;
+  border: 1px dashed rgb(240 210 160 / 0.6);
+  font-family: var(--font-cinzel), Georgia, serif;
+}
+[data-wai-marker="leather-tag"] .wai-cross::before {
+  content: "";
+  position: absolute;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #7a4a2a, #4a2a16);
+  box-shadow: 0 0 0 1.5px rgb(240 210 160 / 0.5);
+}
+[data-wai-marker="leather-tag"] .wai-cross svg {
+  position: relative;
+  width: 40%;
+  height: 40%;
+}
+
+/* Pixel Badges */
+[data-wai-marker="pixel-badge"] .wai-stamp {
+  color: #ffffff;
+  background: rgb(var(--mkd));
+  border: none;
+  border-radius: 0;
+  box-shadow:
+    0 -4px 0 0 rgb(var(--mk)),
+    0 4px 0 0 rgb(var(--mk)),
+    -4px 0 0 0 rgb(var(--mk)),
+    4px 0 0 0 rgb(var(--mk)),
+    6px 6px 0 2px rgb(0 0 0 / 0.4);
+  font-family: var(--font-press-start), monospace;
+}
+[data-wai-marker="pixel-badge"] .wai-stamp-word {
+  font-size: 0.85em;
+}
+[data-wai-marker="pixel-badge"] .wai-stamp-icon {
+  border-radius: 0;
+  background: rgb(var(--mk));
+  color: #111111;
+}
+[data-wai-marker="pixel-badge"] .wai-mark {
+  color: #ffffff;
+  background: rgb(var(--mkd));
+  border-radius: 0;
+  box-shadow: 0 0 0 2px rgb(var(--mk));
+  font-family: var(--font-press-start), monospace;
+  font-size: 0.5rem;
+}
+[data-wai-marker="pixel-badge"] .wai-cross svg {
+  shape-rendering: crispEdges;
+}
+[data-wai-marker="pixel-badge"] .wai-cross path {
+  stroke-linecap: square;
+  stroke-width: 4;
+}
+
+/* Paint Blots */
+[data-wai-marker="paint-blot"] .wai-stamp {
+  color: rgb(var(--mkd));
+  background:
+    radial-gradient(circle at 12% 80%, rgb(var(--mk) / 0.7) 0 8%, transparent 9%),
+    radial-gradient(circle at 92% 18%, rgb(var(--mk) / 0.7) 0 6%, transparent 7%),
+    rgb(var(--mk) / 0.35);
+  border: none;
+  border-radius: 46% 54% 40% 60% / 58% 42% 60% 40%;
+  font-family: var(--font-permanent-marker), cursive;
+}
+[data-wai-marker="paint-blot"] .wai-stamp-word {
+  font-weight: 400;
+}
+[data-wai-marker="paint-blot"] .wai-stamp-icon {
+  background: rgb(var(--mkd));
+  color: #ffffff;
+  border-radius: 40% 60% 50% 50%;
+}
+[data-wai-marker="paint-blot"] .wai-mark {
+  color: rgb(var(--mkd));
+  background: rgb(var(--mk) / 0.4);
+  border-radius: 46% 54% 40% 60% / 58% 42% 60% 40%;
+  font-family: var(--font-permanent-marker), cursive;
+  font-weight: 400;
+}
+[data-wai-marker="paint-blot"] .wai-cross path {
+  stroke-width: 5;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+/* Butterfly Flight: butterflies come to rest along the top of the banner. */
+.wvr-butterfly {
+  top: 0.4rem;
+  width: 1.1rem;
+  height: 0.85rem;
+  background:
+    radial-gradient(ellipse 30% 40% at 28% 38%, #ff8fd8 95%, transparent),
+    radial-gradient(ellipse 30% 40% at 72% 38%, #ff8fd8 95%, transparent),
+    radial-gradient(ellipse 22% 26% at 32% 72%, #ffd84a 95%, transparent),
+    radial-gradient(ellipse 22% 26% at 68% 72%, #ffd84a 95%, transparent),
+    linear-gradient(90deg, transparent 46%, #3a2a3a 46% 54%, transparent 54%);
+  opacity: 0.55;
+}
+
+/* Rainbow Arch */
+.wvr-rainbow {
+  left: 8%;
+  right: 8%;
+  top: 0.2rem;
+  height: 140%;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: radial-gradient(
+    ellipse 50% 100% at 50% 100%,
+    transparent 70%,
+    rgb(124 108 240 / 0.45) 70% 74%,
+    rgb(79 195 247 / 0.45) 74% 78%,
+    rgb(123 211 137 / 0.45) 78% 82%,
+    rgb(255 209 102 / 0.45) 82% 86%,
+    rgb(255 159 67 / 0.45) 86% 90%,
+    rgb(255 93 108 / 0.45) 90% 94%,
+    transparent 94%
+  );
+}
+.wvr-cloud {
+  bottom: 0.2rem;
+  width: 3rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 60%, #ffffff 0 34%, transparent 35%),
+    radial-gradient(circle at 62% 40%, #ffffff 0 40%, transparent 41%),
+    radial-gradient(circle at 82% 66%, #ffffff 0 28%, transparent 29%);
+  opacity: 0.85;
+}
+.wvr-cloud[data-side="l"] {
+  left: 4%;
+}
+.wvr-cloud[data-side="r"] {
+  right: 4%;
+}
+
+/* Golden Trophy: rests in the portrait's corner. */
+.wvr-trophy {
+  position: absolute;
+  right: -8%;
+  bottom: -6%;
+  width: 46%;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.5));
+}
+.wvr-on-portrait[data-reveal="trophy"] .wvr-gleam {
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 246 200 / 0.35) 50%, transparent 65%) 0 0 / 250% 100% no-repeat;
+  opacity: 0;
+}
+
+/* ---- Art Nouveau ---- */
+[data-wai-style="art-nouveau"] :is(.wai-board, .wai-log) {
+  border: 2px solid rgb(var(--accent-rgb) / 0.55);
+  outline: 1px solid rgb(var(--accent-rgb) / 0.3);
+  outline-offset: 3px;
+}
+[data-wai-style="art-nouveau"] :is(.wai-board, .wai-log, .wai-stage, .wai-result, .wai-player) {
+  border-radius: 2.2rem 0.5rem 2.2rem 0.5rem;
+}
+[data-wai-style="art-nouveau"] :is(.wai-board, .wai-log) {
+  background-image:
+    radial-gradient(circle at 0 0, transparent 1.6rem, rgb(var(--accent-rgb) / 0.35) 1.65rem 1.75rem, transparent 1.8rem),
+    radial-gradient(circle at 100% 100%, transparent 1.6rem, rgb(var(--accent-rgb) / 0.35) 1.65rem 1.75rem, transparent 1.8rem);
+  background-size: 3.6rem 3.6rem;
+  background-repeat: no-repeat;
+  background-position: 0 0, 100% 100%;
+}
+[data-wai-style="art-nouveau"] :is(h2, .wai-question) {
+  font-family: var(--font-playfair), Georgia, serif;
+  font-style: italic;
+  letter-spacing: 0.01em;
+}
+[data-wai-style="art-nouveau"] h2::before,
+[data-wai-style="art-nouveau"] h2::after {
+  content: "❦";
+  margin-inline: 0.35em;
+  font-style: normal;
+  color: rgb(var(--accent-rgb) / 0.8);
+}
+[data-wai-style="art-nouveau"] .wai-portrait {
+  border-radius: 50% 50% 0.5rem 0.5rem / 34% 34% 0.5rem 0.5rem;
+}
+[data-wai-style="art-nouveau"]:not([data-wai-marker]) .wai-stamp {
+  border-radius: 1.6rem 0.4rem 1.6rem 0.4rem;
+  font-family: var(--font-playfair), Georgia, serif;
+  font-style: italic;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wai-fx-full .wtb-fume {
+    animation: wtb-rise 9s linear infinite;
+  }
+  .wai-fx .wtb-cauldron {
+    animation: wtb-glow 4s ease-in-out infinite;
+  }
+  .wai-fx .wtb-hills {
+    animation: wtb-roll 16s linear infinite;
+  }
+  .wai-fx .wtb-fireplace {
+    animation: wtb-glow 2.2s ease-in-out infinite;
+  }
+  .wai-fx-full .wtb-snow {
+    animation: wtb-snowfall 10s linear infinite;
+  }
+  .wai-fx[data-wai-question="megaphone"] .wai-question {
+    animation: wq-blast 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) 0.15s both;
+  }
+  .wai-fx[data-wai-question="megaphone"] .wqf-waves {
+    animation: wtb-glow 0.6s ease-in-out 3;
+  }
+  .wai-fx[data-wai-question="ransom-note"] .wai-q {
+    animation: wq-paste 0.5s steps(4) both;
+  }
+  .wai-fx[data-wai-question="carrier-pigeon"] .wqf-pigeon {
+    animation: wq-pigeon 1s cubic-bezier(0.3, 0.6, 0.4, 1) both;
+  }
+  .wai-fx[data-wai-question="carrier-pigeon"] .wai-q {
+    animation: wq-unroll 0.4s ease-out 0.7s both;
+  }
+  .wai-fx-full .wvr-butterfly {
+    animation: wvr-rise 2.2s ease-out both;
+  }
+  .wai-fx .wvr-rainbow {
+    animation: wvr-arch 1.2s ease-out both;
+  }
+  .wai-fx .wvr-cloud {
+    animation: wvr-puff 0.6s ease-out both;
+  }
+  .wai-fx .wvr-trophy {
+    animation: wvr-trophy 0.9s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  }
+  .wai-fx .wvr-on-portrait[data-reveal="trophy"] .wvr-gleam {
+    animation: wvr-sweep 1.2s ease-out 0.8s both;
+  }
+}
+@keyframes wtb-roll {
+  to {
+    translate: -50% 0;
+  }
+}
+@keyframes wtb-snowfall {
+  from {
+    transform: translateY(-1rem);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(12px, 18rem);
+    opacity: 0;
+  }
+}
+@keyframes wq-blast {
+  0% {
+    scale: 0.6;
+    opacity: 0;
+  }
+  60% {
+    scale: 1.08;
+    opacity: 1;
+  }
+}
+@keyframes wq-paste {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes wq-pigeon {
+  from {
+    translate: -12rem 1rem;
+    rotate: -10deg;
+  }
+}
+@keyframes wvr-arch {
+  from {
+    clip-path: inset(0 50% 0 50%);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+@keyframes wvr-puff {
+  from {
+    scale: 0.3;
+    opacity: 0;
+  }
+}
+@keyframes wvr-trophy {
+  from {
+    translate: 0 40%;
+    scale: 0.4;
+    opacity: 0;
+  }
+}
+@keyframes wvr-sweep {
+  0% {
+    opacity: 1;
+    background-position: -120% 0;
+  }
+  100% {
+    opacity: 0;
+    background-position: 120% 0;
+  }
+}
+
 /* The shop preview holds everything still when effects are off. */
 .waip[data-still] *,
 .waip[data-still] *::before,

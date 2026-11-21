@@ -17,8 +17,11 @@ export const DESCENT_LOOKS = {
     "bell-jar",
     "watcher",
     "caged-star",
+    "hourglass",
+    "anglerfish",
+    "lotus",
   ],
-  fog: ["ink", "tarot", "will-o-wisps", "ash", "silk", "runes", "bubbles"],
+  fog: ["ink", "tarot", "will-o-wisps", "ash", "silk", "runes", "bubbles", "marine-snow", "kelp", "stardust"],
   trail: [
     "shattered",
     "pearls",
@@ -27,6 +30,9 @@ export const DESCENT_LOOKS = {
     "rune-ladder",
     "embers",
     "cross-stitch",
+    "vine",
+    "morse",
+    "zipper",
   ],
   marker: [
     "clockwork",
@@ -36,8 +42,11 @@ export const DESCENT_LOOKS = {
     "crystal-shard",
     "sigil",
     "bell",
+    "lifebuoy",
+    "moon-phase",
+    "nautilus",
   ],
-  style: ["etching", "stained-glass", "shadow-theatre", "cyanotype"],
+  style: ["etching", "stained-glass", "shadow-theatre", "cyanotype", "ukiyo-e"],
 } as const;
 
 type Category = keyof typeof DESCENT_LOOKS;
@@ -230,6 +239,39 @@ export function Lantern({ kind }: { kind?: string }) {
           <path d="M-14 14 H14 V18 H-14 Z" className="dw-brass" />
         </svg>
       );
+    case "hourglass":
+      return (
+        <svg viewBox="-20 -34 40 60" className="dw-lantern-body">
+          <path d="M0 -34 V-25" className="dw-chain" />
+          <path d="M-11 -25 H11 V-22 H-11 Z M-11 15 H11 V18 H-11 Z" className="dw-brass" />
+          <path d="M-9 -22 V15 M9 -22 V15" className="lt-brass-line" />
+          <path d="M-7 -22 C-7 -10 -1 -6 -1 -3 C-1 0 -7 4 -7 15 H7 C7 4 1 0 1 -3 C1 -6 7 -10 7 -22 Z" className="lt-jar" />
+          <path d="M-5 -19 H5 C5 -12 1 -8 0 -6 C-1 -8 -5 -12 -5 -19 Z" className="dw-flame" />
+          <path d="M0 -5 V9" className="lt-sand" />
+          <path d="M-6 15 C-5 10 -2 8 0 8 C2 8 5 10 6 15 Z" className="dw-flame lt-sand-pile" />
+        </svg>
+      );
+    case "anglerfish":
+      return (
+        <svg viewBox="-20 -34 40 60" className="dw-lantern-body" data-float>
+          <path d="M-2 4 C-4 -14 4 -22 10 -24" className="lt-lure-stalk" />
+          <circle cx="11" cy="-24" r="4.5" className="dw-flame" />
+          <path d="M-18 6 C-14 -8 2 -10 10 2 C6 14 -10 18 -18 6 Z" className="lt-angler" />
+          <path d="M-18 6 L-24 0 L-23 13 Z" className="lt-angler" />
+          <path d="M8 2 L4 5 L6 1 L2 4 L4 0 L0 3 M8 3 L4 7 L6 4 L2 8 L4 5" className="lt-teeth" />
+          <circle cx="-2" cy="-1" r="2.2" className="lt-angler-eye" />
+        </svg>
+      );
+    case "lotus":
+      return (
+        <svg viewBox="-20 -34 40 60" className="dw-lantern-body" data-float>
+          <ellipse cx="0" cy="-6" rx="3" ry="6" className="dw-flame" />
+          <rect x="-2.5" y="-2" width="5" height="7" rx="1" className="lt-candle" />
+          <path d="M-16 6 C-14 -4 -8 -2 -5 4 Z M16 6 C14 -4 8 -2 5 4 Z" className="lt-petal" />
+          <path d="M-9 8 C-10 -8 -4 -8 -1 6 Z M9 8 C10 -8 4 -8 1 6 Z" className="lt-petal lt-petal-mid" />
+          <path d="M-18 8 C-6 14 6 14 18 8 C10 16 -10 16 -18 8 Z" className="lt-petal" />
+        </svg>
+      );
     default:
       return (
         <svg viewBox="-20 -34 40 60" className="dw-lantern-body">
@@ -379,6 +421,31 @@ function MarkerArt({ kind }: { kind: string }) {
             className="mk-frame mk-tint"
           />
           <circle cy="16" r="2.6" className="mk-fill" />
+        </>
+      );
+    case "lifebuoy":
+      return (
+        <g className="mk-bob">
+          <circle r="15" className="mk-buoy" />
+          <path d="M0 -19 V-11 M0 11 V19 M-19 0 H-11 M11 0 H19" className="mk-buoy-band" />
+          <circle r="15" className="mk-line" />
+        </g>
+      );
+    case "moon-phase":
+      return (
+        <>
+          <path d="M6 -16 A17 17 0 1 0 6 16 A13 13 0 1 1 6 -16 Z" className="mk-fill mk-moon" />
+          <circle cx="10" cy="-12" r="1.2" className="mk-fill" />
+          <circle cx="14" cy="-4" r="0.8" className="mk-fill" />
+          <circle r="10" className="mk-frame" />
+        </>
+      );
+    case "nautilus":
+      return (
+        <>
+          <path d="M0 0 m0 -17 a17 17 0 1 1 -14.7 8.5 a13 13 0 0 1 9 -12.5 a9 9 0 0 1 9.5 5 a6 6 0 0 1 -3 7" className="mk-frame mk-tint" />
+          <path d="M-14.7 -8.5 L-5.7 -4 M0 -17 L1 -8 M14.5 -9 L7 -3 M15 9 L7 5 M0 17 L0 9" className="mk-line" />
+          <circle r="9" className="mk-frame" />
         </>
       );
     default:

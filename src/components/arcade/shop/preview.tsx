@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { fitWorld, mix, observeCanvas, withAlpha, type CanvasSize } from "../engine";
 import { drawEatEffect, eatLife, paintGround, paintRim, paintSnakeBody, paintSnakeHead, snakeColors, snakeTheme, type Point, type SnakePath, type SnakeTheme } from "../snake-look";
 import { FRUIT_COLORS, drawFruit as drawSnakeFruit, setSnakeArtStyle } from "../snake-art";
-import { HEIGHT as FLUTTER_H, PIPE_W, WIDTH as FLUTTER_W, drawCharacter, drawGround, drawObstacle, drawSky, drawTrail, flutterTheme, type FlutterTheme } from "../flutter-look";
+import { HEIGHT as FLUTTER_H, PIPE_W, WIDTH as FLUTTER_W, applyFlutterStyle, drawCharacter, drawGround, drawObstacle, drawSky, drawTrail, flutterTheme, type FlutterTheme } from "../flutter-look";
 import {
   PIXEL_UNIT,
   drawBackdrop,
@@ -410,6 +410,7 @@ function createFlutterScene(theme: FlutterTheme, effects: MotionLevel, focus: st
       drawCharacter(ctx, theme, wing, false, now, animate);
       ctx.restore();
     }
+    applyFlutterStyle(ctx, theme, 0, FLUTTER_TOP, FLUTTER_W, viewH, now, animate);
     ctx.restore();
   };
 }
@@ -768,6 +769,7 @@ function PreviewSudoku({ look, effects }: { look: GameLook; effects: MotionLevel
         data-font={look.font}
         data-grid={look.grid}
         data-highlight={look.highlight}
+        data-style={look.style}
       >
         {SDK_CELLS.map((cell, i) => {
           const r = row(i);
@@ -891,7 +893,7 @@ function createGemChaseScene(theme: GemChaseTheme, effects: MotionLevel): Painte
       const x = 1 + ((((8 - t * 8 + i * 2) % 8) + 8) % 8);
       const p = at(x, 5);
       const r = tile * 0.36;
-      drawShadeBody(ctx, p.x, p.y, r, color, animate ? Math.sin(now / 120 + i) * r * 0.12 : 0, animate, theme.style);
+      drawShadeBody(ctx, p.x, p.y, r, color, animate ? Math.sin(now / 120 + i) * r * 0.12 : 0, animate, theme.style, theme.shadeKind);
       for (const side of [-1, 1]) {
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
@@ -962,6 +964,28 @@ function createBlasterScene(theme: BlasterTheme, effects: MotionLevel): Painter 
       if (theme.trail.sparks && animate) {
         ctx.fillStyle = withAlpha("#ffffff", 0.7 - i * 0.12);
         ctx.fillRect(trailX + Math.sin(now / 50 + i * 2) * 8, 256 + i * 9, 1.5, 1.5);
+      }
+      const extra = theme.trail.extra;
+      if (extra) {
+        const color = extra.colors[i % extra.colors.length];
+        const k = 1 - i / 6;
+        if (extra.kind === "ring") {
+          ctx.strokeStyle = withAlpha(color, k * 0.8);
+          ctx.lineWidth = 1 + k * 2;
+          ctx.beginPath();
+          ctx.arc(trailX, 258 + i * 10, 4 + i * 2.2, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (extra.kind === "smoke") {
+          ctx.globalCompositeOperation = "source-over";
+          ctx.fillStyle = withAlpha(color, 0.4 * k);
+          ctx.beginPath();
+          ctx.arc(trailX + Math.sin(i * 2.3) * 4, 262 + i * 10, 3 + i * 1.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalCompositeOperation = "lighter";
+        } else {
+          ctx.fillStyle = withAlpha(color, k);
+          ctx.fillRect(trailX + Math.sin((animate ? now / 60 : 0) + i * 2.1) * 9, 258 + i * 9, 2, 2);
+        }
       }
     }
     ctx.globalCompositeOperation = "source-over";

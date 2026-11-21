@@ -10,7 +10,9 @@ import { mix, withAlpha } from "./engine";
  * effects play on top.
  */
 
-export type StackerTheme = { key: string; blocks: string; theme: string; scenery: string; perfect: string };
+export type StackerStyle = "" | "voxel" | "toon" | "papercraft" | "low-poly" | "hologram";
+const STYLES: StackerStyle[] = ["voxel", "toon", "papercraft", "low-poly", "hologram"];
+export type StackerTheme = { key: string; blocks: string; theme: string; scenery: string; perfect: string; style: StackerStyle };
 type P3 = [number, number, number];
 type Face = { id: "front" | "right" | "top"; len: number; at: (u: number, v: number) => P3 };
 export type BlockSpec = { cx: number; cz: number; w: number; d: number; y0: number; y1: number; level: number; flash: number; alpha: number; top: boolean };
@@ -23,7 +25,8 @@ export function stackerTheme(look: GameLook): StackerTheme {
   const theme = look.theme ?? "default";
   const scenery = look.scenery ?? "default";
   const perfect = look.perfect ?? "default";
-  return { key: `${blocks}|${theme}|${scenery}|${perfect}`, blocks, theme, scenery, perfect };
+  const style = STYLES.find((entry) => entry === look.style) ?? "";
+  return { key: `${blocks}|${theme}|${scenery}|${perfect}|${style}`, blocks, theme, scenery, perfect, style };
 }
 
 const rand = (i: number, salt = 0) => {
@@ -87,6 +90,12 @@ export function blockColor(theme: StackerTheme, level: number) {
       return level % 4 === 3 ? "#c9a227" : mix("#c5ced8", "#8d99a6", wave);
     case "glass":
       return mix("#9fe8ff", "#c7a6ff", wave);
+    case "terracotta":
+      return mix("#d9774a", "#b5523a", wave);
+    case "jade":
+      return mix("#3fa77a", "#1f6a52", wave);
+    case "opal":
+      return mix("#eef2f6", "#dfe6f0", wave);
     default:
       return mix("#ffb347", "#ff5e7e", wave);
   }
@@ -96,6 +105,12 @@ function themed(theme: StackerTheme, color: string) {
   switch (theme.theme) {
     case "pancakes":
       return mix(color, "#e0a458", 0.6);
+    case "sushi":
+      return mix(color, "#f6f2e8", 0.75);
+    case "timber":
+      return mix(color, "#c9945a", 0.55);
+    case "pagoda":
+      return mix(color, "#c23a2a", 0.45);
     case "castle":
       return mix(color, "#a39e93", 0.55);
     case "cake":
@@ -152,6 +167,52 @@ function materialDetail(c: CanvasRenderingContext2D, theme: StackerTheme, f: Fac
       line(c, f.at(0, f.id === "top" ? 0.3 : 0.86), f.at(1, f.id === "top" ? 0.3 : 0.86));
       c.stroke();
       break;
+    case "terracotta": {
+      // Ridges pressed in by the potter's fingers, and a dusty bloom.
+      c.strokeStyle = withAlpha("#6a2a14", 0.25);
+      c.lineWidth = 1.4 * thin;
+      c.beginPath();
+      for (let v = 0.2; v < 1; v += 0.3) line(c, f.at(0, v), f.at(1, v + 0.02));
+      c.stroke();
+      c.fillStyle = withAlpha("#f4dcc0", 0.18);
+      for (let k = 0; k < 5; k += 1) {
+        const u = rand(level * 9 + k, 3);
+        const v = rand(level * 11 + k, 4);
+        rect(c, f, u, v, u + 0.06, v + 0.12);
+        c.fill();
+      }
+      break;
+    }
+    case "jade": {
+      c.strokeStyle = withAlpha("#c8f0d8", 0.4);
+      c.lineWidth = 1.2 * thin;
+      c.beginPath();
+      // Carved cloud scrolls: little spirals marching along the face.
+      const count = Math.max(1, Math.round(f.len / 26));
+      for (let i = 0; i < count; i += 1) {
+        const u0 = (i + 0.5) / count;
+        let prev = f.at(u0, 0.5);
+        for (let a = 0; a < Math.PI * 3; a += 0.5) {
+          const rr = 0.04 + a * 0.012;
+          const next = f.at(u0 + Math.cos(a) * rr * (24 / Math.max(24, f.len)) * 3, 0.5 + Math.sin(a) * rr * 2.2);
+          line(c, prev, next);
+          prev = next;
+        }
+      }
+      c.stroke();
+      break;
+    }
+    case "opal": {
+      const fire = ["#ff7ab8", "#6ae0ff", "#9cff8a", "#ffd36a", "#b48cff"];
+      for (let k = 0; k < 7; k += 1) {
+        const u = rand(level * 13 + k, f.id.length);
+        const v = rand(level * 17 + k, 5);
+        c.fillStyle = withAlpha(fire[(level + k) % fire.length], 0.45);
+        rect(c, f, u, v, Math.min(1, u + 0.09), Math.min(1, v + 0.18));
+        c.fill();
+      }
+      break;
+    }
     case "glass":
       c.strokeStyle = withAlpha("#ffffff", 0.45);
       c.lineWidth = 1.6 * thin;
@@ -294,6 +355,79 @@ function themeDetail(c: CanvasRenderingContext2D, theme: StackerTheme, f: Face, 
       c.stroke();
       break;
     }
+    case "sushi": {
+      if (side) {
+        // A nori band round the middle, rice grains above and below.
+        c.fillStyle = "#1f2a22";
+        rect(c, f, 0, 0.3, 1, 0.62);
+        c.fill();
+        c.fillStyle = withAlpha("#4a6a4a", 0.5);
+        rect(c, f, 0, 0.44, 1, 0.48);
+        c.fill();
+        c.fillStyle = withAlpha("#ffffff", 0.8);
+        for (let i = 0; i < Math.round(f.len / 5); i += 1) {
+          const u = rand(b.level * 7 + i, f.id.length);
+          const v = rand(b.level * 3 + i, 7) > 0.5 ? 0.7 + rand(i, 8) * 0.25 : 0.05 + rand(i, 9) * 0.2;
+          rect(c, f, u, v, u + 2 / Math.max(10, f.len), v + 0.06);
+          c.fill();
+        }
+      }
+      break;
+    }
+    case "timber": {
+      // Three planks per layer, running across on odd layers and along on even ones.
+      const across = b.level % 2 === 0;
+      c.strokeStyle = withAlpha("#4a2a10", 0.45);
+      c.lineWidth = 1.4 * thin;
+      c.beginPath();
+      if (f.id === "top") {
+        for (const k of [1 / 3, 2 / 3]) {
+          if (across) line(c, f.at(k, 0), f.at(k, 1));
+          else line(c, f.at(0, k), f.at(1, k));
+        }
+      } else if ((f.id === "front") === across) {
+        for (const k of [1 / 3, 2 / 3]) line(c, f.at(k, 0), f.at(k, 1));
+      }
+      c.stroke();
+      c.strokeStyle = withAlpha("#4a2a10", 0.18);
+      c.lineWidth = thin;
+      c.beginPath();
+      for (let k = 0; k < 3; k += 1) {
+        const v = 0.25 + k * 0.25;
+        line(c, f.at(0.05, v), f.at(0.95, v + (rand(b.level, k) - 0.5) * 0.1));
+      }
+      c.stroke();
+      break;
+    }
+    case "pagoda": {
+      if (side) {
+        // Tiled eaves along the top, red pillars and paper screens below.
+        c.fillStyle = "#2f3a3a";
+        rect(c, f, 0, 0.66, 1, 1);
+        c.fill();
+        c.strokeStyle = withAlpha("#8aa0a0", 0.5);
+        c.lineWidth = thin;
+        c.beginPath();
+        const tilesN = Math.max(3, Math.round(f.len / 5));
+        for (let i = 1; i < tilesN; i += 1) line(c, f.at(i / tilesN, 0.66), f.at(i / tilesN, 1));
+        c.stroke();
+        c.fillStyle = withAlpha("#f6ead0", 0.85);
+        const bays = Math.max(1, Math.round(f.len / 22));
+        for (let i = 0; i < bays; i += 1) {
+          rect(c, f, (i + 0.2) / bays, 0.1, (i + 0.8) / bays, 0.58);
+          c.fill();
+        }
+      } else {
+        c.fillStyle = "#2f3a3a";
+        rect(c, f, 0, 0, 1, 1);
+        c.fill();
+        c.strokeStyle = withAlpha("#d4a24a", 0.8);
+        c.lineWidth = 1.5 * thin;
+        rect(c, f, 0.12, 0.12, 0.88, 0.88);
+        c.stroke();
+      }
+      break;
+    }
     case "cake": {
       if (side) {
         c.fillStyle = "#fff6ea";
@@ -406,6 +540,36 @@ function topDecor(c: CanvasRenderingContext2D, theme: StackerTheme, b: BlockSpec
       c.fill();
       break;
     }
+    case "sushi": {
+      // A slice of fish draped over the top, with its fat lines.
+      const fish = ["#ff8a5c", "#e84a5f", "#ffb07a"][b.level % 3];
+      const pts: P3[] = [];
+      for (let i = 0; i < 10; i += 1) {
+        const a = (i / 10) * Math.PI * 2;
+        pts.push([b.cx + Math.cos(a) * b.w * 0.42, y + 2, b.cz + Math.sin(a) * b.d * 0.3]);
+      }
+      c.fillStyle = fish;
+      poly(c, pts);
+      c.fill();
+      c.strokeStyle = withAlpha("#ffffff", 0.6);
+      c.lineWidth = 1.2;
+      c.beginPath();
+      for (const k of [-0.2, 0, 0.2]) line(c, [b.cx + k * b.w - b.w * 0.1, y + 2, b.cz - b.d * 0.2], [b.cx + k * b.w + b.w * 0.1, y + 2, b.cz + b.d * 0.2]);
+      c.stroke();
+      break;
+    }
+    case "pagoda": {
+      // A little finial spire on the top floor.
+      const [cx, cy] = proj([b.cx, y, b.cz]);
+      c.fillStyle = "#d4a24a";
+      c.fillRect(cx - 1.5, cy - 18, 3, 18);
+      for (const k of [6, 11]) {
+        c.beginPath();
+        c.ellipse(cx, cy - k, 4, 1.6, 0, 0, Math.PI * 2);
+        c.fill();
+      }
+      break;
+    }
     case "pancakes": {
       // Syrup pooled on top, then a pat of butter.
       c.fillStyle = withAlpha("#a0521a", 0.75);
@@ -420,6 +584,114 @@ function topDecor(c: CanvasRenderingContext2D, theme: StackerTheme, b: BlockSpec
       smallBox(c, b.cx, b.cz, Math.min(16, b.w * 0.3), Math.min(16, b.d * 0.3), y, y + 4, "#ffe680");
       break;
     }
+  }
+}
+
+/** The art style's treatment of one face, after its colors and details. */
+function styleFace(c: CanvasRenderingContext2D, style: StackerStyle, f: Face, fill: string, h: number, b: BlockSpec, scale: number) {
+  const thin = 1 / scale;
+  const across = f.id === "top" ? b.d : h;
+  c.save();
+  rect(c, f, 0, 0, 1, 1);
+  c.clip();
+  switch (style) {
+    case "voxel": {
+      const nu = Math.max(2, Math.round(f.len / 7));
+      const nv = Math.max(1, Math.round(across / 7));
+      for (let i = 0; i < nu; i += 1)
+        for (let k = 0; k < nv; k += 1) {
+          const v = rand(b.level * 97 + i * 13 + k, f.id.length);
+          if (v > 0.55) continue;
+          c.fillStyle = v < 0.25 ? withAlpha("#ffffff", 0.12) : withAlpha("#000000", 0.1);
+          rect(c, f, i / nu, k / nv, (i + 1) / nu, (k + 1) / nv);
+          c.fill();
+        }
+      c.strokeStyle = withAlpha("#000000", 0.2);
+      c.lineWidth = thin;
+      c.beginPath();
+      for (let i = 1; i < nu; i += 1) line(c, f.at(i / nu, 0), f.at(i / nu, 1));
+      for (let k = 1; k < nv; k += 1) line(c, f.at(0, k / nv), f.at(1, k / nv));
+      c.stroke();
+      break;
+    }
+    case "toon": {
+      if (f.id !== "top") {
+        c.fillStyle = withAlpha("#ffffff", 0.28);
+        rect(c, f, 0, 0.78, 1, 0.9);
+        c.fill();
+      } else {
+        c.fillStyle = withAlpha("#ffffff", 0.7);
+        rect(c, f, 0.08, 0.1, 0.16, 0.18);
+        c.fill();
+      }
+      break;
+    }
+    case "papercraft": {
+      c.strokeStyle = withAlpha("#ffffff", 0.65);
+      c.lineWidth = 1.2 * thin;
+      c.setLineDash([3 * thin, 2.5 * thin]);
+      c.beginPath();
+      rect(c, f, 0.06, 0.12, 0.94, 0.88);
+      c.stroke();
+      c.setLineDash([]);
+      c.strokeStyle = withAlpha("#5a4630", 0.1);
+      c.beginPath();
+      for (let k = 0; k < 4; k += 1) line(c, f.at(rand(b.level + k, 1), 0), f.at(rand(b.level + k, 2), 1));
+      c.stroke();
+      break;
+    }
+    case "low-poly": {
+      const nu = Math.max(2, Math.round(f.len / 20));
+      for (let i = 0; i < nu; i += 1) {
+        for (const tri of [0, 1]) {
+          const v = rand(b.level * 31 + i * 7 + tri, f.id.length + 3);
+          c.fillStyle = v > 0.5 ? withAlpha("#ffffff", (v - 0.5) * 0.4) : withAlpha("#000000", (0.5 - v) * 0.3);
+          const u0 = i / nu;
+          const u1 = (i + 1) / nu;
+          const jag = (rand(b.level + i, 9) - 0.5) * 0.3 / nu;
+          poly(c, tri ? [f.at(u0, 0), f.at(u1 + jag, 0), f.at(u0 - jag, 1)] : [f.at(u1 + jag, 0), f.at(u1, 1), f.at(u0 - jag, 1)]);
+          c.fill();
+        }
+      }
+      c.strokeStyle = withAlpha("#ffffff", 0.22);
+      c.lineWidth = thin;
+      c.beginPath();
+      for (let i = 1; i <= nu; i += 1) line(c, f.at(i / nu, 0), f.at((i - 1) / nu, 1));
+      c.stroke();
+      break;
+    }
+    case "hologram": {
+      c.strokeStyle = withAlpha(mix(fill, "#ffffff", 0.5), 0.25);
+      c.lineWidth = thin;
+      c.beginPath();
+      const lines = Math.max(2, Math.round(across / 3));
+      for (let k = 1; k < lines; k += 1) line(c, f.at(0, k / lines), f.at(1, k / lines));
+      c.stroke();
+      break;
+    }
+  }
+  c.restore();
+  // Edges are drawn outside the clip so outlines sit on top of the face.
+  if (style === "toon") {
+    c.strokeStyle = "#16121e";
+    c.lineWidth = 2.2 * thin;
+    c.lineJoin = "round";
+    rect(c, f, 0, 0, 1, 1);
+    c.stroke();
+  } else if (style === "papercraft") {
+    c.strokeStyle = withAlpha(mix(fill, "#000000", 0.4), 0.6);
+    c.lineWidth = thin;
+    rect(c, f, 0, 0, 1, 1);
+    c.stroke();
+  } else if (style === "hologram") {
+    const glow = mix(fill, "#ffffff", 0.35);
+    c.strokeStyle = withAlpha(glow, 0.25);
+    c.lineWidth = 5 * thin;
+    rect(c, f, 0, 0, 1, 1);
+    c.stroke();
+    c.strokeStyle = glow;
+    c.lineWidth = 1.4 * thin;
+    c.stroke();
   }
 }
 
@@ -441,10 +713,11 @@ export function drawBlock(c: CanvasRenderingContext2D, theme: StackerTheme, b: B
   const themedFaces = theme.theme !== "default";
   c.save();
   if (b.alpha < 1) c.globalAlpha *= b.alpha;
+  const style = theme.style;
   for (const [f, shade] of faces) {
     const fill = b.flash > 0 ? mix(shade, "#ffffff", b.flash) : shade;
     rect(c, f, 0, 0, 1, 1);
-    c.fillStyle = glass ? withAlpha(fill, 0.5) : fill;
+    c.fillStyle = style === "hologram" ? withAlpha(fill, 0.22) : glass ? withAlpha(fill, 0.5) : fill;
     c.fill();
     if (detailed || themedFaces) {
       c.save();
@@ -459,6 +732,7 @@ export function drawBlock(c: CanvasRenderingContext2D, theme: StackerTheme, b: B
       rect(c, f, 0, 0, 1, 1);
       c.stroke();
     }
+    if (style) styleFace(c, style, f, fill, h, b, scale);
   }
   if (b.top) topDecor(c, theme, b, raw);
   c.restore();
@@ -469,7 +743,7 @@ export function drawBlock(c: CanvasRenderingContext2D, theme: StackerTheme, b: B
 // ---------------------------------------------------------------------------------------------
 
 export function sceneryInk(theme: StackerTheme) {
-  return theme.scenery === "day" || theme.scenery === "ocean-view" ? "#1d2b4a" : "#f4f1ff";
+  return theme.scenery === "day" || theme.scenery === "ocean-view" || theme.scenery === "candy-clouds" ? "#1d2b4a" : "#f4f1ff";
 }
 
 export function pedestalColor(theme: StackerTheme) {
@@ -488,6 +762,12 @@ export function pedestalColor(theme: StackerTheme) {
       return "#2c4a52";
     case "space":
       return "#5a5a6e";
+    case "savanna":
+      return "#8a5a2a";
+    case "candy-clouds":
+      return "#f2a8c8";
+    case "storm":
+      return "#3a4048";
     default:
       return mix("#2c3b66", "#ffb347", 0.18);
   }
@@ -654,12 +934,176 @@ export function drawScenery(c: CanvasRenderingContext2D, theme: StackerTheme, cw
       c.fillRect(0, 0, cw, ch);
       break;
     }
+    case "savanna": {
+      gradient([[0, mix("#f6a04a", "#6a2a4a", lift)], [0.7, "#ffcf7a"], [1, "#ffe6b0"]]);
+      c.fillStyle = withAlpha("#fff0c0", 0.95);
+      c.beginPath();
+      c.arc(cw * 0.5, ch * 0.78 + camera * 0.15, 90, 0, Math.PI * 2);
+      c.fill();
+      const ground = ch - 40 + camera * 0.3;
+      if (ground - 90 < ch) {
+        c.fillStyle = "#3a2414";
+        c.fillRect(0, ground, cw, ch - ground + 4);
+        for (let i = 0; i < 4; i += 1) {
+          // Acacias: a thin trunk and a flat umbrella crown.
+          const x = cw * (0.1 + i * 0.27) + rand(i, 3) * 30;
+          const th = 50 + rand(i, 4) * 30;
+          c.strokeStyle = "#3a2414";
+          c.lineWidth = 4;
+          c.beginPath();
+          c.moveTo(x, ground);
+          c.lineTo(x + 6, ground - th);
+          c.moveTo(x + 3, ground - th * 0.5);
+          c.lineTo(x - 14, ground - th + 4);
+          c.stroke();
+          c.fillStyle = "#3a2414";
+          c.beginPath();
+          c.ellipse(x + 2, ground - th - 4, 36 + rand(i, 5) * 12, 9, 0, 0, Math.PI * 2);
+          c.fill();
+        }
+      }
+      c.strokeStyle = withAlpha("#3a2414", 0.7);
+      c.lineWidth = 1.8;
+      for (let i = 0; i < 5; i += 1) {
+        const x = ((rand(i, 6) * cw + t * 0.03 * (0.8 + rand(i, 7))) % (cw + 60)) - 30;
+        const y = ch * (0.18 + rand(i, 8) * 0.25) + Math.sin(t / 400 + i) * 3;
+        const flap = Math.sin(t / 120 + i) * 3;
+        c.beginPath();
+        c.moveTo(x - 6, y - flap);
+        c.quadraticCurveTo(x - 3, y - 3, x, y);
+        c.quadraticCurveTo(x + 3, y - 3, x + 6, y - flap);
+        c.stroke();
+      }
+      break;
+    }
+    case "candy-clouds": {
+      gradient([[0, mix("#ffb3d9", "#b48cff", lift)], [1, "#ffe8f2"]]);
+      for (let i = 0; i < 7; i += 1) {
+        const x = ((rand(i, 1) * (cw + 200) + t * 0.008 * (0.5 + rand(i, 2))) % (cw + 200)) - 100;
+        const y = ((rand(i, 3) * ch + camera * 0.25) % (ch + 120)) - 60;
+        const s = 0.6 + rand(i, 4) * 0.6;
+        c.fillStyle = i % 2 ? "#ffd1ea" : "#d8e6ff";
+        c.beginPath();
+        c.arc(x, y, 24 * s, 0, Math.PI * 2);
+        c.arc(x + 26 * s, y + 4 * s, 20 * s, 0, Math.PI * 2);
+        c.arc(x - 24 * s, y + 6 * s, 17 * s, 0, Math.PI * 2);
+        c.fill();
+      }
+      const base = ch + camera * 0.3;
+      for (let i = 0; i < 3; i += 1) {
+        const x = cw * (0.15 + i * 0.35);
+        const top = base - 110 - rand(i, 5) * 40;
+        if (top > ch) continue;
+        c.strokeStyle = "#fff6ee";
+        c.lineWidth = 5;
+        c.beginPath();
+        c.moveTo(x, base);
+        c.lineTo(x, top);
+        c.stroke();
+        for (let k = 0; k < 4; k += 1) {
+          c.strokeStyle = ["#ff5e9a", "#ffd166", "#5ec9ff", "#7ae582"][(i + k) % 4];
+          c.lineWidth = 5;
+          c.beginPath();
+          c.arc(x, top, 6 + k * 5, 0, Math.PI * 2);
+          c.stroke();
+        }
+      }
+      break;
+    }
+    case "storm": {
+      gradient([[0, "#1e232c"], [0.6, "#3c4450"], [1, "#6a7480"]]);
+      for (let i = 0; i < 9; i += 1) {
+        const x = ((rand(i, 1) * (cw + 240) + t * 0.006 * (0.5 + rand(i, 2))) % (cw + 240)) - 120;
+        const y = ch * (0.08 + rand(i, 3) * 0.4) + camera * 0.05;
+        const s = 0.9 + rand(i, 4) * 0.9;
+        c.fillStyle = withAlpha(i % 2 ? "#4a525e" : "#2a3038", 0.9);
+        c.beginPath();
+        c.arc(x, y, 30 * s, 0, Math.PI * 2);
+        c.arc(x + 32 * s, y + 8 * s, 24 * s, 0, Math.PI * 2);
+        c.arc(x - 30 * s, y + 10 * s, 22 * s, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.strokeStyle = withAlpha("#b8c4d4", 0.35);
+      c.lineWidth = 1.2;
+      c.beginPath();
+      for (let i = 0; i < 70; i += 1) {
+        const x = (rand(i, 5) * (cw + 60) - (t * 0.25 + i * 13) * 0.3) % (cw + 60);
+        const y = (rand(i, 6) * ch + t * (0.5 + rand(i, 7) * 0.3)) % ch;
+        const xx = x < 0 ? x + cw + 60 : x;
+        c.moveTo(xx, y);
+        c.lineTo(xx - 5, y + 14);
+      }
+      c.stroke();
+      break;
+    }
     default:
       gradient([
         [0, mix("#1b2647", "#ff5e7e", 0.08 + lift * 0.14)],
         [0.6, "#1b2647"],
         [1, mix("#1b2647", "#2c3b66", 0.8)],
       ]);
+  }
+  styleSky(c, theme.style, cw, ch, camera);
+}
+
+/** The art style's pass over the sky, so the background matches the blocks. */
+function styleSky(c: CanvasRenderingContext2D, style: StackerStyle, cw: number, ch: number, camera: number) {
+  switch (style) {
+    case "hologram": {
+      c.fillStyle = withAlpha("#050a18", 0.72);
+      c.fillRect(0, 0, cw, ch);
+      c.strokeStyle = withAlpha("#4ff0ff", 0.12);
+      c.lineWidth = 1;
+      c.beginPath();
+      const shift = (camera * 0.2) % 32;
+      for (let x = 0; x <= cw; x += 32) {
+        c.moveTo(x, 0);
+        c.lineTo(x, ch);
+      }
+      for (let y = shift; y <= ch; y += 32) {
+        c.moveTo(0, y);
+        c.lineTo(cw, y);
+      }
+      c.stroke();
+      break;
+    }
+    case "papercraft": {
+      c.fillStyle = withAlpha("#e8d6b4", 0.35);
+      c.fillRect(0, 0, cw, ch);
+      c.strokeStyle = withAlpha("#7a5a3a", 0.08);
+      c.lineWidth = 1;
+      c.beginPath();
+      for (let i = 0; i < 120; i += 1) {
+        const x = rand(i, 31) * cw;
+        const y = rand(i, 32) * ch;
+        c.moveTo(x, y);
+        c.lineTo(x + 6, y + (rand(i, 33) - 0.5) * 4);
+      }
+      c.stroke();
+      break;
+    }
+    case "voxel": {
+      // The sky resolves into big square pixels.
+      c.fillStyle = withAlpha("#000000", 0.05);
+      for (let y = 0; y < ch; y += 24) for (let x = (y / 24) % 2 ? 24 : 0; x < cw; x += 48) c.fillRect(x, y, 24, 24);
+      break;
+    }
+    case "toon": {
+      c.fillStyle = withAlpha("#16121e", 0.07);
+      for (let y = 0, row = 0; y < ch; y += 12, row += 1) for (let x = row % 2 ? 6 : 0; x < cw; x += 12) c.fillRect(x, y, 2, 2);
+      break;
+    }
+    case "low-poly": {
+      for (let i = 0; i < 14; i += 1) {
+        c.fillStyle = withAlpha(i % 2 ? "#ffffff" : "#000000", 0.05);
+        c.beginPath();
+        c.moveTo(rand(i, 41) * cw, rand(i, 42) * ch);
+        c.lineTo(rand(i, 43) * cw, rand(i, 44) * ch);
+        c.lineTo(rand(i, 45) * cw, rand(i, 46) * ch);
+        c.fill();
+      }
+      break;
+    }
   }
 }
 
@@ -677,6 +1121,11 @@ export function perfectDuration(theme: StackerTheme) {
     case "sparkles":
     case "stars":
       return 700;
+    case "coins":
+    case "bubbles":
+      return 900;
+    case "paint":
+      return 800;
     default:
       return 520;
   }
@@ -857,6 +1306,82 @@ export function drawPerfect(c: CanvasRenderingContext2D, theme: StackerTheme, ri
           c.arc(x, y, 2.2, 0, Math.PI * 2);
           c.fill();
         }
+      }
+      break;
+    }
+    case "coins": {
+      const count = full ? 9 : 4;
+      const [ox, oy] = proj([ring.cx, ring.y, ring.cz]);
+      for (let i = 0; i < count; i += 1) {
+        const a = rand(seed + i, 1) * Math.PI * 2;
+        const v = 30 + rand(i, 2) * 40;
+        const x = ox + Math.cos(a) * v * t;
+        const y = oy - (90 + rand(i, 3) * 40) * t + 150 * t * t;
+        const flip = Math.abs(Math.cos(t * 12 + i));
+        c.fillStyle = withAlpha("#f2c230", Math.min(1, (1 - t) * 2));
+        c.beginPath();
+        c.ellipse(x, y, 5 * flip + 0.6, 5, 0, 0, Math.PI * 2);
+        c.fill();
+        c.strokeStyle = withAlpha("#a6780a", Math.min(1, (1 - t) * 2));
+        c.lineWidth = 1.2 * thin;
+        c.stroke();
+        if (flip > 0.5) {
+          c.fillStyle = withAlpha("#fff2b0", Math.min(1, (1 - t) * 2));
+          c.fillRect(x - 0.8, y - 2.5, 1.6, 5);
+        }
+      }
+      break;
+    }
+    case "bubbles": {
+      const count = full ? 8 : 4;
+      for (let i = 0; i < count; i += 1) {
+        const [sx, sy] = proj([ring.cx + (rand(seed + i, 1) - 0.5) * ring.w, ring.y, ring.cz + (rand(seed + i, 2) - 0.5) * ring.d]);
+        const life = Math.min(1, t * (1.1 + rand(i, 3) * 0.4));
+        const r = 3 + rand(i, 4) * 5;
+        const y = sy - life * (40 + rand(i, 5) * 40);
+        const x = sx + Math.sin(life * 8 + i) * 5;
+        if (life < 0.9) {
+          c.strokeStyle = withAlpha("#ffffff", 0.85);
+          c.fillStyle = withAlpha("#bfe9ff", 0.2);
+          c.lineWidth = 1.2 * thin;
+          c.beginPath();
+          c.arc(x, y, r, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+          c.fillStyle = withAlpha("#ffffff", 0.8);
+          c.beginPath();
+          c.arc(x - r * 0.35, y - r * 0.35, r * 0.25, 0, Math.PI * 2);
+          c.fill();
+        } else {
+          // Pop: a ring of droplets.
+          c.fillStyle = withAlpha("#ffffff", (1 - life) * 8);
+          for (let k = 0; k < 6; k += 1) {
+            const a = (k / 6) * Math.PI * 2;
+            c.fillRect(x + Math.cos(a) * r * 1.4 - 0.8, y + Math.sin(a) * r * 1.4 - 0.8, 1.6, 1.6);
+          }
+        }
+      }
+      break;
+    }
+    case "paint": {
+      // Paint splashes over the top edge and runs down the front and right faces.
+      const color = CONFETTI[seed % CONFETTI.length];
+      const run = Math.min(1, t * 1.6);
+      const alpha = t > 0.7 ? (1 - t) / 0.3 : 1;
+      c.fillStyle = withAlpha(color, 0.85 * alpha);
+      outline(c, ring.cx, ring.cz, ring.w * (0.5 + run * 0.5), ring.d * (0.5 + run * 0.5), ring.y);
+      c.fill();
+      const drips = full ? 6 : 3;
+      for (let i = 0; i < drips; i += 1) {
+        const onFront = i % 2 === 0;
+        const k = rand(seed + i, 1);
+        const top: P3 = onFront ? [ring.cx - ring.w / 2 + k * ring.w, ring.y, ring.cz + ring.d / 2] : [ring.cx + ring.w / 2, ring.y, ring.cz + ring.d / 2 - k * ring.d];
+        const [sx, sy] = proj(top);
+        const len = run * (10 + rand(i, 2) * 16);
+        c.fillRect(sx - 1.6, sy, 3.2, len);
+        c.beginPath();
+        c.arc(sx, sy + len, 2.4, 0, Math.PI * 2);
+        c.fill();
       }
       break;
     }

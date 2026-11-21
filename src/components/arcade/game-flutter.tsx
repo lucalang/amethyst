@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { dailyDate, dailyVariant, seedFrom, seededRandom } from "@/lib/arcade-daily";
 import type { MotionLevel } from "@/lib/preferences";
 import { fitWorld, observeCanvas, startLoop, withAlpha, type CanvasSize } from "./engine";
-import { GAP, GROUND, HEIGHT, PIPE_W, TIP, WIDTH, drawCharacter, drawGround, drawObstacle, drawSky, drawTrail, flutterTheme, sceneryOf, type FlutterTheme } from "./flutter-look";
+import { GAP, GROUND, HEIGHT, PIPE_W, TIP, WIDTH, applyFlutterStyle, drawCharacter, drawGround, drawObstacle, drawSky, drawTrail, flutterTheme, sceneryOf, type FlutterTheme } from "./flutter-look";
 import { GAME_PALETTES } from "./palettes";
 import { CoinReward, useArcadeRun } from "./coin-reward";
 import { useCompetitionBoard } from "./competition";
@@ -294,6 +294,8 @@ function createFlutter(canvas: HTMLCanvasElement, hooks: Hooks) {
     ctx.rotate(angle);
     drawCharacter(ctx, theme, wing, phase === "over", now, animate);
     ctx.restore();
+    // The art style re-renders the world; the score and countdown are drawn after it, so they stay crisp.
+    applyFlutterStyle(ctx, theme, 0, 0, WIDTH, HEIGHT, now, animate);
 
     if (phase !== "ready") {
       const scenery = sceneryOf(theme);

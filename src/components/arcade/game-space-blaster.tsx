@@ -796,6 +796,13 @@ function createBlaster(canvas: HTMLCanvasElement, hooks: Hooks) {
       const flame = flameColor(trail, ship.overdrive > 0, time * 1000);
       for (const side of [-6, 6]) particle("glow", ship.x + side + rand(-1, 1), ship.y + 18, rand(-10, 10), rand(140, 200), rand(0.12, 0.2), rand(3, 5), flame);
       if (trail.sparks && Math.random() < 0.35) particle("spark", ship.x + rand(-5, 5), ship.y + 20, rand(-30, 30), rand(120, 220), rand(0.25, 0.45), 1.5, "#ffffff");
+      const extra = trail.extra;
+      if (extra && Math.random() < extra.chance) {
+        const color = extra.colors[Math.floor(Math.random() * extra.colors.length)];
+        if (extra.kind === "ring") particle("ring", ship.x, ship.y + 22, 0, 160, 0.35, 14, color);
+        else if (extra.kind === "smoke") particle("smoke", ship.x + rand(-6, 6), ship.y + 24, rand(-15, 15), rand(90, 140), rand(0.4, 0.6), rand(4, 6), color);
+        else particle("spark", ship.x + rand(-6, 6), ship.y + 20, rand(-50, 50), rand(120, 220), rand(0.3, 0.5), 1.8, color);
+      }
     }
   }
 

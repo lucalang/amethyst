@@ -20,6 +20,9 @@ export const ASCENT_LOOKS = {
     "pennant-rope",
     "starlight",
     "toadstool",
+    "sunflower",
+    "rope-ladder",
+    "pumpkin-vine",
   ],
   climber: [
     "paper-kite",
@@ -29,6 +32,9 @@ export const ASCENT_LOOKS = {
     "acorn-sprite",
     "tree-frog",
     "tin-gardener",
+    "robin",
+    "squirrel",
+    "astronaut",
   ],
   growth: [
     "fireflies",
@@ -38,6 +44,9 @@ export const ASCENT_LOOKS = {
     "dandelion",
     "confetti",
     "rainbow-wake",
+    "soap-bubbles",
+    "autumn-leaves",
+    "fairy-dust",
   ],
   sky: [
     "storybook",
@@ -47,6 +56,9 @@ export const ASCENT_LOOKS = {
     "balloon-regatta",
     "patchwork-sky",
     "origami-flock",
+    "golden-sunrise",
+    "kite-festival",
+    "aurora-night",
   ],
   garden: [
     "enchanted-grove",
@@ -56,8 +68,11 @@ export const ASCENT_LOOKS = {
     "oasis",
     "moss-temple",
     "winter-greenhouse",
+    "tulip-windmill",
+    "jungle-ruins",
+    "moon-base",
   ],
-  style: ["pen-and-ink", "papercraft", "pixel-quest", "chalk-mural"],
+  style: ["pen-and-ink", "papercraft", "pixel-quest", "chalk-mural", "watercolour"],
 } as const;
 
 type Category = keyof typeof ASCENT_LOOKS;
@@ -217,6 +232,53 @@ export function leafArt(
         </>
       );
     }
+    case "sunflower": {
+      // A little sunflower: petals in the answer's colour round a seed-brown middle.
+      const cx = s * size * 1.05;
+      const cy = -size * 0.15;
+      const r = size * 0.42;
+      return (
+        <>
+          <path d={`M0 0 L${cx} ${cy}`} stroke="#4f8a2a" strokeWidth="2" strokeLinecap="round" />
+          {Array.from({ length: 8 }, (_, i) => {
+            const a = (i / 8) * Math.PI * 2;
+            return <ellipse key={i} cx={cx + Math.cos(a) * r * 0.75} cy={cy + Math.sin(a) * r * 0.75} rx={r * 0.42} ry={r * 0.2} transform={`rotate(${(a * 180) / Math.PI} ${cx + Math.cos(a) * r * 0.75} ${cy + Math.sin(a) * r * 0.75})`} fill={fill} stroke={edge} strokeWidth="0.8" />;
+          })}
+          <circle cx={cx} cy={cy} r={r * 0.45} fill="#6a3f1a" stroke="#3a2010" strokeWidth="0.8" />
+        </>
+      );
+    }
+    case "rope-ladder": {
+      // A painted tag hanging off the rung by a loop of string.
+      const tx = s * size * 0.9;
+      return (
+        <>
+          <path d={`M0 0 Q${s * size * 0.45} ${size * 0.15} ${tx} ${-size * 0.05}`} stroke="#a8844a" strokeWidth="1.2" fill="none" />
+          <path
+            d={`M${tx} ${-size * 0.32} l${s * size * 0.75} 0 l${s * size * 0.22} ${size * 0.27} l${-s * size * 0.22} ${size * 0.27} l${-s * size * 0.75} 0 Z`}
+            fill={fill}
+            stroke={edge}
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+          <circle cx={tx + s * size * 0.12} cy={-size * 0.05} r={size * 0.06} fill="#fff" fillOpacity="0.8" />
+        </>
+      );
+    }
+    case "pumpkin-vine": {
+      const cx = s * size * 1;
+      const cy = -size * 0.05;
+      const r = size * 0.36;
+      return (
+        <>
+          <path d={`M0 0 C${s * size * 0.3} ${-size * 0.4} ${s * size * 0.6} ${size * 0.2} ${cx} ${cy - r}`} stroke="#5a8a2a" strokeWidth="1.6" fill="none" />
+          <path d={`M${cx - s * r * 0.2} ${cy - r * 0.9} q${s * r * 0.4} ${-r * 0.5} ${s * r * 0.7} ${-r * 0.2}`} stroke="#5a8a2a" strokeWidth="1" fill="none" />
+          <ellipse cx={cx} cy={cy} rx={r * 1.15} ry={r} fill={fill} stroke={edge} strokeWidth="1.2" />
+          <path d={`M${cx} ${cy - r} V${cy + r} M${cx - r * 0.55} ${cy - r * 0.85} Q${cx - r * 0.85} ${cy} ${cx - r * 0.55} ${cy + r * 0.85} M${cx + r * 0.55} ${cy - r * 0.85} Q${cx + r * 0.85} ${cy} ${cx + r * 0.55} ${cy + r * 0.85}`} stroke={edge} strokeOpacity="0.55" strokeWidth="0.8" fill="none" />
+          <rect x={cx - r * 0.12} y={cy - r * 1.3} width={r * 0.24} height={r * 0.4} fill="#6a4a1a" />
+        </>
+      );
+    }
     case "crystal-stem":
       return (
         <>
@@ -364,6 +426,50 @@ export function Climber({ kind }: { kind?: string }) {
             strokeWidth="1"
             fill="none"
           />
+        </svg>
+      );
+    case "robin":
+      return (
+        <svg viewBox="-20 -40 40 50" className="aw-climber-body">
+          <path d="M-12 -8 L-20 -18 L-16 -6 Z" fill="#6a4a32" className="ac-tail" />
+          <ellipse cx="0" cy="-10" rx="13" ry="12" fill="#8a6440" stroke="#4a3018" strokeWidth="1.2" />
+          <path d="M-2 -16 C8 -16 12 -6 4 2 C-2 4 -6 -4 -2 -16 Z" fill="#e8582a" />
+          <circle cx="6" cy="-24" r="8" fill="#8a6440" stroke="#4a3018" strokeWidth="1.2" />
+          <path d="M6 -24 C10 -22 12 -18 8 -16 C4 -17 3 -21 6 -24 Z" fill="#e8582a" />
+          <path d="M13 -25 L19 -23 L13 -21 Z" fill="#e8b02a" />
+          <circle cx="9" cy="-27" r="1.4" fill="#1a1008" />
+          <path d="M-6 -10 Q-2 -2 4 -6" stroke="#4a3018" strokeWidth="1" fill="none" />
+          <path d="M-2 2 V8 M3 2 V8" stroke="#c87a2a" strokeWidth="1.3" className="ac-legs" />
+        </svg>
+      );
+    case "squirrel":
+      return (
+        <svg viewBox="-20 -40 40 50" className="aw-climber-body">
+          <path d="M-6 2 C-22 0 -24 -22 -12 -32 C-6 -36 -2 -30 -8 -26 C-16 -20 -12 -8 -2 -6 Z" fill="#c4682a" stroke="#6a3010" strokeWidth="1.2" className="ac-tail" />
+          <ellipse cx="2" cy="-8" rx="8" ry="11" fill="#d87a3a" stroke="#6a3010" strokeWidth="1.2" />
+          <ellipse cx="4" cy="-5" rx="4" ry="6" fill="#f4d4a8" />
+          <circle cx="6" cy="-22" r="7" fill="#d87a3a" stroke="#6a3010" strokeWidth="1.2" />
+          <path d="M2 -28 L1 -34 L5 -29 M8 -29 L10 -34 L11 -27" fill="#d87a3a" stroke="#6a3010" strokeWidth="1" />
+          <circle cx="9" cy="-23" r="1.4" fill="#1a1008" />
+          <circle cx="12.5" cy="-20" r="1" fill="#3a1a08" />
+          <ellipse cx="9" cy="-10" rx="3.2" ry="3.6" fill="#a8743a" stroke="#5a3a14" strokeWidth="0.8" />
+          <path d="M6 -12.5 Q9 -15 12 -12.5" fill="#6a4a1a" stroke="#5a3a14" strokeWidth="0.8" />
+        </svg>
+      );
+    case "astronaut":
+      return (
+        <svg viewBox="-20 -40 40 50" className="aw-climber-body">
+          <path d="M-12 -30 V-6" stroke="#9aa0ac" strokeWidth="1.2" />
+          <path d="M-12 -30 L-3 -27 L-12 -24 Z" fill="#e8402a" className="ac-plume" />
+          <rect x="-8" y="-14" width="16" height="16" rx="5" fill="#f4f6fa" stroke="#6a7080" strokeWidth="1.2" />
+          <rect x="-4" y="-10" width="8" height="5" rx="1.5" fill="#4fc3f7" />
+          <rect x="-11" y="-12" width="4" height="10" rx="2" fill="#d8dce4" stroke="#6a7080" strokeWidth="1" />
+          <circle cx="0" cy="-22" r="10" fill="#f4f6fa" stroke="#6a7080" strokeWidth="1.2" />
+          <circle cx="0" cy="-22" r="7" fill="#1a2a4a" />
+          <path d="M-4 -26 Q-1 -28 2 -26" stroke="#9fd8ff" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          <circle cx="-2" cy="-21" r="1" fill="#fff" className="ac-eyes" />
+          <circle cx="2" cy="-21" r="1" fill="#fff" className="ac-eyes" />
+          <path d="M-5 2 V8 M5 2 V8" stroke="#6a7080" strokeWidth="2.5" strokeLinecap="round" className="ac-legs" />
         </svg>
       );
     case "snail":
@@ -810,6 +916,106 @@ const pine = (
 /** The ground at the bottom of the climb; the default is the cottage garden. */
 export function Garden({ kind }: { kind?: string }) {
   switch (kind) {
+    case "tulip-windmill":
+      return (
+        <Bed far="#8ac4e8" near="#7ab85a" soil="#5a3a22" rows="#3a2414" back={<rect width="800" height="320" fill="#cfe8ff" opacity="0.3" />}>
+          {/* A Dutch windmill with turning sails beside bands of tulips. */}
+          <g transform="translate(150 60)">
+            <path d="M20 160 L34 40 H66 L80 160 Z" fill="#c8b8a0" stroke="#5a4a3a" strokeWidth="2" />
+            <path d="M30 40 L50 18 L70 40 Z" fill="#6a4a3a" stroke="#3a2a1a" strokeWidth="2" />
+            <rect x="42" y="120" width="16" height="40" rx="8" fill="#4a3a2a" />
+            <g transform="translate(50 46)">
+              <g className="ag-spin">
+                {[0, 90, 180, 270].map((a) => (
+                  <g key={a} transform={`rotate(${a})`}>
+                    <rect x="-3" y="-70" width="6" height="66" fill="#8a6a4a" />
+                    <rect x="3" y="-66" width="16" height="56" fill="#f4eee0" stroke="#8a6a4a" strokeWidth="1.5" />
+                  </g>
+                ))}
+              </g>
+              <circle r="5" fill="#3a2a1a" />
+            </g>
+          </g>
+          {[0, 1, 2, 3].map((row) =>
+            Array.from({ length: 16 }, (_, k) => {
+              const x = 330 + k * 28 + (row % 2) * 14;
+              const y = 196 + row * 12;
+              const color = ["#e8282a", "#ffd23a", "#ff7ab8", "#ff8a2a"][row];
+              return (
+                <g key={`t${row}-${k}`} transform={`translate(${x} ${y})`}>
+                  <path d="M0 0 V10" stroke="#3f7a2a" strokeWidth="2" />
+                  <path d="M-5 0 Q-5 -9 -2 -10 L0 -6 L2 -10 Q5 -9 5 0 Z" fill={color} />
+                </g>
+              );
+            }),
+          )}
+        </Bed>
+      );
+    case "jungle-ruins":
+      return (
+        <Bed far="#2f6a3a" near="#3f8a3a" soil="#4a3220" rows="#2a1a10" back={<rect width="800" height="320" fill="#1f4a2a" opacity="0.3" />}>
+          {/* A stepped stone temple wrapped in vines, palms and a parrot on a hanging vine. */}
+          <g transform="translate(560 70)">
+            {[0, 1, 2, 3].map((k) => (
+              <rect key={k} x={20 + k * 18} y={130 - k * 34} width={160 - k * 36} height="36" fill={k % 2 ? "#8a8a72" : "#9a9a80"} stroke="#4a4a3a" strokeWidth="2" />
+            ))}
+            <rect x="84" y="-6" width="32" height="34" fill="#7a7a62" stroke="#4a4a3a" strokeWidth="2" />
+            <rect x="92" y="8" width="16" height="20" fill="#2a2a20" />
+            <path d="M40 60 Q60 90 50 130 M150 40 Q130 80 160 120" stroke="#3f8a3a" strokeWidth="5" fill="none" />
+          </g>
+          {[90, 260].map((x, i) => (
+            <g key={x} transform={`translate(${x} 200)`} className="ag-sway">
+              <path d="M0 0 Q6 -60 -4 -120" stroke="#6a4a2a" strokeWidth="8" fill="none" />
+              {[-60, -20, 20, 60, 100].map((a) => (
+                <path key={a} d="M-4 -120 q30 -10 60 20 q-30 -6 -60 -20" fill="#3f9a3a" transform={`rotate(${a + i * 15} -4 -120)`} />
+              ))}
+            </g>
+          ))}
+          <path d="M470 0 Q480 60 470 110" stroke="#2f6a2a" strokeWidth="3" fill="none" />
+          <g transform="translate(470 112)" className="ag-bob">
+            <ellipse cx="0" cy="0" rx="8" ry="12" fill="#e8282a" />
+            <path d="M-2 10 L-6 26 L2 12 Z" fill="#2a6ae8" />
+            <path d="M4 -6 L12 -4 L6 0 Z" fill="#ffd23a" />
+            <circle cx="2" cy="-6" r="1.5" fill="#1a1a1a" />
+          </g>
+        </Bed>
+      );
+    case "moon-base":
+      return (
+        <Bed far="#6a6a78" near="#8a8a96" soil="#5a5a64" rows="#3a3a44" back={<rect width="800" height="320" fill="#0a0e24" />}>
+          {/* Earth rising behind craters, a greenhouse dome and a little rover. */}
+          <g transform="translate(640 70)">
+            <circle r="34" fill="#2a6ad8" />
+            <path d="M-20 -14 Q-6 -24 6 -12 Q-2 -2 -16 -4 Z M8 6 Q20 0 24 14 Q12 22 6 14 Z" fill="#4fae5a" />
+            <circle r="34" fill="none" stroke="#9fd0ff" strokeWidth="3" opacity="0.6" />
+          </g>
+          {[[100, 40], [300, 70], [520, 30], [720, 110], [40, 120]].map(([x, y]) => (
+            <circle key={`s${x}`} cx={x} cy={y} r="1.6" fill="#fff" className="ag-twinkle" />
+          ))}
+          {[[140, 214, 30], [600, 222, 22], [700, 206, 16]].map(([x, y, r]) => (
+            <g key={`c${x}`}>
+              <ellipse cx={x} cy={y} rx={r} ry={r * 0.32} fill="#6a6a74" />
+              <ellipse cx={x} cy={y + 2} rx={r * 0.8} ry={r * 0.22} fill="#4a4a54" />
+            </g>
+          ))}
+          <g transform="translate(230 120)">
+            <path d="M0 80 A70 70 0 0 1 140 80 Z" fill="rgb(190 230 255 / 0.35)" stroke="#d8ecff" strokeWidth="2" />
+            <path d="M70 10 V80 M20 30 Q70 50 120 30" stroke="#d8ecff" strokeWidth="1.2" fill="none" opacity="0.7" />
+            {[30, 55, 85, 110].map((x) => (
+              <path key={x} d={`M${x} 80 V62 q6 -6 0 -12 q-6 6 0 12`} stroke="#4fae5a" strokeWidth="3" fill="#6fce5a" />
+            ))}
+          </g>
+          <g transform="translate(520 196)" className="ag-bob">
+            <rect x="-26" y="-14" width="52" height="16" rx="4" fill="#e8ecf2" stroke="#6a7080" strokeWidth="1.5" />
+            <rect x="-10" y="-24" width="18" height="10" rx="2" fill="#4fc3f7" stroke="#6a7080" strokeWidth="1.2" />
+            <path d="M14 -14 V-30" stroke="#6a7080" strokeWidth="1.5" />
+            <circle cx="14" cy="-31" r="2.5" fill="#ff5a4a" className="ag-glow" />
+            {[-18, 0, 18].map((x) => (
+              <circle key={x} cx={x} cy="4" r="6" fill="#3a3a44" stroke="#9aa0ac" strokeWidth="1.5" />
+            ))}
+          </g>
+        </Bed>
+      );
     case "enchanted-grove":
       return (
         <Bed

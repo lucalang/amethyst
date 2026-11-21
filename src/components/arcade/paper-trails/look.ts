@@ -16,7 +16,7 @@ export type Point = { x: number; y: number };
 // ---------------------------------------------------------------------------------------------
 // Piece skins
 
-export type PieceDecor = "fold" | "sticker" | "star" | "waves" | "stripes" | "foil" | "stars" | "plain";
+export type PieceDecor = "fold" | "sticker" | "star" | "waves" | "stripes" | "foil" | "stars" | "plain" | "airmail" | "veins" | "marbled";
 /** `color` is the piece and its territory, `dark` its outlines and trail edge, `light` highlights and trail. */
 export type PieceSkin = { color: string; dark: string; light: string; decor: PieceDecor };
 
@@ -29,6 +29,9 @@ const SKINS: Record<string, PieceSkin> = {
   bumblebee: { color: "#f4c21a", dark: "#5a4300", light: "#fff2a8", decor: "stripes" },
   gold: { color: "#d8a01c", dark: "#6e4b00", light: "#fff1bd", decor: "foil" },
   galaxy: { color: "#33358a", dark: "#0c0d33", light: "#a9adff", decor: "stars" },
+  airmail: { color: "#4f8fe0", dark: "#173c78", light: "#d6e6ff", decor: "airmail" },
+  "pressed-leaf": { color: "#5aa83a", dark: "#1f4a12", light: "#cdeab0", decor: "veins" },
+  marbled: { color: "#2a4a8a", dark: "#0e1c3a", light: "#e8c86a", decor: "marbled" },
 };
 
 /** Computer opponents' colours, kept apart from the player's hue (see `botSkins`). */
@@ -59,16 +62,16 @@ export function botSkins(player: PieceSkin): PieceSkin[] {
 // ---------------------------------------------------------------------------------------------
 // Territory patterns and trail effects
 
-export type PatternId = "" | "stripes" | "dots" | "gingham" | "hatch" | "waves" | "scales" | "confetti";
-const PATTERNS: readonly PatternId[] = ["stripes", "dots", "gingham", "hatch", "waves", "scales", "confetti"];
-export type TrailEffect = "" | "stitches" | "crayon" | "ricrac" | "splats" | "glitter" | "comet" | "rainbow";
-const TRAILS: readonly TrailEffect[] = ["stitches", "crayon", "ricrac", "splats", "glitter", "comet", "rainbow"];
+export type PatternId = "" | "stripes" | "dots" | "gingham" | "hatch" | "waves" | "scales" | "confetti" | "chevron" | "tartan" | "honeycomb";
+const PATTERNS: readonly PatternId[] = ["stripes", "dots", "gingham", "hatch", "waves", "scales", "confetti", "chevron", "tartan", "honeycomb"];
+export type TrailEffect = "" | "stitches" | "crayon" | "ricrac" | "splats" | "glitter" | "comet" | "rainbow" | "washi" | "footprints" | "paper-chain";
+const TRAILS: readonly TrailEffect[] = ["stitches", "crayon", "ricrac", "splats", "glitter", "comet", "rainbow", "washi", "footprints", "paper-chain"];
 
 // ---------------------------------------------------------------------------------------------
 // Art styles
 
-export type ArtStyleId = "" | "blueprint" | "newsprint" | "papercraft" | "chalkboard";
-const STYLES: readonly ArtStyleId[] = ["blueprint", "newsprint", "papercraft", "chalkboard"];
+export type ArtStyleId = "" | "blueprint" | "newsprint" | "papercraft" | "chalkboard" | "treasure-map";
+const STYLES: readonly ArtStyleId[] = ["blueprint", "newsprint", "papercraft", "chalkboard", "treasure-map"];
 
 export type ArtStyle = {
   id: ArtStyleId;
@@ -174,6 +177,22 @@ const STYLE_DEFS: Record<ArtStyleId, ArtStyle> = {
     label: { bg: "rgb(30 42 37 / 0.9)", fg: "#f3efe2" },
     font: "'Chalkboard SE', 'Comic Sans MS', 'Segoe Print', ui-rounded, system-ui, sans-serif",
   },
+  "treasure-map": {
+    id: "treasure-map",
+    paper: "#e9d6a8",
+    margin: "#b8945a",
+    grid: "rgb(110 70 30 / 0.07)",
+    gridMajor: "rgb(110 70 30 / 0.16)",
+    border: "#6a3e18",
+    ink: "#4a2a10",
+    dark: false,
+    outline: 0.1,
+    raise: 0,
+    cast: 0,
+    sketch: false,
+    label: { bg: "rgb(244 230 196 / 0.94)", fg: "#4a2a10" },
+    font: "'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif",
+  },
 };
 
 export type PaperTrailsTheme = { key: string; skin: PieceSkin; pattern: PatternId; trail: TrailEffect; style: ArtStyle };
@@ -191,6 +210,7 @@ export function landColor(style: ArtStyle, skin: PieceSkin) {
   if (style.id === "blueprint") return mix(skin.color, "#dbeaff", 0.28);
   if (style.id === "chalkboard") return mix(skin.color, "#f3efe2", 0.22);
   if (style.id === "newsprint") return mix(skin.color, "#eeebe3", 0.08);
+  if (style.id === "treasure-map") return mix(skin.color, "#c8a46a", 0.38);
   return skin.color;
 }
 
@@ -198,6 +218,7 @@ export function landColor(style: ArtStyle, skin: PieceSkin) {
 export function edgeColor(style: ArtStyle, skin: PieceSkin) {
   if (style.dark) return mix(skin.light, style.ink, 0.35);
   if (style.id === "newsprint") return style.ink;
+  if (style.id === "treasure-map") return mix(skin.dark, style.ink, 0.6);
   return mix(skin.dark, style.ink, 0.25);
 }
 
@@ -297,6 +318,23 @@ function paperTile(style: ArtStyle): HTMLCanvasElement | null {
         g.fill();
       }
     }
+  } else if (style.id === "treasure-map") {
+    // Tea stains and foxing on old parchment.
+    for (let i = 0; i < 7; i += 1) {
+      const x = hash(i * 7 + 1) * 128;
+      const y = hash(i * 7 + 2) * 128;
+      const r = 10 + hash(i * 7 + 3) * 26;
+      const stain = g.createRadialGradient(x, y, r * 0.6, x, y, r);
+      stain.addColorStop(0, "rgb(150 100 40 / 0.04)");
+      stain.addColorStop(0.9, "rgb(130 80 30 / 0.12)");
+      stain.addColorStop(1, "rgb(130 80 30 / 0)");
+      g.fillStyle = stain;
+      g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    for (let i = 0; i < 90; i += 1) {
+      g.fillStyle = `rgb(120 80 30 / ${0.05 + hash(i + 500) * 0.08})`;
+      g.fillRect(hash(i + 300) * 128, hash(i + 400) * 128, 1.2, 1.2);
+    }
   } else {
     const count = style.id === "papercraft" ? 260 : style.id === "chalkboard" ? 180 : 140;
     for (let i = 0; i < count; i += 1) {
@@ -360,6 +398,29 @@ export function drawArena(ctx: Ctx, style: ArtStyle, cols: number, rows: number,
   ctx.lineWidth = style.id === "newsprint" ? 0.3 : 0.22;
   if (style.dark) ctx.setLineDash([0.8, 0.4]);
   ctx.strokeRect(-0.11, -0.11, cols + 0.22, rows + 0.22);
+  if (style.id === "treasure-map") {
+    // A second inked rule, and a compass rose in the corner.
+    ctx.lineWidth = 0.08;
+    ctx.strokeRect(0.35, 0.35, cols - 0.7, rows - 0.7);
+    const cx = cols - 3.2;
+    const cy = rows - 3.2;
+    ctx.fillStyle = withAlpha(style.ink, 0.35);
+    ctx.strokeStyle = withAlpha(style.ink, 0.45);
+    ctx.lineWidth = 0.06;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let k = 0; k < 8; k += 1) {
+      const a = (k * Math.PI) / 4 - Math.PI / 2;
+      const len = k % 2 ? 1.1 : 2.2;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+      ctx.lineTo(cx + Math.cos(a + 0.35) * 0.35, cy + Math.sin(a + 0.35) * 0.35);
+      ctx.lineTo(cx + Math.cos(a - 0.35) * 0.35, cy + Math.sin(a - 0.35) * 0.35);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
   ctx.restore();
 }
 
@@ -440,6 +501,60 @@ function patternTile(pattern: PatternId, ink: string, accent: string): HTMLCanva
         }
       }
       break;
+    case "chevron":
+      g.lineWidth = s * 0.08;
+      g.lineJoin = "miter";
+      for (const row of [0.25, 0.75]) {
+        g.beginPath();
+        g.moveTo(0, row * s + s * 0.12);
+        g.lineTo(s * 0.25, row * s - s * 0.12);
+        g.lineTo(s * 0.5, row * s + s * 0.12);
+        g.lineTo(s * 0.75, row * s - s * 0.12);
+        g.lineTo(s, row * s + s * 0.12);
+        g.stroke();
+      }
+      break;
+    case "tartan":
+      g.globalAlpha = 0.45;
+      g.fillRect(0, s * 0.1, s, s * 0.18);
+      g.fillRect(s * 0.1, 0, s * 0.18, s);
+      g.globalAlpha = 0.8;
+      g.lineWidth = s * 0.025;
+      g.beginPath();
+      g.moveTo(0, s * 0.62);
+      g.lineTo(s, s * 0.62);
+      g.moveTo(s * 0.62, 0);
+      g.lineTo(s * 0.62, s);
+      g.stroke();
+      g.fillStyle = accent;
+      g.fillRect(0, s * 0.18, s, s * 0.03);
+      g.fillRect(s * 0.18, 0, s * 0.03, s);
+      break;
+    case "honeycomb": {
+      g.lineWidth = s * 0.035;
+      const r = s / 4 / Math.cos(Math.PI / 6) / 1.0;
+      for (const [cx, cy] of [
+        [0, 0],
+        [s / 2, 0],
+        [s, 0],
+        [s / 4, s / 2],
+        [(s * 3) / 4, s / 2],
+        [0, s],
+        [s / 2, s],
+        [s, s],
+      ]) {
+        g.beginPath();
+        for (let k = 0; k <= 6; k += 1) {
+          const a = (k * Math.PI) / 3 + Math.PI / 6;
+          const x = cx + Math.cos(a) * r * 0.55;
+          const y = cy + Math.sin(a) * r * 0.55;
+          if (k === 0) g.moveTo(x, y);
+          else g.lineTo(x, y);
+        }
+        g.stroke();
+      }
+      break;
+    }
     case "confetti":
       for (let i = 0; i < 9; i += 1) {
         g.save();
@@ -500,6 +615,29 @@ export function drawLands(ctx: Ctx, style: ArtStyle, lands: readonly Land[]) {
     if (pattern) {
       ctx.fillStyle = pattern;
       ctx.fill(land.path, "evenodd");
+    }
+  }
+  if (style.id === "treasure-map") {
+    // Old-map coastlines: faint ripple lines echo every shore.
+    for (const land of lands) {
+      ctx.strokeStyle = withAlpha(style.ink, 0.12);
+      for (const w of [0.7, 0.4]) {
+        ctx.lineWidth = w;
+        ctx.stroke(land.path);
+        ctx.strokeStyle = withAlpha(style.paper, 0.85);
+        ctx.lineWidth = w - 0.12;
+        ctx.stroke(land.path);
+        ctx.strokeStyle = withAlpha(style.ink, 0.12);
+      }
+    }
+    for (const land of lands) {
+      ctx.fillStyle = landColor(style, land.skin);
+      ctx.fill(land.path, "evenodd");
+      const pattern = landPattern(ctx, land.pattern, style, land.skin);
+      if (pattern) {
+        ctx.fillStyle = pattern;
+        ctx.fill(land.path, "evenodd");
+      }
     }
   }
   for (const land of lands) {
@@ -706,6 +844,63 @@ export function drawTrail(ctx: Ctx, style: ArtStyle, skin: PieceSkin, effect: Tr
       }
       break;
     }
+    case "washi": {
+      // Translucent tape strips with a printed pattern and torn, slightly crooked joins.
+      const samples = resample(points, 0.9);
+      for (let i = 1; i < samples.length; i += 1) {
+        const a = samples[i - 1];
+        const b = samples[i];
+        const k = i + seed;
+        ctx.save();
+        ctx.translate((a.x + b.x) / 2, (a.y + b.y) / 2);
+        ctx.rotate(Math.atan2(b.y - a.y, b.x - a.x) + (hash(k) - 0.5) * 0.12);
+        ctx.fillStyle = withAlpha(i % 2 ? skin.light : "#ffffff", 0.55);
+        ctx.fillRect(-0.5, -TRAIL_W * 0.6, 1, TRAIL_W * 1.2);
+        ctx.fillStyle = withAlpha(skin.dark, 0.35);
+        for (let d = -0.35; d <= 0.35; d += 0.35) {
+          ctx.beginPath();
+          ctx.arc(d, 0, 0.06, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+      break;
+    }
+    case "footprints": {
+      ctx.fillStyle = withAlpha(style.dark ? "#ffffff" : edge, 0.8);
+      for (const s of resample(points, 0.5)) {
+        const k = Math.round(s.d / 0.5);
+        const side = k % 2 ? 1 : -1;
+        const ang = Math.atan2(-s.nx, s.ny);
+        ctx.save();
+        ctx.translate(s.x + s.nx * side * TRAIL_W * 0.2, s.y + s.ny * side * TRAIL_W * 0.2);
+        ctx.rotate(ang + Math.PI);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 0.09, 0.06, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(0.11, 0, 0.035, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      break;
+    }
+    case "paper-chain": {
+      ctx.lineWidth = 0.07;
+      const samples = resample(points, 0.42);
+      samples.forEach((s, i) => {
+        ctx.strokeStyle = i % 2 ? skin.light : style.dark ? "#ffffff" : skin.dark;
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(Math.atan2(-s.nx, s.ny) + Math.PI / 2);
+        ctx.beginPath();
+        if (i % 2) ctx.ellipse(0, 0, 0.26, 0.12, 0, 0, Math.PI * 2);
+        else ctx.ellipse(0, 0, 0.12, 0.17, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+      break;
+    }
     case "comet": {
       ctx.strokeStyle = withAlpha("#ffffff", 0.85);
       ctx.lineWidth = TRAIL_W * 0.25;
@@ -809,6 +1004,50 @@ export function drawPiece(ctx: Ctx, style: ArtStyle, skin: PieceSkin, x: number,
       ctx.fillRect(-r, -r, r * 2, r * 2);
       break;
     }
+    case "airmail": {
+      // Red and white diagonal border dashes round the envelope edge.
+      ctx.lineWidth = r * 0.22;
+      ctx.setLineDash([r * 0.3, r * 0.3]);
+      for (const [color, offset] of [["#e0263a", 0], ["#ffffff", r * 0.3]] as const) {
+        ctx.strokeStyle = color;
+        ctx.lineDashOffset = offset;
+        ctx.beginPath();
+        ctx.roundRect(-r, -r, r * 2, r * 2, r * 0.35);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.fillStyle = withAlpha("#ffffff", 0.8);
+      ctx.fillRect(-r * 0.55, -r * 0.3, r * 0.5, r * 0.36);
+      break;
+    }
+    case "veins":
+      ctx.strokeStyle = withAlpha(skin.light, 0.85);
+      ctx.lineWidth = r * 0.07;
+      ctx.beginPath();
+      ctx.moveTo(-r, 0);
+      ctx.lineTo(r * 0.2, 0);
+      for (const k of [-0.7, -0.35, 0]) {
+        ctx.moveTo(k * r, 0);
+        ctx.lineTo(k * r + r * 0.35, -r * 0.45);
+        ctx.moveTo(k * r, 0);
+        ctx.lineTo(k * r + r * 0.35, r * 0.45);
+      }
+      ctx.stroke();
+      break;
+    case "marbled":
+      ctx.lineWidth = r * 0.1;
+      for (let i = 0; i < 5; i += 1) {
+        ctx.strokeStyle = i % 2 ? withAlpha(skin.light, 0.75) : withAlpha("#8ab0ff", 0.55);
+        ctx.beginPath();
+        for (let k = 0; k <= 16; k += 1) {
+          const px = -r + (k / 16) * r * 2;
+          const py = (i - 2) * r * 0.42 + Math.sin(k * 0.8 + i * 1.7) * r * 0.22 + Math.sin(k * 0.3 + i) * r * 0.12;
+          if (k === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+      }
+      break;
     case "stars":
       for (let i = 0; i < 6; i += 1) {
         const tw = animate ? (Math.sin(now / 250 + i * 2) + 1) / 2 : 0.7;
