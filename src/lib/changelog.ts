@@ -51,6 +51,35 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-21-who-am-i-shop",
+    date: "2026-11-21",
+    title: "Who Am I? shop",
+    intro: "Who Am I? has its own cosmetic shop: 39 items for the deduction duel, from a moonlit library table and stained-glass card frames to wax-sealed questions and a curtain-call victory.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Tables and cards", text: "Seven table themes, from a green baize parlour to a sunken galleon and a starship bridge, and seven card backs with matching portrait frames, like art deco, gilded baroque and holographic foil." },
+      { kind: "new", feature: "Questions and answers", text: "Seven ways for a question to arrive, including telegram tape, a paper plane and a wax seal, and seven answer markers, from rubber stamps to brass medallions and neon." },
+      { kind: "new", feature: "Victory reveals", text: "Seven ways to celebrate a win: curtains parting, a magician's hat, a masquerade unmasking, a gallery unveiling, fireworks, lanterns and a constellation crown." },
+      { kind: "new", feature: "Art styles", text: "Cut-Paper Diorama, Comic Panel, Illuminated Manuscript and Phosphor Terminal redraw the panels, borders, lettering and portraits, and work with everything else." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Who Am I? shop",
+          body: "Seven table themes, seven card backs and frames, seven question effects, seven answer markers, seven victory reveals and four art styles. Everything is purely visual: characters, questions, answers, turns, the bot and Wagers work exactly as before.",
+          points: [
+            "You only ever see your own cosmetics, against the bot and in Wagers. Your rival sees theirs, and nothing about theirs is shared.",
+            "Your hidden card shows the same back whoever is on the front, and victory reveals only play once the round is over, so no cosmetic gives anything away.",
+            "Yes and No keep their word, icon and colour with every marker, and the turn and winner highlights keep their colours with every art style.",
+            "Equip items from the Shop button in the game: the table restyles straight away. Animations follow your effects setting and reduced motion.",
+          ],
+          where: "Arcade → Who Am I? → Shop",
+          link: { href: "/arcade/who-am-i/shop", label: "Open the Who Am I? shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-21-sumbreak-shop",
     date: "2026-11-21",
     title: "Sumbreak shop",

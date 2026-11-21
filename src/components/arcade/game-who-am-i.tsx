@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ShellNavProvider, type ShellNav } from "./competition";
 import { GameShell, Stat, useArcade, useGameAchievementTracking } from "./game-shell";
+import { PortraitReveal, VictoryReveal, whoAmILook } from "./who-am-i/look";
 import { Portrait } from "./who-am-i/portrait";
 import { RulesList, WhoAmITable, knowledgeOf, mirrorEvents, type TableActions, type TableView } from "./who-am-i/table";
 
@@ -380,6 +381,8 @@ const BURST = Array.from({ length: 18 }, (_, i) => ({
 
 function ResultBanner({ won, title, detail, you, children }: { won: boolean | null; title: string; detail: string; you: string | null; children?: ReactNode }) {
   const character = characterById(you);
+  // The equipped victory reveal replaces the gem shards; both only play for a win, once the round is over.
+  const reveal = whoAmILook(useArcade().look).reveal;
   return (
     <section
       role="status"
@@ -390,7 +393,8 @@ function ResultBanner({ won, title, detail, you, children }: { won: boolean | nu
         won === null && "border-border bg-surface/50",
       )}
     >
-      {won ? (
+      {won && reveal ? <VictoryReveal kind={reveal} /> : null}
+      {won && !reveal ? (
         <span aria-hidden className="wai-burst">
           {BURST.map((shard, i) => (
             <span key={i} style={{ "--x": shard.x, "--dx": shard.dx, "--dy": shard.dy, "--r": shard.r, "--c": shard.c, animationDelay: shard.delay } as CSSProperties} />
@@ -398,8 +402,9 @@ function ResultBanner({ won, title, detail, you, children }: { won: boolean | nu
         </span>
       ) : null}
       {character ? (
-        <span className={cn("wai-flip-in relative size-20 shrink-0 overflow-hidden rounded-lg ring-2 ring-offset-2 ring-offset-background sm:size-24", won ? "ring-emerald-400" : won === false ? "ring-rose-400" : "ring-border")}>
+        <span className={cn("wai-flip-in wai-portrait relative size-20 shrink-0 overflow-hidden rounded-lg ring-2 ring-offset-2 ring-offset-background sm:size-24", won ? "ring-emerald-400" : won === false ? "ring-rose-400" : "ring-border")}>
           <Portrait character={character} />
+          {won ? <PortraitReveal kind={reveal} /> : null}
         </span>
       ) : null}
       <div className="relative min-w-0 space-y-2">

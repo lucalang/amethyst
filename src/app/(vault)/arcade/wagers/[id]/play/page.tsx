@@ -5,6 +5,7 @@ import { LazyWhoAmI } from "@/components/arcade/lazy";
 import { GAME_SETTINGS, isCompetitiveGame } from "@/lib/competitive";
 import { loadSudoku } from "@/lib/data/arcade";
 import { loadCompetitivePlay, loadWagerState, loadWhoAmIState } from "@/lib/data/competitive";
+import { loadGameLoadout } from "@/lib/data/shop";
 import type { SudokuSize } from "@/lib/sudoku";
 import { requireUser } from "@/lib/supabase/auth";
 
@@ -20,9 +21,10 @@ export default async function WagerPlayPage({ params }: Props) {
 
   // A Who Am I? round is a live duel: players join (and rejoin after a refresh) until it's over.
   if (round?.game === "who-am-i" && (round.yourAttempt === null || round.yourAttempt === "playing")) {
-    const duel = await loadWhoAmIState(ctx, id, round.round);
+    // Each player sees their own cosmetics; the rival's are never loaded.
+    const [duel, look] = await Promise.all([loadWhoAmIState(ctx, id, round.round), loadGameLoadout(ctx, "who-am-i")]);
     if (!duel) redirect(`/arcade/wagers/${id}`);
-    return <LazyWhoAmI mode={{ kind: "wager", wager: id, initial: duel, stake: state!.stake }} />;
+    return <LazyWhoAmI mode={{ kind: "wager", wager: id, initial: duel, stake: state!.stake }} look={look} />;
   }
 
   // A Sudoku round in progress can be resumed; every other game is a single run.

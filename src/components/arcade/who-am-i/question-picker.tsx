@@ -192,7 +192,7 @@ export function QuestionPicker({ selected, onSelect, onAsk, asked, disabled }: {
                       <Swatch card={card} />
                       {card.short}
                       {used ? (
-                        <span className={cn("inline-flex items-center gap-0.5 rounded px-1 text-[0.6rem] font-bold uppercase", answer === undefined ? "bg-foreground/10" : answer ? "bg-emerald-400/20 text-emerald-300" : "bg-rose-400/20 text-rose-300")}>
+                        <span className={cn("wai-mark inline-flex items-center gap-0.5 rounded px-1 text-[0.6rem] font-bold uppercase", answer === undefined ? "wai-mark-other bg-foreground/10" : answer ? "wai-mark-yes bg-emerald-400/20 text-emerald-300" : "wai-mark-no bg-rose-400/20 text-rose-300")}>
                           {answer === undefined ? "…" : answer ? <><Check aria-hidden className="size-2.5" strokeWidth={3} />Yes</> : <><X aria-hidden className="size-2.5" strokeWidth={3} />No</>}
                         </span>
                       ) : null}

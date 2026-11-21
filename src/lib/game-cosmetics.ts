@@ -4,7 +4,7 @@
  * How each item looks lives with the game's renderer, keyed by the item's slug.
  */
 
-export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars", "blank-atlas", "the-ascent", "sumbreak"] as const;
+export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars", "blank-atlas", "the-ascent", "sumbreak", "who-am-i"] as const;
 export type ShopGame = (typeof SHOP_GAMES)[number];
 export const isShopGame = (value: unknown): value is ShopGame => typeof value === "string" && (SHOP_GAMES as readonly string[]).includes(value);
 
@@ -1451,6 +1451,109 @@ export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
           item("watercolour", "Watercolour Wash", 350, "Blotted, hand-painted tiles with pigment edges, paper grain and pencil numbers."),
           item("bauhaus", "Bauhaus Poster", 400, "Circles, squares and arches by number, flat colour, hard shadows and strict lettering."),
           item("crt-arcade", "CRT Arcade", 450, "Square pixel tiles, scanlines, a curved glass screen and pixel numbers."),
+        ],
+      },
+    ],
+  },
+  "who-am-i": {
+    game: "who-am-i",
+    title: "Who Am I?",
+    prefix: "who-am-i",
+    href: "/arcade/who-am-i",
+    blurb: "Table themes, card backs and frames, question effects, answer markers, victory reveals and art styles. You only ever see your own, characters and answers stay clear, and nothing about the game changes.",
+    categories: [
+      {
+        id: "table",
+        label: "Table themes",
+        icon: "image",
+        blurb: "Where the duel is played: the scenery behind the table and the colours of its panels.",
+        default: { name: "Gem-lit Parlour", description: "A deep violet night parlour." },
+        items: [
+          item("green-baize", "Green Baize Parlour", 90, "Soft green felt under a brass rail and a warm pool of lamplight."),
+          item("noir-office", "Rainy Detective Office", 100, "Light through the blinds, rain on the glass and a desk lamp glowing in the corner."),
+          item("lantern-garden", "Lantern Tea Garden", 110, "Dusk in a bamboo garden, with paper lanterns swaying on a string."),
+          item("fortune-tent", "Fortune Teller's Tent", 130, "Striped canvas, swinging brass stars and a crystal ball glowing below."),
+          item("sunken-galleon", "Sunken Galleon", 150, "Rippling light, rising bubbles and a brass porthole, deep under the sea."),
+          item("starship-bridge", "Starship Bridge", 160, "A drifting starfield through the viewport, with a scanner sweeping the deck."),
+          item("moonlit-library", "Moonlit Library", 180, "Towering shelves, an arched window full of moon and dust glinting in the light."),
+        ],
+      },
+      {
+        id: "card",
+        label: "Card backs & frames",
+        icon: "tag",
+        blurb: "The back of your hidden card and the frame round every portrait. Your card's back is the same whoever is on the front.",
+        default: { name: "Gemfolk Classic", description: "A violet card back with a big question mark, and plain rounded portraits." },
+        items: [
+          item("pressed-botanicals", "Pressed Botanicals", 90, "Pressed leaves and a fern on cream card, with leafy vine frames."),
+          item("woven-tapestry", "Woven Tapestry", 100, "A woven back with a stitched diamond, and braided frames."),
+          item("celestial-almanac", "Celestial Almanac", 110, "Moon phases and stars on midnight blue, with silver star-cornered frames."),
+          item("art-deco", "Art Deco", 130, "A gold sunburst on black, with stepped gold frames."),
+          item("gilded-baroque", "Gilded Baroque", 150, "Crimson velvet and gold flourishes, with polished gilt frames."),
+          item("stained-glass", "Stained Glass", 170, "A rose window of coloured panes, with leaded frames of every gem colour."),
+          item("holo-foil", "Holographic Foil", 190, "A rainbow foil back that catches the light, with shimmering foil frames."),
+        ],
+      },
+      {
+        id: "question",
+        label: "Question effects",
+        icon: "sparkles",
+        blurb: "How a question arrives when it's asked, by you or your opponent. The question itself always stays readable.",
+        default: { name: "Rise In", description: "The question slides gently into place." },
+        items: [
+          item("telegram", "Telegram Tape", 80, "The question taps out letter by letter on a paper tape, ending in STOP."),
+          item("quill-ink", "Quill & Ink", 90, "A quill writes the question out and underlines it in ink."),
+          item("paper-plane", "Paper Plane", 100, "A paper plane loops in and the question unfolds from it."),
+          item("comic-burst", "Comic Burst", 110, "The question pops up in a speech balloon with a ?! starburst."),
+          item("spotlight", "Spotlight", 120, "A spotlight sweeps across the stage and settles on the question."),
+          item("crystal-mist", "Crystal Mist", 140, "Glowing mist swirls and the question surfaces from within it."),
+          item("wax-seal", "Wax Seal", 150, "The question is written on parchment and stamped with a red wax seal."),
+        ],
+      },
+      {
+        id: "marker",
+        label: "Answer markers",
+        icon: "highlighter",
+        blurb: "Yes and No stamps, answer tags in the log and crosses on the board. Every marker keeps its word, icon and colour.",
+        default: { name: "Bold Stamps", description: "Rounded stamps in green and red." },
+        items: [
+          item("chalk-scrawl", "Chalk Scrawl", 70, "Answers chalked on a board, with dashed chalk crosses."),
+          item("rubber-stamp", "Rubber Stamp", 80, "Inked office stamps, a little worn, pressed at an angle."),
+          item("cross-stitch", "Cross-Stitch", 90, "Answers stitched onto linen, with stitched crosses."),
+          item("die-cut-sticker", "Die-Cut Stickers", 100, "Glossy stickers with a white border and a peeling corner."),
+          item("ticket-punch", "Ticket Punch", 110, "Answers on ticket stubs, and punched holes on crossed-out cards."),
+          item("brass-medallion", "Brass Medallions", 130, "Engraved brass coins with answers in Roman capitals."),
+          item("neon-script", "Neon Script", 150, "Glowing neon answers and crosses."),
+        ],
+      },
+      {
+        id: "reveal",
+        label: "Victory reveals",
+        icon: "crown",
+        blurb: "What plays when you win a round, in place of the gem shards. Only shown once the round is over.",
+        default: { name: "Gem Shards", description: "A burst of gem shards." },
+        items: [
+          item("lantern-release", "Lantern Release", 100, "Glowing lanterns float up from the banner."),
+          item("fireworks-finale", "Fireworks Finale", 120, "Three fireworks burst one after another."),
+          item("magicians-hat", "Magician's Hat", 130, "A puff of smoke clears to show you, with cards flying from a top hat."),
+          item("masquerade", "Masquerade Unmasking", 140, "A jewelled mask lifts from your face in a swirl of glitter."),
+          item("constellation-crown", "Constellation Crown", 160, "Stars appear and join up into a crown over your head."),
+          item("gallery-unveil", "Gallery Unveiling", 170, "A sheet is whisked off to show your portrait in a gilded frame."),
+          item("curtain-call", "Curtain Call", 190, "Red velvet curtains part, a spotlight finds you and roses rain down."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Redraws the whole table: panels, borders, lettering and portraits. Combines with every other cosmetic.",
+        default: { name: "Gem Glass", description: "Soft rounded glassy panels." },
+        items: [
+          item("cut-paper", "Cut-Paper Diorama", 300, "Panels cut from paper and taped down, with rounded lettering and paper-edged portraits."),
+          item("comic-panel", "Comic Panel", 350, "Thick ink outlines, halftone dots, offset shadows and punchy headline lettering."),
+          item("illuminated", "Illuminated Manuscript", 400, "Gilded double borders, corner flourishes, carved capitals and a golden first letter on every question."),
+          item("phosphor-terminal", "Phosphor Terminal", 450, "Glowing scanlined panels, terminal lettering, a blinking cursor and prompt-marked headings."),
         ],
       },
     ],

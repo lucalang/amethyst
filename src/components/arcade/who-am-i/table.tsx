@@ -23,9 +23,11 @@ import {
 } from "@/lib/who-am-i";
 import { cn } from "@/lib/utils";
 import { useArcade } from "../game-shell";
-import { MysteryPortrait, Portrait } from "./portrait";
+import { CardBack, QuestionFlourish, TableBackdrop, tableAttributes, whoAmILook, type WhoAmILook } from "./look";
+import { Portrait } from "./portrait";
 import { QuestionPicker } from "./question-picker";
 import "./who-am-i.css";
+import "./cosmetics.css";
 
 /** What the table shows, whether the opponent is the bot or a Wager rival. */
 export type TableView = {
@@ -172,7 +174,8 @@ export function WhoAmITable({ view, actions, storageKey, banner, footer }: {
   banner?: ReactNode;
   footer?: ReactNode;
 }) {
-  const { play, effects } = useArcade();
+  const { play, effects, look: equipped } = useArcade();
+  const look = useMemo(() => whoAmILook(equipped), [equipped]);
   const [crossed, setCrossed] = useBoardMarks(storageKey);
   const [guessMode, setGuessing] = useState(false);
   const [pick, setPick] = useState<string | null>(null);
@@ -253,18 +256,19 @@ export function WhoAmITable({ view, actions, storageKey, banner, footer }: {
   }
 
   return (
-    <div className={cn("wai-table grid gap-3 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start", fx && "wai-fx", effects === "full" && "wai-fx-full")}>
+    <div className={cn("wai-table grid gap-3 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start", fx && "wai-fx", effects === "full" && "wai-fx-full")} {...tableAttributes(look)}>
+      <TableBackdrop kind={look.table} />
       <p aria-live="polite" className="sr-only">{announce(items.at(-1), view.names)}</p>
 
       {/* Players and the turn stage: on top on phones; a column that stays in view beside the board on desktop */}
       <div className="wai-scroll-y grid min-w-0 content-start gap-3 lg:sticky lg:top-[4.5rem] lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-0.5">
         <div className="grid grid-cols-2 gap-2">
           <PlayerCard label="You" name={you ? you.name : "Who am I?"} active={view.turn === "you" && !done} winner={view.winner === "you"} loser={done && view.winner === "them"}>
-            {you ? <span className={cn("block size-full", fx && "wai-flip-in")}><Portrait character={you} label={`You were ${you.name}`} /></span> : <MysteryPortrait />}
+            {you ? <span className={cn("block size-full", fx && "wai-flip-in")}><Portrait character={you} label={`You were ${you.name}`} /></span> : <CardBack kind={look.card} />}
             {you ? null : <span className="sr-only">Your card is hidden</span>}
           </PlayerCard>
           <PlayerCard label={view.names.them} name={them ? them.name : "Not dealt yet"} active={view.turn === "them" && !done} winner={view.winner === "them"} loser={done && view.winner === "you"}>
-            {them ? <Portrait character={them} label={`${view.names.them} is ${them.name}`} /> : <MysteryPortrait />}
+            {them ? <Portrait character={them} label={`${view.names.them} is ${them.name}`} /> : <CardBack kind={look.card} />}
           </PlayerCard>
         </div>
         {banner}
@@ -276,6 +280,7 @@ export function WhoAmITable({ view, actions, storageKey, banner, footer }: {
             yourMove={yourMove}
             toAnswer={Boolean(toAnswer)}
             reveal={showReveal ? reveal : null}
+            look={look}
             stillFit={consistent.size}
             onContinue={acknowledge}
             guessing={guessing}
@@ -386,7 +391,7 @@ export function WhoAmITable({ view, actions, storageKey, banner, footer }: {
                             revealed && "wai-tile-revealed border-emerald-400 ring-2 ring-emerald-400",
                           )}
                         >
-                          <span className="relative block aspect-square overflow-hidden rounded-md">
+                          <span className="wai-portrait relative block aspect-square overflow-hidden rounded-md">
                             <Portrait character={character} />
                             {out || wrong ? (
                               <span aria-hidden className="wai-cross absolute inset-0 grid place-items-center bg-background/25">
@@ -447,7 +452,7 @@ function TheirBoard({ view, knowledge, left }: { view: TableView; knowledge: Kno
               aria-label={`${character.name}: ${reason ? `ruled out (${reason})` : "still possible"}${theirs ? `. This is ${name}’s card.` : ""}`}
               className={cn("wai-tile relative rounded-lg border border-transparent p-0.5", reason && "wai-tile-out", theirs && "border-sky-400/80")}
             >
-              <span aria-hidden className="relative block aspect-square overflow-hidden rounded-md">
+              <span aria-hidden className="wai-portrait relative block aspect-square overflow-hidden rounded-md">
                 <Portrait character={character} />
                 {reason ? (
                   <span className="wai-cross absolute inset-0 grid place-items-center bg-background/25">
@@ -479,7 +484,7 @@ function PlayerCard({ label, name, active, winner, loser, children }: { label: s
         loser && "opacity-80",
       )}
     >
-      <div className="size-14 shrink-0 overflow-hidden rounded-lg">{children}</div>
+      <div className="wai-portrait relative size-14 shrink-0 overflow-hidden rounded-lg">{children}</div>
       <div className="min-w-0">
         <p className="truncate text-xs font-semibold text-muted-foreground">{label}</p>
         <p aria-hidden className="truncate text-sm font-bold">{name}</p>
@@ -512,7 +517,7 @@ function AnswerStamp({ answer, auto }: { answer: CustomAnswer; auto?: boolean })
       <span className="grid size-9 place-items-center wai-stamp-icon rounded-full">
         <Icon aria-hidden className="size-6" strokeWidth={3} />
       </span>
-      <span className="text-3xl leading-none font-black tracking-tight uppercase">{ANSWER_LABEL[answer]}</span>
+      <span className="wai-stamp-word text-3xl leading-none font-black tracking-tight uppercase">{ANSWER_LABEL[answer]}</span>
       {auto ? <span className="self-end text-xs font-semibold opacity-80">(auto)</span> : null}
     </span>
   );
@@ -569,8 +574,9 @@ function lastMoveNote(items: LogItem[], names: TableView["names"]) {
   return null;
 }
 
-function Stage({ view, actions, items, yourMove, toAnswer, reveal, stillFit, onContinue, guessing, pick, onGuessing }: {
+function Stage({ view, actions, items, yourMove, toAnswer, reveal, look, stillFit, onContinue, guessing, pick, onGuessing }: {
   view: TableView;
+  look: WhoAmILook;
   actions: TableActions;
   items: LogItem[];
   yourMove: boolean;
@@ -711,12 +717,15 @@ function Stage({ view, actions, items, yourMove, toAnswer, reveal, stillFit, onC
       <StageCard stageKey={`answer-${pending.card ?? pending.text}`} tone="accent" label={`${name} asks`} icon={<CircleHelp aria-hidden className="size-4 text-amethyst" />} aside={countdown}>
         <div className="flex gap-3">
           {theirs ? (
-            <span className="size-16 shrink-0 overflow-hidden rounded-lg ring-2 ring-amethyst/50">
+            <span className="wai-portrait relative size-16 shrink-0 overflow-hidden rounded-lg ring-2 ring-amethyst/50">
               <Portrait character={theirs} label={`${name}’s card: ${theirs.name}`} />
             </span>
           ) : null}
           <div className="min-w-0 flex-1">
-            <p className="wai-question text-lg leading-snug font-bold text-pretty break-words">{pending.kind === "card" ? cardById(pending.card)?.prompt : <q>{pending.text}</q>}</p>
+            <div className="wai-q">
+              <p className="wai-question text-lg leading-snug font-bold text-pretty break-words">{pending.kind === "card" ? cardById(pending.card)?.prompt : <q>{pending.text}</q>}</p>
+              <QuestionFlourish kind={look.question} />
+            </div>
             <p className="mt-1 text-xs text-muted-foreground">
               Answer about {theirs ? <span className="font-semibold text-foreground">{theirs.name}</span> : "their character"}, the card you can see.{" "}
               {pending.kind === "custom" ? "This is a custom question: answer honestly. Nobody can check it." : "Card answers are checked."}
@@ -754,7 +763,10 @@ function Stage({ view, actions, items, yourMove, toAnswer, reveal, stillFit, onC
     if (waitingAnswer) {
       return (
         <StageCard stageKey={`asked-${pending.card ?? pending.text}`} tone="accent" label="You asked" icon={<MessageSquareText aria-hidden className="size-4 text-amethyst" />} aside={countdown}>
-          <p className="wai-question text-lg leading-snug font-bold text-pretty break-words sm:text-xl">{pending.kind === "card" ? cardById(pending.card)?.prompt : <q>{pending.text}</q>}</p>
+          <div className="wai-q">
+            <p className="wai-question text-lg leading-snug font-bold text-pretty break-words sm:text-xl">{pending.kind === "card" ? cardById(pending.card)?.prompt : <q>{pending.text}</q>}</p>
+            <QuestionFlourish kind={look.question} />
+          </div>
           <p className="mt-2 text-sm text-muted-foreground">
             {name} is answering <Dots />
           </p>
@@ -776,7 +788,7 @@ function Stage({ view, actions, items, yourMove, toAnswer, reveal, stillFit, onC
     return (
       <StageCard stageKey="guess" tone="accent" label="Guess who you are" icon={<Target aria-hidden className="size-4 text-amethyst" />} aside={countdown}>
         <div className="flex items-center gap-3">
-          <span className={cn("size-14 shrink-0 overflow-hidden rounded-lg", target ? "ring-2 ring-amethyst" : "")}>{target ? <Portrait key={target.id} character={target} className="wai-pop" /> : <MysteryPortrait />}</span>
+          <span className={cn("size-14 shrink-0 overflow-hidden rounded-lg", target ? "ring-2 ring-amethyst" : "")}>{target ? <Portrait key={target.id} character={target} className="wai-pop" /> : <CardBack kind={look.card} />}</span>
           <p className="min-w-0 text-sm text-muted-foreground">
             {target ? <>You’ll guess <span className="font-semibold text-foreground">{target.name}</span>. Right wins the round; wrong passes the turn.</> : "Pick a character on your board below."}
           </p>
@@ -864,7 +876,7 @@ function Stage({ view, actions, items, yourMove, toAnswer, reveal, stillFit, onC
 
 function QuestionLog({ items, names }: { items: LogItem[]; names: TableView["names"] }) {
   return (
-    <section aria-labelledby="wai-log" className="rounded-xl border border-border bg-surface/40 p-3">
+    <section aria-labelledby="wai-log" className="wai-log rounded-xl border border-border bg-surface/40 p-3">
       <h2 id="wai-log" className="mb-2 text-sm font-bold">Questions and guesses</h2>
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nothing asked yet.</p>
@@ -880,7 +892,8 @@ function QuestionLog({ items, names }: { items: LogItem[]; names: TableView["nam
                     <span className="min-w-0 break-words">{questionText(item.card, item.text)}</span>
                     <span
                       className={cn(
-                        "inline-flex shrink-0 items-center gap-0.5 rounded-full px-2 text-xs font-bold",
+                        "wai-mark inline-flex shrink-0 items-center gap-0.5 rounded-full px-2 text-xs font-bold",
+                        item.answer === "yes" ? "wai-mark-yes" : item.answer === "no" ? "wai-mark-no" : "wai-mark-other",
                         item.answer === "yes" ? "bg-emerald-400/20 text-emerald-300" : item.answer === "no" ? "bg-rose-400/20 text-rose-300" : "bg-foreground/10 text-muted-foreground",
                       )}
                     >

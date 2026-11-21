@@ -8,7 +8,7 @@ import type { WhoAmIState } from "@/lib/who-am-i";
 
 /** A game's personal records keyed by board ("" = default) and the equipped look, for a competitive play page. */
 export async function loadCompetitivePlay(ctx: AuthContext, game: Exclude<CompetitiveGame, "who-am-i">) {
-  // Games without a shop (Sumbreak) play with the default look.
+  // Games without a shop play with the default look.
   const [all, look] = await Promise.all([loadArcadeRecords(ctx), isShopGame(game) ? loadGameLoadout(ctx, game) : Promise.resolve({})]);
   const records: Record<string, number> = {};
   for (const [key, score] of Object.entries(all)) {

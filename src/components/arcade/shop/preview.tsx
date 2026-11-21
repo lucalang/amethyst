@@ -36,6 +36,7 @@ import { createFrontWarsShowcase } from "../front-wars/showcase";
 import { DescentPreview } from "../blank-atlas/preview";
 import { AscentPreview } from "../the-ascent/preview";
 import { SumbreakPreview } from "../sumbreak/preview";
+import { WhoAmIPreview } from "../who-am-i/preview";
 import { CELEBRATIONS, PuzzleCelebration, QueensCrown, QueensDefs, TangoSymbol, ZipMarker, lookAttributes, patchColors, queensRegionColors, zipTrail, type Celebration } from "../puzzle-looks";
 import "../minigames.css";
 // The 2048 board (.g2048) and the shared stage are styled here; previews also show outside game pages
@@ -1303,6 +1304,7 @@ const ASPECT: Record<ShopGame, string> = {
   "blank-atlas": "",
   "the-ascent": "",
   sumbreak: "",
+  "who-am-i": "",
 };
 
 /** A live preview of a game with the given look; `focus` is the category being browsed. */
@@ -1316,6 +1318,7 @@ export function CosmeticPreview({ game, look, focus, effects }: { game: ShopGame
   if (game === "blank-atlas") return <DescentPreview look={look} effects={effects} />;
   if (game === "the-ascent") return <AscentPreview look={look} effects={effects} />;
   if (game === "sumbreak") return <SumbreakPreview look={look} effects={effects} />;
+  if (game === "who-am-i") return <WhoAmIPreview look={look} effects={effects} />;
   const key = `${JSON.stringify(look)}|${effects}|${game === "flutter" ? focus : ""}`;
   const create = (): Painter => {
     if (game === "snake") return createSnakeScene(snakeTheme(look), effects);

@@ -1,0 +1,2052 @@
+/*
+ * Who Am I?: shop cosmetics, keyed on the data-wai-<category> attributes on the table root (`.wai-table`), which
+ * also carries `.wai-fx` (effects on) and `.wai-fx-full` (full effects).
+ *
+ * Clarity rules, whatever is equipped:
+ * - table themes recolour panels through the skin's variables; yes stays green, no stays red;
+ * - answer markers keep their word and icon, and their yes/no colour family (--mk / --mkd below);
+ * - art styles change borders' width and style, shapes, textures and lettering, never the turn, answer or winner
+ *   colours on players and stage cards;
+ * - reveals rest in an "after" state, which is all that shows without motion; every animation is behind .wai-fx
+ *   (particles behind .wai-fx-full) and prefers-reduced-motion: no-preference.
+ */
+
+.wai-mark-yes,
+.wai-stamp-yes {
+  --mk: 52 211 153;
+  --mkd: 15 122 85;
+}
+.wai-mark-no,
+.wai-stamp-no {
+  --mk: 251 113 133;
+  --mkd: 180 35 63;
+}
+.wai-mark-other,
+.wai-stamp-unsure,
+.wai-stamp-none {
+  --mk: 185 173 214;
+  --mkd: 91 81 112;
+}
+
+/* ============================================================================
+ * Table themes
+ * ========================================================================== */
+
+.wai-table[data-wai-table] {
+  position: relative;
+  isolation: isolate;
+  padding: 0.6rem;
+  border-radius: 1rem;
+}
+@media (min-width: 640px) {
+  .wai-table[data-wai-table] {
+    padding: 0.9rem;
+  }
+}
+.wai-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.wai-backdrop > i {
+  position: absolute;
+  display: block;
+}
+
+/* Moonlit Library */
+.wai-table[data-wai-table="moonlit-library"] {
+  --background: #0f0e1f;
+  --surface: #1a1830;
+  --surface-raised: #24213f;
+  --border: rgb(214 178 94 / 0.28);
+  --muted-foreground: #c3bad8;
+  --amethyst: #e2b75c;
+  --amethyst-foreground: #1d1406;
+  --accent-rgb: 226 183 92;
+}
+[data-scene="moonlit-library"] {
+  background:
+    radial-gradient(
+      55% 45% at 86% 8%,
+      rgb(170 190 255 / 0.16),
+      transparent 70%
+    ),
+    linear-gradient(180deg, #16132c, #0b0a18);
+}
+.wtb-shelves {
+  inset: 0 0 auto;
+  height: 4.5rem;
+  border-bottom: 5px solid #2a1a12;
+  background: repeating-linear-gradient(
+    90deg,
+    #3a2318 0 6px,
+    #5b3524 6px 9px,
+    #2c4a3e 9px 15px,
+    #6b2a2a 15px 19px,
+    #3b2d55 19px 26px,
+    #2a1a12 26px 28px,
+    #7a5a2a 28px 31px,
+    #2a3b5a 31px 38px
+  );
+  opacity: 0.5;
+}
+.wtb-moon {
+  right: 4%;
+  top: 1.2rem;
+  width: min(9rem, 26%);
+  aspect-ratio: 0.8;
+  border: 5px solid #2a1a12;
+  border-radius: 50% 50% 0.3rem 0.3rem / 40% 40% 0.3rem 0.3rem;
+  background:
+    linear-gradient(90deg, transparent 48%, #2a1a12 48% 52%, transparent 52%),
+    linear-gradient(transparent 55%, #2a1a12 55% 58%, transparent 58%),
+    radial-gradient(
+      circle at 62% 34%,
+      #f4f1dc 0 15%,
+      rgb(244 241 220 / 0.25) 16%,
+      transparent 42%
+    ),
+    linear-gradient(#1d2650, #121838);
+  box-shadow: 0 0 60px rgb(170 190 255 / 0.22);
+}
+.wtb-mote {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #f6e7b0;
+  opacity: 0.45;
+}
+
+/* Green Baize Parlour */
+.wai-table[data-wai-table="green-baize"] {
+  --background: #0b241a;
+  --surface: #123526;
+  --surface-raised: #184332;
+  --border: rgb(215 180 100 / 0.3);
+  --muted-foreground: #bcd5c6;
+  --amethyst: #f0c75e;
+  --amethyst-foreground: #1f1503;
+  --accent-rgb: 240 199 94;
+}
+[data-scene="green-baize"] {
+  background:
+    repeating-radial-gradient(
+      circle at 30% 30%,
+      rgb(255 255 255 / 0.025) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(80% 70% at 50% 35%, #1d6b48, #0f3d2a 70%, #0a2a1d);
+}
+.wtb-lamp {
+  inset: -10% 12% auto;
+  height: 60%;
+  background: radial-gradient(
+    50% 50% at 50% 30%,
+    rgb(255 236 170 / 0.2),
+    transparent 70%
+  );
+}
+.wtb-rail {
+  inset: 0;
+  border-radius: inherit;
+  border: 7px solid #5b3a1e;
+  box-shadow:
+    inset 0 0 0 2px #c9a24a,
+    inset 0 6px 14px rgb(0 0 0 / 0.5);
+}
+
+/* Lantern Tea Garden */
+.wai-table[data-wai-table="lantern-garden"] {
+  --background: #1a1020;
+  --surface: #2a1b2e;
+  --surface-raised: #38243c;
+  --border: rgb(255 170 110 / 0.28);
+  --muted-foreground: #e2c6cc;
+  --amethyst: #ff9e5e;
+  --amethyst-foreground: #2a0f02;
+  --accent-rgb: 255 158 94;
+}
+[data-scene="lantern-garden"] {
+  background: linear-gradient(
+    180deg,
+    #3b1d45 0%,
+    #6a2d4a 30%,
+    #2a1630 65%,
+    #170c1c
+  );
+}
+.wtb-bamboo {
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgb(18 36 20 / 0.75) 0 10px,
+      transparent 10px 16px,
+      rgb(18 36 20 / 0.55) 16px 24px,
+      transparent 24px
+    ),
+    linear-gradient(
+      270deg,
+      rgb(18 36 20 / 0.75) 0 12px,
+      transparent 12px 20px,
+      rgb(18 36 20 / 0.5) 20px 27px,
+      transparent 27px
+    );
+}
+.wtb-string {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2.6rem;
+  border-bottom: 1.5px solid rgb(40 20 30 / 0.9);
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+}
+.wtb-lantern {
+  width: 1.5rem;
+  height: 2rem;
+  border-radius: 45%;
+  background: radial-gradient(circle at 50% 45%, #ffe2a0, #ff8a3d 55%, #c2412b);
+  box-shadow: 0 0 22px rgb(255 150 70 / 0.55);
+  transform-origin: 50% -0.5rem;
+}
+.wtb-lantern::before {
+  content: "";
+  position: absolute;
+  left: 30%;
+  right: 30%;
+  top: -3px;
+  height: 4px;
+  border-radius: 2px;
+  background: #3a1a12;
+}
+
+/* Rainy Detective Office */
+.wai-table[data-wai-table="noir-office"] {
+  --background: #0e0f11;
+  --surface: #1a1c20;
+  --surface-raised: #24272c;
+  --border: rgb(255 255 255 / 0.15);
+  --muted-foreground: #b8b3a9;
+  --amethyst: #e8d6a8;
+  --amethyst-foreground: #1b160a;
+  --accent-rgb: 232 214 168;
+}
+[data-scene="noir-office"] {
+  background: linear-gradient(180deg, #1c1f24, #0d0e10);
+}
+.wtb-blinds {
+  inset: -10%;
+  background: repeating-linear-gradient(
+    -28deg,
+    rgb(255 240 200 / 0.08) 0 18px,
+    transparent 18px 34px
+  );
+  mask-image: radial-gradient(70% 60% at 70% 30%, #000, transparent);
+}
+.wtb-desk-lamp {
+  left: -6%;
+  bottom: -12%;
+  width: 52%;
+  height: 60%;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 210 130 / 0.16),
+    transparent
+  );
+}
+.wtb-rain {
+  top: -20%;
+  width: 1px;
+  background: linear-gradient(transparent, rgb(200 210 230 / 0.32));
+}
+
+/* Fortune Teller's Tent */
+.wai-table[data-wai-table="fortune-tent"] {
+  --background: #170a1f;
+  --surface: #2a1235;
+  --surface-raised: #381846;
+  --border: rgb(240 190 90 / 0.3);
+  --muted-foreground: #d9c2e2;
+  --amethyst: #f2b84b;
+  --amethyst-foreground: #2a1702;
+  --accent-rgb: 242 184 75;
+}
+[data-scene="fortune-tent"] {
+  background: #1d0c27;
+}
+.wtb-tent {
+  inset: 0;
+  background: repeating-conic-gradient(
+    from 0deg at 50% -30%,
+    #4a1640 0 5deg,
+    #2b0f3a 5deg 10deg
+  );
+  mask-image: linear-gradient(#000, rgb(0 0 0 / 0.3));
+}
+.wtb-crystal {
+  left: 50%;
+  bottom: -6rem;
+  width: 13rem;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 42% 35%,
+    rgb(220 200 255 / 0.45),
+    rgb(140 90 220 / 0.22) 50%,
+    transparent 70%
+  );
+}
+.wtb-star {
+  top: 0;
+  width: 1px;
+  background: rgb(240 190 90 / 0.5);
+  transform-origin: 50% 0;
+}
+.wtb-star::after {
+  content: "";
+  position: absolute;
+  bottom: -7px;
+  left: -7px;
+  width: 15px;
+  height: 15px;
+  background: #f2b84b;
+  clip-path: polygon(
+    50% 0,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
+/* Sunken Galleon */
+.wai-table[data-wai-table="sunken-galleon"] {
+  --background: #081a20;
+  --surface: #0f2a33;
+  --surface-raised: #143843;
+  --border: rgb(120 220 230 / 0.22);
+  --muted-foreground: #acd2d6;
+  --amethyst: #5fe0d2;
+  --amethyst-foreground: #03201d;
+  --accent-rgb: 95 224 210;
+}
+[data-scene="sunken-galleon"] {
+  background: linear-gradient(180deg, #11505c, #0a2c36 50%, #061a20);
+}
+.wtb-caustics {
+  inset: -630px 0 0 -360px;
+  background:
+    radial-gradient(
+        circle at 20% 30%,
+        rgb(160 255 240 / 0.08) 0 9%,
+        transparent 10%
+      )
+      0 0 / 90px 70px,
+    radial-gradient(
+        circle at 70% 60%,
+        rgb(160 255 240 / 0.06) 0 11%,
+        transparent 12%
+      )
+      0 0 / 120px 90px;
+}
+.wtb-porthole {
+  right: 5%;
+  top: 1.2rem;
+  width: min(7rem, 22%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 9px solid #8a6a3a;
+  box-shadow:
+    inset 0 0 0 3px #c9a24a,
+    0 0 0 3px #4a3418;
+  background: radial-gradient(
+    circle at 40% 35%,
+    rgb(120 220 255 / 0.35),
+    rgb(10 60 80 / 0.6)
+  );
+}
+.wtb-bubble {
+  bottom: -2rem;
+  width: 0.9rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid rgb(200 255 250 / 0.45);
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgb(255 255 255 / 0.5) 0 15%,
+    transparent 20%
+  );
+}
+
+/* Starship Bridge */
+.wai-table[data-wai-table="starship-bridge"] {
+  --background: #070c16;
+  --surface: #101a2a;
+  --surface-raised: #162438;
+  --border: rgb(110 190 255 / 0.25);
+  --muted-foreground: #a3b8cf;
+  --amethyst: #6ec3ff;
+  --amethyst-foreground: #021627;
+  --accent-rgb: 110 195 255;
+}
+[data-scene="starship-bridge"] {
+  background: radial-gradient(90% 70% at 50% 20%, #0f1a33, #060a14 75%);
+}
+.wtb-stars {
+  inset: -1170px 0 0;
+  background:
+    radial-gradient(circle, #ffffff 0 1px, transparent 1.5px) 0 0 / 90px 90px,
+    radial-gradient(circle, rgb(180 210 255 / 0.7) 0 1px, transparent 1.5px)
+      40px 60px / 130px 130px;
+  opacity: 0.55;
+}
+.wtb-viewport {
+  inset: 0.6rem 6% auto;
+  height: 34%;
+  border: 3px solid rgb(110 190 255 / 0.32);
+  border-radius: 40% 40% 12px 12px / 60% 60% 12px 12px;
+  box-shadow: inset 0 0 40px rgb(110 190 255 / 0.14);
+}
+.wtb-scan {
+  inset: 0;
+  background: linear-gradient(
+    transparent 0 49.8%,
+    rgb(110 195 255 / 0.3) 50%,
+    transparent 50.2%
+  );
+}
+
+/* ============================================================================
+ * Card backs and portrait frames (a frame is .wai-portrait::after)
+ * ========================================================================== */
+
+[data-wai-card] .wai-portrait::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* Gradient borders: the frame is a border-box gradient with the inside cut away. */
+:is(
+    [data-wai-card="stained-glass"],
+    [data-wai-card="gilded-baroque"],
+    [data-wai-card="woven-tapestry"],
+    [data-wai-card="holo-foil"]
+  )
+  .wai-portrait::after {
+  border: var(--fw, 4px) solid transparent;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) padding-box exclude,
+    linear-gradient(#000 0 0);
+}
+[data-wai-card="stained-glass"] .wai-portrait::after {
+  background: conic-gradient(
+      #b384ff 0 18%,
+      #18141f 0 20%,
+      #34d399 0 38%,
+      #18141f 0 40%,
+      #4c8dff 0 58%,
+      #18141f 0 60%,
+      #ff4d6d 0 78%,
+      #18141f 0 80%,
+      #ffb63b 0 98%,
+      #18141f 0
+    )
+    border-box;
+}
+[data-wai-card="gilded-baroque"] .wai-portrait::after {
+  background: linear-gradient(
+      135deg,
+      #8a6418,
+      #f6dc86 28%,
+      #b8862b 50%,
+      #fbe7a0 72%,
+      #8a6418
+    )
+    border-box;
+}
+[data-wai-card="woven-tapestry"] .wai-portrait::after {
+  background: repeating-linear-gradient(
+      45deg,
+      #c2553b 0 3px,
+      #e8c47a 3px 6px,
+      #2f4d6b 6px 9px
+    )
+    border-box;
+}
+[data-wai-card="holo-foil"] .wai-portrait::after {
+  --fw: 3px;
+  background: conic-gradient(
+      #9cf6ff,
+      #c7a6ff,
+      #ffb3e1,
+      #fff2a6,
+      #a6ffcb,
+      #9cf6ff
+    )
+    border-box;
+}
+[data-wai-card="celestial-almanac"] .wai-portrait::after {
+  inset: 2px;
+  border: 1.5px solid #aab4e0;
+  background:
+    radial-gradient(circle at 0 0, #eef1ff 0 3px, transparent 3.5px),
+    radial-gradient(circle at 100% 0, #eef1ff 0 3px, transparent 3.5px),
+    radial-gradient(circle at 0 100%, #eef1ff 0 3px, transparent 3.5px),
+    radial-gradient(circle at 100% 100%, #eef1ff 0 3px, transparent 3.5px);
+}
+[data-wai-card="pressed-botanicals"] .wai-portrait::after {
+  border: 2.5px dotted #a3b665;
+  box-shadow: inset 0 0 0 1px #4d5e2d;
+  background:
+    radial-gradient(40% 18% at 0 0, #7d9a4a 0 60%, transparent 62%),
+    radial-gradient(40% 18% at 100% 100%, #7d9a4a 0 60%, transparent 62%);
+}
+[data-wai-card="art-deco"] .wai-portrait::after {
+  border: 2px solid #d6b25e;
+  box-shadow:
+    inset 0 0 0 2px #111014,
+    inset 0 0 0 3px #d6b25e;
+  background:
+    linear-gradient(#d6b25e, #d6b25e) 0 0 / 22% 3px no-repeat,
+    linear-gradient(#d6b25e, #d6b25e) 0 0 / 3px 22% no-repeat,
+    linear-gradient(#d6b25e, #d6b25e) 100% 100% / 22% 3px no-repeat,
+    linear-gradient(#d6b25e, #d6b25e) 100% 100% / 3px 22% no-repeat;
+}
+
+/* ============================================================================
+ * Question effects (.wai-q wraps the question; .wqf is the flourish)
+ * ========================================================================== */
+
+.wai-q {
+  position: relative;
+  isolation: isolate;
+}
+.wqf {
+  pointer-events: none;
+}
+
+/* Wax Seal: parchment, sealed in red. */
+[data-wai-question="wax-seal"] .wai-q {
+  padding: 0.55rem 2.8rem 0.55rem 0.75rem;
+  border-radius: 0.35rem;
+  color: #3a2414;
+  background: linear-gradient(#f6ead0, #ead9b0);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+}
+[data-wai-question="wax-seal"] .wai-q .wai-question {
+  color: inherit;
+  font-family: var(--font-literata), Georgia, serif;
+}
+.wqf-seal {
+  position: absolute;
+  right: -0.45rem;
+  top: -0.65rem;
+  width: 2.7rem;
+  rotate: 12deg;
+  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.45));
+}
+
+/* Quill & Ink */
+.wqf-quill {
+  position: relative;
+  display: block;
+  height: 0.8rem;
+  margin-top: 0.15rem;
+}
+.wqf-underline {
+  position: absolute;
+  inset: 0 1.6rem 0 0;
+  width: calc(100% - 1.6rem);
+  height: 100%;
+  overflow: visible;
+}
+.wqf-underline path {
+  fill: none;
+  stroke: var(--amethyst);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.wqf-feather {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1.5rem;
+}
+
+/* Telegram Tape */
+[data-wai-question="telegram"] .wai-q {
+  padding: 0.55rem 3.6rem 0.55rem 0.75rem;
+  color: #2b2418;
+  background: #f4eedb;
+  border-block: 3px dotted rgb(43 36 24 / 0.35);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.2);
+}
+[data-wai-question="telegram"] .wai-q .wai-question {
+  color: inherit;
+  font-family: var(--font-special-elite), "Courier New", monospace;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.wqf-telegram {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.5rem;
+  padding: 0 0.3rem;
+  border: 1.5px solid currentColor;
+  font-family: var(--font-special-elite), monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+/* Spotlight */
+.wqf-spotlight {
+  position: absolute;
+  inset: -1.4rem -1rem;
+  z-index: -1;
+  background: radial-gradient(
+    45% 60% at 50% 55%,
+    rgb(255 244 200 / 0.2),
+    transparent 72%
+  );
+}
+[data-wai-question="spotlight"] .wai-question {
+  text-shadow: 0 0 18px rgb(255 240 190 / 0.35);
+}
+
+/* Paper Plane */
+.wqf-plane {
+  position: absolute;
+  right: -0.3rem;
+  top: -1.1rem;
+  width: 1.9rem;
+  rotate: -8deg;
+}
+
+/* Crystal Mist */
+.wqf-mist {
+  position: absolute;
+  inset: -0.7rem -0.5rem;
+  z-index: -1;
+}
+.wqf-mist > i {
+  position: absolute;
+  width: 55%;
+  height: 130%;
+  top: -15%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(200 170 255 / 0.28),
+    transparent
+  );
+  filter: blur(5px);
+}
+.wqf-mist > i:nth-child(2) {
+  left: 30%;
+  background: radial-gradient(
+    closest-side,
+    rgb(140 220 255 / 0.22),
+    transparent
+  );
+}
+.wqf-mist > i:nth-child(3) {
+  left: 52%;
+}
+[data-wai-question="crystal-mist"] .wai-question {
+  text-shadow: 0 0 12px rgb(200 170 255 / 0.45);
+}
+
+/* Comic Burst: a speech balloon with a starburst. */
+[data-wai-question="comic-burst"] .wai-q {
+  margin: 0.5rem 0 0.7rem 0.4rem;
+  padding: 0.55rem 0.8rem 0.55rem 1.7rem;
+  color: #111111;
+  background: #ffffff;
+  border: 2.5px solid #111111;
+  border-radius: 1.1rem;
+  box-shadow: 3px 3px 0 #111111;
+}
+[data-wai-question="comic-burst"] .wai-q::after {
+  content: "";
+  position: absolute;
+  left: 1.6rem;
+  bottom: -0.75rem;
+  width: 1rem;
+  height: 0.75rem;
+  background: #111111;
+  clip-path: polygon(0 0, 100% 0, 10% 100%);
+}
+[data-wai-question="comic-burst"] .wai-q .wai-question {
+  color: inherit;
+}
+.wqf-burst {
+  position: absolute;
+  left: -0.9rem;
+  top: -1rem;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  background: #ffd23f;
+  color: #e0262f;
+  font-family: var(--font-bungee), Impact, sans-serif;
+  font-size: 0.8rem;
+  clip-path: polygon(
+    50% 0,
+    60% 22%,
+    85% 10%,
+    78% 36%,
+    100% 45%,
+    79% 58%,
+    92% 82%,
+    66% 76%,
+    55% 100%,
+    43% 78%,
+    18% 92%,
+    24% 66%,
+    0 54%,
+    22% 42%,
+    10% 18%,
+    36% 24%
+  );
+}
+
+/* ============================================================================
+ * Answer markers: the big stamp, log and picker tags (.wai-mark), board crosses
+ * ========================================================================== */
+
+[data-wai-marker] .wai-stamp-word {
+  font-weight: 400;
+}
+
+/* Rubber Stamp */
+[data-wai-marker="rubber-stamp"] .wai-stamp {
+  color: rgb(var(--mk));
+  background: transparent;
+  border: 3px solid rgb(var(--mk));
+  outline: 1.5px solid rgb(var(--mk));
+  outline-offset: -7px;
+  border-radius: 0.35rem;
+  rotate: -5deg;
+  font-family: var(--font-special-elite), "Courier New", monospace;
+  -webkit-mask:
+    radial-gradient(circle at 18% 30%, transparent 0 2px, #000 3px),
+    radial-gradient(circle at 63% 72%, transparent 0 3px, #000 4px),
+    radial-gradient(circle at 82% 22%, transparent 0 1.5px, #000 2.5px),
+    radial-gradient(circle at 40% 85%, transparent 0 2px, #000 3px);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle at 18% 30%, transparent 0 2px, #000 3px),
+    radial-gradient(circle at 63% 72%, transparent 0 3px, #000 4px) intersect,
+    radial-gradient(circle at 82% 22%, transparent 0 1.5px, #000 2.5px)
+      intersect,
+    radial-gradient(circle at 40% 85%, transparent 0 2px, #000 3px) intersect;
+}
+[data-wai-marker="rubber-stamp"] .wai-stamp-icon {
+  background: none;
+  border: 2px solid currentColor;
+}
+[data-wai-marker="rubber-stamp"] .wai-mark {
+  background: none;
+  color: rgb(var(--mk));
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+  font-family: var(--font-special-elite), monospace;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+[data-wai-marker="rubber-stamp"] .wai-cross svg {
+  rotate: -8deg;
+  opacity: 0.9;
+}
+[data-wai-marker="rubber-stamp"] .wai-cross path {
+  stroke-width: 4.2;
+  stroke-linecap: butt;
+}
+
+/* Brass Medallions */
+[data-wai-marker="brass-medallion"] .wai-stamp {
+  color: rgb(var(--mk));
+  background: linear-gradient(#2a2216, #17120a);
+  border: 2px solid #b8862b;
+  border-radius: 999px;
+  font-family: var(--font-cinzel), Georgia, serif;
+}
+[data-wai-marker="brass-medallion"] .wai-stamp-word {
+  font-weight: 700;
+}
+[data-wai-marker="brass-medallion"] .wai-stamp-icon {
+  color: #2a1a05;
+  background: radial-gradient(circle at 35% 30%, #fbe7a0, #c9952f 55%, #7a5413);
+  box-shadow:
+    inset 0 0 0 2px #7a5413,
+    0 2px 4px rgb(0 0 0 / 0.5);
+}
+[data-wai-marker="brass-medallion"] .wai-mark {
+  color: rgb(var(--mkd));
+  background: linear-gradient(#fbe7a0, #d2a043);
+  box-shadow: inset 0 0 0 1px #7a5413;
+  border-radius: 999px;
+  font-family: var(--font-cinzel), Georgia, serif;
+}
+[data-wai-marker="brass-medallion"] .wai-cross::before {
+  content: "";
+  position: absolute;
+  width: 64%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fbe7a0, #c9952f 60%, #7a5413);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.5);
+}
+[data-wai-marker="brass-medallion"] .wai-cross svg {
+  position: relative;
+  width: 40%;
+  height: 40%;
+  color: #3b2a0a;
+}
+
+/* Chalk Scrawl */
+[data-wai-marker="chalk-scrawl"] .wai-stamp {
+  color: rgb(var(--mk));
+  background: rgb(28 32 30 / 0.75);
+  border: 2px dashed rgb(var(--mk) / 0.85);
+  border-radius: 46% 54% 50% 50% / 60% 40% 60% 40%;
+  font-family: var(--font-caveat), "Segoe Print", cursive;
+}
+[data-wai-marker="chalk-scrawl"] .wai-stamp-word {
+  font-weight: 700;
+  text-shadow:
+    0 0 1px currentColor,
+    1px 1px 0 rgb(255 255 255 / 0.18);
+}
+[data-wai-marker="chalk-scrawl"] .wai-stamp-icon {
+  background: none;
+  border: 2px dashed currentColor;
+}
+[data-wai-marker="chalk-scrawl"] .wai-mark {
+  color: rgb(var(--mk));
+  background: rgb(28 32 30 / 0.6);
+  border: 1.5px dashed currentColor;
+  font-family: var(--font-caveat), cursive;
+  font-size: 0.85rem;
+}
+[data-wai-marker="chalk-scrawl"] .wai-cross path {
+  stroke-width: 2.8;
+  stroke-dasharray: 2.2 0.9;
+}
+
+/* Neon Script */
+[data-wai-marker="neon-script"] .wai-stamp {
+  color: #ffffff;
+  background: #0b0812;
+  border: 2px solid rgb(var(--mk));
+  border-radius: 999px;
+  box-shadow:
+    0 0 10px rgb(var(--mk) / 0.6),
+    inset 0 0 10px rgb(var(--mk) / 0.4);
+  font-family: var(--font-caveat), cursive;
+}
+[data-wai-marker="neon-script"] .wai-stamp-word {
+  font-weight: 700;
+  text-shadow:
+    0 0 6px rgb(var(--mk)),
+    0 0 14px rgb(var(--mk));
+}
+[data-wai-marker="neon-script"] .wai-stamp-icon {
+  color: rgb(var(--mk));
+  background: none;
+  filter: drop-shadow(0 0 4px rgb(var(--mk)));
+}
+[data-wai-marker="neon-script"] .wai-mark {
+  color: rgb(var(--mk));
+  background: #0b0812;
+  box-shadow: 0 0 6px rgb(var(--mk) / 0.6);
+  text-shadow: 0 0 4px rgb(var(--mk));
+}
+[data-wai-marker="neon-script"] .wai-cross svg {
+  filter: drop-shadow(0 0 3px currentColor) drop-shadow(0 0 6px currentColor);
+}
+
+/* Cross-Stitch */
+[data-wai-marker="cross-stitch"] .wai-stamp {
+  color: rgb(var(--mkd));
+  background:
+    linear-gradient(rgb(0 0 0 / 0.07) 1px, transparent 1px) 0 0 / 5px 5px,
+    linear-gradient(90deg, rgb(0 0 0 / 0.07) 1px, transparent 1px) 0 0 / 5px 5px,
+    #f1e9d8;
+  border: 2.5px dashed rgb(var(--mkd));
+  font-family: var(--font-patrick-hand), "Segoe Print", cursive;
+}
+[data-wai-marker="cross-stitch"] .wai-stamp-icon {
+  background: none;
+  border: 2px dashed currentColor;
+}
+[data-wai-marker="cross-stitch"] .wai-mark {
+  color: rgb(var(--mkd));
+  background: #f1e9d8;
+  border: 1.5px dashed rgb(var(--mkd));
+  font-family: var(--font-patrick-hand), cursive;
+}
+[data-wai-marker="cross-stitch"] .wai-cross path {
+  stroke-width: 2.8;
+  stroke-linecap: butt;
+  stroke-dasharray: 1.6 1.1;
+}
+
+/* Die-Cut Stickers */
+[data-wai-marker="die-cut-sticker"] .wai-stamp {
+  color: #ffffff;
+  background:
+    linear-gradient(
+      225deg,
+      rgb(255 255 255 / 0.6) 0 9%,
+      rgb(0 0 0 / 0.15) 9% 10%,
+      transparent 10.5%
+    ),
+    rgb(var(--mkd));
+  border: none;
+  border-radius: 1.2rem;
+  box-shadow:
+    0 0 0 3px #ffffff,
+    0 6px 10px -2px rgb(0 0 0 / 0.5);
+  rotate: 3deg;
+  font-family: var(--font-fredoka), ui-rounded, sans-serif;
+}
+[data-wai-marker="die-cut-sticker"] .wai-stamp-word {
+  font-weight: 700;
+}
+[data-wai-marker="die-cut-sticker"] .wai-stamp-icon {
+  color: rgb(var(--mkd));
+  background: #ffffff;
+}
+[data-wai-marker="die-cut-sticker"] .wai-mark {
+  color: #ffffff;
+  background: rgb(var(--mkd));
+  box-shadow: 0 0 0 2px #ffffff;
+  font-family: var(--font-fredoka), sans-serif;
+}
+[data-wai-marker="die-cut-sticker"] .wai-cross::before {
+  content: "";
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgb(0 0 0 / 0.45);
+}
+[data-wai-marker="die-cut-sticker"] .wai-cross svg {
+  position: relative;
+  width: 44%;
+  height: 44%;
+}
+
+/* Ticket Punch */
+[data-wai-marker="ticket-punch"] .wai-stamp {
+  color: rgb(var(--mkd));
+  background: #f6efd9;
+  border: none;
+  border-radius: 0.3rem;
+  padding-inline: 1.3rem;
+  font-family: var(--font-bungee), Impact, sans-serif;
+  -webkit-mask:
+    radial-gradient(circle at 0 50%, transparent 0 0.55rem, #000 0.6rem),
+    radial-gradient(circle at 100% 50%, transparent 0 0.55rem, #000 0.6rem);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(circle at 0 50%, transparent 0 0.55rem, #000 0.6rem),
+    radial-gradient(circle at 100% 50%, transparent 0 0.55rem, #000 0.6rem)
+      intersect;
+}
+[data-wai-marker="ticket-punch"] .wai-stamp-icon {
+  background: none;
+  border-radius: 0;
+  border-right: 2px dashed rgb(var(--mkd) / 0.5);
+  padding-right: 0.4rem;
+  width: auto;
+}
+[data-wai-marker="ticket-punch"] .wai-mark {
+  color: rgb(var(--mkd));
+  background: #f6efd9;
+  border-radius: 2px;
+  font-family: var(--font-bungee), sans-serif;
+  font-weight: 400;
+  font-size: 0.6rem;
+}
+[data-wai-marker="ticket-punch"] .wai-cross::before {
+  content: "";
+  position: absolute;
+  top: 8%;
+  right: 8%;
+  width: 24%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgb(var(--paper-rgb));
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / 0.7),
+    0 0 0 1.5px rgb(255 255 255 / 0.5);
+}
+
+/* ============================================================================
+ * Victory reveals
+ * ========================================================================== */
+
+.wai-reveal {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.wai-reveal > i,
+.wvr-on-portrait > i {
+  position: absolute;
+  display: block;
+}
+.wvr-on-portrait {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Curtain Call: drapes rest off to the sides; a valance stays along the top. */
+.wvr-curtain {
+  top: 0;
+  bottom: 0;
+  width: 51%;
+  background:
+    linear-gradient(
+      90deg,
+      rgb(0 0 0 / 0.25),
+      transparent 20%,
+      transparent 80%,
+      rgb(0 0 0 / 0.25)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      #8f1022 0 10px,
+      #b5162e 10px 18px,
+      #7a0c1c 18px 24px
+    );
+}
+.wvr-curtain[data-side="l"] {
+  left: 0;
+  translate: -102% 0;
+}
+.wvr-curtain[data-side="r"] {
+  right: 0;
+  translate: 102% 0;
+}
+.wvr-valance {
+  inset: 0 0 auto;
+  height: 0.7rem;
+  border-top: 3px solid #e8c15a;
+  background: radial-gradient(
+      circle at 50% 0,
+      #b5162e 0 0.55rem,
+      transparent 0.58rem
+    )
+    0 0 / 1.4rem 0.7rem repeat-x;
+}
+.wvr-rose {
+  top: -10%;
+  width: 0.7rem;
+  aspect-ratio: 1;
+  border-radius: 50% 50% 50% 0;
+  background: radial-gradient(circle at 40% 40%, #ff5a7a, #a8102a);
+  opacity: 0;
+}
+.wvr-spot {
+  inset: -30%;
+  background: radial-gradient(
+    closest-side,
+    rgb(255 244 200 / 0.5),
+    transparent
+  );
+  opacity: 0.25;
+}
+
+/* Magician's Hat */
+.wvr-smoke {
+  inset: -10%;
+  background:
+    radial-gradient(
+      circle at 30% 60%,
+      rgb(240 240 255 / 0.95) 0 30%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 70% 40%,
+      rgb(230 230 245 / 0.95) 0 32%,
+      transparent 58%
+    ),
+    radial-gradient(
+      circle at 50% 80%,
+      rgb(250 250 255 / 0.9) 0 30%,
+      transparent 55%
+    );
+  opacity: 0;
+}
+.wvr-hat {
+  position: absolute;
+  right: -1px;
+  bottom: -2px;
+  width: 42%;
+  rotate: 12deg;
+}
+.wvr-card {
+  left: 3rem;
+  top: 55%;
+  width: 0.9rem;
+  height: 1.25rem;
+  border: 1.5px solid #222222;
+  border-radius: 2px;
+  background: #ffffff;
+  opacity: 0;
+}
+.wvr-card::after {
+  content: "♥";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #c8102e;
+  font-size: 0.7rem;
+}
+.wvr-card:nth-child(even)::after {
+  content: "♠";
+  color: #111111;
+}
+
+/* Masquerade: the mask rests tilted at the portrait's corner. */
+.wvr-mask {
+  position: absolute;
+  left: 8%;
+  top: 22%;
+  width: 84%;
+  overflow: visible;
+  transform: translate(32%, -62%) rotate(18deg) scale(0.5);
+}
+.wvr-glitter {
+  inset: 0;
+  background:
+    radial-gradient(circle, #fff3c4 0 1.5px, transparent 2px) 0 0 / 22px 18px,
+    radial-gradient(circle, #e8c15a 0 1px, transparent 1.5px) 11px 9px / 26px
+      22px;
+  opacity: 0;
+}
+[data-reveal="constellation-crown"] .wvr-glitter {
+  background:
+    radial-gradient(circle, #ffffff 0 1px, transparent 1.5px) 0 0 / 30px 24px,
+    radial-gradient(circle, #cfe0ff 0 1px, transparent 1.5px) 15px 12px / 34px
+      28px;
+}
+
+/* Gallery Unveiling: the gilded frame stays; the sheet has gone. */
+.wvr-frame {
+  inset: 0;
+  border: 4px solid transparent;
+  border-radius: inherit;
+  background: linear-gradient(
+      135deg,
+      #8a6418,
+      #f6dc86 30%,
+      #b8862b 50%,
+      #fbe7a0 72%,
+      #8a6418
+    )
+    border-box;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) padding-box exclude,
+    linear-gradient(#000 0 0);
+}
+.wvr-sheet {
+  inset: -4%;
+  background: repeating-linear-gradient(
+    100deg,
+    #e9e4f2 0 8px,
+    #cfc7de 8px 12px,
+    #f4f0fa 12px 20px
+  );
+  translate: 0 115%;
+}
+
+/* Fireworks Finale: each burst settles into a faint star. */
+.wvr-firework {
+  width: 0;
+  height: 0;
+}
+.wvr-firework > b {
+  position: absolute;
+  left: -1.5px;
+  top: -7px;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: rotate(var(--a)) translateY(-24px);
+  opacity: 0.22;
+}
+
+/* Lantern Release: lanterns come to rest near the top, glowing softly. */
+.wvr-lantern {
+  top: 0.5rem;
+  width: 0.8rem;
+  height: 1.05rem;
+  border-radius: 40%;
+  background: radial-gradient(circle at 50% 40%, #ffe9a8, #ff9a3d 60%, #c8502a);
+  box-shadow: 0 0 12px rgb(255 160 70 / 0.7);
+  opacity: 0.5;
+}
+
+/* Constellation Crown */
+.wvr-crown {
+  position: absolute;
+  left: 10%;
+  top: 2%;
+  width: 80%;
+  overflow: visible;
+}
+.wvr-crown :is(polyline, line) {
+  fill: none;
+  stroke: #fff3c4;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  filter: drop-shadow(0 0 2px #fff3c4);
+}
+.wvr-crown circle {
+  transform-box: fill-box;
+  transform-origin: center;
+  fill: #fffbe8;
+  filter: drop-shadow(0 0 3px #fff3c4);
+}
+
+/* ============================================================================
+ * Art styles: panels are .wai-stage, .wai-board, .wai-log, .wai-player, .wai-result.
+ * Board and log take full borders; players, stage cards and the result keep the
+ * colour of their state (turn, answer, winner) and only change shape and texture.
+ * ========================================================================== */
+
+/* ---- Illuminated Manuscript ---- */
+[data-wai-style="illuminated"] :is(.wai-board, .wai-log) {
+  border: 3px double rgb(214 178 94 / 0.7);
+}
+[data-wai-style="illuminated"] :is(.wai-stage, .wai-result, .wai-player) {
+  border-style: double;
+  border-width: 3px;
+}
+[data-wai-style="illuminated"]
+  :is(.wai-board, .wai-log, .wai-stage, .wai-result) {
+  background-image:
+    radial-gradient(
+      circle at 0 0,
+      rgb(214 178 94 / 0.35) 0 0.85rem,
+      transparent 0.9rem
+    ),
+    radial-gradient(
+      circle at 100% 0,
+      rgb(214 178 94 / 0.35) 0 0.85rem,
+      transparent 0.9rem
+    ),
+    radial-gradient(
+      circle at 100% 100%,
+      rgb(214 178 94 / 0.35) 0 0.85rem,
+      transparent 0.9rem
+    ),
+    radial-gradient(
+      circle at 0 100%,
+      rgb(214 178 94 / 0.35) 0 0.85rem,
+      transparent 0.9rem
+    ),
+    linear-gradient(rgb(255 236 190 / 0.04), rgb(255 236 190 / 0.04));
+}
+[data-wai-style="illuminated"] :is(h2, .wai-player p) {
+  font-family: var(--font-cinzel), Georgia, serif;
+  letter-spacing: 0.03em;
+}
+[data-wai-style="illuminated"] .wai-question {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+[data-wai-style="illuminated"]:not(
+    [data-wai-question="wax-seal"],
+    [data-wai-question="telegram"],
+    [data-wai-question="comic-burst"]
+  )
+  .wai-question::first-letter {
+  float: left;
+  margin: 0.05em 0.12em 0 0;
+  font-family: var(--font-cinzel), Georgia, serif;
+  font-size: 1.9em;
+  line-height: 0.8;
+  color: #e2b75c;
+}
+[data-wai-style="illuminated"] .wai-portrait {
+  box-shadow: 0 0 0 1px rgb(214 178 94 / 0.65);
+}
+[data-wai-style="illuminated"]:not([data-wai-marker]) .wai-stamp {
+  border-style: double;
+  border-width: 4px;
+  border-radius: 0.5rem;
+  font-family: var(--font-cinzel), Georgia, serif;
+}
+
+/* ---- Comic Panel ---- */
+[data-wai-style="comic-panel"] :is(.wai-board, .wai-log) {
+  border: 3px solid rgb(var(--ink-rgb) / 0.85);
+}
+[data-wai-style="comic-panel"] :is(.wai-stage, .wai-result, .wai-player) {
+  border-width: 3px;
+}
+[data-wai-style="comic-panel"]
+  :is(.wai-board, .wai-log, .wai-stage, .wai-result, .wai-player) {
+  border-radius: 0.35rem;
+  background-image: radial-gradient(
+    rgb(var(--ink-rgb) / 0.08) 1px,
+    transparent 1.6px
+  );
+  background-size: 6px 6px;
+}
+[data-wai-style="comic-panel"]
+  :is(.wai-board, .wai-log, .wai-stage, .wai-result) {
+  box-shadow: 5px 5px 0 rgb(0 0 0 / 0.7);
+}
+[data-wai-style="comic-panel"] .wai-stage {
+  border-radius: 1rem 0.35rem 1rem 0.35rem;
+}
+[data-wai-style="comic-panel"] :is(h2, .wai-player p:nth-child(2)) {
+  font-family: var(--font-bungee), Impact, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+[data-wai-style="comic-panel"] .wai-portrait {
+  outline: 2px solid rgb(var(--ink-rgb) / 0.85);
+  outline-offset: -1px;
+}
+[data-wai-style="comic-panel"]:not([data-wai-marker]) .wai-stamp {
+  border-width: 3px;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.7);
+  font-family: var(--font-bungee), Impact, sans-serif;
+}
+[data-wai-style="comic-panel"]:not([data-wai-marker]) .wai-stamp-word {
+  font-weight: 400;
+}
+
+/* ---- Cut-Paper Diorama ---- */
+[data-wai-style="cut-paper"]
+  :is(.wai-board, .wai-log, .wai-stage, .wai-result, .wai-player) {
+  border-radius: 14px 10px 16px 9px / 10px 15px 9px 14px;
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgb(255 255 255 / 0.03) 0 2px,
+    transparent 2px 6px
+  );
+  box-shadow:
+    0 2px 0 rgb(0 0 0 / 0.3),
+    0 12px 20px -10px rgb(0 0 0 / 0.65);
+}
+[data-wai-style="cut-paper"] :is(.wai-board, .wai-log) {
+  position: relative;
+  border-color: transparent;
+}
+[data-wai-style="cut-paper"] .wai-board {
+  rotate: -0.3deg;
+}
+[data-wai-style="cut-paper"] .wai-log {
+  rotate: 0.35deg;
+}
+[data-wai-style="cut-paper"] :is(.wai-board, .wai-log)::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 4.5rem;
+  height: 16px;
+  translate: -50% 0;
+  rotate: -3deg;
+  background: rgb(255 240 200 / 0.35);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+[data-wai-style="cut-paper"] :is(h2, .wai-player p, .wai-question) {
+  font-family: var(--font-fredoka), ui-rounded, sans-serif;
+}
+[data-wai-style="cut-paper"] .wai-portrait {
+  border-radius: 0.6rem;
+  outline: 2px solid rgb(255 255 255 / 0.85);
+  outline-offset: -2px;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.3);
+}
+[data-wai-style="cut-paper"]:not([data-wai-marker]) .wai-stamp {
+  rotate: -3deg;
+  box-shadow: 0 3px 0 rgb(0 0 0 / 0.3);
+  font-family: var(--font-fredoka), ui-rounded, sans-serif;
+}
+
+/* ---- Phosphor Terminal ---- */
+[data-wai-style="phosphor-terminal"] :is(.wai-board, .wai-log) {
+  border: 1px solid rgb(var(--accent-rgb) / 0.55);
+}
+[data-wai-style="phosphor-terminal"]
+  :is(.wai-board, .wai-log, .wai-stage, .wai-result, .wai-player) {
+  border-radius: 2px;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgb(0 0 0 / 0.2) 0 1px,
+    transparent 1px 3px
+  );
+}
+[data-wai-style="phosphor-terminal"]
+  :is(.wai-board, .wai-log, .wai-stage, .wai-result) {
+  box-shadow: inset 0 0 22px rgb(var(--accent-rgb) / 0.1);
+}
+[data-wai-style="phosphor-terminal"]
+  :is(h2, .wai-question, .wai-player p, .wai-log-item) {
+  font-family: var(--font-vt323), ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+[data-wai-style="phosphor-terminal"] h2 {
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+[data-wai-style="phosphor-terminal"] h2::before {
+  content: "> ";
+  color: rgb(var(--accent-rgb));
+}
+[data-wai-style="phosphor-terminal"] .wai-log-item {
+  font-size: 1rem;
+}
+[data-wai-style="phosphor-terminal"] .wai-question {
+  font-weight: 400;
+  font-size: 1.35rem;
+  text-shadow: 0 0 6px rgb(var(--accent-rgb) / 0.45);
+}
+[data-wai-style="phosphor-terminal"] .wai-portrait {
+  border-radius: 2px;
+}
+[data-wai-style="phosphor-terminal"] .wai-portrait::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    0deg,
+    rgb(0 0 0 / 0.22) 0 1px,
+    transparent 1px 3px
+  );
+  pointer-events: none;
+}
+[data-wai-style="phosphor-terminal"]:not([data-wai-marker]) .wai-stamp {
+  border-radius: 2px;
+  font-family: var(--font-vt323), monospace;
+  box-shadow: 0 0 12px rgb(var(--mk) / 0.4);
+}
+[data-wai-style="phosphor-terminal"]:not([data-wai-marker]) .wai-stamp-word {
+  font-weight: 400;
+  font-size: 2.2rem;
+}
+
+/* ============================================================================
+ * Motion
+ * ========================================================================== */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Table scenery */
+  .wai-fx-full .wtb-mote {
+    animation: wtb-float 9s ease-in-out infinite;
+  }
+  .wai-fx .wtb-lantern {
+    animation: wtb-sway 5s ease-in-out infinite;
+  }
+  .wai-fx-full .wtb-rain {
+    animation: wtb-rain 1.4s linear infinite;
+  }
+  .wai-fx .wtb-star {
+    animation: wtb-swing 6s ease-in-out infinite;
+  }
+  .wai-fx .wtb-crystal {
+    animation: wtb-glow 5s ease-in-out infinite;
+  }
+  .wai-fx .wtb-caustics {
+    animation: wtb-drift 70s linear infinite;
+  }
+  .wai-fx-full .wtb-bubble {
+    animation: wtb-rise 11s linear infinite;
+  }
+  .wai-fx .wtb-stars {
+    animation: wtb-stars 240s linear infinite;
+  }
+  .wai-fx .wtb-scan {
+    animation: wtb-scan 7s linear infinite;
+  }
+  .wai-fx .wai-player .wai-card-back .wai-holo-shine {
+    animation: wai-holo 3.5s ease-in-out infinite;
+  }
+  .wai-fx[data-wai-card="holo-foil"] .wai-player .wai-portrait::after {
+    animation: wai-hue 6s linear infinite;
+  }
+
+  /* Question effects (they replace the default rise-in) */
+  .wai-fx[data-wai-question="wax-seal"] .wai-q {
+    animation: wq-unroll 0.35s ease-out both;
+  }
+  .wai-fx[data-wai-question="wax-seal"] .wqf-seal {
+    animation: wq-stamp 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) 0.35s both;
+  }
+  .wai-fx[data-wai-question="quill-ink"] .wai-question {
+    animation: wq-write 0.9s ease-out both;
+  }
+  .wai-fx[data-wai-question="quill-ink"] .wqf-underline path {
+    stroke-dasharray: 100;
+    animation: wq-ink 0.6s ease-out 0.8s both;
+  }
+  .wai-fx[data-wai-question="quill-ink"] .wqf-feather {
+    animation: wq-quill 1.4s ease-in-out both;
+  }
+  .wai-fx[data-wai-question="telegram"] .wai-question {
+    animation: wq-type 1.1s steps(22) both;
+  }
+  .wai-fx[data-wai-question="telegram"] .wqf-telegram {
+    animation: wq-pop 0.25s ease-out 1.1s both;
+  }
+  .wai-fx[data-wai-question="spotlight"] .wqf-spotlight {
+    animation: wq-sweep 0.9s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  }
+  .wai-fx[data-wai-question="spotlight"] .wai-question {
+    animation: wq-lit 0.9s ease-out both;
+  }
+  .wai-fx[data-wai-question="paper-plane"] .wqf-plane {
+    animation: wq-fly 0.9s cubic-bezier(0.3, 0.6, 0.4, 1) both;
+  }
+  .wai-fx[data-wai-question="paper-plane"] .wai-question {
+    animation: wq-unfold 0.45s ease-out 0.6s both;
+    transform-origin: 50% 0;
+  }
+  .wai-fx[data-wai-question="crystal-mist"] .wqf-mist > i {
+    animation: wq-swirl 6s ease-in-out infinite alternate;
+  }
+  .wai-fx[data-wai-question="crystal-mist"] .wqf-mist > i:nth-child(2) {
+    animation-duration: 8s;
+    animation-delay: -3s;
+  }
+  .wai-fx[data-wai-question="crystal-mist"] .wai-question {
+    animation: wq-surface 0.9s ease-out both;
+  }
+  .wai-fx[data-wai-question="comic-burst"] .wai-q {
+    animation: wq-balloon 0.4s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+  .wai-fx[data-wai-question="comic-burst"] .wqf-burst {
+    animation: wq-burst 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) 0.2s both;
+  }
+  .wai-fx[data-wai-question="comic-burst"] .wai-question {
+    animation: none;
+  }
+
+  /* Markers */
+  .wai-fx[data-wai-marker="chalk-scrawl"] .wai-cross path,
+  .wai-fx[data-wai-marker="cross-stitch"] .wai-cross path {
+    animation: none;
+  }
+  .wai-fx[data-wai-marker="die-cut-sticker"] .wai-cross::before,
+  .wai-fx[data-wai-marker="brass-medallion"] .wai-cross::before {
+    animation: wai-pop 220ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  }
+  .wai-fx[data-wai-marker="neon-script"] .wai-stamp {
+    animation:
+      wai-stamp 460ms cubic-bezier(0.2, 1.4, 0.4, 1) 80ms both,
+      wm-flicker 0.7s steps(1) 0.5s;
+  }
+
+  /* Victory reveals */
+  .wai-fx .wvr-curtain[data-side="l"] {
+    animation: wvr-open-l 1.3s cubic-bezier(0.5, 0, 0.3, 1) both;
+  }
+  .wai-fx .wvr-curtain[data-side="r"] {
+    animation: wvr-open-r 1.3s cubic-bezier(0.5, 0, 0.3, 1) both;
+  }
+  .wai-fx-full .wvr-rose {
+    animation: wvr-fall 1.6s ease-in both;
+  }
+  .wai-fx .wvr-spot {
+    animation: wvr-spot 1.8s ease-out 0.8s both;
+  }
+  .wai-fx .wvr-smoke {
+    animation: wvr-smoke 1.2s ease-out both;
+  }
+  .wai-fx .wvr-hat {
+    animation: wai-pop 420ms cubic-bezier(0.2, 1.4, 0.4, 1) 0.1s both;
+  }
+  .wai-fx-full .wvr-card {
+    animation: wvr-card 1.2s cubic-bezier(0.2, 0.7, 0.4, 1)
+      calc(0.5s + var(--k) * 0.1s) both;
+  }
+  .wai-fx .wvr-mask {
+    animation: wvr-unmask 1.3s cubic-bezier(0.5, 0, 0.3, 1) 0.3s both;
+  }
+  .wai-fx-full .wvr-glitter {
+    animation: wvr-glitter 1.6s ease-out 0.5s both;
+  }
+  .wai-fx .wvr-sheet {
+    animation: wvr-sheet 1.1s cubic-bezier(0.6, 0, 0.3, 1) 0.2s both;
+  }
+  .wai-fx .wvr-frame {
+    animation: wvr-gleam 1.2s ease-out 1.1s both;
+  }
+  .wai-fx-full .wvr-firework > b {
+    animation: wvr-spark 1.1s cubic-bezier(0.1, 0.7, 0.3, 1) both;
+    animation-delay: inherit;
+  }
+  .wai-fx-full .wvr-lantern {
+    animation: wvr-rise 2.6s ease-out both;
+  }
+  .wai-fx .wvr-crown circle {
+    animation: wvr-twinkle-in 0.4s ease-out both;
+  }
+  .wai-fx .wvr-crown :is(polyline, line) {
+    animation: wvr-draw 1s ease-out 0.9s both;
+  }
+
+  /* Art styles */
+  .wai-fx[data-wai-style="phosphor-terminal"] .wai-question::after {
+    content: "_";
+    animation: wai-blink 1s steps(1) infinite;
+  }
+}
+
+@keyframes wtb-float {
+  50% {
+    translate: 6px -14px;
+    opacity: 0.8;
+  }
+}
+@keyframes wtb-sway {
+  50% {
+    rotate: 6deg;
+  }
+}
+@keyframes wtb-rain {
+  to {
+    translate: -14px 140vh;
+  }
+}
+@keyframes wtb-swing {
+  0%,
+  100% {
+    rotate: -5deg;
+  }
+  50% {
+    rotate: 5deg;
+  }
+}
+@keyframes wtb-glow {
+  50% {
+    opacity: 0.6;
+    scale: 1.05;
+  }
+}
+@keyframes wtb-drift {
+  to {
+    translate: 360px 630px;
+  }
+}
+@keyframes wtb-rise {
+  from {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(18px, -120vh);
+    opacity: 0;
+  }
+}
+@keyframes wtb-stars {
+  to {
+    translate: 0 1170px;
+  }
+}
+@keyframes wtb-scan {
+  from {
+    translate: 0 -50%;
+  }
+  to {
+    translate: 0 50%;
+  }
+}
+@keyframes wai-holo {
+  0%,
+  100% {
+    transform: rotate(20deg) translateX(0);
+  }
+  50% {
+    transform: rotate(20deg) translateX(150px);
+  }
+}
+@keyframes wai-hue {
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+@keyframes wq-unroll {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes wq-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-20deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes wq-write {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes wq-ink {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes wq-quill {
+  0% {
+    opacity: 0;
+    translate: -14rem -1.6rem;
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    translate: -2rem -1.2rem;
+  }
+  100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes wq-type {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes wq-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wq-sweep {
+  from {
+    opacity: 0;
+    transform: translateX(-60%) scaleX(0.6);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wq-lit {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes wq-fly {
+  0% {
+    opacity: 0;
+    transform: translate(-16rem, 1.5rem) rotate(-14deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-6rem, -1rem) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wq-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(500px) rotateX(-80deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wq-swirl {
+  from {
+    transform: translateX(-12%) scale(0.95);
+  }
+  to {
+    transform: translateX(12%) scale(1.1);
+  }
+}
+@keyframes wq-surface {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+@keyframes wq-balloon {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wq-burst {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-40deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wm-flicker {
+  0%,
+  30%,
+  60% {
+    opacity: 0.35;
+  }
+  15%,
+  45%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes wvr-open-l {
+  0%,
+  25% {
+    translate: 0 0;
+  }
+  100% {
+    translate: -102% 0;
+  }
+}
+@keyframes wvr-open-r {
+  0%,
+  25% {
+    translate: 0 0;
+  }
+  100% {
+    translate: 102% 0;
+  }
+}
+@keyframes wvr-fall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(12rem) rotate(260deg);
+  }
+}
+@keyframes wvr-spot {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0.25;
+  }
+}
+@keyframes wvr-smoke {
+  0% {
+    opacity: 1;
+    transform: scale(0.7);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+@keyframes wvr-card {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--k) * 46px - 20px), -5rem)
+      rotate(calc(var(--k) * 40deg - 50deg));
+  }
+}
+@keyframes wvr-unmask {
+  0%,
+  20% {
+    transform: none;
+  }
+  100% {
+    transform: translate(32%, -62%) rotate(18deg) scale(0.5);
+  }
+}
+@keyframes wvr-glitter {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes wvr-sheet {
+  0%,
+  15% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  100% {
+    translate: 0 115%;
+    rotate: 8deg;
+  }
+}
+@keyframes wvr-gleam {
+  0% {
+    filter: brightness(1);
+  }
+  40% {
+    filter: brightness(1.6);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+@keyframes wvr-spark {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(0) scaleY(0.4);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateY(-30px) scaleY(1);
+  }
+  100% {
+    opacity: 0.22;
+    transform: rotate(var(--a)) translateY(-24px);
+  }
+}
+@keyframes wvr-rise {
+  0% {
+    opacity: 1;
+    transform: translate(0, 9rem);
+  }
+  50% {
+    transform: translate(var(--sway), 4rem);
+  }
+  100% {
+    opacity: 0.5;
+    transform: none;
+  }
+}
+@keyframes wvr-twinkle-in {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes wvr-draw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes wai-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* The shop preview holds everything still when effects are off. */
+.waip[data-still] *,
+.waip[data-still] *::before,
+.waip[data-still] *::after {
+  animation: none !important;
+}
