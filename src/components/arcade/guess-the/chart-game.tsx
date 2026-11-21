@@ -567,7 +567,7 @@ export default function GuessTheChart({ best: initialBest }: { best: number | nu
         </>
       }
     >
-      <div data-motion={effects} className="flex flex-col gap-3">
+      <div data-motion={effects} data-gt-mode="chart" className="flex flex-col gap-3">
         {phase.kind === "loading" ? (
           <div role="status" className="gtc-panel grid min-h-[24rem] place-items-center text-sm text-muted-foreground">
             <span className="flex flex-col items-center gap-3">
@@ -585,14 +585,14 @@ export default function GuessTheChart({ best: initialBest }: { best: number | nu
           </div>
         ) : chart ? (
           <>
-            <section className="gtc-panel flex flex-col gap-3 p-3 sm:p-5">
+            <section className="gtc-panel gt-card-hero gt-enter flex flex-col gap-3 p-3 sm:p-6">
               <header className="flex flex-col gap-1.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="gtc-chip gtc-chip-accent">{chart.topic}</span>
                   <span className="gtc-chip">{chart.firstYear}–{chart.lastYear}</span>
                   <span className="gtc-chip">{chart.unit}</span>
                 </div>
-                <h2 className="text-xl leading-tight font-extrabold tracking-tight text-balance sm:text-2xl">{chart.title}</h2>
+                <h2 className="gt-display text-3xl text-balance sm:text-4xl">{chart.title}</h2>
                 <p className="text-sm text-pretty text-muted-foreground">{chart.subtitle}</p>
               </header>
 
@@ -630,7 +630,7 @@ export default function GuessTheChart({ best: initialBest }: { best: number | nu
                   </p>
                   <p className="mt-0.5 text-sm text-pretty text-muted-foreground">{missText(chart, result)}</p>
                 </div>
-                <Button size="lg" onClick={deal} ref={(element) => element?.focus({ preventScroll: true })}>
+                <Button size="lg" className="gt-go h-12 rounded-full px-6 text-base" onClick={deal} ref={(element) => element?.focus({ preventScroll: true })}>
                   <Shuffle aria-hidden />
                   Another chart
                 </Button>
@@ -665,7 +665,7 @@ export default function GuessTheChart({ best: initialBest }: { best: number | nu
                     <RotateCcw aria-hidden />
                     Reset
                   </Button>
-                  <Button size="sm" onClick={() => void submit()} disabled={!complete || phase.kind !== "drawing"}>
+                  <Button size="sm" className="gt-go rounded-full px-4" onClick={() => void submit()} disabled={!complete || phase.kind !== "drawing"}>
                     {phase.kind === "submitting" ? <Loader2 aria-hidden className="animate-spin" /> : <Send aria-hidden />}
                     Reveal
                   </Button>

@@ -3,13 +3,14 @@
 import "./guess-the.css";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ComponentType, type CSSProperties, type ReactNode } from "react";
-import { ArrowRight, Info, LayoutGrid, Loader2, RotateCcw, Trophy } from "lucide-react";
+import { ArrowRight, Flag, Info, LayoutGrid, Loader2, RotateCcw, Ruler, Tag, Trophy, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { ROUND_SCORING, ROUND_SIZE, roundVerdict, type RoundModeId, type RoundPrompt, type RoundResult } from "@/lib/minigames/guess-the";
 import { cn } from "@/lib/utils";
-import { GameShell, Stat, useArcade, useGameAchievementTracking } from "../game-shell";
+import { GameShell, useArcade, useGameAchievementTracking } from "../game-shell";
+import { Confetti, CountUp, toneOf } from "./fx";
 
 /**
  * The shared player for round-based Guess The ... modes: deals a round from /api/arcade/guess-the/<mode>, shows one
@@ -35,6 +36,8 @@ type Phase<M extends RoundModeId> =
   | { kind: "finishing"; prompts: RoundPrompt[M][]; results: RoundResult[M][]; guesses: unknown[] }
   | { kind: "done"; prompts: RoundPrompt[M][]; results: RoundResult[M][]; guesses: unknown[]; score: number; best: number; previousBest: number | null };
 
+const MODE_ICON = { flag: Flag, size: Ruler, price: Tag } as const;
+
 const RECENT_KEEP = 30;
 const recentKey = (mode: RoundModeId) => `amethyst:guess-the:${mode}:recent:v1`;
 function readRecent(mode: RoundModeId): string[] {
@@ -54,13 +57,16 @@ function rememberRound(mode: RoundModeId, ids: readonly string[]) {
   }
 }
 
-function ScoreRing({ score, animate }: { score: number; animate: boolean }) {
+/** A prompt's score as a share of the best it could be (flags are worth 10). */
+const shareOf = (mode: RoundModeId, score: number) => (mode === "flag" ? score * 10 : score);
+
+export function ScoreRing({ score, animate, size = "lg" }: { score: number; animate: boolean; size?: "lg" | "xl" }) {
   const r = 34;
   const length = 2 * Math.PI * r;
   return (
-    <div className="relative grid size-24 shrink-0 place-items-center">
-      <svg viewBox="0 0 84 84" className="absolute inset-0 size-full -rotate-90" aria-hidden>
-        <circle cx="42" cy="42" r={r} fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="7" className="text-foreground" />
+    <div className={cn("relative grid shrink-0 place-items-center", size === "xl" ? "size-36 sm:size-40" : "size-24")}>
+      <svg viewBox="0 0 84 84" className="absolute inset-0 size-full -rotate-90 drop-shadow-[0_0_18px_rgb(var(--gt-a-rgb)/0.45)]" aria-hidden>
+        <circle cx="42" cy="42" r={r} fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="7" className="text-foreground" />
         <circle
           cx="42"
           cy="42"
@@ -76,14 +82,16 @@ function ScoreRing({ score, animate }: { score: number; animate: boolean }) {
         />
         <defs>
           <linearGradient id="gtr-ring" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--amethyst)" />
-            <stop offset="100%" stopColor="var(--rose)" />
+            <stop offset="0%" stopColor="var(--gt-a)" />
+            <stop offset="100%" stopColor="var(--gt-b)" />
           </linearGradient>
         </defs>
       </svg>
       <p className="relative flex flex-col items-center leading-none">
-        <span className="text-3xl font-extrabold tabular-nums">{score}</span>
-        <span className="mt-0.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">of 100</span>
+        <span className={cn("font-extrabold tabular-nums", size === "xl" ? "gt-display text-5xl" : "text-3xl")}>
+          <CountUp value={score} animate={animate} />
+        </span>
+        <span className="mt-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">of 100</span>
       </p>
     </div>
   );
@@ -116,6 +124,7 @@ export function RoundGame<M extends RoundModeId>({
   const loading = useRef(false);
   const size = ROUND_SIZE[mode];
   const animate = effects !== "off";
+  const Icon: LucideIcon = MODE_ICON[mode];
 
   useGameAchievementTracking("guess-the", phase.kind === "playing" ? "playing" : phase.kind);
 
@@ -132,7 +141,7 @@ export function RoundGame<M extends RoundModeId>({
           );
           setPhase({ kind: "playing", prompts, index: 0, results: prompts.map(() => null), guesses: prompts.map(() => null), busy: false });
         },
-        () => setPhase({ kind: "error", message: `Couldn’t load a round. Check your connection and try again.` }),
+        () => setPhase({ kind: "error", message: "Couldn’t load a round. Check your connection and try again." }),
       )
       .finally(() => (loading.current = false));
   }, [mode]);
@@ -154,7 +163,8 @@ export function RoundGame<M extends RoundModeId>({
       const results = current.results.map((entry, i) => (i === current.index ? result : entry));
       const guesses = current.guesses.map((entry, i) => (i === current.index ? value : entry));
       setPhase({ ...current, results, guesses, busy: false });
-      play(result.score >= (mode === "flag" ? 1 : 75) ? "win" : "reveal");
+      const share = shareOf(mode, result.score);
+      play(share >= 90 ? "perfect" : share >= 50 ? "coin" : "miss");
     } catch (error) {
       setPhase({ ...current, busy: false });
       toast.error(error instanceof ApiError ? error.message : "Couldn’t check your guess. Try again.");
@@ -187,15 +197,17 @@ export function RoundGame<M extends RoundModeId>({
     setPhase({ ...phase, index: phase.index + 1 });
   }
 
-  const answered = phase.kind === "playing" ? phase.results.filter(Boolean).length : phase.kind === "finishing" || phase.kind === "done" ? size : 0;
-  const scored = phase.kind === "playing" ? (phase.results.filter(Boolean) as RoundResult[M][]) : phase.kind === "finishing" || phase.kind === "done" ? phase.results : [];
-  const running = scored.length ? (mode === "flag" ? scored.reduce((sum, result) => sum + result.score, 0) : Math.round(scored.reduce((sum, result) => sum + result.score, 0) / scored.length)) : null;
+  const results: (RoundResult[M] | null)[] = phase.kind === "playing" ? phase.results : phase.kind === "finishing" || phase.kind === "done" ? phase.results : [];
+  const scored = results.filter(Boolean) as RoundResult[M][];
+  const running = scored.length ? (mode === "flag" ? scored.reduce((sum, result) => sum + result.score, 0) : Math.round(scored.reduce((sum, result) => sum + result.score, 0) / scored.length)) : 0;
+  const current = phase.kind === "playing" ? phase.index : -1;
+  const newBest = phase.kind === "done" && (phase.previousBest === null || phase.score > phase.previousBest);
 
   return (
     <GameShell
       game="guess-the"
       title={title}
-      active={phase.kind === "playing" && answered > 0}
+      active={phase.kind === "playing" && scored.length > 0}
       actions={
         <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
           <Link href="/arcade/guess-the" title="All Guess The ... modes">
@@ -204,60 +216,75 @@ export function RoundGame<M extends RoundModeId>({
           </Link>
         </Button>
       }
-      stats={
-        <>
-          <Stat label="Best" value={best === null ? "—" : `${best}/100`} />
-          <Stat label="This round" value={`${answered}/${size}`} />
-          <Stat label={mode === "flag" ? "Points" : "Average"} value={running ?? "—"} />
-        </>
-      }
     >
-      <div data-motion={effects} className="flex flex-col gap-3">
+      <div data-motion={effects} data-gt-mode={mode} className="relative flex flex-col gap-4">
+        <div className="gt-hud">
+          <span className="gt-mode-badge">
+            <span aria-hidden>
+              <Icon className="size-4" />
+            </span>
+            {title}
+          </span>
+          <ol className="gt-pips order-last w-full sm:order-none sm:w-auto" aria-label={`${scored.length} of ${size} answered`}>
+            {Array.from({ length: size }, (_, i) => {
+              const result = results[i];
+              const state = result ? toneOf(shareOf(mode, result.score)) : i === current ? "current" : "todo";
+              return <li key={i} className="gt-pip" data-state={state} />;
+            })}
+          </ol>
+          <div className="ml-auto flex gap-5">
+            <p className="gt-stat">
+              <b>{running}</b>
+              <span>{mode === "flag" ? "Points" : "Average"}</span>
+            </p>
+            <p className="gt-stat">
+              <b className="text-muted-foreground">{best ?? "—"}</b>
+              <span>Best</span>
+            </p>
+          </div>
+        </div>
+
         {phase.kind === "loading" ? (
-          <div role="status" className="gtc-panel grid min-h-[24rem] place-items-center text-sm text-muted-foreground">
-            <span className="flex flex-col items-center gap-3">
+          <div role="status" className="gt-card grid min-h-[26rem] place-items-center text-sm text-muted-foreground">
+            <span className="flex flex-col items-center gap-4">
               <span aria-hidden className="gtc-loader" />
-              Dealing a round…
+              Dealing a fresh round…
             </span>
           </div>
         ) : phase.kind === "error" ? (
-          <div role="alert" className="gtc-panel grid min-h-[24rem] place-items-center gap-3 text-center text-sm">
+          <div role="alert" className="gt-card grid min-h-[26rem] place-items-center gap-3 text-center text-sm">
             <p>{phase.message}</p>
-            <Button size="sm" onClick={deal}>
+            <Button size="lg" className="gt-go" onClick={deal}>
               <RotateCcw aria-hidden />
               Try again
             </Button>
           </div>
         ) : phase.kind === "playing" ? (
           <>
-            <div className="flex items-center gap-3">
-              <p className="shrink-0 text-xs font-semibold text-muted-foreground tabular-nums">
-                {noun[0].toUpperCase() + noun.slice(1)} {phase.index + 1} of {phase.prompts.length}
+            <div key={phase.prompts[phase.index].id} className="gt-enter">
+              <p className="gt-kicker mb-2 px-1">
+                {noun} {phase.index + 1} / {phase.prompts.length}
               </p>
-              <div aria-hidden className="gtc-progress flex-1">
-                <span style={{ width: `${(answered / phase.prompts.length) * 100}%` }} />
-              </div>
+              <Play
+                prompt={phase.prompts[phase.index]}
+                result={phase.results[phase.index]}
+                guess={phase.guesses[phase.index]}
+                busy={phase.busy}
+                onGuess={(value) => void guess(value)}
+                animate={animate}
+              />
             </div>
-            <Play
-              key={phase.prompts[phase.index].id}
-              prompt={phase.prompts[phase.index]}
-              result={phase.results[phase.index]}
-              guess={phase.guesses[phase.index]}
-              busy={phase.busy}
-              onGuess={(value) => void guess(value)}
-              animate={animate}
-            />
             {phase.results[phase.index] ? (
-              <div className="flex justify-end">
-                <Button size="lg" onClick={next} ref={(element) => element?.focus({ preventScroll: true })}>
-                  {phase.index === phase.prompts.length - 1 ? "See your round" : `Next ${noun}`}
+              <div className="gt-enter-2 flex justify-end">
+                <Button size="lg" className="gt-go h-12 rounded-full px-6 text-base" onClick={next} ref={(element) => element?.focus({ preventScroll: true })}>
+                  {phase.index === phase.prompts.length - 1 ? "See your score" : `Next ${noun}`}
                   <ArrowRight aria-hidden />
                 </Button>
               </div>
             ) : null}
-            <details className="gtc-panel p-3 text-xs text-muted-foreground" open={rounds === 0 && phase.index === 0 && !phase.results[0]}>
+            <details className="gt-card p-3 text-xs text-muted-foreground" open={rounds === 0 && phase.index === 0 && !phase.results[0]}>
               <summary className="flex cursor-pointer list-none items-center gap-1.5 font-semibold text-foreground">
-                <Info aria-hidden className="size-3.5 text-amethyst" />
+                <Info aria-hidden className="size-3.5 text-[var(--gt-a)]" />
                 How to play and scoring
               </summary>
               <div className="mt-2 flex flex-col gap-2 text-pretty">
@@ -267,42 +294,60 @@ export function RoundGame<M extends RoundModeId>({
             </details>
           </>
         ) : phase.kind === "finishing" ? (
-          <div role="status" className="gtc-panel grid min-h-[16rem] place-items-center text-sm text-muted-foreground">
+          <div role="status" className="gt-card grid min-h-[20rem] place-items-center text-sm text-muted-foreground">
             <span className="flex items-center gap-2">
               <Loader2 aria-hidden className="size-4 animate-spin" />
-              Scoring your round…
+              Adding up your round…
             </span>
           </div>
         ) : (
           <>
-            <section aria-live="polite" className="gtc-panel gtc-score flex flex-col items-center gap-4 p-4 text-center sm:flex-row sm:text-left">
-              <ScoreRing score={phase.score} animate={animate} />
-              <div className="min-w-0 flex-1">
-                <p className="flex flex-wrap items-center justify-center gap-2 text-lg font-extrabold tracking-tight sm:justify-start">
-                  {roundVerdict(phase.score)}
-                  {phase.previousBest === null || phase.score > phase.previousBest ? <span className="gtc-chip gtc-chip-rose">New best</span> : null}
+            <section aria-live="polite" className="gt-card gt-card-hero gt-enter relative flex flex-col items-center gap-5 overflow-hidden p-6 text-center sm:flex-row sm:p-8 sm:text-left">
+              {newBest || phase.score === 100 ? <Confetti /> : null}
+              <ScoreRing score={phase.score} animate={animate} size="xl" />
+              <div className="flex min-w-0 flex-1 flex-col items-center gap-2 sm:items-start">
+                <p className="gt-kicker">Round complete</p>
+                <p className="gt-display text-4xl sm:text-5xl">
+                  <span className="gt-gradient-text">{roundVerdict(phase.score)}</span>
                 </p>
-                <p className="mt-0.5 flex items-center justify-center gap-1.5 text-sm text-muted-foreground sm:justify-start">
-                  <Trophy aria-hidden className="size-3.5" />
-                  Best round: <span className="font-semibold text-foreground tabular-nums">{phase.best}/100</span>
-                </p>
-              </div>
-              <Button size="lg" onClick={deal} ref={(element) => element?.focus({ preventScroll: true })}>
-                <RotateCcw aria-hidden />
-                Play another round
-              </Button>
-            </section>
-            <ol className="gtc-panel flex flex-col divide-y divide-border p-1 text-sm">
-              {phase.prompts.map((prompt, i) => (
-                <li key={prompt.id} className="flex items-center gap-3 px-3 py-2">
-                  <span className="w-5 shrink-0 text-xs text-muted-foreground tabular-nums">{i + 1}</span>
-                  <div className="min-w-0 flex-1">{summary(prompt, phase.results[i], phase.guesses[i])}</div>
-                  <span className="shrink-0 font-semibold tabular-nums">
-                    {phase.results[i].score}
-                    <span className="text-xs font-normal text-muted-foreground">/{mode === "flag" ? 10 : 100}</span>
+                <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                  {newBest ? <span className="gtc-chip-rose gtc-chip">New best!</span> : null}
+                  <span className="gt-chip">
+                    <Trophy aria-hidden className="size-3" />
+                    Best {phase.best}/100
                   </span>
-                </li>
-              ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 sm:items-end">
+                <Button size="lg" className="gt-go h-12 rounded-full px-6 text-base" onClick={deal} ref={(element) => element?.focus({ preventScroll: true })}>
+                  <RotateCcw aria-hidden />
+                  Play again
+                </Button>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/arcade/guess-the">Try another mode</Link>
+                </Button>
+              </div>
+            </section>
+            <ol className="grid gap-2 sm:grid-cols-2">
+              {phase.prompts.map((prompt, i) => {
+                const result = phase.results[i];
+                const share = shareOf(mode, result.score);
+                return (
+                  <li key={prompt.id} className="gt-card gt-enter-2 flex flex-col gap-2 p-3" style={{ animationDelay: `${0.1 + i * 0.05}s` }}>
+                    <div className="flex items-start gap-3">
+                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[rgb(var(--ink-rgb)/0.08)] text-xs font-bold tabular-nums">{i + 1}</span>
+                      <div className="min-w-0 flex-1 text-sm">{summary(prompt, result, phase.guesses[i])}</div>
+                      <span data-tone={toneOf(share)} className="shrink-0 text-lg font-extrabold text-[var(--tone)] tabular-nums">
+                        {result.score}
+                        <span className="text-xs font-normal text-muted-foreground">/{mode === "flag" ? 10 : 100}</span>
+                      </span>
+                    </div>
+                    <div aria-hidden className="gtc-progress">
+                      <span data-tone={toneOf(share)} style={{ width: `${share}%`, background: "var(--tone)", boxShadow: "0 0 10px var(--tone)" }} />
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           </>
         )}

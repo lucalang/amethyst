@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { ExternalLink, Loader2, Minus, Plus, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatMeasure, type SizePrompt, type SizeThing } from "@/lib/minigames/guess-the";
 import { ArtDefs, artwork } from "./size-art";
+import { CountUp, promptVerdict, toneOf } from "./fx";
 import { RoundGame, type PlayProps } from "./round-game";
 
 /** Slider steps across the prompt's range (log scale). */
@@ -94,7 +95,7 @@ function Scene({ prompt, ratio, ghost, onDrag }: { prompt: SizePrompt; ratio: nu
           height={height}
           role="img"
           aria-label={`${prompt.reference.name} and ${prompt.subject.name}, side by side at ${ghost === null ? "your guessed" : "their real"} relative size`}
-          className="gtc-plot block touch-none select-none"
+          className="block touch-none select-none"
           style={{ cursor: onDrag ? "ew-resize" : undefined }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -102,7 +103,9 @@ function Scene({ prompt, ratio, ghost, onDrag }: { prompt: SizePrompt; ratio: nu
           onPointerCancel={() => (drag.current = null)}
         >
           <ArtDefs />
-          <line x1="0" x2={width} y1={ground} y2={ground} stroke="currentColor" strokeOpacity="0.25" />
+          <line x1="0" x2={width} y1={ground} y2={ground} stroke="var(--gt-a)" strokeOpacity="0.45" strokeWidth="1.5" />
+          <ellipse cx={refX + (ref1.w * scale) / 2} cy={ground} rx={(ref1.w * scale) / 2} ry="4" fill="rgb(0 0 0 / 0.35)" />
+          <ellipse cx={subX + (sub.w * scale) / 2} cy={ground} rx={(sub.w * scale) / 2} ry="4" fill="rgb(0 0 0 / 0.35)" />
           {thing(prompt.reference, refX, ref1, "ref")}
           {thing(prompt.subject, subX, sub, "sub")}
           {ghostBox ? thing(prompt.subject, subX, ghostBox, "ghost", true) : null}
@@ -111,7 +114,7 @@ function Scene({ prompt, ratio, ghost, onDrag }: { prompt: SizePrompt; ratio: nu
           <text x={refX + (ref1.w * scale) / 2} y={height - 8} textAnchor="middle" fontSize="12" fill="var(--muted-foreground)">
             {prompt.reference.name}
           </text>
-          <text x={subX + (sub.w * scale) / 2} y={height - 8} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--foreground)">
+          <text x={subX + (sub.w * scale) / 2} y={height - 8} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--gt-a)">
             {prompt.subject.name}
           </text>
         </svg>
@@ -122,7 +125,32 @@ function Scene({ prompt, ratio, ghost, onDrag }: { prompt: SizePrompt; ratio: nu
   );
 }
 
-function SizePlay({ prompt, result, busy, onGuess }: PlayProps<"size">) {
+/** Eases the shown size from the guess to the real size once revealed, so you see how far off it was. */
+function useRevealRatio(result: { guess: number; actual: number } | null, animate: boolean) {
+  const [shown, setShown] = useState<number | null>(null);
+  useEffect(() => {
+    if (!result) return;
+    if (!animate) {
+      const id = requestAnimationFrame(() => setShown(result.actual));
+      return () => cancelAnimationFrame(id);
+    }
+    let frame = 0;
+    const start = performance.now();
+    const from = Math.log(result.guess);
+    const to = Math.log(result.actual);
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start - 250) / 900);
+      const k = t <= 0 ? 0 : 1 - (1 - t) ** 3;
+      setShown(Math.exp(from + (to - from) * k));
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [result, animate]);
+  return result ? (shown ?? result.guess) : null;
+}
+
+function SizePlay({ prompt, result, busy, onGuess, animate }: PlayProps<"size">) {
   const [lo, hi] = prompt.range;
   const span = Math.log(hi / lo);
   const toStep = (ratio: number) => Math.round((Math.log(ratio / lo) / span) * STEPS);
@@ -133,47 +161,54 @@ function SizePlay({ prompt, result, busy, onGuess }: PlayProps<"size">) {
   const ratio = fromStep(step);
   const clampStep = (value: number) => Math.min(STEPS, Math.max(0, Math.round(value)));
   const nudge = (factor: number) => setStep((current) => clampStep(toStep(fromStep(current) * factor)));
+  const revealRatio = useRevealRatio(result, animate);
 
   return (
-    <section className="gtc-panel flex flex-col gap-3 p-3 sm:p-5">
-      <header className="flex flex-col gap-1.5">
+    <section className="gt-card gt-card-hero flex flex-col gap-4 p-3 sm:p-6">
+      <header className="flex flex-col gap-2 px-1">
         <div className="flex flex-wrap gap-1.5">
-          <span className="gtc-chip gtc-chip-accent">{prompt.topic}</span>
-          <span className="gtc-chip">Compared by {prompt.dimension}</span>
+          <span className="gt-chip gt-chip-accent">{prompt.topic}</span>
+          <span className="gt-chip">Compared by {prompt.dimension}</span>
         </div>
-        <h2 className="text-xl leading-tight font-extrabold tracking-tight text-balance sm:text-2xl">
-          How big is {prompt.subject.name} next to {prompt.reference.name}?
+        <h2 className="gt-display text-3xl text-balance sm:text-4xl">
+          How big is <span className="gt-gradient-text">{prompt.subject.name}</span>?
         </h2>
         <p className="text-sm text-pretty text-muted-foreground">
-          Resize <span className="font-semibold text-foreground">{prompt.subject.name}</span> ({prompt.subject.detail}) to match its real size next to <span className="font-semibold text-foreground">{prompt.reference.name}</span> (
-          {prompt.reference.detail}).
+          Next to {prompt.reference.name} ({prompt.reference.detail}), resize {prompt.subject.name} ({prompt.subject.detail}) to its real size.
         </p>
       </header>
 
-      <Scene prompt={prompt} ratio={result ? result.actual : ratio} ghost={result ? result.guess : null} onDrag={result || busy ? undefined : (factor) => setStep((current) => clampStep(toStep(fromStep(current) * factor)))} />
+      <div className="gt-blueprint p-2 sm:p-3">
+        <Scene prompt={prompt} ratio={revealRatio ?? ratio} ghost={result ? result.guess : null} onDrag={result || busy ? undefined : (factor) => setStep((current) => clampStep(toStep(fromStep(current) * factor)))} />
+      </div>
 
       {result ? (
-        <div aria-live="polite" className="flex flex-col gap-2">
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="rounded-xl border border-amethyst/40 bg-amethyst/10 p-3">
-              <p className="text-xs text-muted-foreground">Real {prompt.dimension}</p>
-              <p className="text-2xl font-extrabold tabular-nums">{ratioText(result.actual)}</p>
+        <div aria-live="polite" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span data-tone={toneOf(result.score)} className="gt-verdict">
+              {promptVerdict(result.score)}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              Score{" "}
+              <span data-tone={toneOf(result.score)} className="text-2xl font-extrabold text-[var(--tone)] tabular-nums">
+                <CountUp value={result.score} animate={animate} />
+              </span>
+              /100
+            </span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="gt-tile gt-tile-accent gt-pop">
+              <p>Real {prompt.dimension}</p>
+              <p>{ratioText(result.actual)}</p>
             </div>
-            <div className="rounded-xl border border-rose/40 bg-rose/10 p-3">
-              <p className="text-xs text-muted-foreground">Your guess (dashed)</p>
-              <p className="text-2xl font-extrabold tabular-nums">{ratioText(result.guess)}</p>
-            </div>
-            <div className="rounded-xl border border-border p-3">
-              <p className="text-xs text-muted-foreground">Score</p>
-              <p className="text-2xl font-extrabold tabular-nums">
-                {result.score}
-                <span className="text-sm font-normal text-muted-foreground">/100</span>
-              </p>
+            <div className="gt-tile gt-tile-guess">
+              <p>Your guess (dashed)</p>
+              <p>{ratioText(result.guess)}</p>
             </div>
           </div>
           <p className="text-sm text-pretty">
-            {prompt.subject.name} is {formatMeasure(result.subject.value, result.subject.unit)} and {prompt.reference.name} is {formatMeasure(result.reference.value, result.reference.unit)}, so {prompt.subject.name} is{" "}
-            <span className="font-semibold">{ratioText(result.actual)}</span> the {prompt.dimension} of {prompt.reference.name}.
+            {prompt.subject.name} is <b>{formatMeasure(result.subject.value, result.subject.unit)}</b> and {prompt.reference.name} is <b>{formatMeasure(result.reference.value, result.reference.unit)}</b>, so {prompt.subject.name} is{" "}
+            <b className="text-[var(--gt-a)]">{ratioText(result.actual)}</b> the {prompt.dimension} of {prompt.reference.name}.
           </p>
           <p className="text-xs text-pretty text-muted-foreground">
             {result.note} Sources:{" "}
@@ -181,7 +216,7 @@ function SizePlay({ prompt, result, busy, onGuess }: PlayProps<"size">) {
               <span key={source.url}>
                 {i ? "; " : ""}
                 {source.publisher},{" "}
-                <a href={source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 font-medium text-amethyst underline-offset-2 hover:underline">
+                <a href={source.url} target="_blank" rel="noopener noreferrer" className="gt-link">
                   {source.title}
                   <ExternalLink aria-hidden className="size-3" />
                 </a>
@@ -192,22 +227,23 @@ function SizePlay({ prompt, result, busy, onGuess }: PlayProps<"size">) {
         </div>
       ) : (
         <form
-          className="flex flex-col gap-2"
+          className="flex flex-col gap-3"
           onSubmit={(event) => {
             event.preventDefault();
             onGuess(ratio);
           }}
         >
-          <div className="flex items-center justify-between gap-2 text-sm">
-            <label htmlFor={sliderId} className="font-semibold">
+          <div className="flex items-end justify-between gap-3 px-1">
+            <label htmlFor={sliderId} className="gt-kicker">
               {prompt.subject.name}’s {prompt.dimension}
             </label>
-            <span className="text-muted-foreground tabular-nums">
-              {ratioText(ratio)} {prompt.reference.name}’s
-            </span>
+            <p className="text-right leading-none">
+              <span className="gt-display text-4xl tabular-nums sm:text-5xl">{ratioText(ratio)}</span>
+              <span className="block pt-1 text-xs text-muted-foreground">{prompt.reference.name}’s</span>
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button type="button" variant="outline" size="icon" className="size-11 shrink-0" onClick={() => nudge(1 / 1.03)} disabled={busy} aria-label="Smaller">
+            <Button type="button" variant="outline" size="icon" className="size-11 shrink-0 rounded-full" onClick={() => nudge(1 / 1.03)} disabled={busy} aria-label="Smaller">
               <Minus aria-hidden />
             </Button>
             <input
@@ -220,16 +256,17 @@ function SizePlay({ prompt, result, busy, onGuess }: PlayProps<"size">) {
               onChange={(event) => setStep(Number(event.target.value))}
               disabled={busy}
               aria-valuetext={`${ratioText(ratio)} the ${prompt.dimension} of ${prompt.reference.name}`}
-              className="h-11 w-full accent-[var(--amethyst)]"
+              className="gt-range"
+              style={{ "--fill": `${(step / STEPS) * 100}%` } as CSSProperties}
             />
-            <Button type="button" variant="outline" size="icon" className="size-11 shrink-0" onClick={() => nudge(1.03)} disabled={busy} aria-label="Bigger">
+            <Button type="button" variant="outline" size="icon" className="size-11 shrink-0 rounded-full" onClick={() => nudge(1.03)} disabled={busy} aria-label="Bigger">
               <Plus aria-hidden />
             </Button>
-            <Button type="submit" size="lg" disabled={busy}>
-              {busy ? <Loader2 aria-hidden className="animate-spin" /> : <Send aria-hidden />}
-              Reveal
-            </Button>
           </div>
+          <Button type="submit" size="lg" className="gt-go h-12 self-end rounded-full px-6 text-base" disabled={busy}>
+            {busy ? <Loader2 aria-hidden className="animate-spin" /> : <Send aria-hidden />}
+            Lock it in
+          </Button>
         </form>
       )}
     </section>

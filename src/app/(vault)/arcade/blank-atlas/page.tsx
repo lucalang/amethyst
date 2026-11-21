@@ -13,3 +13,4 @@ export default async function BlankAtlasPage() {
   const best = records["blank-atlas"];
   return <LazyBlankAtlas records={best === undefined ? {} : { "": best }} look={look} />;
 }
+  

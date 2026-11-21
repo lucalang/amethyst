@@ -1,123 +1,718 @@
-/* Guess The ...: a calm slate "data desk" with a sky-blue history line and a pink guess (see guess-the/). */
+/*
+ * Guess The ...: a neon quiz-show stage. Midnight backdrop with drifting spotlights, glass cards with a glowing edge,
+ * and one signature colour per mode (--gt-a / --gt-b, set by [data-gt-mode]): chart sky, flag coral, size mint,
+ * price gold. Every animation stops with the effects setting off ([data-motion="off"]) or reduced motion.
+ */
 [data-game-skin="guess-the"] {
-  --background: #0d1424;
-  --surface: #131c30;
-  --surface-raised: #1b2640;
-  --foreground: #eef3fb;
-  --muted-foreground: #a3b1c9;
+  --background: #070a18;
+  --surface: #0e1428;
+  --surface-raised: #151d38;
+  --foreground: #f2f5ff;
+  --muted-foreground: #a3adcf;
   --amethyst: #38bdf8;
   --amethyst-foreground: #04131d;
   --rose: #f472b6;
   --rose-foreground: #2b0618;
   --destructive: #ff8a8a;
-  --ink-rgb: 238 243 251;
-  --paper-rgb: 13 20 36;
+  --ink-rgb: 242 245 255;
+  --paper-rgb: 7 10 24;
   --accent-rgb: 56 189 248;
   --rose-rgb: 244 114 182;
-  --shadow-rgb: 2 6 16;
-  --shadow-alpha: 0.8;
+  --shadow-rgb: 2 4 14;
+  --shadow-alpha: 0.85;
   --theme-dark: 1;
+  --gt-a: #38bdf8;
+  --gt-b: #a78bfa;
+  --gt-a-rgb: 56 189 248;
+  --gt-good: #34d399;
+  --gt-mid: #fbbf24;
+  --gt-bad: #fb7185;
   color-scheme: dark;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 12% 0%, rgb(var(--gt-a-rgb) / 0.16), transparent 70%),
+    radial-gradient(50% 45% at 92% 8%, rgb(167 139 250 / 0.14), transparent 70%),
+    radial-gradient(70% 60% at 50% 110%, rgb(244 114 182 / 0.1), transparent 70%),
+    #070a18;
 }
+/* A faint dot grid behind everything, like a stage floor. */
+[data-game-skin="guess-the"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgb(var(--ink-rgb) / 0.07) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, #000, transparent 85%);
+}
+
+/* Mode colours. */
+[data-gt-mode="chart"] {
+  --gt-a: #38bdf8;
+  --gt-b: #818cf8;
+  --gt-a-rgb: 56 189 248;
+}
+[data-gt-mode="flag"] {
+  --gt-a: #fb7185;
+  --gt-b: #fb923c;
+  --gt-a-rgb: 251 113 133;
+}
+[data-gt-mode="size"] {
+  --gt-a: #34d399;
+  --gt-b: #22d3ee;
+  --gt-a-rgb: 52 211 153;
+}
+[data-gt-mode="price"] {
+  --gt-a: #fbbf24;
+  --gt-b: #f472b6;
+  --gt-a-rgb: 251 191 36;
+}
+[data-gt-mode] {
+  --amethyst: var(--gt-a);
+  --accent-rgb: var(--gt-a-rgb);
+}
+
+/* ------------------------------------------------------------------------------------------- Type */
+
+.gt-display {
+  font-family: var(--font-syne), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+.gt-gradient-text {
+  background: linear-gradient(100deg, var(--gt-a), var(--gt-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gt-kicker {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gt-a);
+}
+
+/* ------------------------------------------------------------------------------------------- Cards */
+
+.gtc-panel,
+.gt-card {
+  position: relative;
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgb(var(--gt-a-rgb) / 0.1), transparent 55%),
+    linear-gradient(180deg, rgb(var(--ink-rgb) / 0.055), rgb(var(--ink-rgb) / 0.02));
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--ink-rgb) / 0.09),
+    inset 0 1px 0 rgb(var(--ink-rgb) / 0.08),
+    0 24px 50px -30px rgb(0 0 0 / 0.9);
+  backdrop-filter: blur(6px);
+}
+/* The hero card for a prompt: a gradient border that glows in the mode's colour. */
+.gt-card-hero {
+  background:
+    linear-gradient(#0c1226, #0c1226) padding-box,
+    linear-gradient(135deg, rgb(var(--gt-a-rgb) / 0.75), rgb(var(--ink-rgb) / 0.08) 40%, rgb(var(--ink-rgb) / 0.06) 60%, color-mix(in srgb, var(--gt-b) 70%, transparent)) border-box;
+  border: 1.5px solid transparent;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.3),
+    0 30px 70px -36px rgb(var(--gt-a-rgb) / 0.55),
+    0 24px 50px -30px rgb(0 0 0 / 0.9);
+}
+
+.gtc-chip,
+.gt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  border: 1px solid rgb(var(--ink-rgb) / 0.14);
+  padding: 0.15rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: rgb(var(--ink-rgb) / 0.05);
+}
+.gtc-chip-accent,
+.gt-chip-accent {
+  color: var(--gt-a);
+  border-color: rgb(var(--gt-a-rgb) / 0.45);
+  background: rgb(var(--gt-a-rgb) / 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.gtc-chip-rose {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(90deg, var(--gt-a), var(--gt-b));
+  font-size: 0.72rem;
+  box-shadow: 0 0 18px rgb(var(--gt-a-rgb) / 0.5);
+}
+
+/* A big glowing call to action. */
+.gt-go {
+  background: linear-gradient(100deg, var(--gt-a), var(--gt-b)) !important;
+  color: #08091a !important;
+  font-weight: 800 !important;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.15) inset,
+    0 10px 30px -10px rgb(var(--gt-a-rgb) / 0.8);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+.gt-go:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.2) inset,
+    0 14px 36px -10px rgb(var(--gt-a-rgb) / 0.95);
+}
+.gt-go:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+.gt-go:disabled {
+  filter: grayscale(0.6) brightness(0.7);
+  box-shadow: none;
+}
+
+/* A big text field that looks like a game-show answer board. */
+.gt-field {
+  height: 3.25rem;
+  border-radius: 0.9rem;
+  border: 1.5px solid rgb(var(--ink-rgb) / 0.16);
+  background: rgb(0 0 0 / 0.35);
+  padding-inline: 1rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--foreground);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.gt-field::placeholder {
+  color: rgb(var(--ink-rgb) / 0.35);
+  font-weight: 500;
+}
+.gt-field:focus {
+  border-color: var(--gt-a);
+  box-shadow: 0 0 0 4px rgb(var(--gt-a-rgb) / 0.2);
+}
+
+/* ------------------------------------------------------------------------------------------- HUD */
+
+.gt-hud {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+.gt-pips {
+  display: flex;
+  flex: 1;
+  min-width: 12rem;
+  gap: 5px;
+}
+.gt-pip {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgb(var(--ink-rgb) / 0.1);
+  overflow: hidden;
+}
+.gt-pip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: left;
+  transform: scaleX(0);
+  background: var(--pip, var(--gt-a));
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.gt-pip[data-state="good"] {
+  --pip: var(--gt-good);
+}
+.gt-pip[data-state="mid"] {
+  --pip: var(--gt-mid);
+}
+.gt-pip[data-state="bad"] {
+  --pip: var(--gt-bad);
+}
+.gt-pip:is([data-state="good"], [data-state="mid"], [data-state="bad"])::after {
+  transform: scaleX(1);
+  box-shadow: 0 0 10px var(--pip);
+}
+.gt-pip[data-state="current"] {
+  background: rgb(var(--gt-a-rgb) / 0.3);
+  box-shadow: 0 0 0 1px rgb(var(--gt-a-rgb) / 0.6);
+}
+.gt-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+}
+.gt-stat b {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.gt-stat span {
+  margin-top: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.gt-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem 0.3rem 0.35rem;
+  background: rgb(var(--gt-a-rgb) / 0.12);
+  box-shadow: inset 0 0 0 1px rgb(var(--gt-a-rgb) / 0.35);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.gt-mode-badge > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  color: #08091a;
+  background: linear-gradient(135deg, var(--gt-a), var(--gt-b));
+}
+
+/* ------------------------------------------------------------------------------------------- Feedback */
+
+.gt-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 0.6rem;
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-syne), sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--tone, var(--gt-a));
+  background: color-mix(in srgb, var(--tone, var(--gt-a)) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tone, var(--gt-a)) 60%, transparent);
+  rotate: -2deg;
+}
+[data-tone="good"] {
+  --tone: var(--gt-good);
+}
+[data-tone="mid"] {
+  --tone: var(--gt-mid);
+}
+[data-tone="bad"] {
+  --tone: var(--gt-bad);
+}
+.gt-tile {
+  border-radius: 1rem;
+  padding: 0.75rem 0.9rem;
+  background: rgb(var(--ink-rgb) / 0.045);
+  box-shadow: inset 0 0 0 1px rgb(var(--ink-rgb) / 0.08);
+}
+.gt-tile-accent {
+  background: rgb(var(--gt-a-rgb) / 0.12);
+  box-shadow: inset 0 0 0 1px rgb(var(--gt-a-rgb) / 0.45);
+}
+.gt-tile-guess {
+  background: rgb(244 114 182 / 0.1);
+  box-shadow: inset 0 0 0 1px rgb(244 114 182 / 0.4);
+}
+.gt-tile p:first-child {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+.gt-tile p:last-child {
+  margin-top: 0.15rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.gt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 600;
+  color: var(--gt-a);
+  text-underline-offset: 2px;
+}
+.gt-link:hover {
+  text-decoration: underline;
+}
+
+/* Confetti for a new best or a perfect round. */
+.gt-confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.gt-confetti i {
+  position: absolute;
+  top: 40%;
+  left: var(--x);
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------------------------------- Mode picker */
+
+/* The rolling word in the picker's title: a reel of mode names behind a one-line window. */
+.gt-hero-word {
+  display: inline-block;
+  overflow: hidden;
+  height: 1.05em;
+  vertical-align: bottom;
+}
+.gt-hero-reel {
+  display: flex;
+  flex-direction: column;
+}
+.gt-hero-reel > span {
+  display: block;
+  height: 1.05em;
+  line-height: 1.05;
+  padding-right: 0.08em;
+}
+.gt-mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  min-height: 15rem;
+  padding: 1.1rem;
+  color: var(--foreground);
+  text-decoration: none;
+  background:
+    radial-gradient(90% 70% at 100% 0%, rgb(var(--gt-a-rgb) / 0.28), transparent 60%),
+    radial-gradient(80% 60% at 0% 100%, color-mix(in srgb, var(--gt-b) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, #10172f, #0a0f22);
+  box-shadow:
+    inset 0 0 0 1px rgb(var(--gt-a-rgb) / 0.28),
+    0 30px 60px -36px rgb(var(--gt-a-rgb) / 0.6);
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 0.25s ease;
+  outline: none;
+}
+.gt-mode-card:hover,
+.gt-mode-card:focus-visible {
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(var(--gt-a-rgb) / 0.7),
+    0 40px 70px -34px rgb(var(--gt-a-rgb) / 0.85);
+}
+.gt-mode-card:focus-visible {
+  box-shadow:
+    0 0 0 3px var(--background),
+    0 0 0 5px var(--gt-a),
+    0 40px 70px -34px rgb(var(--gt-a-rgb) / 0.85);
+}
+.gt-mode-art {
+  position: absolute;
+  right: -0.5rem;
+  top: -0.25rem;
+  width: 58%;
+  max-width: 15rem;
+  aspect-ratio: 1.25;
+  opacity: 0.95;
+  pointer-events: none;
+}
+.gt-mode-card .gt-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #08091a;
+  background: linear-gradient(100deg, var(--gt-a), var(--gt-b));
+  box-shadow: 0 8px 24px -10px rgb(var(--gt-a-rgb) / 0.9);
+  transition: transform 0.2s ease;
+}
+.gt-mode-card:hover .gt-play {
+  transform: translateX(3px);
+}
+.gt-num {
+  position: absolute;
+  left: 1.1rem;
+  top: 1rem;
+  font-family: var(--font-syne), sans-serif;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: rgb(var(--ink-rgb) / 0.4);
+}
+
+/* Mode illustrations. */
+.gt-art-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ------------------------------------------------------------------------------------------- Flag */
+
+.gt-flag-frame {
+  position: relative;
+  width: min(100%, 22rem);
+  aspect-ratio: 4 / 3;
+  perspective: 900px;
+}
+.gt-flag {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.15),
+    0 30px 60px -28px rgb(0 0 0 / 0.95),
+    0 0 80px -30px rgb(var(--gt-a-rgb) / 0.6);
+  transform-origin: left center;
+}
+.gt-flag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Folds of cloth catching the light, drifting across the flag. */
+.gt-flag::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(100deg, rgb(255 255 255 / 0) 0 12%, rgb(255 255 255 / 0.16) 18%, rgb(0 0 0 / 0.12) 26%, rgb(255 255 255 / 0) 32%);
+  background-size: 200% 100%;
+  mix-blend-mode: soft-light;
+}
+.gt-flag-pole {
+  position: absolute;
+  left: -0.9rem;
+  top: -0.6rem;
+  bottom: -2.5rem;
+  width: 0.35rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6b7280, #e5e7eb, #6b7280);
+}
+.gt-flag-pole::before {
+  content: "";
+  position: absolute;
+  top: -0.45rem;
+  left: 50%;
+  width: 0.8rem;
+  height: 0.8rem;
+  translate: -50% 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #fff7c2, #d4a017);
+}
+.gt-answer {
+  position: relative;
+  border-radius: 1rem;
+  padding: 0.9rem 1rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--tone) 12%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--tone) 55%, transparent);
+}
+
+/* ------------------------------------------------------------------------------------------- Price */
+
+.gt-tag {
+  position: relative;
+  border-radius: 0.9rem 1.6rem 1.6rem 0.9rem;
+  padding: 1rem 1.2rem 1rem 2.4rem;
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgb(var(--gt-a-rgb) / 0.22), transparent 60%),
+    linear-gradient(180deg, #17203c, #0f1630);
+  box-shadow:
+    inset 0 0 0 1.5px rgb(var(--gt-a-rgb) / 0.45),
+    0 24px 60px -30px rgb(var(--gt-a-rgb) / 0.55);
+}
+/* The tag's punched hole and its string. */
+.gt-tag::before {
+  content: "";
+  position: absolute;
+  left: 0.8rem;
+  top: 50%;
+  width: 0.8rem;
+  height: 0.8rem;
+  translate: 0 -50%;
+  border-radius: 999px;
+  background: #070a18;
+  box-shadow: inset 0 0 0 2px rgb(var(--gt-a-rgb) / 0.6);
+}
+.gt-till {
+  font-family: var(--font-vt323), ui-monospace, monospace;
+  letter-spacing: 0.04em;
+}
+.gt-meter {
+  position: relative;
+  height: 2.75rem;
+}
+.gt-meter-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 1.1rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gt-bad), var(--gt-mid) 30%, var(--gt-good) 45%, var(--gt-good) 55%, var(--gt-mid) 70%, var(--gt-bad));
+  opacity: 0.8;
+}
+.gt-meter-mark {
+  position: absolute;
+  top: 0.5rem;
+  width: 0;
+  height: 1.7rem;
+  translate: -50% 0;
+}
+.gt-meter-mark::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mark);
+  box-shadow: 0 0 10px var(--mark);
+}
+.gt-meter-mark span {
+  position: absolute;
+  top: 1.85rem;
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mark);
+}
+.gt-scale {
+  display: flex;
+  border-radius: 0.9rem;
+  padding: 0.2rem;
+  background: rgb(0 0 0 / 0.35);
+  box-shadow: inset 0 0 0 1.5px rgb(var(--ink-rgb) / 0.12);
+}
+.gt-scale button {
+  flex: 1;
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+.gt-scale button[aria-checked="true"] {
+  color: #08091a;
+  background: linear-gradient(100deg, var(--gt-a), var(--gt-b));
+}
+
+/* ------------------------------------------------------------------------------------------- Size */
+
+.gt-blueprint {
+  border-radius: 1rem;
+  background:
+    linear-gradient(rgb(var(--gt-a-rgb) / 0.07) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgb(var(--gt-a-rgb) / 0.07) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(80% 70% at 50% 100%, rgb(var(--gt-a-rgb) / 0.12), transparent 70%),
+    rgb(0 0 0 / 0.25);
+  box-shadow: inset 0 0 0 1px rgb(var(--gt-a-rgb) / 0.2);
+}
+.gt-range {
+  appearance: none;
+  width: 100%;
+  height: 2.75rem;
+  background: transparent;
+  cursor: pointer;
+}
+.gt-range::-webkit-slider-runnable-track {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(var(--gt-a-rgb) / 0.2), var(--gt-a) var(--fill), rgb(var(--ink-rgb) / 0.12) var(--fill));
+}
+.gt-range::-moz-range-track {
+  height: 0.6rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(var(--gt-a-rgb) / 0.2), var(--gt-a) var(--fill), rgb(var(--ink-rgb) / 0.12) var(--fill));
+}
+.gt-range::-webkit-slider-thumb {
+  appearance: none;
+  margin-top: -0.7rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--gt-a));
+  box-shadow:
+    0 0 0 4px rgb(var(--gt-a-rgb) / 0.3),
+    0 6px 18px -4px rgb(var(--gt-a-rgb) / 0.9);
+}
+.gt-range::-moz-range-thumb {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #fff, var(--gt-a));
+  box-shadow:
+    0 0 0 4px rgb(var(--gt-a-rgb) / 0.3),
+    0 6px 18px -4px rgb(var(--gt-a-rgb) / 0.9);
+}
+.gt-range:focus-visible {
+  outline: none;
+}
+.gt-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 4px var(--background),
+    0 0 0 6px var(--gt-a);
+}
+
+/* ------------------------------------------------------------------------------------------- Chart (kept) */
 
 .gtc-plot {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   outline: none;
-  border-radius: 0.75rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, rgb(var(--ink-rgb) / 0.04), transparent 70%);
 }
 .gtc-plot:focus-visible {
-  box-shadow: 0 0 0 2px var(--amethyst);
+  box-shadow: 0 0 0 2px var(--gt-a);
 }
 .gtc-plot[data-drawing="true"] {
   cursor: crosshair;
 }
-
-/* The real continuation draws itself in after a guess is submitted. */
-.gtc-reveal {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: gtc-draw 1.1s cubic-bezier(0.3, 0.7, 0.3, 1) 0.15s forwards;
-}
-.gtc-reveal-fill {
-  opacity: 0;
-  animation: gtc-fade 0.5s ease-out 1s forwards;
-}
-.gtc-score {
-  animation: gtc-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) 1.1s both;
-}
-@keyframes gtc-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes gtc-fade {
-  to {
-    opacity: 1;
-  }
-}
-@keyframes gtc-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.85);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .gtc-reveal,
-  .gtc-reveal-fill,
-  .gtc-score {
-    animation: none;
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
-}
-[data-motion="off"] .gtc-reveal,
-[data-motion="off"] .gtc-reveal-fill,
-[data-motion="off"] .gtc-score {
-  animation: none;
-  stroke-dashoffset: 0;
-  opacity: 1;
-}
-
-/* Panels: a soft glassy card with a faint sky glow in the corner. */
-.gtc-panel {
-  position: relative;
-  border: 1px solid rgb(var(--ink-rgb) / 0.1);
-  border-radius: 1rem;
-  background:
-    radial-gradient(120% 80% at 0% 0%, rgb(var(--accent-rgb) / 0.09), transparent 55%),
-    radial-gradient(90% 70% at 100% 100%, rgb(var(--rose-rgb) / 0.06), transparent 60%),
-    rgb(var(--ink-rgb) / 0.03);
-  box-shadow: 0 1px 0 rgb(var(--ink-rgb) / 0.06) inset, 0 18px 40px -28px rgb(var(--shadow-rgb) / 0.9);
-}
-.gtc-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  border-radius: 999px;
-  border: 1px solid rgb(var(--ink-rgb) / 0.12);
-  padding: 0.1rem 0.55rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  background: rgb(var(--ink-rgb) / 0.04);
-}
-.gtc-chip-accent {
-  color: var(--amethyst);
-  border-color: rgb(var(--accent-rgb) / 0.4);
-  background: rgb(var(--accent-rgb) / 0.12);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.gtc-chip-rose {
-  color: var(--rose);
-  border-color: rgb(var(--rose-rgb) / 0.45);
-  background: rgb(var(--rose-rgb) / 0.12);
-  font-size: 0.75rem;
-}
 .gtc-progress {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
   overflow: hidden;
   background: rgb(var(--ink-rgb) / 0.1);
@@ -126,49 +721,255 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--amethyst), var(--rose));
+  background: linear-gradient(90deg, var(--gt-a), var(--gt-b));
+  box-shadow: 0 0 12px rgb(var(--gt-a-rgb) / 0.6);
   transition: width 0.2s ease-out;
 }
 .gtc-loader {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 999px;
-  border: 3px solid rgb(var(--ink-rgb) / 0.12);
-  border-top-color: var(--amethyst);
-  animation: gtc-spin 0.8s linear infinite;
+  border: 3px solid rgb(var(--ink-rgb) / 0.1);
+  border-top-color: var(--gt-a);
+  border-right-color: var(--gt-b);
 }
-.gtc-hint {
-  animation: gtc-breathe 2.4s ease-in-out infinite;
+
+/* ------------------------------------------------------------------------------------------- Motion */
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-motion]:not([data-motion="off"]) .gtc-reveal {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: gt-draw 1.1s cubic-bezier(0.3, 0.7, 0.3, 1) 0.15s forwards;
+  }
+  [data-motion]:not([data-motion="off"]) .gtc-reveal-fill {
+    opacity: 0;
+    animation: gt-fade 0.5s ease-out 1s forwards;
+  }
+  [data-motion]:not([data-motion="off"]) .gtc-score {
+    animation: gt-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) 1.1s both;
+  }
+  [data-motion]:not([data-motion="off"]) .gtc-hint {
+    animation: gt-breathe 2.4s ease-in-out infinite;
+  }
+  [data-motion]:not([data-motion="off"]) .gtc-ring {
+    animation: gt-ring 1.1s cubic-bezier(0.3, 0.7, 0.3, 1) 0.2s both;
+  }
+  .gtc-loader {
+    animation: gt-spin 0.8s linear infinite;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-enter {
+    animation: gt-enter 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-enter-2 {
+    animation: gt-enter 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) 0.08s both;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-enter-3 {
+    animation: gt-enter 0.5s cubic-bezier(0.2, 0.8, 0.3, 1) 0.16s both;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-pop {
+    animation: gt-pop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-verdict {
+    animation: gt-stamp 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-shake {
+    animation: gt-shake 0.45s ease both;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-pip[data-state="current"] {
+    animation: gt-breathe 1.4s ease-in-out infinite;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-flag {
+    animation: gt-wave 4.5s ease-in-out infinite;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-flag::after {
+    animation: gt-folds 3.2s linear infinite;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-flag[data-revealed] {
+    animation: gt-flip 0.7s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  }
+  [data-motion="full"] .gt-confetti i {
+    animation: gt-confetti 1.6s cubic-bezier(0.2, 0.7, 0.4, 1) var(--d) both;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-hero-reel {
+    animation: gt-roll 10s cubic-bezier(0.7, 0, 0.2, 1) infinite;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-mode-card:hover .gt-anim,
+  [data-motion]:not([data-motion="off"]) .gt-mode-card:focus-visible .gt-anim {
+    animation-duration: var(--fast, 1.2s);
+  }
+  [data-motion]:not([data-motion="off"]) .gt-anim-draw {
+    stroke-dasharray: 1;
+    animation: gt-loop-draw 3.6s ease-in-out infinite;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-anim-wave {
+    animation: gt-wave 3s ease-in-out infinite;
+    transform-origin: left center;
+    transform-box: fill-box;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-anim-grow {
+    animation: gt-grow 3.2s ease-in-out infinite;
+    transform-origin: bottom;
+    transform-box: fill-box;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-anim-swing {
+    animation: gt-swing 3s ease-in-out infinite;
+    transform-origin: 50% 0%;
+    transform-box: fill-box;
+  }
+  [data-motion]:not([data-motion="off"]) .gt-anim-float {
+    animation: gt-float 3.4s ease-in-out infinite;
+    transform-box: fill-box;
+  }
 }
-.gtc-ring {
-  animation: gtc-ring 1.1s cubic-bezier(0.3, 0.7, 0.3, 1) 1.1s both;
-}
-.gtc-plot {
-  background: linear-gradient(180deg, rgb(var(--ink-rgb) / 0.035), transparent 70%);
-}
-@keyframes gtc-spin {
+
+@keyframes gt-draw {
   to {
-    transform: rotate(360deg);
+    stroke-dashoffset: 0;
   }
 }
-@keyframes gtc-breathe {
+@keyframes gt-fade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes gt-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+@keyframes gt-breathe {
   50% {
-    opacity: 0.55;
+    opacity: 0.5;
   }
 }
-@keyframes gtc-ring {
+@keyframes gt-ring {
   from {
     stroke-dashoffset: var(--gtc-ring-from);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .gtc-hint,
-  .gtc-ring,
-  .gtc-loader {
-    animation: none;
+@keyframes gt-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
-[data-motion="off"] .gtc-hint,
-[data-motion="off"] .gtc-ring {
-  animation: none;
+@keyframes gt-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+@keyframes gt-stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.8) rotate(-12deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.92) rotate(1deg);
+  }
+}
+@keyframes gt-shake {
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(7px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+@keyframes gt-wave {
+  0%,
+  100% {
+    transform: perspective(700px) rotateY(0deg) skewY(0deg);
+  }
+  35% {
+    transform: perspective(700px) rotateY(-7deg) skewY(-1deg);
+  }
+  70% {
+    transform: perspective(700px) rotateY(4deg) skewY(0.6deg);
+  }
+}
+@keyframes gt-folds {
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes gt-flip {
+  from {
+    transform: perspective(700px) rotateY(-90deg);
+  }
+}
+@keyframes gt-confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--r));
+  }
+}
+/* The hero word rolls through the four modes, holding each for a beat (the reel has five words, so each is 20%). */
+@keyframes gt-roll {
+  0%,
+  20% {
+    transform: translateY(0);
+  }
+  25%,
+  45% {
+    transform: translateY(-20%);
+  }
+  50%,
+  70% {
+    transform: translateY(-40%);
+  }
+  75%,
+  95% {
+    transform: translateY(-60%);
+  }
+  100% {
+    transform: translateY(-80%);
+  }
+}
+@keyframes gt-loop-draw {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  55%,
+  85% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+@keyframes gt-grow {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes gt-swing {
+  0%,
+  100% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+@keyframes gt-float {
+  50% {
+    transform: translateY(-6px);
+  }
 }
