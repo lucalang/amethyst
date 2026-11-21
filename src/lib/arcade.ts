@@ -124,7 +124,7 @@ export const ARCADE_GAMES: readonly ArcadeGame[] = [
     id: "guess-the",
     title: "Guess The ...",
     href: "/arcade/guess-the",
-    blurb: "Guessing games built on real-world data. Start with Guess the Chart: see how a chart began, then draw how it carried on.",
+    blurb: "Guessing games built on real-world data: draw how a chart carried on, name flags, size things against each other and guess real prices.",
     recordLabel: "Best accuracy",
     category: "minigames",
   },

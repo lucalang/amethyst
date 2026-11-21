@@ -50,6 +50,9 @@ export const LazyQueens = wrap(dynamic<RecordProps & { userId: string }>(() => i
 export const LazySumbreak = wrap(dynamic<RecordProps & { userId: string }>(() => import("./game-sumbreak"), { ssr: false, loading: Loading }));
 export const LazyGuessThe = wrap(dynamic<RecordProps>(() => import("./game-guess-the"), { ssr: false, loading: Loading }));
 export const LazyGuessTheChart = wrap(dynamic<{ best: number | null }>(() => import("./guess-the/chart-game"), { ssr: false, loading: Loading }));
+export const LazyGuessTheFlag = wrap(dynamic<{ best: number | null }>(() => import("./guess-the/flag-game"), { ssr: false, loading: Loading }));
+export const LazyGuessTheSize = wrap(dynamic<{ best: number | null }>(() => import("./guess-the/size-game"), { ssr: false, loading: Loading }));
+export const LazyGuessThePrice = wrap(dynamic<{ best: number | null }>(() => import("./guess-the/price-game"), { ssr: false, loading: Loading }));
 export const LazyWhoAmI = wrap(dynamic<{ mode: WhoAmIMode }>(() => import("./game-who-am-i"), { ssr: false, loading: Loading }));
 export const LazySudoku = wrap(
   dynamic<{

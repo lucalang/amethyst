@@ -2,12 +2,12 @@
 
 import "./guess-the/guess-the.css";
 import Link from "next/link";
-import { ArrowRight, LineChart, Trophy } from "lucide-react";
+import { ArrowRight, Flag, LineChart, Ruler, Tag, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GUESS_THE_MODES } from "@/lib/minigames/guess-the";
 import { GameShell } from "./game-shell";
 
-const MODE_ICONS = { chart: LineChart } as const;
+const MODE_ICONS = { chart: LineChart, flag: Flag, size: Ruler, price: Tag } as const;
 
 /** Guess The ...: the mode picker. Each mode is its own page; new modes only need an entry in GUESS_THE_MODES. */
 export default function GameGuessThe({ records }: { records: Record<string, number> }) {
@@ -44,7 +44,6 @@ export default function GameGuessThe({ records }: { records: Record<string, numb
             );
           })}
         </ul>
-        <p className="text-xs text-muted-foreground">More modes are on the way.</p>
       </div>
     </GameShell>
   );

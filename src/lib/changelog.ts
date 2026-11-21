@@ -51,6 +51,35 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-21-guess-the-new-modes",
+    date: "2026-11-21",
+    title: "Three new Guess The ... modes",
+    intro: "Guess The ... grows from one mode to four: name flags, size famous things against each other and guess real, sourced prices. Each mode keeps its own best round.",
+    icon: "gamepad",
+    highlights: [
+      { kind: "new", feature: "Guess the Flag", text: "Ten flags a round. Type the country; close spellings and common names like USA, UK or Czech Republic count, and the answer is shown after every flag." },
+      { kind: "new", feature: "Guess the Real Size", text: "Two things side by side, from the Moon and Earth to a bank card and a quarter. Resize one to match its real size next to the other, then see the true comparison." },
+      { kind: "new", feature: "Guess the Price", text: "Launch prices, postage and record auction results, each with its model, market and date. Every answer links to its source." },
+      { kind: "improved", feature: "Records per mode", text: "Every mode has its own best score out of 100 on the Guess The ... page and the Arcade cabinet. Guess the Chart and its records are unchanged." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Guess the Flag, Guess the Real Size and Guess the Price",
+          body: "Each mode plays in rounds and is scored out of 100: ten flags worth ten points each, or five comparisons or prices whose scores are averaged. Answers stay on the server until you’ve guessed, and the whole round is checked again on the server before your record is saved.",
+          points: [
+            "Flags: accents, capitals and punctuation don’t matter, small typos are forgiven, and recognised names count (Holland, Türkiye, Great Britain). Naming a different country, like Niger for Nigeria, doesn’t. Flags that look almost identical to another country’s are left out.",
+            "Sizes and prices are scored by how many times too big or too small your guess is: 10% off scores 83, 25% off scores 64, and double or half scores 25.",
+            "Every measurement comes from the body that sets or publishes it, such as NASA, ISO, the U.S. Mint or the building’s operator, and every price from the maker, the auction house or a report of the sale. Sources are linked after each answer.",
+            "Play with a mouse, touch or keyboard: type and press Enter, or resize with a drag, the slider, − and + or the arrow keys.",
+          ],
+          where: "Arcade → Guess The ...",
+          link: { href: "/arcade/guess-the", label: "Open Guess The ..." },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-21-minigame-shops-expansion",
     date: "2026-11-21",
     title: "Bigger game shops",
