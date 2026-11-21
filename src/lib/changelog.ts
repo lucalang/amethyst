@@ -51,6 +51,35 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-21-sumbreak-shop",
+    date: "2026-11-21",
+    title: "Sumbreak shop",
+    intro: "Sumbreak has its own cosmetic shop: 32 items for the merging puzzle, from carved gemstone tiles and a celestial observatory board to luminous numbers and ink-splash merges.",
+    icon: "palette",
+    highlights: [
+      { kind: "new", feature: "Tile materials", text: "Seven materials for the number tiles, including toy blocks, glazed porcelain, gummy jelly, stained glass, neon signs and carved gemstones." },
+      { kind: "new", feature: "Board themes", text: "Seven boards, from a zen garden and a koi pond to a circuit board, a volcanic forge and a turning star chart. Each one fills emptied cells its own way." },
+      { kind: "new", feature: "Numbers and merges", text: "Seven number styles, like typewriter, marquee lights and luminous, and seven merge effects, from soap bubbles to lightning and a supernova." },
+      { kind: "new", feature: "Art styles", text: "Woodcut Print, Watercolour Wash, Bauhaus Poster and CRT Arcade redraw the board, tile shapes, lettering and effects, and work with everything else." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Sumbreak shop",
+          body: "Seven tile materials, seven board themes, seven number styles, seven merge effects and four art styles. Everything is purely visual: puzzles, rules, hints, scoring and records never change.",
+          points: [
+            "Every tile keeps its number's colour with every material and art style, so equal numbers always match.",
+            "Number styles stay bold and outlined or backed, so values read clearly on any tile.",
+            "Equip items from the Shop button in the game: the board restyles straight away, even mid-puzzle.",
+            "Animations follow your effects setting and reduced motion.",
+          ],
+          where: "Arcade → Sumbreak → Shop",
+          link: { href: "/arcade/sumbreak/shop", label: "Open the Sumbreak shop" },
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-21-ascent-shop",
     date: "2026-11-21",
     title: "The Ascent shop",

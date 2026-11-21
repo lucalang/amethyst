@@ -4,7 +4,7 @@
  * How each item looks lives with the game's renderer, keyed by the item's slug.
  */
 
-export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars", "blank-atlas", "the-ascent"] as const;
+export const SHOP_GAMES = ["snake", "2048", "flutter", "sudoku", "fruit-slice", "stacker", "gem-chase", "space-blaster", "zip", "patches", "tango", "queens", "paper-trails", "front-wars", "blank-atlas", "the-ascent", "sumbreak"] as const;
 export type ShopGame = (typeof SHOP_GAMES)[number];
 export const isShopGame = (value: unknown): value is ShopGame => typeof value === "string" && (SHOP_GAMES as readonly string[]).includes(value);
 
@@ -1364,6 +1364,93 @@ export const GAME_SHOPS: Record<ShopGame, GameShopInfo> = {
           item("papercraft", "Pop-up Papercraft", 350, "Every piece cut from card with a white edge, standing off the page on a hard shadow."),
           item("pixel-quest", "8-bit Quest", 400, "Blocky clouds, a pixel grid, square badges and monospace capitals."),
           item("chalk-mural", "Chalk Mural", 450, "Drawn in chalk on a slate wall, with a wooden-framed board for every panel."),
+        ],
+      },
+    ],
+  },
+  sumbreak: {
+    game: "sumbreak",
+    title: "Sumbreak",
+    prefix: "sumbreak",
+    href: "/arcade/sumbreak",
+    blurb: "Tile materials, board themes, number styles, merge effects and art styles. Every number keeps its own colour, and puzzles and scoring never change.",
+    categories: [
+      {
+        id: "tile",
+        label: "Tile materials",
+        icon: "gem",
+        blurb: "What the number tiles are made of. Each tile keeps the colour of its number, so equal numbers always match.",
+        default: { name: "Glossy Candy", description: "Smooth rounded tiles with a glossy highlight." },
+        items: [
+          item("toy-blocks", "Painted Toy Blocks", 80, "Chunky wooden blocks with the grain showing through and one chipped, bare-wood corner."),
+          item("porcelain", "Glazed Porcelain", 90, "White crackle glaze with each number's colour hand-painted round the rim."),
+          item("gummy", "Gummy Jelly", 100, "Squishy see-through jelly that wobbles when you pick it up."),
+          item("cloisonne", "Cloisonné Enamel", 120, "Glossy enamel held in thin gold wire, with a gold stud in every corner."),
+          item("stained-glass", "Stained Glass", 140, "Leaded panes in the number's shades, lit from behind."),
+          item("neon-sign", "Neon Sign", 160, "Dark glass with a glowing tube bent round every edge."),
+          item("gemstone", "Carved Gemstone", 180, "Eight cut facets round a polished table that catches the light."),
+        ],
+      },
+      {
+        id: "board",
+        label: "Board themes",
+        icon: "image",
+        blurb: "The board under the tiles, and what's left in a cell when its tile merges away.",
+        default: { name: "Night Sea", description: "A deep teal board with soft sunken holes." },
+        items: [
+          item("zen-garden", "Zen Garden", 90, "Raked sand rippling round smooth stones. Emptied cells become raked circles."),
+          item("scholars-desk", "Scholar's Desk", 100, "Green leather with gold tooling, an ink blot and a wax seal. Emptied cells are pressed into the leather."),
+          item("koi-pond", "Koi Pond", 120, "Rippling water with koi circling below. Emptied cells hold lily pads."),
+          item("circuit-board", "Circuit Board", 120, "Copper traces with pulses of light and blinking LEDs. Emptied cells become solder pads."),
+          item("aurora-floe", "Aurora Ice Floe", 140, "Cracked sea ice under a drifting aurora. Emptied cells freeze over."),
+          item("volcanic-forge", "Volcanic Forge", 160, "Black basalt split by glowing, pulsing lava. Emptied cells smoulder."),
+          item("observatory", "Celestial Observatory", 180, "A turning star chart behind a brass astrolabe. Emptied cells each hold a tiny star."),
+        ],
+      },
+      {
+        id: "number",
+        label: "Number styles",
+        icon: "type",
+        blurb: "How the numbers are lettered. Every style stays bold and high-contrast on any tile.",
+        default: { name: "Bold Round", description: "Heavy, rounded numbers." },
+        items: [
+          item("typewriter", "Typewriter", 70, "Inked typewriter numerals, each struck slightly off true."),
+          item("letterpress", "Letterpress", 80, "Classic serif numbers pressed deep into the tile."),
+          item("bubble-letters", "Bubble Letters", 90, "Puffy white numbers with a thick outline and a drop shadow."),
+          item("brush-ink", "Brush Ink", 100, "Bold, slanted numbers dashed off with a brush."),
+          item("digital-clock", "Digital Clock", 110, "Glowing numbers in a little LCD window, like an old bedside clock."),
+          item("marquee", "Marquee Lights", 130, "Numbers filled with rows of warm light bulbs."),
+          item("luminous", "Luminous", 150, "Numbers that glow from within, with a halo in the tile's colour."),
+        ],
+      },
+      {
+        id: "merge",
+        label: "Merge effects",
+        icon: "zap",
+        blurb: "What bursts out when two tiles merge. Big merges still shake the board and chains still count up.",
+        default: { name: "Spark Ring", description: "A ring of light and eight sparks." },
+        items: [
+          item("soap-bubbles", "Soap Bubbles", 90, "Shimmering bubbles float up and pop."),
+          item("petal-whirl", "Petal Whirl", 100, "Petals spiral out in a little whirlwind."),
+          item("pixel-shatter", "Pixel Shatter", 110, "The tile bursts into square pixels that tumble away."),
+          item("ink-splash", "Ink Splash", 120, "A splash of ink in the number's colour, with flying droplets."),
+          item("lightning", "Lightning Arc", 140, "Forked bolts crackle out from the merged tile."),
+          item("firework-peony", "Firework Peony", 160, "A firework blooms in two rings of trailing sparks."),
+          item("supernova", "Supernova", 180, "A blinding flash, a shockwave and rays of starlight."),
+        ],
+      },
+      {
+        id: "style",
+        label: "Art styles",
+        icon: "brush",
+        style: true,
+        blurb: "Redraws the whole puzzle: board frame, tile shapes, outlines, lettering and effects. Works with every other cosmetic.",
+        default: { name: "Smooth Glow", description: "Soft glossy shapes on a glowing board." },
+        items: [
+          item("woodcut", "Woodcut Print", 300, "Carved black outlines, hatched shading and inked serif numbers on cream paper."),
+          item("watercolour", "Watercolour Wash", 350, "Blotted, hand-painted tiles with pigment edges, paper grain and pencil numbers."),
+          item("bauhaus", "Bauhaus Poster", 400, "Circles, squares and arches by number, flat colour, hard shadows and strict lettering."),
+          item("crt-arcade", "CRT Arcade", 450, "Square pixel tiles, scanlines, a curved glass screen and pixel numbers."),
         ],
       },
     ],

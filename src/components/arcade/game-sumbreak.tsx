@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
+import { useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { RotateCcw, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 import { keyDirection, useArcade, useGameKeys } from "./game-shell";
 import { PuzzleFrame, usePuzzleSession, type PuzzleSession, type PuzzleSpec } from "./puzzle-shell";
 import { CELEBRATIONS } from "./puzzle-looks";
+import { BoardLayers, MergeFx, sumbreakLook } from "./sumbreak/look";
+import "./sumbreak/cosmetics.css";
 
 /** One step of play: the board before it and the merge (null = the board was reset to the start). */
 type Step = { before: SumbreakBoard; move: SumbreakMove | null };
@@ -32,7 +34,6 @@ type Pop = { id: number; cell: number; from: number; fromValue: number; chain: n
 
 /** Merges this close together (ms) build a chain. */
 const CHAIN_MS = 1600;
-const SPARK_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 /** The merges since the last reset, in order: what the server replays. */
 function movesOf(history: Step[]) {
@@ -45,7 +46,8 @@ function movesOf(history: Step[]) {
 }
 
 function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
-  const { play, effects, look } = useArcade();
+  const { play, effects, look: equipped } = useArcade();
+  const look = useMemo(() => sumbreakLook(equipped), [equipped]);
   const { puzzle, locked } = session;
   const n = puzzle.size;
   const [cells, setCells] = useState<SumbreakBoard>(() => [...puzzle.cells]);
@@ -278,7 +280,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
       session={session}
       title="Sumbreak"
       onHint={hint}
-      celebrate={CELEBRATIONS[look.finish ?? ""]}
+      celebrate={CELEBRATIONS[equipped.finish ?? ""]}
       rules={[
         "Drag a number onto a neighbour above, below, left or right that holds the same number, or tap one and then the other.",
         "The two merge into their sum, which lands on the tile you moved onto. The tile you moved from stays empty: nothing slides, and nothing merges across a gap or diagonally.",
@@ -309,6 +311,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
           pop && tier(cells[pop.cell] || 1) >= 4 && (pop.id % 2 ? "sumbreak-thump-a" : "sumbreak-thump-b"),
         )}
       >
+        <BoardLayers look={look} />
         {pop && pop.chain >= 2 && effects !== "off" ? (
           <span key={`chain-${pop.id}`} aria-hidden className="sumbreak-chain">
             Chain ×{pop.chain}
@@ -317,7 +320,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
         <div
           role="grid"
           aria-label={`Sumbreak board, ${n} by ${n}, ${left} tile${left === 1 ? "" : "s"} left`}
-          className="grid size-full"
+          className="sumbreak-grid grid size-full"
           style={
             {
               "--sb-gap": "clamp(0.25rem, 1.6cqi, 0.6rem)",
@@ -393,10 +396,7 @@ function SumbreakPlay({ session }: { session: PuzzleSession<SumbreakPuzzle> }) {
                         >
                           {pop.fromValue}
                         </span>
-                        <span className="sumbreak-ring" />
-                        {SPARK_ANGLES.map((angle) => (
-                          <span key={angle} className="sumbreak-spark" style={{ "--a": `${angle + (pop.id % 4) * 11}deg` } as CSSProperties} />
-                        ))}
+                        <MergeFx kind={look.merge} seed={pop.id} />
                       </span>
                     ) : null}
                     {value ? (
