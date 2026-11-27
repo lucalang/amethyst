@@ -31,7 +31,9 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { apiFetch } from "@/lib/api-client";
 import type { SoundName } from "./sound";
 import { GameOverlay, GameShell, Stat, useAway, useArcade, useGameAchievementTracking, useGameKeys, useRecord } from "./game-shell";
 import { observeCanvas, startLoop, type CanvasSize } from "./engine";
@@ -70,6 +72,7 @@ import {
   immune,
   launchAttack,
   launchNuke,
+  continueAfterWin,
   matchScore,
   maxTroops,
   moveFleet,
@@ -155,6 +158,8 @@ type Hud = {
   /** Gold per second: the base, Factories and their railroads, and trade (smoothed). */
   income: { base: number; factory: number; trade: number; total: number };
   share: number;
+  /** The share that ends the match: the win share, or the whole map once you chose to play on. */
+  goal: number;
   time: number;
   rank: number;
   alive: number;
@@ -168,7 +173,7 @@ type Hud = {
   strikes: Strike[];
   tools: Record<Picker, ToolState>;
 };
-type Result = { won: boolean; score: number; best: boolean; time: number; peak: number; message: string };
+type Result = { won: boolean; score: number; best: boolean; time: number; peak: number; message: string; /** A fresh victory by share: the player may play on toward the whole map. */ canContinue: boolean };
 type Banner = { id: number; count: number; name: string; detail: string; major: boolean };
 
 /** Every tool: what it's called, its key, where it sits in the dock, and what it does (shown in the tool card). */
@@ -472,6 +477,7 @@ function snapshot(game: Game, selected: number, feed: FeedEntry[]): Hud {
       total: (goldPerTick(player) + factoryIncome(player)) / TICK_SECONDS + player.tradeRate,
     },
     share: share(game, player),
+    goal: game.continued ? 1 : WIN_SHARE,
     time: game.time,
     rank: alive.findIndex((nation) => nation.id === 1) + 1,
     alive: alive.length,
@@ -883,17 +889,27 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
 
   const finish = useCallback(
     (game: Game) => {
-      const won = game.outcome?.winner === 1;
+      // Playing on after a victory keeps it: the win was counted when it happened, a later defeat doesn't undo it.
+      const won = game.continued || game.outcome?.winner === 1;
       const score = matchScore(game);
       const improved = submit(score);
+      // One win per match, counted when it is first reached (a later total conquest isn't a second win).
+      if (won && !game.continued) {
+        apiFetch("/api/arcade/wins", { method: "POST", json: { game: "front-wars" } }).catch(() => toast.error("Your win could not be added to the leaderboard."));
+      }
       const winner = game.outcome?.winner ? game.nations[game.outcome.winner] : null;
-      const message = won
-        ? `You hold ${percent(share(game, game.nations[1]))} of the land.`
-        : game.outcome?.reason === "conquered"
-          ? "Your last land fell."
-          : `${winner?.name ?? "A rival"} took ${percent(winner ? share(game, winner) : WIN_SHARE)} of the land first.`;
+      const message =
+        game.outcome?.reason === "total"
+          ? "You conquered the whole world."
+          : game.outcome?.reason === "conquered"
+            ? game.continued
+              ? "You won, then your last land fell. The win still counts."
+              : "Your last land fell."
+            : won
+              ? `You hold ${percent(share(game, game.nations[1]))} of the land.`
+              : `${winner?.name ?? "A rival"} took ${percent(winner ? share(game, winner) : WIN_SHARE)} of the land first.`;
       selectedRef.current = -1;
-      setResult({ won, score, best: improved, time: game.time, peak: game.nations[1].peak, message });
+      setResult({ won, score, best: improved, time: game.time, peak: game.nations[1].peak, message, canContinue: game.outcome?.winner === 1 && game.outcome.reason === "share" && !game.continued });
       refresh(game);
       setPhase("over");
       setTool("attack");
@@ -901,6 +917,16 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
     },
     [play, submit, refresh],
   );
+
+  /** After a victory: keep the match going toward every last tile. The popup stays as it was; this just closes it. */
+  const continueMatch = useCallback(() => {
+    const game = gameRef.current;
+    if (!game || !continueAfterWin(game)) return;
+    setResult(null);
+    say("You won! Playing on: take every last tile to conquer the world.", true);
+    refresh(game);
+    setPhase("playing");
+  }, [say, refresh]);
 
   const start = useCallback(
     (next: Settings) => {
@@ -1341,7 +1367,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
       stats={
         inMatch && player ? (
           <>
-            <Stat label="Land" value={`${percent(player.share)} / ${percent(WIN_SHARE)}`} highlight={player.share >= 0.4} />
+            <Stat label="Land" value={`${percent(player.share)} / ${percent(player.goal)}`} highlight={player.share >= 0.4} />
             <Stat label="Rank" value={player.rank ? `#${player.rank} of ${player.alive}` : "—"} />
             <Stat label="Time" value={clock(player.time)} className="hidden sm:flex" />
           </>
@@ -1407,16 +1433,16 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                       <span className="fw-res-sub">+{compact(player.income.total)}/s</span>
                     </span>
                   </div>
-                  <div className="fw-res" data-kind="land" title={`You hold ${percent(player.share)} of all land; ${percent(WIN_SHARE)} wins.`}>
+                  <div className="fw-res" data-kind="land" title={player.goal < 1 ? `You hold ${percent(player.share)} of all land; ${percent(player.goal)} wins.` : `You already won. You hold ${percent(player.share)} of all land; take every tile to conquer the world.`}>
                     <Flag aria-hidden className="fw-res-icon" />
                     <span className="fw-res-body">
                       <span className="fw-res-label">Land</span>
                       <span className="fw-res-value">{percent(player.share)}</span>
                       <span className="fw-meter" aria-hidden>
-                        <span style={{ width: `${Math.min(100, (player.share / WIN_SHARE) * 100)}%` }} />
+                        <span style={{ width: `${Math.min(100, (player.share / player.goal) * 100)}%` }} />
                       </span>
                       <span className="fw-res-sub">
-                        goal {percent(WIN_SHARE)} · #{player.rank || "—"}
+                        goal {percent(player.goal)} · #{player.rank || "—"}
                       </span>
                     </span>
                   </div>
@@ -1520,7 +1546,13 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                 title={result.won ? "Victory" : "Defeat"}
                 actions={
                   <>
-                    <Button size="sm" onClick={() => start(settings)}>
+                    {result.canContinue ? (
+                      <Button size="sm" onClick={continueMatch}>
+                        <Play aria-hidden />
+                        Keep playing
+                      </Button>
+                    ) : null}
+                    <Button size="sm" variant={result.canContinue ? "outline" : "default"} onClick={() => start(settings)}>
                       <RotateCcw aria-hidden />
                       Rematch
                     </Button>
@@ -1538,6 +1570,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                 <span className="block text-xs">
                   {clock(result.time)} · peak {percent(result.peak)} of the land
                 </span>
+                {result.canContinue ? <span className="mt-2 block text-xs">Your win is saved. Keep playing to try to take every last tile.</span> : null}
               </GameOverlay>
             ) : null}
           </div>
@@ -1942,7 +1975,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                   <h2 className="fw-card-title">
                     <Trophy aria-hidden className="size-4" />
                     Leaderboard
-                    <span className="ml-auto text-xs font-medium text-muted-foreground">Goal {percent(WIN_SHARE)}</span>
+                    <span className="ml-auto text-xs font-medium text-muted-foreground">Goal {percent(player.goal)}</span>
                   </h2>
                   <ol className="fw-nations">
                     {player.leaders.map((nation, index) => (
@@ -1960,7 +1993,7 @@ export default function FrontWarsGame({ records }: { records: Record<string, num
                             ) : null}
                           </span>
                           <span className="fw-share" aria-hidden>
-                            <span style={{ width: `${Math.min(100, (nation.share / WIN_SHARE) * 100)}%`, background: nation.color }} />
+                            <span style={{ width: `${Math.min(100, (nation.share / player.goal) * 100)}%`, background: nation.color }} />
                           </span>
                         </span>
                         <span className="text-right text-xs tabular-nums">
@@ -2169,7 +2202,7 @@ function Setup({ settings, onChange, onStart }: { settings: Settings; onChange: 
           <summary>How to play</summary>
           <ul>
             <li>
-              <strong>Win</strong> by holding {percent(WIN_SHARE)} of all land. You lose if your last land falls or a rival reaches {percent(WIN_SHARE)} first.
+              <strong>Win</strong> by holding {percent(WIN_SHARE)} of all land. After winning you can keep playing to conquer the whole map. You lose if your last land falls or a rival reaches {percent(WIN_SHARE)} first.
             </li>
             <li>
               <strong>Start:</strong> for 10 seconds, tap anywhere to choose your spawn. Then everyone is protected for 5 seconds.

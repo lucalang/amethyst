@@ -51,6 +51,74 @@ export const CHANGE_KINDS: readonly ChangeKind[] = ["new", "improved", "fixed"];
 
 const RELEASES: readonly Release[] = [
   {
+    id: "2026-11-25-leaderboards-tables-and-more",
+    date: "2026-11-25",
+    title: "Leaderboards, tables and a better Front Wars",
+    intro: "The Descent, The Ascent and Front Wars get leaderboards, Front Wars loses its tiny islands and lets you play on after winning, Notes get tables, and streaks, tasks and codes get easier to manage.",
+    icon: "trophy",
+    highlights: [
+      { kind: "new", feature: "Leaderboards for The Descent, The Ascent and Front Wars", text: "The Descent and The Ascent rank your best score; Front Wars ranks your wins. Open Ranks in any of the three games." },
+      { kind: "improved", feature: "Front Wars", text: "Tiny islands are gone, Bots no longer start squeezed into cramped spots, and after a victory you can keep playing to take every last tile." },
+      { kind: "new", feature: "Tables in Notes", text: "Insert a table from the toolbar, move between cells with Tab and Enter, and add or remove rows and columns." },
+      { kind: "new", feature: "Move a step to another task", text: "A step can move to any other task in the same list from its menu." },
+      { kind: "new", feature: "Restore all streaks", text: "Restore every lost streak you can restore today with one confirmation." },
+    ],
+    details: {
+      new: [
+        {
+          title: "Leaderboards for The Descent, The Ascent and Front Wars",
+          body: "These three keep a personal record rather than coin runs, so their boards are simple: one all-time board each, with your own placement shown even outside the top list.",
+          points: [
+            "The Descent and The Ascent rank your best score.",
+            "Front Wars ranks wins: each match you win at the winning land share counts once. Playing on afterwards and conquering the whole map doesn't count a second win.",
+            "Ties go to whoever got there first. Names are the same anonymous arcade names as everywhere else on the leaderboards.",
+          ],
+          where: "Arcade → Leaderboards, or Ranks inside each game",
+          link: { href: "/arcade/leaderboards?game=front-wars", label: "Open the leaderboards" },
+        },
+        {
+          title: "Tables in Notes",
+          body: "Tables are plain Markdown tables, so they stay readable anywhere. While your cursor is elsewhere a table shows as a real table; click a cell to edit it as aligned text.",
+          points: [
+            "Pick a size from the Table button in the toolbar to insert one.",
+            "Tab and Shift+Tab move between cells, Enter moves down a row, and Tab in the last cell adds a row.",
+            "The Table menu adds rows above or below, adds columns left or right, and deletes a row, a column or the whole table.",
+            "Cells understand bold, italic, code, strikethrough and links.",
+          ],
+          where: "Notes → toolbar → Table",
+        },
+        {
+          title: "Move a step to another task",
+          body: "Steps can now move between tasks of the same list. The step goes to the end of the other task's steps. Moving between lists isn't possible.",
+          where: "To Do → a task → a step's menu → Move to task",
+        },
+        {
+          title: "Restore all streaks",
+          body: "When two or more streaks can be restored right now, a Restore all button appears above them. It shows every streak and the total price before you confirm, restores the longest streaks first and stops if you run out of Coins. Streaks that still need a round played today are left out and counted.",
+          where: "Arcade",
+          link: { href: "/arcade", label: "Open the Arcade" },
+        },
+      ],
+      improved: [
+        {
+          title: "Front Wars",
+          body: "Matches are less fiddly and no longer end with a few Bots hiding in odd corners.",
+          points: [
+            "Islands too small to fight over are removed from the world map. Every Nation keeps its home land.",
+            "Bots start in open land instead of cramped spots, and a Bot that has been squeezed down to a tiny pocket is annexed by the player surrounding it.",
+            "After a victory the popup now has Keep playing next to Rematch. Your win and score are saved; play on to hold the whole map. Taking every tile ends the match with a bonus to your score, and losing your last land afterwards doesn't undo the win.",
+          ],
+          where: "Arcade → Front Wars",
+        },
+        {
+          title: "Redeeming a code again",
+          body: "When you redeem a code you've redeemed before (for example after it was updated), the reveal now lists only the cosmetics that are new to you. Coins, cases and boosters are shown and granted exactly as before.",
+          where: "Vault",
+        },
+      ],
+    },
+  },
+  {
     id: "2026-11-21-guess-the-new-modes",
     date: "2026-11-21",
     title: "Three new Guess The ... modes",

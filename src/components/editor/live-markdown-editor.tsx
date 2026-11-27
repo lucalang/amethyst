@@ -7,10 +7,11 @@ import { EditorState, Prec } from "@codemirror/state";
 import { EditorView, drawSelection, keymap, placeholder as placeholderExtension } from "@codemirror/view";
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, type Ref } from "react";
 import { livePreview } from "./live-preview";
+import { inTable, liveTables, tableEnter, tableTab } from "./live-tables";
 import { headingLevelAt, insertLink, setHeading, toggleInline } from "./markdown-commands";
 import { imageUploads, insertImageFiles } from "./note-images";
 
-export type EditorStatus = { canUndo: boolean; canRedo: boolean; heading: number };
+export type EditorStatus = { canUndo: boolean; canRedo: boolean; heading: number; /** The caret is inside a table. */ table?: boolean };
 
 export type LiveMarkdownEditorHandle = {
   view: () => EditorView | null;
@@ -64,7 +65,7 @@ export function LiveMarkdownEditor({
   const createView = useEffectEvent((parent: HTMLElement) => {
     let last = "";
     const report = (state: EditorState) => {
-      const status: EditorStatus = { canUndo: undoDepth(state) > 0, canRedo: redoDepth(state) > 0, heading: headingLevelAt(state) };
+      const status: EditorStatus = { canUndo: undoDepth(state) > 0, canRedo: redoDepth(state) > 0, heading: headingLevelAt(state), table: inTable(state) };
       const key = JSON.stringify(status);
       if (key !== last) {
         last = key;
@@ -80,6 +81,7 @@ export function LiveMarkdownEditor({
         EditorView.lineWrapping,
         markdown({ base: markdownLanguage }),
         livePreview,
+        liveTables,
         imageUploads(reportImageError),
         // Typing [ or ( adds the closing bracket; typing it again steps over it.
         closeBrackets(),
@@ -89,6 +91,10 @@ export function LiveMarkdownEditor({
           { key: "Mod-i", run: (view) => toggleInline(view, "*") },
           { key: "Mod-k", run: insertLink },
           { key: "Mod-s", preventDefault: true, run: () => (emitSave(), true) },
+          // Inside a table these move between cells; elsewhere they do what they always did.
+          { key: "Tab", run: (view) => tableTab(view, false) },
+          { key: "Shift-Tab", run: (view) => tableTab(view, true) },
+          { key: "Enter", run: tableEnter },
           ...headingKeys,
           ...closeBracketsKeymap,
           ...defaultKeymap,

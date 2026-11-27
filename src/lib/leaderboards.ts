@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { RANKED_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, type RankedGameId } from "@/lib/arcade";
+import { ARCADE_GAMES, SUDOKU_DIFFICULTIES, SUDOKU_LABELS, isRankedGame, type ArcadeGameId, type RankedGameId } from "@/lib/arcade";
 import { SUDOKU_CONFIG, SUDOKU_SIZES, sudokuVariant } from "@/lib/sudoku";
 import { dailyDate, dailyVariant } from "@/lib/arcade-daily";
 import { PUZZLE_DIFFICULTIES, isLevelsVariant, levelsBoard, type PuzzleLevelGame } from "@/lib/minigames/levels";
@@ -16,6 +16,17 @@ export type LeaderboardOrder = "high" | "fast";
 
 export type BoardOption = { id: string; label: string };
 
+/**
+ * Record-only games that still have a leaderboard: The Descent and The Ascent rank their best score, Front Wars
+ * ranks wins. They have no coin runs, so (unlike `RankedGameId`) they have no streaks, Tournaments or Wagers.
+ */
+export const RECORD_LEADERBOARD_GAMES = ["front-wars", "blank-atlas", "the-ascent"] as const;
+export type RecordLeaderboardGame = (typeof RECORD_LEADERBOARD_GAMES)[number];
+export type LeaderboardGameId = RankedGameId | RecordLeaderboardGame;
+export const isRecordLeaderboardGame = (game: ArcadeGameId): game is RecordLeaderboardGame => (RECORD_LEADERBOARD_GAMES as readonly string[]).includes(game);
+/** Whether a game has a leaderboard page (its shell links to it). */
+export const hasLeaderboard = (game: ArcadeGameId): game is LeaderboardGameId => isRankedGame(game) || isRecordLeaderboardGame(game);
+
 type LeaderboardGame = {
   order: LeaderboardOrder;
   scoreLabel: string;
@@ -25,6 +36,8 @@ type LeaderboardGame = {
   daily: boolean;
   /** Snake: one board per setup, listed from the boards players have ranked on. */
   setups?: boolean;
+  /** What a row's number counts, when it isn't a plain score (Front Wars: "win" / "wins"). */
+  unit?: { one: string; many: string };
 };
 
 /** Days of daily boards that stay browsable (today first). */
@@ -40,7 +53,7 @@ function levelBoards(game: PuzzleLevelGame): Pick<LeaderboardGame, "order" | "sc
   return { order: "high", scoreLabel: "Highest level", boards: PUZZLE_DIFFICULTIES[game].map((option) => ({ id: levelsBoard(option.id), label: option.label })), daily: true };
 }
 
-export const LEADERBOARD_GAMES: Record<RankedGameId, LeaderboardGame> = {
+export const LEADERBOARD_GAMES: Record<LeaderboardGameId, LeaderboardGame> = {
   "2048": {
     order: "high",
     scoreLabel: "Score",
@@ -85,10 +98,14 @@ export const LEADERBOARD_GAMES: Record<RankedGameId, LeaderboardGame> = {
   patches: { ...levelBoards("patches"), matchBoards: [{ id: "", label: "Practice" }] },
   tango: { ...levelBoards("tango"), matchBoards: [{ id: "", label: "Practice" }] },
   queens: { ...levelBoards("queens"), matchBoards: [{ id: "", label: "Practice" }] },
+  "front-wars": { order: "high", scoreLabel: "Wins", boards: [{ id: "", label: "All time" }], daily: false, unit: { one: "win", many: "wins" } },
+  "blank-atlas": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Best descent" }], daily: false },
+  "the-ascent": { order: "high", scoreLabel: "Score", boards: [{ id: "", label: "Best climb" }], daily: false },
   sumbreak: { ...levelBoards("sumbreak"), matchBoards: SUMBREAK_LEVELS.map((level) => ({ id: level.id, label: level.label })) },
 };
 
-export const LEADERBOARD_GAME_IDS = RANKED_GAMES.map((game) => game.id);
+/** Every game with a leaderboard, in the order the Arcade lists its games. */
+export const LEADERBOARD_GAME_IDS = ARCADE_GAMES.map((game) => game.id).filter(hasLeaderboard);
 
 /** A Snake board id split into its parts (mode key is a mode id or an `x…` mix). */
 export type SnakeBoardParts = { key: string; size: SnakeSize; count: number; speed: SnakeSpeed };
@@ -117,7 +134,7 @@ export function snakeBoardLabel(board: string) {
   return parts.join(" · ");
 }
 
-export function boardLabel(game: RankedGameId, board: string, now = Date.now()) {
+export function boardLabel(game: LeaderboardGameId, board: string, now = Date.now()) {
   if (board.startsWith("daily-")) return `Daily · ${dailyBoards(now).find((day) => day.id === board)?.label ?? board.slice(6)}`;
   if (game === "snake") return snakeBoardLabel(board);
   const entry = LEADERBOARD_GAMES[game];
@@ -125,10 +142,10 @@ export function boardLabel(game: RankedGameId, board: string, now = Date.now()) 
 }
 
 /** Whether a board ranks the highest level completed (rows show "Level 12" and equal levels share a rank). */
-export const isLevelsBoard = (game: RankedGameId, board: string) => isLevelsVariant(board) && LEADERBOARD_GAMES[game].boards.some((option) => option.id === board);
+export const isLevelsBoard = (game: LeaderboardGameId, board: string) => isLevelsVariant(board) && LEADERBOARD_GAMES[game].boards.some((option) => option.id === board);
 
 /** The metric a board ranks, for headings and footnotes: daily boards of a level game still rank a score. */
-export function boardMetric(game: RankedGameId, board: string) {
+export function boardMetric(game: LeaderboardGameId, board: string) {
   if (isLevelsBoard(game, board)) return "Highest level";
   const entry = LEADERBOARD_GAMES[game];
   return entry.scoreLabel === "Highest level" ? "Score" : entry.scoreLabel;
@@ -144,7 +161,7 @@ export function dailyBoards(now = Date.now()): BoardOption[] {
   });
 }
 
-export function isLeaderboardBoard(game: RankedGameId, board: string, now = Date.now()) {
+export function isLeaderboardBoard(game: LeaderboardGameId, board: string, now = Date.now()) {
   const entry = LEADERBOARD_GAMES[game];
   if (entry.boards.some((option) => option.id === board) || entry.matchBoards?.some((option) => option.id === board)) return true;
   if (entry.setups && game === "snake" && isSnakeLeaderboardVariant(board)) return true;
@@ -153,7 +170,7 @@ export function isLeaderboardBoard(game: RankedGameId, board: string, now = Date
 
 export const leaderboardQuerySchema = z
   .object({
-    game: z.enum(LEADERBOARD_GAME_IDS as [RankedGameId, ...RankedGameId[]]),
+    game: z.enum(LEADERBOARD_GAME_IDS as [LeaderboardGameId, ...LeaderboardGameId[]]),
     board: z.string().max(40).default(""),
     limit: z.coerce.number().int().min(1).max(LEADERBOARD_LIMIT).default(LEADERBOARD_LIMIT),
   })
@@ -173,7 +190,7 @@ export type LeaderboardRow = {
 };
 
 export type Leaderboard = {
-  game: RankedGameId;
+  game: LeaderboardGameId;
   board: string;
   order: LeaderboardOrder;
   players: number;
@@ -184,7 +201,7 @@ export type Leaderboard = {
   boards?: { board: string; players: number }[];
 };
 
-export function leaderboardHref(game: RankedGameId, board = "") {
+export function leaderboardHref(game: LeaderboardGameId, board = "") {
   const params = new URLSearchParams({ game });
   if (board) params.set("board", board);
   return `/arcade/leaderboards?${params}`;

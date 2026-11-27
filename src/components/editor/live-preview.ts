@@ -4,6 +4,7 @@ import type { EditorState, Range } from "@codemirror/state";
 import { Decoration, type DecorationSet, type EditorView, ViewPlugin, type ViewUpdate, WidgetType } from "@codemirror/view";
 import type { SyntaxNode } from "@lezer/common";
 import { findImageEmbeds, resolveImageSrc } from "@/lib/attachments";
+import { isRenderedTable } from "./live-tables";
 
 // Obsidian-style live preview: Markdown stays the document; decorations style
 // it in place and hide syntax markers except on the lines holding the caret.
@@ -200,6 +201,8 @@ export function buildLivePreview(view: EditorView): DecorationSet {
       from,
       to,
       enter: (ref) => {
+        // A table shown as an HTML table is drawn by its own widget (see live-tables.ts).
+        if (ref.name === "Table" && ref.node.parent?.name === "Document" && isRenderedTable(state, ref.from, ref.to)) return false;
         const heading = /^(?:ATX|Setext)Heading(\d)$/.exec(ref.name);
         if (heading) {
           addLines(ref.from, ref.name.startsWith("Setext") ? doc.lineAt(ref.from).to : ref.to, HEADING_LINES[Number(heading[1]) - 1], "h");

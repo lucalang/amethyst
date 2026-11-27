@@ -253,6 +253,158 @@ export function RecoverStreakDialog({
 }
 
 /**
+ * Confirms and restores every streak that can be restored right now in one go (the ones that still need a round
+ * today are left out and counted). It restores one game at a time through the same server-checked request as a
+ * single restore, most valuable streak first, so the price, the balance and the once-per-day rule are enforced
+ * per game; it stops at the first game the player can't afford.
+ */
+export function RestoreAllDialog({
+  streaks,
+  waiting,
+  open,
+  onOpenChange,
+  onRestored,
+}: {
+  /** The streaks that can be restored right now (their offer is ready). */
+  streaks: readonly ArcadeStreak[];
+  /** How many more lost streaks need a round of their game first. */
+  waiting: number;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** The newest streaks from the server, or null when they should be reloaded. */
+  onRestored: (streaks: ArcadeStreaks | null) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [shownFor, setShownFor] = useState(open);
+  const sending = useRef(false);
+  const sound = useUiSound();
+  if (shownFor !== open) {
+    setShownFor(open);
+    if (open) {
+      setProblem(null);
+      setDone(0);
+    }
+  }
+  const queue = [...streaks].filter((streak) => streak.recovery).sort((a, b) => (b.recovery?.streak ?? 0) - (a.recovery?.streak ?? 0));
+  const total = queue.reduce((sum, streak) => sum + (streak.recovery?.cost ?? 0), 0);
+  if (queue.length === 0 && !busy) return null;
+
+  async function restoreAll() {
+    if (sending.current) return;
+    sending.current = true;
+    setBusy(true);
+    setProblem(null);
+    setDone(0);
+    let restored = 0;
+    let spent = 0;
+    let latest: ArcadeStreaks | null = null;
+    let balance: number | null = null;
+    let stopped: string | null = null;
+    for (const streak of queue) {
+      const recovery = streak.recovery;
+      if (!recovery) continue;
+      try {
+        const body = await apiFetch<{ recovery: StreakRecovery; streaks: ArcadeStreaks | null }>("/api/arcade/streaks", {
+          method: "POST",
+          json: { game: streak.game, expectedCost: recovery.cost },
+        });
+        balance = body.recovery.balance;
+        if (body.streaks) latest = body.streaks;
+        if (body.recovery.status === "recovered") {
+          restored += 1;
+          spent += body.recovery.cost;
+        }
+        setDone((count) => count + 1);
+      } catch (error) {
+        const code = error instanceof ApiError ? error.code : null;
+        if (code === "insufficient_funds") {
+          stopped = "You ran out of Coins, so the rest were not restored.";
+          break;
+        }
+        if (code === "price_changed" || code === "streak_not_recoverable") {
+          // Something changed for this game; carry on with the others and let the reload show the truth.
+          latest = null;
+          continue;
+        }
+        stopped = "Couldn’t restore every streak. Check your connection and try again.";
+        break;
+      }
+    }
+    if (balance !== null) window.dispatchEvent(new CustomEvent("archive:coins", { detail: balance }));
+    if (restored > 0) {
+      sound("flame");
+      toast.success(`${restored} ${restored === 1 ? "streak" : "streaks"} restored for ${coinsLabel(spent)}.`);
+    }
+    onRestored(latest);
+    sending.current = false;
+    setBusy(false);
+    if (stopped) {
+      setProblem(stopped);
+      if (restored > 0) toast.error(stopped);
+    } else {
+      onOpenChange(false);
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Restore {queue.length === 1 ? "your streak" : `all ${queue.length} streaks`}?
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2">
+              <p>
+                This spends <span className="coin-ink font-semibold tabular-nums">{coinsLabel(total)}</span> to count yesterday as played in each game below.
+              </p>
+              <ul className="space-y-1">
+                {queue.map((streak) => (
+                  <li key={streak.game} className="flex items-baseline justify-between gap-3 text-foreground">
+                    <span className="truncate">
+                      {gameTitle(streak.game)} <span className="text-muted-foreground tabular-nums">· {dayWord(streak.recovery!.streak + 1)}</span>
+                    </span>
+                    <span className="coin-ink shrink-0 tabular-nums">{coinsLabel(streak.recovery!.cost)}</span>
+                  </li>
+                ))}
+              </ul>
+              {waiting > 0 ? (
+                <p>
+                  {waiting} more {waiting === 1 ? "streak needs" : "streaks need"} a round played today before {waiting === 1 ? "it" : "they"} can be restored.
+                </p>
+              ) : null}
+              <p>Each missed day can be restored only once, and only until 00:00 UTC tonight.</p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {problem ? (
+          <p role="alert" className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground">
+            <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-destructive" />
+            <span>{problem}</span>
+          </p>
+        ) : null}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>{problem ? "Close" : "Keep my Coins"}</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={busy || queue.length === 0}
+            aria-busy={busy || undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              void restoreAll();
+            }}
+          >
+            {busy ? <Loader2 aria-hidden className="animate-spin" /> : <Coins aria-hidden />}
+            {busy ? `Restoring ${Math.min(done + 1, queue.length)} of ${queue.length}…` : `Spend ${coinsLabel(total)}`}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+/**
  * The lost-streak notice: says plainly which streak was lost, that it can be restored, the exact price and the
  * deadline (00:00 UTC tonight), with an explicitly labelled restore button. Before today's round it explains
  * that one finished round unlocks restoring (the server's rule). `playHref` adds a way to that game.

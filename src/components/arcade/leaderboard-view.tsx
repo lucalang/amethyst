@@ -7,20 +7,21 @@ import { ARCADE_CABINETS } from "@/components/arcade/previews";
 import { useSettings } from "@/components/layout/settings-context";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiFetch } from "@/lib/api-client";
-import { ARCADE_GAMES, formatDuration, type RankedGameId } from "@/lib/arcade";
-import { LEADERBOARD_GAMES, LEADERBOARD_GAME_IDS, boardLabel, boardMetric, dailyBoards, isLevelsBoard, leaderboardHref, parseSnakeBoard, snakeBoardLabel, snakeBoardOf, type Leaderboard, type LeaderboardRow, type SnakeBoardParts } from "@/lib/leaderboards";
+import { ARCADE_GAMES, formatDuration, type ArcadeGameId } from "@/lib/arcade";
+import { LEADERBOARD_GAMES, LEADERBOARD_GAME_IDS, boardLabel, boardMetric, dailyBoards, isLevelsBoard, leaderboardHref, parseSnakeBoard, snakeBoardLabel, snakeBoardOf, type Leaderboard, type LeaderboardGameId, type LeaderboardRow, type SnakeBoardParts } from "@/lib/leaderboards";
 import { FRUIT_COUNT, SNAKE_MODES, SNAKE_MODE_IDS, SNAKE_SIZES, SNAKE_SIZE_IDS, SNAKE_SPEEDS, SNAKE_SPEED_IDS, snakeVariant, isSnakeLeaderboardVariant, type SnakeSize, type SnakeSpeed } from "@/lib/snake";
 
 type Load = { key: string } & ({ status: "ready"; data: Leaderboard } | { status: "error"; unavailable: boolean });
 
-const titleOf = (game: RankedGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
+const titleOf = (game: ArcadeGameId) => ARCADE_GAMES.find((entry) => entry.id === game)?.title ?? game;
 const dateFormat = new Intl.DateTimeFormat("en", { month: "short", day: "numeric" });
 
-function Score({ row, fast, levels }: { row: LeaderboardRow; fast: boolean; levels: boolean }) {
-  return <span className="lb-score">{fast ? formatDuration(row.score) : levels ? `Level ${row.score.toLocaleString("en")}` : row.score.toLocaleString("en")}</span>;
+function Score({ row, fast, levels, unit }: { row: LeaderboardRow; fast: boolean; levels: boolean; unit?: { one: string; many: string } }) {
+  const number = row.score.toLocaleString("en");
+  return <span className="lb-score">{fast ? formatDuration(row.score) : levels ? `Level ${number}` : unit ? `${number} ${row.score === 1 ? unit.one : unit.many}` : number}</span>;
 }
 
-function Row({ row, fast, levels, index = 0 }: { row: LeaderboardRow; fast: boolean; levels: boolean; index?: number }) {
+function Row({ row, fast, levels, unit, index = 0 }: { row: LeaderboardRow; fast: boolean; levels: boolean; unit?: { one: string; many: string }; index?: number }) {
   return (
     <li className="lb-row enter enter-soft" style={{ "--enter-index": index } as CSSProperties} data-you={row.you ? "" : undefined} data-podium={row.rank <= 3 ? row.rank : undefined}>
       <span className="lb-rank" aria-label={`Rank ${row.rank}`}>
@@ -37,13 +38,13 @@ function Row({ row, fast, levels, index = 0 }: { row: LeaderboardRow; fast: bool
           {row.hints ? ` · ${row.hints} hint${row.hints === 1 ? "" : "s"}` : ""}
         </span>
       </span>
-      <Score row={row} fast={fast} levels={levels} />
+      <Score row={row} fast={fast} levels={levels} unit={unit} />
     </li>
   );
 }
 
 /** Snake boards offer the player's current setup first. */
-export function LeaderboardView({ game: initialGame, board: initialBoard }: { game: RankedGameId; board: string }) {
+export function LeaderboardView({ game: initialGame, board: initialBoard }: { game: LeaderboardGameId; board: string }) {
   const snakeSetup = useSettings().arcadeSnake;
   const snakeBoard = snakeSetup.mode === "blender" ? "" : snakeVariant(snakeSetup);
   const [game, setGame] = useState(initialGame);
@@ -76,7 +77,7 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
     };
   }, [game, board, key]);
 
-  function pickGame(next: RankedGameId) {
+  function pickGame(next: LeaderboardGameId) {
     setGame(next);
     setBoard(next === "snake" ? snakeBoard : LEADERBOARD_GAMES[next].boards[0].id);
   }
@@ -232,11 +233,11 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
             <span aria-hidden className="ui-icon">
               <Trophy className="size-4" />
             </span>
-            No ranked runs on this board yet.
+            {config.unit ? "Nobody has a win here yet." : "No ranked runs on this board yet."}
             <Button asChild size="sm">
               <Link href={href}>
                 <Play aria-hidden />
-                {levels ? "Climb the first levels" : "Set the first score"}
+                {levels ? "Climb the first levels" : config.unit ? "Win the first match" : "Set the first score"}
               </Link>
             </Button>
           </div>
@@ -244,17 +245,17 @@ export function LeaderboardView({ game: initialGame, board: initialBoard }: { ga
           <>
             <ol className="lb-list" aria-label={`Top ${data.top.length}`}>
               {data.top.map((row, index) => (
-                <Row key={`${row.rank}-${index}`} row={row} fast={fast} levels={levels} index={index} />
+                <Row key={`${row.rank}-${index}`} row={row} fast={fast} levels={levels} unit={config.unit} index={index} />
               ))}
             </ol>
             <footer className="lb-footer">
               {youOutside ? (
                 <ol className="lb-list" aria-label="Your placement">
-                  <Row row={youOutside} fast={fast} levels={levels} />
+                  <Row row={youOutside} fast={fast} levels={levels} unit={config.unit} />
                 </ol>
               ) : data.you ? null : (
                 <p className="flex flex-wrap items-center justify-between gap-2 px-1 text-sm text-muted-foreground">
-                  You don’t have a ranked run on this board yet.
+                  {config.unit ? "You don’t have a win yet." : "You don’t have a ranked run on this board yet."}
                   <Button asChild size="sm" variant="outline">
                     <Link href={href}>
                       <Play aria-hidden />

@@ -7,7 +7,7 @@ const redeemSchema = z.object({ code: z.string().max(200), request: z.uuid().opt
 
 type Loot = { kind: string; id: string; quantity: number }[] | null | undefined;
 type Redemption =
-  | { status: "unlocked"; coins: number; items: string[]; newItems: string[]; achievements: string[]; newAchievements: string[]; loot?: Loot; balance: number }
+  | { status: "unlocked"; repeat?: boolean; coins: number; items: string[]; newItems: string[]; achievements: string[]; newAchievements: string[]; loot?: Loot; balance: number }
   | { status: "already"; coins: number; items: string[]; achievements: string[]; loot?: Loot; redeemedAt: string; balance: number }
   | { status: "unavailable" | "unknown"; triesLeft: number };
 
@@ -23,7 +23,10 @@ const withAchievements = (items: string[], achievements: string[] | undefined, l
 function present(result: Redemption) {
   if (result.status === "unlocked") {
     const { achievements, newAchievements, loot, ...rest } = result;
-    return { ...rest, items: withAchievements(result.items, achievements, loot), newItems: withAchievements(result.newItems, newAchievements, loot) };
+    // Redeeming a code again (it was updated): list only the cosmetics that are new to the account. Coins, cases,
+    // boosters and achievements are granted and shown exactly as before.
+    const cosmetics = result.repeat ? result.newItems : result.items;
+    return { ...rest, repeat: result.repeat === true, items: withAchievements(cosmetics, achievements, loot), newItems: withAchievements(result.newItems, newAchievements, loot) };
   }
   if (result.status === "already") {
     const { achievements, loot, ...rest } = result;

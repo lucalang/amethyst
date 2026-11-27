@@ -2,12 +2,13 @@
 
 import type { EditorView } from "@codemirror/view";
 import { useRef, useState, type ReactNode } from "react";
-import { Bold, ChevronDown, Heading, ImagePlus, Italic, Link2, List, ListChecks, ListOrdered, ListPlus, Redo2, Undo2 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BetweenHorizontalStart, BetweenVerticalStart, Bold, ChevronDown, Heading, ImagePlus, Italic, Link2, List, ListChecks, ListOrdered, ListPlus, Redo2, Table2, Trash2, Undo2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TaskLinesDialog } from "@/components/workspace/task-lines-dialog";
 import { cn } from "@/lib/utils";
 import type { EditorStatus } from "./live-markdown-editor";
+import { deleteTable, insertTable, tableAddColumn, tableAddRow, tableDeleteColumn, tableDeleteRow } from "./live-tables";
 import { insertLink, insertTaskLines, redoEdit, setHeading, toggleInline, toggleList, undoEdit } from "./markdown-commands";
 
 const HEADING_OPTIONS = [
@@ -21,6 +22,81 @@ const HEADING_OPTIONS = [
 ];
 
 const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+
+const PICKER_ROWS = 6;
+const PICKER_COLUMNS = 6;
+
+/** Table menu: a size grid that inserts a table, and (with the caret in a table) its row and column actions. */
+function TableMenu({ run, inTable }: { run: (command: (view: EditorView) => unknown) => () => void; inTable: boolean }) {
+  const [hover, setHover] = useState<{ rows: number; columns: number }>({ rows: 3, columns: 3 });
+  return (
+    <DropdownMenu modal={false}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Table"
+              onMouseDown={(event) => event.preventDefault()}
+              className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-[color,background-color,scale] duration-150 hover:bg-amethyst/12 hover:text-amethyst focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-90 active:bg-amethyst/20 aria-expanded:bg-amethyst/12 aria-expanded:text-amethyst pointer-coarse:size-10 [&_svg]:size-4"
+            >
+              <Table2 aria-hidden />
+            </button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>Table</TooltipContent>
+      </Tooltip>
+      <DropdownMenuContent align="start" className="w-56" onCloseAutoFocus={(event) => event.preventDefault()}>
+        <DropdownMenuLabel>Insert table · {hover.columns} × {hover.rows}</DropdownMenuLabel>
+        <div role="group" aria-label="Table size" className="grid gap-1 px-2 pb-2" style={{ gridTemplateColumns: `repeat(${PICKER_COLUMNS}, 1fr)` }}>
+          {Array.from({ length: PICKER_ROWS * PICKER_COLUMNS }, (_, index) => {
+            const rows = Math.floor(index / PICKER_COLUMNS) + 1;
+            const columns = (index % PICKER_COLUMNS) + 1;
+            const lit = rows <= hover.rows && columns <= hover.columns;
+            return (
+              <button
+                key={index}
+                type="button"
+                aria-label={`${columns} columns × ${rows} rows`}
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setHover({ rows, columns })}
+                onFocus={() => setHover({ rows, columns })}
+                onClick={run((view) => insertTable(view, rows, columns))}
+                className={cn(
+                  "aspect-square rounded-[3px] border transition-colors duration-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                  lit ? "border-amethyst/70 bg-amethyst/25" : "border-border bg-transparent",
+                )}
+              />
+            );
+          })}
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={!inTable} onSelect={run((view) => tableAddRow(view, false))}>
+          <BetweenHorizontalStart aria-hidden /> Row above
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={run((view) => tableAddRow(view, true))}>
+          <BetweenHorizontalStart aria-hidden className="rotate-180" /> Row below
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={run((view) => tableAddColumn(view, false))}>
+          <BetweenVerticalStart aria-hidden className="rotate-180" /> Column left
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={run((view) => tableAddColumn(view, true))}>
+          <BetweenVerticalStart aria-hidden /> Column right
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={!inTable} onSelect={run(tableDeleteRow)}>
+          <Trash2 aria-hidden /> Delete row
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!inTable} onSelect={run(tableDeleteColumn)}>
+          <Trash2 aria-hidden /> Delete column
+        </DropdownMenuItem>
+        <DropdownMenuItem variant="destructive" disabled={!inTable} onSelect={run(deleteTable)}>
+          <Trash2 aria-hidden /> Delete table
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function ToolButton({
   label,
@@ -146,6 +222,7 @@ export function EditorToolbar({
       <ToolButton label="Task list" onRun={run((view) => toggleList(view, "task"))}>
         <ListChecks aria-hidden />
       </ToolButton>
+      <TableMenu run={run} inTable={Boolean(status.table)} />
       <Tooltip>
         <TooltipTrigger asChild>
           <button

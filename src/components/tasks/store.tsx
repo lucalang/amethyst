@@ -499,6 +499,24 @@ function useStoreValue(userId: string, initial: TaskChanges) {
         return mutate({ steps: { [id]: null } }, () => apiFetch(`/api/task-steps/${id}`, { method: "DELETE" }), { failure: "Step not deleted" });
       },
 
+      /** Move a step to the end of another task's steps; the task must be in the same list (the server enforces it). */
+      moveStep(id: string, taskId: string) {
+        const { steps, tasks } = dataRef.current;
+        const current = steps[id];
+        if (!current) return Promise.resolve("That step no longer exists.");
+        const target = tasks[taskId];
+        const from = tasks[current.taskId];
+        if (!target) return Promise.resolve("That task no longer exists.");
+        if (from && from.listId !== target.listId) return Promise.resolve("A step can only move to a task in the same list.");
+        if (current.taskId === taskId) return Promise.resolve(null);
+        const position = Object.values(steps).reduce((last, step) => (step.taskId === taskId ? Math.max(last, step.position) : last), -1) + 1;
+        return mutate(
+          { steps: { [id]: { ...current, taskId, position } } },
+          () => apiFetch<{ step: TaskStep }>(`/api/task-steps/${id}/move`, { method: "POST", json: { taskId } }),
+          { failure: "Step not moved", done: (result) => ({ steps: { [id]: result.step } }), pullAfter: true },
+        );
+      },
+
       reorderSteps(taskId: string, orderedIds: string[]) {
         const steps = dataRef.current.steps;
         const patch = Object.fromEntries(orderedIds.filter((id) => steps[id]).map((id, i) => [id, { ...steps[id], position: i }]));

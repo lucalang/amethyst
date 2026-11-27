@@ -310,7 +310,8 @@ export type GameEvent =
   | { kind: "threatened"; attack: number; from: number; to: number; building: Building; tile: number }
   | { kind: "clash"; a: number; b: number; troops: number; tile: number };
 
-export type Outcome = { winner: number | null; reason: "share" | "conquered" };
+/** "share": the winner held WIN_SHARE; "conquered": the player's last land fell; "total": the player took every tile after choosing to play on. */
+export type Outcome = { winner: number | null; reason: "share" | "conquered" | "total" };
 
 /**
  * A whole player conquered: one per elimination by attack (annexations of surrounded Bots are quieter). `tiles`
@@ -368,6 +369,10 @@ export type Game = {
   dirty: number[];
   events: GameEvent[];
   outcome: Outcome | null;
+  /** The player won at WIN_SHARE and chose to play on toward the whole map (see `continueAfterWin`). */
+  continued: boolean;
+  /** When the player's win happened (game.time), so playing on never lowers the pace part of the score. */
+  wonAt: number;
   rng: () => number;
 };
 
@@ -461,6 +466,60 @@ function addRelief(land: Uint8Array, w: number, h: number, rng: () => number) {
     terrain[t] = height > 0.72 ? MOUNTAIN : height > 0.6 ? HIGHLAND : PLAINS;
   }
   return terrain;
+}
+
+/** Islands smaller than this many tiles (0.25° each on the world map) are removed: too small to fight over. */
+export const MIN_ISLAND_TILES = 30;
+
+/**
+ * Removes every landmass under `minTiles`, except those within a few tiles of a `keep` tile (a Nation's home, so a
+ * small Nation such as Taiwan always stays). Returns how many tiles were removed.
+ */
+function dropTinyIslands(land: Uint8Array, w: number, h: number, minTiles: number, keep: readonly number[]) {
+  const seen = new Uint8Array(land.length);
+  // Each home protects only the one landmass nearest to it (the home point can sit just off the coast).
+  const protectedTiles = new Set<number>();
+  for (const home of keep) {
+    if (home < 0 || home >= land.length) continue;
+    const hx = home % w;
+    const hy = (home / w) | 0;
+    let found = -1;
+    for (let r = 0; r <= 8 && found < 0; r += 1) {
+      for (let dy = -r; dy <= r && found < 0; dy += 1) {
+        for (let dx = -r; dx <= r; dx += 1) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const x = hx + dx;
+          const y = hy + dy;
+          if (x >= 0 && y >= 0 && x < w && y < h && land[y * w + x]) {
+            found = y * w + x;
+            break;
+          }
+        }
+      }
+    }
+    if (found >= 0) protectedTiles.add(found);
+  }
+  let removed = 0;
+  for (let start = 0; start < land.length; start += 1) {
+    if (!land[start] || seen[start]) continue;
+    const island = [start];
+    seen[start] = 1;
+    let kept = false;
+    for (let i = 0; i < island.length; i += 1) {
+      const t = island[i];
+      if (protectedTiles.has(t)) kept = true;
+      for (const n of neighbors(t, w, h)) {
+        if (land[n] && !seen[n]) {
+          seen[n] = 1;
+          island.push(n);
+        }
+      }
+    }
+    if (island.length >= minTiles || kept) continue;
+    for (const t of island) land[t] = 0;
+    removed += island.length;
+  }
+  return removed;
 }
 
 /** One landmass in a sea, every land tile reachable over land. */
@@ -620,6 +679,13 @@ export function createGame(settings: Settings, seed: number): Game {
     w = WORLD_W;
     h = WORLD_H;
     land = decodeWorld();
+    dropTinyIslands(
+      land,
+      w,
+      h,
+      MIN_ISLAND_TILES,
+      WORLD_NATIONS.map(([, lat, lon]) => Math.floor((WORLD_NORTH - lat) * 4) * w + Math.floor((lon + 180) * 4)),
+    );
   } else {
     w = 520;
     h = 320;
@@ -695,13 +761,15 @@ export function createGame(settings: Settings, seed: number): Game {
     dirty: [],
     events: [],
     outcome: null,
+    continued: false,
+    wonAt: 0,
     rng,
   };
 
   // Nations and Bots take their places right away; the player picks theirs during the spawn phase.
   for (const nation of nations) {
     if (nation.kind === "nation") spawnNear(game, nation, nation.home >= 0 ? nation.home : randomLand(game), 4);
-    else if (nation.kind === "bot") spawnNear(game, nation, randomLand(game), 2);
+    else if (nation.kind === "bot") spawnNear(game, nation, roomyLand(game), 2);
   }
   return game;
 }
@@ -712,6 +780,44 @@ function randomLand(game: Game) {
     if (game.terrain[t] !== WATER && game.owner[t] === 0) return t;
   }
   return -1;
+}
+
+/** Free land tiles in the square of `radius` around a tile (the map's edge and the sea count as no room). */
+function openRoom(game: Game, t: number, radius: number) {
+  const { w, h } = game;
+  const x0 = t % w;
+  const y0 = (t / w) | 0;
+  let free = 0;
+  for (let dy = -radius; dy <= radius; dy += 1) {
+    for (let dx = -radius; dx <= radius; dx += 1) {
+      const x = x0 + dx;
+      const y = y0 + dy;
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const n = y * w + x;
+      if (game.terrain[n] !== WATER && game.owner[n] === 0) free += 1;
+    }
+  }
+  return free;
+}
+
+/**
+ * Where a Bot starts: the roomiest of a few random spots, so none begins squeezed onto a sliver of coast or a
+ * pocket between others (those Bots would hide there for the whole match). Needs half of a 13×13 square free.
+ */
+function roomyLand(game: Game) {
+  let best = -1;
+  let bestRoom = -1;
+  for (let tries = 0; tries < 30; tries += 1) {
+    const t = randomLand(game);
+    if (t < 0) break;
+    const room = openRoom(game, t, 6);
+    if (room > bestRoom) {
+      best = t;
+      bestRoom = room;
+    }
+    if (room >= 85) break;
+  }
+  return best;
 }
 
 /** The nearest unclaimed land to a tile, searching outward. */
@@ -2329,11 +2435,15 @@ export function step(game: Game) {
  * Only Bots whose surroundings changed since the last check are looked at, and the coast and edge are counted as
  * tiles change hands, so an unchanged Bot costs nothing.
  */
+const TINY_BOT_TILES = 40;
+
 function annexSurrounded(game: Game) {
   for (const bot of game.nations) {
     if (!bot.alive || bot.kind !== "bot" || !bot.touched) continue;
     bot.touched = false;
-    if (bot.tiles > 4000 || bot.exposed > 0) continue;
+    // A Bot squeezed down to a pocket (a few tiles) is annexed even when it touches the coast: it can't do
+    // anything from there, and hiding in it would keep a match from ever finishing cleanly.
+    if (bot.tiles > 4000 || (bot.exposed > 0 && bot.tiles > TINY_BOT_TILES)) continue;
     let surrounder = -1;
     let enclosed = true;
     for (const b of bot.border) {
@@ -2372,19 +2482,44 @@ function annexSurrounded(game: Game) {
 }
 
 function checkOutcome(game: Game) {
-  for (const nation of game.nations) {
-    if (!nation.alive) continue;
-    const held = share(game, nation);
-    if (held > nation.peak) nation.peak = held;
-    if (held >= WIN_SHARE) {
-      game.outcome = { winner: nation.id, reason: "share" };
+  const player = game.nations[1];
+  if (game.continued) {
+    // The player already won and chose to play on: the match ends when they hold every tile of the map, or
+    // when their last land falls (the win stays recorded).
+    const held = share(game, player);
+    if (held > player.peak) player.peak = held;
+    if (player.tiles >= game.landTiles) {
+      game.outcome = { winner: 1, reason: "total" };
       return;
     }
+  } else {
+    for (const nation of game.nations) {
+      if (!nation.alive) continue;
+      const held = share(game, nation);
+      if (held > nation.peak) nation.peak = held;
+      if (held >= WIN_SHARE) {
+        game.outcome = { winner: nation.id, reason: "share" };
+        if (nation.id === 1) game.wonAt = game.time;
+        return;
+      }
+    }
   }
-  if (!game.nations[1].alive || (game.nations[1].spawned && game.nations[1].tiles === 0)) {
-    game.nations[1].alive = false;
+  if (!player.alive || (player.spawned && player.tiles === 0)) {
+    player.alive = false;
     game.outcome = { winner: null, reason: "conquered" };
   }
+}
+
+/**
+ * After a victory by share, the player may play on toward the whole map. Clears the result so the match runs
+ * again; it now ends only with every tile taken ("total") or the player's last land falling. Rivals keep
+ * fighting, and nobody else can win any more.
+ */
+export function continueAfterWin(game: Game): boolean {
+  if (game.outcome?.winner !== 1 || game.outcome.reason !== "share" || game.continued) return false;
+  game.outcome = null;
+  game.continued = true;
+  return true;
 }
 
 /** A tile deep in a player's land (near its middle), for a City out of harm's way, or -1. */
@@ -2436,9 +2571,12 @@ export function compactNumber(value: number) {
  */
 export function matchScore(game: Game) {
   const player = game.nations[1];
-  if (game.outcome?.winner !== 1) return Math.round(player.peak * 1000);
+  // Playing on after a win keeps the win: a later defeat doesn't turn it into a loss.
+  const won = game.continued || game.outcome?.winner === 1;
+  if (!won) return Math.round(player.peak * 1000);
   const { difficulty, map, bots, nations } = game.settings;
   const base = 2000 * { easy: 1, normal: 1.6, hard: 2.4 }[difficulty] * (map === "world" ? 1.4 : 1) * (0.7 + (bots / 400) * 0.5 + (nations ? 0.5 : 0));
-  const pace = Math.max(0.5, 1.6 - game.time / 1800);
-  return Math.round(base * pace);
+  const pace = Math.max(0.5, 1.6 - (game.continued ? game.wonAt : game.time) / 1800);
+  // Taking every last tile after winning is worth a quarter more.
+  return Math.round(base * pace * (game.outcome?.reason === "total" ? 1.25 : 1));
 }

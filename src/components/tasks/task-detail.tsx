@@ -13,6 +13,7 @@ import {
   PanelRightClose,
   Pencil,
   Plus,
+  Repeat2,
   Search,
   Star,
   Sun,
@@ -21,7 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { errorMessage, readLocal, writeLocal } from "@/components/workspace/client-utils";
@@ -223,7 +224,11 @@ function TitleField({ task }: { task: Task }) {
 }
 
 function Steps({ task, steps, onAllDone }: { task: Task; steps: TaskStep[]; onAllDone: () => void }) {
-  const actions = useTaskActions();
+  const { data, actions } = useTasks();
+  // A step can move to any other task of the same list.
+  const targets = Object.values(data.tasks)
+    .filter((other) => other.listId === task.listId && other.id !== task.id)
+    .sort((a, b) => Number(Boolean(a.completedAt)) - Number(Boolean(b.completedAt)) || a.position - b.position || a.id.localeCompare(b.id));
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -261,6 +266,7 @@ function Steps({ task, steps, onAllDone }: { task: Task; steps: TaskStep[]; onAl
               step={step}
               index={index}
               count={steps.length}
+              targets={targets}
               onMove={(delta) => move(index, delta)}
               onToggle={(completed) => {
                 void actions.updateStep(step.id, { completed });
@@ -292,12 +298,15 @@ function StepRow({
   step,
   index,
   count,
+  targets,
   onMove,
   onToggle,
 }: {
   step: TaskStep;
   index: number;
   count: number;
+  /** The other tasks of the same list this step can move to. */
+  targets: Task[];
   onMove: (delta: number) => void;
   onToggle: (completed: boolean) => void;
 }) {
@@ -376,6 +385,20 @@ function StepRow({
           <DropdownMenuItem disabled={index === count - 1} onSelect={() => onMove(1)}>
             <ArrowDown aria-hidden /> Move down
           </DropdownMenuItem>
+          {targets.length > 0 ? (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Repeat2 aria-hidden /> Move to task
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="max-h-80 w-64 overflow-y-auto">
+                {targets.map((target) => (
+                  <DropdownMenuItem key={target.id} onSelect={() => void actions.moveStep(step.id, target.id)}>
+                    <span className={cn("truncate", target.completedAt && "text-muted-foreground line-through decoration-muted-foreground/60")}>{target.title}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onSelect={() => void actions.deleteStep(step.id)}>
             <Trash2 aria-hidden /> Delete step

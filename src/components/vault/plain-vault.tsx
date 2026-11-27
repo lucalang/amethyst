@@ -21,12 +21,12 @@ import "./plain-vault.css";
 import { createVaultRequestId } from "./vault-request";
 
 type Redemption =
-  | { status: "unlocked"; coins: number; items: string[]; newItems: string[]; balance: number }
+  | { status: "unlocked"; repeat?: boolean; coins: number; items: string[]; newItems: string[]; balance: number }
   | { status: "already"; coins: number; items: string[]; redeemedAt: string; balance: number }
   | { status: "unavailable" | "unknown"; triesLeft: number };
 
 type Outcome =
-  | { phase: "granted"; coins: number; items: string[]; newItems?: string[]; recovered?: boolean }
+  | { phase: "granted"; coins: number; items: string[]; newItems?: string[]; recovered?: boolean; /** Opened before: only new cosmetics are listed. */ repeat?: boolean }
   | { phase: "already"; coins: number; items: string[]; redeemedAt: string }
   | { phase: "invalid" | "unavailable"; triesLeft: number | null; message?: string }
   | { phase: "locked"; message: string }
@@ -122,7 +122,9 @@ function copyFor(outcome: Outcome) {
     case "granted":
       return outcome.recovered
         ? "Your last attempt was cut off, but the vault had already answered. These rewards were granted once and are yours."
-        : "Everything below is now on your account.";
+        : outcome.repeat
+          ? "You redeemed this code before, so only the cosmetics that are new to you are listed. Coins, cases and boosters were added as usual."
+          : "Everything below is now on your account.";
     case "already":
       return `Your account redeemed this code on ${formatDate(outcome.redeemedAt)}. Its rewards are already yours; nothing new was added.`;
     case "invalid":
@@ -256,7 +258,7 @@ export function PlainChamber({ initialFinds, looks }: { initialFinds: VaultFind[
       attempt.current = { code, request };
       const result = await apiFetch<Redemption>("/api/vault/redeem", { method: "POST", json: { code, request } });
       if (result.status === "unlocked") {
-        next = { phase: "granted", coins: result.coins, items: result.items, newItems: result.newItems };
+        next = { phase: "granted", coins: result.coins, items: result.items, newItems: result.newItems, repeat: result.repeat };
         balance = result.balance;
       } else if (result.status === "already") {
         // A grant whose answer was lost earlier is shown as that grant, not as an old claim.

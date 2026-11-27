@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { Flame, Gamepad2, Layers, Play, Sparkles, Trophy } from "lucide-react";
+import { Flame, Gamepad2, Layers, Play, RotateCcw, Sparkles, Trophy } from "lucide-react";
 import { Tabs as TabsPrimitive } from "radix-ui";
 import { DailyCountdown } from "@/components/arcade/daily";
 import { ARCADE_CABINETS, ArcadePreview } from "@/components/arcade/previews";
-import { RecoverStreakDialog, StreakLine, StreakRestorePanel, useArcadeStreaks } from "@/components/arcade/streaks";
+import { RecoverStreakDialog, RestoreAllDialog, StreakLine, StreakRestorePanel, useArcadeStreaks } from "@/components/arcade/streaks";
 import { CatalogEmpty, CatalogSearch } from "@/components/catalog/catalog-search";
 import { Button } from "@/components/ui/button";
 import {
@@ -159,6 +159,9 @@ export function ArcadeGames({
     return streak?.recovery ? [{ game, streak }] : [];
   });
   const [recovering, setRecovering] = useState<RankedGameId | null>(null);
+  const [restoringAll, setRestoringAll] = useState(false);
+  // Restore all covers the offers that are ready (today's round played); the rest wait for a round first.
+  const readyNow = restorable.filter(({ streak }) => streak.recovery?.ready).map(({ streak }) => streak);
   const match = catalogMatcher(query);
   const games = match ? ARCADE_GAMES.filter((game) => match(game.title, ARCADE_CABINETS[game.id].genre, game.blurb, ...(game.features ?? []))) : ARCADE_GAMES;
   const counts = Object.fromEntries(ARCADE_CATEGORIES.map((category) => [category.id, arcadeGamesIn(category.id, games).length])) as Record<ArcadeCategoryId, number>;
@@ -202,9 +205,17 @@ export function ArcadeGames({
       </p>
       {restorable.length > 0 ? (
         <section aria-labelledby="arcade-restore-heading" className="mb-5 grid gap-2.5">
-          <h2 id="arcade-restore-heading" className="text-sm font-semibold">
-            {restorable.length === 1 ? "A streak you can restore today" : `${restorable.length} streaks you can restore today`}
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="arcade-restore-heading" className="text-sm font-semibold">
+              {restorable.length === 1 ? "A streak you can restore today" : `${restorable.length} streaks you can restore today`}
+            </h2>
+            {readyNow.length > 1 ? (
+              <Button size="sm" variant="outline" className="h-8 px-3" onClick={() => setRestoringAll(true)}>
+                <RotateCcw aria-hidden />
+                Restore all · <span className="tabular-nums">{readyNow.length}</span>
+              </Button>
+            ) : null}
+          </div>
           <div className="grid gap-2.5 md:grid-cols-2">
             {restorable.map(({ game, streak }) => (
               <StreakRestorePanel key={game.id} streak={streak} playHref={game.href} onRestore={() => setRecovering(streak.game)} />
@@ -281,6 +292,13 @@ export function ArcadeGames({
           </TabsPrimitive.Content>
         );
       })}
+      <RestoreAllDialog
+        streaks={readyNow}
+        waiting={restorable.length - readyNow.length}
+        open={restoringAll}
+        onOpenChange={setRestoringAll}
+        onRestored={(next) => (next ? replace(next) : refresh())}
+      />
       {streaks && recovering ? (
         <RecoverStreakDialog
           streak={streaks[recovering]}

@@ -232,7 +232,6 @@ export default function AscentGame({ records }: { records: Record<string, number
       game={ASCENT_GAME}
       title="The Ascent"
       active={phase.kind === "preview" || phase.kind === "answering" || phase.kind === "result"}
-      leaderboard={null}
       actions={
         index > 0 && phase.kind !== "complete" ? (
           <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={restart}>

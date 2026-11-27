@@ -233,6 +233,9 @@ export const recordScoreSchema = z
     path: ["score"],
   });
 
+/** A won match in a game that ranks wins (Front Wars). Counted once per victory; the score record is separate. */
+export const recordWinSchema = z.object({ game: z.literal("front-wars") }).strict();
+
 export const SUDOKU_CELLS = 81;
 
 /** Most coins rewards pay in any 24 hours; the database (`daily_limit` in _credit_coins) enforces it. */

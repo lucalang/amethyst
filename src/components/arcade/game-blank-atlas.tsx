@@ -228,7 +228,6 @@ export default function DescentGame({ records }: { records: Record<string, numbe
       game={BLANK_ATLAS_GAME}
       title="The Descent"
       active={phase.kind === "preview" || phase.kind === "answering" || phase.kind === "result"}
-      leaderboard={null}
       actions={
         index > 0 && phase.kind !== "complete" ? (
           <Button variant="outline" size="sm" className="h-8 px-2.5" onClick={restart}>

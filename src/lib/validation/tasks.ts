@@ -110,4 +110,7 @@ export const updateStepSchema = z
   .strict()
   .refine((value) => value.title !== undefined || value.completed !== undefined, "Nothing to update.");
 
+/** Move a step to another task of the same list (the database refuses any other list). */
+export const moveStepSchema = z.object({ taskId: z.uuid() }).strict();
+
 export const taskSearchSchema = z.string().trim().min(1).max(100);

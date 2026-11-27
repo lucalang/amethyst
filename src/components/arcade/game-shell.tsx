@@ -25,7 +25,7 @@ import { apiFetch } from "@/lib/api-client";
 import { ARCADE_EXPLORER_GAME_IDS, type AchievementEvent } from "@/lib/achievements";
 import { isRankedGame, type ArcadeGameId, type ScoreGame } from "@/lib/arcade";
 import { isShopGame, type GameLook } from "@/lib/game-cosmetics";
-import { leaderboardHref } from "@/lib/leaderboards";
+import { hasLeaderboard, leaderboardHref } from "@/lib/leaderboards";
 import { cn } from "@/lib/utils";
 import { closeAudio, playSound, type SoundName } from "./sound";
 import { ArcadeContext, useArcade } from "./arcade-context";
@@ -229,7 +229,7 @@ export function GameShell({
           </div>
           <div className="ml-auto flex items-center gap-1.5">
             {actions}
-            {leaderboard !== null && isRankedGame(game) ? <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
+            {leaderboard !== null && hasLeaderboard(game) ? <Button asChild variant="outline" size="sm" className="h-8 px-2.5">
               <Link href={leaderboardHref(game, leaderboard)} prefetch={false} aria-label={`${title} leaderboard`} title={`${title} leaderboard`}>
                 <Trophy aria-hidden />
                 <span aria-hidden className="hidden sm:inline">Ranks</span>

@@ -159,6 +159,12 @@ export type Database = {
               Update: { user_id?: string; game?: string; variant?: string; score?: number; achieved_at?: string }
               Relationships: [{ foreignKeyName: "arcade_records_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
             },
+            "arcade_wins": {
+              Row: { user_id: string; game: string; wins: number; last_win_at: string }
+              Insert: { user_id?: string; game: string; wins?: number; last_win_at?: string }
+              Update: { user_id?: string; game?: string; wins?: number; last_win_at?: string }
+              Relationships: [{ foreignKeyName: "arcade_wins_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"] }]
+            },
             "arcade_runs": {
               Row: { id: string; user_id: string; game: string; variant: string; board: string | null; started_at: string; finished_at: string | null; score: number | null; outcome: string }
               Insert: { [_ in never]: never }
@@ -634,6 +640,12 @@ isOneToOne: false
 "arcade_leaderboard":
 { Args: { "p_game": string,"p_board": string,"p_limit"?: number,"p_puzzle"?: string | null }; Returns: Json
                            },
+"arcade_record_leaderboard":
+{ Args: { "p_game": string,"p_limit"?: number }; Returns: Json
+                           },
+"record_arcade_win":
+{ Args: { "p_game": string }; Returns: number
+                           },
 "arcade_leaderboard_boards":
 { Args: { "p_game": string }; Returns: { board: string; players: number }[]
                            },
@@ -852,6 +864,9 @@ isOneToOne: false
                            },
 "add_task_step":
 { Args: { "p_task_id": string,"p_title": string }; Returns: Database["public"]["Tables"]["task_steps"]["Row"]
+                           },
+"move_task_step":
+{ Args: { "p_step_id": string,"p_task_id": string }; Returns: Database["public"]["Tables"]["task_steps"]["Row"]
                            },
 "reorder_task_steps":
 { Args: { "p_task_id": string,"p_step_ids": (string)[] }; Returns: undefined

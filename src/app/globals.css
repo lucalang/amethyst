@@ -2493,6 +2493,82 @@
 .cm-live .cm-md-hr {
   color: var(--muted-foreground);
 }
+/* Tables: a rendered HTML table while the caret is elsewhere; aligned, editable text with the caret inside. */
+.cm-live .cm-md-table-wrap {
+  margin: 0.5rem 0.25rem;
+  padding: 0 0.75rem;
+  overflow-x: auto;
+}
+.cm-live .cm-md-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 50%;
+  max-width: 100%;
+  font-size: 0.95em;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: text;
+}
+.cm-live .cm-md-table th,
+.cm-live .cm-md-table td {
+  padding: 0.4rem 0.8rem;
+  text-align: left;
+  vertical-align: top;
+  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  min-width: 4.5rem;
+  overflow-wrap: anywhere;
+}
+.cm-live .cm-md-table th:last-child,
+.cm-live .cm-md-table td:last-child {
+  border-right: 0;
+}
+.cm-live .cm-md-table thead th {
+  border-top: 0;
+  background: var(--surface-raised);
+  color: var(--strong);
+  font-weight: 700;
+}
+.cm-live .cm-md-table tbody tr:nth-child(even) td {
+  background: color-mix(in oklab, var(--surface-raised) 45%, transparent);
+}
+.cm-live .cm-md-table tbody tr:hover td {
+  background: rgb(var(--accent-rgb) / 0.08);
+}
+.cm-live .cm-md-table code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--secondary);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.cm-live .cm-md-table a {
+  color: var(--amethyst);
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--accent-rgb) / 0.45);
+  text-underline-offset: 3px;
+}
+.cm-live .cm-md-table-line {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  white-space: pre;
+  overflow-x: auto;
+  background: var(--surface-raised);
+}
+.cm-live .cm-md-table-head {
+  font-weight: 700;
+  border-radius: 8px 8px 0 0;
+}
+.cm-live .cm-md-table-sep {
+  color: var(--muted-foreground);
+}
+.cm-live .cm-md-table-pipe {
+  color: var(--amethyst);
+  font-weight: 700;
+}
+
 .cm-live .cm-md-task {
   position: absolute;
   inset-inline-start: calc(var(--cm-task-indent, 0rem) + 1rem);

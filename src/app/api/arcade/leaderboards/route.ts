@@ -1,4 +1,4 @@
-import { LEADERBOARD_GAMES, leaderboardQuerySchema, type Leaderboard, type LeaderboardRow } from "@/lib/leaderboards";
+import { LEADERBOARD_GAMES, isRecordLeaderboardGame, leaderboardQuerySchema, type Leaderboard, type LeaderboardRow } from "@/lib/leaderboards";
 import { apiError, dbError, jsonResponse, requireApiUser } from "@/lib/http";
 import { dailyPuzzle } from "@/lib/sudoku-puzzles";
 
@@ -19,8 +19,11 @@ export async function GET(request: Request) {
     if (!puzzle) return apiError(503, "unavailable", "This daily board is unavailable right now.");
   }
 
+  // Record-only games (The Descent, The Ascent, Front Wars) rank a saved record or a win count, not timed runs.
   const [ranked, boards] = await Promise.all([
-    ctx.supabase.rpc("arcade_leaderboard", { p_game: game, p_board: board, p_limit: limit, p_puzzle: puzzle }),
+    isRecordLeaderboardGame(game)
+      ? ctx.supabase.rpc("arcade_record_leaderboard", { p_game: game, p_limit: limit })
+      : ctx.supabase.rpc("arcade_leaderboard", { p_game: game, p_board: board, p_limit: limit, p_puzzle: puzzle }),
     LEADERBOARD_GAMES[game].setups ? ctx.supabase.rpc("arcade_leaderboard_boards", { p_game: game }) : null,
   ]);
   if (ranked.error) return dbError(ranked.error, "Could not load the leaderboard.");
